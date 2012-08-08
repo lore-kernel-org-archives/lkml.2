@@ -1,947 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab2HHKoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:44:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51342 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2HHKon (ORCPT
+	id S1752848Ab2HHKql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:46:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61426 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2HHKqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:44:43 -0400
+	Wed, 8 Aug 2012 06:46:40 -0400
+Date: Wed, 8 Aug 2012 12:46:29 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Grant Likely <grant.likely@secretlab.ca>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/dt: use linear irq domain for ioapic(s).
+Message-ID: <20120808104629.GA20296@avionic-0098.mockup.avionic-design.de>
+References: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120806073811.GA3261@breakpoint.cc>
 MIME-Version: 1.0
-In-Reply-To: <CADdae-hfLecu_87tMSkXbwuNRF6O3XYdexH3DrUgSgoHHc5S_w@mail.gmail.com>
-References: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
-	<20120720132153.GA26110@redhat.com>
-	<20120720202155.GB15677@oc1711230544.ibm.com>
-	<CADdae-hyq7RALEg6fOTQZc_cDoi8PnovBZ2xNdsZRNTqfJnORA@mail.gmail.com>
-	<20120720210606.GC15677@oc1711230544.ibm.com>
-	<CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
-	<20120723163906.GA3662@oc1711230544.ibm.com>
-	<CADdae-hux6VA6-M5dOi=D34rcFweAyibAbB_qvdrTwz+oQw3SA@mail.gmail.com>
-	<20120724165247.GA18401@oc1711230544.ibm.com>
-	<CADdae-hfLecu_87tMSkXbwuNRF6O3XYdexH3DrUgSgoHHc5S_w@mail.gmail.com>
-Date: Wed, 8 Aug 2012 12:44:42 +0200
-X-Google-Sender-Auth: gcFtZgwJYCz_yJ7VaWeCvVNq3_k
-Message-ID: <CADdae-i782aP_UMaubSpaJhs54_5-c9Qbxk7YOmVf=rVigaevQ@mail.gmail.com>
-Subject: Re: oops in kernel ( 3.4.x -> 3.5rc )
-From: nicolas prochazka <prochazka.nicolas@gmail.com>
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, m.szyprowski@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <20120806073811.GA3261@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:Qd3zWtzJvTcY8rkS8OYYUDhP3X8T8BEDoAIGT79P5uU
+ iy6WNJtVxGhrBbIZMPX2FockiqYSo52dTJWvfNHf4bbtMPJoWE
+ GB3ZFlkutXyO0wLVSdXAaD6MW4M0EBVCw/yq2s/NiOmY8Wzg85
+ rwNA1xuu/VhroDmTalnMwBMRbMtDvgviyyek29RHxaK9M4wZSJ
+ UtRHwy4OQFzUHyZkydCVvOFsLc1HR60LDtwl4zliAM9CG6WyNT
+ PR+hqQaz3R0Cu1wL43MYZbOdcmj/gq0z6d5BRAIs7uqM1/4r3L
+ Xl8CKpB9uytuVRJ7ndRln4kaHCNGrz5rMPLF0uPTqlkbJgpqV8
+ GKa+o9TE4xw4vlW1CtsLCTC90L62yRps7kJ5htJkHXLNdQ6MNk
+ 3tm61j6j1f12uBDniPJZpbMJ9j6MWJTJkM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-last git master checkout  seems  correct this problem
-Thanks
-Nicolas Prochazka.
 
-2012/7/28 nicolas prochazka <prochazka.nicolas@gmail.com>:
-> hello again,
-> bisect git gives ( after 13 steps) :
-> 58bca4a8fa90fcf9069379653b396b2cec642f7f is the first bad commit
->
-> Regards,
-> Nicolas Prochazka
->
-> 2012/7/24 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
->> On Mon, Jul 23, 2012 at 11:15:09PM +0200, nicolas prochazka wrote:
->>> Hello,
->>> I 'm trying differents versions with differents results
->>>
->>> - commit f044db4cb4bf16893812d35b5fbeaaf3e30c9215  : bug is not reproductible
->>> - 3.5rc7  : bug is reproductible    (cf new dump )
->>> - master branch  : bug is reproductible
->>>
->>>
->>>
->>> Regards,
->>> Nicolas Prochazka
->>>
->>>
->>
->> Hi, Nicolas.
->>
->> Can you try a bisect? I am also copying David Howells and Bobby Powers,
->> even though their set of patches don't seem to be the culprit.
->>
->> Regards.
->> Cascardo.
->>
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000002f
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 PGD 6627ea067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0002 [#1] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 1
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 17596, comm: queue.sh Not tainted
->>> 3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff81156900>]
->>> [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff880669ebdd90  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: 0000000000000038 RBX:
->>> ffff8807ed95eec0 RCX: 0000000000000007
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000800 RDI: ffff8805a4d01d40
->>> Jul 23 21:10:05 positronic18696 RBP: ffff880669ebddf0 R08:
->>> 0000000000000020 R09: ffffffff81156694
->>> Jul 23 21:10:05 positronic18696 R10: 0000000000000001 R11:
->>> 0000000000000000 R12: ffff8807ecf25000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8805a4d01d80 R14:
->>> 0000000000000100 R15: ffff8807d3a61800
->>> Jul 23 21:10:05 positronic18696 FS:  00007f1a8e719700(0000)
->>> GS:ffff88083fc40000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 000000008005003b
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000002f CR3:
->>> 000000066ef90000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process queue.sh (pid: 17596,
->>> threadinfo ffff880669ebc000, task ffff8806625ab000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff880669ebdda0 000000018102db49
->>> 0000000000000020 ffff8806627ee8c0
->>> Jul 23 21:10:05 positronic18696 ffff8807eefc1608 ffff8807eefc1680
->>> 00007f1a8e7199d0 ffff8807bf41d000
->>> Jul 23 21:10:05 positronic18696 0000000000000000 0000000001200011
->>> 00007f1a8e7199d0 0000000000000000
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81040441>] copy_process+0x931/0x13c0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81041024>] do_fork+0x54/0x360
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff810559e7>] ?
->>> __set_task_blocked+0x37/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81055a83>] ?
->>> __set_current_blocked+0x53/0x70
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8100c098>] sys_clone+0x28/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4bb3>] stub_clone+0x13/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>] ?
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: 8b 45 b0 49 8b 7d 10 48 8b 71 10
->>> 4c 89 c2 e8 08 82 23 00 45 85 f6 74 54 41 8d 46 ff 31 c9 48 8d 34 c5
->>> 08 00 00 00 31 c0 eb 15 90 <f0> 48 ff 42 30 49 89 14 04 ff c1 48 83 c0
->>> 08 48 39 f0 74 24 49
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff880669ebdd90>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000002f
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d92756 ]---
->>> Jul 23 21:10:05 positronic18696 device vmtap35 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmEtap35 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmtap36 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmEtap36 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmtap37 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmEtap37 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmtap38 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 device vmEtap38 left promiscuous mode
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 598c9e067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#2] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 0
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 21815, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff88053f965d78  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf700 RBX:
->>> ffff8807ed1d9118 RCX: 000000000000007e
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf700
->>> Jul 23 21:10:05 positronic18696 RBP: ffff88053f965d98 R08:
->>> ffff88083fc16a10 R09: ffffffff8119bfe0
->>> Jul 23 21:10:05 positronic18696 R10: 0000000000000000 R11:
->>> 0000000000000206 R12: ffff8807d8afaa80
->>> Jul 23 21:10:05 positronic18696 R13: ffff8808139d7000 R14:
->>> ffff8807ed98d038 R15: ffff88053f965e08
->>> Jul 23 21:10:05 positronic18696 FS:  00007faee78b5700(0000)
->>> GS:ffff88083fc00000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 00000007e2eb5000 CR4: 00000000000007e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 21815,
->>> threadinfo ffff88053f964000, task ffff8807c6207000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff8807d8afaa80 0000000000000007
->>> ffff8807ed1d9118 ffff8807ee63ab40
->>> Jul 23 21:10:05 positronic18696 ffff88053f965dc8 ffffffff8119f8b0
->>> ffffffffff0a0210 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff88053f965e98 ffff8807eca70200
->>> ffff88053f965e48 ffffffff811a0876
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8119f8b0>]
->>> proc_fd_instantiate+0x80/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811a0876>] proc_fill_cache+0x126/0x150
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8119f830>] ?
->>> proc_fdinfo_instantiate+0x90/0x90
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8114cc50>] ? filldir64+0xe0/0xe0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811a0ba6>]
->>> proc_readfd_common+0xf6/0x1c0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8119f830>] ?
->>> proc_fdinfo_instantiate+0x90/0x90
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8114cc50>] ? filldir64+0xe0/0xe0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811a0ca5>] proc_readfd+0x15/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8114ce70>] vfs_readdir+0xa0/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8114cc50>] ? filldir64+0xe0/0xe0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8114d01d>] sys_getdents+0x8d/0x100
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff88053f965d78>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d92757 ]---
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000002f
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 PGD 7ee96c067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0002 [#3] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 3
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 7882, comm: bash Tainted: G
->>> D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff81156900>]
->>> [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff8807ec9e1d90  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: 0000000000000038 RBX:
->>> ffff8807ed42de40 RCX: 0000000000000007
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000800 RDI: ffff8807ef0de080
->>> Jul 23 21:10:05 positronic18696 RBP: ffff8807ec9e1df0 R08:
->>> 0000000000000020 R09: ffffffff81156694
->>> Jul 23 21:10:05 positronic18696 R10: 00000000fffffffb R11:
->>> 0000000000000000 R12: ffff8807eb8ec000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ef0de440 R14:
->>> 0000000000000100 R15: ffff8807ed98d000
->>> Jul 23 21:10:05 positronic18696 FS:  00007f7d50f02700(0000)
->>> GS:ffff88083fcc0000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 000000008005003b
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000002f CR3:
->>> 00000007ed669000 CR4: 00000000000007e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process bash (pid: 7882, threadinfo
->>> ffff8807ec9e0000, task ffff8808139d7000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff8807ec9e1da0 000000018102db49
->>> 0000000000000020 ffff8807ef0de980
->>> Jul 23 21:10:05 positronic18696 ffff8807ee3bf708 ffff8807ee3bf780
->>> 00007f7d50f029d0 ffff8806627e6000
->>> Jul 23 21:10:05 positronic18696 0000000000000000 0000000001200011
->>> 00007f7d50f029d0 0000000000000000
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81040441>] copy_process+0x931/0x13c0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8112902f>] ?
->>> kmem_cache_alloc+0xaf/0x110
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81041024>] do_fork+0x54/0x360
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81139247>] ? fd_install+0x67/0x90
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81144580>] ? do_pipe_flags+0xb0/0x100
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8100c098>] sys_clone+0x28/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4bb3>] stub_clone+0x13/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>] ?
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: 8b 45 b0 49 8b 7d 10 48 8b 71 10
->>> 4c 89 c2 e8 08 82 23 00 45 85 f6 74 54 41 8d 46 ff 31 c9 48 8d 34 c5
->>> 08 00 00 00 31 c0 eb 15 90 <f0> 48 ff 42 30 49 89 14 04 ff c1 48 83 c0
->>> 08 48 39 f0 74 24 49
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff81156900>] dup_fd+0x160/0x2e0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff8807ec9e1d90>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000002f
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d92758 ]---
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 7ec990067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#4] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 3
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22417, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff88066ef4fcd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff88066ef4fcf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff88066ef4fc44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007f7200558700(0000)
->>> GS:ffff88083fcc0000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 00000007ec9fd000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22417,
->>> threadinfo ffff88066ef4e000, task ffff8807ecfa9000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff88066ef4fdb8 ffff88066ef4fe48
->>> ffff88066ef4fdc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff88066ef4fd58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff88066ef4fe48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff88066ef4fcd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d92759 ]---
->>> Jul 23 21:10:05 positronic18696 device vmtap24 entered promiscuous mode
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 7ecea9067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#5] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 2
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22487, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff8807ecb4dcd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff8807ecb4dcf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff8807ecb4dc44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007f370dd20700(0000)
->>> GS:ffff88083fc80000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 0000000623f45000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22487,
->>> threadinfo ffff8807ecb4c000, task ffff8807d1b99000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff8807ecb4ddb8 ffff8807ecb4de48
->>> ffff8807ecb4ddc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff8807ecb4dd58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff8807ecb4de48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff8807ecb4dcd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d9275a ]---
->>> Jul 23 21:10:05 positronic18696 device vmEtap24 entered promiscuous mode
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 7ec9a0067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#6] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 3
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22570, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff88066edebcd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff88066edebcf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff88066edebc44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007f914b112700(0000)
->>> GS:ffff88083fcc0000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 00000005a4c9b000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22570,
->>> threadinfo ffff88066edea000, task ffff8807eefa2000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff88066edebdb8 ffff88066edebe48
->>> ffff88066edebdc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff88066edebd58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff88066edebe48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff88066edebcd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d9275b ]---
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 53d536067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#7] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 1
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22727, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff8807bf797cd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff8807bf797cf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff8807bf797c44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007f49e0de2700(0000)
->>> GS:ffff88083fc40000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 000000066ed95000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22727,
->>> threadinfo ffff8807bf796000, task ffff8807eeeb1000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff8807bf797db8 ffff8807bf797e48
->>> ffff8807bf797dc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff8807bf797d58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff8807bf797e48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff8807bf797cd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d9275c ]---
->>> Jul 23 21:10:05 positronic18696 device vmtap25 entered promiscuous mode
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 PGD 7c6184067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#8] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 7
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22808, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff880771b43cd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff880771b43cf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff880771b43c44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007f22e3d5f700(0000)
->>> GS:ffff88083fdc0000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 000000053d5cc000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22808,
->>> threadinfo ffff880771b42000, task ffff8807e2e36000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff880771b43db8 ffff880771b43e48
->>> ffff880771b43dc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff880771b43d58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff880771b43e48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff880771b43cd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d9275d ]---
->>> Jul 23 21:10:05 positronic18696 BUG: unable to handle kernel paging
->>> request at 000000010000003b
->>> Jul 23 21:10:05 positronic18696 IP: [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 device vmEtap25 entered promiscuous mode
->>> Jul 23 21:10:05 positronic18696 PGD 771aad067 PUD 0
->>> Jul 23 21:10:05 positronic18696 Oops: 0000 [#9] SMP
->>> Jul 23 21:10:05 positronic18696 CPU 0
->>> Jul 23 21:10:05 positronic18696 Modules linked in: kvm_intel kvm
->>> Jul 23 21:10:05 positronic18696
->>> Jul 23 21:10:05 positronic18696 Pid: 22820, comm: netstat Tainted: G
->>>    D      3.5.0-rc7-dirty #6 Dell Inc. PowerEdge M600/0MY736
->>> Jul 23 21:10:05 positronic18696 RIP: 0010:[<ffffffff8119f684>]
->>> [<ffffffff8119f684>] tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP: 0018:ffff8807c628fcd8  EFLAGS: 00010206
->>> Jul 23 21:10:05 positronic18696 RAX: ffff8807ee3bf180 RBX:
->>> ffff8807ed065f88 RCX: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 RDX: 00000000ffffffff RSI:
->>> 0000000000000000 RDI: ffff8807ee3bf180
->>> Jul 23 21:10:05 positronic18696 RBP: ffff8807c628fcf8 R08:
->>> ffff8807ed051038 R09: ffffffffffcaffc8
->>> Jul 23 21:10:05 positronic18696 R10: ffff8807c628fc44 R11:
->>> 0000000000000004 R12: ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 R13: ffff8807ee1ab000 R14:
->>> ffff8807eb875038 R15: ffff880813b59c20
->>> Jul 23 21:10:05 positronic18696 FS:  00007fe1972b9700(0000)
->>> GS:ffff88083fc00000(0000) knlGS:0000000000000000
->>> Jul 23 21:10:05 positronic18696 CS:  0010 DS: 0000 ES: 0000 CR0:
->>> 0000000080050033
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b CR3:
->>> 00000007a745d000 CR4: 00000000000027e0
->>> Jul 23 21:10:05 positronic18696 DR0: 0000000000000001 DR1:
->>> 0000000000000002 DR2: 0000000000000001
->>> Jul 23 21:10:05 positronic18696 DR3: 000000000000000a DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jul 23 21:10:05 positronic18696 Process netstat (pid: 22820,
->>> threadinfo ffff8807c628e000, task ffff8807d1a99000)
->>> Jul 23 21:10:05 positronic18696 Stack:
->>> Jul 23 21:10:05 positronic18696 ffff8807c628fdb8 ffff8807c628fe48
->>> ffff8807c628fdc8 0000000000000001
->>> Jul 23 21:10:05 positronic18696 ffff8807c628fd58 ffffffff811460dc
->>> ffff880813b59c20 ffff8807ed051000
->>> Jul 23 21:10:05 positronic18696 0000000000000001 ffff8807ed0642a8
->>> 0000000000000040 ffff8807c628fe48
->>> Jul 23 21:10:05 positronic18696 Call Trace:
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811460dc>] lookup_fast+0x1fc/0x2f0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81147d2d>] path_lookupat+0x12d/0x780
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81150d94>] ? dynamic_dname+0x94/0xa0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811483b3>] do_path_lookup+0x33/0x80
->>> Jul 23 21:10:05 positronic18696 [<ffffffff811486a9>]
->>> user_path_at_empty+0x59/0xb0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81145ad2>] ? path_put+0x22/0x30
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac3b7e>] ? _raw_spin_lock+0xe/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8106d29a>] ? lg_local_unlock+0x1a/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159264>] ?
->>> mntput_no_expire+0x44/0x140
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81159381>] ? mntput+0x21/0x40
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113facd>] sys_readlinkat+0x4d/0xc0
->>> Jul 23 21:10:05 positronic18696 [<ffffffff8113fb5b>] sys_readlink+0x1b/0x20
->>> Jul 23 21:10:05 positronic18696 [<ffffffff81ac4929>]
->>> system_call_fastpath+0x16/0x1b
->>> Jul 23 21:10:05 positronic18696 Code: b8 00 00 00 48 8b 50 08 44 3b 32
->>> 0f 83 9e 00 00 00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2
->>> 0f 84 87 00 00 00 48 89 c7 <44> 8b 62 3c e8 b3 67 ea ff 4c 89 ef e8 0b
->>> e0 ff ff 85 c0 0f 84
->>> Jul 23 21:10:05 positronic18696 RIP  [<ffffffff8119f684>]
->>> tid_fd_revalidate+0x84/0x1a0
->>> Jul 23 21:10:05 positronic18696 RSP <ffff8807c628fcd8>
->>> Jul 23 21:10:05 positronic18696 CR2: 000000010000003b
->>> Jul 23 21:10:05 positronic18696 ---[ end trace ccf5b66c39d9275e ]---
->>>
->>>
->>>
->>>
->>> 2012/7/23 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
->>> > On Sat, Jul 21, 2012 at 12:59:12AM +0200, nicolas prochazka wrote:
->>> >> Well done
->>> >> 1fd36adcd98c14d2fd97f545293c488775cb2823  :  the bug occurs   ( cf dump )
->>> >> 1dce27c5aa6770e9d195f2bb7db1db3d4dde5591 :  the bug not occurs
->>> >>
->>> >> Regards,
->>> >> Nicolas Prochazka.
->>> >
->>> > Hi, Nicolas.
->>> >
->>> > I was too hasty in sending you the commit id. There is a bug in 1fd36adc
->>> > that is fixed by commit f044db4cb4bf16893812d35b5fbeaaf3e30c9215. Can
->>> > you test running f044db4cb4? If you find the bug in there, then we know
->>> > that this fix isn't the only one needed for 1fd36adc.
->>> >
->>> > Regards.
->>> > Cascardo.
->>> >
->>> >>
->>> >> dump  / 1fd36adcd98c14d2fd97f545293c488775cb2823
->>> >> lloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> VMtap: no IPv6 routers present
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 71 not NULL!
->>> >> alloc_fd: slot 121 not NULL!
->>> >> alloc_fd: slot 96 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 110 not NULL!
->>> >> alloc_fd: slot 121 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> brE: no IPv6 routers present
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 121 not NULL!
->>> >> alloc_fd: slot 142 not NULL!
->>> >> alloc_fd: slot 153 not NULL!
->>> >> alloc_fd: slot 153 not NULL!
->>> >> alloc_fd: slot 153 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 70 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 102 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 106 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 106 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 36 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 68 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> alloc_fd: slot 100 not NULL!
->>> >> ------------[ cut here ]------------
->>> >> kernel BUG at fs/open.c:873!
->>> >> invalid opcode: 0000 [#1] SMP
->>> >> CPU 0
->>> >> Modules linked in: kvm_intel kvm
->>> >>
->>> >> then BUG paging request as usual
->>> >>
->>> >>
->>> >> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
->>> >> > On Fri, Jul 20, 2012 at 10:52:40PM +0200, nicolas prochazka wrote:
->>> >> >> Hello
->>> >> >> the problem is occured with  :
->>> >> >> - linux kernel 3.4.5    i do not test with 3.4.0 / 1 / 2 / 3 / 4    ,
->>> >> >> but i can if you want
->>> >> >> - linux kernel 3.5rc6 rc7  / do not test with other rc.
->>> >> >>
->>> >> >> the problem is not occured with :
->>> >> >> linux kernel 3.3.4 / 3.3.8
->>> >> >>
->>> >> >> These servers are used for :
->>> >> >> - starting a lot of virtual machine with qemu-kvm ( ~ 40 )   ( lot of
->>> >> >> select i think)
->>> >> >> - do a lot of network tests with openvswitch
->>> >> >>
->>> >> >> I can test a kernel 3.4.x before and after a commit id (?) to find a regression.
->>> >> >>
->>> >> >> Regards,
->>> >> >> Nicolas.
->>> >> >>
->>> >> >
->>> >> > Can you try this commit 1fd36adcd98c14d2fd97f545293c488775cb2823? And
->>> >> > the commit before it?
->>> >> >
->>> >> >>
->>> >> >> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
->>> >> >> > On Fri, Jul 20, 2012 at 09:21:53AM -0400, Dave Jones wrote:
->>> >> >> >> On Fri, Jul 20, 2012 at 11:56:06AM +0200, nicolas prochazka wrote:
->>> >> >> >>
->>> >> >> >>  > [ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
->>> >> >> >>
->>> >> >> >> That '1' looks like a random bit flip. Try running memtest86.
->>> >> >> >>
->>> >> >> >
->>> >> >> > Looks more a 32-bit value of 1 followed by a 32-bit value of 0x2f. Most
->>> >> >> > likely a pointer to some other piece of a struct. However, taking a look
->>> >> >> > at fs/files.c code, nothing seems suspicious.
->>> >> >> >
->>> >> >> > Nicolas, it wasn't clear to me if you had problems with 3.4 too. There
->>> >> >> > has been some changes in fs/files.c on 3.4-rc1 in the piece of code
->>> >> >> > where you hit the problem.
->>> >> >> >
->>> >> >> > What does your system exercise? Any chance you are using a lot of
->>> >> >> > select, which has also been changed in those same patches to fs/files.c?
->>> >> >> >
->>> >> >> > Regards.
->>> >> >> > Cascardo.
->>> >> >> >
->>> >> >> >
->>> >> >> >>  > [ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
->>> >> >> >>
->>> >> >> >> This wasn't the first problem either.
->>> >> >> >>
->>> >> >> >>  > [ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
->>> >> >> >>
->>> >> >> >> Looks like the same flipped bit.
->>> >> >> >>
->>> >> >> >>       Dave
->>> >> >> >>
->>> >> >> >> --
->>> >> >> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> >> >> >> the body of a message to majordomo@vger.kernel.org
->>> >> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> >> >> >> Please read the FAQ at  http://www.tux.org/lkml/
->>> >> >> >>
->>> >> >> >
->>> >> >>
->>> >> >
->>> >> --
->>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> >> the body of a message to majordomo@vger.kernel.org
->>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> >> Please read the FAQ at  http://www.tux.org/lkml/
->>> >>
->>> >
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Aug 06, 2012 at 09:38:11AM +0200, Sebastian Andrzej Siewior wrote:
+> The former conversion to irq_domain_add_legacy() did not fully work
+> since we miss the irq decs for NR_IRQS_LEGACY+.
+> Ideally we could use irq_domain_add_simple() or the no-map variant (and
+> program the virq <-> line mapping directly into ioapic) but this would
+> require a different irq lookup in "do_IRQ()" and won't work with ACPI
+> without changes. So this is probably easiest for everyone.
+>=20
+> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> ---
+>  arch/x86/kernel/devicetree.c |   52 ++++++++++++++++++++++++++++++++++--=
+------
+>  1 file changed, 43 insertions(+), 9 deletions(-)
+>=20
+> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+> index 3ae2ced..df225fc 100644
+> --- a/arch/x86/kernel/devicetree.c
+> +++ b/arch/x86/kernel/devicetree.c
+> @@ -342,6 +342,48 @@ const struct irq_domain_ops ioapic_irq_domain_ops =
+=3D {
+>  	.xlate =3D ioapic_xlate,
+>  };
+> =20
+> +static void dt_add_ioapic_domain(unsigned int ioapic_num,
+> +		struct device_node *np)
+> +{
+> +	struct irq_domain *id;
+> +	struct mp_ioapic_gsi *gsi_cfg;
+> +	int ret;
+> +	int num;
+> +
+> +	gsi_cfg =3D mp_ioapic_gsi_routing(ioapic_num);
+> +	num =3D gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
+> +
+> +	id =3D irq_domain_add_linear(np, num,
+> +			&ioapic_irq_domain_ops,
+> +			(void *)ioapic_num);
+
+This fits on two lines instead of three.
+
+> +	BUG_ON(!id);
+> +	if (gsi_cfg->gsi_base =3D=3D 0) {
+> +		/*
+> +		 * The first NR_IRQS_LEGACY irq descs are allocated in
+> +		 * early_irq_init() and need just a mapping. The
+> +		 * remaining irqs need both. All of them are preallocated
+> +		 * and assigned so we can keep the 1:1 mapping which the ioapic
+> +		 * is having.
+> +		 */
+> +		ret =3D irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
+> +		if (ret)
+> +			pr_err("Error mapping legacy irqs: %d\n", ret);
+> +
+> +		if (num > NR_IRQS_LEGACY) {
+> +			ret =3D irq_create_strict_mappings(id, NR_IRQS_LEGACY,
+> +					NR_IRQS_LEGACY, num - NR_IRQS_LEGACY);
+> +			if (ret)
+> +				pr_err("Error creating mapping for the "
+> +						"remaining  irqs: %d\n", ret);
+
+There's an extra space between "remaining" and "irqs". Also other places
+use the spelling IRQ and IRQs respectively in strings, so it may be nice
+to stay consistent.
+
+> +		}
+> +		irq_set_default_host(id);
+> +	} else {
+> +		ret =3D irq_create_strict_mappings(id, gsi_cfg->gsi_base, 0, num);
+> +		if (ret)
+> +			pr_err("Error creating irq mapping: %d\n", ret);
+> +	}
+> +}
+> +
+>  static void __init ioapic_add_ofnode(struct device_node *np)
+>  {
+>  	struct resource r;
+> @@ -356,15 +398,7 @@ static void __init ioapic_add_ofnode(struct device_n=
+ode *np)
+> =20
+>  	for (i =3D 0; i < nr_ioapics; i++) {
+>  		if (r.start =3D=3D mpc_ioapic_addr(i)) {
+> -			struct irq_domain *id;
+> -			struct mp_ioapic_gsi *gsi_cfg;
+> -
+> -			gsi_cfg =3D mp_ioapic_gsi_routing(i);
+> -
+> -			id =3D irq_domain_add_legacy(np, 32, gsi_cfg->gsi_base, 0,
+> -						   &ioapic_irq_domain_ops,
+> -						   (void*)i);
+> -			BUG_ON(!id);
+> +			dt_add_ioapic_domain(i, np);
+>  			return;
+>  		}
+>  	}
+
+Besides the above nitpicks:
+
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
+
+On another note, I saw that you've used the "intel,ce4100" prefix in
+various places and I wonder if it would be useful to replace them with
+something more generic like "intel,hpet", "intel,lapic" and
+"intel,ioapic" respectively. The hardware that I use is based on an Atom
+N450 and works with the current code, so it really isn't ce4100-
+specific.
+
+Given that this is x86/devicetree only and fixes things that didn't work
+before, can it go into 3.6? Backporting to stable is probably not worth
+it because it depends on a number of other IRQ domain patches that are
+only available in 3.6.
+
+Thierry
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQIkOFAAoJEN0jrNd/PrOhDD4P/2n/vpTIYVkWteqUro4c8f8b
+0kjrCgizSr8Q/ey8HY0JlcnIReUUUjj5JsNeBm9+2chA9yEkCvnnYQDWiboD8GhL
+DXUJWUYKaDhhccYR8vX1Bj9GnJjYBAE3uLO7DivGxzmPk8XquPld5MGHZ8GlcTQV
+dl03cS6T8oE2M54tF/ibD5pHYVvXmR4oeGjqwmCc7EutXKt6RgSKL3QbukwY6F5b
+ItM7N2IG4dt2O2/lIwgblsoVaQQB0gxVX5sxCveqijX+FiZ4WHuQV0FOoiVcSdLB
+J+mW4UIKdlN9OeAfCkRB4PBujrZsbLfHpWmmiQnFbl++oCXjatXwwJb0MwwgPL41
+2MfYPNChtYJ8gwLvckEPbduemCrBcnWQKIOXHs8hs+HvyxyNka1g8McMK+YUg5iy
+U3yUuQDk8RWel7EnVRFRy1qpnh4Mj1k8uQkxn2gZYbGgcMvNy065tC+5mKaEsKJD
+pPDCK3dyJyrD7p3/teotH1I0FuPmztSxvw6ACJ25ktTzEHzMT/41fXhNxD/6tKXg
+mNwV9MJDSlT8dmu125+zJTtIvjU3DbHS/mnbZgPK2LiQspOUwfLF64UHvdgICLAt
+Sz7J6U9Z7EGq7rc08TljV2tDlR4BEDACPyL91bJ2C3dO77mmmEboy8qb47J0DKHm
+XAMbWd/X+DYwcx6TkYwx
+=w2JO
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
