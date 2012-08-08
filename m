@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab2HHVQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:16:31 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:49499 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001Ab2HHVQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:16:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] tpm_tis / PM: Fix unused function warning for CONFIG_PM_SLEEP
-Date: Wed, 8 Aug 2012 23:22:22 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-References: <201208082308.15466.rjw@sisk.pl>
-In-Reply-To: <201208082308.15466.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208082322.22314.rjw@sisk.pl>
+	id S1030874Ab2HHVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:19:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59528 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab2HHVTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 17:19:05 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 1/3] regulator: add always set/clear masks to regulator_enable_regmap
+Date: Wed,  8 Aug 2012 15:18:45 -0600
+Message-Id: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Warren <swarren@nvidia.com>
 
-According to a compiler warning, the tpm_tis_resume() function is not
-used for CONFIG_PM_SLEEP unset, so add a #ifdef to prevent it from
-being built in that case.
+Some regulators need some register bits set or cleared in order to place
+them under software control. Add .en_dis_set_mask and .en_dis_clr_mask
+fields to struct regulator_desc. These can't be part of the existing
+.enable_mask field, whose bits are set when enabled and cleared when
+disabled, since the bits in this field need to be set/cleard irrespective
+of regulator state.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/char/tpm/tpm_tis.c |    2 ++
- 1 file changed, 2 insertions(+)
+v2: New patch
 
-Index: linux/drivers/char/tpm/tpm_tis.c
-===================================================================
---- linux.orig/drivers/char/tpm/tpm_tis.c
-+++ linux/drivers/char/tpm/tpm_tis.c
-@@ -807,6 +807,7 @@ module_param_string(hid, tpm_pnp_tbl[TIS
- MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
- #endif
- 
-+#ifdef CONFIG_PM_SLEEP
- static int tpm_tis_resume(struct device *dev)
+ drivers/regulator/core.c         |   22 +++++++++++++++-------
+ include/linux/regulator/driver.h |    4 ++++
+ 2 files changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b28221a..457be22 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1762,14 +1762,18 @@ EXPORT_SYMBOL_GPL(regulator_is_enabled_regmap);
+  * @rdev: regulator to operate on
+  *
+  * Regulators that use regmap for their register I/O can set the
+- * enable_reg and enable_mask fields in their descriptor and then use
+- * this as their enable() operation, saving some code.
++ * enable_reg, enable_mask, en_dis_set_mask, and en_dis_clr_mask fields in
++ * their descriptor and then use this as their enable() operation, saving
++ * some code.
+  */
+ int regulator_enable_regmap(struct regulator_dev *rdev)
  {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
-@@ -816,6 +817,7 @@ static int tpm_tis_resume(struct device
- 
- 	return tpm_pm_resume(dev);
+ 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+-				  rdev->desc->enable_mask,
+-				  rdev->desc->enable_mask);
++				  rdev->desc->enable_mask |
++				  rdev->desc->en_dis_set_mask |
++				  rdev->desc->en_dis_clr_mask,
++				  rdev->desc->enable_mask |
++				  rdev->desc->en_dis_set_mask);
  }
-+#endif
+ EXPORT_SYMBOL_GPL(regulator_enable_regmap);
  
- static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
+@@ -1779,13 +1783,17 @@ EXPORT_SYMBOL_GPL(regulator_enable_regmap);
+  * @rdev: regulator to operate on
+  *
+  * Regulators that use regmap for their register I/O can set the
+- * enable_reg and enable_mask fields in their descriptor and then use
+- * this as their disable() operation, saving some code.
++ * enable_reg, enable_mask, en_dis_set_mask, and en_dis_clr_mask fields in
++ * their descriptor and then use this as their disable() operation, saving
++ * some code.
+  */
+ int regulator_disable_regmap(struct regulator_dev *rdev)
+ {
+ 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+-				  rdev->desc->enable_mask, 0);
++				  rdev->desc->enable_mask |
++				  rdev->desc->en_dis_set_mask |
++				  rdev->desc->en_dis_clr_mask,
++				  rdev->desc->en_dis_set_mask);
+ }
+ EXPORT_SYMBOL_GPL(regulator_disable_regmap);
  
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index bac4c87..2c40c86 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -182,6 +182,8 @@ enum regulator_type {
+  * @vsel_mask: Mask for register bitfield used for selector
+  * @enable_reg: Register for control when using regmap enable/disable ops
+  * @enable_mask: Mask for control when using regmap enable/disable ops
++ * @en_dis_set_mask: Mask to always set when using regmap enable/disable ops
++ * @en_dis_clr_mask: Mask to always clear when using regmap enable/disable ops
+  *
+  * @enable_time: Time taken for initial enable of regulator (in uS).
+  */
+@@ -205,6 +207,8 @@ struct regulator_desc {
+ 	unsigned int vsel_mask;
+ 	unsigned int enable_reg;
+ 	unsigned int enable_mask;
++	unsigned int en_dis_set_mask;
++	unsigned int en_dis_clr_mask;
+ 
+ 	unsigned int enable_time;
+ };
+-- 
+1.7.0.4
 
