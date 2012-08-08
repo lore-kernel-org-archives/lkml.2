@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab2HHIiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:38:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48061 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757854Ab2HHIiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:38:03 -0400
-Message-ID: <50222565.5060603@suse.cz>
-Date: Wed, 08 Aug 2012 10:37:57 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757885Ab2HHInN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:43:13 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39796 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab2HHInJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 04:43:09 -0400
 MIME-Version: 1.0
-To: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
-        marcel@holtmann.org, linux-kernel@vger.kernel.org,
-        John Hommel <john.hommel@hp.com>
-Subject: Re: [PATCH v2] Bluetooth: Another vendor specific ID for BCM20702A0
- [0a5c:21f1]
-References: <1343431747.1803.12.camel@aeonflux> <1343742454-28019-1-git-send-email-mmarek@suse.cz> <20120806184047.GD3146@joana>
-In-Reply-To: <20120806184047.GD3146@joana>
+In-Reply-To: <502179EA.30301@wwwdotorg.org>
+References: <1344341538-32223-1-git-send-email-linus.walleij@stericsson.com>
+	<502179EA.30301@wwwdotorg.org>
+Date: Wed, 8 Aug 2012 10:43:06 +0200
+Message-ID: <CACRpkdZ+SsMzAGotOVZ5HrOEQUDs-8ixBYwuLu1ff6Qe=84OdA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl/nomadik: add ASIC DB8450 pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Patrice Chotard <patrice.chotard@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.8.2012 20:40, Gustavo Padovan wrote:
-> Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> Date:   Mon Aug 6 15:36:49 2012 -0300
-> 
->     Bluetooth: Use USB_VENDOR_AND_INTERFACE_INFO() for Broadcom devices
->     
->     Many Broadcom devices has a vendor specific devices class, with this rule
->     we match all existent and future controllers with this behavior.
->     
->     Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> 
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index cef3bac..504231e 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -104,6 +104,9 @@ static struct usb_device_id btusb_table[] = {
->         /* Foxconn - Hon Hai */
->         { USB_DEVICE(0x0489, 0xe033) },
->  
-> +       /*Broadcom devices with vendor specific id */
-> +       { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
+On Tue, Aug 7, 2012 at 10:26 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Hi Gustavo,
+>> @@ -1722,6 +1722,8 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+>>       /* Poke in other ASIC variants here */
+>>       if (version == PINCTRL_NMK_DB8500)
+>>               nmk_pinctrl_db8500_init(&npct->soc);
+>> +     if (platid->driver_data == PINCTRL_NMK_DB8540)
+>> +             nmk_pinctrl_db8540_init(&npct->soc);
+>
+> I'm surprised one of those checks "version" and the other
+> "platid->driver_data".
+>
+> Aside from that, this looks fine.
 
-Yes, this works. Well, I don't posses the card personally, but a helpful
-person at HP confirmed that the btusb driver with this patch works with
-the new card. So you can add
+Bah, I'll fix this, then add your ACK.
 
-  Tested-by: John Hommel <john.hommel@hp.com>
-
-BTW, the following ID can also be removed after adding the above match:
-
-	{ USB_DEVICE(0x0a5c, 0x21e1) },
-	{ USB_DEVICE(0x0a5c, 0x21e3) },
-	{ USB_DEVICE(0x0a5c, 0x21e6) },
-	{ USB_DEVICE(0x0a5c, 0x21e8) },
-	{ USB_DEVICE(0x0a5c, 0x21f3) },
-
-Thanks,
-Michal
+Yours,
+Linus Walleij
