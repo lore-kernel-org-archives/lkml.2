@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab2HHCF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:05:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53271 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab2HHCFZ (ORCPT
+	id S1755805Ab2HHCGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:06:20 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48502 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475Ab2HHCGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:05:25 -0400
-Date: Wed, 8 Aug 2012 10:05:33 +0800
-From: "Jianpeng Ma" <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>
-Cc: "Shaohua Li" <shli@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] block:Fix some problems about handling plug in blk_queue_bio().
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201208081005308597351@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 7 Aug 2012 22:06:19 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-c4-5021c998c926
+Date: Wed, 8 Aug 2012 11:07:49 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mm: kswapd: Continue reclaiming for
+ reclaim/compaction if the minimum number of pages have not been reclaimed
+Message-ID: <20120808020749.GC4247@bbox>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-4-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344342677-5845-4-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7825hLv018940
 
-I think there are three problems about handling plug in blk_queue_bio():
-1:if request_count >= BLK_MAX_REQUEST_COUNT, avoid unnecessary plug->should_sort judge.
-2:Only two device can trace plug.
-3:When exec blk_flush_plug_list,it use list_sort which has
-O(nlog(n)) complexity. When insert and sort, it only O(n) complexity.
+On Tue, Aug 07, 2012 at 01:31:14PM +0100, Mel Gorman wrote:
+> When direct reclaim is running reclaim/compaction, there is a minimum
+> number of pages it reclaims. As it must be under the low watermark to be
+> in direct reclaim it has also woken kswapd to do some work. This patch
+> has kswapd use the same logic as direct reclaim to reclaim a minimum
+> number of pages so compaction can run later.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- block/blk-core.c |   32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
+-ENOPARSE by my stupid brain.
+Could you elaborate a bit more?
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b4dbdf..e7759f8 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1514,20 +1514,31 @@ get_rq:
- 		if (list_empty(&plug->list))
- 			trace_block_plug(q);
- 		else {
--			if (!plug->should_sort) {
-+			if (request_count >= BLK_MAX_REQUEST_COUNT) {
-+				blk_flush_plug_list(plug, false);
-+				trace_block_plug(q);
-+			} else	if (!plug->should_sort) {
- 				struct request *__rq;
- 
- 				__rq = list_entry_rq(plug->list.prev);
- 				if (__rq->q != q)
- 					plug->should_sort = 1;
--			}
--			if (request_count >= BLK_MAX_REQUEST_COUNT) {
--				blk_flush_plug_list(plug, false);
-+			} else  {
-+				struct request *rq;
-+
-+				list_for_each_entry_reverse(rq, &plug->list, queuelist) {
-+					if (rq->q == q) {
-+						list_add(&req->queuelist, &rq->queuelist);
-+						goto stat_acct;
-+					}
-+				}
- 				trace_block_plug(q);
- 			}
- 		}
- 		list_add_tail(&req->queuelist, &plug->list);
-+stat_acct:
- 		drive_stat_acct(req, 1);
-+
- 	} else {
- 		spin_lock_irq(q->queue_lock);
- 		add_acct_request(q, req, where);
-@@ -2866,14 +2877,6 @@ void blk_start_plug(struct blk_plug *plug)
- }
- EXPORT_SYMBOL(blk_start_plug);
- 
--static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
--{
--	struct request *rqa = container_of(a, struct request, queuelist);
--	struct request *rqb = container_of(b, struct request, queuelist);
--
--	return !(rqa->q <= rqb->q);
--}
--
- /*
-  * If 'from_schedule' is true, then postpone the dispatch of requests
-  * until a safe kblockd context. We due this to avoid accidental big
-@@ -2967,11 +2970,6 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
- 
- 	list_splice_init(&plug->list, &list);
- 
--	if (plug->should_sort) {
--		list_sort(NULL, &list, plug_rq_cmp);
--		plug->should_sort = 0;
--	}
--
- 	q = NULL;
- 	depth = 0;
- 
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c |   19 ++++++++++++++++---
+>  1 file changed, 16 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 0cb2593..afdec93 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1701,7 +1701,7 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+>   * calls try_to_compact_zone() that it will have enough free pages to succeed.
+>   * It will give up earlier than that if there is difficulty reclaiming pages.
+>   */
+> -static inline bool should_continue_reclaim(struct lruvec *lruvec,
+> +static bool should_continue_reclaim(struct lruvec *lruvec,
+>  					unsigned long nr_reclaimed,
+>  					unsigned long nr_scanned,
+>  					struct scan_control *sc)
+> @@ -1768,6 +1768,17 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+>  	}
+>  }
+>  
+> +static inline bool should_continue_reclaim_zone(struct zone *zone,
+> +					unsigned long nr_reclaimed,
+> +					unsigned long nr_scanned,
+> +					struct scan_control *sc)
+> +{
+> +	struct mem_cgroup *memcg = mem_cgroup_iter(NULL, NULL, NULL);
+> +	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> +
+> +	return should_continue_reclaim(lruvec, nr_reclaimed, nr_scanned, sc);
+> +}
+> +
+>  /*
+>   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+>   */
+> @@ -2496,8 +2507,10 @@ loop_again:
+>  			 */
+>  			testorder = order;
+>  			if (COMPACTION_BUILD && order &&
+> -					compaction_suitable(zone, order) !=
+> -						COMPACT_SKIPPED)
+> +					!should_continue_reclaim_zone(zone,
+> +						nr_soft_reclaimed,
+
+nr_soft_reclaimed is always zero with !CONFIG_MEMCG.
+So should_continue_reclaim_zone would return normally true in case of
+non-__GFP_REPEAT allocation. Is it intentional?
+
+
+> +						sc.nr_scanned - nr_soft_scanned,
+> +						&sc))
+>  				testorder = 0;
+>  
+>  			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+> -- 
+> 1.7.9.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.9.5
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Kind regards,
+Minchan Kim
