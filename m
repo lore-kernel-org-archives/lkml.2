@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab2HHNaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:30:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56807 "EHLO
+	id S1758592Ab2HHNcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:32:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51670 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758211Ab2HHNaP (ORCPT
+	by vger.kernel.org with ESMTP id S1758359Ab2HHNcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:30:15 -0400
-Date: Wed, 8 Aug 2012 14:30:13 +0100
+	Wed, 8 Aug 2012 09:32:05 -0400
+Date: Wed, 8 Aug 2012 14:32:03 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: =?utf-8?B?yLjvv73vv706IFtQQVRD?= =?utf-8?Q?H?= 1/4] arm/dts:
- max77686: Add DTS file for max77686 PMIC
-Message-ID: <20120808133013.GY16861@opensource.wolfsonmicro.com>
-References: <1344366267-18971-1-git-send-email-dongjin.kim@agreeyamobility.net>
- <20120807193413.GE14711@sirena.org.uk>
- <A6A3B7488C419F488E5B13FFD03C08AD2F4372BC@SN2PRD0510MB370.namprd05.prod.outlook.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Liam Girdwood <lrg@ti.com>, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] regulator: make the dummy regulator's
+ print_constraint more helpful
+Message-ID: <20120808133202.GA16861@opensource.wolfsonmicro.com>
+References: <20120807181642.GF16861@opensource.wolfsonmicro.com>
+ <1344366097-23775-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <A6A3B7488C419F488E5B13FFD03C08AD2F4372BC@SN2PRD0510MB370.namprd05.prod.outlook.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1344366097-23775-1-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Cookie: You will be married within a year.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 07:50:11PM +0000, Dongjin Kim wrote:
+On Tue, Aug 07, 2012 at 09:01:37PM +0200, Uwe Kleine-König wrote:
+> This prevents the output of just
+> 
+> 	dummy:
+> 
+> in the boot log. Now it says:
+> 
+> 	regulator-dummy: no parameters
 
-Please fix your mailer to word wrap within paragraphs.
-
-> Are you meaning VDD_MIF_1.0V, for example, would be replaced with
-> another common name for other boards and my board file,
-> exynos4412-odroidx.dts, describe the name again if necessary? Like
-> below?
-
-No, the entire configuration.
-
-> max77686.dtsi:
->     buck1 {
->          regulator-compatible = "BUCK1";
->          regulator-name = "VDD_BUCK1_1.0V";
->          regulator-min-microvolt = <800000>;
->          regulator-max-microvolt = <1050000>;
->          regulator-always-on;
->          regulator-boot-on;
->     };
-
-Especially things like the voltage range might not be appropriate if the
-regulator is used for a different purpose on a different board.
+Applied, thanks.
