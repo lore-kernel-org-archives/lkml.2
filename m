@@ -1,58 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab2HHSpe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 14:45:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43548 "EHLO mx1.redhat.com"
+	id S1758623Ab2HHSrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 14:47:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50458 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964822Ab2HHSpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 14:45:33 -0400
-Message-ID: <5022B356.9060902@redhat.com>
-Date: Wed, 08 Aug 2012 14:43:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753374Ab2HHSrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 14:47:04 -0400
+Date: Wed, 8 Aug 2012 14:46:57 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
+Subject: Re: [dm-devel] [PATCH] dm: verity support data device offset (Linux
+ 3.4.7)
+In-Reply-To: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
+Message-ID: <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com>
+References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@kernel.org, oleg@redhat.com,
-        pjt@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        Lee.Schermerhorn@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/19] sched-numa rewrite
-References: <20120731191204.540691987@chello.nl> <20120808171714.GM10459@redhat.com>
-In-Reply-To: <20120808171714.GM10459@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 01:17 PM, Andrea Arcangeli wrote:
-> Hi everyone,
->
-> On Tue, Jul 31, 2012 at 09:12:04PM +0200, Peter Zijlstra wrote:
->> Hi all,
->>
->> After having had a talk with Rik about all this NUMA nonsense where he proposed
->> the scheme implemented in the next to last patch, I came up with a related
->> means of doing the home-node selection.
->>
->> I've also switched to (ab)using PROT_NONE for driving the migration faults.
->
-> I'm glad we agree on the introduction of the numa hinting page faults.
->
-> I run a benchmark to compare your sched-numa rewrite with autonuma22:
->
-> http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma-vs-sched-numa-rewrite-20120808.pdf
+Hi
 
-For the people who have not yet read that PDF:
+The problem with the patch is that it changes interface to the userspace 
+tool. The userspace tool veritysetup already exists in recent cryptsetup 
+package, so we can't change the interface - you should change the patch so 
+that the starting data block is the last argument and the argument is 
+optional - so that it is compatible with the existing userspace too.
 
-While the sched-numa code is relatively small and clean, the
-current version does not seem to offer a significant
-performance improvement over not having it, and in one of
-the tests performance actually regresses vs. mainline.
+Another thing --- do we need this patch at all? You can create a dm-linear 
+device and stack existing dm-verity on the top of it to get the same 
+effect of changing data starting block. Is there some reason why you can't 
+use dm-linear device and why you need this patch?
 
-On the other hand, the autonuma code is pretty large and
-hard to understand, but it does provide a significant
-speedup on each of the tests.
+Mikulas
 
-I have not looked at why sched-numa is not giving a significant
-performance improvement.
+
+
+On Wed, 8 Aug 2012, Wesley Miaw wrote:
+
+> From: Wesley Miaw <wmiaw@netflix.com>
+> 
+> Add data device start block index to dm-verity target parameters to support
+> verity targets where the data does not begin at sector 0 of the block device.
+> Also fix the hash block index computation so it takes into account data offsets.
+> 
+> Signed-off-by: Wesley Miaw <wmiaw@netflix.com>
+> ---
+>  Documentation/device-mapper/verity.txt |    8 ++++-
+>  drivers/md/dm-verity.c                 |   32 +++++++++++++++--------
+>  2 files changed, 27 insertions(+), 13 deletions(-)
+> --- a/drivers/md/dm-verity.c	2012-08-07 16:03:03.778759000 -0700
+> +++ b/drivers/md/dm-verity.c	2012-08-07 17:32:02.130176956 -0700
+> @@ -491,7 +491,7 @@ static int verity_map(struct dm_target *
+>  	io->bio = bio;
+>  	io->orig_bi_end_io = bio->bi_end_io;
+>  	io->orig_bi_private = bio->bi_private;
+> -	io->block = bio->bi_sector >> (v->data_dev_block_bits - SECTOR_SHIFT);
+> +	io->block = (bio->bi_sector - v->data_start) >> (v->data_dev_block_bits - SECTOR_SHIFT);
+>  	io->n_blocks = bio->bi_size >> v->data_dev_block_bits;
+>  
+>  	bio->bi_end_io = verity_end_io;
+> @@ -641,6 +641,7 @@ static void verity_dtr(struct dm_target 
+>   *	<hash device>
+>   *	<data block size>
+>   *	<hash block size>
+> + *	<data start block>
+>   *	<the number of data blocks>
+>   *	<hash start block>
+>   *	<algorithm>
+> @@ -671,8 +672,8 @@ static int verity_ctr(struct dm_target *
+>  		goto bad;
+>  	}
+>  
+> -	if (argc != 10) {
+> -		ti->error = "Invalid argument count: exactly 10 arguments required";
+> +	if (argc != 11) {
+> +		ti->error = "Invalid argument count: exactly 11 arguments required";
+>  		r = -EINVAL;
+>  		goto bad;
+>  	}
+> @@ -718,6 +719,15 @@ static int verity_ctr(struct dm_target *
+>  	v->hash_dev_block_bits = ffs(num) - 1;
+>  
+>  	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) != 1 ||
+> +		num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=
+> +		(sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) {
+> +		ti->error = "Invalid data start";
+> +		r = -EINVAL;
+> +		goto bad;
+> +	}
+> +	v->data_start = num_ll << (v->data_dev_block_bits - SECTOR_SHIFT);
+> +
+> +	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) != 1 ||
+>  	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=
+>  	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) {
+>  		ti->error = "Invalid data blocks";
+> @@ -732,7 +742,7 @@ static int verity_ctr(struct dm_target *
+>  		goto bad;
+>  	}
+>  
+> -	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) != 1 ||
+> +	if (sscanf(argv[7], "%llu%c", &num_ll, &dummy) != 1 ||
+>  	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=
+>  	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) {
+>  		ti->error = "Invalid hash start";
+> @@ -741,7 +751,7 @@ static int verity_ctr(struct dm_target *
+>  	}
+>  	v->hash_start = num_ll;
+>  
+> -	v->alg_name = kstrdup(argv[7], GFP_KERNEL);
+> +	v->alg_name = kstrdup(argv[8], GFP_KERNEL);
+>  	if (!v->alg_name) {
+>  		ti->error = "Cannot allocate algorithm name";
+>  		r = -ENOMEM;
+> @@ -770,23 +780,23 @@ static int verity_ctr(struct dm_target *
+>  		r = -ENOMEM;
+>  		goto bad;
+>  	}
+> -	if (strlen(argv[8]) != v->digest_size * 2 ||
+> -	    hex2bin(v->root_digest, argv[8], v->digest_size)) {
+> +	if (strlen(argv[9]) != v->digest_size * 2 ||
+> +	    hex2bin(v->root_digest, argv[9], v->digest_size)) {
+>  		ti->error = "Invalid root digest";
+>  		r = -EINVAL;
+>  		goto bad;
+>  	}
+>  
+> -	if (strcmp(argv[9], "-")) {
+> -		v->salt_size = strlen(argv[9]) / 2;
+> +	if (strcmp(argv[10], "-")) {
+> +		v->salt_size = strlen(argv[10]) / 2;
+>  		v->salt = kmalloc(v->salt_size, GFP_KERNEL);
+>  		if (!v->salt) {
+>  			ti->error = "Cannot allocate salt";
+>  			r = -ENOMEM;
+>  			goto bad;
+>  		}
+> -		if (strlen(argv[9]) != v->salt_size * 2 ||
+> -		    hex2bin(v->salt, argv[9], v->salt_size)) {
+> +		if (strlen(argv[10]) != v->salt_size * 2 ||
+> +		    hex2bin(v->salt, argv[10], v->salt_size)) {
+>  			ti->error = "Invalid salt";
+>  			r = -EINVAL;
+>  			goto bad;
+> --- a/Documentation/device-mapper/verity.txt	2012-08-08 11:02:48.558883756 -0700
+> +++ b/Documentation/device-mapper/verity.txt	2012-08-08 11:13:01.259982498 -0700
+> @@ -9,7 +9,7 @@ Construction Parameters
+>  =======================
+>      <version> <dev> <hash_dev>
+>      <data_block_size> <hash_block_size>
+> -    <num_data_blocks> <hash_start_block>
+> +    <data_start_block> <num_data_blocks> <hash_start_block>
+>      <algorithm> <digest> <salt>
+>  
+>  <version>
+> @@ -41,6 +41,10 @@ Construction Parameters
+>  <hash_block_size>
+>      The size of a hash block in bytes.
+>  
+> +<data_start_block>
+> +    This is the offset, in <data_block_size>-blocks, from the start of data_dev
+> +    to the first block of the data.
+> +
+>  <num_data_blocks>
+>      The number of data blocks on the data device.  Additional blocks are
+>      inaccessible.  You can place hashes to the same partition as data, in this
+> @@ -136,7 +140,7 @@ Example
+>  =======
+>  Set up a device:
+>    # dmsetup create vroot --readonly --table \
+> -    "0 2097152 verity 1 /dev/sda1 /dev/sda2 4096 4096 262144 1 sha256 "\
+> +    "0 2097152 verity 1 /dev/sda1 /dev/sda2 4096 4096 0 262144 1 sha256 "\
+>      "4392712ba01368efdf14b05c76f9e4df0d53664630b5d48632ed17a137f39076 "\
+>      "1234000000000000000000000000000000000000000000000000000000000000"
+>  
+> 
+> 
