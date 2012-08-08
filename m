@@ -1,129 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab2HHGST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:18:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46411 "EHLO mx1.redhat.com"
+	id S1757738Ab2HHGSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:18:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:5682 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756954Ab2HHGSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757117Ab2HHGSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 02:18:15 -0400
-Message-ID: <50220524.4050202@redhat.com>
-Date: Wed, 08 Aug 2012 14:20:20 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Shaohua Li <shli@kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH V6 2/2] virtio-blk: Add REQ_FLUSH and REQ_FUA support
- to bio path
-References: <1344329235-17449-1-git-send-email-asias@redhat.com> <1344329235-17449-3-git-send-email-asias@redhat.com> <20120807091510.GA2651@lst.de>
-In-Reply-To: <20120807091510.GA2651@lst.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 8 Aug 2012 08:17:58 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: David Miller <davem@davemloft.net>
+Cc: albcamus@gmail.com, chris@arachsys.com, mchan@broadcom.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to bnx2-mips-09-6.2.1b
+Message-ID: <20120808061758.GA15255@1wt.eu>
+References: <20120713130405.GS13885@arachsys.com> <CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com> <20120807.225800.1450928472652058111.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120807.225800.1450928472652058111.davem@davemloft.net>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 05:15 PM, Christoph Hellwig wrote:
-> At least after review is done I really think this patch sopuld be folded
-> into the previous one.
+On Tue, Aug 07, 2012 at 10:58:00PM -0700, David Miller wrote:
+> From: Jike Song <albcamus@gmail.com>
+> Date: Wed, 8 Aug 2012 13:50:42 +0800
+> 
+> > On Fri, Jul 13, 2012 at 9:04 PM, Chris Webb <chris@arachsys.com> wrote:
+> >> Commit c2c20ef43d00 "bnx2: Update driver to use new mips firmware"
+> >> updated the bnx2 driver to use bnx2-mips-09-6.2.1b in place of
+> >> bnx2-mips-09-6.2.1a, but didn't replace the copy of bnx2-mips-09-6.2.1a
+> >> in firmware/bnx2/ with the new version.
+> >>
+> >> This means that the bnx2 driver stopped working altogether for users who
+> >> use CONFIG_FIRMWARE_IN_KERNEL to compile firmware together with drivers
+> >> into their kernel, rather than having a runtime firmware loader.
+> >>
+> > 
+> > Still not fixed in mainline? I encountered the same problem with
+> > v3.6-rc1-133-g42a579a.
+> 
+> The current firmware for all drivers are not distributed in the kernel
+> sources any longer, they are maintained in a completely seperate
+> repository.
+> 
+> The old ones are just kept around in the kernel sources for
+> compatability.
+> 
+> This is a FAQ.
 
-OK.
+Well, if the drivers provided with the kernel don't work out of the box
+anymore, maybe we should also move them to a separate repository. All it
+is going to do otherwise is to cause invalid bug reports because users
+don't understand why using the latest driver does not work.
 
-> Some more comments below:
->
->> @@ -58,6 +58,12 @@ struct virtblk_req
->>   	struct bio *bio;
->>   	struct virtio_blk_outhdr out_hdr;
->>   	struct virtio_scsi_inhdr in_hdr;
->> +	struct work_struct work;
->> +	struct virtio_blk *vblk;
->
-> I think using bio->bi_private for the virtio_blk pointer would
-> be cleaner.
+That way it would be clear that an in-kernel driver has to be self-sustaining
+to be maintainable, otherwise it has nothing to do there.
 
-I wish I could use bio->bi_private but I am seeing this when using 
-bio->bi_priate to store virito_blk pointer:
+Just my 2 cents,
+Willy
 
-
-[    1.100335] Call Trace:
-[    1.100335]  <IRQ>
-[    1.100335]  [<ffffffff811dd4b0>] ? end_bio_bh_io_sync+0x30/0x50
-[    1.100335]  [<ffffffff811e167d>] bio_endio+0x1d/0x40
-[    1.100335]  [<ffffffff81551fb2>] virtblk_done+0xa2/0x260
-[    1.100335]  [<ffffffff813d714d>] vring_interrupt+0x2d/0x40
-[    1.100335]  [<ffffffff81119c0d>] handle_irq_event_percpu+0x6d/0x210
-[    1.100335]  [<ffffffff81119df1>] handle_irq_event+0x41/0x70
-[    1.100335]  [<ffffffff8111d2c9>] handle_edge_irq+0x69/0x120
-[    1.100335]  [<ffffffff810613a2>] handle_irq+0x22/0x30
-[    1.100335]  [<ffffffff81aadccd>] do_IRQ+0x5d/0xe0
-[    1.100335]  [<ffffffff81aa432f>] common_interrupt+0x6f/0x6f
-
-end_bio_bh_io_sync() uses bio->private:
-
-    struct buffer_head *bh = bio->bi_private;
-
->
->> +	bool is_flush;
->> +	bool req_flush;
->> +	bool req_data;
->> +	bool req_fua;
->
-> This could be a bitmap, or better even a single state field.
-
-Will use a bitmap for now.
-
->> +static int virtblk_bio_send_flush(struct virtio_blk *vblk,
->> +				  struct virtblk_req *vbr)
->
->> +static int virtblk_bio_send_data(struct virtio_blk *vblk,
->> +				 struct virtblk_req *vbr)
->
-> These should only get the struct virtblk_req * argument as the virtio_blk
-> structure is easily derivable from it.
-
-Yes. Will clean it up.
-
->> +static inline void virtblk_bio_done_flush(struct virtio_blk *vblk,
->> +					  struct virtblk_req *vbr)
->>   {
->> +	if (vbr->req_data) {
->> +		/* Send out the actual write data */
->> +		struct virtblk_req *_vbr;
->> +		_vbr = virtblk_alloc_req(vblk, GFP_NOIO);
->> +		if (!_vbr) {
->> +			bio_endio(vbr->bio, -ENOMEM);
->> +			goto out;
->> +		}
->> +		_vbr->req_fua = vbr->req_fua;
->> +		_vbr->bio = vbr->bio;
->> +		_vbr->vblk = vblk;
->> +		INIT_WORK(&_vbr->work, virtblk_bio_send_data_work);
->> +		queue_work(virtblk_wq, &_vbr->work);
->
-> The _vbr naming isn't too nice.  Also can you explain why the original
-> request can't be reused in a comment here
-
-Ah, the original request can be reused. Will fix this.
-
-> Also if using a state variable I think the whole code would be
-> a bit cleaner if the bio_done helpers are combined.
->
->> -	if (writeback && !use_bio)
->> +	if (writeback)
->>   		blk_queue_flush(vblk->disk->queue, REQ_FLUSH);
->
-> Shouldn't this be REQ_FLUSH | REQ_FUA for the bio case?
-
-Without REQ_FUA, I am also seeing bio with REQ_FUA flag set. Do we need 
-to set REQ_FUA explicitly?
-
-> Btw, did you verify that flushes really work correctly for all cases
-> using tracing in qemu?
-
-I added some debug code in both kernel and kvm tool to verity the flush.
-
--- 
-Asias
