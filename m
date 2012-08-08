@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab2HHG1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:27:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60481 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757484Ab2HHG1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:27:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344407225-1276-1-git-send-email-dragos.tatulea@intel.com>
-References: <1344407225-1276-1-git-send-email-dragos.tatulea@intel.com>
-From: "Tatulea, Dragos" <dragos.tatulea@intel.com>
-Date: Wed, 8 Aug 2012 09:27:10 +0300
-Message-ID: <CAJ_JQ2WNeT-ymk9k3YNzh-cjaG5fEpC6cz1Ze9_RXRR4Uho6-w@mail.gmail.com>
-Subject: Re: [PATCH] x86: set fpmath to 387 to avoid gcc warnings
-To: hpa@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, Dragos Tatulea <dragos.tatulea@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932248Ab2HHG2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:28:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34660 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab2HHG15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 02:27:57 -0400
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to
+ bnx2-mips-09-6.2.1b
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: David Miller <davem@davemloft.net>, albcamus@gmail.com, chris@arachsys.com,
+        mchan@broadcom.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+In-Reply-To: <20120808061758.GA15255@1wt.eu>
+References: <20120713130405.GS13885@arachsys.com>
+	 <CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com>
+	 <20120807.225800.1450928472652058111.davem@davemloft.net>
+	 <20120808061758.GA15255@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 08:27:52 +0200
+Message-ID: <1344407272.28967.214.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 9:27 AM, Dragos Tatulea <dragos.tatulea@intel.com> wrote:
-> If gcc has a different default fpmath set (ex: sse),
-> many unuseful warnings will be spewed.
->
-> This can affect out of tree modules that compile with
-> -Werror (ex: systemtap stp scripts).
->
-> Be paranoid and add -msoft-float as well to try to
-> get an error if FP instructions are generated at all.
->
-> Change-Id: If9271d7aea7371f394ede0bc5e3ed1383cdb0e1a
-Ooops, leaked some trash. Patch re-sent.
+On Wed, 2012-08-08 at 08:17 +0200, Willy Tarreau wrote:
 
-Thanks,
-Dragos
+> 
+> Well, if the drivers provided with the kernel don't work out of the box
+> anymore, maybe we should also move them to a separate repository. All it
+> is going to do otherwise is to cause invalid bug reports because users
+> don't understand why using the latest driver does not work.
+> 
+> That way it would be clear that an in-kernel driver has to be self-sustaining
+> to be maintainable, otherwise it has nothing to do there.
+
+People compiling their own kernels are supposed to be able to handle
+this problem themselves.
+
+If not, they can use a distro.
+
+
+
