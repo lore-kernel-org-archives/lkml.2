@@ -1,63 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2HHVeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:34:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46453 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2HHVeN (ORCPT
+	id S932903Ab2HHVfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:35:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49606 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756980Ab2HHVfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:34:13 -0400
-Date: Wed, 08 Aug 2012 14:34:10 -0700 (PDT)
-Message-Id: <20120808.143410.991859746378752444.davem@davemloft.net>
-To: ycheng@google.com
-Cc: skinsbursky@parallels.com, netdev@vger.kernel.org, ruanzhijie@hotmail.com,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [RFC PATCH] tun: don't zeroize sock->file on detach
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAK6E8=cpODYa1xURk7BZBnWwx5q3OD8-xkCau7GNPn+1BS0oQQ@mail.gmail.com>
-References: <20120711114753.24395.53193.stgit@localhost6.localdomain6>
-	<50226147.3010309@parallels.com>
-	<CAK6E8=cpODYa1xURk7BZBnWwx5q3OD8-xkCau7GNPn+1BS0oQQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 8 Aug 2012 17:35:46 -0400
+Subject: Re: [PATCH 18/19] sched, numa: Per task memory placement for big
+ processes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@kernel.org
+Cc: riel@redhat.com, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20120731192809.428855038@chello.nl>
+References: <20120731191204.540691987@chello.nl>
+	 <20120731192809.428855038@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 23:35:32 +0200
+Message-ID: <1344461732.16728.19.camel@laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yuchung Cheng <ycheng@google.com>
-Date: Wed, 8 Aug 2012 10:48:32 -0700
+On Tue, 2012-07-31 at 21:12 +0200, Peter Zijlstra wrote:
+> +#ifdef CONFIG_NUMA
+> +       /*
+> +        * XXX fold this into flags for 64bit or so...
+> +        */
+> +       int nid_last;
+> +#endif 
 
-> On Wed, Aug 8, 2012 at 5:53 AM, Stanislav Kinsbursky
-> <skinsbursky@parallels.com> wrote:
->> Hi, Dave.
->> What about this patch?
->>
->>
->> On Wed, Jul 11, 2012 at 03:48:20PM +0400, Stanislav Kinsbursky wrote:
->>>
->>> This is a fix for bug, introduced in 3.4 kernel by commit
->>> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things,
->>> replaced
->>> simple sock_put() by sk_release_kernel(). Below is sequence, which leads
->>> to
->>> oops for non-persistent devices:
->>>
->>> tun_chr_close()
->>> tun_detach()                            <== tun->socket.file = NULL
->>> tun_free_netdev()
->>> sk_release_sock()
->>> sock_release(sock->file == NULL)
->>> iput(SOCK_INODE(sock))                  <== dereference on NULL pointer
->>>
->>> This patch just removes zeroing of socket's file from __tun_detach().
->>> sock_release() will do this.
->>>
->>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> Acked-by: Yuchung Cheng <ycheng@google.com>
-> 
-> I has tested this patch and it works (so my kernel stops crashing
-> using tun devices).
+Something like the below? I still ought to update all the various
+comments about page flag layout etc..
 
-This patch needs to be formally resubmitted to netdev.
+Also, that #warning gives a very noisy build indeed, I guess we should
+either make it silent or increase the page frame size for those
+configs.. 32bit NUMA is quite rare for normal people (sorry Paul) :)
+
+---
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -611,10 +611,19 @@ static inline pte_t maybe_mkwrite(pte_t 
+ #define NODES_WIDTH		0
+ #endif
+ 
++#if NODES_WIDTH && (SECTIONS_WIDTH+ZONES_WIDTH+2*NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS)
++#define LAST_NID_WIDTH	NODES_SHIFT
++#else
++#warning "faking page_xchg_last_nid"
++#define LAST_NID_NOT_IN_PAGE_FLAGS
++#define LAST_NID_WIDTH	0
++#endif
++
+ /* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
+ #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
+ #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
+ #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
++#define LAST_NID_PGOFF		(ZONES_PGOFF - LAST_NID_WIDTH)
+ 
+ /*
+  * We are going to use the flags for the page to node mapping if its in
+@@ -632,6 +641,7 @@ static inline pte_t maybe_mkwrite(pte_t 
+ #define SECTIONS_PGSHIFT	(SECTIONS_PGOFF * (SECTIONS_WIDTH != 0))
+ #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
+ #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
++#define LAST_NID_PGSHIFT	(LAST_NID_PGOFF * (LAST_NID_WIDTH != 0))
+ 
+ /* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
+ #ifdef NODE_NOT_IN_PAGE_FLAGS
+@@ -653,6 +663,7 @@ static inline pte_t maybe_mkwrite(pte_t 
+ #define ZONES_MASK		((1UL << ZONES_WIDTH) - 1)
+ #define NODES_MASK		((1UL << NODES_WIDTH) - 1)
+ #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
++#define LAST_NID_MASK		((1UL << LAST_NID_WIDTH) - 1)
+ #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
+ 
+ static inline enum zone_type page_zonenum(const struct page *page)
+@@ -691,6 +702,39 @@ static inline int page_to_nid(const stru
+ }
+ #endif
+ 
++#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return nid; /* fakin' it */
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page_to_nid(page);
++}	
++#else
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	unsigned long old_flags, flags;
++	int last_nid;
++
++       	old_flags = flags = page->flags;
++	last_nid = (flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
++
++	flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
++	flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
++
++ 	(void)cmpxchg(&page->flags, old_flags, flags);
++
++	return last_nid;
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
++}
++#endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
++
+ static inline struct zone *page_zone(const struct page *page)
+ {
+ 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -176,12 +176,6 @@ struct page {
+ 	 */
+ 	void *shadow;
+ #endif
+-#ifdef CONFIG_NUMA
+-	/*
+-	 * XXX fold this into flags for 64bit or so...
+-	 */
+-	int nid_last;
+-#endif
+ }
+ /*
+  * The struct page can be forced to be double word aligned so that atomic ops
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1366,6 +1366,7 @@ static void __split_huge_page_refcount(s
+ 		page_tail->mapping = page->mapping;
+ 
+ 		page_tail->index = page->index + i;
++		page_xchg_last_nid(page, page_last_nid(tail_page));
+ 		page_tail->nid_last = page->nid_last;
+ 
+ 		BUG_ON(!PageAnon(page_tail));
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2265,10 +2265,9 @@ int mpol_misplaced(struct page *page, st
+ 	 * task_tick_numa().
+ 	 */
+ 	if (multi && (pol->flags & MPOL_F_HOME)) {
+-		if (page->nid_last != polnid) {
+-			page->nid_last = polnid;
++		int last_nid = page_xchg_last_nid(page, polnid);
++		if (last_nid != polnid)
+ 			goto out;
+-		}
+ 	}
+ 
+ 	if (curnid != polnid)
+
+
