@@ -1,163 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab2HHQwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:52:07 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:37109 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758912Ab2HHQwE (ORCPT
+	id S1758918Ab2HHQzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 12:55:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64984 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758508Ab2HHQzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:52:04 -0400
-X-IronPort-AV: E=Sophos;i="4.77,733,1336348800"; 
-   d="scan'208";a="13914482"
-Date: Wed, 8 Aug 2012 17:51:39 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v2 10/23] xen/arm: compile and run xenbus
-In-Reply-To: <50216228.7010407@tycho.nsa.gov>
-Message-ID: <alpine.DEB.2.02.1208081743430.21096@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-10-git-send-email-stefano.stabellini@eu.citrix.com> <20120807182157.GN15053@phenom.dumpdata.com> <50216228.7010407@tycho.nsa.gov>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 8 Aug 2012 12:55:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20120808151555.GE14718@S2101-09.ap.freescale.net>
+References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com> <20120808151555.GE14718@S2101-09.ap.freescale.net>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Wed, 8 Aug 2012 11:55:30 -0500
+Message-ID: <CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
+Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device tree
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steev Klimaszewski <steev@genesi-usa.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Aug 2012, Daniel De Graaf wrote:
-> On 08/07/2012 02:21 PM, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Aug 06, 2012 at 03:27:13PM +0100, Stefano Stabellini wrote:
-> >> bind_evtchn_to_irqhandler can legitimately return 0 (irq 0): it is not
-> >> an error.
-> >>
-> >> If Linux is running as an HVM domain and is running as Dom0, use
-> >> xenstored_local_init to initialize the xenstore page and event channel.
-> >>
-> >> Changes in v2:
-> >>
-> >> - refactor xenbus_init.
-> > 
-> > Thank you. Lets also CC our friend at NSA who has been doing some work
-> > in that area. Daniel are you OK with this change - will it still make
-> > PV initial domain with with the MiniOS XenBus driver?
-> > 
-> > Thanks.
-> 
-> That case will work, but what this will break is launching the initial domain
-> with a Xenstore stub domain already running (see below).
-> 
-> >>
-> >> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >> ---
-> >>  drivers/xen/xenbus/xenbus_comms.c |    2 +-
-> >>  drivers/xen/xenbus/xenbus_probe.c |   62 +++++++++++++++++++++++++-----------
-> >>  drivers/xen/xenbus/xenbus_xs.c    |    1 +
-> >>  3 files changed, 45 insertions(+), 20 deletions(-)
-> >>
-> >> diff --git a/drivers/xen/xenbus/xenbus_comms.c b/drivers/xen/xenbus/xenbus_comms.c
-> >> index 52fe7ad..c5aa55c 100644
-> >> --- a/drivers/xen/xenbus/xenbus_comms.c
-> >> +++ b/drivers/xen/xenbus/xenbus_comms.c
-> >> @@ -224,7 +224,7 @@ int xb_init_comms(void)
-> >>  		int err;
-> >>  		err = bind_evtchn_to_irqhandler(xen_store_evtchn, wake_waiting,
-> >>  						0, "xenbus", &xb_waitq);
-> >> -		if (err <= 0) {
-> >> +		if (err < 0) {
-> >>  			printk(KERN_ERR "XENBUS request irq failed %i\n", err);
-> >>  			return err;
-> >>  		}
-> > 
-> >> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> >> index b793723..a67ccc0 100644
-> >> --- a/drivers/xen/xenbus/xenbus_probe.c
-> >> +++ b/drivers/xen/xenbus/xenbus_probe.c
-> >> @@ -719,37 +719,61 @@ static int __init xenstored_local_init(void)
-> >>  	return err;
-> >>  }
-> >>  
-> >> +enum xenstore_init {
-> >> +	UNKNOWN,
-> >> +	PV,
-> >> +	HVM,
-> >> +	LOCAL,
-> >> +};
-> >>  static int __init xenbus_init(void)
-> >>  {
-> >>  	int err = 0;
-> >> +	enum xenstore_init usage = UNKNOWN;
-> >> +	uint64_t v = 0;
-> >>  
-> >>  	if (!xen_domain())
-> >>  		return -ENODEV;
-> >>  
-> >>  	xenbus_ring_ops_init();
-> >>  
-> >> -	if (xen_hvm_domain()) {
-> >> -		uint64_t v = 0;
-> >> -		err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
-> >> -		if (err)
-> >> -			goto out_error;
-> >> -		xen_store_evtchn = (int)v;
-> >> -		err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
-> >> -		if (err)
-> >> -			goto out_error;
-> >> -		xen_store_mfn = (unsigned long)v;
-> >> -		xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
-> >> -	} else {
-> >> -		xen_store_evtchn = xen_start_info->store_evtchn;
-> >> -		xen_store_mfn = xen_start_info->store_mfn;
-> >> -		if (xen_store_evtchn)
-> >> -			xenstored_ready = 1;
-> >> -		else {
-> >> +	if (xen_pv_domain())
-> >> +		usage = PV;
-> >> +	if (xen_hvm_domain())
-> >> +		usage = HVM;
-> 
-> The above is correct for domUs, and is overridden for dom0s:
+On Wed, Aug 8, 2012 at 10:15 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Tue, Aug 07, 2012 at 04:46:18PM -0500, Matt Sealey wrote:
+>> This device tree only supports the final retail board ("TO3").
+>>
+>> It is currently feature equivalent to the MX51 Babbage device tree. The
+>> following features have been tested and work as well as can be expected:
+[snip]
+>> +     soc {
+>> +             aips@70000000 {
+>> +                     spba@70000000 {
+>> +                             esdhc@70004000 {
 >
-> >> +	if (xen_hvm_domain() && xen_initial_domain())
-> >> +		usage = LOCAL;
-> >> +	if (xen_pv_domain() && !xen_start_info->store_evtchn)
-> >> +		usage = LOCAL;
-> 
-> Instead of these checks, I think it should just be:
-> 
-> if (!xen_start_info->store_evtchn)
-> 	usage = LOCAL;
-> 
-> Any domain started after xenstore will have store_evtchn set, so if you don't
-> have this set, you are either going to be running xenstore locally, or will
-> use the ioctl to change it later (and so should still set up everything as if
-> it will be running locally).
+> The pinctrl_provide_dummies() in imx51_dt_init() is something to be
+> removed.  Then any driver calling pinctrl API will require pinctrl
+> set up for the device here.  So please have the pinctrl setup for
+> those devices.
 
-That would be wrong for an HVM dom0 domain (at least on ARM), because
-we don't have a start_info page at all.
+Absolutely not. Our pins are muxed in U-Boot as they should be. I
+refuse to add pinmux entries
+or any setup at all for this. What's stopping this right now is you
+need a new U-Boot which we
+didn't release or mainline because we are still testing it (old U-Boot
+shipped on the boards
+cannot boot device tree anyway). While the number of users of this is
+limited to everyone in
+the office here and a few trusted testers, actually the support here
+is meaningless for everyone
+else, but we feel it needs to go into the tree so we can track changes
+when people changing
+bindings and basically be future-thinking. We need the nitpicks, but
+in this instance, I will
+take a leaf from Russell's book and say I violently disagree with
+requiring pinctrl to be set up.
+There's no need on MX51 with the current state of the architecture and
+we've successfully
+tested all pad settings in mainline (and older kernels by stripping
+muxing from the kernel)
+just relying on gpio_direction and value sets.
 
+We'll have a public U-Boot for this board by the end of next week
+probably, and it will do it
+right the first time.
 
-> >> +	if (xen_pv_domain() && xen_start_info->store_evtchn)
-> >> +		xenstored_ready = 1;
-> 
-> This part can now just be moved unconditionally into case PV.
+>> +                     wdog@73f98000 {
+>> +                             status = "okay";
+>> +                     };
+>
+> Remove it.  I have queued a patch to enable wdog in <soc>.dtsi
+> by default.
 
-What about:
+Okay.
 
-if (xen_pv_domain())
-    usage = PV;
-if (xen_hvm_domain())
-    usage = HVM;
-if (!xen_store_evtchn)
-    usage = LOCAL;
+>> +             aips@80000000 {
+>> +                     sdma@83fb0000 {
+>> +                             fsl,sdma-ram-script-name = "imx/sdma/sdma-imx51.bin";
+>> +                     };
+>
+> Remove it.  I have seen a patch to move this name into <soc>.dtsi
+> as default.
 
-and moving xenstored_ready in case PV, like you suggested.
+BTW I propose we make this somehow a bootloader-stage thing - at least, the SDMA
+firmware should be in a location which is dictated not by the kernel
+itself, certainly not
+the device tree, but packaging and operating system dependent
+features. It describes
+the board, not the rootfs. As in, depending on the OS booted it may not be
+imx/sdma/sdma-imx51.bin or anything like it. Remember device trees are NOT just
+for Linux (or Android, which may still put it in a relative path with
+that name, but it
+may NOT depending on future changes!)
+
+In a boot.scr for modern U-Boot you might just have
+
+setenv bootargs ${bootargs} imx-sdma.firmware="imx/sdma/sdma-imx51.bin"
+
+Or something similar. OS filesystem paths in device tree are absolutely wrong.
+
+>> -dtb-$(CONFIG_MACH_IMX51_DT) += imx51-babbage.dtb
+>> +dtb-$(CONFIG_MACH_IMX51_DT) += imx51-babbage.dtb imx51-efikamx.dtb
+>
+> Please have the new entry on the new line like dtb-$(CONFIG_SOC_IMX6Q).
+> Yes, we will change dtb-$(CONFIG_MACH_IMX53_DT).
+
+Okay.
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
