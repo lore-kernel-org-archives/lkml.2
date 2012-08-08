@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab2HHUfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:35:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52045 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab2HHUfM (ORCPT
+	id S1759283Ab2HHUqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:46:49 -0400
+Received: from exout101.netflix.com ([69.53.237.162]:6394 "EHLO
+	exout103.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759163Ab2HHUqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 16:35:12 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Eric Paris <eparis@parisplace.org>, John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-Date: Wed, 08 Aug 2012 16:35:08 -0400
-Message-ID: <2294220.dmCbVvF3Tg@sifl>
-User-Agent: KMail/4.9 (Linux/3.4.7-gentoo; KDE/4.9.0; x86_64; ; )
-In-Reply-To: <1344456578.28967.244.camel@edumazet-glaptop>
-References: <50215A7E.8000701@linaro.org> <CACLa4ptgoge0nnEuov5E9gc2bdR-wjCo+bpB6Auhwo8jSO99oA@mail.gmail.com> <1344456578.28967.244.camel@edumazet-glaptop>
+	Wed, 8 Aug 2012 16:46:48 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024;d=netflix.com;
+  h=from:to:cc:subject:date:message-id:references:in-reply-to
+    :content-type:mime-version;
+  b=Mp4iCqRWenWQZYm2LX5ICCq0fP2p/cWwmsLNiHtkvpShpRj9jNUY60RldLuMbezeqGiLs4zT
+    Ow1Q5kpEVc5lpfaJmElP+LyQ1Rz61arB/1E29Qy82l1vRC/6qc5zZDfHHgE6s5mihTFgPILP
+    oXRb0tvcxpEzu85evw2u0+gskIg=
+From: Wesley Miaw <wmiaw@netflix.com>
+To: Milan Broz <mbroz@redhat.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
+Subject: Re: [dm-devel] [PATCH] dm: verity support data device offset (Linux
+ 3.4.7)
+Thread-Topic: [dm-devel] [PATCH] dm: verity support data device offset
+ (Linux 3.4.7)
+Thread-Index: AQHNdZLjOIWAIbPp80KsaTGNtIwdlpdQXnkLgAB5j4A=
+Date: Wed, 8 Aug 2012 20:46:46 +0000
+Message-ID: <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com>
+References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
+ <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com>
+ <5022CC99.30103@redhat.com>
+In-Reply-To: <5022CC99.30103@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.2.229.146]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_BB6D1B9A-301B-46F7-BA19-4C8C058D4648";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 08, 2012 10:09:38 PM Eric Dumazet wrote:
-> On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
-> > Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
-> > code.
-> 
-> Sure but it seems include file misses an accessor for this.
-> 
-> We could add it on a future cleanup patch, as Paul mentioned.
+--Apple-Mail=_BB6D1B9A-301B-46F7-BA19-4C8C058D4648
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=windows-1252
 
-Actually, the issue is that the shared socket doesn't have an init/alloc 
-function to do the LSM allocation like we do with other sockets so Eric's 
-patch does it as part of ip_send_unicast_reply().
+On Aug 8, 2012, at 1:31 PM, Milan Broz wrote:
 
-If we look at the relevant part of Eric's patch:
+> On 08/08/2012 08:46 PM, Mikulas Patocka wrote:
+>=20
+>> The problem with the patch is that it changes interface to the =
+userspace=20
+>> tool. The userspace tool veritysetup already exists in recent =
+cryptsetup=20
+>> package, so we can't change the interface - you should change the =
+patch so=20
+>> that the starting data block is the last argument and the argument is=20=
 
- +#ifdef CONFIG_SECURITY
- +       if (!sk->sk_security && security_sk_alloc(sk, PF_INET, GFP_ATOMIC))
- +                       goto out;
- +#endif
+>> optional - so that it is compatible with the existing userspace too.
+>=20
+> yes. Please never change interface without at least increasing target =
+version.
+>=20
+> I have to add userspace support as well to veritysetup and we need a =
+way
+> how to detect that option is supported by running kernel.
 
-... if we were to remove the CONFIG_SECURITY conditional we would end up 
-calling security_sk_alloc() each time through in the CONFIG_SECURITY=n case as 
-sk->sk_security would never be initialized to a non-NULL value.  In the 
-CONFIG_SECURITY=y case it should only be called once as security_sk_alloc() 
-should set sk->sk_security to a LSM blob.
 
-> >  Ifndef CONF_SECURITY then security_sk_alloc() is a static
-> > 
-> > inline return 0;   I guess the question is "Where did the sk come
-> > from"?  Why wasn't security_sk_alloc() called when it was allocated?
-> > Should it have been updated at some time and that wasn't done either?
-> > Seems wrong to be putting packets on the queue for a socket where the
-> > security data was never allocated and was never set to its proper
-> > state.
-> 
-> IMHO it seems wrong to even care about security for internal sockets.
->
-> They are per cpu, shared for all users on the machine.
+Understood. Thank you for the feedback. I will attempt a new patch =
+version which addresses these issues. I also found that I did not =
+correct the last-block boundary check so I will re-submit my patch with =
+that as well.
 
-The issue, from a security point of view, is that these sockets are sending 
-network traffic; even if it is just resets and timewait ACKs, it is still 
-network traffic and the LSMs need to be able to enforce security policy on 
-this traffic.  After all, what would you say if your firewall let these same 
-packets pass without any filtering?
+I did modify veritysetup on my own so the format and verify commands =
+will work with regular files on disk instead of having to mount through =
+loop devices.
+--
+Wesley Miaw=
 
-The issue I'm struggling with at present is how should we handle this traffic 
-from a LSM perspective.  The label based LSMs, e.g. SELinux and Smack, use the 
-LSM blob assigned to locally generated outbound traffic to identify the 
-traffic and apply the security policy, so not only do we have to resolve the 
-issue of ensuring the traffic is labeled correctly, we have to do it with a 
-shared socket (although the patch didn't change the shared nature of the 
-socket).
+--Apple-Mail=_BB6D1B9A-301B-46F7-BA19-4C8C058D4648
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
 
-For those who are interested, I think the reasonable labeling solution here is 
-to go with SECINITSID_KERNEL/kernel_t for SELinux and likely the ambient label 
-for Smack as in both the TCP reset and timewait ACK there shouldn't be any 
-actual user data present.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
 
--- 
-paul moore
-www.paul-moore.com
+iQEcBAEBAgAGBQJQItA2AAoJELoPFVk1ivvRshUH/ig/0hogLn/utO1+ubjgW/Fd
+oRt8iaYaAAz9i6ufv6gK50RCT21KGd+qB9/83wKEr0a8uXmTm14z18i6GZCV3FlR
+1cT8/elEvBgWWCyd3X5zRewYS45fgs47Xw2PpkUG4BOwT5MFyj9R5sdsFKTpsnNr
+P74QQ60GY3xIoFijNNJ+GRqQCzIo7Scd5i/1iv3sjJDF9ONCRmZezBU4FmqO1jNQ
+qsoN4Az5GOLNmH+GJAX8D0pc7AqaFKO71Ad9JOjT8scWN8igoNH+dqyTJdStr4j7
+fUw7r/yCM1d7S63eFsrKXolEeBMDr527tcbqtipdAcaCIHn/jlMaBS4QZoZvtsw=
+=RPrr
+-----END PGP SIGNATURE-----
 
+--Apple-Mail=_BB6D1B9A-301B-46F7-BA19-4C8C058D4648--
