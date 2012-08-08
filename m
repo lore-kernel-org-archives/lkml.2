@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab2HHJLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:11:21 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33780 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600Ab2HHJLO (ORCPT
+	id S964861Ab2HHJLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:11:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58169 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932642Ab2HHJLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:11:14 -0400
-Message-ID: <50222D11.4010005@in.ibm.com>
-Date: Wed, 08 Aug 2012 14:40:41 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 8 Aug 2012 05:11:46 -0400
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH 3/5] uprobes: remove check for uprobe variable in handle_swbp()
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-4-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1344355952-2382-4-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12080809-5564-0000-0000-000003EDFA67
+In-Reply-To: <1344389967-8465-9-git-send-email-linux@prisktech.co.nz>
+References: <1344389967-8465-1-git-send-email-linux@prisktech.co.nz>
+	<1344389967-8465-9-git-send-email-linux@prisktech.co.nz>
+Date: Wed, 8 Aug 2012 11:11:45 +0200
+Message-ID: <CACRpkdbYxpN9RCu8j8KMBgrb=-DsYZHq7hx-ifmHhJ0ZZcRYjw@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH 8/8] ARM: vt8500: gpio: Devicetree support for arch-vt8500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
+        Neil Zhang <zhangwm@marvell.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Eric Andersson <eric.andersson@unixphere.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 09:42 PM, Sebastian Andrzej Siewior wrote:
-> by the time we get here (after we pass cleanup_ret) uprobe is always is
-> set. If it is NULL we leave very early in the code.
->
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->   kernel/events/uprobes.c |   16 +++++++---------
->   1 file changed, 7 insertions(+), 9 deletions(-)
->
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 41a2555..c8e5204 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1528,17 +1528,15 @@ cleanup_ret:
->   		utask->active_uprobe = NULL;
->   		utask->state = UTASK_RUNNING;
->   	}
-> -	if (uprobe) {
-> -		if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
-> +	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
->
-Shouldn't we check uprobe != NULL before we check the uprobe->flags ?
-i.e, shouldn't the above line be :
+On Wed, Aug 8, 2012 at 3:39 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
 
-        if (uprobe && ! (uprobe->flags & UPROBE_SKIP_SSTEP)) ?
-> -			/*
-> -			 * cannot singlestep; cannot skip instruction;
-> -			 * re-execute the instruction.
-> -			 */
-> -			instruction_pointer_set(regs, bp_vaddr);
-> +		/*
-> +		 * cannot singlestep; cannot skip instruction;
-> +		 * re-execute the instruction.
-> +		 */
-> +		instruction_pointer_set(regs, bp_vaddr);
->
-> -		put_uprobe(uprobe);
-> -	}
-> +	put_uprobe(uprobe);
->   }
+> Converted the existing arch-vt8500 gpio to a platform_device.
+> Added support for WM8505 and WM8650 GPIO controllers.
+(...)
+> +++ b/drivers/gpio/gpio-vt8500.c
 
-Thanks
-Suzuki
+This driver looks very one-bit-per-gpio typed. Are you sure you cannot
+just reuse drivers/gpio/gpio-generic.c? Make a compelling case please...
 
+> +struct vt8500_gpio_bank_regs {
+> +       int     en;
+> +       int     dir;
+> +       int     data_out;
+> +       int     data_in;
+
+Why are all these members int? They should be u8 from reading your code.
+
+> +       int     ngpio;
+> +};
+
+
+> +static struct vt8500_gpio_data vt8500_data = {
+> +       .num_banks      = 7,
+> +       .banks  = {
+> +               VT8500_BANK(0x00, 0x20, 0x40, 0x60, 26),
+> +               VT8500_BANK(0x04, 0x24, 0x44, 0x64, 28),
+> +               VT8500_BANK(0x08, 0x28, 0x48, 0x68, 31),
+> +               VT8500_BANK(0x0C, 0x2C, 0x4C, 0x6C, 19),
+> +               VT8500_BANK(0x10, 0x30, 0x50, 0x70, 19),
+> +               VT8500_BANK(0x14, 0x34, 0x54, 0x74, 23),
+> +               VT8500_BANK(-1, 0x3C, 0x5C, 0x7C, 9),    /* external gpio */
+
+What on earth are all those magic numbers?
+
+I *guess* they're enabling some default GPIO settings etc.
+
+But it really needs better structure, #defines for each one or
+atleast include <linux/bitops.h> and say:
+
+= BIT(4) | /* Enable GPIO pin 5 on this bank */
+   BIT(5); /* Enable GPIO pin 6 on this bank */
+
+However I suspect this is board specific and should
+be taken from device tree. Please elaborate on this...
+
+Ditto for the different instances.
+
+(...)
+> +       unsigned val;
+
+Looks like all of these should be u8.
+
+> +       val = readl(vt8500_chip->base + vt8500_chip->regs->en +
+> +                                                       vt8500_chip->regoff);
+
+val = (u8) readl(...);
+
+usw
+
+> +       val |= (1 << offset);
+
+Use <linux/bitops.h>
+
+val |= BIT(offset);
+
+Apart from these remarks it's looking good...
+
+Yours,
+Linus Walleij
