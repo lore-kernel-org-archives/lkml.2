@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030546Ab2HHSZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 14:25:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34861 "EHLO
+	id S1030615Ab2HHSZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 14:25:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34868 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab2HHSZC (ORCPT
+	with ESMTP id S1030553Ab2HHSZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 14:25:02 -0400
+	Wed, 8 Aug 2012 14:25:07 -0400
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
         Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
         Vivek Goyal <vgoyal@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 1/2] floppy: don't call alloc_ordered_workqueue inside the alloc_disk loop
-Date: Wed,  8 Aug 2012 15:24:52 -0300
-Message-Id: <1344450293-5557-2-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 2/2] floppy: error handling fixes on do_floppy_init
+Date: Wed,  8 Aug 2012 15:24:53 -0300
+Message-Id: <1344450293-5557-3-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344450293-5557-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1344450293-5557-1-git-send-email-herton.krzesinski@canonical.com>
@@ -22,71 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 070ad7e ("floppy: convert to delayed work and single-thread
-wq"), we end up calling alloc_ordered_workqueue multiple times inside
-the loop, which shouldn't be intended. Besides the leak, other side
-effect in the current code is if blk_init_queue fails, we would end up
-calling unregister_blkdev even if we didn't call yet register_blkdev.
+While looking at commit 3f9a5aa ("floppy: Cleanup disk->queue before
+caling put_disk() if add_disk() was never called") I noticed some
+problems with the error handling and cleanup:
 
-Just moved the allocation of floppy_wq before the loop, and adjusted the
-code accordingly.
+* missing cleanup (put_disk) if blk_init_queue fails, dr is decremented
+  first in the error handling loop
+* if something fails in the add_disk loop, there is no cleanup of
+  previous iterations in the error handling.
+* "if (disks[dr]->queue)" check is bogus, when reaching there for each
+  dr should exist an queue allocated, and it doesn't take into account
+  iterations where add_disk wasn't done, if failure happens in add_disk
+  loop.
+* floppy_module_exit doesn't reset queue pointer if add_disk wasn't
+  done.
+
+Later commit 4609dff (floppy: Fix a crash during rmmod) fixed the last
+item, this change should handle the remaining problems on do_floppy_init.
 
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: stable@vger.kernel.org # 3.5+
+Cc: stable@vger.kernel.org
 ---
- drivers/block/floppy.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/block/floppy.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index a7d6347..c8d9e68 100644
+index c8d9e68..0854113 100644
 --- a/drivers/block/floppy.c
 +++ b/drivers/block/floppy.c
-@@ -4138,6 +4138,10 @@ static int __init do_floppy_init(void)
+@@ -4127,6 +4127,7 @@ static int __init do_floppy_init(void)
+ {
+ 	int i, unit, drive;
+ 	int err, dr;
++	int registered = -1;
  
- 	raw_cmd = NULL;
+ 	set_debugt();
+ 	interruptjiffies = resultjiffies = jiffies;
+@@ -4151,6 +4152,7 @@ static int __init do_floppy_init(void)
  
-+	floppy_wq = alloc_ordered_workqueue("floppy", 0);
-+	if (!floppy_wq)
-+		return -ENOMEM;
-+
- 	for (dr = 0; dr < N_DRIVE; dr++) {
- 		disks[dr] = alloc_disk(1);
- 		if (!disks[dr]) {
-@@ -4145,16 +4149,10 @@ static int __init do_floppy_init(void)
- 			goto out_put_disk;
- 		}
- 
--		floppy_wq = alloc_ordered_workqueue("floppy", 0);
--		if (!floppy_wq) {
--			err = -ENOMEM;
--			goto out_put_disk;
--		}
--
  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
  		if (!disks[dr]->queue) {
++			put_disk(disks[dr]);
  			err = -ENOMEM;
--			goto out_destroy_workq;
-+			goto out_put_disk;
+ 			goto out_put_disk;
  		}
+@@ -4292,7 +4294,7 @@ static int __init do_floppy_init(void)
  
- 		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
-@@ -4318,8 +4316,6 @@ out_release_dma:
- out_unreg_region:
- 	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
- 	platform_driver_unregister(&floppy_driver);
--out_destroy_workq:
--	destroy_workqueue(floppy_wq);
- out_unreg_blkdev:
- 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ 		err = platform_device_register(&floppy_device[drive]);
+ 		if (err)
+-			goto out_release_dma;
++			goto out_remove_drives;
+ 
+ 		err = device_create_file(&floppy_device[drive].dev,
+ 					 &dev_attr_cmos);
+@@ -4310,6 +4312,16 @@ static int __init do_floppy_init(void)
+ 
+ out_unreg_platform_dev:
+ 	platform_device_unregister(&floppy_device[drive]);
++out_remove_drives:
++	registered = drive - 1;
++	while (drive--) {
++		if ((allowed_drive_mask & (1 << drive)) &&
++		     fdc_state[FDC(drive)].version != FDC_NONE) {
++			del_gendisk(disks[drive]);
++			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
++			platform_device_unregister(&floppy_device[drive]);
++		}
++	}
+ out_release_dma:
+ 	if (atomic_read(&usage_count))
+ 		floppy_release_irq_and_dma();
+@@ -4321,14 +4333,14 @@ out_unreg_blkdev:
  out_put_disk:
-@@ -4335,6 +4331,7 @@ out_put_disk:
- 		}
+ 	while (dr--) {
+ 		del_timer_sync(&motor_off_timer[dr]);
+-		if (disks[dr]->queue) {
+-			blk_cleanup_queue(disks[dr]->queue);
+-			/*
+-			 * put_disk() is not paired with add_disk() and
+-			 * will put queue reference one extra time. fix it.
+-			 */
++		blk_cleanup_queue(disks[dr]->queue);
++		/*
++		 * put_disk() may not be paired with add_disk() and
++		 * will put queue reference one extra time. fix it.
++		 */
++		if (dr > registered || !(allowed_drive_mask & (1 << dr)) ||
++		    fdc_state[FDC(dr)].version == FDC_NONE)
+ 			disks[dr]->queue = NULL;
+-		}
  		put_disk(disks[dr]);
  	}
-+	destroy_workqueue(floppy_wq);
- 	return err;
- }
- 
+ 	destroy_workqueue(floppy_wq);
 -- 
 1.7.9.5
 
