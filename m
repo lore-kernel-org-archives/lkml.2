@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458Ab2HHN1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:27:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34627 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429Ab2HHNVz (ORCPT
+	id S1758609Ab2HHN1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:27:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33238 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758595Ab2HHN1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:21:55 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v5 05/19] vfs: remove user_path_at_empty
-Date: Wed,  8 Aug 2012 09:21:28 -0400
-Message-Id: <1344432102-22312-6-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
-References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
+	Wed, 8 Aug 2012 09:27:15 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
+Cc: Joerg Roedel <joro@8bytes.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Len Brown <lenb@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
+Date: Wed,  8 Aug 2012 08:27:03 -0500
+Message-Id: <1344432423-26495-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
+References: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...there are no more callers.
+The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
+but the only remapping unit described in the DMAR table matches id 0.
+Interrupt remapping fails as a result, and the kernel panics with the
+message "timer doesn't work through Interrupt-remapped IO-APIC."
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
+not found, do not allow IRQ remapping to be enabled.
+
+v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
+    and add FW_BUG to the log message
+v3: Skip check if IOMMU doesn't support interrupt remapping and remove
+    existing check that the IOMMU count equals the IOAPIC count
+
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- fs/namei.c            | 12 +++---------
- include/linux/namei.h |  1 -
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ drivers/iommu/intel_irq_remapping.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index e66161f..dc58de9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2106,10 +2106,10 @@ int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
- 	return err;
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index e0b18f3..af8904d 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -736,6 +736,7 @@ int __init parse_ioapics_under_ir(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	int ir_supported = 0;
++	int ioapic_idx;
+ 
+ 	for_each_drhd_unit(drhd) {
+ 		struct intel_iommu *iommu = drhd->iommu;
+@@ -748,13 +749,20 @@ int __init parse_ioapics_under_ir(void)
+ 		}
+ 	}
+ 
+-	if (ir_supported && ir_ioapic_num != nr_ioapics) {
+-		printk(KERN_WARNING
+-		       "Not all IO-APIC's listed under remapping hardware\n");
+-		return -1;
++	if (!ir_supported)
++		return 0;
++
++	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
++		int ioapic_id = mpc_ioapic_id(ioapic_idx);
++		if (!map_ioapic_to_ir(ioapic_id)) {
++			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
++			       "interrupt remapping will be disabled\n",
++			       ioapic_id);
++			return -1;
++		}
+ 	}
+ 
+-	return ir_supported;
++	return 1;
  }
  
--int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
--		 struct path *path, int *empty)
-+int user_path_at(int dfd, const char __user *name, unsigned flags,
-+		 struct path *path)
- {
--	char *tmp = getname_flags(name, flags, empty);
-+	char *tmp = getname_flags(name, flags, NULL);
- 	int err;
- 
- 	if (IS_ERR(tmp)) {
-@@ -2121,12 +2121,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
- 	return err;
- }
- 
--int user_path_at(int dfd, const char __user *name, unsigned flags,
--		 struct path *path)
--{
--	return user_path_at_empty(dfd, name, flags, path, NULL);
--}
--
- static int user_path_parent(int dfd, const char __user *path,
- 			struct nameidata *nd, char **name)
- {
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 482f87f..491fb48 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -57,7 +57,6 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- 
- extern int kern_path_at(int, const char *, unsigned, struct path *);
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
--extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
- 
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+ int __init ir_dev_scope_init(void)
 -- 
-1.7.11.2
+1.7.9.5
 
