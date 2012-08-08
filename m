@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab2HHOQC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:16:02 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:43337 "EHLO mx2.parallels.com"
+	id S932301Ab2HHOQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:16:14 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:41729 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab2HHOQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:16:00 -0400
-Message-ID: <5022748E.5040809@parallels.com>
-Date: Wed, 8 Aug 2012 18:15:42 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kir Kolyshkin <kir@parallels.com>
-Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
- for memcg: stripped down version
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com> <4FEC1D63.6000903@parallels.com> <20120628152540.cc13a735.akpm@linux-foundation.org> <50211F3D.2000008@parallels.com>
-In-Reply-To: <50211F3D.2000008@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1757362Ab2HHOQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:16:09 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] sched: Fix __sched_period comment
+Date: Wed,  8 Aug 2012 16:16:04 +0200
+Message-Id: <1344435364-18632-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 05:59 PM, Glauber Costa wrote:
-> On 06/29/2012 02:25 AM, Andrew Morton wrote:
->> On Thu, 28 Jun 2012 13:01:23 +0400
->> Glauber Costa <glommer@parallels.com> wrote:
->>
->>>
->>> ...
->>>
->>
->> OK, that all sounds convincing ;) Please summarise and capture this
->> discussion in the [patch 0/n] changelog so we (or others) don't have to
->> go through this all again.  And let's remember this in the next
->> patchset!
->>
->>> Last, but not least, note that it is totally within my interests to
->>> merge the slab tracking as fast as we can. it'll be a matter of going
->>> back to it, and agreeing in the final form.
->>
->> Yes, I'd very much like to have the whole slab implementation in a
->> reasonably mature state before proceeding too far with this base
->> patchset.
->>
-> So, that was posted separately as well.
-> 
-> Although there is a thing to fix here and there - all of them I am
-> working on already - I believe that to be mature enough.
-> 
-> Do you have any comments on that? Would you be willing to take this
-> first part (modified with the comments on this thread itself) and let it
-> start sitting in the tree?
-> 
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-In the mean time, for any interested parties, I've set up a tree at:
+It should be sched_nr_latency so fix it before it annoys me more.
 
-git://github.com/glommer/linux.git
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-branches kmemcg-slab and kmemcg-stack
-
-Intended to be a throw-away tree.
-
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d0cc03b3e70b..67ac0b1abf7b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -597,7 +597,7 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
+ /*
+  * The idea is to set a period in which each task runs once.
+  *
+- * When there are too many tasks (sysctl_sched_nr_latency) we have to stretch
++ * When there are too many tasks (sched_nr_latency) we have to stretch
+  * this period because otherwise the slices get too small.
+  *
+  * p = (nr <= nl) ? l : l*nr/nl
+-- 
+1.7.11.rc1
 
