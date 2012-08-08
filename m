@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab2HHN1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:27:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33238 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758595Ab2HHN1P (ORCPT
+	id S1758628Ab2HHN2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:28:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36202 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758411Ab2HHNVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:27:15 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Cc: Joerg Roedel <joro@8bytes.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Len Brown <lenb@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
-Date: Wed,  8 Aug 2012 08:27:03 -0500
-Message-Id: <1344432423-26495-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
-References: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
+	Wed, 8 Aug 2012 09:21:52 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v5 03/19] vfs: make fstatat retry on ESTALE errors from getattr call
+Date: Wed,  8 Aug 2012 09:21:26 -0400
+Message-Id: <1344432102-22312-4-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
+References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
-but the only remapping unit described in the DMAR table matches id 0.
-Interrupt remapping fails as a result, and the kernel panics with the
-message "timer doesn't work through Interrupt-remapped IO-APIC."
-
-To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
-not found, do not allow IRQ remapping to be enabled.
-
-v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
-    and add FW_BUG to the log message
-v3: Skip check if IOMMU doesn't support interrupt remapping and remove
-    existing check that the IOMMU count equals the IOAPIC count
-
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- drivers/iommu/intel_irq_remapping.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ fs/namei.c         |  2 +-
+ fs/stat.c          | 21 ++++++++++++++++-----
+ include/linux/fs.h |  1 +
+ 3 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index e0b18f3..af8904d 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -736,6 +736,7 @@ int __init parse_ioapics_under_ir(void)
+diff --git a/fs/namei.c b/fs/namei.c
+index 83a6f46..e66161f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -117,7 +117,7 @@
+  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
+  * PATH_MAX includes the nul terminator --RR.
+  */
+-static char *getname_flags(const char __user *filename, int flags, int *empty)
++char *getname_flags(const char __user *filename, int flags, int *empty)
  {
- 	struct dmar_drhd_unit *drhd;
- 	int ir_supported = 0;
-+	int ioapic_idx;
+ 	char *result = __getname(), *err;
+ 	int len;
+diff --git a/fs/stat.c b/fs/stat.c
+index b6ff118..5afeb37 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -72,9 +72,11 @@ EXPORT_SYMBOL(vfs_fstat);
+ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flag)
+ {
++	char *name;
+ 	struct path path;
+ 	int error = -EINVAL;
+-	int lookup_flags = 0;
++	unsigned int try = 0;
++	unsigned int lookup_flags = 0;
  
- 	for_each_drhd_unit(drhd) {
- 		struct intel_iommu *iommu = drhd->iommu;
-@@ -748,13 +749,20 @@ int __init parse_ioapics_under_ir(void)
- 		}
- 	}
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+@@ -85,12 +87,21 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 	if (flag & AT_EMPTY_PATH)
+ 		lookup_flags |= LOOKUP_EMPTY;
  
--	if (ir_supported && ir_ioapic_num != nr_ioapics) {
--		printk(KERN_WARNING
--		       "Not all IO-APIC's listed under remapping hardware\n");
--		return -1;
-+	if (!ir_supported)
-+		return 0;
-+
-+	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
-+		int ioapic_id = mpc_ioapic_id(ioapic_idx);
-+		if (!map_ioapic_to_ir(ioapic_id)) {
-+			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
-+			       "interrupt remapping will be disabled\n",
-+			       ioapic_id);
-+			return -1;
-+		}
- 	}
+-	error = user_path_at(dfd, filename, lookup_flags, &path);
+-	if (error)
++	name = getname_flags(filename, lookup_flags, NULL);
++	if (IS_ERR(name)) {
++		error = PTR_ERR(name);
+ 		goto out;
++	}
++	do {
++		error = kern_path_at(dfd, name, lookup_flags, &path);
++		if (error)
++			break;
  
--	return ir_supported;
-+	return 1;
+-	error = vfs_getattr(path.mnt, path.dentry, stat);
+-	path_put(&path);
++		error = vfs_getattr(path.mnt, path.dentry, stat);
++		path_put(&path);
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(error, try++));
++	putname(name);
+ out:
+ 	return error;
  }
- 
- int __init ir_dev_scope_init(void)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b776a97..f2e7371 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2201,6 +2201,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
+ 				   const char *, int);
+ extern struct file * dentry_open(const struct path *, int, const struct cred *);
+ extern int filp_close(struct file *, fl_owner_t id);
++extern char *getname_flags(const char __user *, int, int *);
+ extern char * getname(const char __user *);
+ enum {
+ 	FILE_CREATED = 1,
 -- 
-1.7.9.5
+1.7.11.2
 
