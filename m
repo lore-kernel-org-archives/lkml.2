@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab2HHOiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:38:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53582 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab2HHOiN (ORCPT
+	id S1758441Ab2HHOjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:39:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59297 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757406Ab2HHOjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:38:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Mack <zonque@gmail.com>
-Subject: Re: [PATCH 2/6] ARM: pxa remove irq_to_gpio from eeti_ts driver
-Date: Wed, 8 Aug 2012 14:38:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sven Neumann <s.neumann@raumfeld.com>, linux-input@vger.kernel.org
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <201208081419.17181.arnd@arndb.de> <50227615.1090907@gmail.com>
-In-Reply-To: <50227615.1090907@gmail.com>
+	Wed, 8 Aug 2012 10:39:37 -0400
+Date: Wed, 8 Aug 2012 15:39:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Dmitry Torokhov <dtor@mail.ru>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
+Message-ID: <20120808143927.GB24328@opensource.wolfsonmicro.com>
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
+ <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com>
+ <5022529D.3090406@ti.com>
+ <20120808125252.GR16861@opensource.wolfsonmicro.com>
+ <50227936.3040701@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208081438.04931.arnd@arndb.de>
-X-Provags-ID: V02:K0:SxmqrAfusJfNE0wEbS4JT8kNRXNCzcipe+2vQ00biAL
- vAYJI2D31t3tPbbojPzYvuuFkW+tbOnT3z969IvwfD9oDlF1tF
- 3VjzOCWN7E28g2oLh0AIfxdnobXgNyBsWRYnhK8xuCV8o7zruL
- A66KfLk9QxKibEeNvXujhe4fkBYFMGY+1l0vhaqnSQ3KRMJQAw
- nkHjZtjgauJFn4q11tpnK/toftWg/tZRosHE7/TYWi4tWsejsd
- Ofgvyb1T/X+pgSSDBMEkg8dprV5xwObtH6yJVkXiNPWlrj57Jp
- LfqxgTwBuaQJUGWqpDf6KdRIorbCO7MwcwP4LEJG2lRPmz67lD
- ExoHOB3f9QIs2dfAF9xI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50227936.3040701@ti.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 August 2012, Daniel Mack wrote:
-> > 
-> > I've taken your patch instead now, 
-> 
-> Will that go to some other tree than linux-input now?
+On Wed, Aug 08, 2012 at 05:35:34PM +0300, Peter Ujfalusi wrote:
 
-I have it in the arm-soc tree for now, but I don't really care
-which tree it goes through, as long as it does. I've kept a
-version of this patch in one branch with random fixes that
-I try to clear out now.
+> Does this needs the common clock framework on the platform? OMAP3 certainly
+> does not have it enabled since it has not been adopted.
 
-Other than that, I'm fine with whatever Dmitry prefers.
-
-	Arnd
+I'd hope at least the binding code for finding clocks has been done at
+the clkdev level so it can be used on other platforms but perhaps that's
+not the case.
