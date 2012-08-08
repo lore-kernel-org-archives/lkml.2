@@ -1,176 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab2HHDVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 23:21:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34522 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab2HHDVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 23:21:10 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/8] perf hists browser: Add verbose mode hotkey
-Date: Wed,  8 Aug 2012 00:20:50 -0300
-Message-Id: <1344396057-10540-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1344396057-10540-1-git-send-email-acme@infradead.org>
-References: <1344396057-10540-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755764Ab2HHDgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 23:36:14 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:58997 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751787Ab2HHDgM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 23:36:12 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Date: Wed, 8 Aug 2012 05:36:05 +0200
+Subject: RE: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Thread-Topic: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Thread-Index: Ac10y89l2vFLR7yeTjmQMY2Tz8+DMwASP9zg
+Message-ID: <F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+ <1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
+ <20120807183809.GC26990@kroah.com>
+In-Reply-To: <20120807183809.GC26990@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> On Tue, Aug 07, 2012 at 12:24:28PM +0530, Arun Murthy wrote:
+> > Adds Modem Access Framework, which allows for registering platform
+> specific
+> > modem access mechanisms. The framework also exposes APIs for client
+> drivers
+> > for getting and releasing access to modem, regardless of the
+> underlying
+> > platform specific access mechanism.
+> 
+> The term "modems" here has a lot of legacy connotations.  First of
+> which
+> is, userspace handles this today as tty devices, why aren't you doing
+> the same here?  Why does this have to be something "special"?
+> 
 
-Right now just shows the DSO name in callchain entries, to help debug
-the DWARF CFI post unwind code.
+The main focus over there the modem IPC. In doing so, there are some
+functionality like waking the modem, or releasing the modem etc. These
+will be used by the modem IPC drivers and also few others like sim driver
+and security drivers.
+Since this is a shared call and hence has to be synchronized. Hence so a
+small framework like is being done to monitor the modem access related only
+operations.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-54gouunatugtfw92j6gddk45@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/hists.c |   37 ++++++++++++++++++++++++++-----------
- 1 file changed, 26 insertions(+), 11 deletions(-)
+> >
+> > Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> > ---
+> >  drivers/Kconfig                        |    2 +
+> >  drivers/Makefile                       |    1 +
+> >  drivers/modem_shm/Kconfig              |    9 +
+> >  drivers/modem_shm/Makefile             |    1 +
+> >  drivers/modem_shm/modem_access.c       |  419
+> ++++++++++++++++++++++++++++++++
+> 
+> Any reason why this can't be under drivers/tty/ ?
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 413bd62..b809469 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -24,6 +24,7 @@ struct hist_browser {
- 	struct hist_entry   *he_selection;
- 	struct map_symbol   *selection;
- 	int		     print_seq;
-+	bool		     show_dso;
- 	bool		     has_symbols;
- };
- 
-@@ -376,12 +377,19 @@ out:
- }
- 
- static char *callchain_list__sym_name(struct callchain_list *cl,
--				      char *bf, size_t bfsize)
-+				      char *bf, size_t bfsize, bool show_dso)
- {
-+	int printed;
-+
- 	if (cl->ms.sym)
--		return cl->ms.sym->name;
-+		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+	else
-+		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+
-+	if (show_dso)
-+		scnprintf(bf + printed, bfsize - printed, " %s",
-+			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
- 
--	snprintf(bf, bfsize, "%#" PRIx64, cl->ip);
- 	return bf;
- }
- 
-@@ -417,7 +425,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browse
- 		remaining -= cumul;
- 
- 		list_for_each_entry(chain, &child->val, list) {
--			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			char bf[1024], *alloc_str;
- 			const char *str;
- 			int color;
- 			bool was_first = first;
-@@ -434,7 +442,8 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browse
- 			}
- 
- 			alloc_str = NULL;
--			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+			str = callchain_list__sym_name(chain, bf, sizeof(bf),
-+						       browser->show_dso);
- 			if (was_first) {
- 				double percent = cumul * 100.0 / new_total;
- 
-@@ -493,7 +502,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *browser,
- 	char folded_sign = ' ';
- 
- 	list_for_each_entry(chain, &node->val, list) {
--		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+		char bf[1024], *s;
- 		int color;
- 
- 		folded_sign = callchain_list__folded(chain);
-@@ -510,7 +519,8 @@ static int hist_browser__show_callchain_node(struct hist_browser *browser,
- 			*is_current_entry = true;
- 		}
- 
--		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+		s = callchain_list__sym_name(chain, bf, sizeof(bf),
-+					     browser->show_dso);
- 		ui_browser__gotorc(&browser->b, row, 0);
- 		ui_browser__set_color(&browser->b, color);
- 		slsmg_write_nstring(" ", offset);
-@@ -830,7 +840,7 @@ static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *bro
- 		remaining -= cumul;
- 
- 		list_for_each_entry(chain, &child->val, list) {
--			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			char bf[1024], *alloc_str;
- 			const char *str;
- 			bool was_first = first;
- 
-@@ -842,7 +852,8 @@ static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *bro
- 			folded_sign = callchain_list__folded(chain);
- 
- 			alloc_str = NULL;
--			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+			str = callchain_list__sym_name(chain, bf, sizeof(bf),
-+						       browser->show_dso);
- 			if (was_first) {
- 				double percent = cumul * 100.0 / new_total;
- 
-@@ -880,10 +891,10 @@ static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
- 	int printed = 0;
- 
- 	list_for_each_entry(chain, &node->val, list) {
--		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+		char bf[1024], *s;
- 
- 		folded_sign = callchain_list__folded(chain);
--		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+		s = callchain_list__sym_name(chain, bf, sizeof(bf), browser->show_dso);
- 		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
- 	}
- 
-@@ -1133,6 +1144,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			continue;
- 		case 'd':
- 			goto zoom_dso;
-+		case 'V':
-+			browser->show_dso = !browser->show_dso;
-+			continue;
- 		case 't':
- 			goto zoom_thread;
- 		case '/':
-@@ -1164,6 +1178,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					"d             Zoom into current DSO\n"
- 					"t             Zoom into current Thread\n"
- 					"P             Print histograms to perf.hist.N\n"
-+					"V             Verbose (DSO names in callchains, etc)\n"
- 					"/             Filter symbol by name");
- 			continue;
- 		case K_ENTER:
--- 
-1.7.9.2.358.g22243
+No specific reason, other than to have a separate place for the modem
+access related drivers. Many of the platforms have these functionality
+and hence all of them can reside over here using a common framework(MAF)
 
+> 
+> >  include/linux/modem_shm/modem.h        |   64 +++++
+> >  include/linux/modem_shm/modem_client.h |   55 +++++
+> 
+> Why are both of these "public" like this?  Why not just make one file?
+> Would someone ever only need to include one of these?
+
+modem.h is a header file used by the MAF, but modem_client.h includes
+a structure that will be used by all clients registering to this MAF.
+Hence the clients can only include only this header.
+
+> 
+> > +config MODEM_SHM
+> > +        bool "Modem Access Framework"
+> > +        default y
+> 
+> Unless it is needed to boot your machine, NEVER make the default y.
+
+Oops,.. will change this.
+
+> 
+> > +struct modem {
+> > +	struct device *dev;
+> > +	struct list_head list;
+> > +	char *modem_name;
+> 
+> You already have a name in the struct device, why do you need another
+> one?
+> 
+> > +	struct device_attribute dev_attr;
+> 
+> Why is this in the structure?
+> 
+> > +	struct modem_dev *mdev;
+> > +	atomic_t use;
+> 
+> What is this variable for?
+
+This is used to monitor the number of requests received. Just to
+balance the enable/disable process. Something like the regulator
+framework.
+
+> 
+> Why isn't this a 'struct device' itself?
+> 
+> > +/**
+> > + * modem_is_requested - check if modem access is requested
+> > + * @modem: modem device
+> > + *
+> > + * Checks whether modem is accessed or not by querying
+> > + * the underlying platform specific modem access
+> > + * implementation.
+> > + */
+> > +int modem_is_requested(struct modem *modem)
+> > +{
+> > +	int ret;
+> > +
+> > +	mutex_lock(&modem->mdev->mutex);
+> > +	ret = _modem_is_requested(modem->mdev);
+> > +	mutex_unlock(&modem->mdev->mutex);
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL(modem_is_requested);
+> 
+> EXPORT_SYMBOL_GPL() for this, and the other apis perhaps?
+
+OK.
+
+> 
+> > +static struct modem *_modem_get(struct device *dev, const char *id,
+> > +		int exclusive)
+> > +{
+> > +	struct modem_dev *mdev_ptr;
+> > +	struct modem *modem = ERR_PTR(-ENODEV);
+> > +	int ret;
+> > +
+> > +	if (id == NULL) {
+> > +		pr_err("modem_get with no identifier\n");
+> > +		return modem;
+> > +	}
+> > +
+> > +	mutex_lock(&modem_list_mutex);
+> > +	list_for_each_entry(mdev_ptr, &modem_list, modem_list) {
+> > +		if (strcmp(mdev_get_name(mdev_ptr), id) == 0)
+> > +			goto found;
+> > +	}
+> > +
+> > +	goto out;
+> > +
+> > +found:
+> > +	if (!try_module_get(mdev_ptr->owner))
+> > +		goto out;
+> > +
+> > +	modem = create_modem(mdev_ptr, dev, id);
+> > +	if (modem == NULL) {
+> > +		modem = ERR_PTR(-ENOMEM);
+> > +		module_put(mdev_ptr->owner);
+> > +	}
+> > +
+> > +	mdev_ptr->open_count++;
+> > +	ret = _modem_is_requested(mdev_ptr);
+> > +	if (ret)
+> > +		mdev_ptr->use_count = 1;
+> > +	else
+> > +		mdev_ptr->use_count = 0;
+> > +
+> > +out:
+> > +	mutex_unlock(&modem_list_mutex);
+> > +	return modem;
+> > +
+> > +}
+> 
+> Calling this function does a lot more than just incrementing the
+> reference count of an object.  It sets it up, and creates things.  That
+> should be way more documented than this one line says:
+
+Sure will elaborate the documentation.
+
+> 
+> > +/**
+> > + * modem_get - Get reference to a particular platform specific modem
+> > + * @dev: device
+> > + * @id: modem device name
+> > + *
+> > + * Get reference to a particular modem device.
+> > + */
+> 
+> See, that's really not true.
+> 
+> > +static ssize_t modem_print_state(char *buf, int state)
+> > +{
+> > +	if (state > 0)
+> > +		return sprintf(buf, "accessed\n");
+> > +	else if (state == 0)
+> > +		return sprintf(buf, "released\n");
+> > +	else
+> > +		return sprintf(buf, "unknown\n");
+> > +}
+> 
+> Why not use an enumerated type for your state, to make it easier to
+> understand than 0, -, and +?
+
+Done
+
+> 
+> > +static ssize_t modem_state_show(struct device *dev,
+> > +		struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> > +	ssize_t ret;
+> > +
+> > +	mutex_lock(&mdev->mutex);
+> > +	ret = modem_print_state(buf, _modem_is_requested(mdev));
+> 
+> Why not just embed the function here?  It's only ever called once.
+
+This function will be called by the modem IPC drivers also.
+
+> 
+> > +	mutex_unlock(&mdev->mutex);
+> > +
+> > +	return ret;
+> > +}
+> > +static DEVICE_ATTR(state, 0444, modem_state_show, NULL);
+> > +
+> > +static ssize_t modem_use_show(struct device *dev,
+> > +		struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> > +	struct modem *mod;
+> > +	size_t size = 0;
+> > +
+> > +	list_for_each_entry(mod, &mdev->client_list, list) {
+> > +		if (mod->dev != NULL)
+> > +			size += sprintf((buf + size), "%s (%d)\n",
+> > +				dev_name(mod->dev), atomic_read(&mod->use));
+> > +		else
+> > +			size += sprintf((buf + size), "unknown (%d)\n",
+> > +				atomic_read(&mod->use));
+> > +	}
+> > +	size += sprintf((buf + size), "\n");
+> > +
+> > +	return size;
+> > +}
+> > +static DEVICE_ATTR(use, 0444, modem_use_show, NULL);
+> 
+> You have sysfs files with no matching Documentation/ABI entries showing
+> how they are to be used, and what they contain, in this patch.  Please
+> fix this.
+> 
+> And why are you reporting an atomic value, that's 2 values per sysfs
+> file, not acceptable.
+> 
+
+Will change it accordingly.
+
+> > +static ssize_t modem_name_show(struct device *dev,
+> > +		struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct modem_dev *mdev = dev_get_drvdata(dev);
+> > +
+> > +	return sprintf(buf, "%s\n", mdev_get_name(mdev));
+> > +}
+> > +static DEVICE_ATTR(name, 0444, modem_name_show, NULL);
+> 
+> The name is in the struct device, which is the directory in sysfs,
+> don't
+> include it again in a sysfs file, that's redundant.
+
+Ok.
+
+> 
+> > +static int add_modem_attributes(struct modem_dev *mdev)
+> > +{
+> > +	struct device      *dev = &mdev->dev;
+> > +	struct modem_ops   *ops = mdev->desc->ops;
+> > +	int                status = 0;
+> > +
+> > +	status = device_create_file(dev, &dev_attr_use);
+> > +	if (status < 0)
+> > +		return status;
+> > +
+> > +	status = device_create_file(dev, &dev_attr_name);
+> > +	if (status < 0)
+> > +		return status;
+> > +
+> > +	status = device_create_file(dev, &dev_attr_num_active_users);
+> > +	if (status < 0)
+> > +		return status;
+> > +
+> > +	if (ops->is_requested) {
+> > +		status = device_create_file(dev, &dev_attr_state);
+> > +		if (status < 0)
+> > +			return status;
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> 
+> Please use a default attribute group, as you just raced with userspace,
+> and now userspace tried to look for these files when the device was
+> created, yet they were not present yet, causing all sorts of problems
+> with your tools.  This must be fixed.
+> 
+
+Done. Will implement this in the next version of the patch.
+
+Thanks and Regards,
+Arun R Murthy
+--------------
