@@ -1,197 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab2HHFGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 01:06:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27266 "EHLO mga09.intel.com"
+	id S1752016Ab2HHFTu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 01:19:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43928 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab2HHFF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 01:05:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,730,1336374000"; 
-   d="scan'208";a="182983469"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com
-Subject: [PATCH 1/1] proc: add /proc/pid/shmaps
-Date: Wed,  8 Aug 2012 21:04:19 +0800
-Message-Id: <1344431059-12514-1-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751573Ab2HHFT2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 01:19:28 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Daniel Mack <zonque@gmail.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: RE: [PATCH v3 1/2] lis3: add generic DT matching code
+Thread-Topic: [PATCH v3 1/2] lis3: add generic DT matching code
+Thread-Index: AQHNcyYHigTOH3VPQ0CGb64rDYCsY5dMmlKwgAG9zICAAQhKIA==
+Date: Wed, 8 Aug 2012 05:19:15 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA0E257@DBDE01.ent.ti.com>
+References: <1343633775-6268-1-git-send-email-zonque@gmail.com>
+ <501E9CE2.20500@gmail.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA0B8A5@DBDE01.ent.ti.com>
+ <5021631D.1030505@gmail.com>
+In-Reply-To: <5021631D.1030505@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a shmaps entry to /proc/pid: show information about shared memory in an address space.
+Hi Mack,
 
-People that use shared memory and want to perform an analyzing about it. For example, judge whether any memory address is shared. This file just contains 'share' part of /proc/pid/maps now. There are too many contents in maps, and so we have to do a lot of analysis to obtain relative information every time.
+No attachments please.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- fs/proc/base.c     |    2 ++
- fs/proc/internal.h |    2 ++
- fs/proc/task_mmu.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 65 insertions(+), 6 deletions(-)
+On Wed, Aug 08, 2012 at 00:19:01, Daniel Mack wrote:
+> Hi,
+> 
+> thanks for your review.
+> 
+> On 06.08.2012 12:45, AnilKumar, Chimata wrote:
+> > On Sun, Aug 05, 2012 at 21:48:42, Daniel Mack wrote:
+> >> On 30.07.2012 09:36, Daniel Mack wrote:
+> >>> This patch adds logic to parse lis3 properties from a device tree node
+> >>> and store them in a freshly allocated lis3lv02d_platform_data.
+> >>>
+> >>> Note that the actual match tables are left out here. This part should
+> >>> happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
+> >>>
+> >>> Also adds some DT bindinds documentation.
+> >>>
+> >>> Signed-off-by: Daniel Mack <zonque@gmail.com>
+> >>> ---
+> >>> Changes from v2:
+> >>>  - kzalloc braino
+> >>>
+> >>> Changes from v1:
+> >>>  - some typos in properties fixed
+> >>>
+> >>>
+> >>>  Documentation/devicetree/bindings/misc/lis302.txt |  74 ++++++++++++
+> >>>  drivers/misc/lis3lv02d/lis3lv02d.c                | 137 ++++++++++++++++++++++
+> >>>  drivers/misc/lis3lv02d/lis3lv02d.h                |   4 +
+> >>>  3 files changed, 215 insertions(+)
+> >>>  create mode 100644 Documentation/devicetree/bindings/misc/lis302.txt
+> >>>
+> >>> diff --git a/Documentation/devicetree/bindings/misc/lis302.txt b/Documentation/devicetree/bindings/misc/lis302.txt
+> >>> new file mode 100644
+> >>> index 0000000..66230fd
+> >>> --- /dev/null
+> >>> +++ b/Documentation/devicetree/bindings/misc/lis302.txt
+> >>> @@ -0,0 +1,74 @@
+> >>> +LIS302 accelerometer devicetree bindings
+> >>> +
+> >>> +This device is matched via its bus drivers, and has a number of properties
+> >>> +that apply in on the generic device (independent from the bus).
+> >>> +
+> >>> +
+> >>> +Required properties for the SPI bindings:
+> >>> + - compatible: 		should be set to "st,lis3lv02d_spi"
+> >>> + - reg:			the chipselect index
+> >>> + - spi-max-frequency:	maximal bus speed, should be set to 1000000 unless
+> >>> +			constrained by external circuitry
+> >>> + - interrupts:		the interrupt generated by the device
+> >>> +
+> >>> +
+> >>> +Optional properties for all bus drivers:
+> >>> +
+> >>> + - st,click-single-{x,y,z}:	if present, tells the device to issue an
+> >>> +				interrupt on single click events on the
+> >>> +				x/y/z axis.
+> >>> + - st,click-double-{x,y,z}:	if present, tells the device to issue an
+> >>> +				interrupt on double click events on the
+> >>> +				x/y/z axis.
+> >>> + - st,click-thresh-{x,y,z}:	set the x/y/z axis threshold
+> >>> + - st,click-click-time-limit:	click time limit, from 0 to 127.5msec
+> >>> +				with step of 0.5 msec
+> >>> + - st,click-latency:		click latency, from 0 to 255 msec with
+> >>> +				step of 1 msec.
+> >>> + - st,click-window:		click window, from 0 to 255 msec with
+> >>> +				step of 1 msec.
+> >>> + - st,irq{1,2}-disable:		disable IRQ 1/2
+> >>> + - st,irq{1,2}-ff-wu-1:		raise IRQ 1/2 on FF_WU_1 condition
+> >>> + - st,irq{1,2}-ff-wu-2:		raise IRQ 1/2 on FF_WU_2 condition
+> >>> + - st,irq{1,2}-data-ready:	raise IRQ 1/2 on data ready contition
+> >>> + - st,irq{1,2}-click:		raise IRQ 1/2 on click condition
+> >>> + - st,irq-open-drain:		consider IRQ lines open-drain
+> >>> + - st,irq-active-low:		make IRQ lines active low
+> >>> + - st,wu-duration-1:		duration register for Free-Fall/Wake-Up
+> >>> +				interrupt 1
+> >>> + - st,wu-duration-2:		duration register for Free-Fall/Wake-Up
+> >>> +				interrupt 2
+> >>> + - st,wakeup-{x,y,z}-{lo,hi}:	set wakeup condition on x/y/z axis for
+> >>> +				upper/lower limit
+> >>> + - st,highpass-cutoff-hz=:	1, 2, 4 or 8 for 1Hz, 2Hz, 4Hz or 8Hz of
+> >>> +				highpass cut-off frequency
+> >>> + - st,hipass{1,2}-disable:	disable highpass 1/2.
+> >>> + - st,default-rate=:		set the default rate
+> >>> + - st,axis-{x,y,z}=:		set the axis to map to the three coordinates
+> > 
+> > Some more parameters missing, what about st_min_limits and st_max_limits
+> > required for selftest.
+> 
+> Right. Added them now.
+> 
+> >>> +
+> >>> +
+> >>> +Example for a SPI device node:
+> >>> +
+> >>> +	lis302@0 {
+> >>> +		compatible = "st,lis302dl-spi";
+> >>> +		reg = <0>;
+> >>> +		spi-max-frequency = <1000000>;
+> >>> +		interrupt-parent = <&gpio>;
+> >>> +		interrupts = <104 0>;
+> >>> +
+> >>> +		st,click-single-x;
+> >>> +		st,click-single-y;
+> >>> +		st,click-single-z;
+> >>> +		st,click-thresh-x = <10>;
+> >>> +		st,click-thresh-y = <10>;
+> >>> +		st,click-thresh-z = <10>;
+> >>> +		st,irq1-click;
+> >>> +		st,irq2-click;
+> >>> +		st,wakeup-x-lo;
+> >>> +		st,wakeup-x-hi;
+> >>> +		st,wakeup-y-lo;
+> >>> +		st,wakeup-y-hi;
+> >>> +		st,wakeup-z-lo;
+> >>> +		st,wakeup-z-hi;
+> >>> +	};
+> > 
+> > Why can't we add these flags in driver itself like below?
+> > Is these parameters varies from SoC to SoC or accelerometer
+> > - to - accelerometer?
+> 
+> I don't understand, sorry. The point here is that the driver that is
+> probed for device initialization are the PCI/I2C/SPI drivers. The
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1b6c84c..d49057a 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -3047,6 +3047,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
- 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
-+	REG("shmaps",      S_IRUGO, proc_pid_shmaps_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
- #endif
-@@ -3411,6 +3412,7 @@ static const struct pid_entry tid_base_stuff[] = {
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
- 	REG("maps",      S_IRUGO, proc_tid_maps_operations),
-+	REG("shmaps",      S_IRUGO, proc_tid_shmaps_operations),
- #ifdef CONFIG_CHECKPOINT_RESTORE
- 	REG("children",  S_IRUGO, proc_tid_children_operations),
- #endif
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index e1167a1..3f2882c 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -57,6 +57,8 @@ extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
- extern const struct file_operations proc_tid_children_operations;
- extern const struct file_operations proc_pid_maps_operations;
- extern const struct file_operations proc_tid_maps_operations;
-+extern const struct file_operations proc_pid_shmaps_operations;
-+extern const struct file_operations proc_tid_shmaps_operations;
- extern const struct file_operations proc_pid_numa_maps_operations;
- extern const struct file_operations proc_tid_numa_maps_operations;
- extern const struct file_operations proc_pid_smaps_operations;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 4540b8f..59daebf 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -210,7 +210,8 @@ static int do_maps_open(struct inode *inode, struct file *file,
- }
- 
- static void
--show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
-+show_map_vma(struct seq_file *m, struct vm_area_struct *vma,
-+	     int is_pid, int only_shmap)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct file *file = vma->vm_file;
-@@ -224,6 +225,9 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
- 	int len;
- 	const char *name = NULL;
- 
-+	if (only_shmap && !(flags & VM_MAYSHARE))
-+		return;
-+
- 	if (file) {
- 		struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
- 		dev = inode->i_sb->s_dev;
-@@ -300,13 +304,13 @@ done:
- 	seq_putc(m, '\n');
- }
- 
--static int show_map(struct seq_file *m, void *v, int is_pid)
-+static int show_map(struct seq_file *m, void *v, int is_pid, int only_shmap)
- {
- 	struct vm_area_struct *vma = v;
- 	struct proc_maps_private *priv = m->private;
- 	struct task_struct *task = priv->task;
- 
--	show_map_vma(m, vma, is_pid);
-+	show_map_vma(m, vma, is_pid, only_shmap);
- 
- 	if (m->count < m->size)  /* vma is copied successfully */
- 		m->version = (vma != get_gate_vma(task->mm))
-@@ -316,12 +320,12 @@ static int show_map(struct seq_file *m, void *v, int is_pid)
- 
- static int show_pid_map(struct seq_file *m, void *v)
- {
--	return show_map(m, v, 1);
-+	return show_map(m, v, 1, 0);
- }
- 
- static int show_tid_map(struct seq_file *m, void *v)
- {
--	return show_map(m, v, 0);
-+	return show_map(m, v, 0, 0);
- }
- 
- static const struct seq_operations proc_pid_maps_op = {
-@@ -363,6 +367,57 @@ const struct file_operations proc_tid_maps_operations = {
- };
- 
- /*
-+ * /proc/pid/shmaps - just contains 'share' part of /proc/maps
-+ */
-+static int show_pid_shmap(struct seq_file *m, void *v)
-+{
-+	return show_map(m, v, 1, 1);
-+}
-+
-+static int show_tid_shmap(struct seq_file *m, void *v)
-+{
-+	return show_map(m, v, 0, 1);
-+}
-+
-+static const struct seq_operations proc_pid_shmaps_op = {
-+	.start	= m_start,
-+	.next	= m_next,
-+	.stop	= m_stop,
-+	.show	= show_pid_shmap
-+};
-+
-+static const struct seq_operations proc_tid_shmaps_op = {
-+	.start	= m_start,
-+	.next	= m_next,
-+	.stop	= m_stop,
-+	.show	= show_tid_shmap
-+};
-+
-+static int pid_shmaps_open(struct inode *inode, struct file *file)
-+{
-+	return do_maps_open(inode, file, &proc_pid_shmaps_op);
-+}
-+
-+static int tid_shmaps_open(struct inode *inode, struct file *file)
-+{
-+	return do_maps_open(inode, file, &proc_tid_shmaps_op);
-+}
-+
-+const struct file_operations proc_pid_shmaps_operations = {
-+	.open		= pid_shmaps_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release_private,
-+};
-+
-+const struct file_operations proc_tid_shmaps_operations = {
-+	.open		= tid_shmaps_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release_private,
-+};
-+
-+/*
-  * Proportional Set Size(PSS): my share of RSS.
-  *
-  * PSS of a process is the count of pages it has in memory, where each
-@@ -498,7 +553,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
- 		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
- 
--	show_map_vma(m, vma, is_pid);
-+	show_map_vma(m, vma, is_pid, 0);
- 
- 	seq_printf(m,
- 		   "Size:           %8lu kB\n"
--- 
-1.7.9.5
+Look at the below example it has different drivers (SPI, I2C).
+Compatible name changes form acc-acc so that we can use different
+parameters corresponding to accelerometer, if it is acce specific.
 
+Like
+.compatible = "st,lis302dl-spi",
+.compatible = "st,lis331dlh-i2c",
+.compatible = "st,xx-spi",
+.compatible = "st,xx-i2c",
+
+If we do like this we can reduce lot of DT reads in driver.
+
+> generic part is not something the device tree knows about.
+> 
+> Hence I put the generic parsing of common DT bindings to the generic
+> part of the driver, and made the SPI driver just pass through the
+> of_node pointer.
+> 
+> > #ifdef CONFIG_OF
+> > static struct lis3lv02d_platform_data lis302dl_spi_pdata = {
+> >         .click_flags    = LIS3_CLICK_SINGLE_X |
+> >                           LIS3_CLICK_SINGLE_Y |
+> >                           LIS3_CLICK_SINGLE_Z,
+> >         .irq_cfg        = LIS3_IRQ1_CLICK | LIS3_IRQ2_CLICK,
+> >         .wakeup_flags   = LIS3_WAKEUP_X_LO | LIS3_WAKEUP_X_HI |
+> >                           LIS3_WAKEUP_Y_LO | LIS3_WAKEUP_Y_HI |
+> >                           LIS3_WAKEUP_Z_LO | LIS3_WAKEUP_Z_HI,
+> > };
+> > 
+> > static struct lis3lv02d_platform_data lis331dlh_i2c_pdata = {
+> >         .click_flags    = LIS3_CLICK_SINGLE_X |
+> >                           LIS3_CLICK_SINGLE_Y |
+> >                           LIS3_CLICK_SINGLE_Z,
+> >         .irq_cfg        = LIS3_IRQ1_CLICK | LIS3_IRQ2_CLICK,
+> >         .wakeup_flags   = LIS3_WAKEUP_X_LO | LIS3_WAKEUP_X_HI |
+> >                           LIS3_WAKEUP_Y_LO | LIS3_WAKEUP_Y_HI |
+> >                           LIS3_WAKEUP_Z_LO | LIS3_WAKEUP_Z_HI,
+> > };
+> > 
+> > static const struct of_device_id lis3_of_match[] = {
+> >        {
+> >                .compatible = "st,lis302dl-spi",
+> >                .data = &lis302dl_spi_pdata,
+> >        },
+> >        {
+> >                .compatible = "st,lis331dlh-i2c",
+> >                .data = &lis331dlh_i2c_pdata,
+> >        },
+> >        { },
+> > };
+> > MODULE_DEVICE_TABLE(of, lis3_of_match);
+> > #endif
+> > 
+> > Ignore if parameters between SoC - SoC are different. In
+> > probe we can add these flags to pdata.
+> 
+> No. We want to expose all hardware features to DT so users can configure
+> the device at wish. We can't ignore that SoCs want different device configs.
+
+Is it require is my question, how many SoCs take these different
+parameters from platform data.
+
+Regards
+AnilKumar
