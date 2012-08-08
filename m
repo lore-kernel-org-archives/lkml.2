@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030230Ab2HHJls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:41:48 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:33926 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030198Ab2HHJlj (ORCPT
+	id S1030252Ab2HHJlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:41:53 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:36836 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030232Ab2HHJlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:41:39 -0400
+	Wed, 8 Aug 2012 05:41:50 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -16,62 +16,87 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH 00/11] MFD/ASoC/Input: twl4030-audio submodule DT support
-Date: Wed,  8 Aug 2012 12:41:16 +0300
-Message-Id: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 03/11] MFD: twl4030-audio: Rearange and clean-up the probe function
+Date: Wed,  8 Aug 2012 12:41:19 +0300
+Message-Id: <1344418887-5262-4-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+To facilitate the device tree support the probe function need to be rearanged.
+Small cleanup in the APLL frequency selection part as well.
 
-The following series adds DT support for the twl4030 audio submodule which
-provides audio codec and vibra functionality.
-
-The MFD core driver is probed via DT, it will create the needed child devices
-based on the provided information in the DT blob.
-Child drivers (vibra, ASoC codec) will parse the core's node if needed to get
-the needed parameters for their configuration.
-
-In the ASoC codec driver the hs_extmute callback (which was used to toggle a
-GPIO line) has been removed. The codec driver will receive the GPIO number
-(if it is needed on the platform) and also the level to disable the mute.
-
-If the series is OK (and no objections from the maintainers), it would be good
-if this can go via audio. Changed files are well contained within the
-twl4030-audio stack so I do not expect merge issues later.
-
-The series has been tested on BeagleBoard (with the McBSP DT series, and with
-the upcoming DT audio support for BeagleBoard).
-
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (11):
-  MFD: twl4030-audio: Clean up MODULE_* and platform_driver part
-  MFD: twl4030-audio: Convert to use devm_kzalloc
-  MFD: twl4030-audio: Rearange and clean-up the probe function
-  MFD: twl4030-audio: Add DT support
-  Input: twl4030-vibra: Support for DT booted kernel
-  ASoC: twl4030: Move hs_extmute GPIO handling to driver
-  ARM: OMAP/ASoC: Zoom2: Let the codec to handle the hs_extmute GPIO
-  ASoC/MFD: twl4030: Remove set_hs_extmute callback from platform data
-  ASoC: twl4030: Convert to use devm_kzalloc
-  ASoC: twl4030: Add pointer to pdata within the private data
-  ASoC: twl4030: Support for DT booted kernel
+ drivers/mfd/twl4030-audio.c |   34 ++++++++++++++++------------------
+ 1 files changed, 16 insertions(+), 18 deletions(-)
 
- .../devicetree/bindings/mfd/twl4030-audio.txt      |   51 +++++++++
- arch/arm/mach-omap2/board-zoom-peripherals.c       |    9 +-
- arch/arm/mach-omap2/include/mach/board-zoom.h      |    2 -
- drivers/input/misc/twl4030-vibra.c                 |   20 +++-
- drivers/mfd/twl4030-audio.c                        |  114 +++++++++++++------
- include/linux/i2c/twl.h                            |    4 +-
- sound/soc/codecs/twl4030.c                         |  117 ++++++++++++++++----
- sound/soc/omap/zoom2.c                             |    4 -
- 8 files changed, 250 insertions(+), 71 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/twl4030-audio.txt
-
+diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
+index efa2d42..ca2d669 100644
+--- a/drivers/mfd/twl4030-audio.c
++++ b/drivers/mfd/twl4030-audio.c
+@@ -169,35 +169,30 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
++	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
++			     GFP_KERNEL);
++	if (!audio)
++		return -ENOMEM;
++
++	mutex_init(&audio->mutex);
++	audio->audio_mclk = pdata->audio_mclk;
++
+ 	/* Configure APLL_INFREQ and disable APLL if enabled */
+-	val = 0;
+-	switch (pdata->audio_mclk) {
++	switch (audio->audio_mclk) {
+ 	case 19200000:
+-		val |= TWL4030_APLL_INFREQ_19200KHZ;
++		val = TWL4030_APLL_INFREQ_19200KHZ;
+ 		break;
+ 	case 26000000:
+-		val |= TWL4030_APLL_INFREQ_26000KHZ;
++		val = TWL4030_APLL_INFREQ_26000KHZ;
+ 		break;
+ 	case 38400000:
+-		val |= TWL4030_APLL_INFREQ_38400KHZ;
++		val = TWL4030_APLL_INFREQ_38400KHZ;
+ 		break;
+ 	default:
+ 		dev_err(&pdev->dev, "Invalid audio_mclk\n");
+ 		return -EINVAL;
+ 	}
+-	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
+-					val, TWL4030_REG_APLL_CTL);
+-
+-	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
+-			     GFP_KERNEL);
+-	if (!audio)
+-		return -ENOMEM;
+-
+-	platform_set_drvdata(pdev, audio);
+-
+-	twl4030_audio_dev = pdev;
+-	mutex_init(&audio->mutex);
+-	audio->audio_mclk = pdata->audio_mclk;
++	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, val, TWL4030_REG_APLL_CTL);
+ 
+ 	/* Codec power */
+ 	audio->resource[TWL4030_AUDIO_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
+@@ -222,6 +217,9 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
+ 		childs++;
+ 	}
+ 
++	platform_set_drvdata(pdev, audio);
++	twl4030_audio_dev = pdev;
++
+ 	if (childs)
+ 		ret = mfd_add_devices(&pdev->dev, pdev->id, audio->cells,
+ 				      childs, NULL, 0);
 -- 
 1.7.8.6
 
