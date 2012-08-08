@@ -1,120 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab2HHQlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:41:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33735 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837Ab2HHQlh (ORCPT
+	id S1758891Ab2HHQm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 12:42:26 -0400
+Received: from mail.renton.name ([90.155.165.44]:39824 "EHLO
+	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758837Ab2HHQmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:41:37 -0400
-Date: Wed, 8 Aug 2012 09:41:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH wq/for-3.7] workqueue: fix CPU binding of
- flush_delayed_work[_sync]()
-Message-ID: <20120808164132.GB2985@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 8 Aug 2012 12:42:25 -0400
+Date: Wed, 8 Aug 2012 20:40:33 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: Attaching a process to cgroups
+Message-ID: <20120808164033.GB13735@beaver>
+References: <20120619185856.GC31797@beaver>
+ <1340195298.15707.3.camel@marge.simpson.net>
+ <20120725133637.GA9169@beaver>
+ <1343224667.5745.67.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1343224667.5745.67.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8fcd63664f1185361d00be4fe2decc2b9da8330e Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 8 Aug 2012 09:38:42 -0700
-
-delayed_work encodes the workqueue to use and the last CPU in
-delayed_work->work.data while it's on timer.  The target CPU is
-implicitly recorded as the CPU the timer is queued on and
-delayed_work_timer_fn() queues delayed_work->work to the CPU it is
-running on.
-
-Unfortunately, this leaves flush_delayed_work[_sync]() no way to find
-out which CPU the delayed_work was queued for when they try to
-re-queue after killing the timer.  Currently, it chooses the local CPU
-flush is running on.  This can unexpectedly move a delayed_work queued
-on a specific CPU to another CPU and lead to subtle errors.
-
-There isn't much point in trying to save several bytes in struct
-delayed_work, which is already close to a hundred bytes on 64bit with
-all debug options turned off.  This patch adds delayed_work->cpu to
-remember the CPU it's queued for.
-
-Note that if the timer is migrated during CPU down, the work item
-could be queued to the downed global_cwq after this change.  As a
-detached global_cwq behaves like an unbound one, this doesn't change
-much for the delayed_work.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-While this is a fix, I don't think any current user is affected.  I'll
-route this through wq/for-3.7.
-
-Thanks.
-
- include/linux/workqueue.h |    1 +
- kernel/workqueue.c        |    7 ++++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 2000030..b14d5d5 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -102,6 +102,7 @@ struct work_struct {
- struct delayed_work {
- 	struct work_struct work;
- 	struct timer_list timer;
-+	int cpu;
- };
+On Wed, Jul 25, 2012 at 03:57:47PM +0200, Mike Galbraith wrote:
+> > Hanging on read():
+> > 
+> > # strace -ttT cat /proc/cgroups 
+> > 
+> > 17:30:43.825005 fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 13), ...}) = 0 <0.000005>
+> > 17:30:43.825048 open("/proc/cgroups", O_RDONLY) = 3 <0.000014>
+> > 17:30:43.825085 fstat(3, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0 <0.000004>
+> > 17:30:43.825125 fadvise64(3, 0, 0, POSIX_FADV_SEQUENTIAL) = 0 <0.000005>
+> > 17:30:43.825161 read(3, "#subsys_name\thierarchy\tnum_cgrou"..., 32768) = 112 <7.447084>
  
- static inline struct delayed_work *to_delayed_work(struct work_struct *work)
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 41ae2c0..11723c5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1319,7 +1319,7 @@ void delayed_work_timer_fn(unsigned long __data)
- 	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
- 
- 	local_irq_disable();
--	__queue_work(WORK_CPU_UNBOUND, cwq->wq, &dwork->work);
-+	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
- 	local_irq_enable();
- }
- EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
-@@ -1356,6 +1356,7 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
- 
- 	set_work_cwq(work, get_cwq(lcpu, wq), 0);
- 
-+	dwork->cpu = cpu;
- 	timer->expires = jiffies + delay;
- 
- 	if (unlikely(cpu != WORK_CPU_UNBOUND))
-@@ -2997,7 +2998,7 @@ bool flush_delayed_work(struct delayed_work *dwork)
- {
- 	local_irq_disable();
- 	if (del_timer_sync(&dwork->timer))
--		__queue_work(WORK_CPU_UNBOUND,
-+		__queue_work(dwork->cpu,
- 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
- 	local_irq_enable();
- 	return flush_work(&dwork->work);
-@@ -3020,7 +3021,7 @@ bool flush_delayed_work_sync(struct delayed_work *dwork)
- {
- 	local_irq_disable();
- 	if (del_timer_sync(&dwork->timer))
--		__queue_work(WORK_CPU_UNBOUND,
-+		__queue_work(dwork->cpu,
- 			     get_work_cwq(&dwork->work)->wq, &dwork->work);
- 	local_irq_enable();
- 	return flush_work_sync(&dwork->work);
+In general I've changed it to synchronize_rcu_expedited () and all the
+delays have gone both on writing and reading files from cgroups.
+
 -- 
-1.7.7.3
-
+BRGDS. Alexey Vlasov.
