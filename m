@@ -1,127 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab2HHRKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:10:09 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:33732 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758943Ab2HHRKH (ORCPT
+	id S1030623Ab2HHROE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:14:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45860 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030592Ab2HHROA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:10:07 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Cousson\, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH v2] gpio/omap: add *remove* callback in platform_driver
-Organization: Texas Instruments, Inc.
-References: <1344434316-21141-1-git-send-email-tarun.kanti@ti.com>
-Date: Wed, 08 Aug 2012 10:10:07 -0700
-In-Reply-To: <1344434316-21141-1-git-send-email-tarun.kanti@ti.com> (Tarun
-	Kanti DebBarma's message of "Wed, 8 Aug 2012 19:28:36 +0530")
-Message-ID: <87k3x9wbrk.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 8 Aug 2012 13:14:00 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/11] perf tools: Fix lib/traceevent build dir with OUTPUT variable set
+Date: Wed,  8 Aug 2012 14:13:39 -0300
+Message-Id: <1344446028-21381-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1344446028-21381-1-git-send-email-acme@infradead.org>
+References: <1344446028-21381-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+From: Robert Richter <robert.richter@amd.com>
 
-> Add *remove* callback so that necessary cleanup operations are
-> performed when device is unregistered. The device is deleted
-> from the list and associated clock handle is released by
-> calling clk_put() and irq descriptor is released using the
-> irq_free_desc() api.
->
-> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-> Reported-by: Paul Walmsley <paul@pwsan.com>
-> Reviewed-by: Jon Hunter <jon-hunter@ti.com>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Rajendra Nayak <rnayak@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Cousson, Benoit <b-cousson@ti.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> ---
-> v2:
-> Baseline: git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> Commit: 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee (Linux 3.6-rc1)
->
-> (1) Use irq_free_descs() instead of irq_free_desc().
->     Besides, irq_free_desc() was using wrong parameter,
->     irq_base, instead of bank->irq.
-> (2) irq_free_descs() moved outside spin_lock/unlock_*()
->     in order to avoid exception warnings.
->
-> (3) pm_runtime_disable() added so that bind can happen successfully
->
-> Test Detail:
-> Step 1: Unbind gpio.5 device in order to invoke the *remove* callback.
-> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/unbind
->
-> Step 2: Bind gpio.5 device and confirm probe() for the device succeeds.
-> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/bind
->
-> Step 3: Execute read/write GPIO test case.
+With the OUTPUT variable set the libtraceevent.a file is wrongly built
+in the source directory:
 
-What happens when GPIOs are in use (requested)?   
+ + make -d OUTPUT=/.../.build/perf-user/ DESTDIR=/.../.install/perf-user/
+ ...
+     Considering target file `../lib/traceevent//libtraceevent.a'.
+      File `../lib/traceevent//libtraceevent.a' does not exist.
+      Finished prerequisites of target file `../lib/traceevent//libtraceevent.a'.
+     Must remake target `../lib/traceevent//libtraceevent.a'.
+ Invoking recipe from Makefile:837 to update target `../lib/traceevent//libtraceevent.a'.
+ Putting child 0x703850 (../lib/traceevent//libtraceevent.a) PID 8365 on the chain.
+ Live child 0x703850 (../lib/traceevent//libtraceevent.a) PID 8365
+     SUBDIR ../lib/traceevent/
 
-Kevin
+ $ git clean -nxd
+ Would remove tools/lib/traceevent/.event-parse.d
+ Would remove tools/lib/traceevent/.parse-filter.d
+ Would remove tools/lib/traceevent/.parse-utils.d
+ Would remove tools/lib/traceevent/.trace-seq.d
+ Would remove tools/lib/traceevent/event-parse.o
+ Would remove tools/lib/traceevent/libtraceevent.a
+ Would remove tools/lib/traceevent/parse-filter.o
+ Would remove tools/lib/traceevent/parse-utils.o
+ Would remove tools/lib/traceevent/trace-seq.o
 
->  drivers/gpio/gpio-omap.c |   35 +++++++++++++++++++++++++++++++++++
->  1 files changed, 35 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-> index e6efd77..50de875 100644
-> --- a/drivers/gpio/gpio-omap.c
-> +++ b/drivers/gpio/gpio-omap.c
-> @@ -1152,6 +1152,40 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
->  	return ret;
->  }
->  
-> +/**
-> + * omap_gpio_remove - cleanup a registered gpio device
-> + * @pdev:       pointer to current gpio platform device
-> + *
-> + * Called by driver framework whenever a gpio device is unregistered.
-> + * GPIO is deleted from the list and associated clock handle freed.
-> + */
-> +static int __devexit omap_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct gpio_bank *bank;
-> +	unsigned long flags;
-> +	int ret = -EINVAL;
-> +
-> +	list_for_each_entry(bank, &omap_gpio_list, node) {
-> +		spin_lock_irqsave(&bank->lock, flags);
-> +		if (bank->dev == dev) {
-> +			clk_put(bank->dbck);
-> +			list_del(&bank->node);
-> +			ret = 0;
-> +			spin_unlock_irqrestore(&bank->lock, flags);
-> +			break;
-> +		}
-> +		spin_unlock_irqrestore(&bank->lock, flags);
-> +	}
-> +
-> +	if (!ret) {
-> +		pm_runtime_disable(bank->dev);
-> +		irq_free_descs(bank->irq_base, bank->width);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  #ifdef CONFIG_ARCH_OMAP2PLUS
->  
->  #if defined(CONFIG_PM_RUNTIME)
-> @@ -1478,6 +1512,7 @@ MODULE_DEVICE_TABLE(of, omap_gpio_match);
->  
->  static struct platform_driver omap_gpio_driver = {
->  	.probe		= omap_gpio_probe,
-> +	.remove = __devexit_p(omap_gpio_remove),
->  	.driver		= {
->  		.name	= "omap_gpio",
->  		.pm	= &gpio_pm_ops,
+This patch fixes this.
+
+Note: Though this should already work with O=$outputdir we better use
+the OUTPUT variable directly.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1344361396-7237-3-git-send-email-robert.richter@amd.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 35655c3..2d4bf6e 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -186,10 +186,10 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 
+ TRACE_EVENT_DIR = ../lib/traceevent/
+ 
+-ifeq ("$(origin O)", "command line")
+-	TE_PATH=$(OUTPUT)/
++ifneq ($(OUTPUT),)
++	TE_PATH=$(OUTPUT)
+ else
+-	TE_PATH=$(TRACE_EVENT_DIR)/
++	TE_PATH=$(TRACE_EVENT_DIR)
+ endif
+ 
+ LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+@@ -842,7 +842,7 @@ $(LIB_FILE): $(LIB_OBJS)
+ 
+ # libtraceevent.a
+ $(LIBTRACEEVENT):
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) $(COMMAND_O) libtraceevent.a
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
+ 
+ help:
+ 	@echo 'Perf make targets:'
+-- 
+1.7.9.2.358.g22243
+
