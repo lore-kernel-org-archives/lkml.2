@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab2HHCUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:20:21 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59577 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab2HHCUS (ORCPT
+	id S1755658Ab2HHCXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:23:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58007 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab2HHCX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:20:18 -0400
-Message-ID: <5021CCD3.5060301@linux.vnet.ibm.com>
-Date: Wed, 08 Aug 2012 10:20:03 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 7 Aug 2012 22:23:29 -0400
+Message-ID: <5021CD9E.7060903@gmail.com>
+Date: Tue, 07 Aug 2012 20:23:26 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: John Stultz <johnstul@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        paulmck@linux.vnet.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, prarit@redhat.com,
-        tglx@linutronix.de, Dave Jones <davej@redhat.com>
-Subject: Re: rcu: INFO: rcu_preempt detected stalls on CPUs/tasks on v3.6
-References: <500ED719.2010002@gmail.com> <50112D3B.4020201@redhat.com> <50127B16.5040401@gmail.com> <50153138.4020304@redhat.com> <5015A5A8.7030601@gmail.com> <50161D5E.4030009@redhat.com> <50165046.9020705@gmail.com> <501654D3.7020504@redhat.com> <50168162.4010508@gmail.com> <50168981.3000001@redhat.com> <501EA58D.4090606@gmail.com> <501FFD2A.4010905@us.ibm.com> <50200AEF.5080904@us.ibm.com> <50200CE6.70009@gmail.com> <5020AA44.7010107@us.ibm.com> <5020ECF2.4040006@gmail.com>
-In-Reply-To: <5020ECF2.4040006@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Initial bash completion support
+References: <1344358801-16383-1-git-send-email-fweisbec@gmail.com> <1344358801-16383-2-git-send-email-fweisbec@gmail.com> <5021926E.2070202@gmail.com> <87ipcuyys5.fsf@sejong.aot.lge.com>
+In-Reply-To: <87ipcuyys5.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12080802-5490-0000-0000-000001EBACD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 06:24 PM, Sasha Levin wrote:
-> On 08/07/2012 07:40 AM, John Stultz wrote:
->> On 08/06/2012 11:28 AM, Sasha Levin wrote:
->>> On 08/06/2012 08:20 PM, John Stultz wrote:
->>>> On 08/06/2012 10:21 AM, John Stultz wrote:
->>>>> On 08/05/2012 09:55 AM, Sasha Levin wrote:
->>>>>> On 07/30/2012 03:17 PM, Avi Kivity wrote:
->>>>>>> Possible causes:
->>>>>>>    - the APIC calibration in the guest failed, so it is programming too
->>>>>>> low values into the timer
->>>>>>>    - it actually needs 1 us wakeups and then can't keep up (esp. as kvm
->>>>>>> interrupt injection is slowing it down)
->>>>>>>
->>>>>>> You can try to find out by changing
->>>>>>> arch/x86/kvm/lapic.c:start_lapic_timer() to impose a minimum wakeup of
->>>>>>> (say) 20 microseconds which will let the guest live long enough for you
->>>>>>> to ftrace it and see what kind of timers it is programming.
->>>>>> I've kept trying to narrow it down, and found out It's triggerable using adjtimex().
->>>> Sorry, one more question: Could you provide details on how is it trigger-able using adjtimex?
->>> It triggers after a while of fuzzing using trinity of just adjtimex ('./trinity --quiet -l off -cadjtimex').
->>>
->>> Trinity is available here: http://git.codemonkey.org.uk/?p=trinity.git .
->>>
->>> Let me know if I can help further with reproducing this, I can probably copy over my testing environment to some other host if you'd like.
+On 8/7/12 7:10 PM, Namhyung Kim wrote:
+> On Tue, 07 Aug 2012 16:10:54 -0600, David Ahern wrote:
+>> On 8/7/12 11:00 AM, Frederic Weisbecker wrote:
+>>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+>>> index 35655c3..ddfb7e5 100644
+>>> --- a/tools/perf/Makefile
+>>> +++ b/tools/perf/Makefile
+>>> @@ -951,6 +951,7 @@ install: all
+>>>    	$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+>>>    	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+>>>    	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+>>> +	$(INSTALL) -m 755 bash_completion $(DESTDIR_SQ)/etc/bash_completion.d/perf
 >>
->> Ok. Finally I *think* got it reproduced.  (Had some trouble initially, as I think since the first time I ran it as a normal user, the socket cache isn't the same as if you run it the first time as root? Anyway, after doing a make clean and rebuilding it started to trigger).
+>> still getting an error here:
 >>
->> I'm not seeing the rcu stall message, but I do manage to trigger two other behaviors: a hard hang and a sort of zombie state where memory isn't properly being freed & everything starts segfaulting.   So this may not be the exact same issue, but it triggers quickly as you described (within a few seconds of running trinity as root).
->>
->> It looks like both of these issues are caused by adjtimex(ADJ_SETOFFSET), which  adds or subtracts a huge offset and that either goes negative or gets clamped to a ktime_t at KTIME_MAX (if you get clamped the system hangs, if it goes negative, the system barely functions, but sort of drags along).
->>
->> An updated version of my KTIME_MAX sanity checking patch to handle both of these conditions is below.
->>
->> Would you mind giving this patch a shot and letting me know if you still see problems?
-> 
-> This fixes the problem for me. Thanks!
+>> $ make DESTDIR=/tmp/junk-perf O=/tmp/pbuild -C tools/perf/ install
+>> ...
+>> install -m 755 bash_completion /tmp/junk-perf/etc/bash_completion.d/perf
+>> install: cannot create regular file
+>> /tmp/junk-perf/etc/bash_completion.d/perf': No such file or directory
+>> make: *** [install] Error 1
+>> make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
+>
+> Does patch below fix it?
 
-Could you please also try to reduce the CONFIG_RCU_CPU_STALL_TIMEOUT
-from 60 to 3 and see whether the rcu stall info will show again?(sorry I
-can't do it by my self since the stall info never appear in my sight...)
+Of course. I was too lazy to do that; one liner for Frederic to add - 
+though the sysconfdir integration is nice.
 
-That will be very helpful as I suppose it is time to recover
-CONFIG_RCU_CPU_STALL_TIMEOUT to a reasonable value now ;-)
-
-Regards,
-Michael Wang
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+David
 
