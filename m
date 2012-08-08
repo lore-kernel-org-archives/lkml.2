@@ -1,201 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030238Ab2HHReB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:34:01 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:56189 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757892Ab2HHRd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:33:59 -0400
-X-TM-IMSS-Message-ID: <85f9f23c00051cf0@nsa.gov>
-Message-ID: <5022A303.709@tycho.nsa.gov>
-Date: Wed, 08 Aug 2012 13:33:55 -0400
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Organization: National Security Agency
+	id S1758993Ab2HHRfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:35:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39932 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab2HHRfk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:35:40 -0400
+Message-ID: <5022A369.5020304@vflare.org>
+Date: Wed, 08 Aug 2012 10:35:37 -0700
+From: Nitin Gupta <ngupta@vflare.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v2 10/23] xen/arm: compile and run xenbus
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-10-git-send-email-stefano.stabellini@eu.citrix.com> <20120807182157.GN15053@phenom.dumpdata.com> <50216228.7010407@tycho.nsa.gov> <alpine.DEB.2.02.1208081743430.21096@kaball.uk.xensource.com> <50229B70.3090507@tycho.nsa.gov> <alpine.DEB.2.02.1208081805520.21096@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1208081805520.21096@kaball.uk.xensource.com>
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH 0/7] zram/zsmalloc promotion
+References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1344406340-14128-1-git-send-email-minchan@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 01:19 PM, Stefano Stabellini wrote:
-> On Wed, 8 Aug 2012, Daniel De Graaf wrote:
->> On 08/08/2012 12:51 PM, Stefano Stabellini wrote:
->>> On Tue, 7 Aug 2012, Daniel De Graaf wrote:
->>>> On 08/07/2012 02:21 PM, Konrad Rzeszutek Wilk wrote:
->>>>> On Mon, Aug 06, 2012 at 03:27:13PM +0100, Stefano Stabellini wrote:
->>>>>> bind_evtchn_to_irqhandler can legitimately return 0 (irq 0): it is not
->>>>>> an error.
->>>>>>
->>>>>> If Linux is running as an HVM domain and is running as Dom0, use
->>>>>> xenstored_local_init to initialize the xenstore page and event channel.
->>>>>>
->>>>>> Changes in v2:
->>>>>>
->>>>>> - refactor xenbus_init.
->>>>>
->>>>> Thank you. Lets also CC our friend at NSA who has been doing some work
->>>>> in that area. Daniel are you OK with this change - will it still make
->>>>> PV initial domain with with the MiniOS XenBus driver?
->>>>>
->>>>> Thanks.
->>>>
->>>> That case will work, but what this will break is launching the initial domain
->>>> with a Xenstore stub domain already running (see below).
->>>>
->>>>>>
->>>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>>>>> ---
->>>>>>  drivers/xen/xenbus/xenbus_comms.c |    2 +-
->>>>>>  drivers/xen/xenbus/xenbus_probe.c |   62 +++++++++++++++++++++++++-----------
->>>>>>  drivers/xen/xenbus/xenbus_xs.c    |    1 +
->>>>>>  3 files changed, 45 insertions(+), 20 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/xen/xenbus/xenbus_comms.c b/drivers/xen/xenbus/xenbus_comms.c
->>>>>> index 52fe7ad..c5aa55c 100644
->>>>>> --- a/drivers/xen/xenbus/xenbus_comms.c
->>>>>> +++ b/drivers/xen/xenbus/xenbus_comms.c
->>>>>> @@ -224,7 +224,7 @@ int xb_init_comms(void)
->>>>>>  		int err;
->>>>>>  		err = bind_evtchn_to_irqhandler(xen_store_evtchn, wake_waiting,
->>>>>>  						0, "xenbus", &xb_waitq);
->>>>>> -		if (err <= 0) {
->>>>>> +		if (err < 0) {
->>>>>>  			printk(KERN_ERR "XENBUS request irq failed %i\n", err);
->>>>>>  			return err;
->>>>>>  		}
->>>>>
->>>>>> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
->>>>>> index b793723..a67ccc0 100644
->>>>>> --- a/drivers/xen/xenbus/xenbus_probe.c
->>>>>> +++ b/drivers/xen/xenbus/xenbus_probe.c
->>>>>> @@ -719,37 +719,61 @@ static int __init xenstored_local_init(void)
->>>>>>  	return err;
->>>>>>  }
->>>>>>  
->>>>>> +enum xenstore_init {
->>>>>> +	UNKNOWN,
->>>>>> +	PV,
->>>>>> +	HVM,
->>>>>> +	LOCAL,
->>>>>> +};
->>>>>>  static int __init xenbus_init(void)
->>>>>>  {
->>>>>>  	int err = 0;
->>>>>> +	enum xenstore_init usage = UNKNOWN;
->>>>>> +	uint64_t v = 0;
->>>>>>  
->>>>>>  	if (!xen_domain())
->>>>>>  		return -ENODEV;
->>>>>>  
->>>>>>  	xenbus_ring_ops_init();
->>>>>>  
->>>>>> -	if (xen_hvm_domain()) {
->>>>>> -		uint64_t v = 0;
->>>>>> -		err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
->>>>>> -		if (err)
->>>>>> -			goto out_error;
->>>>>> -		xen_store_evtchn = (int)v;
->>>>>> -		err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
->>>>>> -		if (err)
->>>>>> -			goto out_error;
->>>>>> -		xen_store_mfn = (unsigned long)v;
->>>>>> -		xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
->>>>>> -	} else {
->>>>>> -		xen_store_evtchn = xen_start_info->store_evtchn;
->>>>>> -		xen_store_mfn = xen_start_info->store_mfn;
->>>>>> -		if (xen_store_evtchn)
->>>>>> -			xenstored_ready = 1;
->>>>>> -		else {
->>>>>> +	if (xen_pv_domain())
->>>>>> +		usage = PV;
->>>>>> +	if (xen_hvm_domain())
->>>>>> +		usage = HVM;
->>>>
->>>> The above is correct for domUs, and is overridden for dom0s:
->>>>
->>>>>> +	if (xen_hvm_domain() && xen_initial_domain())
->>>>>> +		usage = LOCAL;
->>>>>> +	if (xen_pv_domain() && !xen_start_info->store_evtchn)
->>>>>> +		usage = LOCAL;
->>>>
->>>> Instead of these checks, I think it should just be:
->>>>
->>>> if (!xen_start_info->store_evtchn)
->>>> 	usage = LOCAL;
->>>>
->>>> Any domain started after xenstore will have store_evtchn set, so if you don't
->>>> have this set, you are either going to be running xenstore locally, or will
->>>> use the ioctl to change it later (and so should still set up everything as if
->>>> it will be running locally).
->>>
->>> That would be wrong for an HVM dom0 domain (at least on ARM), because
->>> we don't have a start_info page at all.
->>>
->>>
->>>>>> +	if (xen_pv_domain() && xen_start_info->store_evtchn)
->>>>>> +		xenstored_ready = 1;
->>>>
->>>> This part can now just be moved unconditionally into case PV.
->>>
->>> What about:
->>>
->>> if (xen_pv_domain())
->>>     usage = PV;
->>> if (xen_hvm_domain())
->>>     usage = HVM;
->>> if (!xen_store_evtchn)
->>>     usage = LOCAL;
->>>
->>> and moving xenstored_ready in case PV, like you suggested.
->>>
->>
->> That looks correct, but you'd need to split up the switch statement in
->> order to populate xen_store_evtchn before that last condition, which
->> ends up pretty much eliminating the usage variable.
+On 08/07/2012 11:12 PM, Minchan Kim wrote:
+> This patchset promotes zram/zsmalloc from staging.
+> Both are very clean and zram is used by many embedded product
+> for a long time.
 > 
-> Going back to what you wrote in the previous email, in what way this
-> patch breaks the case when an initial domain is started after a Xenstore
-> stub domain?
+> [1-3] are patches not merged into linux-next yet but needed
+> it as base for [4-5] which promotes zsmalloc.
+> Greg, if you merged [1-3] already, skip them.
 > 
-> Assuming that we are talking about a PV initial domain on x86, the
-> following check
+> Seth Jennings (5):
+>   1. zsmalloc: s/firstpage/page in new copy map funcs
+>   2. zsmalloc: prevent mappping in interrupt context
+>   3. zsmalloc: add page table mapping method
+>   4. zsmalloc: collapse internal .h into .c
+>   5. zsmalloc: promote to mm/
 > 
-> if (xen_pv_domain() && !xen_start_info->store_evtchn)
->     usage = LOCAL;
-> 
-> will return false (because store_evtchn is set), therefore usage will
-> remain set to PV.
-> And the check:
-> 
-> if (xen_pv_domain() && xen_start_info->store_evtchn)
-> 	xenstored_ready = 1;
-> 
-> will return true so xenstored_ready is going to be set to 1.
+> Minchan Kim (2):
+>   6. zram: promote zram from staging
+>   7. zram: select ZSMALLOC when ZRAM is configured
 > 
 
-Right, the original patch didn't break anything with PV domains. The case
-it doesn't handle is an HVM initial domain with an already-running
-Xenstore domain; I think this applies both to ARM and hybrid/PVH on x86.
-In that case, usage would be set to LOCAL instead of HVM.
+All the changes look good to me. FWIW, for the entire series:
+Acked-by: Nitin Gupta <ngupta@vflare.org>
 
-As a side note: the value of xen_initial_domain() shouldn't be connected to
-determining if xenstore is running locally or not.
+Thanks for all the work.
+Nitin
 
--- 
-Daniel De Graaf
-National Security Agency
+
