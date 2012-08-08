@@ -1,217 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2HHGmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:42:36 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:41230 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751502Ab2HHGmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:42:35 -0400
-From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-To: <stern@rowland.harvard.edu>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linus.walleij@linaro.org>, <praveen.nadahally@stericsson.com>,
-        <ragupathy.rajaram@stericsson.com>, <vikrant.bapat@stericsson.com>
-Subject: [PATCH v3] usb:musb:musb_host: Handle highmem in PIO mode
-Date: Wed, 8 Aug 2012 12:12:04 +0530
-Message-ID: <1344408124-21509-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
-X-Mailer: git-send-email 1.7.4.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756849Ab2HHGuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:50:18 -0400
+Received: from 1wt.eu ([62.212.114.60]:5687 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752504Ab2HHGuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 02:50:07 -0400
+Date: Wed, 8 Aug 2012 08:49:59 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, albcamus@gmail.com, chris@arachsys.com,
+        mchan@broadcom.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to bnx2-mips-09-6.2.1b
+Message-ID: <20120808064959.GB15255@1wt.eu>
+References: <20120713130405.GS13885@arachsys.com> <CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com> <20120807.225800.1450928472652058111.davem@davemloft.net> <20120808061758.GA15255@1wt.eu> <1344407272.28967.214.camel@edumazet-glaptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344407272.28967.214.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of USB bulk transfer, when himem page
-is received, the usb_sg_init function sets the
-urb transfer buffer to NULL. When such URB
-transfer is handled, kernel crashes in PIO mode.
-Handle this by mapping the highmem buffer in PIO mode.
+Hi Eric,
 
-Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Signed-off-by: Praveena NADAHALLY <praveen.nadahally@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/usb/musb/musb_host.c |   97 +++++++++++++++++++++++++++++++++++++++--
- drivers/usb/musb/musb_host.h |    3 +
- 2 files changed, 95 insertions(+), 5 deletions(-)
+On Wed, Aug 08, 2012 at 08:27:52AM +0200, Eric Dumazet wrote:
+> On Wed, 2012-08-08 at 08:17 +0200, Willy Tarreau wrote:
+> 
+> > 
+> > Well, if the drivers provided with the kernel don't work out of the box
+> > anymore, maybe we should also move them to a separate repository. All it
+> > is going to do otherwise is to cause invalid bug reports because users
+> > don't understand why using the latest driver does not work.
+> > 
+> > That way it would be clear that an in-kernel driver has to be self-sustaining
+> > to be maintainable, otherwise it has nothing to do there.
+> 
+> People compiling their own kernels are supposed to be able to handle
+> this problem themselves.
+> 
+> If not, they can use a distro.
 
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index 4bb717d..3ba9a4b 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -813,9 +813,28 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
- 		if (load_count) {
- 			/* PIO to load FIFO */
- 			qh->segsize = load_count;
--			musb_write_fifo(hw_ep, load_count, buf);
-+			if (!buf) {
-+				sg_miter_start(&qh->sg_miter, urb->sg, 1,
-+						SG_MITER_ATOMIC
-+						| SG_MITER_FROM_SG);
-+				if (!sg_miter_next(&qh->sg_miter)) {
-+					dev_err(musb->controller,
-+							"error: sg"
-+							"list empty\n");
-+					sg_miter_stop(&qh->sg_miter);
-+					goto finish;
-+				}
-+				buf = qh->sg_miter.addr + urb->sg->offset +
-+					urb->actual_length;
-+				load_count = min_t(u32, load_count,
-+						qh->sg_miter.length);
-+				musb_write_fifo(hw_ep, load_count, buf);
-+				qh->sg_miter.consumed = load_count;
-+				sg_miter_stop(&qh->sg_miter);
-+			} else
-+				musb_write_fifo(hw_ep, load_count, buf);
- 		}
--
-+finish:
- 		/* re-enable interrupt */
- 		musb_writew(mbase, MUSB_INTRTXE, int_txe);
- 
-@@ -1116,6 +1135,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
- 	void __iomem		*mbase = musb->mregs;
- 	struct dma_channel	*dma;
- 	bool			transfer_pending = false;
-+	static bool use_sg;
- 
- 	musb_ep_select(mbase, epnum);
- 	tx_csr = musb_readw(epio, MUSB_TXCSR);
-@@ -1163,6 +1183,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
- 		return;
- 	}
- 
-+done:
- 	if (status) {
- 		if (dma_channel_status(dma) == MUSB_DMA_STATUS_BUSY) {
- 			dma->status = MUSB_DMA_STATUS_CORE_ABORT;
-@@ -1332,9 +1353,37 @@ void musb_host_tx(struct musb *musb, u8 epnum)
- 		length = qh->maxpacket;
- 	/* Unmap the buffer so that CPU can use it */
- 	usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
--	musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
-+
-+	/*
-+	 * We need to map sg if the transfer_buffer is
-+	 * NULL.
-+	 */
-+	if (!use_sg && !urb->transfer_buffer)
-+		use_sg = true;
-+
-+	if (use_sg) {
-+		/* sg_miter_start is already done in musb_ep_program */
-+		if (!sg_miter_next(&qh->sg_miter)) {
-+			dev_err(musb->controller, "error: sg list empty\n");
-+			sg_miter_stop(&qh->sg_miter);
-+			status = -EINVAL;
-+			goto done;
-+		}
-+		length = min_t(u32, length, qh->sg_miter.length);
-+		musb_write_fifo(hw_ep, length, qh->sg_miter.addr);
-+		qh->sg_miter.consumed = length;
-+		sg_miter_stop(&qh->sg_miter);
-+	} else {
-+		musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
-+	}
-+
- 	qh->segsize = length;
- 
-+	if (use_sg) {
-+		if (offset + length >= urb->transfer_buffer_length)
-+			use_sg = false;
-+	}
-+
- 	musb_ep_select(mbase, epnum);
- 	musb_writew(epio, MUSB_TXCSR,
- 			MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
-@@ -1442,6 +1491,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 	bool			done = false;
- 	u32			status;
- 	struct dma_channel	*dma;
-+	static bool use_sg;
-+	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
- 
- 	musb_ep_select(mbase, epnum);
- 
-@@ -1756,10 +1807,43 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- #endif	/* Mentor DMA */
- 
- 		if (!dma) {
-+			unsigned int received_len;
-+
- 			/* Unmap the buffer so that CPU can use it */
- 			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
--			done = musb_host_packet_rx(musb, urb,
--					epnum, iso_err);
-+
-+			/*
-+			 * We need to map sg if the transfer_buffer is
-+			 * NULL.
-+			 */
-+			if (!urb->transfer_buffer) {
-+				use_sg = true;
-+				sg_miter_start(&qh->sg_miter, urb->sg, 1,
-+						sg_flags);
-+			}
-+
-+			if (use_sg) {
-+				if (!sg_miter_next(&qh->sg_miter)) {
-+					dev_err(musb->controller, "error: sg list empty\n");
-+					sg_miter_stop(&qh->sg_miter);
-+					status = -EINVAL;
-+					done = true;
-+					goto finish;
-+				}
-+				urb->transfer_buffer = qh->sg_miter.addr;
-+				received_len = urb->actual_length;
-+				qh->offset = 0x0;
-+				done = musb_host_packet_rx(musb, urb, epnum,
-+						iso_err);
-+				/* Calculate the number of bytes received */
-+				received_len = urb->actual_length -
-+					received_len;
-+				qh->sg_miter.consumed = received_len;
-+				sg_miter_stop(&qh->sg_miter);
-+			} else {
-+				done = musb_host_packet_rx(musb, urb,
-+						epnum, iso_err);
-+			}
- 			dev_dbg(musb->controller, "read %spacket\n", done ? "last " : "");
- 		}
- 	}
-@@ -1768,6 +1852,9 @@ finish:
- 	urb->actual_length += xfer_len;
- 	qh->offset += xfer_len;
- 	if (done) {
-+		if (use_sg)
-+			use_sg = false;
-+
- 		if (urb->status == -EINPROGRESS)
- 			urb->status = status;
- 		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
-diff --git a/drivers/usb/musb/musb_host.h b/drivers/usb/musb/musb_host.h
-index 622d09f..5a9c8fe 100644
---- a/drivers/usb/musb/musb_host.h
-+++ b/drivers/usb/musb/musb_host.h
-@@ -35,6 +35,8 @@
- #ifndef _MUSB_HOST_H
- #define _MUSB_HOST_H
- 
-+#include <linux/scatterlist.h>
-+
- static inline struct usb_hcd *musb_to_hcd(struct musb *musb)
- {
- 	return container_of((void *) musb, struct usb_hcd, hcd_priv);
-@@ -71,6 +73,7 @@ struct musb_qh {
- 	u16			maxpacket;
- 	u16			frame;		/* for periodic schedule */
- 	unsigned		iso_idx;	/* in urb->iso_frame_desc[] */
-+	struct sg_mapping_iter sg_miter;	/* for highmem in PIO mode */
- };
- 
- /* map from control or bulk queue head to the first qh on that ring */
--- 
-1.7.4.3
+But similarly, people who compile their own kernels are also supposed to
+be able to retrieve up-to-date drivers from another tree. I know many
+people who use the intel NIC drivers from sf.net and (less) other ones
+using myricom's drivers for instance.
+
+I don't really see the value of keeping in the tree drivers that don't
+work out of the box, if it's only causing issues and bug reports.
+
+Regards,
+Willy
 
