@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab2HHMtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:49:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33216 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab2HHMtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:49:11 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=ZD8vtu1JDTEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=eMo4KRmQjVAHfHF2L-4A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344430148.6935.17.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
- is used
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Date: Wed, 08 Aug 2012 08:49:08 -0400
-In-Reply-To: <5021EC6B.7020605@hitachi.com>
-References: <20120807193845.146666357@goodmis.org>
-	 <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758088Ab2HHMvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:51:00 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:43451 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753590Ab2HHMu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 08:50:58 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] wusb: Fix potential memory leak in wusb_dev_sec_add()
+Date: Wed,  8 Aug 2012 16:49:48 +0400
+Message-Id: <1344430188-23921-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 13:34 +0900, Masami Hiramatsu wrote:
->  
-> > -#ifdef CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST
-> > +#if defined(CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST) && !defined(CC_USING_FENTRY)
-> 
-> I think CONFIG_HAVE_FENTRY would better unselect
-> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST in arch/x86/Kconfig explicitly.
+Do not leak memory by updating pointer with potentially NULL realloc return value.
 
-No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
-that it is being used. It only gets used if CC_USING_FENTRY is set,
-which is set by the Makefile at time of compile.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-If CONFIG_HAVE_FENTRY is defined, a test is done to see if the gcc
-compiling the kernel supports -mfentry. If it does, then it defines the
-CC_USING_FENTRY macro, if not, the macro is not defined and the old way
-is performed.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/wusbcore/security.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-If the old way is performed, even if CONFIG_HAVE_FENTRY is defined, then
-we still need the above test. We can not have CONFIG_HAVE_FENTRY
-unselect CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST.
-
--- Steve
-
+diff --git a/drivers/usb/wusbcore/security.c b/drivers/usb/wusbcore/security.c
+index fa810a8..dd88441 100644
+--- a/drivers/usb/wusbcore/security.c
++++ b/drivers/usb/wusbcore/security.c
+@@ -202,7 +202,7 @@ int wusb_dev_sec_add(struct wusbhc *wusbhc,
+ {
+ 	int result, bytes, secd_size;
+ 	struct device *dev = &usb_dev->dev;
+-	struct usb_security_descriptor *secd;
++	struct usb_security_descriptor *secd, *new_secd;
+ 	const struct usb_encryption_descriptor *etd, *ccm1_etd = NULL;
+ 	const void *itr, *top;
+ 	char buf[64];
+@@ -221,11 +221,12 @@ int wusb_dev_sec_add(struct wusbhc *wusbhc,
+ 		goto out;
+ 	}
+ 	secd_size = le16_to_cpu(secd->wTotalLength);
+-	secd = krealloc(secd, secd_size, GFP_KERNEL);
+-	if (secd == NULL) {
++	new_secd = krealloc(secd, secd_size, GFP_KERNEL);
++	if (new_secd == NULL) {
+ 		dev_err(dev, "Can't allocate space for security descriptors\n");
+ 		goto out;
+ 	}
++	secd = new_secd;
+ 	result = usb_get_descriptor(usb_dev, USB_DT_SECURITY,
+ 				    0, secd, secd_size);
+ 	if (result < secd_size) {
+-- 
+1.7.9.5
 
