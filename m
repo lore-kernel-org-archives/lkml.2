@@ -1,44 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759025Ab2HHRkX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:40:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17293 "EHLO mx1.redhat.com"
+	id S1759046Ab2HHRk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:40:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60436 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759012Ab2HHRkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:40:20 -0400
-Date: Wed, 8 Aug 2012 19:36:59 +0200
+	id S1759011Ab2HHRk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:40:57 -0400
+Date: Wed, 8 Aug 2012 19:37:37 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] uprobes: kill uprobes_state->count, add MMF_HAS_UPROBES
-Message-ID: <20120808173659.GA13220@redhat.com>
+Subject: [PATCH 1/7] uprobes: kill uprobes_state->count
+Message-ID: <20120808173736.GA13252@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120808173659.GA13220@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+uprobes_state->count is only needed to avoid the slow path in
+uprobe_pre_sstep_notifier(). It is also checked in uprobe_munmap()
+but ironically its only goal to decrement this counter. However,
+it is very broken. Just some examples:
 
-Srikar, please review.
+- uprobe_mmap() can race with uprobe_unregister() and wrongly
+  increment the counter if it hits the non-uprobe "int3". Note
+  that install_breakpoint() checks ->consumers first and returns
+  -EEXIST if it is NULL.
 
-This is the first part. The next series will teach uprobes to
-clear MMF_HAS_UPROBES, but perhaps we should simply remove
-uprobe_munmap() instead. A wrong MMF_HAS_UPROBES doesn't hurt
-unless the task hits the non-uprobe "int3", not sure it really
-makes sense to try to speedup this case. We will see.
+  "atomic_sub() if error" in uprobe_mmap() looks obviously wrong
+  too.
 
-7/7 is offtopic.
+- uprobe_munmap() can race with uprobe_register() and wrongly
+  decrement the counter by the same reason.
 
-Oleg.
+- Suppose an appication tries to increase the mmapped area via
+  sys_mremap(). vma_adjust() does uprobe_munmap(whole_vma) first,
+  this can nullify the counter temporarily and race with another
+  thread which can hit the bp, the application will be killed by
+  SIGTRAP.
 
- include/linux/sched.h   |    2 +
- include/linux/uprobes.h |   13 ++--
- kernel/events/uprobes.c |  141 ++++++++++++----------------------------------
- kernel/fork.c           |    6 +--
- 4 files changed, 47 insertions(+), 115 deletions(-)
+- Suppose an application mmaps 2 consecutive areas in the same file
+  and one (or both) of these areas has uprobes. In the likely case
+  mmap_region()->vma_merge() suceeds. Like above, this leads to
+  uprobe_munmap/uprobe_mmap from vma_merge()->vma_adjust() but then
+  mmap_region() does another uprobe_mmap(resulting_vma) and doubles
+  the counter.
+
+This patch only removes this counter and fixes the compile errors,
+then we will try to cleanup the changed code and add something else
+instead.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/uprobes.h |    2 +-
+ kernel/events/uprobes.c |   38 ++------------------------------------
+ 2 files changed, 3 insertions(+), 37 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index efe4b33..03ae547 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -99,8 +99,8 @@ struct xol_area {
+ 
+ struct uprobes_state {
+ 	struct xol_area		*xol_area;
+-	atomic_t		count;
+ };
++
+ extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
+ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 940005d..f0bb387 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -680,18 +680,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+ 
+-	/*
+-	 * Ideally, should be updating the probe count after the breakpoint
+-	 * has been successfully inserted. However a thread could hit the
+-	 * breakpoint we just inserted even before the probe count is
+-	 * incremented. If this is the first breakpoint placed, breakpoint
+-	 * notifier might ignore uprobes and pass the trap to the thread.
+-	 * Hence increment before and decrement on failure.
+-	 */
+-	atomic_inc(&mm->uprobes_state.count);
+ 	ret = set_swbp(&uprobe->arch, mm, vaddr);
+-	if (ret)
+-		atomic_dec(&mm->uprobes_state.count);
+ 
+ 	return ret;
+ }
+@@ -699,8 +688,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ static void
+ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
+ {
+-	if (!set_orig_insn(&uprobe->arch, mm, vaddr, true))
+-		atomic_dec(&mm->uprobes_state.count);
++	set_orig_insn(&uprobe->arch, mm, vaddr, true);
+ }
+ 
+ /*
+@@ -1053,13 +1041,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 
+ 				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
+ 					continue;
+-
+-				/*
+-				 * Unable to insert a breakpoint, but
+-				 * breakpoint lies underneath. Increment the
+-				 * probe count.
+-				 */
+-				atomic_inc(&vma->vm_mm->uprobes_state.count);
+ 			}
+ 
+ 			if (!ret)
+@@ -1070,9 +1051,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 
+ 	mutex_unlock(uprobes_mmap_hash(inode));
+ 
+-	if (ret)
+-		atomic_sub(count, &vma->vm_mm->uprobes_state.count);
+-
+ 	return ret;
+ }
+ 
+@@ -1091,9 +1069,6 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+ 		return;
+ 
+-	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
+-		return;
+-
+ 	inode = vma->vm_file->f_mapping->host;
+ 	if (!inode)
+ 		return;
+@@ -1102,13 +1077,6 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	build_probe_list(inode, vma, start, end, &tmp_list);
+ 
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+-		/*
+-		 * An unregister could have removed the probe before
+-		 * unmap. So check before we decrement the count.
+-		 */
+-		if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
+-			atomic_dec(&vma->vm_mm->uprobes_state.count);
+ 		put_uprobe(uprobe);
+ 	}
+ 	mutex_unlock(uprobes_mmap_hash(inode));
+@@ -1219,7 +1187,6 @@ void uprobe_clear_state(struct mm_struct *mm)
+ void uprobe_reset_state(struct mm_struct *mm)
+ {
+ 	mm->uprobes_state.xol_area = NULL;
+-	atomic_set(&mm->uprobes_state.count, 0);
+ }
+ 
+ /*
+@@ -1589,8 +1556,7 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask;
+ 
+-	if (!current->mm || !atomic_read(&current->mm->uprobes_state.count))
+-		/* task is currently not uprobed */
++	if (!current->mm)
+ 		return 0;
+ 
+ 	utask = current->utask;
+-- 
+1.5.5.1
 
