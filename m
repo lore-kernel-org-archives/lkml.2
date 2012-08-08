@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab2HHOrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:47:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53743 "EHLO
+	id S1758658Ab2HHOrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:47:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57875 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758640Ab2HHOrn (ORCPT
+	with ESMTP id S1758638Ab2HHOrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 10:47:43 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Grazvydas Ignotas <notasas@gmail.com>
-Subject: [PATCH 08/11] mtd/omap2: fix dmaengine_slave_config error handling
-Date: Wed,  8 Aug 2012 16:47:25 +0200
-Message-Id: <1344437248-20560-9-git-send-email-arnd@arndb.de>
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 05/11] ARM: exynos: exynos_pm_add_dev_to_genpd may be unused
+Date: Wed,  8 Aug 2012 16:47:22 +0200
+Message-Id: <1344437248-20560-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
 References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ukBNsWwSy8Q7NQEPAFxUFPJHzryJBbW1VK4UD6SD+kg
- oJmymv7x+NT4SnEnQtCYa8L7JI/pyC6Fk91qdPqRozFEsP0+q2
- PasC48B5jq+8pHcfQHyNNlP04QuRVLKrh1+yRtJaK4PEtn8kGP
- 9yRsXQ7tYyWjNDQ5+fa00EoIme0eLMVibeereFg1NPDb+eWQdH
- avamXZoli009M55fUS9CxJ3WGx/c3erI9aVJlKVnMBVXoGIzRB
- kLXQAiwU458OUFfWZA5z4teap6tvYySioQvmtKpEQ2pjE1Td/J
- 9Q+sKBWV9eY1menErD2Kzh7KVP2epUzTQfw06d8MfmZ3H7at9m
- 281E/kXu2xWSSv2P+cbOuxDgxCfpuCU94k9PlEwvj7DTxNjaI7
- XrL7gGbZH8+/QhLqjNHt8WhQ/gJOePbBKY=
+X-Provags-ID: V02:K0:/Yt2Wi6sNF2Lyg1hNWx1mU08J0YMfc2U7mxrp+kthul
+ 1wr6iHxKGBU8rj58GgyrNjF1gWsHDlMBgNQhqyE6WK0H7cl719
+ uiH40E0+nHjIsHn2l5fQWCJnBF5z0p+LloZhBaO99Is+W8GV5T
+ c6M0U8Q1byckfhqoWt+yGqq+XB9NramsfWtbxzPbDT1J5qPF7K
+ Nt9pp8rfZ9KkbJHXC7o4TYGN97gf9CS22nIzhm6kFyUUD+k23y
+ Cr+DshbyfXEH3QQUoNEVR6ZuRY1bDraboTp9HgybhF2eXknmkz
+ uJYMd6sbNBKBG8OHcYfUvcfz41Ul9mrMe1ZmtplndwA19zifB3
+ wo3ifomW66l1zTO67Oy4r4jSk0dRuhksE5kHKhBbFa/b/IdKXc
+ fUJTz5kPdz2qEO1VSc+Juu543RLBGxnVBI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The newly added dmaengine support in the omap2 nand driver
-potentially causes an undefined return value from the
-omap_nand_probe function when dmaengine_slave_config
-reports an error. Let's handle this by returning the
-same error back to the caller.
+exynos_pm_add_dev_to_genpd is used if one or more out of a large
+number of Kconfig symbols are enabled. However the new
+exynos_defconfig selects none of those, so the function becomes
+unused. Marking it so lets the compiler automatically discard
+it.
 
-Without this patch, building omap2plus_defconfig results in:
+Without this patch, building exynos_defconfig results in:
 
-drivers/mtd/nand/omap2.c: In function 'omap_nand_probe':
-drivers/mtd/nand/omap2.c:1154:6: warning: 'err' may be used uninitialized in this function [-Wuninitialized]
+arch/arm/mach-exynos/pm_domains.c:118:123: warning: 'exynos_pm_add_dev_to_genpd' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 ---
- drivers/mtd/nand/omap2.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mach-exynos/pm_domains.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index e9309b3..ac4fd75 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -1245,7 +1245,6 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
- 			goto out_release_mem_region;
- 		} else {
- 			struct dma_slave_config cfg;
--			int rc;
+diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
+index 373c3c0..c0bc83a 100644
+--- a/arch/arm/mach-exynos/pm_domains.c
++++ b/arch/arm/mach-exynos/pm_domains.c
+@@ -115,7 +115,7 @@ static __init int exynos_pm_dt_parse_domains(void)
+ }
+ #endif /* CONFIG_OF */
  
- 			memset(&cfg, 0, sizeof(cfg));
- 			cfg.src_addr = info->phys_base;
-@@ -1254,10 +1253,10 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
- 			cfg.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
- 			cfg.src_maxburst = 16;
- 			cfg.dst_maxburst = 16;
--			rc = dmaengine_slave_config(info->dma, &cfg);
--			if (rc) {
-+			err = dmaengine_slave_config(info->dma, &cfg);
-+			if (err) {
- 				dev_err(&pdev->dev, "DMA engine slave config failed: %d\n",
--					rc);
-+					err);
- 				goto out_release_mem_region;
- 			}
- 			info->nand.read_buf   = omap_read_buf_dma_pref;
+-static __init void exynos_pm_add_dev_to_genpd(struct platform_device *pdev,
++static __init __maybe_unused void exynos_pm_add_dev_to_genpd(struct platform_device *pdev,
+ 						struct exynos_pm_domain *pd)
+ {
+ 	if (pdev->dev.bus) {
 -- 
 1.7.10
 
