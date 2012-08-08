@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2HHI0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:26:12 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56065 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab2HHI0I (ORCPT
+	id S932486Ab2HHI2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:28:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61878 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab2HHI2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:26:08 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-b2-5022229df6f0
-Date: Wed, 8 Aug 2012 17:27:38 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
- reclaim/compaction based on failures
-Message-ID: <20120808082738.GF4247@bbox>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-3-git-send-email-mgorman@suse.de>
- <20120808014824.GB4247@bbox>
- <20120808075526.GI29814@suse.de>
+	Wed, 8 Aug 2012 04:28:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between DT and non-DT boots
+Date: Wed, 8 Aug 2012 08:28:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linux-arm-kernel@lists.infradead.org
+References: <20120807170333.GV16861@opensource.wolfsonmicro.com> <20120808080411.GB4728@gmail.com>
+In-Reply-To: <20120808080411.GB4728@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808075526.GI29814@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208080828.35451.arnd@arndb.de>
+X-Provags-ID: V02:K0:5JSkvR8VZKHB/thXNOVbsA7Sot2u257dhZtRLAPplfh
+ gV63NG80I83KfdlpPaZdLhhPtiaIgJZqRPZ6IXLF3UN+7uXnPe
+ s/L4uxsm0rf5N7txE7/Zw86v7HfWRyMPhOhUORys1Gg1DMzKPX
+ HozGjTFs9x6T3uuE98kW0BUswr3wgiBSj4oYzMr4KjDfVgnZRo
+ WLP9hXDZVVusZ88BHjvdbQt+epCGKdtPUbGIMTriz9R2HRNMaM
+ zzAEnUljh4ezvadPb2DZ3KKfiRN/fEBj6dxohl7QdiNs7e80fB
+ w2V/gCS3oTr4gUaTPD8Helur7Wckv+GN5vl6vL4Ygc0KXlobhE
+ 8Rw6BQQVspf68h+3C+Bg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 08:55:26AM +0100, Mel Gorman wrote:
-> On Wed, Aug 08, 2012 at 10:48:24AM +0900, Minchan Kim wrote:
-> > Hi Mel,
-> > 
-> > Just out of curiosity.
-> > What's the problem did you see? (ie, What's the problem do this patch solve?)
+On Wednesday 08 August 2012, Lee Jones wrote:
+> Okay, actually this isn't so easy. Currently we have:
 > 
-> Everythign in this series is related to the problem in the leader - high
-> order allocation success rates are lower. This patch increases the success
-> rates when allocating under load.
+> During DT boot:
+>  - No platform data is passed, hence no IRQ base for AB8500 is either
+>  - No IRQ base means we register a Linear IRQ Domain
+>  - MFD sees there is no base and leaves the IRQ resource as a hwirq
+>  - AB8500 child devices use *_get_virq() to convert the hwirq to a virq
 > 
-> > AFAIUC, it seem to solve consecutive allocation success ratio through
-> > getting several free pageblocks all at once in a process/kswapd
-> > reclaim context. Right?
+> During non-DT boot:
+>  - Platform data is passed, which contains an IRQ base
+>  - If an IRQ base is requested we use it to register a Legacy IRQ Domain
+>  - MFD adds the IRQ base to the hwirq and registers it as a virq
+>  - AB8500 child devices use *_get_virq() to convert virq to virq - ERROR
 > 
-> Only pageblocks if it is order-9 on x86, it reclaims an amount that depends
-> on an allocation size. This only happens during reclaim/compaction context
-> when we know that a high-order allocation has recently failed. The objective
-> is to reclaim enough order-0 pages so that compaction can succeed again.
+> I guess my suggestion falls-back to placing logic in *_get_virq() to only
+> call irq_create_mapping() when when !ab8500->irq_base.
 
-Your patch increases the number of pages to be reclaimed with considering
-the number of fail case during deferring period and your test proved it's
-really good. Without your patch, why can't VM reclaim enough pages?
-Other processes steal the pages reclaimed?
-Why I ask a question is that I want to know what's the problem at current
-VM.
+In general, it seems easier to use the same domain type for both cases.
+I don't think that MOP500_AB8500_VIR_GPIO_IRQ_BASE is used anywhere
+else besides the .irq_base definition in board-mop500.c, so I would guess
+that you can just remove that identifier and always use the linear
+domain.
 
-
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+	Arnd
