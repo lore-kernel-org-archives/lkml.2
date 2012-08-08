@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab2HHN2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:28:44 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34627 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373Ab2HHNVt (ORCPT
+	id S1758409Ab2HHNaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:30:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56807 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758211Ab2HHNaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:21:49 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v5 01/19] vfs: add a retry_estale helper function to handle retries on ESTALE
-Date: Wed,  8 Aug 2012 09:21:24 -0400
-Message-Id: <1344432102-22312-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
-References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
+	Wed, 8 Aug 2012 09:30:15 -0400
+Date: Wed, 8 Aug 2012 14:30:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dongjin Kim <Dongjin.Kim@agreeyamobility.net>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: =?utf-8?B?yLjvv73vv706IFtQQVRD?= =?utf-8?Q?H?= 1/4] arm/dts:
+ max77686: Add DTS file for max77686 PMIC
+Message-ID: <20120808133013.GY16861@opensource.wolfsonmicro.com>
+References: <1344366267-18971-1-git-send-email-dongjin.kim@agreeyamobility.net>
+ <20120807193413.GE14711@sirena.org.uk>
+ <A6A3B7488C419F488E5B13FFD03C08AD2F4372BC@SN2PRD0510MB370.namprd05.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A6A3B7488C419F488E5B13FFD03C08AD2F4372BC@SN2PRD0510MB370.namprd05.prod.outlook.com>
+X-Cookie: You will be married within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is expected to be called from path-based syscalls to help
-them decide whether to try the lookup and call again in the event that
-they got an -ESTALE return back on an earier try.
+On Tue, Aug 07, 2012 at 07:50:11PM +0000, Dongjin Kim wrote:
 
-Currently, we only retry the call once on an ESTALE error, but in the
-event that we decide that that's not enough in the future, we should be
-able to change the logic in this helper without too much effort.
+Please fix your mailer to word wrap within paragraphs.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- include/linux/fs.h | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+> Are you meaning VDD_MIF_1.0V, for example, would be replaced with
+> another common name for other boards and my board file,
+> exynos4412-odroidx.dts, describe the name again if necessary? Like
+> below?
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aa11047..b776a97 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2211,6 +2211,27 @@ extern int finish_open(struct file *file, struct dentry *dentry,
- 			int *opened);
- extern int finish_no_open(struct file *file, struct dentry *dentry);
- 
-+/**
-+ * retry_estale - determine whether the caller should retry an operation
-+ *
-+ * @error: the error we'll be returning
-+ * @try: number of retries already performed
-+ *
-+ * Check to see if the error code was -ESTALE, and then determine whether
-+ * to retry the call based on the number of retries so far. Currently, we only
-+ * retry the call once.
-+ *
-+ * Returns true if the caller should try again.
-+ */
-+static inline bool
-+retry_estale(const long error, const unsigned int try)
-+{
-+	if (likely(error != -ESTALE))
-+		return false;
-+
-+	return !try;
-+}
-+
- /* fs/ioctl.c */
- 
- extern int ioctl_preallocate(struct file *filp, void __user *argp);
--- 
-1.7.11.2
+No, the entire configuration.
 
+> max77686.dtsi:
+>     buck1 {
+>          regulator-compatible = "BUCK1";
+>          regulator-name = "VDD_BUCK1_1.0V";
+>          regulator-min-microvolt = <800000>;
+>          regulator-max-microvolt = <1050000>;
+>          regulator-always-on;
+>          regulator-boot-on;
+>     };
+
+Especially things like the voltage range might not be appropriate if the
+regulator is used for a different purpose on a different board.
