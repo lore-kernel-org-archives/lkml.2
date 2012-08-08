@@ -1,51 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab2HHMvc (ORCPT <rfc822;w@1wt.eu>);
+	id S1758156Ab2HHMve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:51:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36691 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139Ab2HHMvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 08:51:32 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38174 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab2HHMva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:51:30 -0400
 From: Prabhakar Lad <prabhakar.lad@ti.com>
 To: LAK <linux-arm-kernel@lists.infradead.org>
 CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>
-Subject: [PATCH v4 0/2] ARM: davinci: add support for dm365 vpbe display
-Date: Wed, 8 Aug 2012 18:20:57 +0530
-Message-ID: <1344430259-23968-1-git-send-email-prabhakar.lad@ti.com>
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH v4 2/2] ARM: davinci: dm365 EVM: add support for VPBE display
+Date: Wed, 8 Aug 2012 18:20:59 +0530
+Message-ID: <1344430259-23968-3-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1344430259-23968-1-git-send-email-prabhakar.lad@ti.com>
+References: <1344430259-23968-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series enables VPBE display driver on DM365. 
+From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-This patch series is dependent on this patches posted
-http://www.spinics.net/lists/arm-kernel/msg188234.html
+add support for V4L2 video display to DM365 EVM.
+Support for SD and ED modes is provided, along with Composite
+and Component outputs.
 
-Changes for v4:
-1: Replaced the obsolete preset API by timings API.
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+---
+ arch/arm/mach-davinci/board-dm365-evm.c |  177 ++++++++++++++++++++++++++++++-
+ 1 files changed, 176 insertions(+), 1 deletions(-)
 
-Changes for v3: 
-1: Removed VPSS clock alias for master and slave which was 
-   sent for VPSS driver. since this patch was dependent on 
-   patch[1]. I will revist this patch once MC(captrure driver) 
-   goes into mainline. 
-[1] http://www.spinics.net/lists/linux-media/msg50562.html
-
-Changes for v2: 
-1: Added VPSS clock so that capture and display 
-   can work independent.
-
-Manjunath Hadli (2):
-  ARM: davinci: dm365: add support for v4l2 video display
-  ARM: davinci: dm365 EVM: add support for VPBE display
-
- arch/arm/mach-davinci/board-dm365-evm.c |  179 +++++++++++++++++++++++++++-
- arch/arm/mach-davinci/davinci.h         |    2 +-
- arch/arm/mach-davinci/dm365.c           |  203 +++++++++++++++++++++++++++++--
- 3 files changed, 371 insertions(+), 13 deletions(-)
+diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+index ac1f20d..52422f9 100644
+--- a/arch/arm/mach-davinci/board-dm365-evm.c
++++ b/arch/arm/mach-davinci/board-dm365-evm.c
+@@ -27,6 +27,7 @@
+ #include <linux/input.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/eeprom.h>
++#include <linux/v4l2-dv-timings.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -374,6 +375,180 @@ static struct vpfe_config vpfe_cfg = {
+ 	.ccdc = "ISIF",
+ };
+ 
++#define VENC_STD_ALL	(V4L2_STD_NTSC | V4L2_STD_PAL)
++
++/* venc standards timings */
++static struct vpbe_enc_mode_info dm365evm_enc_std_timing[] = {
++	{
++		.name		= "ntsc",
++		.timings_type	= VPBE_ENC_STD,
++		.std_id		= V4L2_STD_525_60,
++		.interlaced	= 1,
++		.xres		= 720,
++		.yres		= 480,
++		.aspect		= {11, 10},
++		.fps		= {30000, 1001},
++		.left_margin	= 0x79,
++		.right_margin	= 0,
++		.upper_margin	= 0x10,
++		.lower_margin	= 0,
++		.hsync_len	= 0,
++		.vsync_len	= 0,
++		.flags		= 0,
++	},
++	{
++		.name		= "pal",
++		.timings_type	= VPBE_ENC_STD,
++		.std_id		= V4L2_STD_625_50,
++		.interlaced	= 1,
++		.xres		= 720,
++		.yres		= 576,
++		.aspect		= {54, 59},
++		.fps		= {25, 1},
++		.left_margin	= 0x7E,
++		.right_margin	= 0,
++		.upper_margin	= 0x16,
++		.lower_margin	= 0,
++		.hsync_len	= 0,
++		.vsync_len	= 0,
++		.flags		= 0,
++	},
++};
++
++/* venc dv timings */
++static struct vpbe_enc_mode_info dm365evm_enc_preset_timing[] = {
++	{
++		.name		= "480p59_94",
++		.timings_type	= VPBE_ENC_CUSTOM_TIMINGS,
++		.dv_timings	= V4L2_DV_BT_CEA_720X480P59_94,
++		.interlaced	= 0,
++		.xres		= 720,
++		.yres		= 480,
++		.aspect		= {1, 1},
++		.fps		= {5994, 100},
++		.left_margin	= 0x8F,
++		.right_margin	= 0,
++		.upper_margin	= 0x2D,
++		.lower_margin	= 0,
++		.hsync_len	= 0,
++		.vsync_len	= 0,
++		.flags		= 0,
++	},
++	{
++		.name		= "576p50",
++		.timings_type	= VPBE_ENC_CUSTOM_TIMINGS,
++		.dv_timings	= V4L2_DV_BT_CEA_720X576P50,
++		.interlaced	= 0,
++		.xres		= 720,
++		.yres		= 576,
++		.aspect		= {1, 1},
++		.fps		= {50, 1},
++		.left_margin	= 0x8C,
++		.right_margin	= 0,
++		.upper_margin	= 0x36,
++		.lower_margin	= 0,
++		.hsync_len	= 0,
++		.vsync_len	= 0,
++		.flags		= 0,
++	},
++	{
++		.name		= "720p60",
++		.timings_type	= VPBE_ENC_CUSTOM_TIMINGS,
++		.dv_timings	= V4L2_DV_BT_CEA_1280X720P60,
++		.interlaced	= 0,
++		.xres		= 1280,
++		.yres		= 720,
++		.aspect		= {1, 1},
++		.fps		= {60, 1},
++		.left_margin	= 0x117,
++		.right_margin	= 70,
++		.upper_margin	= 38,
++		.lower_margin	= 3,
++		.hsync_len	= 80,
++		.vsync_len	= 5,
++		.flags		= 0,
++	},
++	{
++		.name		= "1080i60",
++		.timings_type	= VPBE_ENC_CUSTOM_TIMINGS,
++		.dv_timings	= V4L2_DV_BT_CEA_1920X1080I60,
++		.interlaced	= 1,
++		.xres		= 1920,
++		.yres		= 1080,
++		.aspect		= {1, 1},
++		.fps		= {30, 1},
++		.left_margin	= 0xc9,
++		.right_margin	= 80,
++		.upper_margin	= 30,
++		.lower_margin	= 3,
++		.hsync_len	= 88,
++		.vsync_len	= 5,
++		.flags		= 0,
++	},
++};
++
++/*
++ * The outputs available from VPBE + ecnoders. Keep the
++ * the order same as that of encoders. First those from venc followed by that
++ * from encoders. Index in the outpuvpbe-t refers to index on a particular
++ * encoder.Driver uses this index to pass it to encoder when it supports more
++ * than one output. Application uses index of the array to set an output.
++ */
++static struct vpbe_output dm365evm_vpbe_outputs[] = {
++	{
++		.output		= {
++			.index		= 0,
++			.name		= "Composite",
++			.type		= V4L2_OUTPUT_TYPE_ANALOG,
++			.std		= VENC_STD_ALL,
++			.capabilities	= V4L2_OUT_CAP_STD,
++		},
++		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
++		.default_mode	= "ntsc",
++		.num_modes	= ARRAY_SIZE(dm365evm_enc_std_timing),
++		.modes		= dm365evm_enc_std_timing,
++		.if_params	= V4L2_MBUS_FMT_FIXED,
++	},
++	{
++		.output		= {
++			.index		= 1,
++			.name		= "Component",
++			.type		= V4L2_OUTPUT_TYPE_ANALOG,
++			.capabilities	= V4L2_OUT_CAP_CUSTOM_TIMINGS,
++		},
++		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
++		.default_mode	= "480p59_94",
++		.num_modes	= ARRAY_SIZE(dm365evm_enc_preset_timing),
++		.modes		= dm365evm_enc_preset_timing,
++		.if_params	= V4L2_MBUS_FMT_FIXED,
++	},
++};
++
++/*
++ * Amplifiers on the board
++ */
++static struct amp_config_info vpbe_amp = {
++	.module_name	= "ths7303",
++	.is_i2c		= 1,
++	.board_info	= {
++		I2C_BOARD_INFO("ths7303", 0x2c)
++	}
++};
++
++static struct vpbe_config dm365evm_display_cfg = {
++	.module_name	= "dm365-vpbe-display",
++	.i2c_adapter_id	= 1,
++	.amp		= &vpbe_amp,
++	.osd		= {
++		.module_name	= VPBE_OSD_SUBDEV_NAME,
++	},
++	.venc		= {
++		.module_name	= VPBE_VENC_SUBDEV_NAME,
++	},
++	.num_outputs	= ARRAY_SIZE(dm365evm_vpbe_outputs),
++	.outputs	= dm365evm_vpbe_outputs,
++};
++
+ static void __init evm_init_i2c(void)
+ {
+ 	davinci_init_i2c(&i2c_pdata);
+@@ -595,7 +770,7 @@ static __init void dm365_evm_init(void)
+ 
+ 	davinci_setup_mmc(0, &dm365evm_mmc_config);
+ 
+-	dm365_init_video(&vpfe_cfg, NULL);
++	dm365_init_video(&vpfe_cfg, &dm365evm_display_cfg);
+ 
+ 	/* maybe setup mmc1/etc ... _after_ mmc0 */
+ 	evm_init_cpld();
+-- 
+1.7.0.4
 
