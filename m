@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab2HHHf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 03:35:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62815 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab2HHHfY (ORCPT
+	id S1757852Ab2HHHhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:37:35 -0400
+Received: from relay02ant.iops.be ([212.53.4.35]:60720 "EHLO
+	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2HHHhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 03:35:24 -0400
-Date: Wed, 8 Aug 2012 08:35:19 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between
- DT and non-DT boots
-Message-ID: <20120808073518.GA4728@gmail.com>
-References: <1344256323-10484-1-git-send-email-lee.jones@linaro.org>
- <20120806081915.GA4518@core.coreip.homeip.net>
- <20120806153750.GI10524@gmail.com>
- <20120806160226.GF29272@sirena.org.uk>
- <20120807170129.GA3759@gmail.com>
- <20120807170333.GV16861@opensource.wolfsonmicro.com>
+	Wed, 8 Aug 2012 03:37:34 -0400
+Message-ID: <50221737.3010608@acm.org>
+Date: Wed, 08 Aug 2012 07:37:27 +0000
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120807170333.GV16861@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chanho Min <chanho0207@gmail.com>
+CC: Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
+References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org> <501DA3F0.4090009@cs.wisc.edu> <50200561.4020100@acm.org> <CAOAMb1BWWzYPSode-6Y9+O5eNhMc-bYofCNwMRmzeC9-nhRb4g@mail.gmail.com> <5020E031.9080406@acm.org> <CAOAMb1BNSTaG8N68jcEDV3gNt6V7BM9HkjUuXHeebhLNHe18kA@mail.gmail.com>
+In-Reply-To: <CAOAMb1BNSTaG8N68jcEDV3gNt6V7BM9HkjUuXHeebhLNHe18kA@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Restating my comment elsewhere...  why do we even need to do this in
-> _get_virq() - I'd *really* expect this to be handled by the irq domain
-> code.
+On 08/08/12 03:42, Chanho Min wrote:
+> Thank you for the explanation. It look correct. Let's check one more thing.
+> What If __scsi_remove_device doesn't release device? : reference count
+> is more than 2.
+> So We lost starved_list but device is exist. Is there any issue about this?
 
-> > Okay, so I've just spent a small amount of time looking at this. I think
-> > the best place for this would be in *_get_virq(), using the same logic that
-> > selected a *_legacy or *_linear domain in the first place. 
+As far as I can see that scenario will also be handled correctly by the
+proposed patch.
 
-> I'd expect your driver to always pass a hwirq into _get_virq() here.
+Bart.
 
-I actually had this thought last night.
-
-(I really must learn to switch off in the evenings.) ;)
-
-That's even easier then. I'll make the changes and submit.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
