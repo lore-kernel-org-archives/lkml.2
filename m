@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab2HHOfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:35:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab2HHOfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:35:20 -0400
-Message-ID: <1344436518.32010.4.camel@eddie.install.bos.redhat.com>
-Subject: Re: [PATCH] Use the UEFI shim to load grub.
-From: Peter Jones <pjones@redhat.com>
-To: dhowells@redhat.com
-Cc: jwboyer@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 08 Aug 2012 10:35:18 -0400
-In-Reply-To: <1344435497-6728-1-git-send-email-pjones@redhat.com>
-References: <1344432179-31974-1-git-send-email-pjones@redhat.com>
-	 <1344435497-6728-1-git-send-email-pjones@redhat.com>
-Organization: Red Hat, Inc.
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758416Ab2HHOfk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:35:40 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:36988 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754099Ab2HHOfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:35:37 -0400
+Message-ID: <50227936.3040701@ti.com>
+Date: Wed, 08 Aug 2012 17:35:34 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Benoit Cousson <b-cousson@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Dmitry Torokhov <dtor@mail.ru>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com> <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com> <5022529D.3090406@ti.com> <20120808125252.GR16861@opensource.wolfsonmicro.com>
+In-Reply-To: <20120808125252.GR16861@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Obviously, this went to the wrong list of addresses.  Sorry for all the
-noise.
-
-On Wed, 2012-08-08 at 10:18 -0400, Peter Jones wrote:
-> For UEFI Secure Boot support, we need to install the shim pre-boot
-> loader, and use it to load grub2.
-> ---
->  pyanaconda/bootloader.py | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On 08/08/2012 03:52 PM, Mark Brown wrote:
+> On Wed, Aug 08, 2012 at 01:50:53PM +0200, Benoit Cousson wrote:
 > 
-> diff --git a/pyanaconda/bootloader.py b/pyanaconda/bootloader.py
-> index ea4de5e..02d0ea8 100644
-> --- a/pyanaconda/bootloader.py
-> +++ b/pyanaconda/bootloader.py
-> @@ -1749,7 +1749,7 @@ class GRUB2(GRUB):
->          self.stage2_device.format.sync(root=ROOT_PATH)
->  
->  class EFIGRUB(GRUB2):
-> -    packages = ["grub2-efi", "efibootmgr"]
-> +    packages = ["grub2-efi", "efibootmgr", "shim"]
->      can_dual_boot = False
->  
->      @property
-> @@ -1809,7 +1809,7 @@ class EFIGRUB(GRUB2):
->          rc = self.efibootmgr("-c", "-w", "-L", productName,
->                               "-d", boot_disk.path, "-p", boot_part_num,
->                               "-l",
-> -                             self.efi_dir_as_efifs_dir + "\\grubx64.efi",
-> +                             self.efi_dir_as_efifs_dir + "\\shim.efi",
->                               root=ROOT_PATH,
->                               stdout="/dev/tty5", stderr="/dev/tty5")
->          if rc:
+>> That being said, since we do have the clock binding now, maybe we should
+>> create a clock provider at board level for the sys_clk and thus you will
+>> just have to create a phandle to it in your audio description.
+> 
+> Yes, we should be doing this.
+
+Does this needs the common clock framework on the platform? OMAP3 certainly
+does not have it enabled since it has not been adopted.
 
 -- 
-  Peter
-
+Péter
