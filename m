@@ -1,153 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab2HHAm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 20:42:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41694 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752269Ab2HHAmy (ORCPT
+	id S1753692Ab2HHAsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:48:53 -0400
+Received: from exout101.netflix.com ([69.53.237.162]:54788 "EHLO
+	exout103.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752269Ab2HHAsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 20:42:54 -0400
-Message-ID: <1344386425.13142.174.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 02/70] floppy: Cleanup disk->queue before caling put_disk()
- if add_disk() was never called
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Vivek Goyal <vgoyal@redhat.com>,
-        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-Date: Wed, 08 Aug 2012 01:40:25 +0100
-In-Reply-To: <20120807224935.GA1008@herton-Z68MA-D2H-B3>
-References: <20120807032755.803571133@decadent.org.uk>
-	 <20120807032756.478538531@decadent.org.uk>
-	 <20120807224935.GA1008@herton-Z68MA-D2H-B3>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-RrBqA+9fVoMRtwZzFumJ"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 7 Aug 2012 20:48:51 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 20:48:51 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024;d=netflix.com;
+  h=from:to:cc:subject:date:message-id:content-type:mime-version;
+  b=g0XvPsud7B/IWb0o/biHrgNZnzC2Io1HbL6ZHn1Oe+jkZuUYoRdypM5gJiuHqxbgW+YLOBmq
+    vDqh5Lk+ZYeIiSyLtOw7NWKnGqMrk6y/Ari1LWzBVwV0KOH2Ye2CpX5/gR9dWxiBa5ZD5yJc
+    UJ+qgLVHwy+nJLvbfTa6OKADBJg=
+From: Wesley Miaw <wmiaw@netflix.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>,
+        "msb@google.com" <msb@google.com>
+Subject: [PATCH] dm: verity support data device offset
+Thread-Topic: [PATCH] dm: verity support data device offset
+Thread-Index: AQHNdP7T82767QqXnkeG0dwAo3s6lg==
+Date: Wed, 8 Aug 2012 00:43:28 +0000
+Message-ID: <66ADE819-D9DE-4A95-9B48-9C4B060CFB06@netflix.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.2.229.146]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-RrBqA+9fVoMRtwZzFumJ
-Content-Type: text/plain; charset="UTF-8"
+--Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2
 Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-On Tue, 2012-08-07 at 19:49 -0300, Herton Ronaldo Krzesinski wrote:
-> On Tue, Aug 07, 2012 at 04:27:57AM +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Vivek Goyal <vgoyal@redhat.com>
-> >=20
-> > commit 3f9a5aabd0a9fe0e0cd308506f48963d79169aa7 upstream.
-> >=20
-> > add_disk() takes gendisk reference on request queue. If driver failed d=
-uring
-> > initialization and never called add_disk() then that extra reference is=
- not
-> > taken. That reference is put in put_disk(). floppy driver allocates the
-> > disk, allocates queue, sets disk->queue and then relizes that floppy
-> > controller is not present. It tries to tear down everything and tries t=
-o
-> > put a reference down in put_disk() which was never taken.
-> >=20
-> > In such error cases cleanup disk->queue before calling put_disk() so th=
-at
-> > we never try to put down a reference which was never taken in first pla=
-ce.
-> >=20
-> > Reported-and-tested-by: Suresh Jayaraman <sjayaraman@suse.com>
-> > Tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > Acked-by: Tejun Heo <tj@kernel.org>
-> > Signed-off-by: Jens Axboe <axboe@kernel.dk>
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > ---
-> >  drivers/block/floppy.c |    8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> >=20
-> > diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> > index 510fb10..401ba78 100644
-> > --- a/drivers/block/floppy.c
-> > +++ b/drivers/block/floppy.c
-> > @@ -4368,8 +4368,14 @@ out_unreg_blkdev:
-> >  out_put_disk:
-> >  	while (dr--) {
-> >  		del_timer_sync(&motor_off_timer[dr]);
-> > -		if (disks[dr]->queue)
-> > +		if (disks[dr]->queue) {
-> >  			blk_cleanup_queue(disks[dr]->queue);
-> > +			/*
-> > +			 * put_disk() is not paired with add_disk() and
-> > +			 * will put queue reference one extra time. fix it.
-> > +			 */
-> > +			disks[dr]->queue =3D NULL;
-> > +		}
-> >  		put_disk(disks[dr]);
-> >  	}
-> >  	return err;
->=20
-> I was taking a look at this, and noticed some issues with the error
-> handling:
-> * missing cleanup (put_disk) if blk_init_queue fails, dr is decremented
->   first in the error handling loop
-> * if something fails in the add_disk loop, there is no cleanup of
->   previous iterations in the error handling.
-> * if (disks[dr]->queue) check is bogus, when reaching there for each dr
->   should exist an queue allocated, and it doesn't take into account
->   iterations where add_disk wasn't done, if failure happens in add_disk
->   loop.
-> * floppy_module_exit doesn't reset queue pointer if add_disk wasn't
->   done.
+I needed to add support for dm-verity with data that is offset into a =
+block device. As part of this I found that the existing code did not =
+compute the correct hash block index if the data_start might be =
+non-zero. Here's a patch to add support for a data offset target =
+parameter as well as a fix to the hash block index computation.
 
-I agree with this analysis.
+Patch and (hopefully proper) commit message below. Thanks.
+--
+Wesley Miaw
 
-> I think the more complete diff below (not build tested) is needed, commen=
-ts?
-[...]
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
 
-There are several off-by-one errors, and 'drive_cnt' is not a
-particularly clear variable name (alongside 'dr' and 'drive'), but I
-think this is on the right track.
+Add data device start block index to dm-verity target parameters to =
+support verity targets where the data does not begin at sector 0 of the =
+block device. Also fix the hash block index computation so it takes into =
+account data offsets.
 
-Anyway, do you agree that the patch under review does fix *a* bug and
-doesn't introduce a regression?
+---
 
-Ben.
+--- a/drivers/md/dm-verity.c	2012-08-07 16:03:03.778759000 -0700
++++ b/drivers/md/dm-verity.c	2012-08-07 17:30:56.914569414 -0700
+@@ -491,7 +491,7 @@
+ 	io->bio =3D bio;
+ 	io->orig_bi_end_io =3D bio->bi_end_io;
+ 	io->orig_bi_private =3D bio->bi_private;
+-	io->block =3D bio->bi_sector >> (v->data_dev_block_bits - =
+SECTOR_SHIFT);
++	io->block =3D (bio->bi_sector - v->data_start)  >> =
+(v->data_dev_block_bits - SECTOR_SHIFT);
+ 	io->n_blocks =3D bio->bi_size >> v->data_dev_block_bits;
+=20
+ 	bio->bi_end_io =3D verity_end_io;
+@@ -641,6 +641,7 @@
+  *	<hash device>
+  *	<data block size>
+  *	<hash block size>
++ *	<data start block>
+  *	<the number of data blocks>
+  *	<hash start block>
+  *	<algorithm>
+@@ -671,8 +672,8 @@
+ 		goto bad;
+ 	}
+=20
+-	if (argc !=3D 10) {
+-		ti->error =3D "Invalid argument count: exactly 10 =
+arguments required";
++	if (argc !=3D 11) {
++		ti->error =3D "Invalid argument count: exactly 11 =
+arguments required";
+ 		r =3D -EINVAL;
+ 		goto bad;
+ 	}
+@@ -718,6 +719,15 @@
+ 	v->hash_dev_block_bits =3D ffs(num) - 1;
+=20
+ 	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) !=3D 1 ||
++		num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
++		(sector_t)num_ll << (v->data_dev_block_bits - =
+SECTOR_SHIFT)) {
++		ti->error =3D "Invalid data start";
++		r =3D -EINVAL;
++		goto bad;
++	}
++	v->data_start =3D num_ll << (v->data_dev_block_bits - =
+SECTOR_SHIFT);
++
++	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
+ 	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
+ 	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) =
+{
+ 		ti->error =3D "Invalid data blocks";
+@@ -732,7 +742,7 @@
+ 		goto bad;
+ 	}
+=20
+-	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
++	if (sscanf(argv[7], "%llu%c", &num_ll, &dummy) !=3D 1 ||
+ 	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=3D
+ 	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) =
+{
+ 		ti->error =3D "Invalid hash start";
+@@ -741,7 +751,7 @@
+ 	}
+ 	v->hash_start =3D num_ll;
+=20
+-	v->alg_name =3D kstrdup(argv[7], GFP_KERNEL);
++	v->alg_name =3D kstrdup(argv[8], GFP_KERNEL);
+ 	if (!v->alg_name) {
+ 		ti->error =3D "Cannot allocate algorithm name";
+ 		r =3D -ENOMEM;
+@@ -770,23 +780,23 @@
+ 		r =3D -ENOMEM;
+ 		goto bad;
+ 	}
+-	if (strlen(argv[8]) !=3D v->digest_size * 2 ||
+-	    hex2bin(v->root_digest, argv[8], v->digest_size)) {
++	if (strlen(argv[9]) !=3D v->digest_size * 2 ||
++	    hex2bin(v->root_digest, argv[9], v->digest_size)) {
+ 		ti->error =3D "Invalid root digest";
+ 		r =3D -EINVAL;
+ 		goto bad;
+ 	}
+=20
+-	if (strcmp(argv[9], "-")) {
+-		v->salt_size =3D strlen(argv[9]) / 2;
++	if (strcmp(argv[10], "-")) {
++		v->salt_size =3D strlen(argv[10]) / 2;
+ 		v->salt =3D kmalloc(v->salt_size, GFP_KERNEL);
+ 		if (!v->salt) {
+ 			ti->error =3D "Cannot allocate salt";
+ 			r =3D -ENOMEM;
+ 			goto bad;
+ 		}
+-		if (strlen(argv[9]) !=3D v->salt_size * 2 ||
+-		    hex2bin(v->salt, argv[9], v->salt_size)) {
++		if (strlen(argv[10]) !=3D v->salt_size * 2 ||
++		    hex2bin(v->salt, argv[10], v->salt_size)) {
+ 			ti->error =3D "Invalid salt";
+ 			r =3D -EINVAL;
+ 			goto bad;
 
---=20
-Ben Hutchings
-Theory and practice are closer in theory than in practice.
-                                - John Levine, moderator of comp.compilers
 
---=-RrBqA+9fVoMRtwZzFumJ
+--Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Message signed with OpenPGP using GPGMail
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
 
-iQIVAwUAUCG1eee/yOyVhhEJAQqRJw//WIkzfOlbPaeuEkkidG/fSUTGZKgRtMWA
-RdYimRIdxaT9IbA0aOaHErHLKumrAJX+C9FIPOC7iiFwwdYNX2yJ8l7k7EJx58OS
-OjKvtgA4rv2d9mrSwpuMfcf5CIGGipOrTzWLjl75FVV2VtRzKbkgEJOHyjq+9/X+
-IRMCkHD3JqCPELp0rxFD8ZqSGuKRGMom4JZLOB0D/p5Gzc5bNBYF8uLyPYr7eqwe
-m2eurosBcgn3BDSDsA1ZZiwHXhn75z/Rt+E6wkRrYYYYRfiZYgU0W5basOV1iQXf
-OuLByqcinvm9rl4Q/ZayMzfgImQbpRff3pAWESB5KQPI488VFLXW6OrjyfFJAv1i
-f3slj4OoJbCNpcZmfSVHKoqMHZDs/t72Tmhz32sGCQ+U4vP+Zz2xNuvUvSXQbhes
-UP+KdnEoKQO8wb0UMGfsRiFAvLC9wjAcboVZbPTXrBIlcuepkRtYIgpRs8RMdepD
-EA+NcxjX9gzat+wge+/znXbsLzmf/8kqUenxT4C76r6KvNZwX4US6GU4zvDPZkZM
-GYOFsTLbbXT0skAFQZl0LoX9//5+zQ9hKt4UV0cT9cq1Ale0be/Htv5Fm1x0wKx5
-Pi55xHQ5RfCUivxePu5S4CyjGNuNPxjSPZdv2g047Qge9OhVmecbuNc7uuboD75E
-wz7OtYZbvfQ=
-=A/SU
+iQEcBAEBAgAGBQJQIbYwAAoJELoPFVk1ivvRzcwH/0fDuo5vMiXHJ/paFXnzZGTo
+LlEUfHKj0ICB1Xh0vDS97Czx2sZ1x1s+e+lkltKg48jYadVe0iQy7jKzVV8MmjZ4
+bZhZEEsQCmORQ3HfHWr172Z7jZdZaHCQbeaFZ4UwTGTeTkSbiC27YSmpR2XrW5vy
+nxW29rq8WavBPtyzAGjGl6wqFxk2nnpZRS3ctQ+QimemTrrnK3UtYsKMlRtmx33i
+7dbjRRRairSCJWVcQYZhCRsQJxB3w80YwP3YIdnlz+D6wYG/iSr7QhjfA+cRCUen
+wIgU97YW7SC8sq0OEVqVT3tavyanmTK0u7DEDboGGB0CXxO8lFN37guC7kmL5bk=
+=TTK+
 -----END PGP SIGNATURE-----
 
---=-RrBqA+9fVoMRtwZzFumJ--
+--Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2--
