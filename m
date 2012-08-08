@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759046Ab2HHRk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:40:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60436 "EHLO mx1.redhat.com"
+	id S1759067Ab2HHRlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:41:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49679 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759011Ab2HHRk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:40:57 -0400
-Date: Wed, 8 Aug 2012 19:37:37 +0200
+	id S1759049Ab2HHRlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:41:02 -0400
+Date: Wed, 8 Aug 2012 19:37:42 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] uprobes: kill uprobes_state->count
-Message-ID: <20120808173736.GA13252@redhat.com>
+Subject: [PATCH 3/7] uprobes: change uprobe_mmap() to ignore the errors but
+	check fatal_signal_pending()
+Message-ID: <20120808173742.GA13262@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,158 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobes_state->count is only needed to avoid the slow path in
-uprobe_pre_sstep_notifier(). It is also checked in uprobe_munmap()
-but ironically its only goal to decrement this counter. However,
-it is very broken. Just some examples:
+Once install_breakpoint() fails uprobe_mmap() "ignores" all other
+uprobes and returns the error.
 
-- uprobe_mmap() can race with uprobe_unregister() and wrongly
-  increment the counter if it hits the non-uprobe "int3". Note
-  that install_breakpoint() checks ->consumers first and returns
-  -EEXIST if it is NULL.
+It was never really needed to to stop after the first error, and
+in fact it was always wrong at least in -ENOTSUPP case.
 
-  "atomic_sub() if error" in uprobe_mmap() looks obviously wrong
-  too.
+Change uprobe_mmap() to ignore the errors and always return 0.
+This is not what we want in the long term, but until we teach
+the callers to handle the failure it would be better to remove
+the pointless complications. And this doesn't look too bad, the
+only "reasonable" error is ENOMEM but in this case the caller
+should be oom-killed in the likely case or the system has more
+serious problems.
 
-- uprobe_munmap() can race with uprobe_register() and wrongly
-  decrement the counter by the same reason.
-
-- Suppose an appication tries to increase the mmapped area via
-  sys_mremap(). vma_adjust() does uprobe_munmap(whole_vma) first,
-  this can nullify the counter temporarily and race with another
-  thread which can hit the bp, the application will be killed by
-  SIGTRAP.
-
-- Suppose an application mmaps 2 consecutive areas in the same file
-  and one (or both) of these areas has uprobes. In the likely case
-  mmap_region()->vma_merge() suceeds. Like above, this leads to
-  uprobe_munmap/uprobe_mmap from vma_merge()->vma_adjust() but then
-  mmap_region() does another uprobe_mmap(resulting_vma) and doubles
-  the counter.
-
-This patch only removes this counter and fixes the compile errors,
-then we will try to cleanup the changed code and add something else
-instead.
+However it makes sense to stop if fatal_signal_pending() == T.
+In particular this helps if the task was oom-killed.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/uprobes.h |    2 +-
- kernel/events/uprobes.c |   38 ++------------------------------------
- 2 files changed, 3 insertions(+), 37 deletions(-)
+ kernel/events/uprobes.c |   27 ++++++---------------------
+ 1 files changed, 6 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index efe4b33..03ae547 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -99,8 +99,8 @@ struct xol_area {
- 
- struct uprobes_state {
- 	struct xol_area		*xol_area;
--	atomic_t		count;
- };
-+
- extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
- extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
- extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 940005d..f0bb387 100644
+index 08ea627..2e269d1 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -680,18 +680,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
- 
--	/*
--	 * Ideally, should be updating the probe count after the breakpoint
--	 * has been successfully inserted. However a thread could hit the
--	 * breakpoint we just inserted even before the probe count is
--	 * incremented. If this is the first breakpoint placed, breakpoint
--	 * notifier might ignore uprobes and pass the trap to the thread.
--	 * Hence increment before and decrement on failure.
--	 */
--	atomic_inc(&mm->uprobes_state.count);
- 	ret = set_swbp(&uprobe->arch, mm, vaddr);
--	if (ret)
--		atomic_dec(&mm->uprobes_state.count);
- 
- 	return ret;
- }
-@@ -699,8 +688,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- static void
- remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
- {
--	if (!set_orig_insn(&uprobe->arch, mm, vaddr, true))
--		atomic_dec(&mm->uprobes_state.count);
-+	set_orig_insn(&uprobe->arch, mm, vaddr, true);
+@@ -996,23 +996,16 @@ static void build_probe_list(struct inode *inode,
  }
  
  /*
-@@ -1053,13 +1041,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
+- * Called from mmap_region.
+- * called with mm->mmap_sem acquired.
++ * Called from mmap_region/vma_adjust with mm->mmap_sem acquired.
+  *
+- * Return -ve no if we fail to insert probes and we cannot
+- * bail-out.
+- * Return 0 otherwise. i.e:
+- *
+- *	- successful insertion of probes
+- *	- (or) no possible probes to be inserted.
+- *	- (or) insertion of probes failed but we can bail-out.
++ * Currently we ignore all errors and always return 0, the callers
++ * can't handle the failure anyway.
+  */
+ int uprobe_mmap(struct vm_area_struct *vma)
+ {
+ 	struct list_head tmp_list;
+ 	struct uprobe *uprobe, *u;
+ 	struct inode *inode;
+-	int ret;
  
- 				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
- 					continue;
--
--				/*
--				 * Unable to insert a breakpoint, but
--				 * breakpoint lies underneath. Increment the
--				 * probe count.
--				 */
--				atomic_inc(&vma->vm_mm->uprobes_state.count);
- 			}
+ 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
+ 		return 0;
+@@ -1024,24 +1017,16 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	mutex_lock(uprobes_mmap_hash(inode));
+ 	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
  
- 			if (!ret)
-@@ -1070,9 +1051,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 
- 	mutex_unlock(uprobes_mmap_hash(inode));
- 
--	if (ret)
--		atomic_sub(count, &vma->vm_mm->uprobes_state.count);
--
- 	return ret;
- }
- 
-@@ -1091,9 +1069,6 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
- 		return;
- 
--	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
--		return;
--
- 	inode = vma->vm_file->f_mapping->host;
- 	if (!inode)
- 		return;
-@@ -1102,13 +1077,6 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	build_probe_list(inode, vma, start, end, &tmp_list);
- 
+-	ret = 0;
  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
--		unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
--		/*
--		 * An unregister could have removed the probe before
--		 * unmap. So check before we decrement the count.
--		 */
--		if (is_swbp_at_addr(vma->vm_mm, vaddr) == 1)
--			atomic_dec(&vma->vm_mm->uprobes_state.count);
+-		if (!ret) {
++		if (!fatal_signal_pending(current)) {
+ 			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+-
+-			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+-			/*
+-			 * We can race against uprobe_register(), see the
+-			 * comment near uprobe_hash().
+-			 */
+-			if (ret == -EEXIST)
+-				ret = 0;
++			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+ 		}
  		put_uprobe(uprobe);
  	}
  	mutex_unlock(uprobes_mmap_hash(inode));
-@@ -1219,7 +1187,6 @@ void uprobe_clear_state(struct mm_struct *mm)
- void uprobe_reset_state(struct mm_struct *mm)
- {
- 	mm->uprobes_state.xol_area = NULL;
--	atomic_set(&mm->uprobes_state.count, 0);
+ 
+-	return ret;
++	return 0;
  }
  
  /*
-@@ -1589,8 +1556,7 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
- {
- 	struct uprobe_task *utask;
- 
--	if (!current->mm || !atomic_read(&current->mm->uprobes_state.count))
--		/* task is currently not uprobed */
-+	if (!current->mm)
- 		return 0;
- 
- 	utask = current->utask;
 -- 
 1.5.5.1
 
