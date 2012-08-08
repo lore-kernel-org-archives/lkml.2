@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab2HHO23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:28:29 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53419 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab2HHO2Y (ORCPT
+	id S1757637Ab2HHObX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:31:23 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58632 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753417Ab2HHObV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:28:24 -0400
+	Wed, 8 Aug 2012 10:31:21 -0400
+Message-ID: <50227837.10400@ti.com>
+Date: Wed, 08 Aug 2012 17:31:19 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <201208080919.52592.arnd@arndb.de>
-References: <1344389967-8465-1-git-send-email-linux@prisktech.co.nz>
-	<1344389967-8465-9-git-send-email-linux@prisktech.co.nz>
-	<CACRpkdbYxpN9RCu8j8KMBgrb=-DsYZHq7hx-ifmHhJ0ZZcRYjw@mail.gmail.com>
-	<201208080919.52592.arnd@arndb.de>
-Date: Wed, 8 Aug 2012 16:28:24 +0200
-Message-ID: <CACRpkdabUWpDsBhz4ZEJNhEuqw-U+v-HrX7NcWoNLeuenv5t9A@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH 8/8] ARM: vt8500: gpio: Devicetree support for arch-vt8500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        Neil Zhang <zhangwm@marvell.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Eric Andersson <eric.andersson@unixphere.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com> <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com> <20120808131356.GS16861@opensource.wolfsonmicro.com> <50226CF4.1010202@ti.com> <20120808135253.GC16861@opensource.wolfsonmicro.com> <502274DA.9020204@ti.com> <20120808141849.GA24328@opensource.wolfsonmicro.com>
+In-Reply-To: <20120808141849.GA24328@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 11:19 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+On 08/08/2012 05:18 PM, Mark Brown wrote:
+> I'm struggling to see any reason not to just hold the external mute on
+> for the entire time the headset is powered off?
 
->> What on earth are all those magic numbers?
->>
->> I *guess* they're enabling some default GPIO settings etc.
->
-> No, they are the register offsets you quoted above, per bank.
+I think because it would mean in most cases that we keep a GPIO line enabled
+during the time the HS is not in use, which burns power.
+In most cases the mute is enabled when the GPIO line is up.
 
-Aha I was fooled by this:
+>> If you are OK with the hassle I can add a patch to the series for
+>> include/linux/of.h to handle this.
+> 
+> Yes, please.
 
-+struct vt8500_gpio_bank_regs {
-+       int     en;
-+       int     dir;
-+       int     data_out;
-+       int     data_in;
-+       int     ngpio;
-+};
+I'll wait for more comments and I'll include it to v2.
 
-This needs to be named something intuitive like "vt8500_gpio_bank_regoffsets"
-
-Some kerneldoc intsead of the opaque comment above will also improve
-readability a lot:
-
-/**
-  * struct vt8500_gpio_bank_regoffsets
-  * @en: offset to enable register in the bank
-  * ...
-
-Yours,
-Linus Walleij
+-- 
+Péter
