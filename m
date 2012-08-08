@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271Ab2HHU0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:26:55 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:60050 "EHLO
+	id S1759259Ab2HHU0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:26:54 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:60048 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759199Ab2HHU0w (ORCPT
+	with ESMTP id S1759162Ab2HHU0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 16:26:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v2 19/41] TTY: move allocations to tty_alloc_driver
-Date: Wed,  8 Aug 2012 22:26:42 +0200
-Message-Id: <1344457604-12823-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH v2 20/41] TTY: add support for unnumbered device nodes
+Date: Wed,  8 Aug 2012 22:26:43 +0200
+Message-Id: <1344457604-12823-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344457604-12823-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -21,167 +21,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So now, that we have flags and know everything needed, keep a promise
-and move all the tables and ports allocation from tty_register_driver
-to tty_alloc_driver.
-
-Not only that it makes sense, but we need this for
-tty_port_link_device which needs tty_driver->ports but is to be called
-before tty_register_driver.
+This allows drivers like ttyprintk to avoid hacks to create an
+unnumbered node in /dev. It used to set TTY_DRIVER_DYNAMIC_DEV in
+flags and call device_create on its own. That is incorrect, because
+TTY_DRIVER_DYNAMIC_DEV may be set only if tty_register_device is
+called explicitly.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/tty_io.c |   73 +++++++++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 40 deletions(-)
+ drivers/char/ttyprintk.c   |   17 ++++-------------
+ drivers/tty/tty_io.c       |    7 +++++--
+ include/linux/tty_driver.h |    6 ++++++
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index e024521..3098fa1 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3059,6 +3059,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 		unsigned long flags)
+diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
+index be1c3fb..9e6272f 100644
+--- a/drivers/char/ttyprintk.c
++++ b/drivers/char/ttyprintk.c
+@@ -178,13 +178,15 @@ static struct tty_driver *ttyprintk_driver;
+ static int __init ttyprintk_init(void)
  {
- 	struct tty_driver *driver;
-+	int err;
+ 	int ret = -ENOMEM;
+-	void *rp;
  
- 	if (!lines)
- 		return ERR_PTR(-EINVAL);
-@@ -3072,9 +3073,34 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
- 	driver->num = lines;
- 	driver->owner = owner;
- 	driver->flags = flags;
--	/* later we'll move allocation of tables here */
-+
-+	if (!(flags & TTY_DRIVER_DEVPTS_MEM)) {
-+		driver->ttys = kcalloc(lines, sizeof(*driver->ttys),
-+				GFP_KERNEL);
-+		driver->termios = kcalloc(lines, sizeof(*driver->termios),
-+				GFP_KERNEL);
-+		if (!driver->ttys || !driver->termios) {
-+			err = -ENOMEM;
-+			goto err_free_all;
-+		}
-+	}
-+
-+	if (!(flags & TTY_DRIVER_DYNAMIC_ALLOC)) {
-+		driver->ports = kcalloc(lines, sizeof(*driver->ports),
-+				GFP_KERNEL);
-+		if (!driver->ports) {
-+			err = -ENOMEM;
-+			goto err_free_all;
-+		}
-+	}
+ 	tty_port_init(&tpk_port.port);
+ 	tpk_port.port.ops = &null_ops;
+ 	mutex_init(&tpk_port.port_write_mutex);
  
- 	return driver;
-+err_free_all:
-+	kfree(driver->ports);
-+	kfree(driver->ttys);
-+	kfree(driver->termios);
-+	kfree(driver);
-+	return ERR_PTR(err);
- }
- EXPORT_SYMBOL(__tty_alloc_driver);
+-	ttyprintk_driver = alloc_tty_driver(1);
++	ttyprintk_driver = tty_alloc_driver(1,
++			TTY_DRIVER_RESET_TERMIOS |
++			TTY_DRIVER_REAL_RAW |
++			TTY_DRIVER_UNNUMBERED_NODE);
+ 	if (!ttyprintk_driver)
+ 		return ret;
  
-@@ -3083,7 +3109,6 @@ static void destruct_tty_driver(struct kref *kref)
- 	struct tty_driver *driver = container_of(kref, struct tty_driver, kref);
- 	int i;
- 	struct ktermios *tp;
--	void *p;
+@@ -195,8 +197,6 @@ static int __init ttyprintk_init(void)
+ 	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
+ 	ttyprintk_driver->init_termios = tty_std_termios;
+ 	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
+-	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
+-		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
+ 	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
  
- 	if (driver->flags & TTY_DRIVER_INSTALLED) {
- 		/*
-@@ -3100,14 +3125,12 @@ static void destruct_tty_driver(struct kref *kref)
- 			if (!(driver->flags & TTY_DRIVER_DYNAMIC_DEV))
- 				tty_unregister_device(driver, i);
- 		}
--		p = driver->ttys;
- 		proc_tty_unregister_driver(driver);
--		driver->ttys = NULL;
--		driver->termios = NULL;
--		kfree(p);
- 		cdev_del(&driver->cdev);
+ 	ret = tty_register_driver(ttyprintk_driver);
+@@ -205,15 +205,6 @@ static int __init ttyprintk_init(void)
+ 		goto error;
  	}
- 	kfree(driver->ports);
-+	kfree(driver->termios);
-+	kfree(driver->ttys);
- 	kfree(driver);
- }
  
-@@ -3138,27 +3161,8 @@ int tty_register_driver(struct tty_driver *driver)
- 	int error;
- 	int i;
- 	dev_t dev;
--	void **p = NULL;
- 	struct device *d;
- 
--	if (!(driver->flags & TTY_DRIVER_DEVPTS_MEM) && driver->num) {
--		p = kzalloc(driver->num * 2 * sizeof(void *), GFP_KERNEL);
--		if (!p)
--			return -ENOMEM;
--	}
--	/*
--	 * There is too many lines in PTY and we won't need the array there
--	 * since it has an ->install hook where it assigns ports properly.
--	 */
--	if (driver->type != TTY_DRIVER_TYPE_PTY) {
--		driver->ports = kcalloc(driver->num, sizeof(struct tty_port *),
--				GFP_KERNEL);
--		if (!driver->ports) {
--			error = -ENOMEM;
--			goto err_free_p;
--		}
+-	/* create our unnumbered device */
+-	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
+-				ttyprintk_driver->name);
+-	if (IS_ERR(rp)) {
+-		printk(KERN_ERR "Couldn't create ttyprintk device\n");
+-		ret = PTR_ERR(rp);
+-		goto error;
 -	}
 -
- 	if (!driver->major) {
- 		error = alloc_chrdev_region(&dev, driver->minor_start,
- 						driver->num, driver->name);
-@@ -3171,15 +3175,7 @@ int tty_register_driver(struct tty_driver *driver)
- 		error = register_chrdev_region(dev, driver->num, driver->name);
- 	}
- 	if (error < 0)
--		goto err_free_p;
--
--	if (p) {
--		driver->ttys = (struct tty_struct **)p;
--		driver->termios = (struct ktermios **)(p + driver->num);
--	} else {
--		driver->ttys = NULL;
--		driver->termios = NULL;
--	}
-+		goto err;
- 
- 	cdev_init(&driver->cdev, &tty_fops);
- 	driver->cdev.owner = driver->owner;
-@@ -3196,7 +3192,7 @@ int tty_register_driver(struct tty_driver *driver)
- 			d = tty_register_device(driver, i, NULL);
- 			if (IS_ERR(d)) {
- 				error = PTR_ERR(d);
--				goto err;
-+				goto err_unreg_devs;
- 			}
- 		}
- 	}
-@@ -3204,7 +3200,7 @@ int tty_register_driver(struct tty_driver *driver)
- 	driver->flags |= TTY_DRIVER_INSTALLED;
  	return 0;
  
--err:
-+err_unreg_devs:
- 	for (i--; i >= 0; i--)
- 		tty_unregister_device(driver, i);
- 
-@@ -3214,10 +3210,7 @@ err:
- 
- err_unreg_char:
- 	unregister_chrdev_region(dev, driver->num);
--	driver->ttys = NULL;
--	driver->termios = NULL;
--err_free_p: /* destruct_tty_driver will free driver->ports */
--	kfree(p);
-+err:
- 	return error;
+ error:
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 3098fa1..59a73af 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1213,7 +1213,10 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+  */
+ static void tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+-	sprintf(p, "%s%d", driver->name, index + driver->name_base);
++	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
++		strcpy(p, driver->name);
++	else
++		sprintf(p, "%s%d", driver->name, index + driver->name_base);
  }
- EXPORT_SYMBOL(tty_register_driver);
+ 
+ /**
+@@ -3061,7 +3064,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+ 	struct tty_driver *driver;
+ 	int err;
+ 
+-	if (!lines)
++	if (!lines || (flags & TTY_DRIVER_UNNUMBERED_NODE && lines > 1))
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	driver = kzalloc(sizeof(struct tty_driver), GFP_KERNEL);
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index 1a85f00..44e05b7 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -394,6 +394,11 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+  * TTY_DRIVER_DYNAMIC_ALLOC -- do not allocate structures which are
+  *	needed per line for this driver as it would waste memory.
+  *	The driver will take care.
++ *
++ * TTY_DRIVER_UNNUMBERED_NODE -- do not create numbered /dev nodes. In
++ *	other words create /dev/ttyprintk and not /dev/ttyprintk0.
++ *	Applicable only when a driver for a single tty device is
++ *	being allocated.
+  */
+ #define TTY_DRIVER_INSTALLED		0x0001
+ #define TTY_DRIVER_RESET_TERMIOS	0x0002
+@@ -402,6 +407,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+ #define TTY_DRIVER_DEVPTS_MEM		0x0010
+ #define TTY_DRIVER_HARDWARE_BREAK	0x0020
+ #define TTY_DRIVER_DYNAMIC_ALLOC	0x0040
++#define TTY_DRIVER_UNNUMBERED_NODE	0x0080
+ 
+ /* tty driver types */
+ #define TTY_DRIVER_TYPE_SYSTEM		0x0001
 -- 
 1.7.10.4
 
