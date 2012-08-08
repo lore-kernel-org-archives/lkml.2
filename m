@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030761Ab2HHTdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:33:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35212 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758084Ab2HHTdG (ORCPT
+	id S1030802Ab2HHTdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:33:41 -0400
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:39743 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758084Ab2HHTdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:33:06 -0400
-Message-ID: <5022BEED.9090106@suse.cz>
-Date: Wed, 08 Aug 2012 21:33:01 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
+	Wed, 8 Aug 2012 15:33:39 -0400
+X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Aug 2012 15:33:38 EDT
+Message-ID: <20120808222306.133742ltgk7j9tic@www.81.fi>
+Date: Wed, 08 Aug 2012 22:23:06 +0300
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH] rndis_wlan: Fix potential memory leak in
+ update_pmkid()
+References: <1344440661-32322-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1344440661-32322-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com
-Subject: Re: [PATCH 02/41] TTY: 68328serial, fix compilation
-References: <1344368886-24033-1-git-send-email-jslaby@suse.cz> <1344368886-24033-3-git-send-email-jslaby@suse.cz> <20120808162450.54158ce3@bob.linux.org.uk>
-In-Reply-To: <20120808162450.54158ce3@bob.linux.org.uk>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 05:24 PM, Alan Cox wrote:
-> On Tue,  7 Aug 2012 21:47:27 +0200
-> Jiri Slaby <jslaby@suse.cz> wrote:
-> 
->> tty_struct->termios is no longer a pointer. This was changed recently
->> by "tty: move the termios object into the tty". But 68328serial was
->> not changed, so we now have a compilation error:
->> 68328serial.c: In function 'change_speed':
->> 68328serial.c:518:22: error: invalid type argument of '->' (have
->> 'struct ktermios') 68328serial.c: In function 'rs_set_ldisc':
->> 68328serial.c:620:31: error: invalid type argument of '->' (have
->> 'struct ktermios') 68328serial.c: In function 'rs_set_termios':
->> 68328serial.c:988:20: error: invalid type argument of '->' (have
->> 'struct ktermios')
->>
->> Fix that now.
->>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> Cc: Alan Cox <alan@linux.intel.com>
-> 
-> Cool - I couldn't even find a compile chain or config to test this. I'd
-> assumed it was broken and really wanted dumping in staging (it still
-> looks that way 8))
+Quoting Alexey Khoroshilov <khoroshilov@ispras.ru>:
 
-Heh, I cannot tell if there is any user at all. The only thing I know is
-it used to compile cleanly the last time I tried and it became broken
-now :).
+> Do not leak memory by updating pointer with potentially NULL realloc  
+> return value.
+>
+> Found by Linux Driver Verification project (linuxtesting.org).
+>
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-BTW you perhaps know that, compilers for most arches are at:
-ftp.kernel.org/pub/tools/crosstool/files/bin/
+Thanks!
 
-regards,
--- 
-js
-suse labs
+Acked-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+
+> ---
+>  drivers/net/wireless/rndis_wlan.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rndis_wlan.c  
+> b/drivers/net/wireless/rndis_wlan.c
+> index 241162e..7a4ae9e 100644
+> --- a/drivers/net/wireless/rndis_wlan.c
+> +++ b/drivers/net/wireless/rndis_wlan.c
+> @@ -1803,6 +1803,7 @@ static struct ndis_80211_pmkid  
+> *update_pmkid(struct usbnet *usbdev,
+>  						struct cfg80211_pmksa *pmksa,
+>  						int max_pmkids)
+>  {
+> +	struct ndis_80211_pmkid *new_pmkids;
+>  	int i, err, newlen;
+>  	unsigned int count;
+>
+> @@ -1833,11 +1834,12 @@ static struct ndis_80211_pmkid  
+> *update_pmkid(struct usbnet *usbdev,
+>  	/* add new pmkid */
+>  	newlen = sizeof(*pmkids) + (count + 1) * sizeof(pmkids->bssid_info[0]);
+>
+> -	pmkids = krealloc(pmkids, newlen, GFP_KERNEL);
+> -	if (!pmkids) {
+> +	new_pmkids = krealloc(pmkids, newlen, GFP_KERNEL);
+> +	if (!new_pmkids) {
+>  		err = -ENOMEM;
+>  		goto error;
+>  	}
+> +	pmkids = new_pmkids;
+>
+>  	pmkids->length = cpu_to_le32(newlen);
+>  	pmkids->bssid_info_count = cpu_to_le32(count + 1);
+> --
+> 1.7.9.5
+>
+>
+>
+
+
+
