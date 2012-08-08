@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030377Ab2HHNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:52:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52783 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030268Ab2HHNwz (ORCPT
+	id S1030397Ab2HHNxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:53:17 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:15843 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030267Ab2HHNxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:52:55 -0400
-Date: Wed, 8 Aug 2012 14:52:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
-Message-ID: <20120808135253.GC16861@opensource.wolfsonmicro.com>
-References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
- <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com>
- <20120808131356.GS16861@opensource.wolfsonmicro.com>
- <50226CF4.1010202@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50226CF4.1010202@ti.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 8 Aug 2012 09:53:15 -0400
+Message-id: <50226F46.3080800@samsung.com>
+Date: Wed, 08 Aug 2012 15:53:10 +0200
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Pawel Osciak <pawel@osciak.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jerome Glisse <jglisse@redhat.com>, Vinod Koul <vinod.koul@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Landley <rob@landley.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alex Deucher <alexander.deucher@amd.com>, Rob Clark <rob@ti.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>, linux-media@vger.kernel.org
+Subject: Re: [PATCH] dma-buf: add reference counting for exporter module
+References: <50223CC5.9060007@samsung.com> <1404275.atroogfRqe@avalon>
+In-reply-to: <1404275.atroogfRqe@avalon>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 04:43:16PM +0300, Peter Ujfalusi wrote:
-> On 08/08/2012 04:13 PM, Mark Brown wrote:
+Hi Laurent,
 
-> > This doesn't seem like something that should be in the CODEC driver
-> > really, there's a general need for something which can unmute controls
-> > at the end of the power up sequence and mute before power down.  Also,
-> > if this is going to be part of the binding shouldn't we just omit the
-> > first property and simply check for the presence of the property which
-> > specifies the GPIO?
+On 08/08/2012 03:35 PM, Laurent Pinchart wrote:
+> Hi Tomasz,
+> 
+> Thanks for the patch.
+> 
+> On Wednesday 08 August 2012 12:17:41 Tomasz Stanislawski wrote:
+>> This patch adds reference counting on a module that exports dma-buf and
+>> implements its operations. This prevents the module from being unloaded
+>> while DMABUF file is in use.
+>>
+>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>> ---
+>>  Documentation/dma-buf-sharing.txt          |    3 ++-
+>>  drivers/base/dma-buf.c                     |   10 +++++++++-
+>>  drivers/gpu/drm/exynos/exynos_drm_dmabuf.c |    1 +
+>>  drivers/gpu/drm/i915/i915_gem_dmabuf.c     |    1 +
+>>  drivers/gpu/drm/nouveau/nouveau_prime.c    |    1 +
+>>  drivers/gpu/drm/radeon/radeon_prime.c      |    1 +
+>>  drivers/staging/omapdrm/omap_gem_dmabuf.c  |    1 +
+>>  include/linux/dma-buf.h                    |    2 ++
+>>  8 files changed, 18 insertions(+), 2 deletions(-)
+>>
+[snip]
 
-> The hs_extmute is used for reducing pop noise on the headset. The sequence is
-> described in the TRM and it need to be done within the codec driver since it
-> is within the sequence.
+>> @@ -96,6 +98,7 @@ struct dma_buf *dma_buf_export(void *priv, const struct
+>> dma_buf_ops *ops, struct file *file;
+>>
+>>  	if (WARN_ON(!priv || !ops
+>> +			  || !ops->owner
 
-Is the point it's at in the sequence the end?
+Thank you for spotting this.
+I didn'y know that try_get_module returned true is module was NULL.
 
-> >> +#ifdef CONFIG_OF
-> >> +	if (of_find_node_by_name(node, "codec"))
-> >> +		return true;
-> >> +#endif
+BTW. Is it worth to add ".owner = THIS_MODULE," to all dma_buf
+exporters in this patch?
 
-> > This really seems like we should be stubbing out of_find_node_by_name()
-> > to return false in non-OF cases.
-
-> Yes, most likely the of_find_node_by_name() deserves the same treatment as
-> some selected of_* function in case CONFIG_OF is not selected.
-> But at the moment this is not the case, we need to protect with ifdef since we
-> might break other randconfigs where CONFIG_OF is not set.
-
-We can always add a patch stubbing it out as part of the series, or in a
-branch in the OF tree that we can pull in.
+Regards,
+Tomasz Stanislawski
 
 > 
-> >> +#ifdef CONFIG_OF
-> >> +	if (!of_property_read_u32(node, "ti,enable-vibra", &vibra) && vibra)
-> >> +		return true;
-> >> +#endif
-> > 
-> > Similarly here.
+> THIS_MODULE is defined as ((struct module *)0) when the driver is built-in, 
+> this check should thus be removed.
 > 
-> Here the ifdef is no needed. of_property_read_u32() return -ENOSYS in case
-> CONFIG_OF is not selected.
-> 
-> -- 
-> Péter
+>>  			  || !ops->map_dma_buf
+>>  			  || !ops->unmap_dma_buf
+>>  			  || !ops->release
+>>
+
