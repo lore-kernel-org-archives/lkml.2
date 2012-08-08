@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030406Ab2HHQB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:01:29 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47207 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030325Ab2HHQB2 (ORCPT
+	id S1758811Ab2HHQGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 12:06:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58140 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758763Ab2HHQGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:01:28 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH 1/4] fuse: add basic support of iovec[] to fuse_req
-References: <20120720114653.15517.74290.stgit@maximpc.sw.ru>
-	<20120720115015.15517.5557.stgit@maximpc.sw.ru>
-Date: Wed, 08 Aug 2012 18:02:47 +0200
-In-Reply-To: <20120720115015.15517.5557.stgit@maximpc.sw.ru> (Maxim Patlasov's
-	message of "Fri, 20 Jul 2012 15:50:23 +0400")
-Message-ID: <87zk65id7c.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 8 Aug 2012 12:06:36 -0400
+Date: Wed, 8 Aug 2012 17:05:17 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Cyril Chemparathy <cyril@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 01/22] ARM: add mechanism for late code patching
+Message-ID: <20120808160517.GO18957@n2100.arm.linux.org.uk>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com> <1343775898-28345-2-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208040045360.5231@xanadu.home> <50219C45.7030601@ti.com> <alpine.LFD.2.02.1208080106500.5231@xanadu.home> <5022673A.7060407@ti.com> <alpine.LFD.2.02.1208080948210.5231@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1208080948210.5231@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim Patlasov <mpatlasov@parallels.com> writes:
+On Wed, Aug 08, 2012 at 09:55:12AM -0400, Nicolas Pitre wrote:
+> On Wed, 8 Aug 2012, Cyril Chemparathy wrote:
+> > Neat macro magic.  Are you thinking that we build this in as a self test in
+> > the code?
+> 
+> For such things, this is never a bad idea to have some test alongside 
+> with the main code, especially if this is extended to more cases in the 
+> future.  It is too easy to break it in subtle ways.
+> 
+> See arch/arm/kernel/kprobes-test*.c for a precedent.
 
-> The patch allows fuse_req to refer to array of iovec-s describing
-> layout of user-data over req->pages. fuse_copy_pages() is re-worked to
-> support both cased: former layout where pages[] corresponded to <buf, len>
-> and newer one where pages[] corresponds to iovec[].
->
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-> ---
->  fs/fuse/dev.c    |   52 +++++++++++++++++++++++++++++++++++++++++++++++++---
->  fs/fuse/fuse_i.h |   12 ++++++++++--
->  2 files changed, 59 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index 7df2b5e..cdae525 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -850,9 +850,9 @@ static int fuse_copy_page(struct fuse_copy_state *cs, struct page **pagep,
->  	return 0;
->  }
->  
-> -/* Copy pages in the request to/from userspace buffer */
-> -static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
-> -			   int zeroing)
-> +/* Start from addr(pages[0]) + page_offset. No holes in the middle. */
-> +static int fuse_copy_pages_for_buf(struct fuse_copy_state *cs, unsigned nbytes,
-> +				   int zeroing)
->  {
->  	unsigned i;
->  	struct fuse_req *req = cs->req;
-> @@ -874,6 +874,52 @@ static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
->  	return 0;
->  }
->  
-> +/* Take iov_offset as offset in iovec[0]. Iterate based on iovec[].iov_len */
-> +static int fuse_copy_pages_for_iovec(struct fuse_copy_state *cs,
-> +				     unsigned nbytes, int zeroing)
-> +{
-> +	unsigned i;
-> +	struct fuse_req *req = cs->req;
-> +	const struct iovec *iov = req->iovec;
-> +	unsigned iov_offset = req->iov_offset;
-> +
-> +	for (i = 0; i < req->num_pages && (nbytes || zeroing); i++) {
-> +		int err;
-> +		unsigned long user_addr = (unsigned long)iov->iov_base +
-> +					  iov_offset;
-> +		unsigned offset = user_addr & ~PAGE_MASK;
-> +		unsigned count = min_t(size_t, PAGE_SIZE - offset,
-> +				       iov->iov_len - iov_offset);
+Done correctly, it shouldn't be a problem, but I wouldn't say that
+arch/arm/kernel/kprobes-test*.c is done correctly.  It's seen quite
+a number of patching attempts since it was introduced for various
+problems, and I've seen quite a number of builds fail for various
+reasons in this file (none which I could be bothered to investigate.)
 
-It would be much cleaner if we didn't have to deal with the original
-iovec here, but only offset and length relative to the page.
-
-I understand that that would mean allocating an array for these.  In the
-other thread I mentioned the possibility of allocating the page array.
-Instead of a page array, we could have an array of (pageptr, offset,
-len) which would simplify the whole thing.
-
-Thanks,
-Miklos
+When the test code ends up causing more problems than the code it's
+testing, something is definitely wrong.
