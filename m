@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab2HHNB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:01:28 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42943 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2HHNB1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:01:27 -0400
+	id S1758208Ab2HHNCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:02:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758065Ab2HHNCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 09:02:19 -0400
+Date: Wed, 8 Aug 2012 14:58:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com
+Subject: Re: [PATCH 3/5] uprobes: remove check for uprobe variable in
+	handle_swbp()
+Message-ID: <20120808125845.GB4504@redhat.com>
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-4-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1344430493-5304-7-git-send-email-arnd@arndb.de>
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-	<1344430493-5304-7-git-send-email-arnd@arndb.de>
-Date: Wed, 8 Aug 2012 10:01:26 -0300
-Message-ID: <CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
-Subject: Re: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
-From: Fabio Estevam <festevam@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344355952-2382-4-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Wed, Aug 8, 2012 at 9:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> It is not currently possible to build the gpmi-nand driver without
-> also building the mxs-dma driver. Clarify this Kconfig and enable
-> both in the defconfig file so we can build it again with both enabled.
+On 08/07, Sebastian Andrzej Siewior wrote:
 >
-> drivers/built-in.o: In function `gpmi_dma_filter':
-> clk-fixed-factor.c:(.text+0xafc18): undefined reference to `mxs_dma_is_apbh'
-> make[1]: *** [vmlinux] Error 1
-> make: *** [sub-make] Error 2
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Sascha Hauer <kernel@pengutronix.de>
+> by the time we get here (after we pass cleanup_ret) uprobe is always is
+> set. If it is NULL we leave very early in the code.
 
-I have already sent a fix for this to the mtd list:
-https://patchwork.kernel.org/patch/1236551/
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
-Regards,
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  kernel/events/uprobes.c |   16 +++++++---------
+>  1 file changed, 7 insertions(+), 9 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 41a2555..c8e5204 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1528,17 +1528,15 @@ cleanup_ret:
+>  		utask->active_uprobe = NULL;
+>  		utask->state = UTASK_RUNNING;
+>  	}
+> -	if (uprobe) {
+> -		if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
+> +	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
+>  
+> -			/*
+> -			 * cannot singlestep; cannot skip instruction;
+> -			 * re-execute the instruction.
+> -			 */
+> -			instruction_pointer_set(regs, bp_vaddr);
+> +		/*
+> +		 * cannot singlestep; cannot skip instruction;
+> +		 * re-execute the instruction.
+> +		 */
+> +		instruction_pointer_set(regs, bp_vaddr);
+>  
+> -		put_uprobe(uprobe);
+> -	}
+> +	put_uprobe(uprobe);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.10.4
+> 
 
-Fabio Estevam
