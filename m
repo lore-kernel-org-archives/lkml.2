@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab2HHMz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:55:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62097 "EHLO
+	id S1758252Ab2HHM4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:56:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60575 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758180Ab2HHMzP (ORCPT
+	with ESMTP id S1757805Ab2HHMzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:55:15 -0400
+	Wed, 8 Aug 2012 08:55:03 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
-Date: Wed,  8 Aug 2012 14:54:53 +0200
-Message-Id: <1344430493-5304-7-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, stable@vger.kernel.org (v3.2+),
+        Daniel Mack <zonque@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH 2/6] ARM: pxa remove irq_to_gpio from eeti_ts driver
+Date: Wed,  8 Aug 2012 14:54:49 +0200
+Message-Id: <1344430493-5304-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344430493-5304-1-git-send-email-arnd@arndb.de>
 References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Lw1yWhdKZwFCJlJUcV61xs3WARbGeXO4zXB8ph3Lri7
- l5yxoDOZfCaatsxdBqopR1dD1yCr6SUw3nC9abQ+gksSoxLaeF
- gpXtSr3lGLOpigMNVejFbYPQIJO70h7QpQKs7kXA1RHzP+TxSh
- nF0cdDLRcqW44FcUe7C9hYZmDdXXKXMkXcCAzo5YFx0T+Mb+AV
- GZonQwTBUYPmD6nA27jO3aqLJz9wzxlqeT+vds060GvWt0KtAC
- BsXMGZ+hzg+KzBkdIw0h5GDlZh3rgs4JrFUAK8ZegwdTsIazKB
- oT85Vcko9FA4UqZrd67ZyzTG2l00SZlMEkLhYpYwvBm7NLWgJ6
- AosxlTGU+rlKeLOtESpuj4AywdWuKVaELWgjdRScjAeSvl4UmU
- zlbbuMFfEEt9Q==
+X-Provags-ID: V02:K0:5KZEO/Fy4nyj/eXxN5uFiNt+o96OxZGOP1OlONedrWu
+ aH/GP57xsSzrtC/BWI2tGH34doPdOYreszWY/TcGCwIxaPFihh
+ 2SdYbURu1ZyLieDoK8T/aA3Z2/XeAjgWlkXh/HyJi1SzJ1d9gI
+ 4YIUObE8ZqKMGxn2oJTacR4i0yxpd7NHJYkMyZtPiBc/WDf8ht
+ 17KfWwnkpgBqcl1rCF0BIcZAV6lVWaH24aznK2cE6fnEJKl+75
+ y1yAjSKqeNG8CyJEKTmYgP5bt6D7nJIZ4JBK8vv3qH6jkZ0yh2
+ Ol2+XvMkoJvVyecGVJ8ZoSUm05J3g4ukarPfxnsDazL6SWICCL
+ Zdfm36MD7VW5JFnY+4Uv22xkx3qX+glTI+8NOhidQ97Nmuwaxa
+ Js4PeNkkVZFeg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not currently possible to build the gpmi-nand driver without
-also building the mxs-dma driver. Clarify this Kconfig and enable
-both in the defconfig file so we can build it again with both enabled.
+The irq_to_gpio function was removed from the pxa platform
+in linux-3.2, and this driver has been broken since.
 
-drivers/built-in.o: In function `gpmi_dma_filter':
-clk-fixed-factor.c:(.text+0xafc18): undefined reference to `mxs_dma_is_apbh'
-make[1]: *** [vmlinux] Error 1
-make: *** [sub-make] Error 2
+Without this patch, building raumfeld_defconfig results in:
+
+drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
+drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: stable@vger.kernel.org (v3.2+)
+Cc: Daniel Mack <zonque@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
 ---
- arch/arm/configs/imx_v6_v7_defconfig |    1 +
- drivers/mtd/nand/Kconfig             |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-pxa/raumfeld.c        |    1 +
+ drivers/input/touchscreen/eeti_ts.c |    8 +++++---
+ include/linux/input/eeti_ts.h       |    1 +
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index f725b96..3c9f32f 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -192,6 +192,7 @@ CONFIG_RTC_DRV_MC13XXX=y
- CONFIG_RTC_DRV_MXC=y
- CONFIG_DMADEVICES=y
- CONFIG_IMX_SDMA=y
-+CONFIG_MXS_DMA=y
- CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_EXT2_FS=y
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index 31bb7e5..8ca4176 100644
---- a/drivers/mtd/nand/Kconfig
-+++ b/drivers/mtd/nand/Kconfig
-@@ -480,7 +480,7 @@ config MTD_NAND_NANDSIM
+diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
+index 5905ed1..9e1c4ea 100644
+--- a/arch/arm/mach-pxa/raumfeld.c
++++ b/arch/arm/mach-pxa/raumfeld.c
+@@ -953,6 +953,7 @@ static struct i2c_board_info raumfeld_connector_i2c_board_info __initdata = {
  
- config MTD_NAND_GPMI_NAND
-         bool "GPMI NAND Flash Controller driver"
--        depends on MTD_NAND && (SOC_IMX23 || SOC_IMX28 || SOC_IMX6Q)
-+        depends on MTD_NAND && MXS_DMA
-         help
- 	 Enables NAND Flash support for IMX23 or IMX28.
- 	 The GPMI controller is very powerful, with the help of BCH
+ static struct eeti_ts_platform_data eeti_ts_pdata = {
+ 	.irq_active_high = 1,
++	.gpio = GPIO_TOUCH_IRQ,
+ };
+ 
+ static struct i2c_board_info raumfeld_controller_i2c_board_info __initdata = {
+diff --git a/drivers/input/touchscreen/eeti_ts.c b/drivers/input/touchscreen/eeti_ts.c
+index 503c709..45dab18 100644
+--- a/drivers/input/touchscreen/eeti_ts.c
++++ b/drivers/input/touchscreen/eeti_ts.c
+@@ -48,7 +48,7 @@ struct eeti_ts_priv {
+ 	struct input_dev *input;
+ 	struct work_struct work;
+ 	struct mutex mutex;
+-	int irq, irq_active_high;
++	int irq, gpio, irq_active_high;
+ };
+ 
+ #define EETI_TS_BITDEPTH	(11)
+@@ -62,7 +62,7 @@ struct eeti_ts_priv {
+ 
+ static inline int eeti_ts_irq_active(struct eeti_ts_priv *priv)
+ {
+-	return gpio_get_value(irq_to_gpio(priv->irq)) == priv->irq_active_high;
++	return gpio_get_value(priv->gpio) == priv->irq_active_high;
+ }
+ 
+ static void eeti_ts_read(struct work_struct *work)
+@@ -203,8 +203,10 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 
+ 	pdata = client->dev.platform_data;
+ 
+-	if (pdata)
++	if (pdata) {
++		priv->gpio = pdata->gpio;
+ 		priv->irq_active_high = pdata->irq_active_high;
++	}
+ 
+ 	irq_flags = priv->irq_active_high ?
+ 		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
+diff --git a/include/linux/input/eeti_ts.h b/include/linux/input/eeti_ts.h
+index f875b31..3404504 100644
+--- a/include/linux/input/eeti_ts.h
++++ b/include/linux/input/eeti_ts.h
+@@ -3,6 +3,7 @@
+ 
+ struct eeti_ts_platform_data {
+ 	unsigned int irq_active_high;
++	unsigned int gpio;
+ };
+ 
+ #endif /* LINUX_INPUT_EETI_TS_H */
 -- 
 1.7.10
 
