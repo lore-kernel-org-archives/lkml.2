@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030719Ab2HHRTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:19:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63164 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030495Ab2HHRTl (ORCPT
+	id S1758964Ab2HHRXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:23:18 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:57091 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758903Ab2HHRXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:19:41 -0400
+	Wed, 8 Aug 2012 13:23:16 -0400
+X-IronPort-AV: E=Sophos;i="4.77,733,1336348800"; 
+   d="scan'208";a="13915138"
+Date: Wed, 8 Aug 2012 18:22:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH v2 21/23] xen: update xen_add_to_physmap interface
+In-Reply-To: <20120807183306.GX15053@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1208081821380.21096@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-21-git-send-email-stefano.stabellini@eu.citrix.com> <20120807183306.GX15053@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
-	<20120808151555.GE14718@S2101-09.ap.freescale.net>
-	<CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
-Date: Wed, 8 Aug 2012 14:19:40 -0300
-Message-ID: <CAOMZO5DOEfV4wTSNW8ABaUhGwa_KG3Bkt0o-rs8k-cZk4P-=+A@mail.gmail.com>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device tree
-From: Fabio Estevam <festevam@gmail.com>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
+On Tue, 7 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> On Mon, Aug 06, 2012 at 03:27:24PM +0100, Stefano Stabellini wrote:
+> > Update struct xen_add_to_physmap to be in sync with Xen's version of the
+> > structure.
+> > The size field was introduced by:
+> > 
+> > changeset:   24164:707d27fe03e7
+> > user:        Jean Guyader <jean.guyader@eu.citrix.com>
+> > date:        Fri Nov 18 13:42:08 2011 +0000
+> > summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
+> > 
+> > According to the comment:
+> > 
+> > "This new field .size is located in the 16 bits padding between .domid
+> > and .space in struct xen_add_to_physmap to stay compatible with older
+> > versions."
+> > 
+> > Changes in v2:
+> 
+> Looks good. Let me take this as in my tree to prep it for Mukesh's patches.
 
-On Wed, Aug 8, 2012 at 1:55 PM, Matt Sealey <matt@genesi-usa.com> wrote:
+OK.
+Beware that patch #23 is going to modify xen_add_to_physmap again to
+replace .size with a union.
 
-...
-> or any setup at all for this. What's stopping this right now is you
-> need a new U-Boot which we
-> didn't release or mainline because we are still testing it (old U-Boot
-> shipped on the boards
-> cannot boot device tree anyway). While the number of users of this is
 
-Actually you can boot a device tree kernel even on old bootloaders
-that do not support dt.
-
-You need to select:
-CONFIG_ARM_APPENDED_DTB=y
-CONFIG_ARM_ATAG_DTB_COMPAT=y
-
-Then,
-
-make -j4 zImage
-make imx51-babbage.dtb
-cat arch/arm/boot/zImage arch/arm/boot/ imx51-babbage.dtb  >
-arch/arm/boot/zImage_dtb
-mkimage -A arm -O linux -T kernel -C none -a 0x90008000 -e 0x90008000
--n Linux -d arch/arm/boot/zImage_dtb arch/arm/boot/uImage
-
-and boot this generated uImage the same way as you used to do in the
-non-dt case.
-
-Regards,
-
-Fabio Estevam
+> > - remove erroneous comment in the commit message.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  include/xen/interface/memory.h |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+> > index b5c3098..b66d04c 100644
+> > --- a/include/xen/interface/memory.h
+> > +++ b/include/xen/interface/memory.h
+> > @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
+> >      /* Which domain to change the mapping for. */
+> >      domid_t domid;
+> >  
+> > +    /* Number of pages to go through for gmfn_range */
+> > +    uint16_t    size;
+> > +
+> >      /* Source mapping space. */
+> >  #define XENMAPSPACE_shared_info 0 /* shared info page */
+> >  #define XENMAPSPACE_grant_table 1 /* grant table page */
+> > -- 
+> > 1.7.2.5
+> 
