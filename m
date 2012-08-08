@@ -1,215 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab2HHEeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 00:34:31 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61727 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2HHEe3 (ORCPT
+	id S1751504Ab2HHEfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 00:35:16 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46050 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2HHEez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 00:34:29 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-7b-5021ec533b98
-Date: Wed, 8 Aug 2012 13:36:00 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
- with free pages
-Message-ID: <20120808043600.GD4247@bbox>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-7-git-send-email-mgorman@suse.de>
+	Wed, 8 Aug 2012 00:34:55 -0400
+X-AuditID: b753bd60-928c4ba0000047ca-2c-5021ec6bb12b
+X-AuditID: b753bd60-928c4ba0000047ca-2c-5021ec6bb12b
+Message-ID: <5021EC6B.7020605@hitachi.com>
+Date: Wed, 08 Aug 2012 13:34:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344342677-5845-7-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
+ is used
+References: <20120807193845.146666357@goodmis.org> <20120807194059.773895870@goodmis.org>
+In-Reply-To: <20120807194059.773895870@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 01:31:17PM +0100, Mel Gorman wrote:
-> commit [7db8889a: mm: have order > 0 compaction start off where it left]
-> introduced a caching mechanism to reduce the amount work the free page
-> scanner does in compaction. However, it has a problem. Consider two process
-> simultaneously scanning free pages
+(2012/08/08 4:38), Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> 				    			C
-> Process A		M     S     			F
-> 		|---------------------------------------|
-> Process B		M 	FS
+> The function graph has a test to check if the frame pointer is
+> corrupted, which can happen with various options of gcc with mcount.
+> But this is not an issue with -mfentry as -mfentry does not need nor use
+> frame pointers for function graph tracing.
 > 
-> C is zone->compact_cached_free_pfn
-> S is cc->start_pfree_pfn
-> M is cc->migrate_pfn
-> F is cc->free_pfn
-> 
-> In this diagram, Process A has just reached its migrate scanner, wrapped
-> around and updated compact_cached_free_pfn accordingly.
-> 
-> Simultaneously, Process B finishes isolating in a block and updates
-> compact_cached_free_pfn again to the location of its free scanner.
-> 
-> Process A moves to "end_of_zone - one_pageblock" and runs this check
-> 
->                 if (cc->order > 0 && (!cc->wrapped ||
->                                       zone->compact_cached_free_pfn >
->                                       cc->start_free_pfn))
->                         pfn = min(pfn, zone->compact_cached_free_pfn);
-> 
-> compact_cached_free_pfn is above where it started so the free scanner skips
-> almost the entire space it should have scanned. When there are multiple
-> processes compacting it can end in a situation where the entire zone is
-> not being scanned at all.  Further, it is possible for two processes to
-> ping-pong update to compact_cached_free_pfn which is just random.
-> 
-> Overall, the end result wrecks allocation success rates.
-> 
-> There is not an obvious way around this problem without introducing new
-> locking and state so this patch takes a different approach.
-> 
-> First, it gets rid of the skip logic because it's not clear that it matters
-> if two free scanners happen to be in the same block but with racing updates
-> it's too easy for it to skip over blocks it should not.
-
-Okay.
-
-> 
-> Second, it updates compact_cached_free_pfn in a more limited set of
-> circumstances.
-> 
-> If a scanner has wrapped, it updates compact_cached_free_pfn to the end
-> 	of the zone. Each time a wrapped scanner isoaltes a page, it
-> 	updates compact_cached_free_pfn. The intention is that after
-> 	wrapping, the compact_cached_free_pfn will be at the highest
-> 	pageblock with free pages when compaction completes.
-
-Okay.
-
-> 
-> If a scanner has not wrapped when compaction completes and
-
-Compaction complete?
-Your code seem to do it in isolate_freepages.
-Isn't it compaction complete?
-
-> 	compact_cached_free_pfn is set the end of the the zone, initialise
-> 	it once.
-
-I can't understad this part.
-Could you elaborate a bit more?
-
-> 
-> This is not optimal and it can still race but the compact_cached_free_pfn
-> will be pointing to or very near a pageblock with free pages.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  mm/compaction.c |   54 ++++++++++++++++++++++++++++--------------------------
->  1 file changed, 28 insertions(+), 26 deletions(-)
+>  kernel/trace/trace_functions_graph.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index be310f1..df50f73 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -419,6 +419,20 @@ static bool suitable_migration_target(struct page *page)
->  }
->  
->  /*
-> + * Returns the start pfn of the last page block in a zone.  This is the starting
-> + * point for full compaction of a zone.  Compaction searches for free pages from
-> + * the end of each zone, while isolate_freepages_block scans forward inside each
-> + * page block.
-> + */
-> +static unsigned long start_free_pfn(struct zone *zone)
-> +{
-> +	unsigned long free_pfn;
-> +	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> +	free_pfn &= ~(pageblock_nr_pages-1);
-> +	return free_pfn;
-> +}
-> +
-> +/*
->   * Based on information in the current compact_control, find blocks
->   * suitable for isolating free pages from and then isolate them.
->   */
-> @@ -457,17 +471,6 @@ static void isolate_freepages(struct zone *zone,
->  					pfn -= pageblock_nr_pages) {
->  		unsigned long isolated;
->  
-> -		/*
-> -		 * Skip ahead if another thread is compacting in the area
-> -		 * simultaneously. If we wrapped around, we can only skip
-> -		 * ahead if zone->compact_cached_free_pfn also wrapped to
-> -		 * above our starting point.
-> -		 */
-> -		if (cc->order > 0 && (!cc->wrapped ||
-> -				      zone->compact_cached_free_pfn >
-> -				      cc->start_free_pfn))
-> -			pfn = min(pfn, zone->compact_cached_free_pfn);
-> -
->  		if (!pfn_valid(pfn))
->  			continue;
->  
-> @@ -510,7 +513,15 @@ static void isolate_freepages(struct zone *zone,
->  		 */
->  		if (isolated) {
->  			high_pfn = max(high_pfn, pfn);
-> -			if (cc->order > 0)
-> +
-> +			/*
-> +			 * If the free scanner has wrapped, update
-> +			 * compact_cached_free_pfn to point to the highest
-> +			 * pageblock with free pages. This reduces excessive
-> +			 * scanning of full pageblocks near the end of the
-> +			 * zone
-> +			 */
-> +			if (cc->order > 0 && cc->wrapped)
->  				zone->compact_cached_free_pfn = high_pfn;
->  		}
+> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> index ce27c8b..99b4378 100644
+> --- a/kernel/trace/trace_functions_graph.c
+> +++ b/kernel/trace/trace_functions_graph.c
+> @@ -143,7 +143,7 @@ ftrace_pop_return_trace(struct ftrace_graph_ret *trace, unsigned long *ret,
+>  		return;
 >  	}
-> @@ -520,6 +531,11 @@ static void isolate_freepages(struct zone *zone,
 >  
->  	cc->free_pfn = high_pfn;
->  	cc->nr_freepages = nr_freepages;
-> +
-> +	/* If compact_cached_free_pfn is reset then set it now */
-> +	if (cc->order > 0 && !cc->wrapped &&
-> +			zone->compact_cached_free_pfn == start_free_pfn(zone))
-> +		zone->compact_cached_free_pfn = high_pfn;
->  }
->  
->  /*
-> @@ -607,20 +623,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	return ISOLATE_SUCCESS;
->  }
->  
-> -/*
-> - * Returns the start pfn of the last page block in a zone.  This is the starting
-> - * point for full compaction of a zone.  Compaction searches for free pages from
-> - * the end of each zone, while isolate_freepages_block scans forward inside each
-> - * page block.
-> - */
-> -static unsigned long start_free_pfn(struct zone *zone)
-> -{
-> -	unsigned long free_pfn;
-> -	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> -	free_pfn &= ~(pageblock_nr_pages-1);
-> -	return free_pfn;
-> -}
-> -
->  static int compact_finished(struct zone *zone,
->  			    struct compact_control *cc)
->  {
-> -- 
-> 1.7.9.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> -#ifdef CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST
+> +#if defined(CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST) && !defined(CC_USING_FENTRY)
+
+I think CONFIG_HAVE_FENTRY would better unselect
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST in arch/x86/Kconfig explicitly.
+
+Thank you,
+
 
 -- 
-Kind regards,
-Minchan Kim
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
