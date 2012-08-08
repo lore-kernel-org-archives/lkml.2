@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab2HHV20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:28:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59167 "EHLO
+	id S933017Ab2HHV22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:28:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51680 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580Ab2HHV2U (ORCPT
+	with ESMTP id S932586Ab2HHV2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:28:20 -0400
+	Wed, 8 Aug 2012 17:28:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 07/10] ARM: rpc: check device_register return code in ecard_probe
-Date: Wed,  8 Aug 2012 23:27:55 +0200
-Message-Id: <1344461278-28245-8-git-send-email-arnd@arndb.de>
+Subject: [PATCH 09/10] ARM: rpc: Fix building RiscPC
+Date: Wed,  8 Aug 2012 23:27:57 +0200
+Message-Id: <1344461278-28245-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344461278-28245-1-git-send-email-arnd@arndb.de>
 References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:E9fjT7aUzpuo9qEZjxj6x6irjR8/HAzod7dp9OIVp4H
- llmGJxbTQaXjRrBiwU8Y+nH6QAroUGOiRYhgETi6zGifW/M7WE
- 8JKWYJ3iqsuTxHBbe2YIj40k6m5/MIIkWLjrcz6qeaFnbOR9Ft
- cwCQ2sVvBIXnSHJmZqD3bkNruRtaktH0Bq5EVwl4N45HPfu64H
- okfz+1pEcybHDvhK/72yQGZgApRUdgxvtIm9+Uuv91zogwU8p7
- clQo4HU6Um5wDP4EjdgJMsYpaiwTQ4fAnHAfCcLIqGwcbzOBN8
- A93+mfArEO4sOv9v4/sgCKrXe6g/+Ym1YBQwteZksBN3gv0xL6
- 5jvpjNJUxZHq+gwcGuSNMrNW2CCXoceAj2oQPjtA5gf2JPOl6P
- 0VjTUPHcBI10A==
+X-Provags-ID: V02:K0:NaK+FXj1uuldGtfArWQHyolwDLs+Stbv7HkO30D/9Lh
+ 1W+1qlkMUI1QG0J/ABrUii+HdKick26wZvOe4CmsyHHGVBEfSB
+ kqKyF7SgaueHaD8vr/t4Z97zPwZYFW1m6AXg3vAHk6nXambXI8
+ n32lsMaCoEO1dvjJz7X8XzVKbuZLBSKhH4HiSm+vFT2FvPnHlz
+ mrnoKjYzdxnC55aG2fJysuQYwKxyyLNB596zaG0z25jcNIbAty
+ jRgk1nV69OC1Z2QIXP75q/mBYi5YC36cqKpAbG0iMzExfnwbbk
+ MYv84hjcdNjQx5CF45VTJvMiPvG+dsbShkfaXxf3LmqPNefNf/
+ Q+7IerrtAuORNVbXIWTDcnfV5ntEAG5V3nLSboFojdtRcv1v3E
+ Tzn2M4RSt1cMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_register is marked __must_check, so we better propagate the error
-value by returning it from ecard_probe.
+ARMv3 support was removed in 357c9c1f07 "ARM: Remove support for ARMv3
+ARM610 and ARM710 CPUs", which explicitly left parts of the CPU32v3
+support in place for building RiscPC. However, this does not actually
+build in my test setup.
+
+This is probably not the right solution, but maybe someone has a better
+idea for how to deal with this.
 
 Without this patch, building rpc_defconfig results in:
 
-arch/arm/mach-rpc/ecard.c: In function 'ecard_probe':
-arch/arm/mach-rpc/ecard.c:963:17: warning: ignoring return value of 'device_register', declared with attribute warn_unused_result [-Wunused-result]
+arch/arm/lib/io-readsw-armv4.S: Assembler messages:
+arch/arm/lib/io-readsw-armv4.S:23: Error: selected processor does not support ARM mode `ldrh ip,[r0]'
+arch/arm/lib/io-readsw-armv4.S:25: Error: selected processor does not support ARM mode `strh ip,[r1],#2'
+arch/arm/lib/io-readsw-armv4.S:38: Error: selected processor does not support ARM mode `ldrh r3,[r0]'
+make[2]: *** [arch/arm/lib/io-readsw-armv4.o] Error 1
+make[1]: *** [arch/arm/lib] Error 2
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/mach-rpc/ecard.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/Kconfig    |    2 +-
+ arch/arm/Makefile   |    1 -
+ arch/arm/mm/Kconfig |   12 ++----------
+ 3 files changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-rpc/ecard.c b/arch/arm/mach-rpc/ecard.c
-index b91bc87..fcb1d59 100644
---- a/arch/arm/mach-rpc/ecard.c
-+++ b/arch/arm/mach-rpc/ecard.c
-@@ -960,7 +960,9 @@ static int __init ecard_probe(int slot, unsigned irq, card_type_t type)
- 	*ecp = ec;
- 	slot_to_expcard[slot] = ec;
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e91c7cd..1e435185 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2259,7 +2259,7 @@ config FPE_NWFPE_XP
  
--	device_register(&ec->dev);
-+	rc = device_register(&ec->dev);
-+	if (rc)
-+		goto nodev;
+ config FPE_FASTFPE
+ 	bool "FastFPE math emulation (EXPERIMENTAL)"
+-	depends on (!AEABI || OABI_COMPAT) && !CPU_32v3 && EXPERIMENTAL
++	depends on (!AEABI || OABI_COMPAT) && EXPERIMENTAL
+ 	---help---
+ 	  Say Y here to include the FAST floating point emulator in the kernel.
+ 	  This is an experimental much faster emulator which now also has full
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index b4c2296..2c53344 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -70,7 +70,6 @@ endif
+ arch-$(CONFIG_CPU_32v5)		:=-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
+ arch-$(CONFIG_CPU_32v4T)	:=-D__LINUX_ARM_ARCH__=4 -march=armv4t
+ arch-$(CONFIG_CPU_32v4)		:=-D__LINUX_ARM_ARCH__=4 -march=armv4
+-arch-$(CONFIG_CPU_32v3)		:=-D__LINUX_ARM_ARCH__=3 -march=armv3
  
- 	return 0;
+ # This selects how we optimise for the processor.
+ tune-$(CONFIG_CPU_ARM7TDMI)	:=-mtune=arm7tdmi
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 101b968..28773e6 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -265,8 +265,7 @@ config CPU_ARM1026
+ # SA110
+ config CPU_SA110
+ 	bool "Support StrongARM(R) SA-110 processor" if ARCH_RPC
+-	select CPU_32v3 if ARCH_RPC
+-	select CPU_32v4 if !ARCH_RPC
++	select CPU_32v4
+ 	select CPU_ABRT_EV4
+ 	select CPU_PABRT_LEGACY
+ 	select CPU_CACHE_V4WB
+@@ -395,12 +394,6 @@ config CPU_V7
  
+ # Figure out what processor architecture version we should be using.
+ # This defines the compiler instruction set which depends on the machine type.
+-config CPU_32v3
+-	bool
+-	select TLS_REG_EMUL if SMP || !MMU
+-	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+-	select CPU_USE_DOMAINS if MMU
+-
+ config CPU_32v4
+ 	bool
+ 	select TLS_REG_EMUL if SMP || !MMU
+@@ -587,8 +580,7 @@ comment "Processor Features"
+ 
+ config ARM_LPAE
+ 	bool "Support for the Large Physical Address Extension"
+-	depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && \
+-		!CPU_32v4 && !CPU_32v3
++	depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && !CPU_32v4
+ 	help
+ 	  Say Y if you have an ARMv7 processor supporting the LPAE page
+ 	  table format and you would like to access memory beyond the
 -- 
 1.7.10
 
