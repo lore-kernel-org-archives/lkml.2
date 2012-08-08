@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030342Ab2HHJmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:42:44 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:34646 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030303Ab2HHJmN (ORCPT
+	id S1030362Ab2HHJn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:43:26 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:41198 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964819Ab2HHJmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:42:13 -0400
+	Wed, 8 Aug 2012 05:42:06 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -16,9 +16,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH 10/11] ASoC: twl4030: Add pointer to pdata within the private data
-Date: Wed,  8 Aug 2012 12:41:26 +0300
-Message-Id: <1344418887-5262-11-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 07/11] ARM: OMAP/ASoC: Zoom2: Let the codec to handle the hs_extmute GPIO
+Date: Wed,  8 Aug 2012 12:41:23 +0300
+Message-Id: <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,71 +26,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Access the pdata via a pointer within the twl4030_priv structure.
-In preparation for DeviceTree support.
+Remove the use of set_hs_extmute callback and let the codec driver to
+handle the extmute GPIO.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- sound/soc/codecs/twl4030.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/mach-omap2/board-zoom-peripherals.c  |    9 ++-------
+ arch/arm/mach-omap2/include/mach/board-zoom.h |    2 --
+ sound/soc/omap/zoom2.c                        |    4 ----
+ 3 files changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 6a00c01..bf0240d 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -153,8 +153,7 @@ struct twl4030_priv {
- 	u8 predrivel_enabled, predriver_enabled;
- 	u8 carkitl_enabled, carkitr_enabled;
+diff --git a/arch/arm/mach-omap2/board-zoom-peripherals.c b/arch/arm/mach-omap2/board-zoom-peripherals.c
+index b797cb2..a7d3b04 100644
+--- a/arch/arm/mach-omap2/board-zoom-peripherals.c
++++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
+@@ -34,6 +34,7 @@
+ #include "common-board-devices.h"
  
--	/* Delay needed after enabling the digimic interface */
--	unsigned int digimic_delay;
-+	struct twl4030_codec_data *pdata;
- };
+ #define OMAP_ZOOM_WLAN_PMENA_GPIO	(101)
++#define ZOOM2_HEADSET_EXTMUTE_GPIO	(153)
+ #define OMAP_ZOOM_WLAN_IRQ_GPIO		(162)
  
- /*
-@@ -350,7 +349,7 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
- 	if (!pdata)
- 		return;
- 
--	twl4030->digimic_delay = pdata->digimic_delay;
-+	twl4030->pdata = pdata;
- 
- 	reg = twl4030_read_reg_cache(codec, TWL4030_REG_HS_POPN_SET);
- 	reg &= ~TWL4030_RAMP_DELAY;
-@@ -751,9 +750,9 @@ static int aif_event(struct snd_soc_dapm_widget *w,
- 
- static void headset_ramp(struct snd_soc_codec *codec, int ramp)
- {
--	struct twl4030_codec_data *pdata = codec->dev->platform_data;
- 	unsigned char hs_gain, hs_pop;
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
- 	/* Base values for ramp delay calculation: 2^19 - 2^26 */
- 	unsigned int ramp_base[] = {524288, 1048576, 2097152, 4194304,
- 				    8388608, 16777216, 33554432, 67108864};
-@@ -868,9 +867,10 @@ static int digimic_event(struct snd_soc_dapm_widget *w,
- 		struct snd_kcontrol *kcontrol, int event)
- {
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(w->codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
- 
--	if (twl4030->digimic_delay)
--		twl4030_wait_ms(twl4030->digimic_delay);
-+	if (pdata && pdata->digimic_delay)
-+		twl4030_wait_ms(pdata->digimic_delay);
- 	return 0;
+ #define LCD_PANEL_ENABLE_GPIO		(7 + OMAP_MAX_GPIO_LINES)
+@@ -244,12 +245,6 @@ static int zoom_twl_gpio_setup(struct device *dev,
+ 	return ret;
  }
  
-@@ -2252,8 +2252,8 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
+-/* EXTMUTE callback function */
+-static void zoom2_set_hs_extmute(int mute)
+-{
+-	gpio_set_value(ZOOM2_HEADSET_EXTMUTE_GPIO, mute);
+-}
+-
+ static struct twl4030_gpio_platform_data zoom_gpio_data = {
+ 	.gpio_base	= OMAP_MAX_GPIO_LINES,
+ 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+@@ -279,7 +274,7 @@ static int __init omap_i2c_init(void)
  
- static int twl4030_soc_remove(struct snd_soc_codec *codec)
+ 		codec_data->ramp_delay_value = 3;	/* 161 ms */
+ 		codec_data->hs_extmute = 1;
+-		codec_data->set_hs_extmute = zoom2_set_hs_extmute;
++		codec_data->hs_extmute_gpio = ZOOM2_HEADSET_EXTMUTE_GPIO;
+ 	}
+ 	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &zoom_twldata);
+ 	omap_register_i2c_bus(2, 400, NULL, 0);
+diff --git a/arch/arm/mach-omap2/include/mach/board-zoom.h b/arch/arm/mach-omap2/include/mach/board-zoom.h
+index 775fdc3..2e94869 100644
+--- a/arch/arm/mach-omap2/include/mach/board-zoom.h
++++ b/arch/arm/mach-omap2/include/mach/board-zoom.h
+@@ -8,5 +8,3 @@
+ extern int __init zoom_debugboard_init(void);
+ extern void __init zoom_peripherals_init(void);
+ extern void __init zoom_display_init(void);
+-
+-#define ZOOM2_HEADSET_EXTMUTE_GPIO	153
+diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
+index 920e0d9..df97a41 100644
+--- a/sound/soc/omap/zoom2.c
++++ b/sound/soc/omap/zoom2.c
+@@ -191,9 +191,6 @@ static int __init zoom2_soc_init(void)
+ 	BUG_ON(gpio_request(ZOOM2_HEADSET_MUX_GPIO, "hs_mux") < 0);
+ 	gpio_direction_output(ZOOM2_HEADSET_MUX_GPIO, 0);
+ 
+-	BUG_ON(gpio_request(ZOOM2_HEADSET_EXTMUTE_GPIO, "ext_mute") < 0);
+-	gpio_direction_output(ZOOM2_HEADSET_EXTMUTE_GPIO, 0);
+-
+ 	return 0;
+ 
+ err1:
+@@ -207,7 +204,6 @@ module_init(zoom2_soc_init);
+ static void __exit zoom2_soc_exit(void)
  {
--	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
+ 	gpio_free(ZOOM2_HEADSET_MUX_GPIO);
+-	gpio_free(ZOOM2_HEADSET_EXTMUTE_GPIO);
  
- 	/* Reset registers to their chip default before leaving */
- 	twl4030_reset_registers(codec);
+ 	platform_device_unregister(zoom2_snd_device);
+ }
 -- 
 1.7.8.6
 
