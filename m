@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab2HHGK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:10:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58410 "EHLO
+	id S932232Ab2HHGLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:11:01 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48567 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133Ab2HHGKy (ORCPT
+	with ESMTP id S1752324Ab2HHGKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 02:10:54 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-00-502202eaa029
+X-AuditID: 9c93016f-b7b08ae00000790d-fc-502202ea3830
 From: Minchan Kim <minchan@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         Dan Magenheimer <dan.magenheimer@oracle.com>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 6/7] zram: promote zram from staging
-Date: Wed,  8 Aug 2012 15:12:19 +0900
-Message-Id: <1344406340-14128-7-git-send-email-minchan@kernel.org>
+Subject: [PATCH 5/7] zsmalloc: promote to mm/
+Date: Wed,  8 Aug 2012 15:12:18 +0900
+Message-Id: <1344406340-14128-6-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344406340-14128-1-git-send-email-minchan@kernel.org>
 References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
@@ -27,108 +27,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's time to promote zram from staging because zram is in staging
-for a long time and is improved by many contributors so code is
-very clean. Most important issue, zram's dependency with x86 is
-solved by making zsmalloc portable. In addition, many embedded
-product uses zram in real practive so I think there is no reason
-to prevent promotion now.
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
+This patch promotes the slab-based zsmalloc memory allocator
+from the staging tree to mm/
+
+zcache/zram depends on this allocator for storing compressed RAM pages
+in an efficient way under system wide memory pressure where
+high-order (greater than 0) page allocation are very likely to
+fail.
+
+For more information on zsmalloc and its internals, read the
+documentation at the top of the zsmalloc c file.
+
+[minchan: change description slighly for including zram]
+
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/block/Kconfig                        |    1 +
- drivers/block/Makefile                       |    1 +
- drivers/{staging => block}/zram/Kconfig      |    0
- drivers/{staging => block}/zram/Makefile     |    0
- drivers/{staging => block}/zram/zram.txt     |    0
- drivers/{staging => block}/zram/zram_drv.c   |    0
- drivers/{staging => block}/zram/zram_drv.h   |    0
- drivers/{staging => block}/zram/zram_sysfs.c |    0
- drivers/staging/Kconfig                      |    2 --
- drivers/staging/Makefile                     |    1 -
- 10 files changed, 2 insertions(+), 3 deletions(-)
- rename drivers/{staging => block}/zram/Kconfig (100%)
- rename drivers/{staging => block}/zram/Makefile (100%)
- rename drivers/{staging => block}/zram/zram.txt (100%)
- rename drivers/{staging => block}/zram/zram_drv.c (100%)
- rename drivers/{staging => block}/zram/zram_drv.h (100%)
- rename drivers/{staging => block}/zram/zram_sysfs.c (100%)
+ drivers/staging/Kconfig                            |    2 --
+ drivers/staging/Makefile                           |    1 -
+ drivers/staging/zcache/zcache-main.c               |    4 ++--
+ drivers/staging/zram/zram_drv.h                    |    3 +--
+ drivers/staging/zsmalloc/Kconfig                   |   10 ----------
+ drivers/staging/zsmalloc/Makefile                  |    3 ---
+ .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
+ mm/Kconfig                                         |   18 ++++++++++++++++++
+ mm/Makefile                                        |    1 +
+ .../zsmalloc/zsmalloc-main.c => mm/zsmalloc.c      |    3 +--
+ 10 files changed, 23 insertions(+), 22 deletions(-)
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
+ rename drivers/staging/zsmalloc/zsmalloc-main.c => mm/zsmalloc.c (99%)
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index a796407..4277454 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -289,6 +289,7 @@ config BLK_DEV_CRYPTOLOOP
- 	  cryptoloop device.
- 
- source "drivers/block/drbd/Kconfig"
-+source "drivers/block/zram/Kconfig"
- 
- config BLK_DEV_NBD
- 	tristate "Network block device support"
-diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index 5b79505..951ba69 100644
---- a/drivers/block/Makefile
-+++ b/drivers/block/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_BLK_DEV_UMEM)	+= umem.o
- obj-$(CONFIG_BLK_DEV_NBD)	+= nbd.o
- obj-$(CONFIG_BLK_DEV_CRYPTOLOOP) += cryptoloop.o
- obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
-+obj-$(CONFIG_ZRAM)	+= zram/
- 
- obj-$(CONFIG_VIODASD)		+= viodasd.o
- obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
-diff --git a/drivers/staging/zram/Kconfig b/drivers/block/zram/Kconfig
-similarity index 100%
-rename from drivers/staging/zram/Kconfig
-rename to drivers/block/zram/Kconfig
-diff --git a/drivers/staging/zram/Makefile b/drivers/block/zram/Makefile
-similarity index 100%
-rename from drivers/staging/zram/Makefile
-rename to drivers/block/zram/Makefile
-diff --git a/drivers/staging/zram/zram.txt b/drivers/block/zram/zram.txt
-similarity index 100%
-rename from drivers/staging/zram/zram.txt
-rename to drivers/block/zram/zram.txt
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-similarity index 100%
-rename from drivers/staging/zram/zram_drv.c
-rename to drivers/block/zram/zram_drv.c
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-similarity index 100%
-rename from drivers/staging/zram/zram_drv.h
-rename to drivers/block/zram/zram_drv.h
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/block/zram/zram_sysfs.c
-similarity index 100%
-rename from drivers/staging/zram/zram_sysfs.c
-rename to drivers/block/zram/zram_sysfs.c
 diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index b7f7bc7..1a628eb 100644
+index e3402d5..b7f7bc7 100644
 --- a/drivers/staging/Kconfig
 +++ b/drivers/staging/Kconfig
-@@ -74,8 +74,6 @@ source "drivers/staging/sep/Kconfig"
+@@ -78,8 +78,6 @@ source "drivers/staging/zram/Kconfig"
  
- source "drivers/staging/iio/Kconfig"
- 
--source "drivers/staging/zram/Kconfig"
--
  source "drivers/staging/zcache/Kconfig"
  
+-source "drivers/staging/zsmalloc/Kconfig"
+-
  source "drivers/staging/wlags49_h2/Kconfig"
+ 
+ source "drivers/staging/wlags49_h25/Kconfig"
 diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index ad74bee..ed8889f 100644
+index 3be59d0..ad74bee 100644
 --- a/drivers/staging/Makefile
 +++ b/drivers/staging/Makefile
-@@ -32,7 +32,6 @@ obj-$(CONFIG_VME_BUS)		+= vme/
- obj-$(CONFIG_IPACK_BUS)		+= ipack/
- obj-$(CONFIG_DX_SEP)            += sep/
+@@ -34,7 +34,6 @@ obj-$(CONFIG_DX_SEP)            += sep/
  obj-$(CONFIG_IIO)		+= iio/
--obj-$(CONFIG_ZRAM)		+= zram/
+ obj-$(CONFIG_ZRAM)		+= zram/
  obj-$(CONFIG_ZCACHE)		+= zcache/
+-obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
  obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
  obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_FB_SM7XX)		+= sm7xxfb/
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index c214977..06ce28f 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -32,9 +32,9 @@
+ #include <linux/crypto.h>
+ #include <linux/string.h>
+ #include <linux/idr.h>
+-#include "tmem.h"
++#include <linux/zsmalloc.h>
+ 
+-#include "../zsmalloc/zsmalloc.h"
++#include "tmem.h"
+ 
+ #ifdef CONFIG_CLEANCACHE
+ #include <linux/cleancache.h>
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 572c0b1..f6d0925 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -17,8 +17,7 @@
+ 
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+-
+-#include "../zsmalloc/zsmalloc.h"
++#include <linux/zsmalloc.h>
+ 
+ /*
+  * Some arbitrary value. This is just to catch
+diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+deleted file mode 100644
+index 9084565..0000000
+--- a/drivers/staging/zsmalloc/Kconfig
++++ /dev/null
+@@ -1,10 +0,0 @@
+-config ZSMALLOC
+-	tristate "Memory allocator for compressed pages"
+-	default n
+-	help
+-	  zsmalloc is a slab-based memory allocator designed to store
+-	  compressed RAM pages.  zsmalloc uses virtual memory mapping
+-	  in order to reduce fragmentation.  However, this results in a
+-	  non-standard allocator interface where a handle, not a pointer, is
+-	  returned by an alloc().  This handle must be mapped in order to
+-	  access the allocated space.
+diff --git a/drivers/staging/zsmalloc/Makefile b/drivers/staging/zsmalloc/Makefile
+deleted file mode 100644
+index b134848..0000000
+--- a/drivers/staging/zsmalloc/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-zsmalloc-y 		:= zsmalloc-main.o
+-
+-obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/include/linux/zsmalloc.h
+similarity index 100%
+rename from drivers/staging/zsmalloc/zsmalloc.h
+rename to include/linux/zsmalloc.h
+diff --git a/mm/Kconfig b/mm/Kconfig
+index d5c8019..2586b66 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -411,3 +411,21 @@ config FRONTSWAP
+ 	  and swap data is stored as normal on the matching swap device.
+ 
+ 	  If unsure, say Y to enable frontswap.
++
++config ZSMALLOC
++	tristate "Memory allocator for compressed pages"
++	default n
++	help
++	  zsmalloc is a slab-based memory allocator designed to store
++	  compressed RAM pages.  zsmalloc uses a memory pool that combines
++	  single pages into higher order pages by linking them together
++	  using the fields of the struct page. Allocations are then
++	  mapped through copy buffers or VM mapping, in order to reduce
++	  memory pool fragmentation and increase allocation success rate under
++	  memory pressure.
++
++	  This results in a non-standard allocator interface where
++	  a handle, not a pointer, is returned by the allocation function.
++	  This handle must be mapped in order to access the allocated space.
++
++	  If unsure, say N.
+diff --git a/mm/Makefile b/mm/Makefile
+index 92753e2..8a3d7bea 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -57,3 +57,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
+ obj-$(CONFIG_CLEANCACHE) += cleancache.o
+ obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
++obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/mm/zsmalloc.c
+similarity index 99%
+rename from drivers/staging/zsmalloc/zsmalloc-main.c
+rename to mm/zsmalloc.c
+index 09a9d35..6b20429 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/mm/zsmalloc.c
+@@ -78,8 +78,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+-
+-#include "zsmalloc.h"
++#include <linux/zsmalloc.h>
+ 
+ /*
+  * This must be power of 2 and greater than of equal to sizeof(link_free).
 -- 
 1.7.9.5
 
