@@ -1,100 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab2HHVxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:53:44 -0400
-Received: from exout101.netflix.com ([69.53.237.162]:10234 "EHLO
-	exout103.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750759Ab2HHVxn (ORCPT
+	id S1752066Ab2HHVyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:54:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64411 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2HHVyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:53:43 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024;d=netflix.com;
-  h=from:to:cc:subject:date:message-id:references:in-reply-to
-    :content-type:mime-version;
-  b=YXuUeNXeiRp/ggTsPF2hjBUwri0OqxbbphtPyOZmKcKrPd5PRmIYVgq5DhakedNJGWx55+xL
-    dWCLdSk1Nwre4YxF5SdRnp943BkemgoNZapH2Cxb8J8sGlBG5OLwzxQwgw7/L7h6e0a4YhCk
-    /5SJ4AthA02jtEC7DrQl+rColW4=
-From: Wesley Miaw <wmiaw@netflix.com>
-To: Milan Broz <mbroz@redhat.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
-Subject: Re: [dm-devel] [PATCH] dm: verity support data device offset (Linux
- 3.4.7)
-Thread-Topic: [dm-devel] [PATCH] dm: verity support data device offset
- (Linux 3.4.7)
-Thread-Index: AQHNdZLjOIWAIbPp80KsaTGNtIwdlpdQXnkLgAB5j4CAAALfgIAAD9QA
-Date: Wed, 8 Aug 2012 21:53:40 +0000
-Message-ID: <ED328367-4878-406E-9E2A-86397F208A1B@netflix.com>
-References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
- <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com>
- <5022CC99.30103@redhat.com>
- <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com>
- <5022D29B.9000402@redhat.com>
-In-Reply-To: <5022D29B.9000402@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.229.146]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_A00A6A6E-7090-45DD-A471-55D807879059";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
-MIME-Version: 1.0
+	Wed, 8 Aug 2012 17:54:54 -0400
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Eric Paris <eparis@parisplace.org>, John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
+In-Reply-To: <1610114.P5WAdux1ri@sifl>
+References: <50215A7E.8000701@linaro.org>
+	 <1344456578.28967.244.camel@edumazet-glaptop>
+	 <1344457972.28967.251.camel@edumazet-glaptop>  <1610114.P5WAdux1ri@sifl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 23:54:49 +0200
+Message-ID: <1344462889.28967.328.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_A00A6A6E-7090-45DD-A471-55D807879059
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=windows-1252
+On Wed, 2012-08-08 at 16:46 -0400, Paul Moore wrote:
+> On Wednesday, August 08, 2012 10:32:52 PM Eric Dumazet wrote:
+> > On Wed, 2012-08-08 at 22:09 +0200, Eric Dumazet wrote:
+> > > On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
+> > > > Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
+> > > > code.
+> > > 
+> > > Sure but it seems include file misses an accessor for this.
+> > > 
+> > > We could add it on a future cleanup patch, as Paul mentioned.
+> > 
+> > I cooked following patch.
+> > But smack/smack_lsm.c makes a reference to
+> > smk_of_current()... so it seems we are in a hole...
+> > 
+> > It makes little sense to me to have any kind of security on this
+> > internal sockets.
+> > 
+> > Maybe selinux should not crash if sk->sk_security is NULL ?
+> 
+> I realize our last emails probably passed each other mid-flight, but hopefully 
+> it explains why we can't just pass packets when sk->sk_security is NULL.
+> 
+> Regardless, some quick comments below ...
+> 
+> > diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> > index 6c77f63..459eca6 100644
+> > --- a/security/selinux/hooks.c
+> > +++ b/security/selinux/hooks.c
+> > @@ -4289,10 +4289,13 @@ out:
+> >  	return 0;
+> >  }
+> > 
+> > -static int selinux_sk_alloc_security(struct sock *sk, int family, ...
+> > +static int selinux_sk_alloc_security(struct sock *sk, int family, ...
+> >  {
+> >  	struct sk_security_struct *sksec;
+> > 
+> > +	if (check && sk->sk_security)
+> > +		return 0;
+> > +
+> >  	sksec = kzalloc(sizeof(*sksec), priority);
+> >  	if (!sksec)
+> >  		return -ENOMEM;
+> 
+> I think I might replace the "check" boolean with a "kern/kernel" boolean so 
+> that in addition to the allocation we can also initialize the socket to 
+> SECINITSID_KERNEL/kernel_t here in the case when the boolean is set.  The only 
+> place that would set the boolean to true would be ip_send_unicast_reply(), all 
+> other callers would set it to false.
+> 
+> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> > index 8221514..8965cf1 100644
+> > --- a/security/smack/smack_lsm.c
+> > +++ b/security/smack/smack_lsm.c
+> > @@ -1754,11 +1754,14 @@ static void smack_task_to_inode(struct task_struct
+> > *p, struct inode *inode) *
+> >   * Returns 0 on success, -ENOMEM is there's no memory
+> >   */
+> > -static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t
+> > gfp_flags) +static int smack_sk_alloc_security(struct sock *sk, int family,
+> > gfp_t gfp_flags, bool check) {
+> >  	char *csp = smk_of_current();
+> >  	struct socket_smack *ssp;
+> > 
+> > +	if (check && sk->sk_security)
+> > +		return 0;
+> > +
+> >  	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+> >  	if (ssp == NULL)
+> >  		return -ENOMEM;
+> 
+> In the case of Smack, when the kernel boolean is true I think the right 
+> solution is to use smack_net_ambient.
+> 
 
-On Aug 8, 2012, at 1:56 PM, Milan Broz wrote:
+cool, here the last version :
 
-> On 08/08/2012 10:46 PM, Wesley Miaw wrote:
->=20
->> I did modify veritysetup on my own so the format and verify commands =
-will work with regular files on disk instead of having to mount through =
-loop devices.
->=20
-> Which veritysetup? In upstream (cryptsetup repository) it allocates =
-loop automatically.
-> (And for userspace verification it doesn't need loop at all.)
->=20
-> Anyway, please send a patch for userspace as well then ;-)
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 4e5a73c..4d8e454 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1601,7 +1601,7 @@ struct security_operations {
+ 	int (*socket_sock_rcv_skb) (struct sock *sk, struct sk_buff *skb);
+ 	int (*socket_getpeersec_stream) (struct socket *sock, char __user *optval, int __user *optlen, unsigned len);
+ 	int (*socket_getpeersec_dgram) (struct socket *sock, struct sk_buff *skb, u32 *secid);
+-	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority);
++	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority, bool kernel);
+ 	void (*sk_free_security) (struct sock *sk);
+ 	void (*sk_clone_security) (const struct sock *sk, struct sock *newsk);
+ 	void (*sk_getsecid) (struct sock *sk, u32 *secid);
+@@ -2539,7 +2539,7 @@ int security_sock_rcv_skb(struct sock *sk, struct sk_buff *skb);
+ int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
+ 				      int __user *optlen, unsigned len);
+ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u32 *secid);
+-int security_sk_alloc(struct sock *sk, int family, gfp_t priority);
++int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel);
+ void security_sk_free(struct sock *sk);
+ void security_sk_clone(const struct sock *sk, struct sock *newsk);
+ void security_sk_classify_flow(struct sock *sk, struct flowi *fl);
+@@ -2667,7 +2667,7 @@ static inline int security_socket_getpeersec_dgram(struct socket *sock, struct s
+ 	return -ENOPROTOOPT;
+ }
+ 
+-static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
++static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+ 	return 0;
+ }
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 8f67ced..e00cadf 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1186,7 +1186,7 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
+ 	if (sk != NULL) {
+ 		kmemcheck_annotate_bitfield(sk, flags);
+ 
+-		if (security_sk_alloc(sk, family, priority))
++		if (security_sk_alloc(sk, family, priority, false))
+ 			goto out_free;
+ 
+ 		if (!try_module_get(prot->owner))
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 76dde25..b233d6e 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1524,6 +1524,8 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ 	sk->sk_priority = skb->priority;
+ 	sk->sk_protocol = ip_hdr(skb)->protocol;
+ 	sk->sk_bound_dev_if = arg->bound_dev_if;
++	if (security_sk_alloc(sk, PF_INET, GFP_ATOMIC, true))
++		goto out;
+ 	sock_net_set(sk, net);
+ 	__skb_queue_head_init(&sk->sk_write_queue);
+ 	sk->sk_sndbuf = sysctl_wmem_default;
+@@ -1539,7 +1541,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
+ 		ip_push_pending_frames(sk, &fl4);
+ 	}
+-
++out:
+ 	put_cpu_var(unicast_sock);
+ 
+ 	ip_rt_put(rt);
+diff --git a/security/security.c b/security/security.c
+index 860aeb3..23cf297 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1146,9 +1146,9 @@ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u
+ }
+ EXPORT_SYMBOL(security_socket_getpeersec_dgram);
+ 
+-int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
++int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+-	return security_ops->sk_alloc_security(sk, family, priority);
++	return security_ops->sk_alloc_security(sk, family, priority, kernel);
+ }
+ 
+ void security_sk_free(struct sock *sk)
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 6c77f63..ccd4374 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4289,10 +4289,13 @@ out:
+ 	return 0;
+ }
+ 
+-static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority)
++static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+ 	struct sk_security_struct *sksec;
+ 
++	if (kernel && sk->sk_security)
++		return 0;
++
+ 	sksec = kzalloc(sizeof(*sksec), priority);
+ 	if (!sksec)
+ 		return -ENOMEM;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 8221514..207d9cc 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -1749,20 +1749,25 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+  * @sk: the socket
+  * @family: unused
+  * @gfp_flags: memory allocation flags
++ * @kernel: true if we should check sk_security being already set
+  *
+  * Assign Smack pointers to current
+  *
+  * Returns 0 on success, -ENOMEM is there's no memory
+  */
+-static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
++static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags, bool kernel)
+ {
+ 	char *csp = smk_of_current();
+ 	struct socket_smack *ssp;
+ 
++	if (kernel && sk->sk_security)
++		return 0;
++
+ 	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+ 	if (ssp == NULL)
+ 		return -ENOMEM;
+-
++	/* kernel is true if called from ip_send_unicast_reply() */
++	csp = kernel ? smack_net_ambient : smk_of_current();
+ 	ssp->smk_in = csp;
+ 	ssp->smk_out = csp;
+ 	ssp->smk_packet = NULL;
 
-I grabbed cryptsetup from http://code.google.com/p/cryptsetup as what I =
-read said that is the most recent. And then modified the code in there =
-because the final block device images need to combine the file system, =
-hash data, and some metadata into a single image and I don't want my =
-users to need root privileges.
 
-I can send a separate patch of those changes, but I'm not sure to where? =
-Also to the LKML?
-
-Thanks,
---
-Wesley Miaw=
-
---Apple-Mail=_A00A6A6E-7090-45DD-A471-55D807879059
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
-
-iQEcBAEBAgAGBQJQIt/kAAoJELoPFVk1ivvRhHsH/2Q2cqCuCrhsK076Hl4y/hXY
-bpT11dyK42LX7l6s/GhbCVA0Lw5WZ3wIJtK3uO1RPnfJOd9H4MupNjISxOP6EUWF
-Bcnu4P+xMt3eobMECHpuhAMXez8h1Qq0TyM9sVKnfvXu7GNSeGmHUJKkGU6G7wH3
-Dj2WRuUuUW/FwzdXWcc6JEnj7md3tPlZEVEtIgFwI0V15ib9QiGV2YRD0SZIHE6M
-Klvh6MYeieQBpO3xm/yzVYM7C58lriIWCjw1OMqTuZQx1GrwZUpRX1gpUmWzrM/E
-Rnz81bWEpCVb4WVU6zAAt/vFbLBJOk95B0x+zWglNvHtuG/9P7oZ76YkpU860Gc=
-=th2f
------END PGP SIGNATURE-----
-
---Apple-Mail=_A00A6A6E-7090-45DD-A471-55D807879059--
