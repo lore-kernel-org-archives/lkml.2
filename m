@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab2HHMz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:55:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53799 "EHLO
+	id S1758220Ab2HHMz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:55:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62097 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758202Ab2HHMzZ (ORCPT
+	with ESMTP id S1758180Ab2HHMzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 08:55:25 -0400
+	Wed, 8 Aug 2012 08:55:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Mack <zonque@gmail.com>,
-        Daniel Ribeiro <drwyrm@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 0/6] ARM: defconfig build errors
-Date: Wed,  8 Aug 2012 14:54:47 +0200
-Message-Id: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
+Date: Wed,  8 Aug 2012 14:54:53 +0200
+Message-Id: <1344430493-5304-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-X-Provags-ID: V02:K0:l/ER3jgavssIxuCeenXT7WkSz0ImE4icFEVDvT4vylM
- xnXtW+Cf5hIfhmidLxlxqOjIAB6Qt22dLtZ49qfgY9LcLd4mgO
- cw6sIqLV6KpTmkPBi5I32gXNXxC62Za/YXNlbEmmi3QUiiOjB2
- e1opbzPMFDJofky1tag1yYbOkUhrr3PHUcaUJ2utdgKzV+ILNP
- eAHmt9n+budLxU0cOvt/udzCKUKeVojz5YU4r12OuEdOZG4w3F
- hFkVnlarwhKAU9gckDC/xVCRRb/0zZOkpyVg9qPizJnfLo28Ql
- /HlpYo5SzXfRT6taeCXnDlDzCihhcQmMsJdcunnZNUTsekkDHF
- H6YiYDt8abIHV1tRDq2MNwfPNrzaIPU18NAC+rd6717Vwl9t8E
- ZZWEyHXx6W4Ug==
+In-Reply-To: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:Lw1yWhdKZwFCJlJUcV61xs3WARbGeXO4zXB8ph3Lri7
+ l5yxoDOZfCaatsxdBqopR1dD1yCr6SUw3nC9abQ+gksSoxLaeF
+ gpXtSr3lGLOpigMNVejFbYPQIJO70h7QpQKs7kXA1RHzP+TxSh
+ nF0cdDLRcqW44FcUe7C9hYZmDdXXKXMkXcCAzo5YFx0T+Mb+AV
+ GZonQwTBUYPmD6nA27jO3aqLJz9wzxlqeT+vds060GvWt0KtAC
+ BsXMGZ+hzg+KzBkdIw0h5GDlZh3rgs4JrFUAK8ZegwdTsIazKB
+ oT85Vcko9FA4UqZrd67ZyzTG2l00SZlMEkLhYpYwvBm7NLWgJ6
+ AosxlTGU+rlKeLOtESpuj4AywdWuKVaELWgjdRScjAeSvl4UmU
+ zlbbuMFfEEt9Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm dusting off my defconfig warning fixes. This is the most important
-bunch as these are actual build failures that happen in one of the
-defconfigs. I've put these into the "fixes" branch of the arm-soc
-tree already and will send them out for -r2 unless I hear objections.
+It is not currently possible to build the gpmi-nand driver without
+also building the mxs-dma driver. Clarify this Kconfig and enable
+both in the defconfig file so we can build it again with both enabled.
 
-Please take a look.
+drivers/built-in.o: In function `gpmi_dma_filter':
+clk-fixed-factor.c:(.text+0xafc18): undefined reference to `mxs_dma_is_apbh'
+make[1]: *** [vmlinux] Error 1
+make: *** [sub-make] Error 2
 
-	Arnd
-
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Daniel Ribeiro <drwyrm@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Cc: Shawn Guo <shawn.guo@linaro.org>
-
-Arnd Bergmann (6):
-  ARM: pxa: remove irq_to_gpio from ezx-pcap driver
-  ARM: pxa remove irq_to_gpio from eeti_ts driver
-  ARM: sa1100: include asm/io.h in hackkit leds code
-  ARM: s3c24xx: use new PWM driver
-  ARM: integrator: include <linux/export.h
-  ARM: imx: gpmi-nand depends on mxs-dma
-
+Cc: Sascha Hauer <kernel@pengutronix.de>
+---
  arch/arm/configs/imx_v6_v7_defconfig |    1 +
- arch/arm/mach-integrator/core.c      |    1 +
- arch/arm/mach-pxa/raumfeld.c         |    1 +
- arch/arm/mach-s3c24xx/Kconfig        |    6 ++++--
- arch/arm/mach-sa1100/leds-hackkit.c  |    1 +
- drivers/input/touchscreen/eeti_ts.c  |    8 +++++---
- drivers/mfd/ezx-pcap.c               |    2 +-
  drivers/mtd/nand/Kconfig             |    2 +-
- include/linux/input/eeti_ts.h        |    1 +
- include/linux/mfd/ezx-pcap.h         |    1 +
- 10 files changed, 17 insertions(+), 7 deletions(-)
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+index f725b96..3c9f32f 100644
+--- a/arch/arm/configs/imx_v6_v7_defconfig
++++ b/arch/arm/configs/imx_v6_v7_defconfig
+@@ -192,6 +192,7 @@ CONFIG_RTC_DRV_MC13XXX=y
+ CONFIG_RTC_DRV_MXC=y
+ CONFIG_DMADEVICES=y
+ CONFIG_IMX_SDMA=y
++CONFIG_MXS_DMA=y
+ CONFIG_COMMON_CLK_DEBUG=y
+ # CONFIG_IOMMU_SUPPORT is not set
+ CONFIG_EXT2_FS=y
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 31bb7e5..8ca4176 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -480,7 +480,7 @@ config MTD_NAND_NANDSIM
+ 
+ config MTD_NAND_GPMI_NAND
+         bool "GPMI NAND Flash Controller driver"
+-        depends on MTD_NAND && (SOC_IMX23 || SOC_IMX28 || SOC_IMX6Q)
++        depends on MTD_NAND && MXS_DMA
+         help
+ 	 Enables NAND Flash support for IMX23 or IMX28.
+ 	 The GPMI controller is very powerful, with the help of BCH
 -- 
 1.7.10
 
