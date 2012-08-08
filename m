@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab2HHOtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:49:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65208 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758321Ab2HHOrl (ORCPT
+	id S932563Ab2HHOtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:49:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54937 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758653Ab2HHOtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:47:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 04/11] ARM: ux500: really kill snowball_of_platform_devs
-Date: Wed,  8 Aug 2012 16:47:21 +0200
-Message-Id: <1344437248-20560-5-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:/35aJrBAerbmOJVHp2aioz0J14iTcLHw5wxZIPLeanu
- lYU+jM6Df25SNWpQZdCAJMQDM7QmJbGNAyjPrhJi23TmybmQQE
- IbaEdspVUU8iLh60dn5dvW4aOZWsio9Pa/XBZdrxnbBLYD9+9Z
- JX65HEgPCJSRvUgC5eHYzec37zSoaje/i0x+4IKiIBaOULT/TY
- TvlBY9TCs7AsdKKsx/hJZPu3aoWLEcH9qQ4uzK9bAkEnCIaCB6
- 5D6cBCug7toZqSMDOe0sUyEakz4hotrdjc6cvPW0CG6Y+PqPtk
- U6xS8f1wfW1t4lMWIpKAIytSiTksxun77MlIkWYsUGf8OtZBLe
- Chga9St3wI93Xdit1iD4dFhSBAMTCgrVKa4Pn6BIy/z2LrTfHA
- qZu3Vc3W+usupqLlONKPRmWbKYKqvWMTeY=
+	Wed, 8 Aug 2012 10:49:36 -0400
+Date: Wed, 8 Aug 2012 15:49:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
+Message-ID: <20120808144933.GC24328@opensource.wolfsonmicro.com>
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
+ <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com>
+ <20120808131356.GS16861@opensource.wolfsonmicro.com>
+ <50226CF4.1010202@ti.com>
+ <20120808135253.GC16861@opensource.wolfsonmicro.com>
+ <502274DA.9020204@ti.com>
+ <20120808141849.GA24328@opensource.wolfsonmicro.com>
+ <50227837.10400@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50227837.10400@ti.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fc67a597a "ARM: ux500: Remove temporary snowball_of_platform_devs
-enablement structure" removed the only user of this variable, but did
-not actually remove the array itself.
+On Wed, Aug 08, 2012 at 05:31:19PM +0300, Peter Ujfalusi wrote:
+> On 08/08/2012 05:18 PM, Mark Brown wrote:
 
-Without this patch, building u8500_defconfig results in:
+> > I'm struggling to see any reason not to just hold the external mute on
+> > for the entire time the headset is powered off?
 
-arch/arm/mach-ux500/board-mop500.c:729:32: warning: 'snowball_of_platform_devs' defined but not used [-Wunused-variable]
+> I think because it would mean in most cases that we keep a GPIO line enabled
+> during the time the HS is not in use, which burns power.
+> In most cases the mute is enabled when the GPIO line is up.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c |    5 -----
- 1 file changed, 5 deletions(-)
+That makes sense if the GPIO is actively driven, open drain should be
+better here, but it's still a generic thing which it'd be nice to
+extract.
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 8674a89..2a732f7 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -726,11 +726,6 @@ MACHINE_END
- 
- #ifdef CONFIG_MACH_UX500_DT
- 
--static struct platform_device *snowball_of_platform_devs[] __initdata = {
--	&snowball_led_dev,
--	&snowball_key_dev,
--};
--
- struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	/* Requires DMA and call-back bindings. */
- 	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
--- 
-1.7.10
-
+Still, the main thing here was the fact that we should be able to drop
+the flag for the feature in the first place.
