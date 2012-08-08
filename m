@@ -1,43 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab2HHBHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 21:07:53 -0400
+	id S1754895Ab2HHBId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 21:08:33 -0400
 Received: from mga02.intel.com ([134.134.136.20]:40862 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753966Ab2HHBHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 21:07:51 -0400
+	id S1754484Ab2HHBHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 21:07:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="182925478"
+   d="scan'208";a="182925507"
 From: Huang Ying <ying.huang@intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Huang Ying <ying.huang@intel.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH -v3 0/4] PCI/PM: PCI D3cold support fixes for 3.6-rc1
-Date: Wed,  8 Aug 2012 09:07:37 +0800
-Message-Id: <1344388061-18981-1-git-send-email-ying.huang@intel.com>
+Subject: [BUGFIX -v3 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+Date: Wed,  8 Aug 2012 09:07:40 +0800
+Message-Id: <1344388061-18981-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344388061-18981-1-git-send-email-ying.huang@intel.com>
+References: <1344388061-18981-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes:
+This patch fixes the following bug:
 
-v3:
+http://marc.info/?l=linux-pci&m=134338059022620&w=2
 
-- Add some comments per Rafael's comments.
+Where lspci does not work properly if a device and the corresponding
+parent bridge (such as PCIe port) is suspended.  This is because the
+device configuration space registers will be not accessible if the
+corresponding parent bridge is suspended or the device is put into
+D3cold state.
 
-v2:
+To solve the issue, the bridge/PCIe port connected to the device is
+put into active state before read/write configuration space registers.
+If the device is in D3cold state, it will be put into active state
+too.
 
-- Change some pm_runtime_put to pm_runtime_put_sync per Alan and Rafael's comments.
+To avoid resume/suspend PCIe port for each configuration register
+read/write, a small delay is added before the PCIe port to go
+suspended.
 
+Reported-by: Bjorn Mork <bjorn@mork.no>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/pci/pci-sysfs.c        |   43 +++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
+ 2 files changed, 52 insertions(+)
 
-[BUGFIX -v3 1/4] PCI/PM: enable D3/D3cold by default for most devices
-[BUGFIX -v3 2/4] PCI/PM: Keep parent bridge active when probing device
-[BUGFIX -v3 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
-[PATCH -v3 4/4] PCI/PM: Add ABI document for sysfs file d3cold_allowed
-
-Best Regards,
-Huang Ying
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -458,6 +458,41 @@ boot_vga_show(struct device *dev, struct
+ }
+ struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+ 
++static void
++pci_config_pm_runtime_get(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	if (parent)
++		pm_runtime_get_sync(parent);
++	pm_runtime_get_noresume(dev);
++	/*
++	 * pdev->current_state is set to PCI_D3cold during suspending,
++	 * so wait until suspending completes
++	 */
++	pm_runtime_barrier(dev);
++	if (pdev->current_state == PCI_D3cold) {
++		/*
++		 * Already called pm_runtime_get_noresume above, so
++		 * just calling pm_runtime_resume is sufficient, need
++		 * not to call pm_runtime_get_sync.
++		 */
++		pm_runtime_resume(dev);
++	}
++}
++
++static void
++pci_config_pm_runtime_put(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	pm_runtime_put(dev);
++	if (parent)
++		pm_runtime_put_sync(parent);
++}
++
+ static ssize_t
+ pci_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+@@ -484,6 +519,8 @@ pci_read_config(struct file *filp, struc
+ 		size = count;
+ 	}
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		u8 val;
+ 		pci_user_read_config_byte(dev, off, &val);
+@@ -529,6 +566,8 @@ pci_read_config(struct file *filp, struc
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
+ }
+ 
+@@ -549,6 +588,8 @@ pci_write_config(struct file* filp, stru
+ 		count = size;
+ 	}
+ 	
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		pci_user_write_config_byte(dev, off, data[off - init_off]);
+ 		off++;
+@@ -587,6 +628,8 @@ pci_write_config(struct file* filp, stru
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
+ }
+ 
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
+ {
+ 	return 0;
+ }
++
++static int pcie_port_runtime_idle(struct device *dev)
++{
++	/* Delay for a short while to prevent too frequent suspend/resume */
++	pm_schedule_suspend(dev, 10);
++	return -EBUSY;
++}
+ #else
+ #define pcie_port_runtime_suspend	NULL
+ #define pcie_port_runtime_resume	NULL
++#define pcie_port_runtime_idle		NULL
+ #endif
+ 
+ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+@@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
+ 	.resume_noirq	= pcie_port_resume_noirq,
+ 	.runtime_suspend = pcie_port_runtime_suspend,
+ 	.runtime_resume = pcie_port_runtime_resume,
++	.runtime_idle	= pcie_port_runtime_idle,
+ };
+ 
+ #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
