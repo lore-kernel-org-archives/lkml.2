@@ -1,112 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab2HHGLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:11:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61898 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247Ab2HHGLR (ORCPT
+	id S932224Ab2HHGMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:12:08 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58410 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab2HHGKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:11:17 -0400
-Date: Wed, 8 Aug 2012 08:11:02 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Tushar Behera'" <tushar.behera@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.hauer@pengutronix.de, patches@linaro.org
-Subject: Re: [PATCH] ARM: SAMSUNG: Fix compilation error with
- s3c2410_defconfig
-Message-ID: <20120808061102.GA22417@avionic-0098.mockup.avionic-design.de>
-References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
- <098f01cd7488$0d66d630$28348290$%kim@samsung.com>
- <5020F568.5020204@linaro.org>
- <0a2d01cd7500$53e26c50$fba744f0$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <0a2d01cd7500$53e26c50$fba744f0$%kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:+9d6ySvhwNsxH93NY7jP1+eib4+oeDUxFpr3RcpCYbJ
- QnpcMRBC444qMb5CV9bhIW2Q0vGfeOFKz/wxYzWdWmyuHDf376
- a81CzkI8ZeEbd90UN30VNMYrcSrCHAD10hyshYsK94okjo+lKE
- VViX9dRajwAgHR5Ukh1uxkmTG4EDq/3P7DQL9rAzmwvtvc3uc+
- +Ca7AfPENAQjKtSPUuxPJ4T1eMqt0MTmD7bh9/QsJ8R3MfjbYt
- ZZ4asD7VAsS/QBaZKdr9Xx1vm3fcuK12kn8QXyaxjvZaqsmbGl
- doBBCz6cS5u93sjZUk2xh0Upp71HdR6NzWhlaeexPYEWe+o8PC
- fD+XuSIYBAEfa37z9Vl1Z+7tDywM3FeuAmYJ5+5oVu7A7ojQ1g
- CAoUdzKj7/3N2XPCsy+7BI5fH2sGo76xjXSyqVDz6KmMUjnQB7
- wrvGA
+	Wed, 8 Aug 2012 02:10:53 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-f9-502202ea487f
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 4/7] zsmalloc: collapse internal .h into .c
+Date: Wed,  8 Aug 2012 15:12:17 +0900
+Message-Id: <1344406340-14128-5-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344406340-14128-1-git-send-email-minchan@kernel.org>
+References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch collapses in the internal zsmalloc_int.h into
+the zsmalloc-main.c file.
 
-On Wed, Aug 08, 2012 at 09:54:13AM +0900, Kukjin Kim wrote:
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index 7aca31c..dcdfb77 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
-> =20
->  config S3C24XX_PWM
->  	bool "PWM device support"
-> -	select HAVE_PWM
-> +	select PWM
->  	help
->  	  Support for exporting the PWM timer blocks via the pwm device
->  	  system
+This is done in preparation for the promotion to mm/ where
+separate internal headers are discouraged.
 
-You could add
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zsmalloc/zsmalloc-main.c |  132 +++++++++++++++++++++++++-
+ drivers/staging/zsmalloc/zsmalloc_int.h  |  149 ------------------------------
+ 2 files changed, 131 insertions(+), 150 deletions(-)
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc_int.h
 
-	select PWM_SAMSUNG
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index defe350..09a9d35 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -76,9 +76,139 @@
+ #include <linux/cpu.h>
+ #include <linux/vmalloc.h>
+ #include <linux/hardirq.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
+ 
+ #include "zsmalloc.h"
+-#include "zsmalloc_int.h"
++
++/*
++ * This must be power of 2 and greater than of equal to sizeof(link_free).
++ * These two conditions ensure that any 'struct link_free' itself doesn't
++ * span more than 1 page which avoids complex case of mapping 2 pages simply
++ * to restore link_free pointer values.
++ */
++#define ZS_ALIGN		8
++
++/*
++ * A single 'zspage' is composed of up to 2^N discontiguous 0-order (single)
++ * pages. ZS_MAX_ZSPAGE_ORDER defines upper limit on N.
++ */
++#define ZS_MAX_ZSPAGE_ORDER 2
++#define ZS_MAX_PAGES_PER_ZSPAGE (_AC(1, UL) << ZS_MAX_ZSPAGE_ORDER)
++
++/*
++ * Object location (<PFN>, <obj_idx>) is encoded as
++ * as single (void *) handle value.
++ *
++ * Note that object index <obj_idx> is relative to system
++ * page <PFN> it is stored in, so for each sub-page belonging
++ * to a zspage, obj_idx starts with 0.
++ *
++ * This is made more complicated by various memory models and PAE.
++ */
++
++#ifndef MAX_PHYSMEM_BITS
++#ifdef CONFIG_HIGHMEM64G
++#define MAX_PHYSMEM_BITS 36
++#else /* !CONFIG_HIGHMEM64G */
++/*
++ * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
++ * be PAGE_SHIFT
++ */
++#define MAX_PHYSMEM_BITS BITS_PER_LONG
++#endif
++#endif
++#define _PFN_BITS		(MAX_PHYSMEM_BITS - PAGE_SHIFT)
++#define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS)
++#define OBJ_INDEX_MASK	((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
++
++#define MAX(a, b) ((a) >= (b) ? (a) : (b))
++/* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
++#define ZS_MIN_ALLOC_SIZE \
++	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
++#define ZS_MAX_ALLOC_SIZE	PAGE_SIZE
++
++/*
++ * On systems with 4K page size, this gives 254 size classes! There is a
++ * trader-off here:
++ *  - Large number of size classes is potentially wasteful as free page are
++ *    spread across these classes
++ *  - Small number of size classes causes large internal fragmentation
++ *  - Probably its better to use specific size classes (empirically
++ *    determined). NOTE: all those class sizes must be set as multiple of
++ *    ZS_ALIGN to make sure link_free itself never has to span 2 pages.
++ *
++ *  ZS_MIN_ALLOC_SIZE and ZS_SIZE_CLASS_DELTA must be multiple of ZS_ALIGN
++ *  (reason above)
++ */
++#define ZS_SIZE_CLASS_DELTA	16
++#define ZS_SIZE_CLASSES		((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / \
++					ZS_SIZE_CLASS_DELTA + 1)
++
++/*
++ * We do not maintain any list for completely empty or full pages
++ */
++enum fullness_group {
++	ZS_ALMOST_FULL,
++	ZS_ALMOST_EMPTY,
++	_ZS_NR_FULLNESS_GROUPS,
++
++	ZS_EMPTY,
++	ZS_FULL
++};
++
++/*
++ * We assign a page to ZS_ALMOST_EMPTY fullness group when:
++ *	n <= N / f, where
++ * n = number of allocated objects
++ * N = total number of objects zspage can store
++ * f = 1/fullness_threshold_frac
++ *
++ * Similarly, we assign zspage to:
++ *	ZS_ALMOST_FULL	when n > N / f
++ *	ZS_EMPTY	when n == 0
++ *	ZS_FULL		when n == N
++ *
++ * (see: fix_fullness_group())
++ */
++static const int fullness_threshold_frac = 4;
++
++struct size_class {
++	/*
++	 * Size of objects stored in this class. Must be multiple
++	 * of ZS_ALIGN.
++	 */
++	int size;
++	unsigned int index;
++
++	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
++	int pages_per_zspage;
++
++	spinlock_t lock;
++
++	/* stats */
++	u64 pages_allocated;
++
++	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
++};
++
++/*
++ * Placed within free objects to form a singly linked list.
++ * For every zspage, first_page->freelist gives head of this list.
++ *
++ * This must be power of 2 and less than or equal to ZS_ALIGN
++ */
++struct link_free {
++	/* Handle of next free chunk (encodes <PFN, obj_idx>) */
++	void *next;
++};
++
++struct zs_pool {
++	struct size_class size_class[ZS_SIZE_CLASSES];
++
++	gfp_t flags;	/* allocation flags used when growing pool */
++	const char *name;
++};
+ 
+ /*
+  * A zspage's class index and fullness group
+diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
+deleted file mode 100644
+index 8c0b344..0000000
+--- a/drivers/staging/zsmalloc/zsmalloc_int.h
++++ /dev/null
+@@ -1,149 +0,0 @@
+-/*
+- * zsmalloc memory allocator
+- *
+- * Copyright (C) 2011  Nitin Gupta
+- *
+- * This code is released using a dual license strategy: BSD/GPL
+- * You can choose the license that better fits your requirements.
+- *
+- * Released under the terms of 3-clause BSD License
+- * Released under the terms of GNU General Public License Version 2.0
+- */
+-
+-#ifndef _ZS_MALLOC_INT_H_
+-#define _ZS_MALLOC_INT_H_
+-
+-#include <linux/kernel.h>
+-#include <linux/spinlock.h>
+-#include <linux/types.h>
+-
+-/*
+- * This must be power of 2 and greater than of equal to sizeof(link_free).
+- * These two conditions ensure that any 'struct link_free' itself doesn't
+- * span more than 1 page which avoids complex case of mapping 2 pages simply
+- * to restore link_free pointer values.
+- */
+-#define ZS_ALIGN		8
+-
+-/*
+- * A single 'zspage' is composed of up to 2^N discontiguous 0-order (single)
+- * pages. ZS_MAX_ZSPAGE_ORDER defines upper limit on N.
+- */
+-#define ZS_MAX_ZSPAGE_ORDER 2
+-#define ZS_MAX_PAGES_PER_ZSPAGE (_AC(1, UL) << ZS_MAX_ZSPAGE_ORDER)
+-
+-/*
+- * Object location (<PFN>, <obj_idx>) is encoded as
+- * as single (void *) handle value.
+- *
+- * Note that object index <obj_idx> is relative to system
+- * page <PFN> it is stored in, so for each sub-page belonging
+- * to a zspage, obj_idx starts with 0.
+- *
+- * This is made more complicated by various memory models and PAE.
+- */
+-
+-#ifndef MAX_PHYSMEM_BITS
+-#ifdef CONFIG_HIGHMEM64G
+-#define MAX_PHYSMEM_BITS 36
+-#else /* !CONFIG_HIGHMEM64G */
+-/*
+- * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
+- * be PAGE_SHIFT
+- */
+-#define MAX_PHYSMEM_BITS BITS_PER_LONG
+-#endif
+-#endif
+-#define _PFN_BITS		(MAX_PHYSMEM_BITS - PAGE_SHIFT)
+-#define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS)
+-#define OBJ_INDEX_MASK	((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
+-
+-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+-/* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
+-#define ZS_MIN_ALLOC_SIZE \
+-	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
+-#define ZS_MAX_ALLOC_SIZE	PAGE_SIZE
+-
+-/*
+- * On systems with 4K page size, this gives 254 size classes! There is a
+- * trader-off here:
+- *  - Large number of size classes is potentially wasteful as free page are
+- *    spread across these classes
+- *  - Small number of size classes causes large internal fragmentation
+- *  - Probably its better to use specific size classes (empirically
+- *    determined). NOTE: all those class sizes must be set as multiple of
+- *    ZS_ALIGN to make sure link_free itself never has to span 2 pages.
+- *
+- *  ZS_MIN_ALLOC_SIZE and ZS_SIZE_CLASS_DELTA must be multiple of ZS_ALIGN
+- *  (reason above)
+- */
+-#define ZS_SIZE_CLASS_DELTA	16
+-#define ZS_SIZE_CLASSES		((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / \
+-					ZS_SIZE_CLASS_DELTA + 1)
+-
+-/*
+- * We do not maintain any list for completely empty or full pages
+- */
+-enum fullness_group {
+-	ZS_ALMOST_FULL,
+-	ZS_ALMOST_EMPTY,
+-	_ZS_NR_FULLNESS_GROUPS,
+-
+-	ZS_EMPTY,
+-	ZS_FULL
+-};
+-
+-/*
+- * We assign a page to ZS_ALMOST_EMPTY fullness group when:
+- *	n <= N / f, where
+- * n = number of allocated objects
+- * N = total number of objects zspage can store
+- * f = 1/fullness_threshold_frac
+- *
+- * Similarly, we assign zspage to:
+- *	ZS_ALMOST_FULL	when n > N / f
+- *	ZS_EMPTY	when n == 0
+- *	ZS_FULL		when n == N
+- *
+- * (see: fix_fullness_group())
+- */
+-static const int fullness_threshold_frac = 4;
+-
+-struct size_class {
+-	/*
+-	 * Size of objects stored in this class. Must be multiple
+-	 * of ZS_ALIGN.
+-	 */
+-	int size;
+-	unsigned int index;
+-
+-	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
+-	int pages_per_zspage;
+-
+-	spinlock_t lock;
+-
+-	/* stats */
+-	u64 pages_allocated;
+-
+-	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+-};
+-
+-/*
+- * Placed within free objects to form a singly linked list.
+- * For every zspage, first_page->freelist gives head of this list.
+- *
+- * This must be power of 2 and less than or equal to ZS_ALIGN
+- */
+-struct link_free {
+-	/* Handle of next free chunk (encodes <PFN, obj_idx>) */
+-	void *next;
+-};
+-
+-struct zs_pool {
+-	struct size_class size_class[ZS_SIZE_CLASSES];
+-
+-	gfp_t flags;	/* allocation flags used when growing pool */
+-	const char *name;
+-};
+-
+-#endif
+-- 
+1.7.9.5
 
-here to side-step the issue below.
-
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 8fc3808..34c8ec1 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -59,7 +59,7 @@ config PWM_PXA
-> =20
->  config PWM_SAMSUNG
->  	tristate "Samsung pwm support"
-> -	depends on PLAT_SAMSUNG
-> +	def_bool PLAT_SAMSUNG
-
-tristate and def_bool conflict, don't they? I think the easiest way to
-solve this problem would be to add a default line, like so:
-
-	default PLAT_SAMSUNG
-
-I've checked this with a s3c2410_defconfig and this causes PWM_SAMSUNG
-to be selected =3Dy, which I guess is what you want.
-
-Thierry
-
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQIgL2AAoJEN0jrNd/PrOhN7oP+wQ7NLlEROotXlnefUf1Hs+M
-ANRtdLlnnbiHxGEjKjKYh0g87b52aIPIz8rcNsO0ivfszHTqVJQc5KgiGPWK9HmS
-ij5ri9/kA57PsQEWROEdhNHESycrktGaW27OkV9+TZP7PmQKA13Qn1MLKHGPwyqQ
-hzFPHQQXK7Ekj426rptEjER1EBObSTBUzJj4uRvcTLJVY6euHtNRRwOYUPtjwK+M
-30y2VlymWsZjPsGLyCLJx6YIb3ewwr+q1ftdwRO3lC5Cgyhmd4DA2yfvozJACcOj
-nqH5kt9+Qth97qEnHpK71OdL4or8G721Fuwa3rX5RswKgJ83rRHuHPucuB6yugM2
-TOmjiQa0VjMNtm2mTbDaW5ya0Z6ynXjgpHb7btrXqi5W/0W8dD9xrsTr41gf9r6b
-mtwD36EzalesqRAMLGUhHTuQKBZMXK8i8lbhjpsxtfraRFfBFUXBlfAdbCt7Zg5b
-4ah3R3R4WhV/6/2fEB1JAiRtPyJHLn8eMb3wTo80DbFJiyeYHbtSdYv4g65uc3J4
-QQbLqquKJNlUFXscrlNuKHTdfxgVFUM9ppkWEafuWAYxT06g5zgGoQEEuXjZvWYm
-UbO17aCPkKvL3kALKZep6naPB4Wc6Y0Jrs6DXTJL4SEcVD7Y7tTQU1vcRtNSgUCM
-R+Z/ChvmlJ/y0FuCVWCk
-=Ny56
------END PGP SIGNATURE-----
-
---FCuugMFkClbJLl1L--
