@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030909Ab2HHVMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:12:39 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:49480 "EHLO ogre.sisk.pl"
+	id S1030928Ab2HHVMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:12:55 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49476 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030848Ab2HHVM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:12:27 -0400
+	id S1759308Ab2HHVM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 17:12:26 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] ACPI / PM: Fix unused function warnings for CONFIG_PM_SLEEP
-Date: Wed, 8 Aug 2012 23:09:14 +0200
+Subject: [PATCH 2/3] platform / x86/ PM: Fix unused function warnings for CONFIG_PM_SLEEP
+Date: Wed, 8 Aug 2012 23:10:20 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
         ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
@@ -20,216 +20,344 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208082309.14658.rjw@sisk.pl>
+Message-Id: <201208082310.20980.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-According to compiler warnings, several suspend/resume functions
-in ACPI drivers are not used for CONFIG_PM_SLEEP unset, so add
-#ifdefs to prevent them from being built in that case.
+According to compiler warnings, quite some suspend/resume functions
+in platform x86 drivers are not used for CONFIG_PM_SLEEP unset, so
+add #ifdefs to prevent them from being built in that case.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/ac.c      |    4 ++++
- drivers/acpi/battery.c |    2 ++
- drivers/acpi/button.c  |    4 ++++
- drivers/acpi/fan.c     |    4 ++++
- drivers/acpi/power.c   |    4 ++++
- drivers/acpi/sbs.c     |    2 ++
- drivers/acpi/thermal.c |    4 ++++
- 7 files changed, 24 insertions(+)
+ drivers/platform/x86/classmate-laptop.c  |    4 ++++
+ drivers/platform/x86/fujitsu-tablet.c    |    2 ++
+ drivers/platform/x86/hdaps.c             |    2 ++
+ drivers/platform/x86/hp_accel.c          |    2 +-
+ drivers/platform/x86/msi-laptop.c        |    4 ++++
+ drivers/platform/x86/panasonic-laptop.c  |    4 ++++
+ drivers/platform/x86/sony-laptop.c       |   12 +++++++++++-
+ drivers/platform/x86/thinkpad_acpi.c     |    2 ++
+ drivers/platform/x86/toshiba_acpi.c      |    2 ++
+ drivers/platform/x86/toshiba_bluetooth.c |    4 ++++
+ drivers/platform/x86/xo15-ebook.c        |    2 ++
+ 11 files changed, 38 insertions(+), 2 deletions(-)
 
-Index: linux/drivers/acpi/ac.c
+Index: linux/drivers/platform/x86/classmate-laptop.c
 ===================================================================
---- linux.orig/drivers/acpi/ac.c
-+++ linux/drivers/acpi/ac.c
-@@ -69,7 +69,9 @@ static const struct acpi_device_id ac_de
+--- linux.orig/drivers/platform/x86/classmate-laptop.c
++++ linux/drivers/platform/x86/classmate-laptop.c
+@@ -350,6 +350,7 @@ static void cmpc_accel_idev_init_v4(stru
+ 	inputdev->close = cmpc_accel_close_v4;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int cmpc_accel_suspend_v4(struct device *dev)
+ {
+ 	struct input_dev *inputdev;
+@@ -384,6 +385,7 @@ static int cmpc_accel_resume_v4(struct d
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static int cmpc_accel_add_v4(struct acpi_device *acpi)
+ {
+@@ -752,6 +754,7 @@ static int cmpc_tablet_remove(struct acp
+ 	return cmpc_remove_acpi_notify_device(acpi);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int cmpc_tablet_resume(struct device *dev)
+ {
+ 	struct input_dev *inputdev = dev_get_drvdata(dev);
+@@ -761,6 +764,7 @@ static int cmpc_tablet_resume(struct dev
+ 		input_report_switch(inputdev, SW_TABLET_MODE, !val);
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(cmpc_tablet_pm, NULL, cmpc_tablet_resume);
+ 
+Index: linux/drivers/platform/x86/fujitsu-tablet.c
+===================================================================
+--- linux.orig/drivers/platform/x86/fujitsu-tablet.c
++++ linux/drivers/platform/x86/fujitsu-tablet.c
+@@ -440,11 +440,13 @@ static int __devexit acpi_fujitsu_remove
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int acpi_fujitsu_resume(struct device *dev)
+ {
+ 	fujitsu_reset();
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(acpi_fujitsu_pm, NULL, acpi_fujitsu_resume);
+ 
+Index: linux/drivers/platform/x86/hdaps.c
+===================================================================
+--- linux.orig/drivers/platform/x86/hdaps.c
++++ linux/drivers/platform/x86/hdaps.c
+@@ -305,10 +305,12 @@ static int hdaps_probe(struct platform_d
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int hdaps_resume(struct device *dev)
+ {
+ 	return hdaps_device_init();
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(hdaps_pm, NULL, hdaps_resume);
+ 
+Index: linux/drivers/platform/x86/hp_accel.c
+===================================================================
+--- linux.orig/drivers/platform/x86/hp_accel.c
++++ linux/drivers/platform/x86/hp_accel.c
+@@ -352,7 +352,7 @@ static int lis3lv02d_remove(struct acpi_
+ }
+ 
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int lis3lv02d_suspend(struct device *dev)
+ {
+ 	/* make sure the device is off when we suspend */
+Index: linux/drivers/platform/x86/msi-laptop.c
+===================================================================
+--- linux.orig/drivers/platform/x86/msi-laptop.c
++++ linux/drivers/platform/x86/msi-laptop.c
+@@ -85,7 +85,9 @@
+ #define MSI_STANDARD_EC_TOUCHPAD_ADDRESS	0xe4
+ #define MSI_STANDARD_EC_TOUCHPAD_MASK		(1 << 4)
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int msi_laptop_resume(struct device *device);
++#endif
+ static SIMPLE_DEV_PM_OPS(msi_laptop_pm, NULL, msi_laptop_resume);
+ 
+ #define MSI_STANDARD_EC_DEVICES_EXISTS_ADDRESS	0x2f
+@@ -753,6 +755,7 @@ err_bluetooth:
+ 	return retval;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int msi_laptop_resume(struct device *device)
+ {
+ 	u8 data;
+@@ -773,6 +776,7 @@ static int msi_laptop_resume(struct devi
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static int __init msi_laptop_input_setup(void)
+ {
+Index: linux/drivers/platform/x86/panasonic-laptop.c
+===================================================================
+--- linux.orig/drivers/platform/x86/panasonic-laptop.c
++++ linux/drivers/platform/x86/panasonic-laptop.c
+@@ -188,7 +188,9 @@ static const struct acpi_device_id pcc_d
  };
- MODULE_DEVICE_TABLE(acpi, ac_device_ids);
+ MODULE_DEVICE_TABLE(acpi, pcc_device_ids);
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_ac_resume(struct device *dev);
+ static int acpi_pcc_hotkey_resume(struct device *dev);
 +#endif
- static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
+ static SIMPLE_DEV_PM_OPS(acpi_pcc_hotkey_pm, NULL, acpi_pcc_hotkey_resume);
  
- static struct acpi_driver acpi_ac_driver = {
-@@ -313,6 +315,7 @@ static int acpi_ac_add(struct acpi_devic
- 	return result;
- }
+ static struct acpi_driver acpi_pcc_driver = {
+@@ -540,6 +542,7 @@ static void acpi_pcc_destroy_input(struc
+ 
+ /* kernel module interface */
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_ac_resume(struct device *dev)
+ static int acpi_pcc_hotkey_resume(struct device *dev)
  {
- 	struct acpi_ac *ac;
-@@ -332,6 +335,7 @@ static int acpi_ac_resume(struct device
- 		kobject_uevent(&ac->charger.dev->kobj, KOBJ_CHANGE);
- 	return 0;
+ 	struct pcc_acpi *pcc;
+@@ -556,6 +559,7 @@ static int acpi_pcc_hotkey_resume(struct
+ 
+ 	return acpi_pcc_write_sset(pcc, SINF_STICKY_KEY, pcc->sticky_mode);
  }
 +#endif
  
- static int acpi_ac_remove(struct acpi_device *device, int type)
+ static int acpi_pcc_hotkey_add(struct acpi_device *device)
  {
-Index: linux/drivers/acpi/battery.c
+Index: linux/drivers/platform/x86/sony-laptop.c
 ===================================================================
---- linux.orig/drivers/acpi/battery.c
-+++ linux/drivers/acpi/battery.c
-@@ -1052,6 +1052,7 @@ static int acpi_battery_remove(struct ac
- 	return 0;
+--- linux.orig/drivers/platform/x86/sony-laptop.c
++++ linux/drivers/platform/x86/sony-laptop.c
+@@ -140,7 +140,10 @@ MODULE_PARM_DESC(kbd_backlight_timeout,
+ 		 "1 for 30 seconds, 2 for 60 seconds and 3 to disable timeout "
+ 		 "(default: 0)");
+ 
++#ifdef CONFIG_PM_SLEEP
+ static void sony_nc_kbd_backlight_resume(void);
++static void sony_nc_thermal_resume(void);
++#endif
+ static int sony_nc_kbd_backlight_setup(struct platform_device *pd,
+ 		unsigned int handle);
+ static void sony_nc_kbd_backlight_cleanup(struct platform_device *pd);
+@@ -151,7 +154,6 @@ static void sony_nc_battery_care_cleanup
+ 
+ static int sony_nc_thermal_setup(struct platform_device *pd);
+ static void sony_nc_thermal_cleanup(struct platform_device *pd);
+-static void sony_nc_thermal_resume(void);
+ 
+ static int sony_nc_lid_resume_setup(struct platform_device *pd);
+ static void sony_nc_lid_resume_cleanup(struct platform_device *pd);
+@@ -1431,6 +1433,7 @@ static void sony_nc_function_cleanup(str
+ 	sony_nc_handles_cleanup(pd);
  }
  
 +#ifdef CONFIG_PM_SLEEP
- /* this is needed to learn about changes made in suspended state */
- static int acpi_battery_resume(struct device *dev)
+ static void sony_nc_function_resume(void)
  {
-@@ -1068,6 +1069,7 @@ static int acpi_battery_resume(struct de
- 	acpi_battery_update(battery);
+ 	unsigned int i, result, bitmask, arg;
+@@ -1508,6 +1511,7 @@ static int sony_nc_resume(struct device
+ 
  	return 0;
  }
 +#endif
  
- static SIMPLE_DEV_PM_OPS(acpi_battery_pm, NULL, acpi_battery_resume);
+ static SIMPLE_DEV_PM_OPS(sony_nc_pm, NULL, sony_nc_resume);
  
-Index: linux/drivers/acpi/button.c
-===================================================================
---- linux.orig/drivers/acpi/button.c
-+++ linux/drivers/acpi/button.c
-@@ -78,7 +78,9 @@ static int acpi_button_add(struct acpi_d
- static int acpi_button_remove(struct acpi_device *device, int type);
- static void acpi_button_notify(struct acpi_device *device, u32 event);
- 
-+#ifdef CONFIG_PM_SLEEP
- static int acpi_button_resume(struct device *dev);
-+#endif
- static SIMPLE_DEV_PM_OPS(acpi_button_pm, NULL, acpi_button_resume);
- 
- static struct acpi_driver acpi_button_driver = {
-@@ -310,6 +312,7 @@ static void acpi_button_notify(struct ac
+@@ -1872,6 +1876,7 @@ static void sony_nc_kbd_backlight_cleanu
  	}
  }
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_button_resume(struct device *dev)
+ static void sony_nc_kbd_backlight_resume(void)
  {
- 	struct acpi_device *device = to_acpi_device(dev);
-@@ -319,6 +322,7 @@ static int acpi_button_resume(struct dev
- 		return acpi_lid_send_state(device);
- 	return 0;
+ 	int ignore = 0;
+@@ -1888,6 +1893,7 @@ static void sony_nc_kbd_backlight_resume
+ 				(kbdbl_ctl->base + 0x200) |
+ 				(kbdbl_ctl->timeout << 0x10), &ignore);
  }
 +#endif
  
- static int acpi_button_add(struct acpi_device *device)
- {
-Index: linux/drivers/acpi/fan.c
-===================================================================
---- linux.orig/drivers/acpi/fan.c
-+++ linux/drivers/acpi/fan.c
-@@ -53,8 +53,10 @@ static const struct acpi_device_id fan_d
- };
- MODULE_DEVICE_TABLE(acpi, fan_device_ids);
- 
-+#ifdef CONFIG_PM_SLEEP
- static int acpi_fan_suspend(struct device *dev);
- static int acpi_fan_resume(struct device *dev);
-+#endif
- static SIMPLE_DEV_PM_OPS(acpi_fan_pm, acpi_fan_suspend, acpi_fan_resume);
- 
- static struct acpi_driver acpi_fan_driver = {
-@@ -184,6 +186,7 @@ static int acpi_fan_remove(struct acpi_d
- 	return 0;
+ struct battery_care_control {
+ 	struct device_attribute attrs[2];
+@@ -2210,6 +2216,7 @@ static void sony_nc_thermal_cleanup(stru
+ 	}
  }
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_fan_suspend(struct device *dev)
+ static void sony_nc_thermal_resume(void)
  {
- 	if (!dev)
-@@ -207,6 +210,7 @@ static int acpi_fan_resume(struct device
+ 	unsigned int status = sony_nc_thermal_mode_get();
+@@ -2217,6 +2224,7 @@ static void sony_nc_thermal_resume(void)
+ 	if (status != th_handle->mode)
+ 		sony_nc_thermal_mode_set(th_handle->mode);
+ }
++#endif
  
+ /* resume on LID open */
+ struct snc_lid_resume_control {
+@@ -4287,6 +4295,7 @@ err_free_resources:
  	return result;
  }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int sony_pic_suspend(struct device *dev)
+ {
+ 	if (sony_pic_disable(to_acpi_device(dev)))
+@@ -4300,6 +4309,7 @@ static int sony_pic_resume(struct device
+ 			spic_dev.cur_ioport, spic_dev.cur_irq);
+ 	return 0;
+ }
 +#endif
  
- static int __init acpi_fan_init(void)
- {
-Index: linux/drivers/acpi/power.c
+ static SIMPLE_DEV_PM_OPS(sony_pic_pm, sony_pic_suspend, sony_pic_resume);
+ 
+Index: linux/drivers/platform/x86/thinkpad_acpi.c
 ===================================================================
---- linux.orig/drivers/acpi/power.c
-+++ linux/drivers/acpi/power.c
-@@ -67,7 +67,9 @@ static const struct acpi_device_id power
+--- linux.orig/drivers/platform/x86/thinkpad_acpi.c
++++ linux/drivers/platform/x86/thinkpad_acpi.c
+@@ -922,6 +922,7 @@ static struct input_dev *tpacpi_inputdev
+ static struct mutex tpacpi_inputdev_send_mutex;
+ static LIST_HEAD(tpacpi_all_drivers);
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int tpacpi_suspend_handler(struct device *dev)
+ {
+ 	struct ibm_struct *ibm, *itmp;
+@@ -949,6 +950,7 @@ static int tpacpi_resume_handler(struct
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(tpacpi_pm,
+ 			 tpacpi_suspend_handler, tpacpi_resume_handler);
+Index: linux/drivers/platform/x86/toshiba_acpi.c
+===================================================================
+--- linux.orig/drivers/platform/x86/toshiba_acpi.c
++++ linux/drivers/platform/x86/toshiba_acpi.c
+@@ -1296,6 +1296,7 @@ static void toshiba_acpi_notify(struct a
+ 	}
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int toshiba_acpi_suspend(struct device *device)
+ {
+ 	struct toshiba_acpi_dev *dev = acpi_driver_data(to_acpi_device(device));
+@@ -1317,6 +1318,7 @@ static int toshiba_acpi_resume(struct de
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(toshiba_acpi_pm,
+ 			 toshiba_acpi_suspend, toshiba_acpi_resume);
+Index: linux/drivers/platform/x86/toshiba_bluetooth.c
+===================================================================
+--- linux.orig/drivers/platform/x86/toshiba_bluetooth.c
++++ linux/drivers/platform/x86/toshiba_bluetooth.c
+@@ -41,7 +41,9 @@ static const struct acpi_device_id bt_de
  };
- MODULE_DEVICE_TABLE(acpi, power_device_ids);
+ MODULE_DEVICE_TABLE(acpi, bt_device_ids);
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_power_resume(struct device *dev);
+ static int toshiba_bt_resume(struct device *dev);
 +#endif
- static SIMPLE_DEV_PM_OPS(acpi_power_pm, NULL, acpi_power_resume);
+ static SIMPLE_DEV_PM_OPS(toshiba_bt_pm, NULL, toshiba_bt_resume);
  
- static struct acpi_driver acpi_power_driver = {
-@@ -775,6 +777,7 @@ static int acpi_power_remove(struct acpi
- 	return 0;
+ static struct acpi_driver toshiba_bt_rfkill_driver = {
+@@ -90,10 +92,12 @@ static void toshiba_bt_rfkill_notify(str
+ 	toshiba_bluetooth_enable(device->handle);
  }
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_power_resume(struct device *dev)
+ static int toshiba_bt_resume(struct device *dev)
  {
- 	int result = 0, state;
-@@ -803,6 +806,7 @@ static int acpi_power_resume(struct devi
- 
- 	return result;
+ 	return toshiba_bluetooth_enable(to_acpi_device(dev)->handle);
  }
 +#endif
  
- int __init acpi_power_init(void)
+ static int toshiba_bt_rfkill_add(struct acpi_device *device)
  {
-Index: linux/drivers/acpi/sbs.c
+Index: linux/drivers/platform/x86/xo15-ebook.c
 ===================================================================
---- linux.orig/drivers/acpi/sbs.c
-+++ linux/drivers/acpi/sbs.c
-@@ -988,6 +988,7 @@ static void acpi_sbs_rmdirs(void)
- #endif
+--- linux.orig/drivers/platform/x86/xo15-ebook.c
++++ linux/drivers/platform/x86/xo15-ebook.c
+@@ -77,10 +77,12 @@ static void ebook_switch_notify(struct a
+ 	}
  }
  
 +#ifdef CONFIG_PM_SLEEP
- static int acpi_sbs_resume(struct device *dev)
+ static int ebook_switch_resume(struct device *dev)
  {
- 	struct acpi_sbs *sbs;
-@@ -997,6 +998,7 @@ static int acpi_sbs_resume(struct device
- 	acpi_sbs_callback(sbs);
- 	return 0;
+ 	return ebook_send_state(to_acpi_device(dev));
  }
 +#endif
  
- static SIMPLE_DEV_PM_OPS(acpi_sbs_pm, NULL, acpi_sbs_resume);
- 
-Index: linux/drivers/acpi/thermal.c
-===================================================================
---- linux.orig/drivers/acpi/thermal.c
-+++ linux/drivers/acpi/thermal.c
-@@ -106,7 +106,9 @@ static const struct acpi_device_id  ther
- };
- MODULE_DEVICE_TABLE(acpi, thermal_device_ids);
- 
-+#ifdef CONFIG_PM_SLEEP
- static int acpi_thermal_resume(struct device *dev);
-+#endif
- static SIMPLE_DEV_PM_OPS(acpi_thermal_pm, NULL, acpi_thermal_resume);
- 
- static struct acpi_driver acpi_thermal_driver = {
-@@ -1041,6 +1043,7 @@ static int acpi_thermal_remove(struct ac
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int acpi_thermal_resume(struct device *dev)
- {
- 	struct acpi_thermal *tz;
-@@ -1075,6 +1078,7 @@ static int acpi_thermal_resume(struct de
- 
- 	return AE_OK;
- }
-+#endif
- 
- static int thermal_act(const struct dmi_system_id *d) {
+ static SIMPLE_DEV_PM_OPS(ebook_switch_pm, NULL, ebook_switch_resume);
  
 
