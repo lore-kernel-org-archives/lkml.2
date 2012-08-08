@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030855Ab2HHT6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:58:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030829Ab2HHT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:57:46 -0400
-Date: Wed, 8 Aug 2012 15:57:30 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 2/2] floppy: error handling fixes on do_floppy_init
-Message-ID: <20120808195730.GG15623@redhat.com>
-References: <1344450293-5557-1-git-send-email-herton.krzesinski@canonical.com>
- <1344450293-5557-3-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344450293-5557-3-git-send-email-herton.krzesinski@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759178Ab2HHT7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:59:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54679 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab2HHT7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 15:59:13 -0400
+Subject: Re: rcu stalls seen with numasched_v2 patches applied.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: john stultz <johnstul@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <20120807171859.GB3850@linux.vnet.ibm.com>
+References: <20120807123305.GA7137@linux.vnet.ibm.com>
+	 <1344347568.27828.122.camel@twins>
+	 <20120807171859.GB3850@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 21:58:58 +0200
+Message-ID: <1344455938.16728.13.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 03:24:53PM -0300, Herton Ronaldo Krzesinski wrote:
-> While looking at commit 3f9a5aa ("floppy: Cleanup disk->queue before
-> caling put_disk() if add_disk() was never called") I noticed some
-> problems with the error handling and cleanup:
-> 
-> * missing cleanup (put_disk) if blk_init_queue fails, dr is decremented
->   first in the error handling loop
-> * if something fails in the add_disk loop, there is no cleanup of
->   previous iterations in the error handling.
-> * "if (disks[dr]->queue)" check is bogus, when reaching there for each
->   dr should exist an queue allocated, and it doesn't take into account
->   iterations where add_disk wasn't done, if failure happens in add_disk
->   loop.
-> * floppy_module_exit doesn't reset queue pointer if add_disk wasn't
->   done.
+On Tue, 2012-08-07 at 22:49 +0530, Srikar Dronamraju wrote:
+> Are you referring to this the commit 158e1645e (trim task_work: get rid of hlist)
 
-Hey, these seem to be multiple cleanups. Can you break these down into
-individual patches. Review becomes easy.
+No, to something like the below..
 
-[..]
-> +		blk_cleanup_queue(disks[dr]->queue);
-> +		/*
-> +		 * put_disk() may not be paired with add_disk() and
-> +		 * will put queue reference one extra time. fix it.
-> +		 */
-> +		if (dr > registered || !(allowed_drive_mask & (1 << dr)) ||
-> +		    fdc_state[FDC(dr)].version == FDC_NONE)
->  			disks[dr]->queue = NULL;
+> I am also able to reproduce this on another 8 node machine too.
 
-I think checking for FDC_NONE and allowed_drive_mask() in multiple places
-is becoming unreadable now. Can we just maintain a separate array to keep
-track of disks on which we have called add_disk() and do the cleanup 
-accordingly.
+Ship me one ;-)
 
-static unsigned short disk_registered[N_DRIVE];
+> Just to update, I had to revert commit: b9403130a5  sched/cleanups: Add
+> load balance cpumask pointer to 'struct lb_env' so that your patches
+> apply cleanly. (I dont think this should have caused any problem.. but)
 
-/* do add_disk */
-disk_registered[drive] = 1;
+Yeah, I've got a rebase on top of that.. just wanted fold this
+page::last_nid thing into the page::flags before posting again.
+
+---
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1539,6 +1539,7 @@ struct task_struct {
+ #ifdef CONFIG_SMP
+ 	u64 node_stamp;			/* migration stamp  */
+ 	unsigned long numa_contrib;
++	struct callback_head numa_work;
+ #endif /* CONFIG_SMP  */
+ #endif /* CONFIG_NUMA */
+ 	struct rcu_head rcu;
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -816,7 +816,7 @@ void task_numa_work(struct callback_head
+ 	struct task_struct *t, *p = current;
+ 	int node = p->node_last;
+ 
+-	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
+ 
+ 	/*
+ 	 * Who cares about NUMA placement when they're dying.
+@@ -891,8 +891,8 @@ void task_tick_numa(struct rq *rq, struc
+ 			 * yet and exit_task_work() is called before
+ 			 * exit_notify().
+ 			 */
+-			init_task_work(&curr->rcu, task_numa_work);
+-			task_work_add(curr, &curr->rcu, true);
++			init_task_work(&curr->numa_work, task_numa_work);
++			task_work_add(curr, &curr->numa_work, true);
+ 		}
+ 		curr->node_last = node;
+ 	}
 
 
-out_put_disk:
-	while(dr--) {
-		if (disks[dr]->queue && !disk_registered[dr]) {
-			blk_cleanup_queue()
-			disks[dr]->queue = NULL;
-		}
-	}
-
-Same disk_registered[] can be used for your other loop of remove drives.
-Also it can be used in cleaning up code in floppy_module_exit().
-
-I think this will make code much more readable. Right now this error 
-handling loop is just getting too complicated.
-
-Thanks
-Vivek
