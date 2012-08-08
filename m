@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab2HHV5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:57:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45876 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2HHV5H (ORCPT
+	id S1753209Ab2HHWGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 18:06:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42523 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab2HHWGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:57:07 -0400
-Message-ID: <5022E0B0.1070406@wwwdotorg.org>
-Date: Wed, 08 Aug 2012 15:57:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 18:06:18 -0400
+Date: Wed, 8 Aug 2012 15:06:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net, snitzer@redhat.com
+Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for
+ dm_rq_clone_bio_info
+Message-ID: <20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-3-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-To: broonie@opensource.wolfsonmicro.com
-CC: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
-References: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344290921-25154-3-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2012 02:18 AM, Laxman Dewangan wrote:
-> As per datasheet, the vin pin for the regulator is named
-> as vin_sm0, vin_sm1, vin_sm2 for sm0, sm1 and sm2 respectively.
+Hello,
+
+On Mon, Aug 06, 2012 at 03:08:31PM -0700, Kent Overstreet wrote:
+> Previously, dm_rq_clone_bio_info needed to be freed by the bio's
+> destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
+> This gets rid of a memory allocation and means we can kill
+> dm_rq_bio_destructor.
 > 
-> Correcting the names in driver and documentation to match with
-> datasheet.
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
+>  drivers/md/dm.c |   31 +++++--------------------------
+>  1 files changed, 5 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index 40b7735..4014696 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -92,6 +92,7 @@ struct dm_rq_target_io {
+>  struct dm_rq_clone_bio_info {
+>  	struct bio *orig;
+>  	struct dm_rq_target_io *tio;
+> +	struct bio clone;
+>  };
+...
+> @@ -2696,7 +2674,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
+>  	if (!pools->tio_pool)
+>  		goto free_io_pool_and_out;
+>  
+> -	pools->bs = bioset_create(pool_size, 0);
+> +	pools->bs = bioset_create(pool_size,
+> +				  offsetof(struct dm_rq_clone_bio_info, orig));
+>  	if (!pools->bs)
+>  		goto free_tio_pool_and_out;
 
-Mark,
+I do like this approach much better but this isn't something
+super-obvious.  Can we please explain what's going on?  Especially,
+the comment above dm_rq_clone_bio_info is outright misleading now.
 
-This patch was in next-20120803, but seems to have been dropped from
-next-20120806 and later:
+Can someone more familiar review this one?  Alasdir, Mike?
 
-> git log next-20120803 --oneline -- drivers/regulator/tps6586x-regulator.c|cat
-> c7bc4e5 regulator: tps6586x: correct vin pin for sm0/sm1/sm2
-> 7c7fac3 regulator: tps6586x: add support for input supply
-> f464703 regulator: tps6586x: Convert to regulator_list_voltage_table
+Also, how was this tested?
 
-> git log next-20120806 --oneline -- drivers/regulator/tps6586x-regulator.c|cat
-> 4c79c8d regulator: tps6586x: Convert to regulator_[enable|disable|is_enabled|get_voltage_sel]_regmap
-> 7c7fac3 regulator: tps6586x: add support for input supply
-> f464703 regulator: tps6586x: Convert to regulator_list_voltage_table
+Thanks.
 
-I assume that was just an accident?
-
+-- 
+tejun
