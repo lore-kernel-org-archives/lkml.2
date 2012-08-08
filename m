@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab2HHOcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:32:54 -0400
-Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:39210 "EHLO
-	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756548Ab2HHOcx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:32:53 -0400
-From: David Cullen <David.Cullen@koe-americas.com>
-To: "mmarek@suse.cz" <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] ARM Fix /usr/bin/xargs: etags: Argument list too long
-Thread-Topic: [RFC PATCH] ARM Fix /usr/bin/xargs: etags: Argument list too
- long
-Thread-Index: AQHNdXKwUdMPlyBDmEORxEZhcXYKAw==
-Date: Wed, 8 Aug 2012 14:32:51 +0000
-Message-ID: <50227893.7070600@koe-americas.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-x-originating-ip: [10.1.5.28]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <9AA143D3EF33FC4581C5AF9B74FF58F6@koe-americas.com>
-Content-Transfer-Encoding: 7BIT
+	id S1758039Ab2HHOfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:35:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62078 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab2HHOfG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:35:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 4/6] ARM: s3c24xx: use new PWM driver
+Date: Wed, 8 Aug 2012 14:34:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Tushar Behera <tushar.behera@linaro.org>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <1344430493-5304-5-git-send-email-arnd@arndb.de> <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
+In-Reply-To: <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201208081434.56198.arnd@arndb.de>
+X-Provags-ID: V02:K0:6bY5eiR/f0fvq5uHQB4BaFgr9DUl/FASEnf7tSIv0JQ
+ iPSlFKSbKIM/6RFYdFD/M0URPdhJOGmQ4cwri+DKeaeF8joObt
+ oX/54tmt8CTHHpkzKgUseyHdw/F21LCxeVMqEMu3TPJc2GRlJm
+ CSg/yQ4gk/LQHfC6XWzWFiqXWoaqU7CgCL9SW8OGoaH0efD9Y8
+ s6KXiXCYPaJub3L2mQCbFstKWsyeeotOvPp7kUnK4JfL6ZWQmT
+ eeOutF2nLDhQHZWtiahhOOKelGI78qB4NLx6QXHQNgk+2ZFkCr
+ 62siuxNZt3VI4nqmmeU3utQc/tiBp+1laDaRxjmkTDI3zMKyGB
+ GkKUQxOWJQr7HnB3MPR4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch applies to
+On Wednesday 08 August 2012, Kukjin Kim wrote:
 
-    commit 42a579a0f960081cd16fc945036e4780c3ad3202
+> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+> index e249611..d56b0f7 100644
+> --- a/arch/arm/mach-s3c24xx/Kconfig
+> +++ b/arch/arm/mach-s3c24xx/Kconfig
+> @@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
+>  	select I2C
+>  	select POWER_SUPPLY
+>  	select MACH_NEO1973
+> -	select S3C2410_PWM
+> +	select S3C24XX_PWM
+>  	select S3C_DEV_USB_HOST
+>  	help
+>  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
+> Phone
+> @@ -493,7 +493,7 @@ config MACH_RX1950
+>  	select S3C24XX_DCLK
+>  	select PM_H1940 if PM
+>  	select I2C
+> -	select S3C2410_PWM
+> +	select S3C24XX_PWM
+>  	select S3C_DEV_NAND
+>  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
+>  	select S3C2440_XTAL_16934400
+> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+> index 7aca31c..dcdfb77 100644
+> --- a/arch/arm/plat-samsung/Kconfig
+> +++ b/arch/arm/plat-samsung/Kconfig
+> @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
+>  
+>  config S3C24XX_PWM
+>  	bool "PWM device support"
+> -	select HAVE_PWM
+> +	select PWM
+>  	help
+>  	  Support for exporting the PWM timer blocks via the pwm device
+>  	  system
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 8fc3808..c74d055 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -58,14 +58,12 @@ config PWM_PXA
+>  	  will be called pwm-pxa.
+>  
+>  config PWM_SAMSUNG
+> -	tristate "Samsung pwm support"
+> +	bool "Samsung PWM support"
+>  	depends on PLAT_SAMSUNG
+> +	default y
+>  	help
+>  	  Generic PWM framework driver for Samsung.
+>  
+> -	  To compile this driver as a module, choose M here: the module
+> -	  will be called pwm-samsung.
+> -
+>  config PWM_TEGRA
+>  	tristate "NVIDIA Tegra PWM support"
+>  	depends on ARCH_TEGRA
 
-When running "make ARCH=arm TAGS" in a chroot using qemu-arm-static,
-the following message is emitted:
+This approach has two disadvantages compared to mine:
 
-    [user@host:/home/work/linux]: make ARCH=arm TAGS
-      GEN     TAGS
-    /usr/bin/xargs: etags: Argument list too long
+* When building for the samsung platforms other than rx1950 or gta02,
+  you can no longer have the PWM driver as a loadable module, for no
+  good reason.
 
-This can be fixed by by passing "-L 1024" to xargs in scripts/tags.sh.
+* It is still possible to manually disable PWM_SAMSUNG, even on
+  rx1950 and gta02, because the Kconfig symbol is visible.
 
-The "1024" was a guess. A value of "3862" changes the message to
+I've added a "Reported-by: Tushar Behera <tushar.behera@linaro.org>"
+line to my version of the patch, but I would prefer to keep that
+approach. I have also changed the patch to use the S3C24XX_PWM
+symbol because that lets everyone migrate the defconfig files.
 
-    /usr/bin/xargs: argument list too long
+Do you want to give this patch some more testing, or should I keep
+it in arm-soc?
 
-Using "2048" also fixes the problem. However, I don't know how much
-headroom that leaves
-
-Does anyone know why the argument lists must be shorter for ARM? All
-of the documentation I have available says that 4096 should be the
-limit.
-
-Signed-off-by: David Cullen <david.cullen@koe-americas.com>
+	Arnd
 ---
- scripts/tags.sh |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>From 438b0cf94adb2528bdeeb71314f7be16512ea5b1 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Sat, 4 Aug 2012 07:52:19 +0000
+Subject: [PATCH] ARM: s3c24xx: use new PWM driver
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index cff8faa..7f4ebb3 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -121,7 +121,7 @@ dogtags()
+The samsung PWM driver has moved to the new PWM subsystem, which
+changed the Kconfig symbol for that driver, but the rx1950 and
+gta02 boards still uses the old one.
 
- exuberant()
- {
--       all_sources | xargs $1 -a                               \
-+       all_sources | xargs -L 1024 $1 -a                       \
-        -I __initdata,__exitdata,__acquires,__releases          \
-        -I __read_mostly,____cacheline_aligned                  \
-        -I ____cacheline_aligned_in_smp                         \
---
-1.7.9.5
+Without this patch, building s3c2410_defconfig results in:
+
+arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_lcd_power':
+arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to `pwm_config'
+arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to `pwm_disable'
+arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to `pwm_config'
+arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to `pwm_enable'
+arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_exit':
+arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to `pwm_free'
+arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_init':
+arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to `pwm_request'
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Tushar Behera <tushar.behera@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+
+diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+index e249611..d56b0f7 100644
+--- a/arch/arm/mach-s3c24xx/Kconfig
++++ b/arch/arm/mach-s3c24xx/Kconfig
+@@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
+ 	select I2C
+ 	select POWER_SUPPLY
+ 	select MACH_NEO1973
+-	select S3C2410_PWM
++	select S3C24XX_PWM
+ 	select S3C_DEV_USB_HOST
+ 	help
+ 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM Phone
+@@ -493,7 +493,7 @@ config MACH_RX1950
+ 	select S3C24XX_DCLK
+ 	select PM_H1940 if PM
+ 	select I2C
+-	select S3C2410_PWM
++	select S3C24XX_PWM
+ 	select S3C_DEV_NAND
+ 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
+ 	select S3C2440_XTAL_16934400
+diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+index 7aca31c..9c3b90c 100644
+--- a/arch/arm/plat-samsung/Kconfig
++++ b/arch/arm/plat-samsung/Kconfig
+@@ -403,7 +403,8 @@ config S5P_DEV_USB_EHCI
+ 
+ config S3C24XX_PWM
+ 	bool "PWM device support"
+-	select HAVE_PWM
++	select PWM
++	select PWM_SAMSUNG
+ 	help
+ 	  Support for exporting the PWM timer blocks via the pwm device
+ 	  system
+
