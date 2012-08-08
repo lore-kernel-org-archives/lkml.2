@@ -1,65 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2HHJXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:23:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40309 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab2HHJXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:23:49 -0400
-X-IronPort-AV: E=Sophos;i="4.77,732,1336320000"; 
-   d="scan'208";a="5580088"
-Message-ID: <50223156.3030803@cn.fujitsu.com>
-Date: Wed, 08 Aug 2012 17:28:54 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1757955Ab2HHJ11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:27:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757917Ab2HHJ1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 05:27:25 -0400
+Date: Wed, 8 Aug 2012 11:27:15 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] sched: fix divide by zero at {thread_group,task}_times
+Message-ID: <20120808092714.GA3580@redhat.com>
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v8] kvm: notify host when the guest is panicked
-References: <5021D235.4050800@cn.fujitsu.com> <20120808091235.GA2663@turtle.usersys.redhat.com>
-In-Reply-To: <20120808091235.GA2663@turtle.usersys.redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/08 17:24:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/08 17:24:10,
-	Serialize complete at 2012/08/08 17:24:10
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 08/08/2012 05:12 PM, Andrew Jones Wrote:
-> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
->> diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
->> new file mode 100644
->> index 0000000..0ebc890
->> --- /dev/null
->> +++ b/Documentation/virtual/kvm/pv_event.txt
->> @@ -0,0 +1,32 @@
->> +The KVM paravirtual event interface
->> +=================================
->> +
->> +Initializing the paravirtual event interface
->> +======================
->> +kvm_pv_event_init()
->> +Argiments:
->> +	None
->> +
->> +Return Value:
->> +	0 : The guest kernel can't use paravirtual event interface.
->> +	-1: The guest kernel can use paravirtual event interface.
->> +
-> 
-> This documentation has the can and can't backwards.
-> 
+On architectures where cputime_t is 64 bit type, is possible to trigger
+divide by zero on do_div(temp, (__force u32) total) line, if total is a
+non zero number but has lower 32 bit's zeroed. Removing casting is not
+a good solution since some do_div() implementations do cast to u32
+internally.
 
-Yes, I will fix it.
+This problem can be triggered in practice on very long lived processes:
 
-Thanks
-Wen Congyang
+  PID: 2331   TASK: ffff880472814b00  CPU: 2   COMMAND: "oraagent.bin"
+   #0 [ffff880472a51b70] machine_kexec at ffffffff8103214b
+   #1 [ffff880472a51bd0] crash_kexec at ffffffff810b91c2
+   #2 [ffff880472a51ca0] oops_end at ffffffff814f0b00
+   #3 [ffff880472a51cd0] die at ffffffff8100f26b
+   #4 [ffff880472a51d00] do_trap at ffffffff814f03f4
+   #5 [ffff880472a51d60] do_divide_error at ffffffff8100cfff
+   #6 [ffff880472a51e00] divide_error at ffffffff8100be7b
+      [exception RIP: thread_group_times+0x56]
+      RIP: ffffffff81056a16  RSP: ffff880472a51eb8  RFLAGS: 00010046
+      RAX: bc3572c9fe12d194  RBX: ffff880874150800  RCX: 0000000110266fad
+      RDX: 0000000000000000  RSI: ffff880472a51eb8  RDI: 001038ae7d9633dc
+      RBP: ffff880472a51ef8   R8: 00000000b10a3a64   R9: ffff880874150800
+      R10: 00007fcba27ab680  R11: 0000000000000202  R12: ffff880472a51f08
+      R13: ffff880472a51f10  R14: 0000000000000000  R15: 0000000000000007
+      ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+   #7 [ffff880472a51f00] do_sys_times at ffffffff8108845d
+   #8 [ffff880472a51f40] sys_times at ffffffff81088524
+   #9 [ffff880472a51f80] system_call_fastpath at ffffffff8100b0f2
+      RIP: 0000003808caac3a  RSP: 00007fcba27ab6d8  RFLAGS: 00000202
+      RAX: 0000000000000064  RBX: ffffffff8100b0f2  RCX: 0000000000000000
+      RDX: 00007fcba27ab6e0  RSI: 000000000076d58e  RDI: 00007fcba27ab6e0
+      RBP: 00007fcba27ab700   R8: 0000000000000020   R9: 000000000000091b
+      R10: 00007fcba27ab680  R11: 0000000000000202  R12: 00007fff9ca41940
+      R13: 0000000000000000  R14: 00007fcba27ac9c0  R15: 00007fff9ca41940
+      ORIG_RAX: 0000000000000064  CS: 0033  SS: 002b
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ kernel/sched/core.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 468bdd4..1d441b0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3142,6 +3142,20 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+ #endif
+ 
++static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
++{
++	u64 temp = (__force u64) rtime;
++
++	temp *= (__force u64) utime;
++
++	if (sizeof(cputime_t) == 4)
++		do_div(temp, (__force u32) total);
++	else
++		temp = div64_u64(temp, (__force u64) total);
++
++	return (__force cputime_t) temp;
++}
++
+ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ {
+ 	cputime_t rtime, utime = p->utime, total = utime + p->stime;
+@@ -3151,13 +3165,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	 */
+ 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+ 
+-	if (total) {
+-		u64 temp = (__force u64) rtime;
+-
+-		temp *= (__force u64) utime;
+-		do_div(temp, (__force u32) total);
+-		utime = (__force cputime_t) temp;
+-	} else
++	if (total)
++		utime = scale_utime(utime, rtime, total);
++	else
+ 		utime = rtime;
+ 
+ 	/*
+@@ -3184,13 +3194,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	total = cputime.utime + cputime.stime;
+ 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ 
+-	if (total) {
+-		u64 temp = (__force u64) rtime;
+-
+-		temp *= (__force u64) cputime.utime;
+-		do_div(temp, (__force u32) total);
+-		utime = (__force cputime_t) temp;
+-	} else
++	if (total)
++		utime = scale_utime(cputime.utime, rtime, total);
++	else
+ 		utime = rtime;
+ 
+ 	sig->prev_utime = max(sig->prev_utime, utime);
+-- 
+1.7.1
+
