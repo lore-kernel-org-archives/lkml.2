@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab2HHHhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 03:37:35 -0400
-Received: from relay02ant.iops.be ([212.53.4.35]:60720 "EHLO
-	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab2HHHhe (ORCPT
+	id S932312Ab2HHHnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:43:17 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:46283 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757535Ab2HHHnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 03:37:34 -0400
-Message-ID: <50221737.3010608@acm.org>
-Date: Wed, 08 Aug 2012 07:37:27 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Chanho Min <chanho0207@gmail.com>
-CC: Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] fix NULL-pointer dereference on scsi_run_queue
-References: <CAOAMb1D+g0zzKGKjMPPp7V-XEwKB5AYGMDvUUbXNaHaz8ieTVg@mail.gmail.com> <501CE4E5.20604@acm.org> <501D51D1.2010806@cs.wisc.edu> <501D83A1.7040900@acm.org> <501DA3F0.4090009@cs.wisc.edu> <50200561.4020100@acm.org> <CAOAMb1BWWzYPSode-6Y9+O5eNhMc-bYofCNwMRmzeC9-nhRb4g@mail.gmail.com> <5020E031.9080406@acm.org> <CAOAMb1BNSTaG8N68jcEDV3gNt6V7BM9HkjUuXHeebhLNHe18kA@mail.gmail.com>
-In-Reply-To: <CAOAMb1BNSTaG8N68jcEDV3gNt6V7BM9HkjUuXHeebhLNHe18kA@mail.gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Aug 2012 03:43:13 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: vitalywool@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        jonsmirl@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND 1/2] i2c: pnx: Fix bit definitions
+Date: Wed,  8 Aug 2012 09:42:31 +0200
+Message-Id: <1344411752-23469-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/12 03:42, Chanho Min wrote:
-> Thank you for the explanation. It look correct. Let's check one more thing.
-> What If __scsi_remove_device doesn't release device? : reference count
-> is more than 2.
-> So We lost starved_list but device is exist. Is there any issue about this?
+The I2C Control Register bits RFDAIE and RFFIE were mixed up. In addition to
+this fix, this patch adds the missing bit DRSIE for completeness.
 
-As far as I can see that scenario will also be handled correctly by the
-proposed patch.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Bart.
+---
+Applies to v3.6-rc1
 
+This patch for i2c-pnx affects PNX4008 and LPC32xx (and LPC31xx, not yet in
+mainline). Can you please test and double-check the manuals of PNX4008 and
+LPC31xx? I only found this via the manual of LPC32xx but assume it's the same
+for the others, also.
+
+Thanks in advance!
+
+ drivers/i2c/busses/i2c-pnx.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- linux-2.6.orig/drivers/i2c/busses/i2c-pnx.c
++++ linux-2.6/drivers/i2c/busses/i2c-pnx.c
+@@ -48,8 +48,9 @@ enum {
+ 	mcntrl_afie = 0x00000002,
+ 	mcntrl_naie = 0x00000004,
+ 	mcntrl_drmie = 0x00000008,
+-	mcntrl_daie = 0x00000020,
+-	mcntrl_rffie = 0x00000040,
++	mcntrl_drsie = 0x00000010,
++	mcntrl_rffie = 0x00000020,
++	mcntrl_daie = 0x00000040,
+ 	mcntrl_tffie = 0x00000080,
+ 	mcntrl_reset = 0x00000100,
+ 	mcntrl_cdbmode = 0x00000400,
