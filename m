@@ -1,95 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab2HHCXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:23:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30162 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab2HHCXc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:23:32 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-14-5021cda25191
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Dongjin Kim'" <tobetter@gmail.com>
-Cc: "'Dongjin Kim'" <dongjin.kim@agreeyamobility.net>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Tony Lindgren'" <tony@atomide.com>,
-        "'Jon Medhurst'" <tixy@yxit.co.uk>,
-        "'Shawn Guo'" <shawn.guo@linaro.org>,
-        "=?UTF-8?Q?'Uwe_Kleine-K=C3=B6nig'?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344262254-14648-1-git-send-email-dongjin.kim@agreeyamobility.net>
- <1344365401-18591-1-git-send-email-dongjin.kim@agreeyamobility.net>
-In-reply-to: <1344365401-18591-1-git-send-email-dongjin.kim@agreeyamobility.net>
-Subject: RE: [PATCH v2] ODROID-X: hkdk4412: Add new hardware based on Exynos4412
-Date: Wed, 08 Aug 2012 11:23:30 +0900
-Message-id: <0a4301cd750c$cd29d2e0$677d78a0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac10zb9JqQEhWSiIQ42y7kDR89yfggAPSF8g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd1FZxUDDL6817W4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4Mq2bpWArd8W1Y1tZGhjbOLsYOTkkBEwkHn+aygJh
-	i0lcuLeerYuRi0NIYBGjxK9JD6Ccv4wSuzZdZgWpYhPQkDj8/hk7iC0ioCbR+LeTFaSIWeAv
-	k8SR/4uhOqYySmx6OJ2xi5GDg1MgQOLCXw4QUxjIvLFcFaSXRUBV4uyjSWwgNq+ArcS8o+uZ
-	IGxBiR+T74FdxCygLjFp3iJmCFtb4sm7C6wgYySA4o/+6kKcYCRx7XIzVImIxL4X7xgnMArN
-	QjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4JB+JrWDcWWDxSFG
-	AQ5GJR7eqGTFACHWxLLiytxDjBIczEoivHsOAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzGnt/
-	9RcSSE8sSc1OTS1ILYLJMnFwSjUwCvBveG94bNLJk3ZTVk9nZglJjXx/y6fyuJPhXzvnykD7
-	sCsfe68Xdk5Mm3I0/OYvhQ8r5gufWPs6vG9LxKfcONmV/9Ytm711+Yk/4n0B+twHVyrxL9hc
-	lh0wZ1/H8VObec85nUsJ0d21bKZR96rvp3X5/RewH4tj0pxxoqpaUFn6rGpy0OUiLSWW4oxE
-	Qy3mouJEAOKTV7RlAgAA
-X-TM-AS-MML: No
+	id S1755529Ab2HHCh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:37:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9333 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab2HHCh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 22:37:58 -0400
+X-IronPort-AV: E=Sophos;i="4.77,730,1336320000"; 
+   d="scan'208";a="5577013"
+Message-ID: <5021D235.4050800@cn.fujitsu.com>
+Date: Wed, 08 Aug 2012 10:43:01 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH v8] kvm: notify host when the guest is panicked
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/08 10:38:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/08 10:38:17,
+	Serialize complete at 2012/08/08 10:38:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dongjin Kim wrote:
-> 
-Hi,
+We can know the guest is panicked when the guest runs on xen.
+But we do not have such feature on kvm.
 
-Basically, we don't add more board file for non-DT for EXYNOS SoCs...
+Another purpose of this feature is: management app(for example:
+libvirt) can do auto dump when the guest is panicked. If management
+app does not do auto dump, the guest's user can do dump by hand if
+he sees the guest is panicked.
 
-> The HKDK4412 is the CPU module developed by Hardkernel which is based on
-> Exynos 4412.  mach_hkdk4412.c is to run on ODROID-X hardware and Machine
-> ID
-> (4289) is registered.
-> 
-This should be done at the link: http://www.arm.linux.org.uk/developer/machines/ by Russell King.
+We have three solutions to implement this feature:
+1. use vmcall
+2. use I/O port
+3. use virtio-serial.
 
-But I'm not sure whether it is worth to you without this patch for board file in mainline.
+We have decided to avoid touching hypervisor. The reason why I choose
+choose the I/O port is:
+1. it is easier to implememt
+2. it does not depend any virtual device
+3. it can work when starting the kernel
 
-> Changes in v2:
->   -. Change regulator's display names
-> 
-> Change-Id: Iea6825a17b2e13f96bc6d892dd5135cad899b5df
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ Documentation/virtual/kvm/pv_event.txt |   32 ++++++++++++++++++++++++++++++++
+ arch/ia64/include/asm/kvm_para.h       |   14 ++++++++++++++
+ arch/powerpc/include/asm/kvm_para.h    |   14 ++++++++++++++
+ arch/s390/include/asm/kvm_para.h       |   14 ++++++++++++++
+ arch/x86/include/asm/kvm_para.h        |   27 +++++++++++++++++++++++++++
+ arch/x86/kernel/kvm.c                  |   25 +++++++++++++++++++++++++
+ include/linux/kvm_para.h               |   23 +++++++++++++++++++++++
+ 7 files changed, 149 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/virtual/kvm/pv_event.txt
 
-No need gerrit Change-Id here.
-
-> Signed-off-by: Dongjin Kim <dongjin.kim@agreeyamobility.net>
-
-If there is no reason, please use same e-mail address in the field of author and sign-off.
-
-Note, if you want to use e-mail 'agreeyamobility.net', just add 'From: Dongjin Kim <dongjin.kim@agreeyamobility.net>', it's ok.
-
-> ---
->  arch/arm/mach-exynos/Kconfig         |   23 +
->  arch/arm/mach-exynos/Makefile        |    1 +
->  arch/arm/mach-exynos/mach-hkdk4412.c |  964
-> ++++++++++++++++++++++++++++++++++
->  arch/arm/tools/mach-types            |    1 +
->  4 files changed, 989 insertions(+)
->  create mode 100644 arch/arm/mach-exynos/mach-hkdk4412.c
-> 
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
+new file mode 100644
+index 0000000..0ebc890
+--- /dev/null
++++ b/Documentation/virtual/kvm/pv_event.txt
+@@ -0,0 +1,32 @@
++The KVM paravirtual event interface
++=================================
++
++Initializing the paravirtual event interface
++======================
++kvm_pv_event_init()
++Argiments:
++	None
++
++Return Value:
++	0 : The guest kernel can't use paravirtual event interface.
++	-1: The guest kernel can use paravirtual event interface.
++
++Querying whether the event can be ejected
++======================
++kvm_pv_has_feature()
++Arguments:
++	feature: The bit value of this paravirtual event to query
++
++Return Value:
++	0: The guest kernel can't eject this paravirtual event.
++	1: The guest kernel can eject this paravirtual event.
++
++
++Ejecting paravirtual event
++======================
++kvm_pv_eject_event()
++Arguments:
++	event: The event to be ejected.
++
++Return Value:
++	None
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 2019cb9..b5ec658 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -31,6 +31,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif
+ 
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index c18916b..01b98c7 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -211,6 +211,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index da44867..00ce058 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -154,6 +154,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 2f7712e..7d297f0 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -96,8 +96,11 @@ struct kvm_vcpu_pv_apf_data {
+ #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+ #define KVM_PV_EOI_DISABLED 0x0
+ 
++#define KVM_PV_EVENT_PORT	(0x505UL)
++
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
++#include <linux/ioport.h>
+ 
+ extern void kvmclock_init(void);
+ extern int kvm_register_clock(char *txt);
+@@ -228,6 +231,30 @@ static inline void kvm_disable_steal_time(void)
+ }
+ #endif
+ 
++static inline int kvm_arch_pv_event_init(void)
++{
++	if (!request_region(KVM_PV_EVENT_PORT, 1, "KVM_PV_EVENT"))
++		return -1;
++
++	return 0;
++}
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	unsigned int features = inl(KVM_PV_EVENT_PORT);
++
++	/* Reading from an invalid I/O port will return -1 */
++	if (features == ~0)
++		features = 0;
++
++	return features;
++}
++
++static inline void kvm_arch_pv_eject_event(unsigned int event)
++{
++	outl(event, KVM_PV_EVENT_PORT);
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index c1d61ee..6129459 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -368,6 +368,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
+ {
+ 	u64 steal;
+@@ -447,6 +458,20 @@ static void __init kvm_apf_trap_init(void)
+ 	set_intr_gate(14, &async_page_fault);
+ }
+ 
++static void __init kvm_pv_panicked_event_init(void)
++{
++	if (!kvm_para_available())
++		return;
++
++	if (kvm_pv_event_init())
++		return;
++
++	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
++		atomic_notifier_chain_register(&panic_notifier_list,
++			&kvm_pv_panic_nb);
++}
++arch_initcall(kvm_pv_panicked_event_init);
++
+ void __init kvm_guest_init(void)
+ {
+ 	int i;
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index ff476dd..8e0fb81 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED	1
++
+ /*
+  * hypercalls use architecture specific
+  */
+@@ -33,5 +39,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
+ 		return 1;
+ 	return 0;
+ }
++
++static inline int kvm_pv_event_init(void)
++{
++	return kvm_arch_pv_event_init();
++}
++
++static inline int kvm_pv_has_feature(unsigned int feature)
++{
++	if (kvm_arch_pv_features() & (1UL << feature))
++		return 1;
++	return 0;
++}
++
++static inline void kvm_pv_eject_event(unsigned int event)
++{
++	kvm_arch_pv_eject_event(event);
++}
+ #endif /* __KERNEL__ */
+ #endif /* __LINUX_KVM_PARA_H */
+-- 
+1.7.1
 
