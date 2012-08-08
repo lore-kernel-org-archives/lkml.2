@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab2HHNSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:18:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58619 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256Ab2HHNR7 (ORCPT
+	id S1758348Ab2HHNSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:18:18 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55177 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758335Ab2HHNSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:17:59 -0400
-Message-ID: <50226700.9000606@linutronix.de>
-Date: Wed, 08 Aug 2012 15:17:52 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 8 Aug 2012 09:18:16 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH 2/5] x86/uprobes: implement x86 specific arch_uprobe_*_step
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-3-git-send-email-bigeasy@linutronix.de> <20120808125709.GA4504@redhat.com>
-In-Reply-To: <20120808125709.GA4504@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <50226409.1060800@de.bosch.com>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+	<1344430493-5304-7-git-send-email-arnd@arndb.de>
+	<CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
+	<50226409.1060800@de.bosch.com>
+Date: Wed, 8 Aug 2012 10:18:15 -0300
+Message-ID: <CAOMZO5BtStkEWGRWi7LcVT_DK0C2WnjPiCOh2ZriVzrP+1NW3g@mail.gmail.com>
+Subject: Re: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
+From: Fabio Estevam <festevam@gmail.com>
+To: Dirk Behme <dirk.behme@de.bosch.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        artem.bityutskiy@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 02:57 PM, Oleg Nesterov wrote:
->> +static int insn_changes_flags(struct arch_uprobe *auprobe)
->> +{
->> +	/* popf reads flags from stack */
->> +	if (auprobe->insn[0] == 0x9d)
->> +		return 1;
->
-> Ah, somehow I didn't think about this before.
->
-> ->insn[0] doesn't look right, we should skip the prefixes.
+On Wed, Aug 8, 2012 at 10:05 AM, Dirk Behme <dirk.behme@de.bosch.com> wrote:
 
-Why? I tried 'lock popf' and I got invalid instruction. The same for
-'rep popf'.
+> Yes. But it seems it's not handled there? I'm trying since ~2 weeks to get
+> something like your patch applied to get the broken mainline fixed, but
+> unfortunately without success so far.
 
-> Oleg.
->
+Let's try once again.
 
-Sebastian
+Artem,
+
+Could https://patchwork.kernel.org/patch/1236551/ be applied?
+
+Thanks,
+
+Fabio Estevam
