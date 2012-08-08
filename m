@@ -1,202 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2HHGLB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:11:01 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48567 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab2HHGKy (ORCPT
+	id S932265Ab2HHGLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:11:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61898 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247Ab2HHGLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:10:54 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-fc-502202ea3830
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 5/7] zsmalloc: promote to mm/
-Date: Wed,  8 Aug 2012 15:12:18 +0900
-Message-Id: <1344406340-14128-6-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344406340-14128-1-git-send-email-minchan@kernel.org>
-References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 8 Aug 2012 02:11:17 -0400
+Date: Wed, 8 Aug 2012 08:11:02 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Tushar Behera'" <tushar.behera@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, patches@linaro.org
+Subject: Re: [PATCH] ARM: SAMSUNG: Fix compilation error with
+ s3c2410_defconfig
+Message-ID: <20120808061102.GA22417@avionic-0098.mockup.avionic-design.de>
+References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
+ <098f01cd7488$0d66d630$28348290$%kim@samsung.com>
+ <5020F568.5020204@linaro.org>
+ <0a2d01cd7500$53e26c50$fba744f0$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+In-Reply-To: <0a2d01cd7500$53e26c50$fba744f0$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:+9d6ySvhwNsxH93NY7jP1+eib4+oeDUxFpr3RcpCYbJ
+ QnpcMRBC444qMb5CV9bhIW2Q0vGfeOFKz/wxYzWdWmyuHDf376
+ a81CzkI8ZeEbd90UN30VNMYrcSrCHAD10hyshYsK94okjo+lKE
+ VViX9dRajwAgHR5Ukh1uxkmTG4EDq/3P7DQL9rAzmwvtvc3uc+
+ +Ca7AfPENAQjKtSPUuxPJ4T1eMqt0MTmD7bh9/QsJ8R3MfjbYt
+ ZZ4asD7VAsS/QBaZKdr9Xx1vm3fcuK12kn8QXyaxjvZaqsmbGl
+ doBBCz6cS5u93sjZUk2xh0Upp71HdR6NzWhlaeexPYEWe+o8PC
+ fD+XuSIYBAEfa37z9Vl1Z+7tDywM3FeuAmYJ5+5oVu7A7ojQ1g
+ CAoUdzKj7/3N2XPCsy+7BI5fH2sGo76xjXSyqVDz6KmMUjnQB7
+ wrvGA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-This patch promotes the slab-based zsmalloc memory allocator
-from the staging tree to mm/
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-zcache/zram depends on this allocator for storing compressed RAM pages
-in an efficient way under system wide memory pressure where
-high-order (greater than 0) page allocation are very likely to
-fail.
+On Wed, Aug 08, 2012 at 09:54:13AM +0900, Kukjin Kim wrote:
+> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+> index 7aca31c..dcdfb77 100644
+> --- a/arch/arm/plat-samsung/Kconfig
+> +++ b/arch/arm/plat-samsung/Kconfig
+> @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
+> =20
+>  config S3C24XX_PWM
+>  	bool "PWM device support"
+> -	select HAVE_PWM
+> +	select PWM
+>  	help
+>  	  Support for exporting the PWM timer blocks via the pwm device
+>  	  system
 
-For more information on zsmalloc and its internals, read the
-documentation at the top of the zsmalloc c file.
+You could add
 
-[minchan: change description slighly for including zram]
+	select PWM_SAMSUNG
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/Kconfig                            |    2 --
- drivers/staging/Makefile                           |    1 -
- drivers/staging/zcache/zcache-main.c               |    4 ++--
- drivers/staging/zram/zram_drv.h                    |    3 +--
- drivers/staging/zsmalloc/Kconfig                   |   10 ----------
- drivers/staging/zsmalloc/Makefile                  |    3 ---
- .../staging/zsmalloc => include/linux}/zsmalloc.h  |    0
- mm/Kconfig                                         |   18 ++++++++++++++++++
- mm/Makefile                                        |    1 +
- .../zsmalloc/zsmalloc-main.c => mm/zsmalloc.c      |    3 +--
- 10 files changed, 23 insertions(+), 22 deletions(-)
- delete mode 100644 drivers/staging/zsmalloc/Kconfig
- delete mode 100644 drivers/staging/zsmalloc/Makefile
- rename {drivers/staging/zsmalloc => include/linux}/zsmalloc.h (100%)
- rename drivers/staging/zsmalloc/zsmalloc-main.c => mm/zsmalloc.c (99%)
+here to side-step the issue below.
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index e3402d5..b7f7bc7 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -78,8 +78,6 @@ source "drivers/staging/zram/Kconfig"
- 
- source "drivers/staging/zcache/Kconfig"
- 
--source "drivers/staging/zsmalloc/Kconfig"
--
- source "drivers/staging/wlags49_h2/Kconfig"
- 
- source "drivers/staging/wlags49_h25/Kconfig"
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index 3be59d0..ad74bee 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -34,7 +34,6 @@ obj-$(CONFIG_DX_SEP)            += sep/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_ZRAM)		+= zram/
- obj-$(CONFIG_ZCACHE)		+= zcache/
--obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
- obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
- obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
- obj-$(CONFIG_FB_SM7XX)		+= sm7xxfb/
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index c214977..06ce28f 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -32,9 +32,9 @@
- #include <linux/crypto.h>
- #include <linux/string.h>
- #include <linux/idr.h>
--#include "tmem.h"
-+#include <linux/zsmalloc.h>
- 
--#include "../zsmalloc/zsmalloc.h"
-+#include "tmem.h"
- 
- #ifdef CONFIG_CLEANCACHE
- #include <linux/cleancache.h>
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 572c0b1..f6d0925 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -17,8 +17,7 @@
- 
- #include <linux/spinlock.h>
- #include <linux/mutex.h>
--
--#include "../zsmalloc/zsmalloc.h"
-+#include <linux/zsmalloc.h>
- 
- /*
-  * Some arbitrary value. This is just to catch
-diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-deleted file mode 100644
-index 9084565..0000000
---- a/drivers/staging/zsmalloc/Kconfig
-+++ /dev/null
-@@ -1,10 +0,0 @@
--config ZSMALLOC
--	tristate "Memory allocator for compressed pages"
--	default n
--	help
--	  zsmalloc is a slab-based memory allocator designed to store
--	  compressed RAM pages.  zsmalloc uses virtual memory mapping
--	  in order to reduce fragmentation.  However, this results in a
--	  non-standard allocator interface where a handle, not a pointer, is
--	  returned by an alloc().  This handle must be mapped in order to
--	  access the allocated space.
-diff --git a/drivers/staging/zsmalloc/Makefile b/drivers/staging/zsmalloc/Makefile
-deleted file mode 100644
-index b134848..0000000
---- a/drivers/staging/zsmalloc/Makefile
-+++ /dev/null
-@@ -1,3 +0,0 @@
--zsmalloc-y 		:= zsmalloc-main.o
--
--obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/include/linux/zsmalloc.h
-similarity index 100%
-rename from drivers/staging/zsmalloc/zsmalloc.h
-rename to include/linux/zsmalloc.h
-diff --git a/mm/Kconfig b/mm/Kconfig
-index d5c8019..2586b66 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -411,3 +411,21 @@ config FRONTSWAP
- 	  and swap data is stored as normal on the matching swap device.
- 
- 	  If unsure, say Y to enable frontswap.
-+
-+config ZSMALLOC
-+	tristate "Memory allocator for compressed pages"
-+	default n
-+	help
-+	  zsmalloc is a slab-based memory allocator designed to store
-+	  compressed RAM pages.  zsmalloc uses a memory pool that combines
-+	  single pages into higher order pages by linking them together
-+	  using the fields of the struct page. Allocations are then
-+	  mapped through copy buffers or VM mapping, in order to reduce
-+	  memory pool fragmentation and increase allocation success rate under
-+	  memory pressure.
-+
-+	  This results in a non-standard allocator interface where
-+	  a handle, not a pointer, is returned by the allocation function.
-+	  This handle must be mapped in order to access the allocated space.
-+
-+	  If unsure, say N.
-diff --git a/mm/Makefile b/mm/Makefile
-index 92753e2..8a3d7bea 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -57,3 +57,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
-+obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/mm/zsmalloc.c
-similarity index 99%
-rename from drivers/staging/zsmalloc/zsmalloc-main.c
-rename to mm/zsmalloc.c
-index 09a9d35..6b20429 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/mm/zsmalloc.c
-@@ -78,8 +78,7 @@
- #include <linux/hardirq.h>
- #include <linux/spinlock.h>
- #include <linux/types.h>
--
--#include "zsmalloc.h"
-+#include <linux/zsmalloc.h>
- 
- /*
-  * This must be power of 2 and greater than of equal to sizeof(link_free).
--- 
-1.7.9.5
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 8fc3808..34c8ec1 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -59,7 +59,7 @@ config PWM_PXA
+> =20
+>  config PWM_SAMSUNG
+>  	tristate "Samsung pwm support"
+> -	depends on PLAT_SAMSUNG
+> +	def_bool PLAT_SAMSUNG
 
+tristate and def_bool conflict, don't they? I think the easiest way to
+solve this problem would be to add a default line, like so:
+
+	default PLAT_SAMSUNG
+
+I've checked this with a s3c2410_defconfig and this causes PWM_SAMSUNG
+to be selected =3Dy, which I guess is what you want.
+
+Thierry
+
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQIgL2AAoJEN0jrNd/PrOhN7oP+wQ7NLlEROotXlnefUf1Hs+M
+ANRtdLlnnbiHxGEjKjKYh0g87b52aIPIz8rcNsO0ivfszHTqVJQc5KgiGPWK9HmS
+ij5ri9/kA57PsQEWROEdhNHESycrktGaW27OkV9+TZP7PmQKA13Qn1MLKHGPwyqQ
+hzFPHQQXK7Ekj426rptEjER1EBObSTBUzJj4uRvcTLJVY6euHtNRRwOYUPtjwK+M
+30y2VlymWsZjPsGLyCLJx6YIb3ewwr+q1ftdwRO3lC5Cgyhmd4DA2yfvozJACcOj
+nqH5kt9+Qth97qEnHpK71OdL4or8G721Fuwa3rX5RswKgJ83rRHuHPucuB6yugM2
+TOmjiQa0VjMNtm2mTbDaW5ya0Z6ynXjgpHb7btrXqi5W/0W8dD9xrsTr41gf9r6b
+mtwD36EzalesqRAMLGUhHTuQKBZMXK8i8lbhjpsxtfraRFfBFUXBlfAdbCt7Zg5b
+4ah3R3R4WhV/6/2fEB1JAiRtPyJHLn8eMb3wTo80DbFJiyeYHbtSdYv4g65uc3J4
+QQbLqquKJNlUFXscrlNuKHTdfxgVFUM9ppkWEafuWAYxT06g5zgGoQEEuXjZvWYm
+UbO17aCPkKvL3kALKZep6naPB4Wc6Y0Jrs6DXTJL4SEcVD7Y7tTQU1vcRtNSgUCM
+R+Z/ChvmlJ/y0FuCVWCk
+=Ny56
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
