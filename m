@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab2HHWeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 18:34:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33304 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756117Ab2HHWeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 18:34:14 -0400
-Message-ID: <5022E963.9020809@zytor.com>
-Date: Wed, 08 Aug 2012 15:34:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1757660Ab2HHWiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 18:38:04 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:36865 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757185Ab2HHWiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 18:38:03 -0400
+Message-ID: <5022EA1E.3010306@fb.com>
+Date: Wed, 8 Aug 2012 15:37:18 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [tip:x86:fpu 2/2] arch/x86/kernel/signal.c:626:4: error: implicit
- declaration of function '__setup_frame'
-References: <20120725232716.GB5758@localhost> <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v6)
+References: <1333172421-6775-2-git-send-email-asharma@fb.com> <4F769976.3070203@fb.com> <5022BB0E.8050706@fb.com>
+In-Reply-To: <5022BB0E.8050706@fb.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.254]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-08_09:2012-08-08,2012-08-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2012 10:48 AM, Suresh Siddha wrote:
->
-> Appended the patch for this. Thanks!
-> ---
-> From: Suresh Siddha <suresh.b.siddha@intel.com>
-> Subject: x86, fpu: fix x86_64 build without CONFIG_IA32_EMULATION
->
-> Fengguang's automated build reported some compilation failures:
->> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
->> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
->> arch/x86/kernel/xsave.c: In function 'save_fsave_header':
->> arch/x86/kernel/xsave.c:144:7: error: dereferencing pointer to incomplete type
->> ...
->
-> Fix x86_64 kernel build without CONFIG_IA32_EMULATION.
->
-> Code saving fsave prefix is applicable only for CONFIG_X86_32 or
-> CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
-> code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
->
-> Also while we are at this, fix a spurious warning:
->> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value of ‘__clear_user’, declared with attribute warn_unused_result
->
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+On 8/8/12 12:16 PM, Arun Sharma wrote:
 
-With this patch applied I get an error at:
+>     and therefore breaks the invariant period == period_self
+>     in the default mode (no sort inclusive).
 
-/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: error: 
-static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
-In file included from 
-/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:29:0:
-/home/hpa/kernel/tip.x86-fpu/arch/x86/include/asm/fpu-internal.h:62:5: 
-note: previous declaration of ‘x32_setup_rt_frame’ was here
-/home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: warning: 
-‘x32_setup_rt_frame’ defined but not used [-Wunused-function]
-make[4]: *** [arch/x86/kernel/signal.o] Error 1
-make[3]: *** [arch/x86/kernel] Error 2
-make[2]: *** [arch/x86] Error 2
-make[1]: *** [sub-make] Error 2
-make[1]: Leaving directory `/home/hpa/kernel/tip.x86-fpu'
 
-... for an x86-64 allyesconfig.
+hist_entry__decay() also needs an update to maintain the invariant.
 
-	-hpa
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -138,6 +138,7 @@ static void hist_entry__add_cpumode_period(struct 
+hist_entry *he,
+  static void hist_entry__decay(struct hist_entry *he)
+  {
+         he->period = (he->period * 7) / 8;
++       he->period_self = (he->period_self * 7) / 8;
+         he->nr_events = (he->nr_events * 7) / 8;
+  }
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+  -Arun
