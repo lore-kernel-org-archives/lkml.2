@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759018Ab2HHRlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:41:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3977 "EHLO mx1.redhat.com"
+	id S1030319Ab2HHRmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:42:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55960 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759087Ab2HHRlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:41:50 -0400
-Date: Wed, 8 Aug 2012 19:37:52 +0200
+	id S1759052Ab2HHRlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:41:02 -0400
+Date: Wed, 8 Aug 2012 19:37:39 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] uprobes: remove "verify" argument from set_orig_insn()
-Message-ID: <20120808173752.GA13282@redhat.com>
+Subject: [PATCH 2/7] uprobes: kill dup_mmap()->uprobe_mmap(), simplify
+	uprobe_mmap/munmap
+Message-ID: <20120808173739.GA13259@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,75 +24,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody does set_orig_insn(verify => false), and I think nobody will.
-Remove this argument. IIUC set_orig_insn(verify => false) was needed
-to single-step without xol area.
+1. Kill dup_mmap()->uprobe_mmap(), it was only needed to calculate
+   new_mm->uprobes_state.count removed by the previous patch.
+
+   If the forking process has a pending uprobe (int3) in vma, it will
+   be copied by copy_page_range(), note that it checks vma->anon_vma
+   so "Don't copy ptes" is not possible after install_breakpoint()
+   which does anon_vma_prepare().
+
+2. Remove is_swbp_at_addr() and "int count" in uprobe_mmap(). Again,
+   this was needed for uprobes_state.count.
+
+   As a side effect this fixes the bug pointed out by Srikar,
+   this code lacked the necessary put_uprobe().
+
+3. uprobe_munmap() becomes a nop after the previous patch. Remove the
+   meaningless code but do not remove the helper, we will need it.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/uprobes.h |    2 +-
- kernel/events/uprobes.c |   20 +++++++++-----------
- 2 files changed, 10 insertions(+), 12 deletions(-)
+ kernel/events/uprobes.c |   30 +++---------------------------
+ kernel/fork.c           |    3 ---
+ 2 files changed, 3 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 30297f9..6d4fe79 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -102,7 +102,7 @@ struct uprobes_state {
- };
- 
- extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
--extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
-+extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
- extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 81fb2d8..25c0d74 100644
+index f0bb387..08ea627 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -347,24 +347,22 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
-  * @mm: the probed process address space.
-  * @auprobe: arch specific probepoint information.
-  * @vaddr: the virtual address to insert the opcode.
-- * @verify: if true, verify existance of breakpoint instruction.
-  *
-  * For mm @mm, restore the original opcode (opcode) at @vaddr.
-  * Return 0 (success) or a negative errno.
+@@ -1012,7 +1012,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	struct list_head tmp_list;
+ 	struct uprobe *uprobe, *u;
+ 	struct inode *inode;
+-	int ret, count;
++	int ret;
+ 
+ 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
+ 		return 0;
+@@ -1025,8 +1025,6 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
+ 
+ 	ret = 0;
+-	count = 0;
+-
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+ 		if (!ret) {
+ 			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+@@ -1036,19 +1034,11 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 			 * We can race against uprobe_register(), see the
+ 			 * comment near uprobe_hash().
+ 			 */
+-			if (ret == -EEXIST) {
++			if (ret == -EEXIST)
+ 				ret = 0;
+-
+-				if (!is_swbp_at_addr(vma->vm_mm, vaddr))
+-					continue;
+-			}
+-
+-			if (!ret)
+-				count++;
+ 		}
+ 		put_uprobe(uprobe);
+ 	}
+-
+ 	mutex_unlock(uprobes_mmap_hash(inode));
+ 
+ 	return ret;
+@@ -1059,27 +1049,13 @@ int uprobe_mmap(struct vm_area_struct *vma)
   */
- int __weak
--set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr, bool verify)
-+set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
+ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
  {
--	if (verify) {
--		int result;
-+	int result;
-+
-+	result = is_swbp_at_addr(mm, vaddr);
-+	if (!result)
-+		return -EINVAL;
+-	struct list_head tmp_list;
+-	struct uprobe *uprobe, *u;
+-	struct inode *inode;
+-
+ 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
+ 		return;
  
--		result = is_swbp_at_addr(mm, vaddr);
--		if (!result)
--			return -EINVAL;
-+	if (result != 1)
-+		return result;
+ 	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+ 		return;
  
--		if (result != 1)
--			return result;
+-	inode = vma->vm_file->f_mapping->host;
+-	if (!inode)
+-		return;
+-
+-	mutex_lock(uprobes_mmap_hash(inode));
+-	build_probe_list(inode, vma, start, end, &tmp_list);
+-
+-	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-		put_uprobe(uprobe);
 -	}
- 	return write_opcode(auprobe, mm, vaddr, *(uprobe_opcode_t *)auprobe->insn);
+-	mutex_unlock(uprobes_mmap_hash(inode));
++	/* TODO: unmapping uprobe(s) will need more work */
  }
  
-@@ -699,7 +697,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- static void
- remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
- {
--	set_orig_insn(&uprobe->arch, mm, vaddr, true);
-+	set_orig_insn(&uprobe->arch, mm, vaddr);
- }
+ /* Slot allocation for XOL */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 54bb88a..0e419ab 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -453,9 +453,6 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
  
- /*
+ 		if (retval)
+ 			goto out;
+-
+-		if (file)
+-			uprobe_mmap(tmp);
+ 	}
+ 	/* a new mm has just been created */
+ 	arch_dup_mmap(oldmm, mm);
 -- 
 1.5.5.1
 
