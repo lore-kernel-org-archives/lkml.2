@@ -1,244 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2HHVyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:54:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64411 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2HHVyy (ORCPT
+	id S1752122Ab2HHV5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:57:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45876 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2HHV5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:54:54 -0400
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Paul Moore <paul@paul-moore.com>
-Cc: Eric Paris <eparis@parisplace.org>, John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
-In-Reply-To: <1610114.P5WAdux1ri@sifl>
-References: <50215A7E.8000701@linaro.org>
-	 <1344456578.28967.244.camel@edumazet-glaptop>
-	 <1344457972.28967.251.camel@edumazet-glaptop>  <1610114.P5WAdux1ri@sifl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Aug 2012 23:54:49 +0200
-Message-ID: <1344462889.28967.328.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 8 Aug 2012 17:57:07 -0400
+Message-ID: <5022E0B0.1070406@wwwdotorg.org>
+Date: Wed, 08 Aug 2012 15:57:04 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: broonie@opensource.wolfsonmicro.com
+CC: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
+References: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 16:46 -0400, Paul Moore wrote:
-> On Wednesday, August 08, 2012 10:32:52 PM Eric Dumazet wrote:
-> > On Wed, 2012-08-08 at 22:09 +0200, Eric Dumazet wrote:
-> > > On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
-> > > > Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
-> > > > code.
-> > > 
-> > > Sure but it seems include file misses an accessor for this.
-> > > 
-> > > We could add it on a future cleanup patch, as Paul mentioned.
-> > 
-> > I cooked following patch.
-> > But smack/smack_lsm.c makes a reference to
-> > smk_of_current()... so it seems we are in a hole...
-> > 
-> > It makes little sense to me to have any kind of security on this
-> > internal sockets.
-> > 
-> > Maybe selinux should not crash if sk->sk_security is NULL ?
+On 07/24/2012 02:18 AM, Laxman Dewangan wrote:
+> As per datasheet, the vin pin for the regulator is named
+> as vin_sm0, vin_sm1, vin_sm2 for sm0, sm1 and sm2 respectively.
 > 
-> I realize our last emails probably passed each other mid-flight, but hopefully 
-> it explains why we can't just pass packets when sk->sk_security is NULL.
-> 
-> Regardless, some quick comments below ...
-> 
-> > diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> > index 6c77f63..459eca6 100644
-> > --- a/security/selinux/hooks.c
-> > +++ b/security/selinux/hooks.c
-> > @@ -4289,10 +4289,13 @@ out:
-> >  	return 0;
-> >  }
-> > 
-> > -static int selinux_sk_alloc_security(struct sock *sk, int family, ...
-> > +static int selinux_sk_alloc_security(struct sock *sk, int family, ...
-> >  {
-> >  	struct sk_security_struct *sksec;
-> > 
-> > +	if (check && sk->sk_security)
-> > +		return 0;
-> > +
-> >  	sksec = kzalloc(sizeof(*sksec), priority);
-> >  	if (!sksec)
-> >  		return -ENOMEM;
-> 
-> I think I might replace the "check" boolean with a "kern/kernel" boolean so 
-> that in addition to the allocation we can also initialize the socket to 
-> SECINITSID_KERNEL/kernel_t here in the case when the boolean is set.  The only 
-> place that would set the boolean to true would be ip_send_unicast_reply(), all 
-> other callers would set it to false.
-> 
-> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> > index 8221514..8965cf1 100644
-> > --- a/security/smack/smack_lsm.c
-> > +++ b/security/smack/smack_lsm.c
-> > @@ -1754,11 +1754,14 @@ static void smack_task_to_inode(struct task_struct
-> > *p, struct inode *inode) *
-> >   * Returns 0 on success, -ENOMEM is there's no memory
-> >   */
-> > -static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t
-> > gfp_flags) +static int smack_sk_alloc_security(struct sock *sk, int family,
-> > gfp_t gfp_flags, bool check) {
-> >  	char *csp = smk_of_current();
-> >  	struct socket_smack *ssp;
-> > 
-> > +	if (check && sk->sk_security)
-> > +		return 0;
-> > +
-> >  	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
-> >  	if (ssp == NULL)
-> >  		return -ENOMEM;
-> 
-> In the case of Smack, when the kernel boolean is true I think the right 
-> solution is to use smack_net_ambient.
-> 
+> Correcting the names in driver and documentation to match with
+> datasheet.
 
-cool, here the last version :
+Mark,
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 4e5a73c..4d8e454 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1601,7 +1601,7 @@ struct security_operations {
- 	int (*socket_sock_rcv_skb) (struct sock *sk, struct sk_buff *skb);
- 	int (*socket_getpeersec_stream) (struct socket *sock, char __user *optval, int __user *optlen, unsigned len);
- 	int (*socket_getpeersec_dgram) (struct socket *sock, struct sk_buff *skb, u32 *secid);
--	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority);
-+	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority, bool kernel);
- 	void (*sk_free_security) (struct sock *sk);
- 	void (*sk_clone_security) (const struct sock *sk, struct sock *newsk);
- 	void (*sk_getsecid) (struct sock *sk, u32 *secid);
-@@ -2539,7 +2539,7 @@ int security_sock_rcv_skb(struct sock *sk, struct sk_buff *skb);
- int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
- 				      int __user *optlen, unsigned len);
- int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u32 *secid);
--int security_sk_alloc(struct sock *sk, int family, gfp_t priority);
-+int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel);
- void security_sk_free(struct sock *sk);
- void security_sk_clone(const struct sock *sk, struct sock *newsk);
- void security_sk_classify_flow(struct sock *sk, struct flowi *fl);
-@@ -2667,7 +2667,7 @@ static inline int security_socket_getpeersec_dgram(struct socket *sock, struct s
- 	return -ENOPROTOOPT;
- }
- 
--static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
-+static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
- {
- 	return 0;
- }
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 8f67ced..e00cadf 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1186,7 +1186,7 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
- 	if (sk != NULL) {
- 		kmemcheck_annotate_bitfield(sk, flags);
- 
--		if (security_sk_alloc(sk, family, priority))
-+		if (security_sk_alloc(sk, family, priority, false))
- 			goto out_free;
- 
- 		if (!try_module_get(prot->owner))
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 76dde25..b233d6e 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1524,6 +1524,8 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	sk->sk_priority = skb->priority;
- 	sk->sk_protocol = ip_hdr(skb)->protocol;
- 	sk->sk_bound_dev_if = arg->bound_dev_if;
-+	if (security_sk_alloc(sk, PF_INET, GFP_ATOMIC, true))
-+		goto out;
- 	sock_net_set(sk, net);
- 	__skb_queue_head_init(&sk->sk_write_queue);
- 	sk->sk_sndbuf = sysctl_wmem_default;
-@@ -1539,7 +1541,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
- 		ip_push_pending_frames(sk, &fl4);
- 	}
--
-+out:
- 	put_cpu_var(unicast_sock);
- 
- 	ip_rt_put(rt);
-diff --git a/security/security.c b/security/security.c
-index 860aeb3..23cf297 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -1146,9 +1146,9 @@ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u
- }
- EXPORT_SYMBOL(security_socket_getpeersec_dgram);
- 
--int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
-+int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
- {
--	return security_ops->sk_alloc_security(sk, family, priority);
-+	return security_ops->sk_alloc_security(sk, family, priority, kernel);
- }
- 
- void security_sk_free(struct sock *sk)
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6c77f63..ccd4374 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4289,10 +4289,13 @@ out:
- 	return 0;
- }
- 
--static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority)
-+static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority, bool kernel)
- {
- 	struct sk_security_struct *sksec;
- 
-+	if (kernel && sk->sk_security)
-+		return 0;
-+
- 	sksec = kzalloc(sizeof(*sksec), priority);
- 	if (!sksec)
- 		return -ENOMEM;
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 8221514..207d9cc 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -1749,20 +1749,25 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
-  * @sk: the socket
-  * @family: unused
-  * @gfp_flags: memory allocation flags
-+ * @kernel: true if we should check sk_security being already set
-  *
-  * Assign Smack pointers to current
-  *
-  * Returns 0 on success, -ENOMEM is there's no memory
-  */
--static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
-+static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags, bool kernel)
- {
- 	char *csp = smk_of_current();
- 	struct socket_smack *ssp;
- 
-+	if (kernel && sk->sk_security)
-+		return 0;
-+
- 	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
- 	if (ssp == NULL)
- 		return -ENOMEM;
--
-+	/* kernel is true if called from ip_send_unicast_reply() */
-+	csp = kernel ? smack_net_ambient : smk_of_current();
- 	ssp->smk_in = csp;
- 	ssp->smk_out = csp;
- 	ssp->smk_packet = NULL;
+This patch was in next-20120803, but seems to have been dropped from
+next-20120806 and later:
 
+> git log next-20120803 --oneline -- drivers/regulator/tps6586x-regulator.c|cat
+> c7bc4e5 regulator: tps6586x: correct vin pin for sm0/sm1/sm2
+> 7c7fac3 regulator: tps6586x: add support for input supply
+> f464703 regulator: tps6586x: Convert to regulator_list_voltage_table
+
+> git log next-20120806 --oneline -- drivers/regulator/tps6586x-regulator.c|cat
+> 4c79c8d regulator: tps6586x: Convert to regulator_[enable|disable|is_enabled|get_voltage_sel]_regmap
+> 7c7fac3 regulator: tps6586x: add support for input supply
+> f464703 regulator: tps6586x: Convert to regulator_list_voltage_table
+
+I assume that was just an accident?
 
