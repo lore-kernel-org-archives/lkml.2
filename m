@@ -1,187 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2HHAsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 20:48:53 -0400
-Received: from exout101.netflix.com ([69.53.237.162]:54788 "EHLO
-	exout103.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752269Ab2HHAsv (ORCPT
+	id S1754001Ab2HHAtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:49:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59295 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab2HHAtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 20:48:51 -0400
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 20:48:51 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024;d=netflix.com;
-  h=from:to:cc:subject:date:message-id:content-type:mime-version;
-  b=g0XvPsud7B/IWb0o/biHrgNZnzC2Io1HbL6ZHn1Oe+jkZuUYoRdypM5gJiuHqxbgW+YLOBmq
-    vDqh5Lk+ZYeIiSyLtOw7NWKnGqMrk6y/Ari1LWzBVwV0KOH2Ye2CpX5/gR9dWxiBa5ZD5yJc
-    UJ+qgLVHwy+nJLvbfTa6OKADBJg=
-From: Wesley Miaw <wmiaw@netflix.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>,
-        "msb@google.com" <msb@google.com>
-Subject: [PATCH] dm: verity support data device offset
-Thread-Topic: [PATCH] dm: verity support data device offset
-Thread-Index: AQHNdP7T82767QqXnkeG0dwAo3s6lg==
-Date: Wed, 8 Aug 2012 00:43:28 +0000
-Message-ID: <66ADE819-D9DE-4A95-9B48-9C4B060CFB06@netflix.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.229.146]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
+	Tue, 7 Aug 2012 20:49:43 -0400
 MIME-Version: 1.0
+Date: Tue, 7 Aug 2012 17:49:41 -0700
+Message-ID: <CAB9O=CPoMdkbnCOTreUuNZ+yHa_+8L1A4VXk6A1ODtgxoGjz7Q@mail.gmail.com>
+Subject: changing clock source frequency input for ARM kernel
+From: John Linn <johnhlinn@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: damm@opensource.se
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+We are working on CPU frequency scaling and our clock source is
+dependent on our CPU frequency. When we change the CPU frequency we'd
+like to update the clock source so the time keeping is all correct.
 
-I needed to add support for dm-verity with data that is offset into a =
-block device. As part of this I found that the existing code did not =
-compute the correct hash block index if the data_start might be =
-non-zero. Here's a patch to add support for a data offset target =
-parameter as well as a fix to the hash block index computation.
+It's not clear to use how to make this correcly. The ST mobile stuff
+is the only example of calling clocksource_updatefreq() that we see,
+but since it's in the enable function it's not clear that this will
+help us.
 
-Patch and (hopefully proper) commit message below. Thanks.
---
-Wesley Miaw
+We have another timer in the block that we can use to allow us to ping
+pong when updating the frequency if needed, but it's still based on
+the same clock which is dependent on the CPU frequency.  It seems not
+wise to disable the clock source if there's only one then re-enable
+it.
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-
-Add data device start block index to dm-verity target parameters to =
-support verity targets where the data does not begin at sector 0 of the =
-block device. Also fix the hash block index computation so it takes into =
-account data offsets.
-
----
-
---- a/drivers/md/dm-verity.c	2012-08-07 16:03:03.778759000 -0700
-+++ b/drivers/md/dm-verity.c	2012-08-07 17:30:56.914569414 -0700
-@@ -491,7 +491,7 @@
- 	io->bio =3D bio;
- 	io->orig_bi_end_io =3D bio->bi_end_io;
- 	io->orig_bi_private =3D bio->bi_private;
--	io->block =3D bio->bi_sector >> (v->data_dev_block_bits - =
-SECTOR_SHIFT);
-+	io->block =3D (bio->bi_sector - v->data_start)  >> =
-(v->data_dev_block_bits - SECTOR_SHIFT);
- 	io->n_blocks =3D bio->bi_size >> v->data_dev_block_bits;
-=20
- 	bio->bi_end_io =3D verity_end_io;
-@@ -641,6 +641,7 @@
-  *	<hash device>
-  *	<data block size>
-  *	<hash block size>
-+ *	<data start block>
-  *	<the number of data blocks>
-  *	<hash start block>
-  *	<algorithm>
-@@ -671,8 +672,8 @@
- 		goto bad;
- 	}
-=20
--	if (argc !=3D 10) {
--		ti->error =3D "Invalid argument count: exactly 10 =
-arguments required";
-+	if (argc !=3D 11) {
-+		ti->error =3D "Invalid argument count: exactly 11 =
-arguments required";
- 		r =3D -EINVAL;
- 		goto bad;
- 	}
-@@ -718,6 +719,15 @@
- 	v->hash_dev_block_bits =3D ffs(num) - 1;
-=20
- 	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) !=3D 1 ||
-+		num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
-+		(sector_t)num_ll << (v->data_dev_block_bits - =
-SECTOR_SHIFT)) {
-+		ti->error =3D "Invalid data start";
-+		r =3D -EINVAL;
-+		goto bad;
-+	}
-+	v->data_start =3D num_ll << (v->data_dev_block_bits - =
-SECTOR_SHIFT);
-+
-+	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
- 	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
- 	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) =
-{
- 		ti->error =3D "Invalid data blocks";
-@@ -732,7 +742,7 @@
- 		goto bad;
- 	}
-=20
--	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
-+	if (sscanf(argv[7], "%llu%c", &num_ll, &dummy) !=3D 1 ||
- 	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=3D
- 	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) =
-{
- 		ti->error =3D "Invalid hash start";
-@@ -741,7 +751,7 @@
- 	}
- 	v->hash_start =3D num_ll;
-=20
--	v->alg_name =3D kstrdup(argv[7], GFP_KERNEL);
-+	v->alg_name =3D kstrdup(argv[8], GFP_KERNEL);
- 	if (!v->alg_name) {
- 		ti->error =3D "Cannot allocate algorithm name";
- 		r =3D -ENOMEM;
-@@ -770,23 +780,23 @@
- 		r =3D -ENOMEM;
- 		goto bad;
- 	}
--	if (strlen(argv[8]) !=3D v->digest_size * 2 ||
--	    hex2bin(v->root_digest, argv[8], v->digest_size)) {
-+	if (strlen(argv[9]) !=3D v->digest_size * 2 ||
-+	    hex2bin(v->root_digest, argv[9], v->digest_size)) {
- 		ti->error =3D "Invalid root digest";
- 		r =3D -EINVAL;
- 		goto bad;
- 	}
-=20
--	if (strcmp(argv[9], "-")) {
--		v->salt_size =3D strlen(argv[9]) / 2;
-+	if (strcmp(argv[10], "-")) {
-+		v->salt_size =3D strlen(argv[10]) / 2;
- 		v->salt =3D kmalloc(v->salt_size, GFP_KERNEL);
- 		if (!v->salt) {
- 			ti->error =3D "Cannot allocate salt";
- 			r =3D -ENOMEM;
- 			goto bad;
- 		}
--		if (strlen(argv[9]) !=3D v->salt_size * 2 ||
--		    hex2bin(v->salt, argv[9], v->salt_size)) {
-+		if (strlen(argv[10]) !=3D v->salt_size * 2 ||
-+		    hex2bin(v->salt, argv[10], v->salt_size)) {
- 			ti->error =3D "Invalid salt";
- 			r =3D -EINVAL;
- 			goto bad;
-
-
---Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
-
-iQEcBAEBAgAGBQJQIbYwAAoJELoPFVk1ivvRzcwH/0fDuo5vMiXHJ/paFXnzZGTo
-LlEUfHKj0ICB1Xh0vDS97Czx2sZ1x1s+e+lkltKg48jYadVe0iQy7jKzVV8MmjZ4
-bZhZEEsQCmORQ3HfHWr172Z7jZdZaHCQbeaFZ4UwTGTeTkSbiC27YSmpR2XrW5vy
-nxW29rq8WavBPtyzAGjGl6wqFxk2nnpZRS3ctQ+QimemTrrnK3UtYsKMlRtmx33i
-7dbjRRRairSCJWVcQYZhCRsQJxB3w80YwP3YIdnlz+D6wYG/iSr7QhjfA+cRCUen
-wIgU97YW7SC8sq0OEVqVT3tavyanmTK0u7DEDboGGB0CXxO8lFN37guC7kmL5bk=
-=TTK+
------END PGP SIGNATURE-----
-
---Apple-Mail=_1CCDA9BB-6A63-4FB3-A57C-A7E60A8582A2--
+Thanks for any help,
+John
