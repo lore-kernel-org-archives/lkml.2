@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab2HHOri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:47:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53838 "EHLO
+	id S1758643Ab2HHOrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:47:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64940 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872Ab2HHOrg (ORCPT
+	with ESMTP id S1758580Ab2HHOri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:47:36 -0400
+	Wed, 8 Aug 2012 10:47:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 01/11] ARM: topology: mark init_cpu_topology as __init
-Date: Wed,  8 Aug 2012 16:47:18 +0200
-Message-Id: <1344437248-20560-2-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Stefan Roese <sr@denx.de>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 07/11] net/stmmac: mark probe function as __devinit
+Date: Wed,  8 Aug 2012 16:47:24 +0200
+Message-Id: <1344437248-20560-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
 References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:AIDeXsX5DDPuzG9ikqR0noogLnxN8v/NCeyJ5+mA9h2
- lPyUpQfjEmxGt8wnLq/e9ZQ+t0eQmJwnbS20Ss75KSpzMaV8FP
- UWkYivDdAty9VDeQO5tQ5tufdXTJNDGzEO2/GVvJnoATFF7BV7
- L7iU35TlBoy3S8qXOYWJhdLd4gWWQCXxm3WgcCSyPmRCOyxj9v
- hxntzz24zTvPdmmHDlpz8yph9P9Ass6gXXpmYCvFKdTgPjH6uz
- RfVTFOBETXDgYORPNkpiw0/WyxrHKnUZvM8KVse3WDqSWYws9N
- eWZN6xCxCBBTqOq8BzR6ZvITcuBbW3Z20cHWLwlk9fPxqxjYlM
- kQHYcO13XZYPNVnaAdcrEuMUXNa4yvHN523ig3PoXqPbVSVzHx
- JrbjL5Gjk1rvsxuoZSfYRI5xTAJXLJ3a8k=
+X-Provags-ID: V02:K0:inJnpn/HTsDtvNMO87XOsVab1X71ILad0I2BWePxoOW
+ xGo8ZZoLI7u9gvf5AL0AmpFRof4Gaaae2jPp4/hF97ka+fy+Bk
+ Z2/dTHaSNoA1OhD3Lz5kOdmGZ2EjoVvyA3MiEU8BnD6HZKnaQv
+ oyyNvPthgUN4UxkfPX2Rw2dGyrfjyP9zcbEnee6dfuLPa69ivx
+ G3m122STy2TehNioRk82G7v3xamRJNBvZDqX1ZeKxnTBYQbCco
+ j9g66bLPSK8ANxwEiQSyc2vzHFC+gjSWqqBHfLbAg8PkpMax6o
+ FYGI20okyoyfnf4vuGzLdZzgMxAU4XeKS8KPwB7SovYv08kLvt
+ 3IxbB4On14lQ9iXNWGknvXWijy54ouMIHdUQohjMrmYEchWFme
+ a6F6ZytkfAYf6TTsFTbePg6IRBiR1HaRqg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init_cpu_topology function can be put into the __init section
-and discarded after boot, because it is only called from
-smp_prepare_cpus, which is also marked __init. This was reported
-by gcc after Vincent Guittot added the parse_dt_topology function
-in 339ca09d7ada "ARM: 7463/1: topology: Update cpu_power according to DT
-information".
+Driver probe functions are generally __devinit so they will be
+discarded after initialization for non-hotplug kernels.
+This was found by a new warning after patch 6a228452d "stmmac: Add
+device-tree support" adds a new __devinit function that is called
+from stmmac_pltfr_probe.
 
-Without this patch, building kzm9g_defconfig results in:
+Without this patch, building socfpga_defconfig results in:
 
-WARNING: vmlinux.o(.text+0xb5a0): Section mismatch in reference from the function init_cpu_topology() to the function .init.text:parse_dt_topology()
-The function init_cpu_topology() references
-the function __init parse_dt_topology().
-This is often because init_cpu_topology lacks a __init
-annotation or the annotation of parse_dt_topology is wrong.
+WARNING: drivers/net/ethernet/stmicro/stmmac/stmmac.o(.text+0x5d4c): Section mismatch in reference from the function stmmac_pltfr_probe() to the function .devinit.text:stmmac_probe_config_dt()
+The function stmmac_pltfr_probe() references
+the function __devinit stmmac_probe_config_dt().
+This is often because stmmac_pltfr_probe lacks a __devinit
+annotation or the annotation of stmmac_probe_config_dt is wrong.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Stefan Roese <sr@denx.de>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- arch/arm/kernel/topology.c |    2 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 198b084..26c12c6 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -321,7 +321,7 @@ void store_cpu_topology(unsigned int cpuid)
-  * init_cpu_topology is called at boot when only one cpu is running
-  * which prevent simultaneous write access to cpu_topology array
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index cd01ee7..b93245c 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -74,7 +74,7 @@ static int __devinit stmmac_probe_config_dt(struct platform_device *pdev,
+  * the necessary resources and invokes the main to init
+  * the net device, register the mdio bus etc.
   */
--void init_cpu_topology(void)
-+void __init init_cpu_topology(void)
+-static int stmmac_pltfr_probe(struct platform_device *pdev)
++static int __devinit stmmac_pltfr_probe(struct platform_device *pdev)
  {
- 	unsigned int cpu;
- 
+ 	int ret = 0;
+ 	struct resource *res;
 -- 
 1.7.10
 
