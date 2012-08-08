@@ -1,138 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab2HHKr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:47:58 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46512 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab2HHKr4 (ORCPT
+	id S1755556Ab2HHKsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:48:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50347 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab2HHKsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:47:56 -0400
-Subject: [PATCH] pci: convert "new_id"/"remove_id" into generic pci_bus driver
- attributes
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Wed, 08 Aug 2012 14:47:51 +0400
-Message-ID: <20120808104751.28854.76212.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Aug 2012 06:48:02 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-78-502243be4337
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Anton Vorontsov'" <anton.vorontsov@linaro.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>
+Cc: "'John Stultz'" <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Sascha Hauer'" <kernel@pengutronix.de>,
+        "'Tony Lindgren'" <tony@atomide.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@ti.com>
+References: <20120805230238.GA1663@lizard>
+ <1344207819-3415-2-git-send-email-anton.vorontsov@linaro.org>
+In-reply-to: <1344207819-3415-2-git-send-email-anton.vorontsov@linaro.org>
+Subject: RE: [PATCH 2/9] ARM: plat-s3c24xx: Don't use FIQ_START
+Date: Wed, 08 Aug 2012 19:47:26 +0900
+Message-id: <0af201cd7553$3346dd70$99d49850$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1zXv4Nk/NdkUpOQE6Z1HjghOL/jwB856QA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jAd19zkoBBr2LLSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG/GW/2QqucVTMesfTwNjI3sXIwSEhYCKxa35OFyMnkCkmceHe
+	ejYQW0hgEaPEs/dOXYxcQPY8Jolz0+cwgSTYBDQkDr9/xg5iiwjESsyadosFpIhZoINZYtXC
+	P1DdWRIXp61mBrE5Bbwkzv26DtYsLGAv0XRlB1icRUBVYv+xW2A2r4CtxJFLDawQtqDEj8n3
+	WEBsZgEtifU7jzNB2PISm9e8ZYY4Wl3i0V9diBuMJI7uXQ1VIiKx78U7xgmMQrOQTJqFZNIs
+	JJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4iJ9J72Bc1WBxiFGAg1GJh3dT
+	qmKAEGtiWXFl7iFGCQ5mJRHePQeBQrwpiZVVqUX58UWlOanFhxilOViUxHlNvL/6CwmkJ5ak
+	ZqemFqQWwWSZODilGhg31nxt5nW5wev/htG7kWdjjMFWvS2d87z5Ml08PI/qv37kMt9u3XMv
+	phKhh56+T/V8+UV5y6fs1NnPqnmtaKtq3rd9z1WzthXMkzvAZ2Nx/N7JcrElV6anR26P5RbR
+	6Xx7d2PjrDXnXMoFP62V2iX9fGaYZNNs4fpTWbb7Dz90fCzXbam+3UWJpTgj0VCLuag4EQDc
+	iBXPXgIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes hardcoded sysfs attributes manipulation and
-converts them into generic pci_bus->dev_attrs. This saves several bytes.
+Anton Vorontsov wrote:
+> 
+> We're about to remove FIQ_START mess, so move the platform-specific
+> detail inside platform-specific s3c24xx_set_fiq().
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- drivers/pci/pci-driver.c |   57 ++++++++--------------------------------------
- 1 file changed, 10 insertions(+), 47 deletions(-)
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 185be37..4c361e5 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -139,7 +139,6 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
- 		return retval;
- 	return count;
- }
--static DRIVER_ATTR(new_id, S_IWUSR, NULL, store_new_id);
- 
- /**
-  * store_remove_id - remove a PCI device ID from this driver
-@@ -185,38 +184,16 @@ store_remove_id(struct device_driver *driver, const char *buf, size_t count)
- 		return retval;
- 	return count;
- }
--static DRIVER_ATTR(remove_id, S_IWUSR, NULL, store_remove_id);
- 
--static int
--pci_create_newid_files(struct pci_driver *drv)
--{
--	int error = 0;
-+static struct driver_attribute pci_drv_attrs[] = {
-+	__ATTR(new_id, S_IWUSR, NULL, store_new_id),
-+	__ATTR(remove_id, S_IWUSR, NULL, store_remove_id),
-+	__ATTR_NULL,
-+};
- 
--	if (drv->probe != NULL) {
--		error = driver_create_file(&drv->driver, &driver_attr_new_id);
--		if (error == 0) {
--			error = driver_create_file(&drv->driver,
--					&driver_attr_remove_id);
--			if (error)
--				driver_remove_file(&drv->driver,
--						&driver_attr_new_id);
--		}
--	}
--	return error;
--}
--
--static void pci_remove_newid_files(struct pci_driver *drv)
--{
--	driver_remove_file(&drv->driver, &driver_attr_remove_id);
--	driver_remove_file(&drv->driver, &driver_attr_new_id);
--}
--#else /* !CONFIG_HOTPLUG */
--static inline int pci_create_newid_files(struct pci_driver *drv)
--{
--	return 0;
--}
--static inline void pci_remove_newid_files(struct pci_driver *drv) {}
--#endif
-+#else
-+#define pci_drv_attrs	NULL
-+#endif /* CONFIG_HOTPLUG */
- 
- /**
-  * pci_match_id - See if a pci device matches a given pci_id table
-@@ -1149,8 +1126,6 @@ const struct dev_pm_ops pci_dev_pm_ops = {
- int __pci_register_driver(struct pci_driver *drv, struct module *owner,
- 			  const char *mod_name)
- {
--	int error;
--
- 	/* initialize common driver fields */
- 	drv->driver.name = drv->name;
- 	drv->driver.bus = &pci_bus_type;
-@@ -1161,19 +1136,7 @@ int __pci_register_driver(struct pci_driver *drv, struct module *owner,
- 	INIT_LIST_HEAD(&drv->dynids.list);
- 
- 	/* register with core */
--	error = driver_register(&drv->driver);
--	if (error)
--		goto out;
--
--	error = pci_create_newid_files(drv);
--	if (error)
--		goto out_newid;
--out:
--	return error;
--
--out_newid:
--	driver_unregister(&drv->driver);
--	goto out;
-+	return driver_register(&drv->driver);
- }
- 
- /**
-@@ -1189,7 +1152,6 @@ out_newid:
- void
- pci_unregister_driver(struct pci_driver *drv)
- {
--	pci_remove_newid_files(drv);
- 	driver_unregister(&drv->driver);
- 	pci_free_dynids(drv);
- }
-@@ -1289,6 +1251,7 @@ struct bus_type pci_bus_type = {
- 	.shutdown	= pci_device_shutdown,
- 	.dev_attrs	= pci_dev_attrs,
- 	.bus_attrs	= pci_bus_attrs,
-+	.drv_attrs	= pci_drv_attrs,
- 	.pm		= PCI_PM_OPS_PTR,
- };
- 
+BTW, how was going on the 'change FIQ_START to a variable' patch from Shawn
+Guo?
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/106486.html
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+
+> ---
+>  arch/arm/plat-s3c24xx/irq.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/plat-s3c24xx/irq.c b/arch/arm/plat-s3c24xx/irq.c
+> index fe57bbb..e4e9567 100644
+> --- a/arch/arm/plat-s3c24xx/irq.c
+> +++ b/arch/arm/plat-s3c24xx/irq.c
+> @@ -503,7 +503,7 @@ int s3c24xx_set_fiq(unsigned int irq, bool on)
+>  	unsigned offs;
+> 
+>  	if (on) {
+> -		offs = irq - FIQ_START;
+> +		offs = irq - IRQ_EINT0;
+>  		if (offs > 31)
+>  			return -EINVAL;
+> 
+> --
+> 1.7.10.4
 
