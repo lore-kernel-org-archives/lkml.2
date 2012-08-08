@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964911Ab2HHPgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:36:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58497 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab2HHPgn (ORCPT
+	id S932709Ab2HHPhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:37:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58075 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932217Ab2HHPhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:36:43 -0400
-Message-ID: <50228781.7040502@gmail.com>
-Date: Wed, 08 Aug 2012 23:36:33 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 8 Aug 2012 11:37:11 -0400
+Date: Wed, 8 Aug 2012 16:36:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] ARM: sa1100: include asm/io.h in hackkit leds code
+Message-ID: <20120808153655.GN18957@n2100.arm.linux.org.uk>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <1344430493-5304-4-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-CC: Rob Landley <rob@landley.net>, Milton Miller <miltonm@bga.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jan Engelhardt <jengelh@inai.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening
- port
-References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com> <501937F7.2070600@landley.net> <gi3946lin5.fsf@mx10.gouders.net> <gisjc5hvun.fsf@mx10.gouders.net> <CAM_iQpWoKGJTUjohn9_guktpBNbOazKY1_eUQozz_O6ZkRmyPg@mail.gmail.com> <giobmsiixa.fsf@mx10.gouders.net>
-In-Reply-To: <giobmsiixa.fsf@mx10.gouders.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344430493-5304-4-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 02:33 PM, Dirk Gouders wrote:
->
->  From b3aec70d785d338b1b643fece6606cd32addaf0c Mon Sep 17 00:00:00 2001
-> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-> Date: Thu, 2 Aug 2012 22:20:16 +0200
-> Subject: [PATCH] netconsole.txt: revision of examples for the receiver of kernel messages
->
-> There are at least 4 implementations of netcat with the BSD-based
-> being the only one that has to be used without the -p switch to
-> specify the listening port.
->
-> Jan Engelhardt suggested to add an example for socat(1).
->
-> Signed-off-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+On Wed, Aug 08, 2012 at 02:54:50PM +0200, Arnd Bergmann wrote:
+> The sa1100 definition of the io_p2v macro has changed in v3.6, and this one
+> file stopped working because of that.
+> 
+> Without this patch, building hackkit_defconfig results in:
+> 
+> arch/arm/mach-sa1100/leds-hackkit.c: In function 'hackkit_leds_event':
+> arch/arm/mach-sa1100/leds-hackkit.c:39:4: error: implicit declaration of function 'IOMEM' [-Werror=implicit-function-declaration]
 
-It looks like no one takes this patch, so I will take it together with 
-my other netpoll/netconsole patches and send them to netdev.
-
-Thanks!
-
+NAK.  Should be linux/io.h
