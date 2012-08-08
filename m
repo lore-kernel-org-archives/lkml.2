@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab2HHInN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:43:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39796 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab2HHInJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:43:09 -0400
+	id S932468Ab2HHIuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:50:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36307 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757854Ab2HHIuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 04:50:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,732,1336374000"; 
+   d="scan'208";a="194516028"
+Date: Wed, 8 Aug 2012 16:50:05 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mq: INFO: possible circular locking dependency detected
+Message-ID: <20120808085005.GA20927@localhost>
+References: <501D0093.2090108@gmail.com>
+ <20120806063433.GW23464@ZenIV.linux.org.uk>
+ <50212C34.8030204@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <502179EA.30301@wwwdotorg.org>
-References: <1344341538-32223-1-git-send-email-linus.walleij@stericsson.com>
-	<502179EA.30301@wwwdotorg.org>
-Date: Wed, 8 Aug 2012 10:43:06 +0200
-Message-ID: <CACRpkdZ+SsMzAGotOVZ5HrOEQUDs-8ixBYwuLu1ff6Qe=84OdA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl/nomadik: add ASIC DB8450 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Patrice Chotard <patrice.chotard@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50212C34.8030204@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 10:26 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Tue, Aug 07, 2012 at 04:54:44PM +0200, Sasha Levin wrote:
+> On 08/06/2012 08:34 AM, Al Viro wrote:
+> > On Sat, Aug 04, 2012 at 12:59:31PM +0200, Sasha Levin wrote:
+> >> Hi all,
+> >>
+> >> While fuzzing with trinity inside a KVM tools guest, using latest -next kernel, I've stumbled on the dump below.
+> >>
+> >> I think this is the result of commit 765927b2 ("switch dentry_open() to struct path, make it grab references itself").
+> > 
+> > 	Not quite, actually - back then the order didn't matter;
+> > unfortunately, I'd missed that place when porting Jan's series,
+> > which made these ordered.
+> > 
+> > 	Anyway, see today's vfs.git#for-linus; that should be dealt with
+> > there.
+> > 
+> 
+> Yup, that did it.
 
->> @@ -1722,6 +1722,8 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
->>       /* Poke in other ASIC variants here */
->>       if (version == PINCTRL_NMK_DB8500)
->>               nmk_pinctrl_db8500_init(&npct->soc);
->> +     if (platid->driver_data == PINCTRL_NMK_DB8540)
->> +             nmk_pinctrl_db8540_init(&npct->soc);
->
-> I'm surprised one of those checks "version" and the other
-> "platid->driver_data".
->
-> Aside from that, this looks fine.
+It works for me, too.
 
-Bah, I'll fix this, then add your ACK.
-
-Yours,
-Linus Walleij
+Thanks,
+Fengguang
