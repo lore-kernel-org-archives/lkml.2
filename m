@@ -1,31 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2HHGDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:03:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13227 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528Ab2HHGDg (ORCPT
+	id S1757304Ab2HHGIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:08:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49367 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab2HHGIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:03:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 07 Aug 2012 22:58:26 -0700
-Message-ID: <5021FF92.8030904@nvidia.com>
-Date: Wed, 8 Aug 2012 11:26:34 +0530
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 02:08:50 -0400
+Date: Wed, 8 Aug 2012 16:08:41 +1000
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Aioanei Rares <krnl.list@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Martin Nyhus <martin.nyhus@gmx.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [bisected] nouveau: "Failed to idle channel x" after resume
+Message-ID: <20120808060841.GB10092@turiel.bne.redhat.com>
+References: <20120611231842.221bd738@europa>
+ <20120705222429.43586868@europa>
+ <CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
+ <1344091275.4520.1.camel@maxim-laptop>
+ <1344285484.14543.0.camel@maxim-laptop>
+ <20120808053716.GA10092@turiel.bne.redhat.com>
+ <87lihpkjnu.fsf@turtle.gmx.de>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: question on devm_kfree
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lihpkjnu.fsf@turtle.gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per comments related to devm_kzalloc, memory allocated using it is freed automatically.
-However there is a function called devm_kfree, comment section of which says that it is used to free memory allocated using devm_kzalloc().
-If memory allocated by devm_kzalloc is freed automatically, what's the need & significance of devm_kfree?
+On Wed, Aug 08, 2012 at 08:00:21AM +0200, Sven Joachim wrote:
+> On 2012-08-08 07:37 +0200, Ben Skeggs wrote:
+> 
+> > On Mon, Aug 06, 2012 at 11:38:04PM +0300, Maxim Levitsky wrote:
+> >> On Sat, 2012-08-04 at 17:41 +0300, Maxim Levitsky wrote: 
+> >> > On Mon, 2012-07-23 at 18:25 +0300, Aioanei Rares wrote: 
+> >> > > On Thu, Jul 5, 2012 at 11:24 PM, Martin Nyhus <martin.nyhus@gmx.com> wrote:
+> >> > > >
+> >> > > > On Mon, 11 Jun 2012 23:18:42 +0200 Martin Nyhus wrote:
+> >> > > > > after resuming from suspend nouveau starts writing Failed to idle
+> >> > > > > channel x (where x is 2 or 3) to the log and X appears to stop and
+> >> > > > > then restart only to stop again. Starting Firefox after resuming
+> >> > > > > triggers the bugs every time, and bisecting leads to 03bd6efa
+> >> > > > > ("drm/nv50/fifo: use hardware channel kickoff functionality").
+> >> > > >
+> >> > > > Hi Ben,
+> >> > > > I'm still seeing this bug with the latest from Linus
+> >> > > > (v3.5-rc5-98-g9e85a6f) and linux-next (next-20120705).
+> >> > > >
+> >> > > > lspci output:
+> >> > > > 01:00.0 VGA compatible controller: nVidia Corporation G86 [GeForce
+> >> > > > 8400M GS] (rev a1)
+> >> > > >
+> >> > > > Sorry I haven't followed up on this earlier,
+> >> > > > Martin
+> >> > > 
+> >> > > I can confirm this with 3.5.0, Chromium and Arch Linux. It's a HP
+> >> > > Pavilion laptop with a G86 [GeForce 8400 M GS] video card .
+> >> > > Seems related to this bug:
+> >> > > http://lists.freedesktop.org/archives/nouveau/2011-January/007358.html
+> >> > > . If I can do anything else
+> >> > > to help, I will be glad to.
+> >> > Added nouveau@lists.freedesktop.org>
+> >> > 
+> >> > I confirm the same issue here.
+> >> > will try to do dig it.
+> >> Nope,can't dig this :-(
+> > Interestingly, this works just fine for me after the driver rework.
+> 
+> Not for me on my GeForce 8500 GT, and I still cannot suspend more than
+> once, subsequent attempts fail:
+> 
+> ,----
+> | Aug  8 07:49:16 turtle kernel: [   91.697068] nouveau W[  PGRAPH][0000:01:00.0][0x0200502d][ffff880037be1d40] parent failed suspend, -16
+> | Aug  8 07:49:16 turtle kernel: [   91.697078] nouveau  [     DRM][0000:01:00.0] resuming display...
+> `----
+Interesting.  Were there any messages prior to that?  I guess the the fifo
+code detected a timeout when trying to save the graphics context, I have
+I have other patches in my tree (I'll push them soon, tied up with other
+work atm) that might help here.
 
-Thanks,
-Venu
+> 
+> > I can confirm issues on G86 with 3.5/3.6-rc1 stock though.  I'll
+> > attempt to find a fix suitable for the non-reworked driver.
+> 
+> Thanks.  I'm currently stuck on 3.4 because of this problem.
+Sorry about that!
 
+Ben.
+
+> 
+> Cheers,
+>        Sven
