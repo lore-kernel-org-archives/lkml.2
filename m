@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab2HHPmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:42:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49744 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932345Ab2HHPmL (ORCPT
+	id S932754Ab2HHPoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:44:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43949 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932345Ab2HHPoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:42:11 -0400
-Message-ID: <502288BB.6020709@ti.com>
-Date: Wed, 8 Aug 2012 17:41:47 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 11:44:06 -0400
+Date: Wed, 8 Aug 2012 16:43:18 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "nico@linaro.org" <nico@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 00/22] Introducing the TI Keystone platform
+Message-ID: <20120808154318.GE8444@arm.com>
+References: <1343775898-28345-1-git-send-email-cyril@ti.com>
+ <20120804083945.GB6802@n2100.arm.linux.org.uk>
+ <501E8CEA.9050601@ti.com>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
-        <alsa-devel@alsa-project.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
-References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com> <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com> <5022529D.3090406@ti.com> <20120808125252.GR16861@opensource.wolfsonmicro.com> <50227936.3040701@ti.com>
-In-Reply-To: <50227936.3040701@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <501E8CEA.9050601@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 04:35 PM, Peter Ujfalusi wrote:
-> On 08/08/2012 03:52 PM, Mark Brown wrote:
->> On Wed, Aug 08, 2012 at 01:50:53PM +0200, Benoit Cousson wrote:
->>
->>> That being said, since we do have the clock binding now, maybe we should
->>> create a clock provider at board level for the sys_clk and thus you will
->>> just have to create a phandle to it in your audio description.
->>
->> Yes, we should be doing this.
-> 
-> Does this needs the common clock framework on the platform? OMAP3 certainly
-> does not have it enabled since it has not been adopted.
-> 
+On Sun, Aug 05, 2012 at 04:10:34PM +0100, Cyril Chemparathy wrote:
+> On 8/4/2012 4:39 AM, Russell King - ARM Linux wrote:
+> > On Tue, Jul 31, 2012 at 07:04:36PM -0400, Cyril Chemparathy wrote:
+> >> This series is a follow on to the RFC series posted earlier (archived at [1]).
+> >> The major change introduced here is the modification to the kernel patching
+> >> mechanism for phys_to_virt/virt_to_phys, in order to support LPAE platforms
+> >> that require late patching.  In addition to these changes, we've updated the
+> >> series based on feedback from the earlier posting.
+> >>
+> >> Most of the patches in this series are fixes and extensions to LPAE support on
+> >> ARM. The last three patches in this series are specific to the TI Keystone
+> >> platform, and are being provided here for the sake of completeness.  These
+> >> three patches are dependent on the smpops patch set (see [2]), and are not
+> >> ready to be merged in as yet.
+> >
+> > Can you explain why you want the kernel loaded above the 4GB watermark?
+> > This seems silly to me, as the kernel needs to run at points with a 1:1
+> > physical to virtual mapping, and you can't do that if the kernel is
+> > stored in physical memory above the 4GB watermark.
+[...]
+> We are well aware of the fact that we are barely scratching the surface 
+> of the problem space here, and we'd be very thankful for a heads up on 
+> issues that we may have missed so far.
 
-Yeah, good point, we are still not there yet. Rajendra is still working
-on it and I hope we can get something for 3.7, but let's avoid having a
-strong dependency on that migration for the moment.
+Another thing to be aware is that apart from a virtual alias between the
+kernel mapping and the idmap, you now introduce a physical alias as well
+and the caches (physically tagged) get confused.
 
-Regards,
-Benoit
+-- 
+Catalin
