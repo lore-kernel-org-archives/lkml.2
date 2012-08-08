@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030946Ab2HHVNV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:13:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35400 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030867Ab2HHVNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:13:19 -0400
-Date: Wed, 8 Aug 2012 18:13:12 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Misael Lopez Cruz <misael.lopez@ti.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [ 017/109] ASoC: dapm: Fix locking during codec shutdown
-Message-ID: <20120808211311.GA5654@herton-Z68MA-D2H-B3>
-References: <20120807222043.089735600@linuxfoundation.org>
- <20120807222044.607925717@linuxfoundation.org>
+	id S1759331Ab2HHVQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:16:31 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49499 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753001Ab2HHVQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 17:16:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] tpm_tis / PM: Fix unused function warning for CONFIG_PM_SLEEP
+Date: Wed, 8 Aug 2012 23:22:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+References: <201208082308.15466.rjw@sisk.pl>
+In-Reply-To: <201208082308.15466.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807222044.607925717@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208082322.22314.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 03:34:36PM -0700, Greg Kroah-Hartman wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
-> 
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Liam Girdwood <lrg@ti.com>
-> 
-> commit 01005a729a17ab419f61a366e22f3419e7a2c3fe upstream.
-> 
-> Codec shutdown performs a DAPM power sequence that might cause conflicts
-> and/or race conditions if another stream power event is running simultaneously.
-> Use card's dapm mutex to protect any potential race condition between them.
-> 
-> Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
-> Signed-off-by: Liam Girdwood <lrg@ti.com>
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  sound/soc/soc-dapm.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> --- a/sound/soc/soc-dapm.c
-> +++ b/sound/soc/soc-dapm.c
-> @@ -3210,10 +3210,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_free);
->  
->  static void soc_dapm_shutdown_codec(struct snd_soc_dapm_context *dapm)
->  {
-> +	struct snd_soc_card *card = dapm->card;
->  	struct snd_soc_dapm_widget *w;
->  	LIST_HEAD(down_list);
->  	int powerdown = 0;
->  
-> +	mutex_lock(&card->dapm_mutex);
-> +
 
-Doesn't build on 3.4:
+According to a compiler warning, the tpm_tis_resume() function is not
+used for CONFIG_PM_SLEEP unset, so add a #ifdef to prevent it from
+being built in that case.
 
-linux-stable/sound/soc/soc-dapm.c: In function 'soc_dapm_shutdown_codec':
-linux-stable/sound/soc/soc-dapm.c:3226:18: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
-linux-stable/sound/soc/soc-dapm.c:3251:20: error: 'struct snd_soc_card' has no member named 'dapm_mutex'
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/char/tpm/tpm_tis.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-It seems this patch should be dropped as when it was applied to 3.2, is
-that correct?
+Index: linux/drivers/char/tpm/tpm_tis.c
+===================================================================
+--- linux.orig/drivers/char/tpm/tpm_tis.c
++++ linux/drivers/char/tpm/tpm_tis.c
+@@ -807,6 +807,7 @@ module_param_string(hid, tpm_pnp_tbl[TIS
+ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
+ #endif
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int tpm_tis_resume(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+@@ -816,6 +817,7 @@ static int tpm_tis_resume(struct device
+ 
+ 	return tpm_pm_resume(dev);
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
+ 
 
->  	list_for_each_entry(w, &dapm->card->widgets, list) {
->  		if (w->dapm != dapm)
->  			continue;
-> @@ -3236,6 +3239,8 @@ static void soc_dapm_shutdown_codec(stru
->  			snd_soc_dapm_set_bias_level(dapm,
->  						    SND_SOC_BIAS_STANDBY);
->  	}
-> +
-> +	mutex_unlock(&card->dapm_mutex);
->  }
->  
->  /*
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
-[]'s
-Herton
