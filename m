@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab2HHGzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:55:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48997 "EHLO
+	id S1757173Ab2HHG5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:57:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49030 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756916Ab2HHGzK (ORCPT
+	with ESMTP id S1756548Ab2HHG5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:55:10 -0400
-Date: Wed, 8 Aug 2012 08:55:02 +0200
+	Wed, 8 Aug 2012 02:57:20 -0400
+Date: Wed, 8 Aug 2012 08:57:13 +0200
 From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Dave Martin <dave.martin@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/2] ARM: build ssi-fiq.S in ARM mode to prevent
- CONFIG_THUMB2_KERNEL build breakage
-Message-ID: <20120808065502.GI1451@pengutronix.de>
-References: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
- <1344379514-30076-2-git-send-email-matt@genesi-usa.com>
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 3/9] [media] mx1_camera: Don't use {en,dis}able_fiq()
+ calls
+Message-ID: <20120808065713.GJ1451@pengutronix.de>
+References: <20120805230238.GA1663@lizard>
+ <1344207819-3415-3-git-send-email-anton.vorontsov@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344379514-30076-2-git-send-email-matt@genesi-usa.com>
+In-Reply-To: <1344207819-3415-3-git-send-email-anton.vorontsov@linaro.org>
 X-Sent-From: Pengutronix Hildesheim
 X-URL: http://www.pengutronix.de/
 X-IRC: #ptxdist @freenode
 X-Accept-Language: de,en
 X-Accept-Content-Type: text/plain
-X-Uptime: 08:49:21 up 45 days, 22:01, 37 users,  load average: 0.68, 0.67,
- 0.46
+X-Uptime: 08:56:52 up 45 days, 22:08, 41 users,  load average: 0.67, 0.81,
+ 0.64
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
@@ -43,44 +43,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:45:13PM -0500, Matt Sealey wrote:
-> If i.MX SSI FIQ support is enabled then it is impossible to build a Thumb2
-> kernel image due to the code not being written with Thumb2 in mind (over-use
-> of registers). In order not to break Thumb2 kernels, compile this as ARM. All
-> the processors which require this support will run ARM code so there is no
-> problem at runtime in doing this, even if it does produce a strange mix of
-> code that may not be desired.
+On Sun, Aug 05, 2012 at 04:03:33PM -0700, Anton Vorontsov wrote:
+> The driver uses platform-specific mxc_set_irq_fiq() with the VIRQ cookie
+> passed to it, so it's pretty clear that the driver is absolutely sure
+> that the FIQ is routed via platform-specific IC, and that the cookie can
+> be used to mask/unmask FIQs. So, let's switch to the genirq routines,
+> since we're about to remove FIQ-specific variants.
 > 
-> In theory this should only be needed on configs based on imx_v4_v5_defconfig
-> where CONFIG_THUMB2_KERNEL cannot be selected anyway since these SoCs do not
-> have ARM cores capable of running Thumb2 code. This also makes rewriting the
-> code as Thumb-compatible kind of redundant. But since one Eukrea board audio
-> driver needs it, and there is an i.MX51 CPU module for this board, it gets
-> pulled in for imx_v6_v7_defconfig too, making this a necessity.
-> 
-> Signed-off-by: Matt Sealey <matt@genesi-usa.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+
 > ---
->  arch/arm/plat-mxc/ssi-fiq.S |    1 +
->  1 file changed, 1 insertion(+)
+>  drivers/media/video/mx1_camera.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/arm/plat-mxc/ssi-fiq.S b/arch/arm/plat-mxc/ssi-fiq.S
-> index 8397a2d..ac09af8 100644
-> --- a/arch/arm/plat-mxc/ssi-fiq.S
-> +++ b/arch/arm/plat-mxc/ssi-fiq.S
-> @@ -28,6 +28,7 @@
->  #define SSI_SIER_RFF0_EN	(1 << 2)
+> diff --git a/drivers/media/video/mx1_camera.c b/drivers/media/video/mx1_camera.c
+> index d2e6f82..1536d09 100644
+> --- a/drivers/media/video/mx1_camera.c
+> +++ b/drivers/media/video/mx1_camera.c
+> @@ -801,7 +801,7 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
+>  	set_fiq_regs(&regs);
 >  
->  		.text
-> +		.arm
->  		.global	imx_ssi_fiq_start
->  		.global	imx_ssi_fiq_end
->  		.global imx_ssi_fiq_base
-
-I think it would be better to add a depends on !THUMB2_KERNEL to
-SND_IMX_SOC_PCM_FIQ. The above may result in broken code in a thumb2
-kernel, so I'd rather keep the compile error instead.
-
-Sascha
+>  	mxc_set_irq_fiq(irq, 1);
+> -	enable_fiq(irq);
+> +	enable_irq(irq);
+>  
+>  	pcdev->soc_host.drv_name	= DRIVER_NAME;
+>  	pcdev->soc_host.ops		= &mx1_soc_camera_host_ops;
+> @@ -817,7 +817,7 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
+>  	return 0;
+>  
+>  exit_free_irq:
+> -	disable_fiq(irq);
+> +	disable_irq(irq);
+>  	mxc_set_irq_fiq(irq, 0);
+>  	release_fiq(&fh);
+>  exit_free_dma:
+> @@ -842,7 +842,7 @@ static int __exit mx1_camera_remove(struct platform_device *pdev)
+>  	struct resource *res;
+>  
+>  	imx_dma_free(pcdev->dma_chan);
+> -	disable_fiq(pcdev->irq);
+> +	disable_irq(pcdev->irq);
+>  	mxc_set_irq_fiq(pcdev->irq, 0);
+>  	release_fiq(&fh);
+>  
+> -- 
+> 1.7.10.4
+> 
+> 
 
 -- 
 Pengutronix e.K.                           |                             |
