@@ -1,148 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab2HHBcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 21:32:36 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51781 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab2HHBce (ORCPT
+	id S1755173Ab2HHBje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 21:39:34 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:63697 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2HHBjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 21:32:34 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-1b-5021c1a6c88d
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>,
-        thierry.reding@avionic-design.de
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.hauer@pengutronix.de, patches@linaro.org
-References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
- <098f01cd7488$0d66d630$28348290$%kim@samsung.com> <5020F568.5020204@linaro.org>
-In-reply-to: 
-Subject: RE: [PATCH] ARM: SAMSUNG: Fix compilation error with s3c2410_defconfig
-Date: Wed, 08 Aug 2012 10:32:22 +0900
-Message-id: <0a3701cd7505$a852fe30$f8f8fa90$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac10i/Ch62t3OukGTm260i7w2w6O+gActU3QAAGirCA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQd1lBxUDDDraZCwu75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ2LSsq+CZZMWvGZpYGxhWiXYycHBICJhLbvhxmgrDF
-	JC7cW8/WxcjFISQwnVFi+6cv7BDOX0aJx9tug1WxCWhIHH7/jB3EFhGokLh+8B8LiM0sUChx
-	+uhURoiGWYwSDTvfsoEkOAV4JNb96WTuYuTgEBbwl3jUWQASZhFQlVj0YwsziM0rYCvRfucE
-	O4QtKPFj8j2omVoS63ceZ4Kw5SU2r3kLNkZCQF3i0V9diBOsJP6e7mSDKBGR2PfiHeMERqFZ
-	SCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHNDPpHcwrmqwOMQo
-	wMGoxMO7KVUxQIg1say4MvcQowQHs5IIb1srUIg3JbGyKrUoP76oNCe1+BCjNAeLkjivifdX
-	fyGB9MSS1OzU1ILUIpgsEwenVAOjW6ym/e2VxfUdZ5QyMrfYhp7IPr1x5vea4p+2G5b55rpe
-	4zKv+GEZduW8+7TnW9nnXZWwuHXi+4Ft9SueHOv9WvAgUadmdme5+LOPvhXs+7OypPnm9OiH
-	n06ct00lJ+Gepmyr1SHPCJcnn5Yvi9Djz5LfoiNT6czr1M1S+f5EVlh3yt4tDmxKLMUZiYZa
-	zEXFiQCavqDuZAIAAA==
-X-TM-AS-MML: No
+	Tue, 7 Aug 2012 21:39:32 -0400
+From: Scott Liu <scott.liu@emc.com.tw>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eleghost@gmail.com
+Cc: Scott Liu <scott.liu@emc.com.tw>
+Subject: [PATCH] hid:hid-multitouch:  add mt_resume for ELAN's production
+Date: Wed,  8 Aug 2012 09:40:33 +0800
+Message-Id: <1344390033-14139-1-git-send-email-scott.liu@emc.com.tw>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin Kim wrote:
-> 
+Some of ELAN’s production need to issue set_idle when resume.
 
-[...]
+Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
+---
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |   26 ++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
 
-> 
-> From: Tushar Behera <tushar.behera@linaro.org>
-> Subject: [PATCH] ARM: SAMSUNG: Fix compilation error with
-> s3c2410_defconfig
-> 
-> Commit 2663e766c56a ("ARM Samsung: Move s3c pwm driver to pwm framework")
-
-Oops, this should be "215c29d3d0e9"...
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-> moved Samsung PWM driver to drivers/pwm and the config option to select
-> this driver has changed.
-> 
-> This patch fixes following build-error with s3c2410_defconfig.
-> 
-> arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_lcd_power':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to
-> 'pwm_config'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to
-> 'pwm_disable'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to
-> 'pwm_config'
-> arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to
-> 'pwm_enable'
-> arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_backlight_exit':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to 'pwm_free'
-> arch/arm/mach-s3c24xx/built-in.o: In function 'rx1950_backlight_init':
-> arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to
-> 'pwm_request'
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> [kgene.kim@samsung.com: re-worked as per review comments]
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-> ---
->  arch/arm/mach-s3c24xx/Kconfig |    4 ++--
->  arch/arm/plat-samsung/Kconfig |    2 +-
->  drivers/pwm/Kconfig           |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-> index e249611..d56b0f7 100644
-> --- a/arch/arm/mach-s3c24xx/Kconfig
-> +++ b/arch/arm/mach-s3c24xx/Kconfig
-> @@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
->  	select I2C
->  	select POWER_SUPPLY
->  	select MACH_NEO1973
-> -	select S3C2410_PWM
-> +	select S3C24XX_PWM
->  	select S3C_DEV_USB_HOST
->  	help
->  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
-> Phone
-> @@ -493,7 +493,7 @@ config MACH_RX1950
->  	select S3C24XX_DCLK
->  	select PM_H1940 if PM
->  	select I2C
-> -	select S3C2410_PWM
-> +	select S3C24XX_PWM
->  	select S3C_DEV_NAND
->  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
->  	select S3C2440_XTAL_16934400
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index 7aca31c..dcdfb77 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
-> 
->  config S3C24XX_PWM
->  	bool "PWM device support"
-> -	select HAVE_PWM
-> +	select PWM
->  	help
->  	  Support for exporting the PWM timer blocks via the pwm device
->  	  system
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 8fc3808..34c8ec1 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -59,7 +59,7 @@ config PWM_PXA
-> 
->  config PWM_SAMSUNG
->  	tristate "Samsung pwm support"
-> -	depends on PLAT_SAMSUNG
-> +	def_bool PLAT_SAMSUNG
->  	help
->  	  Generic PWM framework driver for Samsung.
-> 
-> --
-> 1.7.4.1
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 41c34f2..703aaed 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -829,4 +829,7 @@
+ #define USB_VENDOR_ID_PRIMAX	0x0461
+ #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+ 
++#define USB_VENDOR_ID_ELAN	0x04f3
++#define USB_DEVICE_ID_ELAN_MOCCA	0x000a
++
+ #endif
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 59c8b5c..a086a16 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -767,6 +767,31 @@ static int mt_reset_resume(struct hid_device *hdev)
+ 	mt_set_input_mode(hdev);
+ 	return 0;
+ }
++
++static int mt_resume(struct hid_device *hdev)
++{
++	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
++	struct usb_host_interface *interface = intf->cur_altsetting;
++
++	struct usb_device *dev = hid_to_usb_dev(hdev);
++
++	if (hdev->vendor == USB_VENDOR_ID_ELAN && 
++			hdev->product == USB_DEVICE_ID_ELAN_MOCCA) {
++
++		usb_control_msg(dev, 
++						usb_sndctrlpipe(dev, 0),						
++		                HID_REQ_SET_IDLE, 
++						USB_TYPE_CLASS | USB_RECIP_INTERFACE, 
++						0,
++		                interface->desc.bInterfaceNumber, 
++						NULL, 
++						0, 
++						USB_CTRL_SET_TIMEOUT);
++	}
++
++	return 0;
++}
++
+ #endif
+ 
+ static void mt_remove(struct hid_device *hdev)
+@@ -1092,6 +1117,7 @@ static struct hid_driver mt_driver = {
+ 	.event = mt_event,
+ #ifdef CONFIG_PM
+ 	.reset_resume = mt_reset_resume,
++	.resume=mt_resume,
+ #endif
+ };
+ 
+-- 
+1.7.9.5
 
