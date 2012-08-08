@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab2HHPGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:06:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52600 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758477Ab2HHPGc (ORCPT
+	id S1758714Ab2HHPHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:07:33 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:10444 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757485Ab2HHPHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:06:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 09/11] regulator/twl: remove fixed resource handling
-Date: Wed, 8 Aug 2012 15:06:24 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-10-git-send-email-arnd@arndb.de> <20120808145018.GD24328@opensource.wolfsonmicro.com>
-In-Reply-To: <20120808145018.GD24328@opensource.wolfsonmicro.com>
+	Wed, 8 Aug 2012 11:07:32 -0400
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QOb9J0FJuBIaIwpbJMlw==
+X-RZG-CLASS-ID: mo05
+Message-ID: <502280A9.5070009@denx.de>
+Date: Wed, 08 Aug 2012 17:07:21 +0200
+From: Stefan Roese <sr@denx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH 07/11] net/stmmac: mark probe function as __devinit
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-8-git-send-email-arnd@arndb.de>
+In-Reply-To: <1344437248-20560-8-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208081506.24773.arnd@arndb.de>
-X-Provags-ID: V02:K0:TnNbTJrsND31xOuSA+OrA2Z0cAAaZYbVVccIOYe9Pxg
- /QsmqHSzyNPh9DyAbsgpwC6vVO/jD89ocyx5X0X2gBwziJk3jq
- yvpx/o8o2BzXtBHJYOWnyTWoYQL7T83FBOUMCzUg+jAzNLuz51
- tYarRCjsdY4mD2yvY23qXH5xk+7IQMcblrACw8oOE4xwkvZhAn
- 4lCwhUKjCEeP0yjHLAnJF1UnXa/oVXZGfxNN8QFtzu/p20I2AU
- s6ctDddBEbU4IL+9PK0FU8MoFCg9UNlftmwshfOgniybKJPpm/
- 33Y6rv8ht4xlYyJ2RWpxQOFjiZNAZNv8VM/hvfkID0VmpglmiF
- senqwUZFv1Btedb68qHw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 August 2012, Mark Brown wrote:
-> On Wed, Aug 08, 2012 at 04:47:26PM +0200, Arnd Bergmann wrote:
-> > The recent patch 0e8e5c34cf "regulator: twl: Remove references to
-> > 32kHz clock from DT bindings" removed the only use of the fake
-> > "CLK32KG" regulator but not the TWL6030_FIXED_RESOURCE and
-> > twl6030_fixed_resource definitions that are unused otherwise.
+On 08/08/2012 04:47 PM, Arnd Bergmann wrote:
+> Driver probe functions are generally __devinit so they will be
+> discarded after initialization for non-hotplug kernels.
+> This was found by a new warning after patch 6a228452d "stmmac: Add
+> device-tree support" adds a new __devinit function that is called
+> from stmmac_pltfr_probe.
 > 
-> I've already got a fix for this in my tree.
+> Without this patch, building socfpga_defconfig results in:
+> 
+> WARNING: drivers/net/ethernet/stmicro/stmmac/stmmac.o(.text+0x5d4c): Section mismatch in reference from the function stmmac_pltfr_probe() to the function .devinit.text:stmmac_probe_config_dt()
+> The function stmmac_pltfr_probe() references
+> the function __devinit stmmac_probe_config_dt().
+> This is often because stmmac_pltfr_probe lacks a __devinit
+> annotation or the annotation of stmmac_probe_config_dt is wrong.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Stefan Roese <sr@denx.de>
+> Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
 
-Ok, dropping it here.
+Acked-by: Stefan Roese <sr@denx.de>
 
-	Arnd
+Thanks,
+Stefan
