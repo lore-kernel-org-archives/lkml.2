@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab2HHV3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:29:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63529 "EHLO
+	id S1756724Ab2HHV2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:28:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57825 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab2HHV2S (ORCPT
+	with ESMTP id S1750864Ab2HHV2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:28:18 -0400
+	Wed, 8 Aug 2012 17:28:13 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 01/10] ARM: footbridge: nw_gpio_lock is raw_spin_lock
-Date: Wed,  8 Aug 2012 23:27:49 +0200
-Message-Id: <1344461278-28245-2-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Dan Williams <dan.j.williams@intel.com>, Neil Brown <neilb@suse.de>
+Subject: [PATCH 05/10] asm-generic: xor: mark static functions as __maybe_unused
+Date: Wed,  8 Aug 2012 23:27:53 +0200
+Message-Id: <1344461278-28245-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344461278-28245-1-git-send-email-arnd@arndb.de>
 References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:4x1N39nDtNpEnzAXKwhzKuMxaTMCq4nb9FbpZ7+nH6/
- jcwKAknND1m+q69fyLMli78NmJ108vuS6MiKg5Dw7rlllEux9h
- 8Ar7PdAcsWCcnuHSgUsXi/TVj4tBLkJIejP8vS7JgY3WCeXomW
- JzqVH5GgJ1Xj+Z6opo7WJgdzTSMnwAvLQZvlZX5mf+p36ANDa0
- BOyJzZPbEPnhFkUju2GQNuOboMffkIHPf+m52knH3pWmvAAn3P
- zenLHpSt82jdf+ZKYryR837Pg7b8vmX29Hj2uQA6Y04OmsA0uD
- Nd8sHP1DL1+8PRDHBRLZwegCVqvYE3npVNmH77Ot4FPzDucghh
- elYTCndsiB8GK5JrSlI0kE94suwRxd96+VVpAfzo5Io4Khdkhq
- ytjXKrRUtx21w==
+X-Provags-ID: V02:K0:+mOyi6ak9WkVzVPbQGP1SGkhzHc3yXt2NssSRkTjnD/
+ /BdVT+Ej2w4zYS3N86rYV4xMPt/doyc3Dek+z2hGkLsN+h/vnH
+ fLyCwIx+o8Eyj6D0+y1uvbgKdUm6B3pGFs10Kq+NHmj1MQZglP
+ FyUbhaClLmpCzeWW4SvKWvsYaLSznhtl5GoqMuuFTc+WvQyXYV
+ 6MOO7q1N80JITYKtbtv1igGtTJn9dMO9B+HN7hDamSUwEKszBZ
+ iHTdccAQe2QSoo9zSCnDXPzgyP+yanPCPW7JXqb+hfPYEF+9ce
+ 0Q1W+UdiEdGEV32qn/tBRFRTBVIoT23DcJEKjg+/TSNTTm747n
+ g2P1XXB+tU/cVbZ22A90nRD77RHC65EONsuFYtjZngtOjqWMOf
+ DSTAaI1oNZRSA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bd31b85960a "locking, ARM: Annotate low level hw locks as raw"
-made nw_gpio_lock a raw spinlock, but did not change all the
-users in device drivers. This fixes the remaining ones.
+The asm-generic/xor.h header file is nasty and defines static functions
+that are not inline. The header file is include by the ARM version of
+asm/xor.h, which uses some but not all of the symbols defined there.
 
-sound/oss/waveartist.c: In function 'vnc_mute_spkr':
-sound/oss/waveartist.c:1485:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
-drivers/char/ds1620.c: In function 'netwinder_lock':
-drivers/char/ds1620.c:77:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
-drivers/char/nwflash.c: In function 'kick_open':
-drivers/char/nwflash.c:620:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
+Marking the extraneous functions as __maybe_unused lets gcc drop them
+without complaining.
+
+Without this patch, building iop13xx_defconfig results in:
+
+include/asm-generic/xor.h:696:34: warning: 'xor_block_8regs_p' defined but not used [-Wunused-variable]
+include/asm-generic/xor.h:704:34: warning: 'xor_block_32regs_p' defined but not used [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Neil Brown <neilb@suse.de>
 ---
- drivers/char/ds1620.c  |    8 ++++----
- drivers/char/nwflash.c |    4 ++--
- sound/oss/waveartist.c |    4 ++--
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ include/asm-generic/xor.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/ds1620.c b/drivers/char/ds1620.c
-index aab9605..24ffd8c 100644
---- a/drivers/char/ds1620.c
-+++ b/drivers/char/ds1620.c
-@@ -74,21 +74,21 @@ static inline void netwinder_ds1620_reset(void)
+diff --git a/include/asm-generic/xor.h b/include/asm-generic/xor.h
+index 6028fb8..b4d8432 100644
+--- a/include/asm-generic/xor.h
++++ b/include/asm-generic/xor.h
+@@ -693,7 +693,7 @@ static struct xor_block_template xor_block_32regs = {
+ 	.do_5 = xor_32regs_5,
+ };
  
- static inline void netwinder_lock(unsigned long *flags)
- {
--	spin_lock_irqsave(&nw_gpio_lock, *flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, *flags);
- }
+-static struct xor_block_template xor_block_8regs_p = {
++static struct xor_block_template xor_block_8regs_p __maybe_unused = {
+ 	.name = "8regs_prefetch",
+ 	.do_2 = xor_8regs_p_2,
+ 	.do_3 = xor_8regs_p_3,
+@@ -701,7 +701,7 @@ static struct xor_block_template xor_block_8regs_p = {
+ 	.do_5 = xor_8regs_p_5,
+ };
  
- static inline void netwinder_unlock(unsigned long *flags)
- {
--	spin_unlock_irqrestore(&nw_gpio_lock, *flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, *flags);
- }
- 
- static inline void netwinder_set_fan(int i)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_gpio_modify_op(GPIO_FAN, i ? GPIO_FAN : 0);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- static inline int netwinder_get_fan(void)
-diff --git a/drivers/char/nwflash.c b/drivers/char/nwflash.c
-index d45c334..04e2a94 100644
---- a/drivers/char/nwflash.c
-+++ b/drivers/char/nwflash.c
-@@ -617,9 +617,9 @@ static void kick_open(void)
- 	 * we want to write a bit pattern XXX1 to Xilinx to enable
- 	 * the write gate, which will be open for about the next 2ms.
- 	 */
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_FLASH_WR_ENABLE, CPLD_FLASH_WR_ENABLE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 
- 	/*
- 	 * let the ISA bus to catch on...
-diff --git a/sound/oss/waveartist.c b/sound/oss/waveartist.c
-index 24c430f..672af8b 100644
---- a/sound/oss/waveartist.c
-+++ b/sound/oss/waveartist.c
-@@ -1482,9 +1482,9 @@ vnc_mute_spkr(wavnc_info *devc)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_UNMUTE, devc->spkr_mute_state ? 0 : CPLD_UNMUTE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- static void
+-static struct xor_block_template xor_block_32regs_p = {
++static struct xor_block_template xor_block_32regs_p __maybe_unused = {
+ 	.name = "32regs_prefetch",
+ 	.do_2 = xor_32regs_p_2,
+ 	.do_3 = xor_32regs_p_3,
 -- 
 1.7.10
 
