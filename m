@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759214Ab2HHUJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:09:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57185 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337Ab2HHUJn (ORCPT
+	id S1759224Ab2HHULy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:11:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54450 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759060Ab2HHULw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 16:09:43 -0400
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Paul Moore <paul@paul-moore.com>, John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
-In-Reply-To: <CACLa4ptgoge0nnEuov5E9gc2bdR-wjCo+bpB6Auhwo8jSO99oA@mail.gmail.com>
-References: <50215A7E.8000701@linaro.org> <502198B4.8040503@linaro.org>
-	 <5022BAA2.90606@us.ibm.com> <17464273.DGOeQvDGIE@sifl>
-	 <1344454701.28967.233.camel@edumazet-glaptop>
-	 <CACLa4ptgoge0nnEuov5E9gc2bdR-wjCo+bpB6Auhwo8jSO99oA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Aug 2012 22:09:38 +0200
-Message-ID: <1344456578.28967.244.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 8 Aug 2012 16:11:52 -0400
+Message-ID: <5022C804.2070104@suse.cz>
+Date: Wed, 08 Aug 2012 22:11:48 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
+MIME-Version: 1.0
+To: Alan Cox <alan@linux.intel.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com
+Subject: Re: [PATCH 18/41] TTY: pty, switch to tty_alloc_driver
+References: <1344368886-24033-1-git-send-email-jslaby@suse.cz> <1344368886-24033-19-git-send-email-jslaby@suse.cz> <20120808163757.28a28df1@bob.linux.org.uk>
+In-Reply-To: <20120808163757.28a28df1@bob.linux.org.uk>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
-
-> Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
-> code. 
-
-Sure but it seems include file misses an accessor for this.
-
-We could add it on a future cleanup patch, as Paul mentioned.
-
->  Ifndef CONF_SECURITY then security_sk_alloc() is a static
-> inline return 0;   I guess the question is "Where did the sk come
-> from"?  Why wasn't security_sk_alloc() called when it was allocated?
-> Should it have been updated at some time and that wasn't done either?
-> Seems wrong to be putting packets on the queue for a socket where the
-> security data was never allocated and was never set to its proper
-> state.
+On 08/08/2012 05:37 PM, Alan Cox wrote:
+> On Tue,  7 Aug 2012 21:47:43 +0200
+> Jiri Slaby <jslaby@suse.cz> wrote:
 > 
+>> Switch to the new driver allocation interface, as this is one of the
+>> special call-sites. Here, we need TTY_DRIVER_EXCESSIVE_LINES to not
+>> allocate tty_driver->ports, cdevs and potentially other structures
+>> because we reserve too many lines in pty. Instead, it provides the
+>> tty_port<->tty_struct link in tty->ops->install already.
+> 
+> This is the only thing I would quibble about in the entire patch set.
+> 
+> We've got a pile of things that the pty does and one or two other
+> drivers might want to do about dynamic allocation (termios objects is
+> the same problem).
+> 
+> I think it's a mistake to call it EXCESSIVE_LINES, better a name which
+> indicates what it implies - say TTY_DRIVER_DYNAMIC_ALLOC. Then it means
+> other drivers can move that way if they wish.
 
-IMHO it seems wrong to even care about security for internal sockets.
+I would stick only to the rename at this moment -- I will send a v2 for
+this and 19/41. The merge with DEVPTS_MEM (the termios case) needs
+devpts_kill_index to be moved from tty_release to
+pty_driver->ops->cleanup/shutdown, but I don't feel comfortable to do it
+now since it needs some testing. So I would add this to TODO and will
+send it after the next merge window. If I understood your point correctly?
 
-They are per cpu, shared for all users on the machine.
+> for the entire series, and next time we are both at the same conference
+> I owe you a a couple of beers at least !
 
-What kind of security do you envision exactly ?
+Heh, OK, it would be honor for me ;).
 
-
-These unicast_sock are percpu, and preallocated.
-
-/*
- *      Generic function to send a packet as reply to another packet.
- *      Used to send some TCP resets/acks so far.
- *
- *      Use a fake percpu inet socket to avoid false sharing and contention.
- */
-static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
-        .sk = {
-                .__sk_common = {
-                        .skc_refcnt = ATOMIC_INIT(1),
-                },
-                .sk_wmem_alloc  = ATOMIC_INIT(1),
-                .sk_allocation  = GFP_ATOMIC,
-                .sk_flags       = (1UL << SOCK_USE_WRITE_QUEUE),
-        },
-        .pmtudisc       = IP_PMTUDISC_WANT,
-        .uc_ttl         = -1,
-};
-
-
+thanks,
+-- 
+js
+suse labs
