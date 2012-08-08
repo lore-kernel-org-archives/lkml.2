@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab2HHRXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:23:18 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:57091 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758903Ab2HHRXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:23:16 -0400
-X-IronPort-AV: E=Sophos;i="4.77,733,1336348800"; 
-   d="scan'208";a="13915138"
-Date: Wed, 8 Aug 2012 18:22:50 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH v2 21/23] xen: update xen_add_to_physmap interface
-In-Reply-To: <20120807183306.GX15053@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1208081821380.21096@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-21-git-send-email-stefano.stabellini@eu.citrix.com> <20120807183306.GX15053@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758982Ab2HHRXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:23:52 -0400
+Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:57524 "EHLO
+	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030440Ab2HHRXv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:23:51 -0400
+From: David Cullen <David.Cullen@koe-americas.com>
+To: Michal Marek <mmarek@suse.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCHv2] QEMU Fix /usr/bin/xargs: etags: Argument list too long
+Thread-Topic: [RFC PATCHv2] QEMU Fix /usr/bin/xargs: etags: Argument list
+ too long
+Thread-Index: AQHNdYqTlWZJi87DW0SCm1n02aLGOQ==
+Date: Wed, 8 Aug 2012 17:23:49 +0000
+Message-ID: <5022A0A5.6090809@koe-americas.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
+ Thunderbird/14.0
+x-originating-ip: [10.1.5.28]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <84DB408EA9C41A4BA6698EF01D232B22@koe-americas.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Mon, Aug 06, 2012 at 03:27:24PM +0100, Stefano Stabellini wrote:
-> > Update struct xen_add_to_physmap to be in sync with Xen's version of the
-> > structure.
-> > The size field was introduced by:
-> > 
-> > changeset:   24164:707d27fe03e7
-> > user:        Jean Guyader <jean.guyader@eu.citrix.com>
-> > date:        Fri Nov 18 13:42:08 2011 +0000
-> > summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-> > 
-> > According to the comment:
-> > 
-> > "This new field .size is located in the 16 bits padding between .domid
-> > and .space in struct xen_add_to_physmap to stay compatible with older
-> > versions."
-> > 
-> > Changes in v2:
-> 
-> Looks good. Let me take this as in my tree to prep it for Mukesh's patches.
+Patch applies to
 
-OK.
-Beware that patch #23 is going to modify xen_add_to_physmap again to
-replace .size with a union.
+    commit 42a579a0f960081cd16fc945036e4780c3ad3202
 
+When running "make ARCH=arm TAGS" in a cross chroot using
+qemu-arm-static, the following message is emitted:
 
-> > - remove erroneous comment in the commit message.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  include/xen/interface/memory.h |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> > index b5c3098..b66d04c 100644
-> > --- a/include/xen/interface/memory.h
-> > +++ b/include/xen/interface/memory.h
-> > @@ -163,6 +163,9 @@ struct xen_add_to_physmap {
-> >      /* Which domain to change the mapping for. */
-> >      domid_t domid;
-> >  
-> > +    /* Number of pages to go through for gmfn_range */
-> > +    uint16_t    size;
-> > +
-> >      /* Source mapping space. */
-> >  #define XENMAPSPACE_shared_info 0 /* shared info page */
-> >  #define XENMAPSPACE_grant_table 1 /* grant table page */
-> > -- 
-> > 1.7.2.5
-> 
+    [user@host:/home/work/linux]: make ARCH=arm TAGS
+      GEN     TAGS
+    /usr/bin/xargs: etags: Argument list too long
+
+This can be fixed by by passing "-s $((120 * 1024))" to xargs in
+scripts/tags.sh when QEMU matches .*qemu-.*-static$.
+
+This limits the xargs command line to 120KiB characters to provide
+headroom for people running inside a cross chroot using
+qemu-.*-static.
+
+Signed-off-by: David Cullen <david.cullen@koe-americas.com>
+---
+ scripts/tags.sh |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index cff8faa..02947c5 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -5,12 +5,19 @@
+ # mode may be any of: tags, TAGS, cscope
+ #
+ # Uses the following environment variables:
+-# ARCH, SUBARCH, SRCARCH, srctree, src, obj
++# ARCH, SUBARCH, SRCARCH, srctree, src, obj, QEMU
+
+ if [ "$KBUILD_VERBOSE" = "1" ]; then
+        set -x
+ fi
+
++# If the user is running in a cross chroot using qemu-.*-static,
++# limit xargs to 120KiB of characters per command line.
++XARGS_MAX_CHARS=
++if [ -n "$QEMU" ] && [[ "$QEMU" =~ .*qemu-.*-static$ ]] ; then
++       XARGS_MAX_CHARS="-s $(( 120 * 1024 ))"
++fi
++
+ # This is a duplicate of RCS_FIND_IGNORE without escaped '()'
+ ignore="( -name SCCS -o -name BitKeeper -o -name .svn -o \
+           -name CVS  -o -name .pc       -o -name .hg  -o \
+@@ -121,7 +128,7 @@ dogtags()
+
+ exuberant()
+ {
+-       all_sources | xargs $1 -a                               \
++       all_sources | xargs $XARGS_MAX_CHARS $1 -a              \
+        -I __initdata,__exitdata,__acquires,__releases          \
+        -I __read_mostly,____cacheline_aligned                  \
+        -I ____cacheline_aligned_in_smp                         \
+--
+1.7.9.5
