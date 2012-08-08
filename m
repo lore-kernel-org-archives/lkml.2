@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab2HHXIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 19:08:06 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:59753 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753039Ab2HHXIB (ORCPT
+	id S1759363Ab2HHXIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 19:08:21 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47601 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759313Ab2HHXIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 19:08:01 -0400
-From: Fernando Guzman Lugo <fernando.lugo@ti.com>
-To: <ohad@wizery.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Subject: [PATCH 0/3] remoteproc: introduce rproc recovery
-Date: Wed,  8 Aug 2012 18:07:41 -0500
-Message-Id: <1344467264-5128-1-git-send-email-fernando.lugo@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 8 Aug 2012 19:08:05 -0400
+Date: Wed, 08 Aug 2012 16:08:04 -0700 (PDT)
+Message-Id: <20120808.160804.27739743623506268.davem@davemloft.net>
+To: stigge@antcom.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, edumazet@google.com,
+        aletes.xgr@gmail.com, kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: Re: [PATCH] lpc_eth: remove obsolete ifdefs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344431934-16748-1-git-send-email-stigge@antcom.de>
+References: <1344431934-16748-1-git-send-email-stigge@antcom.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These set of patches make possible the remoteproc recover after a crash.
-This is a hard recovery, that means the remoteproc is reset and it will
-start from the beginning. When a crash happen all the virtio devices are
-destroyed. Therefore, both rpmsg drivers and devices are gracefully
-removed which also cause rproc users become 0 and the remoteproc is turned
-off. After the virtio devices are destroyed the crash handler function
-will read the virtio information from the firmware in order to recreate
-the virtio devices that will boot the remoteproc and everything will be
-functional again.
+From: Roland Stigge <stigge@antcom.de>
+Date: Wed,  8 Aug 2012 15:18:54 +0200
 
-Fernando Guzman Lugo (3):
-  remoteproc: add rproc_report_crash function to notify rproc crashes
-  remoteproc: recover a remoteproc when it has crashed
-  remoteproc: create debugfs entry to disable/enable recovery
-    dynamically
+> The #ifdefs regarding CONFIG_ARCH_LPC32XX_MII_SUPPORT and
+> CONFIG_ARCH_LPC32XX_IRAM_FOR_NET are obsolete since the symbols have been
+> removed from Kconfig and replaced by devicetree based configuration.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
- Documentation/remoteproc.txt             |    7 ++
- drivers/remoteproc/remoteproc_core.c     |  107 ++++++++++++++++++++++++++++--
- drivers/remoteproc/remoteproc_debugfs.c  |   83 +++++++++++++++++++++++
- drivers/remoteproc/remoteproc_internal.h |    1 +
- include/linux/remoteproc.h               |   20 ++++++
- 5 files changed, 211 insertions(+), 7 deletions(-)
-
+Applied, thanks.
