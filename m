@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2HHOrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:47:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64813 "EHLO
+	id S1758706Ab2HHOsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:48:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56277 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758646Ab2HHOrn (ORCPT
+	with ESMTP id S1758635Ab2HHOsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:47:43 -0400
+	Wed, 8 Aug 2012 10:48:18 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH 06/11] gpio: em: do not discard em_gio_irq_domain_cleanup
-Date: Wed,  8 Aug 2012 16:47:23 +0200
-Message-Id: <1344437248-20560-7-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 03/11] usb/ohci-omap: remove unused variable
+Date: Wed,  8 Aug 2012 16:47:20 +0200
+Message-Id: <1344437248-20560-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
 References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:kYcpDsibcRvmGX0c1Q1GKw/zjB7CACtx7xRzF0IPMdr
- QThNqOPrYkHeeCv6tvYFpVWqRLUVxGPEC6acaRPOKFQDaScwQ6
- 7UOJwC+1VeW//zxuJMqdqUdE/PrUAbqrgsqhDSVvNE6KCUpGSg
- qvsB3hqP4l8Ot2mgeLSQKT7zBd8f/hLX+YNdk2rvESF/1pe8cg
- qxxLHXVui9JaAv3hcQBsmCPaTxieWQXKNiQnhfeSuuMIo8GV/d
- XvCWmbly7K4pOuAOTT8JRe6d/1doDEApsdm9EExpKTwLj18ims
- oI10xDGTD94A816ni8aP6iErbsMuSt7WvzCIezSIHEMRqwAXyp
- HkHtRLAwHAeZFAPjISrxiaQlWSszyVfcjTnmyQxCEjuPBO7P9S
- Y/UxJEZndvNCU/pwLn8arzxeCq5Hjx3H3o=
+X-Provags-ID: V02:K0:FEt8siKoLCons0UQWXCPWIFcFQnCUL8gt+fIHkk2QDZ
+ +DEkZ9Yn4hpNDBcOKZGxC+Gh7WSy5LfTKb7MiqPEFKFrdNizOE
+ ciu/Wd+v6lf8sKGlwWqUNS/gsUhp11WjlRV27QAPZzIL6DAqWK
+ Gf/YzvOWBR/4zL0iDkaxw6iSoWqTsp5i4xiRCc1K7w3qH18XrG
+ bZWR6AbXUordnOiLlMEA8LzmKr4rSULk2OomR2zQOW3iAQbJcv
+ zVbFiGshWMnkrA5FjxScH6uwt5TgovcrOdcdGfFMLfZa6d7kP6
+ jHcbRQYz0aqT8mEU8cVpqjCjXnxfGYivIMiZsHXwrjjleyNSdQ
+ 6EQbhSNXdJlmDuSeuH1a6TDiJYb8EvW1VyOr+mRllOlJXXXyFo
+ MC6abeOYCI8Ra2VWtFjHdxNTOlORkT6ZG0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The newly added gpio-em driver marks its em_gio_irq_domain_cleanup
-function as __devexit, which would lead to that function being
-discarded in case CONFIG_HOTPLUG is disabled. However, the function
-is also called by the error handling logic em_gio_probe, which
-would cause a jump into a NULL pointer if it was removed from the
-kernel or module.
+Commit c2e935a7d "USB: move transceiver from ehci_hcd and ohci_hcd to
+hcd and rename it as phy" removed the last use of the "ohci" variable
+in the usb_hcd_omap_remove function, but left the variable in place
+unused.
 
-Without this patch, building kzm9d_defconfig results in:
+Without this patch, building omap1_defconfig results in:
 
-WARNING: drivers/gpio/built-in.o(.devinit.text+0x330): Section mismatch in reference from the function em_gio_probe() to the function .devexit.text:em_gio_irq_domain_cleanup()
-The function __devinit em_gio_probe() references
-a function __devexit em_gio_irq_domain_cleanup().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-em_gio_irq_domain_cleanup() so it may be used outside an exit section.
+In file included from drivers/usb/host/ohci-hcd.c:1013:0:
+drivers/usb/host/ohci-omap.c: In function 'usb_hcd_omap_remove':
+drivers/usb/host/ohci-omap.c:406:19: warning: unused variable 'ohci' [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Magnus Damm <damm@opensource.se>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Richard Zhao <richard.zhao@freescale.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpio/gpio-em.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ohci-omap.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/gpio/gpio-em.c b/drivers/gpio/gpio-em.c
-index 150d976..ae37181 100644
---- a/drivers/gpio/gpio-em.c
-+++ b/drivers/gpio/gpio-em.c
-@@ -266,7 +266,7 @@ static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
- 	return 0;
- }
- 
--static void __devexit em_gio_irq_domain_cleanup(struct em_gio_priv *p)
-+static void em_gio_irq_domain_cleanup(struct em_gio_priv *p)
+diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
+index e7d75d2..f8b2d91 100644
+--- a/drivers/usb/host/ohci-omap.c
++++ b/drivers/usb/host/ohci-omap.c
+@@ -403,8 +403,6 @@ err0:
+ static inline void
+ usb_hcd_omap_remove (struct usb_hcd *hcd, struct platform_device *pdev)
  {
- 	struct gpio_em_config *pdata = p->pdev->dev.platform_data;
- 
+-	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+-
+ 	usb_remove_hcd(hcd);
+ 	if (!IS_ERR_OR_NULL(hcd->phy)) {
+ 		(void) otg_set_host(hcd->phy->otg, 0);
 -- 
 1.7.10
 
