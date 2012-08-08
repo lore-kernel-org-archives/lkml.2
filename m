@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030623Ab2HHROE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:14:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45860 "EHLO
+	id S1030641Ab2HHROK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:14:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45879 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030592Ab2HHROA (ORCPT
+	with ESMTP id S1030592Ab2HHROH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:14:00 -0400
+	Wed, 8 Aug 2012 13:14:07 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/11] perf tools: Fix lib/traceevent build dir with OUTPUT variable set
-Date: Wed,  8 Aug 2012 14:13:39 -0300
-Message-Id: <1344446028-21381-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
+Subject: [GIT PULL 00/11] perf/core improvements and fixes
+Date: Wed,  8 Aug 2012 14:13:37 -0300
+Message-Id: <1344446028-21381-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1344446028-21381-1-git-send-email-acme@infradead.org>
-References: <1344446028-21381-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -24,73 +28,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+Hi Ingo,
 
-With the OUTPUT variable set the libtraceevent.a file is wrongly built
-in the source directory:
+	Please consider pulling, on top of my latest pull request,
 
- + make -d OUTPUT=/.../.build/perf-user/ DESTDIR=/.../.install/perf-user/
- ...
-     Considering target file `../lib/traceevent//libtraceevent.a'.
-      File `../lib/traceevent//libtraceevent.a' does not exist.
-      Finished prerequisites of target file `../lib/traceevent//libtraceevent.a'.
-     Must remake target `../lib/traceevent//libtraceevent.a'.
- Invoking recipe from Makefile:837 to update target `../lib/traceevent//libtraceevent.a'.
- Putting child 0x703850 (../lib/traceevent//libtraceevent.a) PID 8365 on the chain.
- Live child 0x703850 (../lib/traceevent//libtraceevent.a) PID 8365
-     SUBDIR ../lib/traceevent/
+- Arnaldo
 
- $ git clean -nxd
- Would remove tools/lib/traceevent/.event-parse.d
- Would remove tools/lib/traceevent/.parse-filter.d
- Would remove tools/lib/traceevent/.parse-utils.d
- Would remove tools/lib/traceevent/.trace-seq.d
- Would remove tools/lib/traceevent/event-parse.o
- Would remove tools/lib/traceevent/libtraceevent.a
- Would remove tools/lib/traceevent/parse-filter.o
- Would remove tools/lib/traceevent/parse-utils.o
- Would remove tools/lib/traceevent/trace-seq.o
-
-This patch fixes this.
-
-Note: Though this should already work with O=$outputdir we better use
-the OUTPUT variable directly.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344361396-7237-3-git-send-email-robert.richter@amd.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 35655c3..2d4bf6e 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -186,10 +186,10 @@ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
- TRACE_EVENT_DIR = ../lib/traceevent/
- 
--ifeq ("$(origin O)", "command line")
--	TE_PATH=$(OUTPUT)/
-+ifneq ($(OUTPUT),)
-+	TE_PATH=$(OUTPUT)
- else
--	TE_PATH=$(TRACE_EVENT_DIR)/
-+	TE_PATH=$(TRACE_EVENT_DIR)
- endif
- 
- LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
-@@ -842,7 +842,7 @@ $(LIB_FILE): $(LIB_OBJS)
- 
- # libtraceevent.a
- $(LIBTRACEEVENT):
--	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) $(COMMAND_O) libtraceevent.a
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libtraceevent.a
- 
- help:
- 	@echo 'Perf make targets:'
 -- 
 1.7.9.2.358.g22243
 
+The following changes since commit 9782243353ec135327a80c76c63464e592949cd1:
+
+  perf script: Stop using pevent directly (2012-08-07 23:50:21 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 0076d546b4f9b5c15121c6959d108a83fe43fa9a:
+
+  perf scripts python: Add event_analyzing_sample.py as a sample for general event handling (2012-08-08 12:55:38 -0300)
+
+----------------------------------------------------------------
+perf/core improvements
+
+. Assorted fixes for Documentation and build in 32 bit, from Robert Richter
+
+. Add support for non-tracepoint events in perf script python, from Feng Tang
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Feng Tang (5):
+      perf script: Add general python handler to process non-tracepoint events
+      perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
+      perf scripts python: Pass event/thread/dso name and symbol info to event handler in python
+      perf scripts python: Add a python library EventClass.py
+      perf scripts python: Add event_analyzing_sample.py as a sample for general event handling
+
+Robert Richter (6):
+      perf tools: Fix version file for perf documentation with OUTPUT variable set
+      perf tools: Fix lib/traceevent build dir with OUTPUT variable set
+      perf tools: Fix parsing of 64 bit raw config value for 32 bit
+      tools lib traceevent: Fix cast from pointer to integer for 32 bit
+      perf list: Update documentation about raw event setup
+      perf list: Document precise event sampling for AMD IBS
+
+ tools/lib/traceevent/event-parse.c                 |    3 +-
+ tools/perf/Documentation/Makefile                  |    6 +-
+ tools/perf/Documentation/perf-list.txt             |   48 +++--
+ tools/perf/Makefile                                |    8 +-
+ tools/perf/builtin-script.c                        |    5 +-
+ .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |   94 ++++++++++
+ .../perf/scripts/python/event_analyzing_sample.py  |  193 ++++++++++++++++++++
+ tools/perf/util/parse-events.c                     |    6 +-
+ tools/perf/util/parse-events.h                     |    6 +-
+ tools/perf/util/parse-events.l                     |    4 +-
+ tools/perf/util/parse-events.y                     |   10 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 +-
+ .../util/scripting-engines/trace-event-python.c    |   85 ++++++++-
+ tools/perf/util/trace-event-scripting.c            |    2 +-
+ tools/perf/util/trace-event.h                      |    5 +-
+ 15 files changed, 441 insertions(+), 45 deletions(-)
+ create mode 100755 tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
+ create mode 100644 tools/perf/scripts/python/event_analyzing_sample.py
