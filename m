@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab2HHUIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:08:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48270 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab2HHUIW (ORCPT
+	id S1759214Ab2HHUJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:09:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57185 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757337Ab2HHUJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 16:08:22 -0400
-Subject: Re: [PATCH] sched: fix divide by zero at {thread_group,task}_times
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-In-Reply-To: <1344455404.2440.35.camel@marge.simpson.net>
-References: <20120808092714.GA3580@redhat.com>
-	 <1344455404.2440.35.camel@marge.simpson.net>
+	Wed, 8 Aug 2012 16:09:43 -0400
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Paul Moore <paul@paul-moore.com>, John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
+In-Reply-To: <CACLa4ptgoge0nnEuov5E9gc2bdR-wjCo+bpB6Auhwo8jSO99oA@mail.gmail.com>
+References: <50215A7E.8000701@linaro.org> <502198B4.8040503@linaro.org>
+	 <5022BAA2.90606@us.ibm.com> <17464273.DGOeQvDGIE@sifl>
+	 <1344454701.28967.233.camel@edumazet-glaptop>
+	 <CACLa4ptgoge0nnEuov5E9gc2bdR-wjCo+bpB6Auhwo8jSO99oA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Aug 2012 22:08:20 +0200
-Message-ID: <1344456500.16728.15.camel@laptop>
+Date: Wed, 08 Aug 2012 22:09:38 +0200
+Message-ID: <1344456578.28967.244.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 21:50 +0200, Mike Galbraith wrote:
-> 32bit built do_div()
-> and div64_u64() both sucked equally compared to 64bit 
+On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
 
-/me peeks at div64_u64 fallback implementation and sees why, it still
-does a single div, it does some neat fls tricks.
+> Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
+> code. 
 
-Ok, no point in avoiding this then.. 
+Sure but it seems include file misses an accessor for this.
 
-I did the below little edit, no point in mixing the old and new
-primitives.. those __force things annoy me, but I guess otherwise we'll
-upset sparse.
+We could add it on a future cleanup patch, as Paul mentioned.
 
----
-Index: linux-2.6/kernel/sched/core.c
-===================================================================
---- linux-2.6.orig/kernel/sched/core.c
-+++ linux-2.6/kernel/sched/core.c
-@@ -3149,7 +3149,7 @@ static cputime_t scale_utime(cputime_t u
- 	temp *= (__force u64) utime;
- 
- 	if (sizeof(cputime_t) == 4)
--		do_div(temp, (__force u32) total);
-+		temp = div_u64(temp, (__force u32) total);
- 	else
- 		temp = div64_u64(temp, (__force u64) total);
- 
+>  Ifndef CONF_SECURITY then security_sk_alloc() is a static
+> inline return 0;   I guess the question is "Where did the sk come
+> from"?  Why wasn't security_sk_alloc() called when it was allocated?
+> Should it have been updated at some time and that wasn't done either?
+> Seems wrong to be putting packets on the queue for a socket where the
+> security data was never allocated and was never set to its proper
+> state.
+> 
+
+IMHO it seems wrong to even care about security for internal sockets.
+
+They are per cpu, shared for all users on the machine.
+
+What kind of security do you envision exactly ?
+
+
+These unicast_sock are percpu, and preallocated.
+
+/*
+ *      Generic function to send a packet as reply to another packet.
+ *      Used to send some TCP resets/acks so far.
+ *
+ *      Use a fake percpu inet socket to avoid false sharing and contention.
+ */
+static DEFINE_PER_CPU(struct inet_sock, unicast_sock) = {
+        .sk = {
+                .__sk_common = {
+                        .skc_refcnt = ATOMIC_INIT(1),
+                },
+                .sk_wmem_alloc  = ATOMIC_INIT(1),
+                .sk_allocation  = GFP_ATOMIC,
+                .sk_flags       = (1UL << SOCK_USE_WRITE_QUEUE),
+        },
+        .pmtudisc       = IP_PMTUDISC_WANT,
+        .uc_ttl         = -1,
+};
 
 
