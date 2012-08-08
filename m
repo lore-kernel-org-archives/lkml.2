@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2HHFgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 01:36:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54130 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab2HHFgm (ORCPT
+	id S1756244Ab2HHFgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 01:36:52 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42428 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab2HHFgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 01:36:42 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Wed, 08 Aug 2012 00:36:41 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] thermal: Fix potential NULL pointer accesses
-Date: Tue,  7 Aug 2012 22:36:45 -0700
-Message-Id: <1344404205-22861-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Wed, 8 Aug 2012 01:36:50 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-73-5021faf11a90
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
+References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+	<87mx26z0it.fsf@sejong.aot.lge.com>
+	<CANaxB-xAWtj8nU0WiE0aV_WHde_iX=rseU9NwwN=VTHOZYW=JQ@mail.gmail.com>
+Date: Wed, 08 Aug 2012 14:30:53 +0900
+In-Reply-To: <CANaxB-xAWtj8nU0WiE0aV_WHde_iX=rseU9NwwN=VTHOZYW=JQ@mail.gmail.com>
+	(Andrey Wagin's message of "Wed, 8 Aug 2012 09:02:18 +0400")
+Message-ID: <878vdqympe.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The type parameter in thermal_zone_device_register and
-thermal_cooling_device_register can be NULL, indicating that no sysfs attribute
-for the type should be created. Only call strlen() and strcpy() on type if it is
-not NULL.
+On Wed, 8 Aug 2012 09:02:18 +0400, Andrey Wagin wrote:
+> 2012/8/8 Namhyung Kim <namhyung@kernel.org>:
+>>>
+>>> $ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
+>>>               -e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
+>
+> Actually this string is not completed, because sched:sched_switch
+> should be filtered by state.
+>
+>>> [ perf record: Woken up 1 times to write data ]
+>>> [ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
+>>> $ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
+>>> $ ./perf report -i ~/perf.data
+>>
+>> The usage like this is too specific and hard to use IMHO. How about
+>> putting it somehow into perf sched or new command?
+>>
+>> /me don't have an idea though. :-)
+>>
+>
+> I'm going to add a script, so the usage will look like this:
+> $ perf script record sched-stat -e sched:sched_stat_sleep <command>
+> This command will collect sched_stat_* and proper sched_switch events
 
-This patch addresses Coverity #102180 and #102182: Dereference before null check
+???  That means '-e sched:sched_stat_sleep' part can be removed from
+command line, no?
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Applies on top of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git (thermal).
-
- drivers/thermal/thermal_sys.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 5be8728..e69f76d 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -900,7 +900,7 @@ thermal_cooling_device_register(char *type, void *devdata,
- 	struct thermal_zone_device *pos;
- 	int result;
- 
--	if (strlen(type) >= THERMAL_NAME_LENGTH)
-+	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
- 		return ERR_PTR(-EINVAL);
- 
- 	if (!ops || !ops->get_max_state || !ops->get_cur_state ||
-@@ -917,7 +917,7 @@ thermal_cooling_device_register(char *type, void *devdata,
- 		return ERR_PTR(result);
- 	}
- 
--	strcpy(cdev->type, type);
-+	strcpy(cdev->type, type ? : "");
- 	mutex_init(&cdev->lock);
- 	INIT_LIST_HEAD(&cdev->thermal_instances);
- 	cdev->ops = ops;
-@@ -1343,7 +1343,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
- 	int count;
- 	int passive = 0;
- 
--	if (strlen(type) >= THERMAL_NAME_LENGTH)
-+	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
- 		return ERR_PTR(-EINVAL);
- 
- 	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
-@@ -1365,7 +1365,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
- 		return ERR_PTR(result);
- 	}
- 
--	strcpy(tz->type, type);
-+	strcpy(tz->type, type ? : "");
- 	tz->ops = ops;
- 	tz->device.class = &thermal_class;
- 	tz->devdata = devdata;
--- 
-1.7.9.7
-
+Thanks,
+Namhyung
