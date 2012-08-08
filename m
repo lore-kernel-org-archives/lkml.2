@@ -1,398 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab2HHPRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 11:17:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48889 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663Ab2HHPRn (ORCPT
+	id S1758770Ab2HHPUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 11:20:20 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53498 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758663Ab2HHPUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 11:17:43 -0400
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: linux-kernel@vger.kernel.org, benh@kernel.crashing.org, arnd@arndb.de,
-        rmk@arm.linux.org.uk, broonie@opensource.wolfsonmicro.com,
-        stable@vger.kernel.org, sameo@linux.intel.com, rpurdie@rpsys.net,
-        bryan.wu@canonical.com
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 3/3] mfd: 88pm860x: use REG resource in regulator
-Date: Wed,  8 Aug 2012 23:17:28 +0800
-Message-Id: <1344439048-26630-3-git-send-email-haojian.zhuang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344439048-26630-1-git-send-email-haojian.zhuang@gmail.com>
+	Wed, 8 Aug 2012 11:20:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <201208071946.52211.arnd@arndb.de>
 References: <1344364969-32489-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1344439048-26630-1-git-send-email-haojian.zhuang@gmail.com>
+	<201208071946.52211.arnd@arndb.de>
+Date: Wed, 8 Aug 2012 23:20:18 +0800
+Message-ID: <CAN1soZzTnzD-X+jZqBW6efY9uP+puZ0qX_=EWuBzDeFhmO9vCw@mail.gmail.com>
+Subject: Re: [PATCH 1/7] mfd: max8925: Move _IO resources out of ioport_ioresource
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <rmk@arm.linux.org.uk>, "v3.4+" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since IORESOURCE_IO is changed to IORESOURCE_REG in 88pm860x driver,
-update self-defined IORESOURCE_IO resource to register offset that
-is IORESOURCE_REG in regulator driver. And split regulator platform
-data array into scattered platform data.
+On Wed, Aug 8, 2012 at 3:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 07 August 2012, Mark Brown wrote:
+>> The removal of mach/io.h from most ARM platforms also set the range of
+>> valid IO ports to be empty for most platforms when previously any 32
+>> bit integer had been valid. This makes it impossible to add IO resources
+>> as the added range is smaller than that of the root resource for IO ports.
+>>
+>> Since we're not really using IO memory at all fix this by defining our
+>> own root resource outside the normal tree and make that the parent of
+>> all IO resources. This also ensures we won't conflict with read IO ports
+>> if we ever run on a platform which happens to use them.
+>>
+>> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>> Cc: stable@vger.kernel.org (v3.4+)
+>
+> (whole series)
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Tested-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
----
- drivers/mfd/88pm860x-core.c  |  265 +++++++++++++++++++++++++++++++-----------
- drivers/regulator/88pm8607.c |    5 +-
- include/linux/mfd/88pm860x.h |   18 ++-
- 3 files changed, 217 insertions(+), 71 deletions(-)
+And I also attached my 3 patches for 88pm860x since the old self-defined
+IORESOURCE_IO should be changed to register offset (IORESOURCE_REG).
+Otherwise, it still fails in my platform.
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index e364b22..fca15be 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -68,25 +68,53 @@ static struct resource led5_resources[] __devinitdata = {
- 	{0x8, 0x8, "blink",   IORESOURCE_REG, },
- };
- 
--static struct resource regulator_resources[] __devinitdata = {
--	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_REG,},
--	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_REG,},
--	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_REG,},
--	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_REG,},
--	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_REG,},
--	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_REG,},
--	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_REG,},
--	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_REG,},
--	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_REG,},
--	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_REG,},
--	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_REG,},
--	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_REG,},
--	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_REG,},
--	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_REG,},
--	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_REG,},
--	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_REG,},
--	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_REG,},
--	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_REG,},
-+static struct resource buck1_resources[] __devinitdata = {
-+	{0x24, 0x24, "buck set", IORESOURCE_REG, },
-+};
-+static struct resource buck2_resources[] __devinitdata = {
-+	{0x25, 0x25, "buck set", IORESOURCE_REG, },
-+};
-+static struct resource buck3_resources[] __devinitdata = {
-+	{0x26, 0x26, "buck set", IORESOURCE_REG, },
-+};
-+static struct resource ldo1_resources[] __devinitdata = {
-+	{0x10, 0x10, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo2_resources[] __devinitdata = {
-+	{0x11, 0x11, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo3_resources[] __devinitdata = {
-+	{0x12, 0x12, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo4_resources[] __devinitdata = {
-+	{0x13, 0x13, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo5_resources[] __devinitdata = {
-+	{0x14, 0x14, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo6_resources[] __devinitdata = {
-+	{0x15, 0x15, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo7_resources[] __devinitdata = {
-+	{0x16, 0x16, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo8_resources[] __devinitdata = {
-+	{0x17, 0x17, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo9_resources[] __devinitdata = {
-+	{0x18, 0x18, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo10_resources[] __devinitdata = {
-+	{0x19, 0x19, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo12_resources[] __devinitdata = {
-+	{0x1a, 0x1a, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo_vibrator_resources[] __devinitdata = {
-+	{0x28, 0x28, "ldo set", IORESOURCE_REG, },
-+};
-+static struct resource ldo14_resources[] __devinitdata = {
-+	{0x1b, 0x1b, "ldo set", IORESOURCE_REG, },
- };
- 
- static struct resource touch_resources[] __devinitdata = {
-@@ -183,25 +211,88 @@ static struct mfd_cell led_devs[] = {
- 	},
- };
- 
--static struct mfd_cell regulator_devs[] = {
--	{"88pm860x-regulator", 0,},
--	{"88pm860x-regulator", 1,},
--	{"88pm860x-regulator", 2,},
--	{"88pm860x-regulator", 3,},
--	{"88pm860x-regulator", 4,},
--	{"88pm860x-regulator", 5,},
--	{"88pm860x-regulator", 6,},
--	{"88pm860x-regulator", 7,},
--	{"88pm860x-regulator", 8,},
--	{"88pm860x-regulator", 9,},
--	{"88pm860x-regulator", 10,},
--	{"88pm860x-regulator", 11,},
--	{"88pm860x-regulator", 12,},
--	{"88pm860x-regulator", 13,},
--	{"88pm860x-regulator", 14,},
--	{"88pm860x-regulator", 15,},
--	{"88pm860x-regulator", 16,},
--	{"88pm860x-regulator", 17,},
-+static struct mfd_cell reg_devs[] = {
-+	{
-+		.name = "88pm860x-regulator",
-+		.id = 0,
-+		.num_resources = ARRAY_SIZE(buck1_resources),
-+		.resources = buck1_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 1,
-+		.num_resources = ARRAY_SIZE(buck2_resources),
-+		.resources = buck2_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 2,
-+		.num_resources = ARRAY_SIZE(buck3_resources),
-+		.resources = buck3_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 3,
-+		.num_resources = ARRAY_SIZE(ldo1_resources),
-+		.resources = ldo1_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 4,
-+		.num_resources = ARRAY_SIZE(ldo2_resources),
-+		.resources = ldo2_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 5,
-+		.num_resources = ARRAY_SIZE(ldo3_resources),
-+		.resources = ldo3_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 6,
-+		.num_resources = ARRAY_SIZE(ldo4_resources),
-+		.resources = ldo4_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 7,
-+		.num_resources = ARRAY_SIZE(ldo5_resources),
-+		.resources = ldo5_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 8,
-+		.num_resources = ARRAY_SIZE(ldo6_resources),
-+		.resources = ldo6_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 9,
-+		.num_resources = ARRAY_SIZE(ldo7_resources),
-+		.resources = ldo7_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 10,
-+		.num_resources = ARRAY_SIZE(ldo8_resources),
-+		.resources = ldo8_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 11,
-+		.num_resources = ARRAY_SIZE(ldo9_resources),
-+		.resources = ldo9_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 12,
-+		.num_resources = ARRAY_SIZE(ldo10_resources),
-+		.resources = ldo10_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 13,
-+		.num_resources = ARRAY_SIZE(ldo12_resources),
-+		.resources = ldo12_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 14,
-+		.num_resources = ARRAY_SIZE(ldo_vibrator_resources),
-+		.resources = ldo_vibrator_resources,
-+	}, {
-+		.name = "88pm860x-regulator",
-+		.id = 15,
-+		.num_resources = ARRAY_SIZE(ldo14_resources),
-+		.resources = ldo14_resources,
-+	},
- };
- 
- static struct mfd_cell touch_devs[] = {
-@@ -727,38 +818,80 @@ static void __devinit device_led_init(struct pm860x_chip *chip,
- static void __devinit device_regulator_init(struct pm860x_chip *chip,
- 					    struct pm860x_platform_data *pdata)
- {
--	struct regulator_init_data *initdata;
- 	int ret;
--	int i, seq;
- 
--	if ((pdata == NULL) || (pdata->regulator == NULL))
-+	if (pdata == NULL)
-+		return;
-+	if (pdata->buck1) {
-+		reg_devs[0].platform_data = pdata->buck1;
-+		reg_devs[0].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->buck2) {
-+		reg_devs[1].platform_data = pdata->buck2;
-+		reg_devs[1].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->buck3) {
-+		reg_devs[2].platform_data = pdata->buck3;
-+		reg_devs[2].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo1) {
-+		reg_devs[3].platform_data = pdata->ldo1;
-+		reg_devs[3].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo2) {
-+		reg_devs[4].platform_data = pdata->ldo2;
-+		reg_devs[4].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo3) {
-+		reg_devs[5].platform_data = pdata->ldo3;
-+		reg_devs[5].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo4) {
-+		reg_devs[6].platform_data = pdata->ldo4;
-+		reg_devs[6].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo5) {
-+		reg_devs[7].platform_data = pdata->ldo5;
-+		reg_devs[7].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo6) {
-+		reg_devs[8].platform_data = pdata->ldo6;
-+		reg_devs[8].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo7) {
-+		reg_devs[9].platform_data = pdata->ldo7;
-+		reg_devs[9].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo8) {
-+		reg_devs[10].platform_data = pdata->ldo8;
-+		reg_devs[10].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo9) {
-+		reg_devs[11].platform_data = pdata->ldo9;
-+		reg_devs[11].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo10) {
-+		reg_devs[12].platform_data = pdata->ldo10;
-+		reg_devs[12].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo12) {
-+		reg_devs[13].platform_data = pdata->ldo12;
-+		reg_devs[13].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo_vibrator) {
-+		reg_devs[14].platform_data = pdata->ldo_vibrator;
-+		reg_devs[14].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	if (pdata->ldo14) {
-+		reg_devs[15].platform_data = pdata->ldo14;
-+		reg_devs[15].pdata_size = sizeof(struct regulator_init_data);
-+	}
-+	ret = mfd_add_devices(chip->dev, 0, reg_devs,
-+			      ARRAY_SIZE(reg_devs), NULL, 0);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to add regulator subdev\n");
- 		return;
--
--	if (pdata->num_regulators > ARRAY_SIZE(regulator_devs))
--		pdata->num_regulators = ARRAY_SIZE(regulator_devs);
--
--	for (i = 0, seq = -1; i < pdata->num_regulators; i++) {
--		initdata = &pdata->regulator[i];
--		seq = *(unsigned int *)initdata->driver_data;
--		if ((seq < 0) || (seq > PM8607_ID_RG_MAX)) {
--			dev_err(chip->dev, "Wrong ID(%d) on regulator(%s)\n",
--				seq, initdata->constraints.name);
--			goto out;
--		}
--		regulator_devs[i].platform_data = &pdata->regulator[i];
--		regulator_devs[i].pdata_size = sizeof(struct regulator_init_data);
--		regulator_devs[i].num_resources = 1;
--		regulator_devs[i].resources = &regulator_resources[seq];
--
--		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[i], 1,
--				      &regulator_resources[seq], 0);
--		if (ret < 0) {
--			dev_err(chip->dev, "Failed to add regulator subdev\n");
--			goto out;
--		}
- 	}
--out:
--	return;
- }
- 
- static void __devinit device_rtc_init(struct pm860x_chip *chip,
-diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-index 0b76372..843c89a 100644
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -322,12 +322,12 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (res == NULL) {
--		dev_err(&pdev->dev, "No I/O resource!\n");
-+		dev_err(&pdev->dev, "No REG resource!\n");
- 		return -EINVAL;
- 	}
- 	for (i = 0; i < ARRAY_SIZE(pm8607_regulator_info); i++) {
- 		info = &pm8607_regulator_info[i];
--		if (info->desc.id == res->start)
-+		if (info->desc.vsel_reg == res->start)
- 			break;
- 	}
- 	if (i == ARRAY_SIZE(pm8607_regulator_info)) {
-@@ -351,7 +351,6 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
- 	else
- 		config.regmap = chip->regmap_companion;
- 
--	/* replace driver_data with info */
- 	info->regulator = regulator_register(&info->desc, &config);
- 	if (IS_ERR(info->regulator)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
-diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index 2d042f9..87c933d 100644
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@ -359,7 +359,22 @@ struct pm860x_platform_data {
- 	struct pm860x_rtc_pdata		*rtc;
- 	struct pm860x_touch_pdata	*touch;
- 	struct pm860x_power_pdata	*power;
--	struct regulator_init_data	*regulator;
-+	struct regulator_init_data	*buck1;
-+	struct regulator_init_data	*buck2;
-+	struct regulator_init_data	*buck3;
-+	struct regulator_init_data	*ldo1;
-+	struct regulator_init_data	*ldo2;
-+	struct regulator_init_data	*ldo3;
-+	struct regulator_init_data	*ldo4;
-+	struct regulator_init_data	*ldo5;
-+	struct regulator_init_data	*ldo6;
-+	struct regulator_init_data	*ldo7;
-+	struct regulator_init_data	*ldo8;
-+	struct regulator_init_data	*ldo9;
-+	struct regulator_init_data	*ldo10;
-+	struct regulator_init_data	*ldo12;
-+	struct regulator_init_data	*ldo_vibrator;
-+	struct regulator_init_data	*ldo14;
- 
- 	unsigned short	companion_addr;	/* I2C address of companion chip */
- 	int		i2c_port;	/* Controlled by GI2C or PI2C */
-@@ -367,7 +382,6 @@ struct pm860x_platform_data {
- 	int		irq_base;	/* IRQ base number of 88pm860x */
- 	int		num_leds;
- 	int		num_backlights;
--	int		num_regulators;
- };
- 
- extern int pm8606_osc_enable(struct pm860x_chip *, unsigned short);
--- 
-1.7.9.5
-
+Regards
+Haojian
