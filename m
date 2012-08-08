@@ -1,108 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab2HHCGU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:06:20 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48502 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755475Ab2HHCGT (ORCPT
+	id S1755944Ab2HHCIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:08:23 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37942 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab2HHCIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:06:19 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-c4-5021c998c926
-Date: Wed, 8 Aug 2012 11:07:49 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] mm: kswapd: Continue reclaiming for
- reclaim/compaction if the minimum number of pages have not been reclaimed
-Message-ID: <20120808020749.GC4247@bbox>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-4-git-send-email-mgorman@suse.de>
+	Tue, 7 Aug 2012 22:08:22 -0400
+Message-ID: <5021CA31.7000405@oracle.com>
+Date: Wed, 08 Aug 2012 10:08:49 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344342677-5845-4-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH] Parallelize mtrr init between cpus
+References: <5020C3D7.2070407@oracle.com> <5021432F.2030907@zytor.com>
+In-Reply-To: <5021432F.2030907@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 01:31:14PM +0100, Mel Gorman wrote:
-> When direct reclaim is running reclaim/compaction, there is a minimum
-> number of pages it reclaims. As it must be under the low watermark to be
-> in direct reclaim it has also woken kswapd to do some work. This patch
-> has kswapd use the same logic as direct reclaim to reclaim a minimum
-> number of pages so compaction can run later.
-
--ENOPARSE by my stupid brain.
-Could you elaborate a bit more?
-
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |   19 ++++++++++++++++---
->  1 file changed, 16 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 0cb2593..afdec93 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1701,7 +1701,7 @@ static bool in_reclaim_compaction(struct scan_control *sc)
->   * calls try_to_compact_zone() that it will have enough free pages to succeed.
->   * It will give up earlier than that if there is difficulty reclaiming pages.
->   */
-> -static inline bool should_continue_reclaim(struct lruvec *lruvec,
-> +static bool should_continue_reclaim(struct lruvec *lruvec,
->  					unsigned long nr_reclaimed,
->  					unsigned long nr_scanned,
->  					struct scan_control *sc)
-> @@ -1768,6 +1768,17 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
->  	}
->  }
->  
-> +static inline bool should_continue_reclaim_zone(struct zone *zone,
-> +					unsigned long nr_reclaimed,
-> +					unsigned long nr_scanned,
-> +					struct scan_control *sc)
-> +{
-> +	struct mem_cgroup *memcg = mem_cgroup_iter(NULL, NULL, NULL);
-> +	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> +
-> +	return should_continue_reclaim(lruvec, nr_reclaimed, nr_scanned, sc);
-> +}
-> +
->  /*
->   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
->   */
-> @@ -2496,8 +2507,10 @@ loop_again:
->  			 */
->  			testorder = order;
->  			if (COMPACTION_BUILD && order &&
-> -					compaction_suitable(zone, order) !=
-> -						COMPACT_SKIPPED)
-> +					!should_continue_reclaim_zone(zone,
-> +						nr_soft_reclaimed,
-
-nr_soft_reclaimed is always zero with !CONFIG_MEMCG.
-So should_continue_reclaim_zone would return normally true in case of
-non-__GFP_REPEAT allocation. Is it intentional?
 
 
-> +						sc.nr_scanned - nr_soft_scanned,
-> +						&sc))
->  				testorder = 0;
->  
->  			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
-> -- 
-> 1.7.9.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+  2012-08-08 00:32, H. Peter Anvin wrote:
+> On 08/07/2012 12:29 AM, zhenzhong.duan wrote:
+>> Current code serialize mtrr init with set_atomicity_lock.
+>> Mtrr init is quite slow when we bootup on a hvm with large mem, vcpus
+>> and pci passthroughed devices(eg. 24 vcpus + 90G mem).
+>> It took about ~30 mins to bootup, after patch, it took ~2 min.
+> When you're saying "HVM" do you mean "Xen HVM"?  How does it behave on
+> native hardware?
+>
+> 	-hpa
+Yes, I mean Xen HVM. Bootup at same speed as before on baremetal.
