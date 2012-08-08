@@ -1,176 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab2HHG6A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:58:00 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60641 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2HHG57 (ORCPT
+	id S1757249Ab2HHG7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:59:08 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59402 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131Ab2HHG7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:57:59 -0400
-Message-ID: <50220DEF.1060508@gmail.com>
-Date: Wed, 08 Aug 2012 08:57:51 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 8 Aug 2012 02:59:06 -0400
 MIME-Version: 1.0
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 1/2] lis3: add generic DT matching code
-References: <1343633775-6268-1-git-send-email-zonque@gmail.com> <501E9CE2.20500@gmail.com> <331ABD5ECB02734CA317220B2BBEABC13EA0B8A5@DBDE01.ent.ti.com> <5021631D.1030505@gmail.com> <331ABD5ECB02734CA317220B2BBEABC13EA0E257@DBDE01.ent.ti.com>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13EA0E257@DBDE01.ent.ti.com>
-X-Enigmail-Version: 1.4.3
+In-Reply-To: <20120808081317.40c883f9@amdc308.digital.local>
+References: <CAN_1RdsTX5ZGSx7T6X0t70Q6k5_M1zgizL-KzPYrnHOnZ_nfSg@mail.gmail.com>
+	<20120806101200.GJ17551@arwen.pp.htv.fi>
+	<20120806151436.4761cd4d@amdc308.digital.local>
+	<CAN_1RdsFh5-xZ7ijL-Cwf4cDzWYthFfMOM7dPdRUub2rQ_RMDw@mail.gmail.com>
+	<20120807113416.57b03f4f@amdc308.digital.local>
+	<CAN_1Rdu+xy9EzmHty+wT4GYUGADmNMOxk2_FcG9jJ6R2nO-iBQ@mail.gmail.com>
+	<20120808081317.40c883f9@amdc308.digital.local>
+Date: Wed, 8 Aug 2012 14:59:05 +0800
+Message-ID: <CAN_1Rdvd=gZUn0GovPVQsVTzEUrUzjMFp9hnhZDEc1utHu3e5Q@mail.gmail.com>
+Subject: Re: [BUG] Kernel panic when try s3c-hsotg.c with kernel 3.5
+From: Peiyong Feng <peiyong.feng.kernel@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.08.2012 07:19, AnilKumar, Chimata wrote:
-> Hi Mack,
+2012/8/8 Lukasz Majewski <l.majewski@samsung.com>:
+> Dear Peiyong Feng,
+>
+>> > Please enable the debug at s3c-hsotg.c driver and then paste the
+>> > dmesg/debug output.
+>> I have defined DEGUG in s3c-hsotg.c
+>
+> Thank you for 2.6.36 log.
+> I'd also need the log from 3.6-rc1 kernel with DEBUG enabled.
+I have made a define like:
+#define DEBUG
+in s3c-hsotg.c of 3.6-rc1 kernel and the patch:
+======================================
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index b13e0bb..b35d275 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -36,6 +36,7 @@
 
-Call me Daniel :)
+ #include <mach/map.h>
 
-> On Wed, Aug 08, 2012 at 00:19:01, Daniel Mack wrote:
->> On 06.08.2012 12:45, AnilKumar, Chimata wrote:
->>> On Sun, Aug 05, 2012 at 21:48:42, Daniel Mack wrote:
->>>> On 30.07.2012 09:36, Daniel Mack wrote:
->>>>> This patch adds logic to parse lis3 properties from a device tree node
->>>>> and store them in a freshly allocated lis3lv02d_platform_data.
->>>>>
->>>>> Note that the actual match tables are left out here. This part should
->>>>> happen in the drivers that bind to the individual busses (SPI/I2C/PCI).
->>>>>
->>>>> Also adds some DT bindinds documentation.
->>>>>
->>>>> Signed-off-by: Daniel Mack <zonque@gmail.com>
->>>>> ---
->>>>> Changes from v2:
->>>>>  - kzalloc braino
->>>>>
->>>>> Changes from v1:
->>>>>  - some typos in properties fixed
->>>>>
->>>>>
->>>>>  Documentation/devicetree/bindings/misc/lis302.txt |  74 ++++++++++++
->>>>>  drivers/misc/lis3lv02d/lis3lv02d.c                | 137 ++++++++++++++++++++++
->>>>>  drivers/misc/lis3lv02d/lis3lv02d.h                |   4 +
->>>>>  3 files changed, 215 insertions(+)
->>>>>  create mode 100644 Documentation/devicetree/bindings/misc/lis302.txt
->>>>>
++#define DEBUG
+ #include "s3c-hsotg.h"
 
-[...]
+ #define DMA_ADDR_INVALID (~((dma_addr_t)0))
+=-========================================
 
->>>>> +Example for a SPI device node:
->>>>> +
->>>>> +	lis302@0 {
->>>>> +		compatible = "st,lis302dl-spi";
->>>>> +		reg = <0>;
->>>>> +		spi-max-frequency = <1000000>;
->>>>> +		interrupt-parent = <&gpio>;
->>>>> +		interrupts = <104 0>;
->>>>> +
->>>>> +		st,click-single-x;
->>>>> +		st,click-single-y;
->>>>> +		st,click-single-z;
->>>>> +		st,click-thresh-x = <10>;
->>>>> +		st,click-thresh-y = <10>;
->>>>> +		st,click-thresh-z = <10>;
->>>>> +		st,irq1-click;
->>>>> +		st,irq2-click;
->>>>> +		st,wakeup-x-lo;
->>>>> +		st,wakeup-x-hi;
->>>>> +		st,wakeup-y-lo;
->>>>> +		st,wakeup-y-hi;
->>>>> +		st,wakeup-z-lo;
->>>>> +		st,wakeup-z-hi;
->>>>> +	};
->>>
->>> Why can't we add these flags in driver itself like below?
->>> Is these parameters varies from SoC to SoC or accelerometer
->>> - to - accelerometer?
->>
->> I don't understand, sorry. The point here is that the driver that is
->> probed for device initialization are the PCI/I2C/SPI drivers. The
-> 
-> Look at the below example it has different drivers (SPI, I2C).
-> Compatible name changes form acc-acc so that we can use different
-> parameters corresponding to accelerometer, if it is acce specific.
-> 
-> Like
-> .compatible = "st,lis302dl-spi",
-> .compatible = "st,lis331dlh-i2c",
-> .compatible = "st,xx-spi",
-> .compatible = "st,xx-i2c",
-> 
-> If we do like this we can reduce lot of DT reads in driver.
+And the output is just the same as I have posted.
 
-No, we can't. Look, this chip has a huge number of registers that can be
-set in order to accomplish a variety of different functions. It can be
-used as a free-fall detector or as a full-fledged accelerometer, with
-different settings per axis. None of them is specific to the bus this
-chip is connected through.
-
-Of course we want to leave it to the board vendor what functions to use,
-and hence all of them are exposed via DT. The whole idea of DT is to
-describe the hardware and the desired behaviour of each component as
-exact as possible, so vendors don't have to hack along in the source
-code but can boot a generic kernel.
-
-[...]
-
->>> #ifdef CONFIG_OF
->>> static struct lis3lv02d_platform_data lis302dl_spi_pdata = {
->>>         .click_flags    = LIS3_CLICK_SINGLE_X |
->>>                           LIS3_CLICK_SINGLE_Y |
->>>                           LIS3_CLICK_SINGLE_Z,
->>>         .irq_cfg        = LIS3_IRQ1_CLICK | LIS3_IRQ2_CLICK,
->>>         .wakeup_flags   = LIS3_WAKEUP_X_LO | LIS3_WAKEUP_X_HI |
->>>                           LIS3_WAKEUP_Y_LO | LIS3_WAKEUP_Y_HI |
->>>                           LIS3_WAKEUP_Z_LO | LIS3_WAKEUP_Z_HI,
->>> };
->>>
->>> static struct lis3lv02d_platform_data lis331dlh_i2c_pdata = {
->>>         .click_flags    = LIS3_CLICK_SINGLE_X |
->>>                           LIS3_CLICK_SINGLE_Y |
->>>                           LIS3_CLICK_SINGLE_Z,
->>>         .irq_cfg        = LIS3_IRQ1_CLICK | LIS3_IRQ2_CLICK,
->>>         .wakeup_flags   = LIS3_WAKEUP_X_LO | LIS3_WAKEUP_X_HI |
->>>                           LIS3_WAKEUP_Y_LO | LIS3_WAKEUP_Y_HI |
->>>                           LIS3_WAKEUP_Z_LO | LIS3_WAKEUP_Z_HI,
->>> };
->>>
->>> static const struct of_device_id lis3_of_match[] = {
->>>        {
->>>                .compatible = "st,lis302dl-spi",
->>>                .data = &lis302dl_spi_pdata,
->>>        },
->>>        {
->>>                .compatible = "st,lis331dlh-i2c",
->>>                .data = &lis331dlh_i2c_pdata,
->>>        },
->>>        { },
->>> };
->>> MODULE_DEVICE_TABLE(of, lis3_of_match);
->>> #endif
->>>
->>> Ignore if parameters between SoC - SoC are different. In
->>> probe we can add these flags to pdata.
->>
->> No. We want to expose all hardware features to DT so users can configure
->> the device at wish. We can't ignore that SoCs want different device configs.
-> 
-> Is it require is my question, how many SoCs take these different
-> parameters from platform data.
-
-We can't know, and it doesn't matter. The goal here is not to provide a
-way to boot the boards that are currently in mainline via DT with
-minimal effort, but to have DT bindings for this driver that reflect the
-features of this piece of hardware, so anything is possible.
+If that is not the way you want, please let me know.
 
 
-Regards,
-Daniel
-
+>
+> --
+> Best regards,
+>
+> Lukasz Majewski
+>
+> Samsung Poland R&D Center | Linux Platform Group
