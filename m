@@ -1,144 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2HHHnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 03:43:15 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:50380 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756916Ab2HHHnN (ORCPT
+	id S1757863Ab2HHHqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:46:44 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:38866
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751959Ab2HHHqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 03:43:13 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: vitalywool@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, grant.likely@secretlab.ca,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        jonsmirl@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND 2/2] i2c: pnx: Fix read transactions of >= 2 bytes
-Date: Wed,  8 Aug 2012 09:42:32 +0200
-Message-Id: <1344411752-23469-2-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344411752-23469-1-git-send-email-stigge@antcom.de>
-References: <1344411752-23469-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 8 Aug 2012 03:46:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Wed, 8 Aug 2012 15:46:23 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: <viro@zeniv.linux.org.uk>
+CC: <dirk.behme@de.bosch.com>, <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: how to vm_munmap memory range for other processes?
+Message-ID: <20120808074622.GB3824@b20223-02.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On transactions with n>=2 bytes, the controller actually wrongly clocks in n+1
-bytes. This is caused by the (wrong) assumption that RFE in the Status Register
-is 1 iff there is no byte already ordered (via a dummy TX byte). This lead to
-the implementation of synchronized byte ordering, e.g.:
+Hi Al,
 
-Dummy-TX - RX - Dummy-TX - RX - ...
+I saw two commits from you in git tree:
+17d1587 unexport do_munmap()
+bfce281 kill mm argument of vm_munmap()
 
-But since RFE actually stays high after some Dummy-TX, it rather looks like:
+They remove the mm arguments, so it look like impossible to unmap
+memory of other processes except current.
 
-Dummy-TX - Dummy-TX - RX - Dummy-TX - RX - (RX)
+I have a kernel module that needs to unmap memory for certain pid. Do
+you have any idea how to do it?
 
-The last RX byte is clocked in by the bus controller, but ignored by the kernel
-when filling the userspace buffer.
+Thanks
+Richard
 
-This patch fixes the issue by asking for RX via Dummy-TX asynchronously.
-Introducing a separate counter for TX bytes.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
----
-Applies to v3.6-rc1
-
-This patch for i2c-pnx affects PNX4008 and LPC32xx (and LPC31xx, not yet in
-mainline). Can you please test?
-
-Thanks in advance!
-
- drivers/i2c/busses/i2c-pnx.c |   48 +++++++++++++++++++++++++------------------
- include/linux/i2c-pnx.h      |    1 
- 2 files changed, 29 insertions(+), 20 deletions(-)
-
---- linux-2.6.orig/drivers/i2c/busses/i2c-pnx.c
-+++ linux-2.6/drivers/i2c/busses/i2c-pnx.c
-@@ -291,31 +291,37 @@ static int i2c_pnx_master_rcv(struct i2c
- 	 * or we didn't 'ask' for it yet.
- 	 */
- 	if (ioread32(I2C_REG_STS(alg_data)) & mstatus_rfe) {
--		dev_dbg(&alg_data->adapter.dev,
--			"%s(): Write dummy data to fill Rx-fifo...\n",
--			__func__);
-+		/* 'Asking' is done asynchronously, e.g. dummy TX of several
-+		 * bytes is done before the first actual RX arrives in FIFO.
-+		 * Therefore, ordered bytes (via TX) are counted separately.
-+		 */
-+		if (alg_data->mif.order) {
-+			dev_dbg(&alg_data->adapter.dev,
-+				"%s(): Write dummy data to fill Rx-fifo...\n",
-+				__func__);
- 
--		if (alg_data->mif.len == 1) {
--			/* Last byte, do not acknowledge next rcv. */
--			val |= stop_bit;
-+			if (alg_data->mif.order == 1) {
-+				/* Last byte, do not acknowledge next rcv. */
-+				val |= stop_bit;
-+
-+				/*
-+				 * Enable interrupt RFDAIE (data in Rx fifo),
-+				 * and disable DRMIE (need data for Tx)
-+				 */
-+				ctl = ioread32(I2C_REG_CTL(alg_data));
-+				ctl |= mcntrl_rffie | mcntrl_daie;
-+				ctl &= ~mcntrl_drmie;
-+				iowrite32(ctl, I2C_REG_CTL(alg_data));
-+			}
- 
- 			/*
--			 * Enable interrupt RFDAIE (data in Rx fifo),
--			 * and disable DRMIE (need data for Tx)
-+			 * Now we'll 'ask' for data:
-+			 * For each byte we want to receive, we must
-+			 * write a (dummy) byte to the Tx-FIFO.
- 			 */
--			ctl = ioread32(I2C_REG_CTL(alg_data));
--			ctl |= mcntrl_rffie | mcntrl_daie;
--			ctl &= ~mcntrl_drmie;
--			iowrite32(ctl, I2C_REG_CTL(alg_data));
-+			iowrite32(val, I2C_REG_TX(alg_data));
-+			alg_data->mif.order--;
- 		}
--
--		/*
--		 * Now we'll 'ask' for data:
--		 * For each byte we want to receive, we must
--		 * write a (dummy) byte to the Tx-FIFO.
--		 */
--		iowrite32(val, I2C_REG_TX(alg_data));
--
- 		return 0;
- 	}
- 
-@@ -515,6 +521,7 @@ i2c_pnx_xfer(struct i2c_adapter *adap, s
- 
- 		alg_data->mif.buf = pmsg->buf;
- 		alg_data->mif.len = pmsg->len;
-+		alg_data->mif.order = pmsg->len;
- 		alg_data->mif.mode = (pmsg->flags & I2C_M_RD) ?
- 			I2C_SMBUS_READ : I2C_SMBUS_WRITE;
- 		alg_data->mif.ret = 0;
-@@ -567,6 +574,7 @@ i2c_pnx_xfer(struct i2c_adapter *adap, s
- 	/* Cleanup to be sure... */
- 	alg_data->mif.buf = NULL;
- 	alg_data->mif.len = 0;
-+	alg_data->mif.order = 0;
- 
- 	dev_dbg(&alg_data->adapter.dev, "%s(): exiting, stat = %x\n",
- 		__func__, ioread32(I2C_REG_STS(alg_data)));
---- linux-2.6.orig/include/linux/i2c-pnx.h
-+++ linux-2.6/include/linux/i2c-pnx.h
-@@ -22,6 +22,7 @@ struct i2c_pnx_mif {
- 	struct timer_list	timer;		/* Timeout */
- 	u8 *			buf;		/* Data buffer */
- 	int			len;		/* Length of data buffer */
-+	int			order;		/* RX Bytes to order via TX */
- };
- 
- struct i2c_pnx_algo_data {
