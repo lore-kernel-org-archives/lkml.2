@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030409Ab2HHN5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:57:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42524 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030389Ab2HHN5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:57:46 -0400
-Date: Wed, 8 Aug 2012 14:57:24 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Cyril Chemparathy <cyril@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 00/22] Introducing the TI Keystone platform
-Message-ID: <20120808135724.GC4579@mudshark.cambridge.arm.com>
-References: <1343775898-28345-1-git-send-email-cyril@ti.com>
+	id S1757606Ab2HHN6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:58:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39575 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab2HHN6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 09:58:49 -0400
+From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH v2] gpio/omap: add *remove* callback in platform_driver
+Date: Wed, 8 Aug 2012 19:28:36 +0530
+Message-ID: <1344434316-21141-1-git-send-email-tarun.kanti@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343775898-28345-1-git-send-email-cyril@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyril,
+Add *remove* callback so that necessary cleanup operations are
+performed when device is unregistered. The device is deleted
+from the list and associated clock handle is released by
+calling clk_put() and irq descriptor is released using the
+irq_free_desc() api.
 
-On Wed, Aug 01, 2012 at 12:04:36AM +0100, Cyril Chemparathy wrote:
-> This series is a follow on to the RFC series posted earlier (archived at [1]).
-> The major change introduced here is the modification to the kernel patching
-> mechanism for phys_to_virt/virt_to_phys, in order to support LPAE platforms
-> that require late patching.  In addition to these changes, we've updated the
-> series based on feedback from the earlier posting.
+Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Reviewed-by: Jon Hunter <jon-hunter@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Cousson, Benoit <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+---
+v2:
+Baseline: git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+Commit: 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee (Linux 3.6-rc1)
 
-One thing I've noticed going through this code and also looking at the rest
-of the LPAE code in mainline is that it's not at all clear what is the maximum
-physical address we can support for memory.
+(1) Use irq_free_descs() instead of irq_free_desc().
+    Besides, irq_free_desc() was using wrong parameter,
+    irq_base, instead of bank->irq.
+(2) irq_free_descs() moved outside spin_lock/unlock_*()
+    in order to avoid exception warnings.
 
-We currently have the following restrictions:
+(3) pm_runtime_disable() added so that bind can happen successfully
 
-ARM architecture: 40 bits
-ARCH_PGD_SHIFT	: 38 bits
-swapfile	: 36 bits (I posted some patches for this. We could
-                           extend to 37 bits if we complicate the code)
-SPARSEMEM	: 36 bits (due to limited number of page-flags)
+Test Detail:
+Step 1: Unbind gpio.5 device in order to invoke the *remove* callback.
+#echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/unbind
 
-It would be nice if we could define a 36-bit memory limit across the kernel
-for LPAE whilst allowing higher addresses to be used for peripherals. This
-also matches x86 PAE, so the common code will also work correctly.
+Step 2: Bind gpio.5 device and confirm probe() for the device succeeds.
+#echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/bind
 
-Otherwise I worry that we will see platforms with memory right at the top of
-the physical map and these will be incredibly painful to support.
+Step 3: Execute read/write GPIO test case.
 
-Will
+ drivers/gpio/gpio-omap.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index e6efd77..50de875 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1152,6 +1152,40 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
++/**
++ * omap_gpio_remove - cleanup a registered gpio device
++ * @pdev:       pointer to current gpio platform device
++ *
++ * Called by driver framework whenever a gpio device is unregistered.
++ * GPIO is deleted from the list and associated clock handle freed.
++ */
++static int __devexit omap_gpio_remove(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct gpio_bank *bank;
++	unsigned long flags;
++	int ret = -EINVAL;
++
++	list_for_each_entry(bank, &omap_gpio_list, node) {
++		spin_lock_irqsave(&bank->lock, flags);
++		if (bank->dev == dev) {
++			clk_put(bank->dbck);
++			list_del(&bank->node);
++			ret = 0;
++			spin_unlock_irqrestore(&bank->lock, flags);
++			break;
++		}
++		spin_unlock_irqrestore(&bank->lock, flags);
++	}
++
++	if (!ret) {
++		pm_runtime_disable(bank->dev);
++		irq_free_descs(bank->irq_base, bank->width);
++	}
++
++	return ret;
++}
++
+ #ifdef CONFIG_ARCH_OMAP2PLUS
+ 
+ #if defined(CONFIG_PM_RUNTIME)
+@@ -1478,6 +1512,7 @@ MODULE_DEVICE_TABLE(of, omap_gpio_match);
+ 
+ static struct platform_driver omap_gpio_driver = {
+ 	.probe		= omap_gpio_probe,
++	.remove = __devexit_p(omap_gpio_remove),
+ 	.driver		= {
+ 		.name	= "omap_gpio",
+ 		.pm	= &gpio_pm_ops,
+-- 
+1.7.0.4
+
