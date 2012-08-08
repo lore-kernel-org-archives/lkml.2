@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab2HHK01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:26:27 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13353 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab2HHK0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:26:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 08 Aug 2012 03:26:12 -0700
-Message-ID: <50223B3F.1010906@nvidia.com>
-Date: Wed, 8 Aug 2012 15:41:11 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH 0/4] i2c: tegra: required clock support for controller
-References: <1344412294-2420-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1344412294-2420-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751485Ab2HHKeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:34:13 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:51775 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab2HHKeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 06:34:12 -0400
+X-Greylist: delayed 1238 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Aug 2012 06:34:11 EDT
+From: Ilya Shchepetkov <shchepetkov@ispras.ru>
+To: Chris Verges <chrisv@cyberswitching.com>
+Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] rtc-pcf2123: Initialize dynamic sysfs attributes
+Date: Wed,  8 Aug 2012 14:11:25 +0400
+Message-Id: <1344420685-30727-1-git-send-email-shchepetkov@ispras.ru>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 August 2012 01:21 PM, Laxman Dewangan wrote:
-> The Tegra's i2c controller required two clock sources for proper
-> operation named as div-clk and fast-clk.
->
-> Adding support to make sure that driver will get these clocks and
-> enable before any transfer and disable after transfer completed.
->
-> Patch 1 add the entry of fast clock in clock table.
-> Patch 2 modify i2c driver to get the div and fast clock.
-> Patch 3 name the connection of the clock entry.
-> Patch 4 removes non-required entry from tegra20 clock table.
+Dynamically allocated sysfs attributes must be initialized using
+sysfs_attr_init(), otherwise lockdep complains:
+BUG: key <address> not in .data!
 
-Hi Wolfram/Stephen,
-This patch series very much depends on the common clock changes happens 
-on Tegra tree and I think it should go in Tegra common clock tree.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Thanks,
-Laxman
+Signed-off-by: Ilya Shchepetkov <shchepetkov@ispras.ru>
+---
+ drivers/rtc/rtc-pcf2123.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/rtc/rtc-pcf2123.c b/drivers/rtc/rtc-pcf2123.c
+index 8361187..13e4df6 100644
+--- a/drivers/rtc/rtc-pcf2123.c
++++ b/drivers/rtc/rtc-pcf2123.c
+@@ -43,6 +43,7 @@
+ #include <linux/rtc.h>
+ #include <linux/spi/spi.h>
+ #include <linux/module.h>
++#include <linux/sysfs.h>
+ 
+ #define DRV_VERSION "0.6"
+ 
+@@ -292,6 +293,7 @@ static int __devinit pcf2123_probe(struct spi_device *spi)
+ 	pdata->rtc = rtc;
+ 
+ 	for (i = 0; i < 16; i++) {
++		sysfs_attr_init(&pdata->regs[i].attr.attr);
+ 		sprintf(pdata->regs[i].name, "%1x", i);
+ 		pdata->regs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
+ 		pdata->regs[i].attr.attr.name = pdata->regs[i].name;
+-- 
+1.7.7
+
