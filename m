@@ -1,89 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab2HHQ6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 12:58:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34464 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758508Ab2HHQ6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 12:58:43 -0400
-Message-ID: <50229ABC.1030102@canonical.com>
-Date: Wed, 08 Aug 2012 09:58:36 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120724 Thunderbird/15.0
+	id S1030421Ab2HHRBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:01:44 -0400
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:58701 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750744Ab2HHRBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:01:42 -0400
+X-TM-IMSS-Message-ID: <85dc5e84000510bd@nsa.gov>
+Message-ID: <50229B70.3090507@tycho.nsa.gov>
+Date: Wed, 08 Aug 2012 13:01:36 -0400
+From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Paul Moore <paul@paul-moore.com>, John Stultz <john.stultz@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com> <20120807221731.GA25441@mail.hallyn.com>
-In-Reply-To: <20120807221731.GA25441@mail.hallyn.com>
-X-Enigmail-Version: 1.5a1pre
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH v2 10/23] xen/arm: compile and run xenbus
+References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-10-git-send-email-stefano.stabellini@eu.citrix.com> <20120807182157.GN15053@phenom.dumpdata.com> <50216228.7010407@tycho.nsa.gov> <alpine.DEB.2.02.1208081743430.21096@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1208081743430.21096@kaball.uk.xensource.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 03:17 PM, Serge E. Hallyn wrote:
-> Quoting Paul Moore (paul@paul-moore.com):
->> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> wrote:
->>> On 08/07/2012 02:50 PM, Paul Moore wrote:
+On 08/08/2012 12:51 PM, Stefano Stabellini wrote:
+> On Tue, 7 Aug 2012, Daniel De Graaf wrote:
+>> On 08/07/2012 02:21 PM, Konrad Rzeszutek Wilk wrote:
+>>> On Mon, Aug 06, 2012 at 03:27:13PM +0100, Stefano Stabellini wrote:
+>>>> bind_evtchn_to_irqhandler can legitimately return 0 (irq 0): it is not
+>>>> an error.
 >>>>
->>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
->>>> wrote:
->>>>>
->>>>> Hi,
->>>>>      With my kvm environment using 3.6-rc1+, I'm seeing NULL pointer
->>>>> dereferences in selinux_ip_postroute_compat(). It looks like the sksec
->>>>> value
->>>>> is null and we die in the following line:
->>>>>
->>>>>      if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
->>>>>
->>>>> This triggers every time I shutdown the machine, but has also triggered
->>>>> randomly after a few hours.
->>>>>
->>>>> This is on an ubuntu 12.04 image, not using selinux.
+>>>> If Linux is running as an HVM domain and is running as Dom0, use
+>>>> xenstored_local_init to initialize the xenstore page and event channel.
 >>>>
->>>> NOTE: Adding the SELinux list to the CC line
->>>
->>> Thanks!
->>>
->>>> Hi,
+>>>> Changes in v2:
 >>>>
->>>> I'm trying to understand this and I was hoping you could you clarify a
->>>> few things for me:
->>>>
->>>> * Is the panic in the Ubuntu 12.04 guest, or the host?  If the host,
->>>> could you share what distribution you are using?
+>>>> - refactor xenbus_init.
 >>>
->>> Sorry, its a 12.04 guest.  I think the host is Ubuntu 12.04 as well.
+>>> Thank you. Lets also CC our friend at NSA who has been doing some work
+>>> in that area. Daniel are you OK with this change - will it still make
+>>> PV initial domain with with the MiniOS XenBus driver?
 >>>
->>>
->>>> * When you say you are not using SELinux, could you be more specific?
->>>> It seems odd that you are not using SELinux but the panic is happening
->>>> in a SELinux hook.
->>>
->>> I just mean that, being Ubuntu,  the system (userland) isn't configured to
->>> use selinux.  SELinux is just enabled in the kernel config.
+>>> Thanks.
 >>
->> Thanks for the quick response, I'll setup an Ubuntu guest and see if I
->> can reproduce this ... something is odd.  Anything non-standard about
->> your guest install or anything else you think might be helpful?
+>> That case will work, but what this will break is launching the initial domain
+>> with a Xenstore stub domain already running (see below).
+>>
+>>>>
+>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>> ---
+>>>>  drivers/xen/xenbus/xenbus_comms.c |    2 +-
+>>>>  drivers/xen/xenbus/xenbus_probe.c |   62 +++++++++++++++++++++++++-----------
+>>>>  drivers/xen/xenbus/xenbus_xs.c    |    1 +
+>>>>  3 files changed, 45 insertions(+), 20 deletions(-)
+>>>>
+>>>> diff --git a/drivers/xen/xenbus/xenbus_comms.c b/drivers/xen/xenbus/xenbus_comms.c
+>>>> index 52fe7ad..c5aa55c 100644
+>>>> --- a/drivers/xen/xenbus/xenbus_comms.c
+>>>> +++ b/drivers/xen/xenbus/xenbus_comms.c
+>>>> @@ -224,7 +224,7 @@ int xb_init_comms(void)
+>>>>  		int err;
+>>>>  		err = bind_evtchn_to_irqhandler(xen_store_evtchn, wake_waiting,
+>>>>  						0, "xenbus", &xb_waitq);
+>>>> -		if (err <= 0) {
+>>>> +		if (err < 0) {
+>>>>  			printk(KERN_ERR "XENBUS request irq failed %i\n", err);
+>>>>  			return err;
+>>>>  		}
+>>>
+>>>> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+>>>> index b793723..a67ccc0 100644
+>>>> --- a/drivers/xen/xenbus/xenbus_probe.c
+>>>> +++ b/drivers/xen/xenbus/xenbus_probe.c
+>>>> @@ -719,37 +719,61 @@ static int __init xenstored_local_init(void)
+>>>>  	return err;
+>>>>  }
+>>>>  
+>>>> +enum xenstore_init {
+>>>> +	UNKNOWN,
+>>>> +	PV,
+>>>> +	HVM,
+>>>> +	LOCAL,
+>>>> +};
+>>>>  static int __init xenbus_init(void)
+>>>>  {
+>>>>  	int err = 0;
+>>>> +	enum xenstore_init usage = UNKNOWN;
+>>>> +	uint64_t v = 0;
+>>>>  
+>>>>  	if (!xen_domain())
+>>>>  		return -ENODEV;
+>>>>  
+>>>>  	xenbus_ring_ops_init();
+>>>>  
+>>>> -	if (xen_hvm_domain()) {
+>>>> -		uint64_t v = 0;
+>>>> -		err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
+>>>> -		if (err)
+>>>> -			goto out_error;
+>>>> -		xen_store_evtchn = (int)v;
+>>>> -		err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
+>>>> -		if (err)
+>>>> -			goto out_error;
+>>>> -		xen_store_mfn = (unsigned long)v;
+>>>> -		xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+>>>> -	} else {
+>>>> -		xen_store_evtchn = xen_start_info->store_evtchn;
+>>>> -		xen_store_mfn = xen_start_info->store_mfn;
+>>>> -		if (xen_store_evtchn)
+>>>> -			xenstored_ready = 1;
+>>>> -		else {
+>>>> +	if (xen_pv_domain())
+>>>> +		usage = PV;
+>>>> +	if (xen_hvm_domain())
+>>>> +		usage = HVM;
+>>
+>> The above is correct for domUs, and is overridden for dom0s:
+>>
+>>>> +	if (xen_hvm_domain() && xen_initial_domain())
+>>>> +		usage = LOCAL;
+>>>> +	if (xen_pv_domain() && !xen_start_info->store_evtchn)
+>>>> +		usage = LOCAL;
+>>
+>> Instead of these checks, I think it should just be:
+>>
+>> if (!xen_start_info->store_evtchn)
+>> 	usage = LOCAL;
+>>
+>> Any domain started after xenstore will have store_evtchn set, so if you don't
+>> have this set, you are either going to be running xenstore locally, or will
+>> use the ioctl to change it later (and so should still set up everything as if
+>> it will be running locally).
 > 
-> The problem seems to be that selinux_nf_ip_init() was called, which
-> registers the selinux_ipv4_ops (and ipv6).  Those should not get registered
-> if selinux ends up not being loaded (as in, if apparmor is loaded first),
-> since as you've found here the selinux lsm hooks won't be called to set
-> call selinux_sk_alloc_security().
+> That would be wrong for an HVM dom0 domain (at least on ARM), because
+> we don't have a start_info page at all.
 > 
-> I assume what's happening is that CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
-> set to 1, but selinux ended up being set to disabled after the
-> __initcall(selinux_nf_ip_init) ran?  Weird.
 > 
-Its not an Ubuntu kernel. The config has selinux set as the only LSM and
-it is configured to be on by default
+>>>> +	if (xen_pv_domain() && xen_start_info->store_evtchn)
+>>>> +		xenstored_ready = 1;
+>>
+>> This part can now just be moved unconditionally into case PV.
+> 
+> What about:
+> 
+> if (xen_pv_domain())
+>     usage = PV;
+> if (xen_hvm_domain())
+>     usage = HVM;
+> if (!xen_store_evtchn)
+>     usage = LOCAL;
+> 
+> and moving xenstored_ready in case PV, like you suggested.
+> 
+
+That looks correct, but you'd need to split up the switch statement in
+order to populate xen_store_evtchn before that last condition, which
+ends up pretty much eliminating the usage variable.
 
