@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030675Ab2HHRQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:16:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45861 "EHLO
+	id S1030654Ab2HHRQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:16:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45857 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030593Ab2HHROA (ORCPT
+	with ESMTP id S1030590Ab2HHROA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 13:14:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/11] perf tools: Fix parsing of 64 bit raw config value for 32 bit
-Date: Wed,  8 Aug 2012 14:13:40 -0300
-Message-Id: <1344446028-21381-4-git-send-email-acme@infradead.org>
+Subject: =?UTF-8?q?=5BPATCH=2005/11=5D=20perf=20list=3A=20Update=20documentation=20about=20raw=20event=20setup?=
+Date: Wed,  8 Aug 2012 14:13:42 -0300
+Message-Id: <1344446028-21381-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344446028-21381-1-git-send-email-acme@infradead.org>
 References: <1344446028-21381-1-git-send-email-acme@infradead.org>
@@ -26,151 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@amd.com>
 
-perf record fails on 32 bit with:
-
- invalid or unsupported event: 'r40000F7E0'
-
-Fixing this by parsing 64 bit num values.
+It was missing that only certain bit fields are passed to the config
+value which confused users. Updating it.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344361396-7237-4-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1344361396-7237-6-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |    6 +++---
- tools/perf/util/parse-events.h |    6 +++---
- tools/perf/util/parse-events.l |    4 ++--
- tools/perf/util/parse-events.y |   10 +++++-----
- 4 files changed, 13 insertions(+), 13 deletions(-)
+ tools/perf/Documentation/perf-list.txt |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 74a5af4..8bdfa3e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -551,7 +551,7 @@ static int config_attr(struct perf_event_attr *attr,
- }
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index ddc2252..232be51 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -15,6 +15,7 @@ DESCRIPTION
+ This command displays the symbolic event types which can be selected in the
+ various perf commands with the -e option.
  
- int parse_events_add_numeric(struct list_head **list, int *idx,
--			     unsigned long type, unsigned long config,
-+			     u32 type, u64 config,
- 			     struct list_head *head_config)
- {
- 	struct perf_event_attr attr;
-@@ -1005,7 +1005,7 @@ int parse_events__is_hardcoded_term(struct parse_events__term *term)
++[[EVENT_MODIFIERS]]
+ EVENT MODIFIERS
+ ---------------
  
- static int new_term(struct parse_events__term **_term, int type_val,
- 		    int type_term, char *config,
--		    char *str, long num)
-+		    char *str, u64 num)
- {
- 	struct parse_events__term *term;
+@@ -44,6 +45,11 @@ layout of IA32_PERFEVTSELx MSRs (see [Intel® 64 and IA-32 Architectures Softwar
+ of IA32_PERFEVTSELx MSRs) or AMD's PerfEvtSeln (see [AMD64 Architecture Programmer’s Manual Volume 2: System Programming], Page 344,
+ Figure 13-7 Performance Event-Select Register (PerfEvtSeln)).
  
-@@ -1034,7 +1034,7 @@ static int new_term(struct parse_events__term **_term, int type_val,
- }
++Note: Only the following bit fields can be set in x86 counter
++registers: event, umask, edge, inv, cmask. Esp. guest/host only and
++OS/user mode flags must be setup using <<EVENT_MODIFIERS, EVENT
++MODIFIERS>>.
++
+ Example:
  
- int parse_events__term_num(struct parse_events__term **term,
--			   int type_term, char *config, long num)
-+			   int type_term, char *config, u64 num)
- {
- 	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
- 			config, NULL, num);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ee9c218..163aad4 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -55,7 +55,7 @@ struct parse_events__term {
- 	char *config;
- 	union {
- 		char *str;
--		long  num;
-+		u64  num;
- 	} val;
- 	int type_val;
- 	int type_term;
-@@ -73,7 +73,7 @@ struct parse_events_data__terms {
- 
- int parse_events__is_hardcoded_term(struct parse_events__term *term);
- int parse_events__term_num(struct parse_events__term **_term,
--			   int type_term, char *config, long num);
-+			   int type_term, char *config, u64 num);
- int parse_events__term_str(struct parse_events__term **_term,
- 			   int type_term, char *config, char *str);
- int parse_events__term_clone(struct parse_events__term **new,
-@@ -83,7 +83,7 @@ int parse_events_modifier(struct list_head *list, char *str);
- int parse_events_add_tracepoint(struct list_head **list, int *idx,
- 				char *sys, char *event);
- int parse_events_add_numeric(struct list_head **list, int *idx,
--			     unsigned long type, unsigned long config,
-+			     u32 type, u64 config,
- 			     struct list_head *head_config);
- int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 384ca74..e4abdf2 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -15,10 +15,10 @@ YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
- 
- static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
--	long num;
-+	u64 num;
- 
- 	errno = 0;
--	num = strtoul(str, NULL, base);
-+	num = strtoull(str, NULL, base);
- 	if (errno)
- 		return PE_ERROR;
- 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 2bc5fbf..423d331 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -57,7 +57,7 @@ do { \
- %union
- {
- 	char *str;
--	unsigned long num;
-+	u64 num;
- 	struct list_head *head;
- 	struct parse_events__term *term;
- }
-@@ -207,7 +207,7 @@ PE_VALUE ':' PE_VALUE
- 	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_numeric(&list, &data->idx, $1, $3, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, &data->idx, (u32)$1, $3, NULL));
- 	$$ = list;
- }
- 
-@@ -282,7 +282,7 @@ PE_TERM '=' PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__term_str(&term, $1, NULL, $3));
-+	ABORT_ON(parse_events__term_str(&term, (int)$1, NULL, $3));
- 	$$ = term;
- }
- |
-@@ -290,7 +290,7 @@ PE_TERM '=' PE_VALUE
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__term_num(&term, $1, NULL, $3));
-+	ABORT_ON(parse_events__term_num(&term, (int)$1, NULL, $3));
- 	$$ = term;
- }
- |
-@@ -298,7 +298,7 @@ PE_TERM
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__term_num(&term, $1, NULL, 1));
-+	ABORT_ON(parse_events__term_num(&term, (int)$1, NULL, 1));
- 	$$ = term;
- }
- 
+ If the Intel docs for a QM720 Core i7 describe an event as:
 -- 
 1.7.9.2.358.g22243
 
