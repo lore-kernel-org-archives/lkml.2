@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030607Ab2HHRRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:17:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030474Ab2HHRRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:17:31 -0400
-Date: Wed, 8 Aug 2012 19:17:14 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/19] sched-numa rewrite
-Message-ID: <20120808171714.GM10459@redhat.com>
-References: <20120731191204.540691987@chello.nl>
+	id S1030579Ab2HHRSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:18:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57858 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030474Ab2HHRSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:18:12 -0400
+Message-ID: <50229F4A.3010002@pengutronix.de>
+Date: Wed, 08 Aug 2012 19:18:02 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731191204.540691987@chello.nl>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Kurt Van Dijck <kurt.van.dijck@eia.be>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: Re: [PATCH] can/softing: Fix potential memory leak in softing_load_fw()
+References: <1344438901-25005-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1344438901-25005-1-git-send-email-khoroshilov@ispras.ru>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1E3FA5183655B02D06137DED"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1E3FA5183655B02D06137DED
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 31, 2012 at 09:12:04PM +0200, Peter Zijlstra wrote:
-> Hi all,
-> 
-> After having had a talk with Rik about all this NUMA nonsense where he proposed
-> the scheme implemented in the next to last patch, I came up with a related
-> means of doing the home-node selection.
-> 
-> I've also switched to (ab)using PROT_NONE for driving the migration faults.
+On 08/08/2012 05:15 PM, Alexey Khoroshilov wrote:
+> Do not leak memory by updating pointer with potentially NULL realloc re=
+turn value.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-I'm glad we agree on the introduction of the numa hinting page faults.
+Thanks for the work,
+applied to can/master.
 
-I run a benchmark to compare your sched-numa rewrite with autonuma22:
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma-vs-sched-numa-rewrite-20120808.pdf
 
-> These patches go on top of tip/master with origin/master (Linus' tree) merged in.
+--------------enig1E3FA5183655B02D06137DED
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-It applied clean (with git am) on top of 3.6-rc1
-(0d7614f09c1ebdbaa1599a5aba7593f147bf96ee) which already had a pull of
-sched-core from tip and other tip bits. If that's not ok let me know
-which commit I should use, and I'll repeat.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-I released autonuma22 yesterday to provide an exact commit
-(f958aa119a8ec417571ea8bdb527182d8ebe8b68) in case somebody wants to
-reproduce the numbers on 2 node systems.
+iEYEARECAAYFAlAin0oACgkQjTAFq1RaXHPaiQCeN/jNtWYyGKc9JT8hlY7re9dI
+teoAn1LCRd0QVsy03TJqalQjowDfxE22
+=KS42
+-----END PGP SIGNATURE-----
 
-The autonuma-benchmark used to run the benchmark was at commit
-65d93e485f09e3c1005e8c55cb5b1f97bd3a9ed8 which matches tag 0.1:
-
-git clone git://gitorious.org/autonuma-benchmark/autonuma-benchmark.git
-
-I'll update the pdf shortly by adding 8 node results too.
-
-Thanks,
-Andrea
+--------------enig1E3FA5183655B02D06137DED--
