@@ -1,135 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab2HHKDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:03:07 -0400
+	id S1757987Ab2HHKDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:03:12 -0400
 Received: from mga02.intel.com ([134.134.136.20]:64865 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992Ab2HHKDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:03:04 -0400
+	id S1751992Ab2HHKDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 06:03:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,732,1336374000"; 
-   d="scan'208";a="177396281"
+   d="scan'208";a="177396339"
 From: Feng Tang <feng.tang@intel.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Robert Richter <robert.richter@amd.com>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>, Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v5 0/5] perf script: Add general event support to event handler of python script
-Date: Wed,  8 Aug 2012 17:57:50 +0800
-Message-Id: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
+        Stephane Eranian <eranian@google.com>, Feng Tang <feng.tang@intel.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH v5 2/5] perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
+Date: Wed,  8 Aug 2012 17:57:52 +0800
+Message-Id: <1344419875-21665-3-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
+References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo and all,
+Both perl and python script start processing events other than trace
+points, and it's useful to pass the resolved symbol and the dso info to
+the event handler in script for better analysis and statistics.
 
-Current python script can only handle trace point type of events, this
-patch serie try to follow Robert Richter's idea in commit 37a058ea0
-	"perf script: Add generic perl handler to process events"
-to similarly add a python handler for general events other than
-tracepoints.
+Struct thread is already a member of struct addr_location, using
+addr_location will keep the thread info, while providing additional
+symbol and dso info if exist, so that the script itself doesn't need to
+bother to do the symbol resolving and dso searching work.
 
-The first 3 patches have been reviewed and modified several times, 
-and 1/2 have your signed-off, Could you consider to pick them up?
-I've have rebased them on top of you perf/core branch with top
-commit 9782243.
-
-Also in v4, we added 2 RFC python scripts: EventClass.py as a libary and
-process_event.py as a sample to show to handle the general events.
-
-Here is a sample output of using the 2 scripts:
-
-feng@feng-i7:/dev/shm$perf record -a tree
-feng@feng-i7:/dev/shm$perf script -s process_event.py
-
----------------------------------
-There is 67 records in gen_events table
-Statistics about the general events grouped by thread/symbol/dso:
-
-               comm   number         histgram
-=============================================
-            swapper       51     =====#
-               perf       10     =
-               tree        4     ####
-        kworker/1:3        1     #
-               sshd        1     #
-
-                          symbol   number         histgram
-==========================================================
-           native_write_msr_safe       40     ====
-                  __lock_acquire        5     #####
-                      intel_idle        2     ##
-              native_sched_clock        2     ##
-                   __might_sleep        1     #
-                     __slab_free        1     #
-                   cpuidle_enter        1     #
-             generic_exec_single        1     #
-              generic_permission        1     #
-             hpet_msi_next_event        1     #
-                        irq_exit        1     #
-                  ktime_get_real        1     #
-                    load_balance        1     #
-                          memset        1     #
-                      n_tty_poll        1     #
-           prepare_ftrace_return        1     #
-                 sched_clock_cpu        1     #
-smp_call_function_single_interrupt        1     #
-                          strtok        1     #
-                task_waking_fair        1     #
-       tick_nohz_stop_sched_tick        1     #
-
-                                             dso   number         histgram
-==========================================================================
-                               [kernel.kallsyms]       66     ======######
-                             /lib/libc-2.12.1.so        1     #
-
-
-
-Please help to revew, thanks.
-
-- Feng
-
------------------------------
-Change logs:
-	Since v4:
-	* rebased with Arnaldo's git perf/core branch on top of
-	  commmit 9782243
-
-	Since v3:
-	* Add 2 RFC scripts: EventClass.py and process_event.py
-	* Rebased upon 3.5-rc4 d1346a6
-	* Add a check for whether the dso info exist
-	
-	Since v2:
-	* Correct some __unused usage
-	* Add a new parameter: event name to event handler
-
-	Since v1:
-	* Use dictory as the paramter passwd from c to python
-	* Use "process_event" name to comply with perl
-
-
-Feng Tang (5):
-  perf script: Add general python handler to process non-tracepoint
-    events
-  perf script: Replace "struct thread" with "struct addr_location" as a
-    parameter for "process_event()"
-  perf script/python: Pass event/thread/dso name and symbol info to
-    event handler in python
-  perf script: Add a python library EventClass.py
-  perf script: Add event_analyzing_sample.py as a sample for general
-    event handling
-
- tools/perf/builtin-script.c                        |    5 +-
- .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |   95 ++++++++++
- .../perf/scripts/python/event_analyzing_sample.py  |  193 ++++++++++++++++++++
- .../perf/util/scripting-engines/trace-event-perl.c |   11 +-
- .../util/scripting-engines/trace-event-python.c    |   85 +++++++++-
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1339999839-14007-3-git-send-email-feng.tang@intel.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-script.c                        |    5 +++--
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
+ .../util/scripting-engines/trace-event-python.c    |   13 +++++++------
  tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    5 +-
- 7 files changed, 384 insertions(+), 12 deletions(-)
- create mode 100755 tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
- create mode 100644 tools/perf/scripts/python/event_analyzing_sample.py
+ tools/perf/util/trace-event.h                      |    5 +++--
+ 5 files changed, 20 insertions(+), 16 deletions(-)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 6425612..30a9cb8 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -396,9 +396,10 @@ static void print_sample_bts(union perf_event *event,
+ 
+ static void process_event(union perf_event *event, struct perf_sample *sample,
+ 			  struct perf_evsel *evsel, struct machine *machine,
+-			  struct thread *thread)
++			  struct addr_location *al)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	struct thread *thread = al->thread;
+ 
+ 	if (output[attr->type].fields == 0)
+ 		return;
+@@ -511,7 +512,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
+ 
+-	scripting_ops->process_event(event, sample, evsel, machine, thread);
++	scripting_ops->process_event(event, sample, evsel, machine, &al);
+ 
+ 	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 20cefeb..1cde6aa 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -261,7 +261,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
+ 				    struct perf_sample *sample,
+ 				    struct perf_evsel *evsel,
+ 				    struct machine *machine __unused,
+-				    struct thread *thread)
++				    struct addr_location *al)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -272,6 +272,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
++	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	dSP;
+@@ -349,7 +350,7 @@ static void perl_process_event_generic(union perf_event *event,
+ 				       struct perf_sample *sample,
+ 				       struct perf_evsel *evsel,
+ 				       struct machine *machine __unused,
+-				       struct thread *thread __unused)
++				       struct addr_location *al __unused)
+ {
+ 	dSP;
+ 
+@@ -375,10 +376,10 @@ static void perl_process_event(union perf_event *event,
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct thread *thread)
++			       struct addr_location *al)
+ {
+-	perl_process_tracepoint(event, sample, evsel, machine, thread);
+-	perl_process_event_generic(event, sample, evsel, machine, thread);
++	perl_process_tracepoint(event, sample, evsel, machine, al);
++	perl_process_event_generic(event, sample, evsel, machine, al);
+ }
+ 
+ static void run_start_sub(void)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index b9010d8..24711b3 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -225,7 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine __unused,
+-				 struct thread *thread)
++				 struct addr_location *al)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+@@ -238,6 +238,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
++	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+@@ -342,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 					 struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct machine *machine __unused,
+-					 struct thread *thread __unused)
++					 struct addr_location *al __unused)
+ {
+ 	PyObject *handler, *retval, *t;
+ 	static char handler_name[64];
+@@ -361,7 +362,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 		goto exit;
+ 	}
+ 
+-	/* Pass 3 parameters: event_attr, perf_sample, raw data */
++	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
+ 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
+ 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
+ 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
+@@ -380,17 +381,17 @@ static void python_process_event(union perf_event *perf_event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine,
+-				 struct thread *thread)
++				 struct addr_location *al)
+ {
+ 	switch (evsel->attr.type) {
+ 	case PERF_TYPE_TRACEPOINT:
+ 		python_process_tracepoint(perf_event, sample, evsel,
+-					  machine, thread);
++					  machine, al);
+ 		break;
+ 	/* Reserve for future process_hw/sw/raw APIs */
+ 	default:
+ 		python_process_general_event(perf_event, sample, evsel,
+-					     machine, thread);
++					     machine, al);
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index aceb8ee..302ff26 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
+ 				      struct perf_sample *sample __unused,
+ 				      struct perf_evsel *evsel __unused,
+ 				      struct machine *machine __unused,
+-				      struct thread *thread __unused)
++				      struct addr_location *al __unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index cee1635..7575dfd 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -9,7 +9,6 @@ struct machine;
+ struct perf_sample;
+ union perf_event;
+ struct perf_tool;
+-struct thread;
+ 
+ extern int header_page_size_size;
+ extern int header_page_ts_size;
+@@ -76,6 +75,8 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ void tracing_data_put(struct tracing_data *tdata);
+ 
+ 
++struct addr_location;
++
+ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
+@@ -84,7 +85,7 @@ struct scripting_ops {
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct thread *thread);
++			       struct addr_location *al);
+ 	int (*generate_script) (struct pevent *pevent, const char *outfile);
+ };
+ 
+-- 
+1.7.1
 
