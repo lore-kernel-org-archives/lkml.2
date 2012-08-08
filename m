@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab2HHU0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 16:26:54 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:60048 "EHLO
+	id S1759247Ab2HHU0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 16:26:53 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:60049 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759162Ab2HHU0w (ORCPT
+	with ESMTP id S1759161Ab2HHU0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 16:26:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v2 20/41] TTY: add support for unnumbered device nodes
-Date: Wed,  8 Aug 2012 22:26:43 +0200
-Message-Id: <1344457604-12823-3-git-send-email-jslaby@suse.cz>
+Subject: [PATCH v2 21/41] TTY: move cdev_add to tty_register_device
+Date: Wed,  8 Aug 2012 22:26:44 +0200
+Message-Id: <1344457604-12823-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344457604-12823-1-git-send-email-jslaby@suse.cz>
 References: <1344368886-24033-1-git-send-email-jslaby@suse.cz>
@@ -21,115 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows drivers like ttyprintk to avoid hacks to create an
-unnumbered node in /dev. It used to set TTY_DRIVER_DYNAMIC_DEV in
-flags and call device_create on its own. That is incorrect, because
-TTY_DRIVER_DYNAMIC_DEV may be set only if tty_register_device is
-called explicitly.
+We need the /dev/ node not to be available before we call
+tty_register_device. Otherwise we might race with open and
+tty_struct->port might not be available at that time.
+
+This is not an issue now, but would be a problem after "TTY: use
+tty_port_register_device" is applied.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/char/ttyprintk.c   |   17 ++++-------------
- drivers/tty/tty_io.c       |    7 +++++--
- include/linux/tty_driver.h |    6 ++++++
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/tty/tty_io.c       |   48 +++++++++++++++++++++++++++++++++++++-------
+ include/linux/tty_driver.h |    2 +-
+ 2 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index be1c3fb..9e6272f 100644
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -178,13 +178,15 @@ static struct tty_driver *ttyprintk_driver;
- static int __init ttyprintk_init(void)
- {
- 	int ret = -ENOMEM;
--	void *rp;
- 
- 	tty_port_init(&tpk_port.port);
- 	tpk_port.port.ops = &null_ops;
- 	mutex_init(&tpk_port.port_write_mutex);
- 
--	ttyprintk_driver = alloc_tty_driver(1);
-+	ttyprintk_driver = tty_alloc_driver(1,
-+			TTY_DRIVER_RESET_TERMIOS |
-+			TTY_DRIVER_REAL_RAW |
-+			TTY_DRIVER_UNNUMBERED_NODE);
- 	if (!ttyprintk_driver)
- 		return ret;
- 
-@@ -195,8 +197,6 @@ static int __init ttyprintk_init(void)
- 	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
- 	ttyprintk_driver->init_termios = tty_std_termios;
- 	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
--	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
--		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
- 	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
- 
- 	ret = tty_register_driver(ttyprintk_driver);
-@@ -205,15 +205,6 @@ static int __init ttyprintk_init(void)
- 		goto error;
- 	}
- 
--	/* create our unnumbered device */
--	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
--				ttyprintk_driver->name);
--	if (IS_ERR(rp)) {
--		printk(KERN_ERR "Couldn't create ttyprintk device\n");
--		ret = PTR_ERR(rp);
--		goto error;
--	}
--
- 	return 0;
- 
- error:
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 3098fa1..59a73af 100644
+index 59a73af..f83d450 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1213,7 +1213,10 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
-  */
- static void tty_line_name(struct tty_driver *driver, int index, char *p)
- {
--	sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
-+		strcpy(p, driver->name);
-+	else
-+		sprintf(p, "%s%d", driver->name, index + driver->name_base);
- }
+@@ -2991,6 +2991,15 @@ EXPORT_SYMBOL_GPL(tty_put_char);
  
+ struct class *tty_class;
+ 
++static int tty_cdev_add(struct tty_driver *driver, dev_t dev,
++		unsigned int index, unsigned int count)
++{
++	/* init here, since reused cdevs cause crashes */
++	cdev_init(&driver->cdevs[index], &tty_fops);
++	driver->cdevs[index].owner = driver->owner;
++	return cdev_add(&driver->cdevs[index], dev, count);
++}
++
  /**
-@@ -3061,7 +3064,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+  *	tty_register_device - register a tty device
+  *	@driver: the tty driver that describes the tty device
+@@ -3013,8 +3022,10 @@ struct class *tty_class;
+ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+ 				   struct device *device)
+ {
++	struct device *ret;
+ 	char name[64];
+ 	dev_t dev = MKDEV(driver->major, driver->minor_start) + index;
++	bool cdev = false;
+ 
+ 	if (index >= driver->num) {
+ 		printk(KERN_ERR "Attempt to register invalid tty line number "
+@@ -3027,7 +3038,18 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+ 	else
+ 		tty_line_name(driver, index, name);
+ 
+-	return device_create(tty_class, device, dev, NULL, name);
++	if (!(driver->flags & TTY_DRIVER_DYNAMIC_ALLOC)) {
++		int error = tty_cdev_add(driver, dev, index, 1);
++		if (error)
++			return ERR_PTR(error);
++		cdev = true;
++	}
++
++	ret = device_create(tty_class, device, dev, NULL, name);
++	if (IS_ERR(ret) && cdev)
++		cdev_del(&driver->cdevs[index]);
++
++	return ret;
+ }
+ EXPORT_SYMBOL(tty_register_device);
+ 
+@@ -3046,6 +3068,8 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
+ {
+ 	device_destroy(tty_class,
+ 		MKDEV(driver->major, driver->minor_start) + index);
++	if (!(driver->flags & TTY_DRIVER_DYNAMIC_ALLOC))
++		cdev_del(&driver->cdevs[index]);
+ }
+ EXPORT_SYMBOL(tty_unregister_device);
+ 
+@@ -3062,6 +3086,7 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+ 		unsigned long flags)
+ {
  	struct tty_driver *driver;
++	unsigned int cdevs = 1;
  	int err;
  
--	if (!lines)
-+	if (!lines || (flags & TTY_DRIVER_UNNUMBERED_NODE && lines > 1))
- 		return ERR_PTR(-EINVAL);
+ 	if (!lines || (flags & TTY_DRIVER_UNNUMBERED_NODE && lines > 1))
+@@ -3095,6 +3120,13 @@ struct tty_driver *__tty_alloc_driver(unsigned int lines, struct module *owner,
+ 			err = -ENOMEM;
+ 			goto err_free_all;
+ 		}
++		cdevs = lines;
++	}
++
++	driver->cdevs = kcalloc(cdevs, sizeof(*driver->cdevs), GFP_KERNEL);
++	if (!driver->cdevs) {
++		err = -ENOMEM;
++		goto err_free_all;
+ 	}
  
- 	driver = kzalloc(sizeof(struct tty_driver), GFP_KERNEL);
+ 	return driver;
+@@ -3129,8 +3161,10 @@ static void destruct_tty_driver(struct kref *kref)
+ 				tty_unregister_device(driver, i);
+ 		}
+ 		proc_tty_unregister_driver(driver);
+-		cdev_del(&driver->cdev);
++		if (driver->flags & TTY_DRIVER_DYNAMIC_ALLOC)
++			cdev_del(&driver->cdevs[0]);
+ 	}
++	kfree(driver->cdevs);
+ 	kfree(driver->ports);
+ 	kfree(driver->termios);
+ 	kfree(driver->ttys);
+@@ -3180,11 +3214,11 @@ int tty_register_driver(struct tty_driver *driver)
+ 	if (error < 0)
+ 		goto err;
+ 
+-	cdev_init(&driver->cdev, &tty_fops);
+-	driver->cdev.owner = driver->owner;
+-	error = cdev_add(&driver->cdev, dev, driver->num);
+-	if (error)
+-		goto err_unreg_char;
++	if (driver->flags & TTY_DRIVER_DYNAMIC_ALLOC) {
++		error = tty_cdev_add(driver, dev, 0, driver->num);
++		if (error)
++			goto err_unreg_char;
++	}
+ 
+ 	mutex_lock(&tty_mutex);
+ 	list_add(&driver->tty_drivers, &tty_drivers);
 diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index 1a85f00..44e05b7 100644
+index 44e05b7..dd976cf 100644
 --- a/include/linux/tty_driver.h
 +++ b/include/linux/tty_driver.h
-@@ -394,6 +394,11 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
-  * TTY_DRIVER_DYNAMIC_ALLOC -- do not allocate structures which are
-  *	needed per line for this driver as it would waste memory.
-  *	The driver will take care.
-+ *
-+ * TTY_DRIVER_UNNUMBERED_NODE -- do not create numbered /dev nodes. In
-+ *	other words create /dev/ttyprintk and not /dev/ttyprintk0.
-+ *	Applicable only when a driver for a single tty device is
-+ *	being allocated.
-  */
- #define TTY_DRIVER_INSTALLED		0x0001
- #define TTY_DRIVER_RESET_TERMIOS	0x0002
-@@ -402,6 +407,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
- #define TTY_DRIVER_DEVPTS_MEM		0x0010
- #define TTY_DRIVER_HARDWARE_BREAK	0x0020
- #define TTY_DRIVER_DYNAMIC_ALLOC	0x0040
-+#define TTY_DRIVER_UNNUMBERED_NODE	0x0080
- 
- /* tty driver types */
- #define TTY_DRIVER_TYPE_SYSTEM		0x0001
+@@ -289,7 +289,7 @@ struct tty_operations {
+ struct tty_driver {
+ 	int	magic;		/* magic number for this structure */
+ 	struct kref kref;	/* Reference management */
+-	struct cdev cdev;
++	struct cdev *cdevs;
+ 	struct module	*owner;
+ 	const char	*driver_name;
+ 	const char	*name;
 -- 
 1.7.10.4
 
