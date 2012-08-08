@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964846Ab2HHJIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:08:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60086 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab2HHJIN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:08:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344390033-14139-1-git-send-email-scott.liu@emc.com.tw>
-References: <1344390033-14139-1-git-send-email-scott.liu@emc.com.tw>
-Date: Wed, 8 Aug 2012 11:08:12 +0200
-Message-ID: <CAN+gG=FTZwX-fLdodD-P=F8NdC-9V0cQR2ZecR3SjhSQPjoTAA@mail.gmail.com>
-Subject: Re: [PATCH] hid:hid-multitouch: add mt_resume for ELAN's production
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Scott Liu <scott.liu@emc.com.tw>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eleghost@gmail.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1757920Ab2HHJKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:10:54 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:51731 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753062Ab2HHJKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 05:10:52 -0400
+From: Vladimir Gratinskiy <gratinskiy@ispras.ru>
+To: "Jianyun Li" <jyli@marvell.com>
+Cc: Vladimir Gratinskiy <gratinskiy@ispras.ru>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH 1/2] scsi: Use GFP_ATOMIC in kzalloc().
+Date: Wed,  8 Aug 2012 12:41:30 +0400
+Message-Id: <1344415290-10486-1-git-send-email-gratinskiy@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
+Calling memory allocation function from the context of interrupt:
+request_irq(mhba->pdev->irq, mvumi_isr_handler, IRQF_SHARED, "mvumi", mhba);
+Function mvumi_isr_handler() calls mvumi_handshake(mhba) that calls
+mvumi_init_data(mhba). In mvumi_init_data() there is function
+mvumi_alloc_mem_resource(mhba,..) that calls kzalloc(sizeof(*res), GFP_KERNEL).
+In the case of GFP_KERNEL flag, function execution can be preempted,
+because a greater number of operations to find and allocate memory
+blocks is executed.
 
-There is a few white space problems and a maybe an oops.
-Sorry for not having seen this before.
+The patch change GFP_KERNEL flag to GFP_ATOMIC.
 
-On Wed, Aug 8, 2012 at 3:40 AM, Scott Liu <scott.liu@emc.com.tw> wrote:
-> Some of ELAN’s production need to issue set_idle when resume.
->
-> Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
-> ---
->  drivers/hid/hid-ids.h        |    3 +++
->  drivers/hid/hid-multitouch.c |   26 ++++++++++++++++++++++++++
->  2 files changed, 29 insertions(+)
->
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 41c34f2..703aaed 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -829,4 +829,7 @@
->  #define USB_VENDOR_ID_PRIMAX   0x0461
->  #define USB_DEVICE_ID_PRIMAX_KEYBOARD  0x4e05
->
-> +#define USB_VENDOR_ID_ELAN     0x04f3
-> +#define USB_DEVICE_ID_ELAN_MOCCA       0x000a
-> +
->  #endif
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 59c8b5c..a086a16 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -767,6 +767,31 @@ static int mt_reset_resume(struct hid_device *hdev)
->         mt_set_input_mode(hdev);
->         return 0;
->  }
-> +
-> +static int mt_resume(struct hid_device *hdev)
-> +{
-> +       struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-> +       struct usb_host_interface *interface = intf->cur_altsetting;
+Found by Linux Driver Verification project (linuxtesting.org).
 
-There is at least one bluetooth multitouch device, so maybe intf will
-be null....
+Signed-off-by: Vladimir Gratinskiy <gratinskiy@ispras.ru>
+---
+ drivers/scsi/mvumi.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> +
-> +       struct usb_device *dev = hid_to_usb_dev(hdev);
-> +
-> +       if (hdev->vendor == USB_VENDOR_ID_ELAN &&
-> +                       hdev->product == USB_DEVICE_ID_ELAN_MOCCA) {
+diff --git a/drivers/scsi/mvumi.c b/drivers/scsi/mvumi.c
+index 88cf1db..097f72f 100644
+--- a/drivers/scsi/mvumi.c
++++ b/drivers/scsi/mvumi.c
+@@ -118,7 +118,7 @@ static int mvumi_map_pci_addr(struct pci_dev *dev, void **addr_array)
+ static struct mvumi_res *mvumi_alloc_mem_resource(struct mvumi_hba *mhba,
+ 				enum resource_type type, unsigned int size)
+ {
+-	struct mvumi_res *res = kzalloc(sizeof(*res), GFP_KERNEL);
++	struct mvumi_res *res = kzalloc(sizeof(*res), GFP_ATOMIC);
+ 
+ 	if (!res) {
+ 		dev_err(&mhba->pdev->dev,
+@@ -128,7 +128,7 @@ static struct mvumi_res *mvumi_alloc_mem_resource(struct mvumi_hba *mhba,
+ 
+ 	switch (type) {
+ 	case RESOURCE_CACHED_MEMORY:
+-		res->virt_addr = kzalloc(size, GFP_KERNEL);
++		res->virt_addr = kzalloc(size, GFP_ATOMIC);
+ 		if (!res->virt_addr) {
+ 			dev_err(&mhba->pdev->dev,
+ 				"unable to allocate memory,size = %d.\n", size);
+-- 
+1.7.9.5
 
-moving this test at the beginning will prevent us from null or random pointers.
-
-> +
-> +               usb_control_msg(dev,
-> +                                               usb_sndctrlpipe(dev, 0),
-> +                               HID_REQ_SET_IDLE,
-
-mix tab/spaces....
-
-> +                                               USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-> +                                               0,
-> +                               interface->desc.bInterfaceNumber,
-
-again....
-
-> +                                               NULL,
-> +                                               0,
-> +                                               USB_CTRL_SET_TIMEOUT);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
->  #endif
->
->  static void mt_remove(struct hid_device *hdev)
-> @@ -1092,6 +1117,7 @@ static struct hid_driver mt_driver = {
->         .event = mt_event,
->  #ifdef CONFIG_PM
->         .reset_resume = mt_reset_resume,
-> +       .resume=mt_resume,
-
-spaces are need before and after the equal sign....
-
-Cheers,
-Benjamin
-
->  #endif
->  };
->
-> --
-> 1.7.9.5
->
