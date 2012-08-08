@@ -1,412 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab2HHHEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 03:04:49 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16901 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757201Ab2HHHEG (ORCPT
+	id S932163Ab2HHHHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:07:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56859 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab2HHHHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 03:04:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 08 Aug 2012 00:04:00 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>, <olof@lixom.net>
-CC: <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 3/3] ARM: tegra: cardhu: add dt entry for fixed regulators
-Date: Wed, 8 Aug 2012 12:18:47 +0530
-Message-ID: <1344408527-32051-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1344408527-32051-1-git-send-email-ldewangan@nvidia.com>
-References: <1344408527-32051-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 8 Aug 2012 03:07:10 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c-i801: Add device tree support
+Date: Wed,  8 Aug 2012 09:06:47 +0200
+Message-Id: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.11.4
+X-Provags-ID: V02:K0:X8670k85awk4a8u5szAsX0LojCObF/VVzW9SD9n8kyY
+ I1ey8fj6znb3codsHHhl8ecAJ0I/heBGHBjXPC7pRRFMWhnkMh
+ mmrVB8lUOkm8BfFDe76EzFsctjZzPFnT6EjfFNmuiZH2ySZHPI
+ Jc10S/QVUvU9IMRDugKpQLb2/rXf36iT+THMKVmTKnrnY+oHds
+ qjSz4EirNj/JfFMP38cHpjTyU5EdZX+lyfepF2b9TBx2e8s4QP
+ 35G0Zdu2AcuCSYicYzmdCYLOaH6Xqee6AfkTzY21SXDHP23Kwc
+ nX8aTnwQgW6YtIea3XyY5yBa6Z1rxNSb+FfLm20ZkaAQfBNmjH
+ xbhHnoeMTK3EtixfR+tc6EcC8qTUh2D4xpunWYBm7s1eFdm6yM
+ 9+g7zS8AHsIwM3Fz3BsoZ/OnwH8Imhk+kFjSsLXcsSO4v0O1+s
+ 59tdI
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cadhu have multiple power rails which are controlled by
-GPIOs. Add support of these power rail control through
-fixed regulators. Add entry for all fixed regulators for
-cardhu-a02 and a04.
-The details are taken from downstream kernel.
-Also add the tps65910-LDO5 entry and make it always ON
-to suppy power to SDMMC. Once the sd driver support
-regulator handling, this flag will be remove.
+This commit adds support for probing slave devices parsed from the
+device tree.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- arch/arm/boot/dts/tegra30-cardhu-a02.dts |   76 ++++++++++++++
- arch/arm/boot/dts/tegra30-cardhu-a04.dts |   88 +++++++++++++++++
- arch/arm/boot/dts/tegra30-cardhu.dtsi    |  158 ++++++++++++++++++++++++++++++
- 3 files changed, 322 insertions(+), 0 deletions(-)
+ drivers/i2c/busses/i2c-i801.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/tegra30-cardhu-a02.dts b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
-index dd870b7..3fe7e23 100644
---- a/arch/arm/boot/dts/tegra30-cardhu-a02.dts
-+++ b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
-@@ -7,5 +7,81 @@
- / {
- 	model = "NVIDIA Tegra30 Cardhu A02 evaluation board";
- 	compatible = "nvidia,cardhu-a02", "nvidia,cardhu", "nvidia,tegra30";
-+
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ddr_reg: regulator@100 {
-+			compatible = "regulator-fixed";
-+			reg = <100>;
-+			regulator-name = "vdd_ddr";
-+			regulator-min-microvolt = <1500000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&pmic 6 0>;
-+		};
-+
-+		sys_3v3_reg: regulator@101 {
-+			compatible = "regulator-fixed";
-+			reg = <101>;
-+			regulator-name = "sys_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&pmic 7 0>;
-+		};
-+
-+		usb1_vbus_reg: regulator@102 {
-+			compatible = "regulator-fixed";
-+			reg = <102>;
-+			regulator-name = "usb1_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&gpio 68 0>; /* GPIO PI4 */
-+			gpio-open-drain;
-+			vin-supply = <&vdd_5v0_reg>;
-+		};
-+
-+		usb3_vbus_reg: regulator@103 {
-+			compatible = "regulator-fixed";
-+			reg = <103>;
-+			regulator-name = "usb3_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&gpio 63 0>; /* GPIO PH7 */
-+			gpio-open-drain;
-+			vin-supply = <&vdd_5v0_reg>;
-+		};
-+
-+		vdd_5v0_reg: regulator@104 {
-+			compatible = "regulator-fixed";
-+			reg = <104>;
-+			regulator-name = "5v0";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&pmic 2 0>;
-+		};
-+
-+		vdd_bl_reg: regulator@105 {
-+			compatible = "regulator-fixed";
-+			reg = <105>;
-+			regulator-name = "vdd_bl";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&gpio 83 0>; /* GPIO PK3 */
-+		};
-+	};
- };
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 6f00785..b5311cf 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -80,6 +80,7 @@
+ #include <linux/slab.h>
+ #include <linux/wait.h>
+ #include <linux/err.h>
++#include <linux/of_i2c.h>
  
-diff --git a/arch/arm/boot/dts/tegra30-cardhu-a04.dts b/arch/arm/boot/dts/tegra30-cardhu-a04.dts
-index a4cae6c..7f1ac8b 100644
---- a/arch/arm/boot/dts/tegra30-cardhu-a04.dts
-+++ b/arch/arm/boot/dts/tegra30-cardhu-a04.dts
-@@ -7,4 +7,92 @@
- / {
- 	model = "NVIDIA Tegra30 Cardhu A04 (A05, A06, A07) evaluation board";
- 	compatible = "nvidia,cardhu-a04", "nvidia,cardhu", "nvidia,tegra30";
-+
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ddr_reg: regulator@100 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "ddr";
-+			reg = <100>;
-+			regulator-min-microvolt = <1500000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&pmic 7 0>;
-+		};
-+
-+		sys_3v3_reg: regulator@101 {
-+			compatible = "regulator-fixed";
-+			reg = <101>;
-+			regulator-name = "sys_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&pmic 6 0>;
-+		};
-+
-+		usb1_vbus_reg: regulator@102 {
-+			compatible = "regulator-fixed";
-+			reg = <102>;
-+			regulator-name = "usb1_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&gpio 238 0>; /* GPIO PDD6 */
-+			gpio-open-drain;
-+			vin-supply = <&vdd_5v0_reg>;
-+		};
-+
-+		usb3_vbus_reg: regulator@103 {
-+			compatible = "regulator-fixed";
-+			reg = <103>;
-+			regulator-name = "usb3_vbus";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&gpio 236 0>; /* GPIO PDD4 */
-+			gpio-open-drain;
-+			vin-supply = <&vdd_5v0_reg>;
-+		};
-+
-+		vdd_5v0_reg: regulator@104 {
-+			compatible = "regulator-fixed";
-+			reg = <104>;
-+			regulator-name = "5v0";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&pmic 8 0>;
-+		};
-+
-+		vdd_bl_reg: regulator@105 {
-+			compatible = "regulator-fixed";
-+			reg = <105>;
-+			regulator-name = "vdd_bl";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&gpio 234 0>; /* GPIO PDD2 */
-+		};
-+
-+		vdd_bl2_reg: regulator@106 {
-+			compatible = "regulator-fixed";
-+			reg = <106>;
-+			regulator-name = "vdd_bl2";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&gpio 232 0>; /* GPIO PDD0 */
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-index c156273..e40f3fd 100644
---- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
-+++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-@@ -161,6 +161,7 @@
- 			vcc1-supply = <&vdd_ac_bat_reg>;
- 			vcc2-supply = <&vdd_ac_bat_reg>;
- 			vcc3-supply = <&vio_reg>;
-+			vcc4-supply = <&vdd_5v0_reg>;
- 			vcc5-supply = <&vdd_ac_bat_reg>;
- 			vcc6-supply = <&vdd2_reg>;
- 			vcc7-supply = <&vdd_ac_bat_reg>;
-@@ -233,6 +234,15 @@
- 					regulator-always-on;
- 				};
+ #if defined CONFIG_I2C_MUX || defined CONFIG_I2C_MUX_MODULE
+ #include <linux/gpio.h>
+@@ -1238,6 +1239,7 @@ static int __devinit i801_probe(struct pci_dev *dev,
+ 		goto exit_free_irq;
+ 	}
  
-+				ldo5_reg: regulator@8 {
-+					reg = <8>;
-+					regulator-compatible = "ldo5";
-+					regulator-name = "vddio_sdmmc,avdd_vdac";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+				};
-+
- 				ldo6_reg: regulator@9 {
- 					reg = <9>;
- 					regulator-compatible = "ldo6";
-@@ -299,6 +309,154 @@
- 			regulator-max-microvolt = <5000000>;
- 			regulator-always-on;
- 		};
-+
-+		cam_1v8_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "cam_1v8";
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+			enable-active-high;
-+			gpio = <&gpio 220 0>; /* gpio PBB4 */
-+			vin-supply = <&vio_reg>;
-+		};
-+
-+		cp_5v_reg: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "cp_5v";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&pmic 0 0>; /* PMIC TPS65911 GPIO0 */
-+		};
-+
-+		emmc_3v3_reg: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "emmc_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&gpio 25 0>; /* gpio PD1 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		modem_3v3_reg: regulator@4 {
-+			compatible = "regulator-fixed";
-+			reg = <4>;
-+			regulator-name = "modem_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 30 0>; /* gpio PD6>
-+		};
-+
-+		pex_hvdd_3v3_reg: regulator@5 {
-+			compatible = "regulator-fixed";
-+			reg = <5>;
-+			regulator-name = "pex_hvdd_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 95 0>; /* gpio PL7 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_cam1_ldo_reg: regulator@6 {
-+			compatible = "regulator-fixed";
-+			reg = <6>;
-+			regulator-name = "vdd_cam1_ldo";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <2800000>;
-+			enable-active-high;
-+			gpio = <&gpio 142 0>; /* gpio PR6 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_cam2_ldo_reg: regulator@7 {
-+			compatible = "regulator-fixed";
-+			reg = <7>;
-+			regulator-name = "vdd_cam2_ldo";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <2800000>;
-+			enable-active-high;
-+			gpio = <&gpio 143 0>; /* gpio PR7 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_cam3_ldo_reg: regulator@8 {
-+			compatible = "regulator-fixed";
-+			reg = <8>;
-+			regulator-name = "vdd_cam3_ldo";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 144 0>; /* gpio PS0 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_com_reg: regulator@9 {
-+			compatible = "regulator-fixed";
-+			reg = <9>;
-+			regulator-name = "vdd_com";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 24 0>; /* gpio PD0 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_fuse_3v3_reg: regulator@10 {
-+			compatible = "regulator-fixed";
-+			reg = <10>;
-+			regulator-name = "vdd_fuse_3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 94 0>; /* gpio PL6 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_pnl1_reg: regulator@11 {
-+			compatible = "regulator-fixed";
-+			reg = <11>;
-+			regulator-name = "vdd_pnl1";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			enable-active-high;
-+			gpio = <&gpio 92 0>; /* gpio PL4 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_sdmmc1_reg: regulator@12 {
-+			compatible = "regulator-fixed";
-+			reg = <12>;
-+			regulator-name = "vdd_sdmmc1";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			enable-active-high;
-+			gpio = <&gpio 31 0>; /* gpio PD7 */
-+			vin-supply = <&sys_3v3_reg>;
-+		};
-+
-+		vdd_vid_reg: regulator@13 {
-+			compatible = "regulator-fixed";
-+			reg = <13>;
-+			regulator-name = "vddio_vid";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			enable-active-high;
-+			gpio = <&gpio 152 0>; /* GPIO PT0 */
-+			gpio-open-drain;
-+			vin-supply = <&vdd_5v0_reg>;
-+		};
- 	};
- 
- 	sound {
++	of_i2c_register_devices(&priv->adapter);
+ 	i801_probe_optional_slaves(priv);
+ 	/* We ignore errors - multiplexing is optional */
+ 	i801_add_mux(priv);
 -- 
-1.7.1.1
+1.7.11.4
 
