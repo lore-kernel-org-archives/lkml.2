@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030605Ab2HHROB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:14:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54087 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030444Ab2HHRN5 (ORCPT
+	id S1030675Ab2HHRQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:16:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45861 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030593Ab2HHROA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:13:57 -0400
+	Wed, 8 Aug 2012 13:14:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/11] tools lib traceevent: Fix cast from pointer to integer for 32 bit
-Date: Wed,  8 Aug 2012 14:13:41 -0300
-Message-Id: <1344446028-21381-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/11] perf tools: Fix parsing of 64 bit raw config value for 32 bit
+Date: Wed,  8 Aug 2012 14:13:40 -0300
+Message-Id: <1344446028-21381-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344446028-21381-1-git-send-email-acme@infradead.org>
 References: <1344446028-21381-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@amd.com>
 
-Fixing the integer cast reported by the following warning:
+perf record fails on 32 bit with:
 
- tools/lib/traceevent/event-parse.c:3488:14: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+ invalid or unsupported event: 'r40000F7E0'
+
+Fixing this by parsing 64 bit num values.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344361396-7237-5-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1344361396-7237-4-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/perf/util/parse-events.c |    6 +++---
+ tools/perf/util/parse-events.h |    6 +++---
+ tools/perf/util/parse-events.l |    4 ++--
+ tools/perf/util/parse-events.y |   10 +++++-----
+ 4 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 5f34aa3..b7c2c49 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -31,6 +31,7 @@
- #include <stdarg.h>
- #include <ctype.h>
- #include <errno.h>
-+#include <stdint.h>
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 74a5af4..8bdfa3e 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -551,7 +551,7 @@ static int config_attr(struct perf_event_attr *attr,
+ }
  
- #include "event-parse.h"
- #include "event-utils.h"
-@@ -3485,7 +3486,7 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 			if (!string->str)
- 				die("malloc str");
+ int parse_events_add_numeric(struct list_head **list, int *idx,
+-			     unsigned long type, unsigned long config,
++			     u32 type, u64 config,
+ 			     struct list_head *head_config)
+ {
+ 	struct perf_event_attr attr;
+@@ -1005,7 +1005,7 @@ int parse_events__is_hardcoded_term(struct parse_events__term *term)
  
--			args[i] = (unsigned long long)string->str;
-+			args[i] = (uintptr_t)string->str;
- 			strings = string;
- 			trace_seq_destroy(&str);
- 			break;
+ static int new_term(struct parse_events__term **_term, int type_val,
+ 		    int type_term, char *config,
+-		    char *str, long num)
++		    char *str, u64 num)
+ {
+ 	struct parse_events__term *term;
+ 
+@@ -1034,7 +1034,7 @@ static int new_term(struct parse_events__term **_term, int type_val,
+ }
+ 
+ int parse_events__term_num(struct parse_events__term **term,
+-			   int type_term, char *config, long num)
++			   int type_term, char *config, u64 num)
+ {
+ 	return new_term(term, PARSE_EVENTS__TERM_TYPE_NUM, type_term,
+ 			config, NULL, num);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index ee9c218..163aad4 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -55,7 +55,7 @@ struct parse_events__term {
+ 	char *config;
+ 	union {
+ 		char *str;
+-		long  num;
++		u64  num;
+ 	} val;
+ 	int type_val;
+ 	int type_term;
+@@ -73,7 +73,7 @@ struct parse_events_data__terms {
+ 
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+-			   int type_term, char *config, long num);
++			   int type_term, char *config, u64 num);
+ int parse_events__term_str(struct parse_events__term **_term,
+ 			   int type_term, char *config, char *str);
+ int parse_events__term_clone(struct parse_events__term **new,
+@@ -83,7 +83,7 @@ int parse_events_modifier(struct list_head *list, char *str);
+ int parse_events_add_tracepoint(struct list_head **list, int *idx,
+ 				char *sys, char *event);
+ int parse_events_add_numeric(struct list_head **list, int *idx,
+-			     unsigned long type, unsigned long config,
++			     u32 type, u64 config,
+ 			     struct list_head *head_config);
+ int parse_events_add_cache(struct list_head **list, int *idx,
+ 			   char *type, char *op_result1, char *op_result2);
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 384ca74..e4abdf2 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -15,10 +15,10 @@ YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
+ 
+ static int __value(YYSTYPE *yylval, char *str, int base, int token)
+ {
+-	long num;
++	u64 num;
+ 
+ 	errno = 0;
+-	num = strtoul(str, NULL, base);
++	num = strtoull(str, NULL, base);
+ 	if (errno)
+ 		return PE_ERROR;
+ 
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 2bc5fbf..423d331 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -57,7 +57,7 @@ do { \
+ %union
+ {
+ 	char *str;
+-	unsigned long num;
++	u64 num;
+ 	struct list_head *head;
+ 	struct parse_events__term *term;
+ }
+@@ -207,7 +207,7 @@ PE_VALUE ':' PE_VALUE
+ 	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, &data->idx, $1, $3, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx, (u32)$1, $3, NULL));
+ 	$$ = list;
+ }
+ 
+@@ -282,7 +282,7 @@ PE_TERM '=' PE_NAME
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__term_str(&term, $1, NULL, $3));
++	ABORT_ON(parse_events__term_str(&term, (int)$1, NULL, $3));
+ 	$$ = term;
+ }
+ |
+@@ -290,7 +290,7 @@ PE_TERM '=' PE_VALUE
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__term_num(&term, $1, NULL, $3));
++	ABORT_ON(parse_events__term_num(&term, (int)$1, NULL, $3));
+ 	$$ = term;
+ }
+ |
+@@ -298,7 +298,7 @@ PE_TERM
+ {
+ 	struct parse_events__term *term;
+ 
+-	ABORT_ON(parse_events__term_num(&term, $1, NULL, 1));
++	ABORT_ON(parse_events__term_num(&term, (int)$1, NULL, 1));
+ 	$$ = term;
+ }
+ 
 -- 
 1.7.9.2.358.g22243
 
