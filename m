@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab2HHTPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:15:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57532 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab2HHTOY convert rfc822-to-8bit (ORCPT
+	id S932980Ab2HHTPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:15:33 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45783 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643Ab2HHTPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:14:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 11/11] pm/drivers: fix use of SIMPLE_DEV_PM_OPS
-Date: Wed, 8 Aug 2012 17:26:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <201208081622.29777.arnd@arndb.de> <s5hwr19fi6h.wl%tiwai@suse.de>
-In-Reply-To: <s5hwr19fi6h.wl%tiwai@suse.de>
+	Wed, 8 Aug 2012 15:15:30 -0400
+Message-ID: <5022BAA2.90606@us.ibm.com>
+Date: Wed, 08 Aug 2012 12:14:42 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201208081726.21878.arnd@arndb.de>
-X-Provags-ID: V02:K0:sGpDBc4Dk1sBPsrslX3ZIy5nFSlvytaPeuJbD+NiD3e
- xypF+3C71sssrQa9CIIE1JJP37gD4xqAgQqch55KoVgvTVOtmp
- xIhV2yvaKDn+Ao4Due6f3oFTrvqt9grltpXxDk35LPm45AlcYF
- yvtccFgZMmHG1g9pF9Ikym3yTAzsWGXWhcv53rU5S7omrHy+l3
- TrEnnYhnwjQX/AZzCm+K1k7NBNL3BjLarV6WLZmZVhLqsyklsB
- DnIsYyUuxQIf78juqEe/DpDPs1KH34YUfENC+UVPrBImrvfXsR
- Zl22uRpGVtn43XDLLJtvjvLPGetk3mTXChiC8ei5F4SwyaCM1M
- 86MD68ZqwlRuQjHeQTfg=
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Paul Moore <paul@paul-moore.com>, lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com> <20120807221731.GA25441@mail.hallyn.com> <502198B4.8040503@linaro.org>
+In-Reply-To: <502198B4.8040503@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080819-6148-0000-0000-00000871C486
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 August 2012, Takashi Iwai wrote:
-> At Wed, 8 Aug 2012 16:22:29 +0000,
-> Arnd Bergmann wrote:
-> > > Laxman already posted a patch for this, which I'm hoping will make it
-> > > into 3.6, through the I2C tree.
-> > > 
-> > > http://www.spinics.net/lists/linux-i2c/msg09359.html
-> > 
-> > Ok, dropping this one then.
-> 
-> I'm going to fix the similar errors in sound tree tomorrow, too.
-> 
+On 08/07/2012 03:37 PM, John Stultz wrote:
+> On 08/07/2012 03:17 PM, Serge E. Hallyn wrote:
+>> Quoting Paul Moore (paul@paul-moore.com):
+>>> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> 
+>>> wrote:
+>>>> On 08/07/2012 02:50 PM, Paul Moore wrote:
+>>>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
+>>>>> wrote:
+>>>>>> Hi,
+>>>>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL 
+>>>>>> pointer
+>>>>>> dereferences in selinux_ip_postroute_compat(). It looks like the 
+>>>>>> sksec
+>>>>>> value
+>>>>>> is null and we die in the following line:
+>>>>>>
+>>>>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+>>>>>>
+>>>>>> This triggers every time I shutdown the machine, but has also 
+>>>>>> triggered
+>>>>>> randomly after a few hours.
+[snip]
+>> The problem seems to be that selinux_nf_ip_init() was called, which
+>> registers the selinux_ipv4_ops (and ipv6).  Those should not get 
+>> registered
+>> if selinux ends up not being loaded (as in, if apparmor is loaded 
+>> first),
+>> since as you've found here the selinux lsm hooks won't be called to set
+>> call selinux_sk_alloc_security().
+> This sounds about right:
+> root@testvm:~# dmesg | grep SELinux
+> [    0.004578] SELinux:  Initializing.
+> [    0.005704] SELinux:  Starting in permissive mode
+> [    2.235034] SELinux:  Registering netfilter hooks
+>
+>> I assume what's happening is that 
+>> CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
+>> set to 1, but selinux ended up being set to disabled after the
+>> __initcall(selinux_nf_ip_init) ran?  Weird.
+> This looks right as well:
+>
+> # zcat config.gz | grep SELINUX
+> CONFIG_SECURITY_SELINUX=y
+> CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+> CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
+> CONFIG_SECURITY_SELINUX_DISABLE=y
+> CONFIG_SECURITY_SELINUX_DEVELOP=y
+> CONFIG_SECURITY_SELINUX_AVC_STATS=y
+> CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
+> # CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+> CONFIG_DEFAULT_SECURITY_SELINUX=y
+>
+>
+> Since the problem isn't completely obvious, I'm starting a bisection 
+> to narrow this down some more.
 
-Ok. this leaves the omap-rng driver, and my patch comes down to the below.
-Thanks!
+So I bisected this down and it seems to be the following commit:
 
-	Arnd
+commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
+Author: Eric Dumazet <edumazet@google.com>
+Date:   Thu Jul 19 07:34:03 2012 +0000
 
-8<----
+     ipv4: tcp: remove per net tcp_sock
 
->From d83e9e0e5c0e41a0ee2ba6293c8be21e54988f99 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Sat, 4 Aug 2012 07:11:34 +0000
-Subject: [PATCH] omap-rng: fix use of SIMPLE_DEV_PM_OPS
 
-omap_rng_suspend and omap_rng_resume are unused if CONFIG_PM is enabled
-but CONFIG_PM_SLEEP is disabled. I found this while building all defconfig
-files on ARM. It's not clear to me if this is the right solution, but
-at least it makes the code consistent again.
+It doesn't revert totally cleanly, but after fixing up the rejections 
+and booting with this patch removed on top of Linus' head the oops on 
+shutdown goes away.
 
-Without this patch, building omap1_defconfig results in:
+thanks
+-john
 
-drivers/char/hw_random/omap-rng.c:165:12: warning: 'omap_rng_suspend' defined but not used [-Wunused-function]
-drivers/char/hw_random/omap-rng.c:171:12: warning: 'omap_rng_resume' defined but not used [-Wunused-function]
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
-index d706bd0e..4fbdceb 100644
---- a/drivers/char/hw_random/omap-rng.c
-+++ b/drivers/char/hw_random/omap-rng.c
-@@ -160,7 +160,7 @@ static int __exit omap_rng_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- 
- static int omap_rng_suspend(struct device *dev)
- {
 
