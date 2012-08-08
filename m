@@ -1,145 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab2HHW6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 18:58:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55229 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683Ab2HHW6p (ORCPT
+	id S1758600Ab2HHXDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 19:03:44 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47485 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758236Ab2HHXDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 18:58:45 -0400
-Date: Wed, 8 Aug 2012 15:58:39 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 08/12] block: Introduce new bio_split()
-Message-ID: <20120808225839.GG6983@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-9-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344290921-25154-9-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Aug 2012 19:03:43 -0400
+Date: Wed, 08 Aug 2012 16:03:41 -0700 (PDT)
+Message-Id: <20120808.160341.846489589039687208.davem@davemloft.net>
+To: paolo.valente@unimore.it
+Cc: shemminger@vyatta.com, jhs@mojatatu.com, fchecconi@gmail.com,
+        rizzo@iet.unipi.it, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] sched: add missing group change to
+ qfq_change_class
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120807172724.GA13729@paolo-ThinkPad-W520>
+References: <20120807172724.GA13729@paolo-ThinkPad-W520>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Paolo Valente <paolo.valente@unimore.it>
+Date: Tue, 7 Aug 2012 19:27:25 +0200
 
-On Mon, Aug 06, 2012 at 03:08:37PM -0700, Kent Overstreet wrote:
->  /**
-> + * bio_split - split a bio
-> + * @bio:	bio to split
-> + * @sectors:	number of sectors to split from the front of @bio
-> + * @gfp:	gfp mask
-> + * @bs:		bio set to allocate from
-> + *
-> + * Allocates and returns a new bio which represents @sectors from the start of
-> + * @bio, and updates @bio to represent the remaining sectors.
-> + *
-> + * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
-> + * unchanged.
+> [Resending again, as the text was corrupted by the email client]
+> 
+> To speed up operations, QFQ internally divides classes into
+> groups. Which group a class belongs to depends on the ratio between
+> the maximum packet length and the weight of the class. Unfortunately
+> the function qfq_change_class lacks the steps for changing the group
+> of a class when the ratio max_pkt_len/weight of the class changes.
+> 
+> For example, when the last of the following three commands is
+> executed, the group of class 1:1 is not correctly changed:
+> 
+> tc disc add dev XXX root handle 1: qfq
+> tc class add dev XXX parent 1: qfq classid 1:1 weight 1
+> tc class change dev XXX parent 1: classid 1:1 qfq weight 4
+> 
+> Not changing the group of a class does not affect the long-term
+> bandwidth guaranteed to the class, as the latter is independent of the
+> maximum packet length, and correctly changes (only) if the weight of
+> the class changes. In contrast, if the group of the class is not
+> updated, the class is still guaranteed the short-term bandwidth and
+> packet delay related to its old group, instead of the guarantees that
+> it should receive according to its new weight and/or maximum packet
+> length. This may also break service guarantees for other classes.
+> This patch adds the missing operations.
+> 
+> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
 
-Umm.... I don't know.  This is rather confusing.  The function may
-return new or old bios?  What's the rationale behind it?  Return
-ERR_PTR(-EINVAL) instead?
-
-> + *
-> + * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
-> + * bvec boundry; it is the caller's responsibility to ensure that @bio is not
-> + * freed before the split.
-
-This is somewhat error-prone.  Given how splits are used now, this
-might not be a big issue but it isn't difficult to imagine how this
-could go subtly wrong.  More on this.
-
-> + *
-> + * BIG FAT WARNING:
-> + *
-> + * If you're calling this from under generic_make_request() (i.e.
-> + * current->bio_list != NULL), you should mask out __GFP_WAIT and punt to
-> + * workqueue if the allocation fails. Otherwise, your code will probably
-> + * deadlock.
-
-If the condition is detectable, WARN_ON_ONCE() please.
-
-> + * You can't allocate more than once from the same bio pool without submitting
-> + * the previous allocations (so they'll eventually complete and deallocate
-> + * themselves), but if you're under generic_make_request() those previous
-> + * allocations won't submit until you return . And if you have to split bios,
-                                               ^
-					       extra space
-> + * you should expect that some bios will require multiple splits.
-> + */
-> +struct bio *bio_split(struct bio *bio, int sectors,
-> +		      gfp_t gfp, struct bio_set *bs)
-> +{
-> +	unsigned idx, vcnt = 0, nbytes = sectors << 9;
-> +	struct bio_vec *bv;
-> +	struct bio *ret = NULL;
-> +
-> +	BUG_ON(sectors <= 0);
-> +
-> +	if (sectors >= bio_sectors(bio))
-> +		return bio;
-> +
-> +	trace_block_split(bdev_get_queue(bio->bi_bdev), bio,
-> +			  bio->bi_sector + sectors);
-> +
-> +	bio_for_each_segment(bv, bio, idx) {
-> +		vcnt = idx - bio->bi_idx;
-> +
-> +		if (!nbytes) {
-> +			ret = bio_alloc_bioset(gfp, 0, bs);
-> +			if (!ret)
-> +				return NULL;
-> +
-> +			ret->bi_io_vec = bio_iovec(bio);
-> +			ret->bi_flags |= 1 << BIO_CLONED;
-> +			break;
-> +		} else if (nbytes < bv->bv_len) {
-> +			ret = bio_alloc_bioset(gfp, ++vcnt, bs);
-> +			if (!ret)
-> +				return NULL;
-> +
-> +			memcpy(ret->bi_io_vec, bio_iovec(bio),
-> +			       sizeof(struct bio_vec) * vcnt);
-> +
-> +			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
-> +			bv->bv_offset	+= nbytes;
-> +			bv->bv_len	-= nbytes;
-> +			break;
-> +		}
-
-Ummm... ISTR reviewing this code and getting confused by bio_alloc
-inside bio_for_each_segment() loop and commenting something about
-that.  Yeah, this one.
-
-  http://thread.gmane.org/gmane.linux.kernel.device-mapper.devel/15790/focus=370
-
-So, I actually have reviewed this but didn't get any response and
-majority of the issues I raised aren't addressed and you sent the
-patch to me again?  What the hell, Kent?
-
-> +
-> +		nbytes -= bv->bv_len;
-> +	}
-> +
-> +	ret->bi_bdev	= bio->bi_bdev;
-> +	ret->bi_sector	= bio->bi_sector;
-> +	ret->bi_size	= sectors << 9;
-> +	ret->bi_rw	= bio->bi_rw;
-> +	ret->bi_vcnt	= vcnt;
-> +	ret->bi_max_vecs = vcnt;
-> +	ret->bi_end_io	= bio->bi_end_io;
-
-Is this safe?  Why isn't this chaining completion of split bio to the
-original one?
-
-Thanks.
-
--- 
-tejun
+Applied, thanks.
