@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab2HHXDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 19:03:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47485 "EHLO
+	id S1758720Ab2HHXEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 19:04:30 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47496 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758236Ab2HHXDn (ORCPT
+	with ESMTP id S1758261Ab2HHXE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 19:03:43 -0400
-Date: Wed, 08 Aug 2012 16:03:41 -0700 (PDT)
-Message-Id: <20120808.160341.846489589039687208.davem@davemloft.net>
-To: paolo.valente@unimore.it
-Cc: shemminger@vyatta.com, jhs@mojatatu.com, fchecconi@gmail.com,
-        rizzo@iet.unipi.it, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] sched: add missing group change to
- qfq_change_class
+	Wed, 8 Aug 2012 19:04:29 -0400
+Date: Wed, 08 Aug 2012 16:04:28 -0700 (PDT)
+Message-Id: <20120808.160428.2244694881256062176.davem@davemloft.net>
+To: ordex@autistici.org
+Cc: jj@chaosbits.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        b.a.t.m.a.n@lists.open-mesh.org, siwu@hrz.tu-chemnitz.de,
+        lindner_marek@yahoo.de
+Subject: Re: [PATCH] batman-adv: Fix mem leak in the
+ batadv_tt_local_event() function
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120807172724.GA13729@paolo-ThinkPad-W520>
-References: <20120807172724.GA13729@paolo-ThinkPad-W520>
+In-Reply-To: <20120807185036.GG3891@ritirata.org>
+References: <alpine.LNX.2.00.1208072030500.3227@swampdragon.chaosbits.net>
+	<20120807185036.GG3891@ritirata.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,34 +27,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Valente <paolo.valente@unimore.it>
-Date: Tue, 7 Aug 2012 19:27:25 +0200
+From: Antonio Quartulli <ordex@autistici.org>
+Date: Tue, 7 Aug 2012 20:50:36 +0200
 
-> [Resending again, as the text was corrupted by the email client]
+> On Tue, Aug 07, 2012 at 08:32:34PM +0200, Jesper Juhl wrote:
+>> Memory is allocated for 'tt_change_node' with kmalloc().
+>> 'tt_change_node' may go out of scope really being used for anything
+>> (except have a few members initialized) if we hit the 'del:' label.
+>> This patch makes sure we free the memory in that case.
+>> 
+>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > 
-> To speed up operations, QFQ internally divides classes into
-> groups. Which group a class belongs to depends on the ratio between
-> the maximum packet length and the weight of the class. Unfortunately
-> the function qfq_change_class lacks the steps for changing the group
-> of a class when the ratio max_pkt_len/weight of the class changes.
-> 
-> For example, when the last of the following three commands is
-> executed, the group of class 1:1 is not correctly changed:
-> 
-> tc disc add dev XXX root handle 1: qfq
-> tc class add dev XXX parent 1: qfq classid 1:1 weight 1
-> tc class change dev XXX parent 1: classid 1:1 qfq weight 4
-> 
-> Not changing the group of a class does not affect the long-term
-> bandwidth guaranteed to the class, as the latter is independent of the
-> maximum packet length, and correctly changes (only) if the weight of
-> the class changes. In contrast, if the group of the class is not
-> updated, the class is still guaranteed the short-term bandwidth and
-> packet delay related to its old group, instead of the guarantees that
-> it should receive according to its new weight and/or maximum packet
-> length. This may also break service guarantees for other classes.
-> This patch adds the missing operations.
-> 
-> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
+> Acked-by: Antonio Quartulli <ordex@autistici.org>
 
 Applied, thanks.
