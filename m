@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab2HHAy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 20:54:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42802 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2HHAyZ (ORCPT
+	id S1754157Ab2HHA4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:56:17 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54962 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab2HHA4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 20:54:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208080015.31359.rjw@sisk.pl>
-References: <1343251216-24106-1-git-send-email-ccross@android.com>
-	<201208080015.31359.rjw@sisk.pl>
-Date: Tue, 7 Aug 2012 17:54:24 -0700
-X-Google-Sender-Auth: iNQ7Id6LRcsOsHW2PaZ6H415hQk
-Message-ID: <CAMbhsRT5pHkVWPf5u=+hqWhAgAD_kDb+DSSx+PG-nAJ5DHdhng@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
-From: Colin Cross <ccross@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 7 Aug 2012 20:56:16 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-5d-5021b92e07c1
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH] compaction: fix deferring compaction mistake
+Date: Wed,  8 Aug 2012 09:57:44 +0900
+Message-Id: <1344387464-10037-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 3:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, July 25, 2012, Colin Cross wrote:
->> The cpu hotplug notifier gets called in both atomic and non-atomic
->> contexts, it is not always safe to lock a mutex.  Filter out all events
->> except the six necessary ones, which are all sleepable, before taking
->> the mutex.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->
-> Has this been applied already?
+[1] fixed bad deferring policy but made mistake about checking
+compact_order_failed in __compact_pgdat so it can't update
+compact_order_failed with new order. It ends up preventing working
+of deffering policy rightly. This patch fixes it.
 
-It's not in Linus' tree, and I haven't heard anything from Len.
+[1] aff62249, vmscan: only defer compaction for failed order and higher
+
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/compaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index e78cb96..b6984e2 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -861,7 +861,7 @@ static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+ 		if (cc->order > 0) {
+ 			int ok = zone_watermark_ok(zone, cc->order,
+ 						low_wmark_pages(zone), 0, 0);
+-			if (ok && cc->order > zone->compact_order_failed)
++			if (ok && cc->order >= zone->compact_order_failed)
+ 				zone->compact_order_failed = cc->order + 1;
+ 			/* Currently async compaction is never deferred. */
+ 			else if (!ok && cc->sync)
+-- 
+1.7.9.5
+
