@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030362Ab2HHJn0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:43:26 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:41198 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964819Ab2HHJmG (ORCPT
+	id S1030338Ab2HHJnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:43:24 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:56491 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964926Ab2HHJmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 05:42:06 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
@@ -16,9 +16,9 @@ Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
         Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH 07/11] ARM: OMAP/ASoC: Zoom2: Let the codec to handle the hs_extmute GPIO
-Date: Wed,  8 Aug 2012 12:41:23 +0300
-Message-Id: <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 08/11] ASoC/MFD: twl4030: Remove set_hs_extmute callback from platform data
+Date: Wed,  8 Aug 2012 12:41:24 +0300
+Message-Id: <1344418887-5262-9-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,82 +26,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the use of set_hs_extmute callback and let the codec driver to
-handle the extmute GPIO.
+We no longer have users for the set_hs_extmute callback which has been
+replaced by hs_extmute_gpio/hs_extmute_disable_level parameters so the
+codec driver can handle the external mute if it is needed by the board.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/board-zoom-peripherals.c  |    9 ++-------
- arch/arm/mach-omap2/include/mach/board-zoom.h |    2 --
- sound/soc/omap/zoom2.c                        |    4 ----
- 3 files changed, 2 insertions(+), 13 deletions(-)
+ include/linux/i2c/twl.h    |    2 --
+ sound/soc/codecs/twl4030.c |    6 ------
+ 2 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-zoom-peripherals.c b/arch/arm/mach-omap2/board-zoom-peripherals.c
-index b797cb2..a7d3b04 100644
---- a/arch/arm/mach-omap2/board-zoom-peripherals.c
-+++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
-@@ -34,6 +34,7 @@
- #include "common-board-devices.h"
- 
- #define OMAP_ZOOM_WLAN_PMENA_GPIO	(101)
-+#define ZOOM2_HEADSET_EXTMUTE_GPIO	(153)
- #define OMAP_ZOOM_WLAN_IRQ_GPIO		(162)
- 
- #define LCD_PANEL_ENABLE_GPIO		(7 + OMAP_MAX_GPIO_LINES)
-@@ -244,12 +245,6 @@ static int zoom_twl_gpio_setup(struct device *dev,
- 	return ret;
- }
- 
--/* EXTMUTE callback function */
--static void zoom2_set_hs_extmute(int mute)
--{
--	gpio_set_value(ZOOM2_HEADSET_EXTMUTE_GPIO, mute);
--}
--
- static struct twl4030_gpio_platform_data zoom_gpio_data = {
- 	.gpio_base	= OMAP_MAX_GPIO_LINES,
- 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
-@@ -279,7 +274,7 @@ static int __init omap_i2c_init(void)
- 
- 		codec_data->ramp_delay_value = 3;	/* 161 ms */
- 		codec_data->hs_extmute = 1;
--		codec_data->set_hs_extmute = zoom2_set_hs_extmute;
-+		codec_data->hs_extmute_gpio = ZOOM2_HEADSET_EXTMUTE_GPIO;
- 	}
- 	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &zoom_twldata);
- 	omap_register_i2c_bus(2, 400, NULL, 0);
-diff --git a/arch/arm/mach-omap2/include/mach/board-zoom.h b/arch/arm/mach-omap2/include/mach/board-zoom.h
-index 775fdc3..2e94869 100644
---- a/arch/arm/mach-omap2/include/mach/board-zoom.h
-+++ b/arch/arm/mach-omap2/include/mach/board-zoom.h
-@@ -8,5 +8,3 @@
- extern int __init zoom_debugboard_init(void);
- extern void __init zoom_peripherals_init(void);
- extern void __init zoom_display_init(void);
--
--#define ZOOM2_HEADSET_EXTMUTE_GPIO	153
-diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
-index 920e0d9..df97a41 100644
---- a/sound/soc/omap/zoom2.c
-+++ b/sound/soc/omap/zoom2.c
-@@ -191,9 +191,6 @@ static int __init zoom2_soc_init(void)
- 	BUG_ON(gpio_request(ZOOM2_HEADSET_MUX_GPIO, "hs_mux") < 0);
- 	gpio_direction_output(ZOOM2_HEADSET_MUX_GPIO, 0);
- 
--	BUG_ON(gpio_request(ZOOM2_HEADSET_EXTMUTE_GPIO, "ext_mute") < 0);
--	gpio_direction_output(ZOOM2_HEADSET_EXTMUTE_GPIO, 0);
--
- 	return 0;
- 
- err1:
-@@ -207,7 +204,6 @@ module_init(zoom2_soc_init);
- static void __exit zoom2_soc_exit(void)
- {
- 	gpio_free(ZOOM2_HEADSET_MUX_GPIO);
--	gpio_free(ZOOM2_HEADSET_EXTMUTE_GPIO);
- 
- 	platform_device_unregister(zoom2_snd_device);
- }
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 75ce6d1..c9c1fd2 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -666,8 +666,6 @@ struct twl4030_codec_data {
+ 	unsigned int check_defaults:1;
+ 	unsigned int reset_registers:1;
+ 	unsigned int hs_extmute:1;
+-	void (*set_hs_extmute)(int mute); /* Deprecated, use hs_extmute_gpio and
+-					     hs_extmute_disable_level */
+ 	int hs_extmute_gpio;
+ 	unsigned int hs_extmute_disable_level:1; /* the GPIO state to disable
+ 						    the extmute */
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 0630040..1247c4a 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -770,9 +770,6 @@ static void headset_ramp(struct snd_soc_codec *codec, int ramp)
+ 		if (gpio_is_valid(pdata->hs_extmute_gpio)) {
+ 			gpio_set_value(pdata->hs_extmute_gpio,
+ 				       !pdata->hs_extmute_disable_level);
+-		} else if (pdata->set_hs_extmute) {
+-			dev_warn(codec->dev, "set_hs_extmute is deprecated\n");
+-			pdata->set_hs_extmute(1);
+ 		} else {
+ 			hs_pop |= TWL4030_EXTMUTE;
+ 			twl4030_write(codec, TWL4030_REG_HS_POPN_SET, hs_pop);
+@@ -812,9 +809,6 @@ static void headset_ramp(struct snd_soc_codec *codec, int ramp)
+ 		if (gpio_is_valid(pdata->hs_extmute_gpio)) {
+ 			gpio_set_value(pdata->hs_extmute_gpio,
+ 				       pdata->hs_extmute_disable_level);
+-		} else if (pdata->set_hs_extmute) {
+-			dev_warn(codec->dev, "set_hs_extmute is deprecated\n");
+-			pdata->set_hs_extmute(0);
+ 		} else {
+ 			hs_pop &= ~TWL4030_EXTMUTE;
+ 			twl4030_write(codec, TWL4030_REG_HS_POPN_SET, hs_pop);
 -- 
 1.7.8.6
 
