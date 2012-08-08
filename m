@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab2HHIHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:07:17 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:58227 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab2HHIHD (ORCPT
+	id S932421Ab2HHIHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:07:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3715 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab2HHIH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:07:03 -0400
-Date: Wed, 8 Aug 2012 09:06:57 +0100
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Stefan Priebe <s.priebe@profihost.ag>
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, kvm@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Wolf <kwolf@redhat.com>
-Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
-Message-ID: <20120808080657.GA16887@stefanha-thinkpad.localdomain>
-References: <5018FC9B.8040808@redhat.com>
- <501E4615.7060801@profihost.ag>
- <501E4AFD.3020806@redhat.com>
- <501E96BB.5060702@profihost.ag>
- <501EC2E2.8010802@profihost.ag>
- <501F8226.9090500@redhat.com>
- <501F846C.50903@profihost.ag>
- <501FB4A8.6080609@redhat.com>
- <501FBAA2.6050205@redhat.com>
- <5021FE4B.5070701@profihost.ag>
+	Wed, 8 Aug 2012 04:07:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 08 Aug 2012 01:06:51 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <w.sang@pengutronix.de>, <olof@lixom.net>,
+        <khali@linux-fr.org>
+CC: <ben-linux@fluff.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 3/4] ARM: tegra: clock: add connection name in i2c clock entry
+Date: Wed, 8 Aug 2012 13:21:33 +0530
+Message-ID: <1344412294-2420-4-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1344412294-2420-1-git-send-email-ldewangan@nvidia.com>
+References: <1344412294-2420-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5021FE4B.5070701@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12080808-1948-0000-0000-0000029D95CF
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 07:51:07AM +0200, Stefan Priebe wrote:
-> Any news? Was this applied upstream?
+Add connection name "div-clk" for the i2c clock entry.
 
-Kevin is ill.  He has asked me to review and test patches in his
-absence.  When he gets back later this week this will get picked up (and
-included in QEMU 1.2).
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/mach-tegra/tegra20_clocks_data.c |    8 ++++----
+ arch/arm/mach-tegra/tegra30_clocks_data.c |   10 +++++-----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-Here is the tree, it includes this patch:
-
-https://github.com/stefanha/qemu/commits/for-kevin
-
-Stefan
+diff --git a/arch/arm/mach-tegra/tegra20_clocks_data.c b/arch/arm/mach-tegra/tegra20_clocks_data.c
+index 7312ecd..c1318c2 100644
+--- a/arch/arm/mach-tegra/tegra20_clocks_data.c
++++ b/arch/arm/mach-tegra/tegra20_clocks_data.c
+@@ -889,10 +889,10 @@ PERIPH_CLK(la,		"la",			NULL,	76,	0x1f8,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX
+ PERIPH_CLK(owr,		"tegra_w1",		NULL,	71,	0x1cc,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71);
+ PERIPH_CLK(nor,		"nor",			NULL,	42,	0x1d0,	92000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71); /* requires min voltage */
+ PERIPH_CLK(mipi,	"mipi",			NULL,	50,	0x174,	60000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71); /* scales with voltage */
+-PERIPH_CLK(i2c1,	"tegra-i2c.0",		NULL,	12,	0x124,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
+-PERIPH_CLK(i2c2,	"tegra-i2c.1",		NULL,	54,	0x198,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
+-PERIPH_CLK(i2c3,	"tegra-i2c.2",		NULL,	67,	0x1b8,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
+-PERIPH_CLK(dvc,		"tegra-i2c.3",		NULL,	47,	0x128,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
++PERIPH_CLK(i2c1,	"tegra-i2c.0",		"div-clk", 12,	0x124,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
++PERIPH_CLK(i2c2,	"tegra-i2c.1",		"div-clk", 54,	0x198,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
++PERIPH_CLK(i2c3,	"tegra-i2c.2",		"div-clk", 67,	0x1b8,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
++PERIPH_CLK(dvc,		"tegra-i2c.3",		"div-clk", 47,	0x128,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U16);
+ PERIPH_CLK(i2c1_i2c,	"tegra-i2c.0",		"i2c",	0,	0,	72000000,  mux_pllp_out3,			0);
+ PERIPH_CLK(i2c2_i2c,	"tegra-i2c.1",		"i2c",	0,	0,	72000000,  mux_pllp_out3,			0);
+ PERIPH_CLK(i2c3_i2c,	"tegra-i2c.2",		"i2c",	0,	0,	72000000,  mux_pllp_out3,			0);
+diff --git a/arch/arm/mach-tegra/tegra30_clocks_data.c b/arch/arm/mach-tegra/tegra30_clocks_data.c
+index eae85b7..45da437 100644
+--- a/arch/arm/mach-tegra/tegra30_clocks_data.c
++++ b/arch/arm/mach-tegra/tegra30_clocks_data.c
+@@ -1070,11 +1070,11 @@ PERIPH_CLK(la,		"la",			NULL,	76,	0x1f8,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX
+ PERIPH_CLK(owr,		"tegra_w1",		NULL,	71,	0x1cc,	26000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71 | PERIPH_ON_APB);
+ PERIPH_CLK(nor,		"nor",			NULL,	42,	0x1d0,	127000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71); /* requires min voltage */
+ PERIPH_CLK(mipi,	"mipi",			NULL,	50,	0x174,	60000000,  mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71 | PERIPH_ON_APB); /* scales with voltage */
+-PERIPH_CLK(i2c1,	"tegra-i2c.0",		NULL,	12,	0x124,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
+-PERIPH_CLK(i2c2,	"tegra-i2c.1",		NULL,	54,	0x198,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
+-PERIPH_CLK(i2c3,	"tegra-i2c.2",		NULL,	67,	0x1b8,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
+-PERIPH_CLK(i2c4,	"tegra-i2c.3",		NULL,	103,	0x3c4,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
+-PERIPH_CLK(i2c5,	"tegra-i2c.4",		NULL,	47,	0x128,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
++PERIPH_CLK(i2c1,	"tegra-i2c.0",		"div-clk", 12,	0x124,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
++PERIPH_CLK(i2c2,	"tegra-i2c.1",		"div-clk", 54,	0x198,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
++PERIPH_CLK(i2c3,	"tegra-i2c.2",		"div-clk", 67,	0x1b8,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
++PERIPH_CLK(i2c4,	"tegra-i2c.3",		"div-clk", 103,	0x3c4,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
++PERIPH_CLK(i2c5,	"tegra-i2c.4",		"div-clk", 47,	0x128,	26000000,  mux_pllp_clkm,		MUX | DIV_U16 | PERIPH_ON_APB);
+ PERIPH_CLK(uarta,	"tegra-uart.0",		NULL,	6,	0x178,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71 | DIV_U71_UART | PERIPH_ON_APB);
+ PERIPH_CLK(uartb,	"tegra-uart.1",		NULL,	7,	0x17c,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71 | DIV_U71_UART | PERIPH_ON_APB);
+ PERIPH_CLK(uartc,	"tegra-uart.2",		NULL,	55,	0x1a0,	800000000, mux_pllp_pllc_pllm_clkm,	MUX | DIV_U71 | DIV_U71_UART | PERIPH_ON_APB);
+-- 
+1.7.1.1
 
