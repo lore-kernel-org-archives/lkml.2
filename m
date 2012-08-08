@@ -1,44 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab2HHAMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 20:12:12 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58099 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751873Ab2HHAMJ (ORCPT
+	id S1752584Ab2HHAeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:34:11 -0400
+Received: from ishtar.tlinx.org ([173.164.175.65]:46080 "EHLO
+	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2HHAeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 20:12:09 -0400
-X-Sasl-enc: z7CZXt3h+sHFzqf4KIL2ptGVXdxNsaI+wEmHqleZTOk0 1344384728
-Date: Tue, 7 Aug 2012 17:12:07 -0700
-From: "greg@kroah.com" <greg@kroah.com>
-To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "smurf@smurf.noris.de" <smurf@smurf.noris.de>,
-        "gustavo@padovan.org" <gustavo@padovan.org>,
-        "Liuqifeng (Qifeng)" <qifeng.liuqifeng@huawei.com>
-Subject: Re: [PATCH 1/8] USB:support the new interfaces of Huawei Data Card
- devices in option driver
-Message-ID: <20120808001207.GC14456@kroah.com>
-References: <910F9D9E13B84F4C8FA771DC9BDE99F326D85860@szxeml546-mbs.china.huawei.com>
+	Tue, 7 Aug 2012 20:34:09 -0400
+X-Greylist: delayed 1261 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Aug 2012 20:34:09 EDT
+Message-ID: <5021AF10.2040308@tlinx.org>
+Date: Tue, 07 Aug 2012 17:13:04 -0700
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F326D85860@szxeml546-mbs.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: NETRTLINK: Device not found moving from 3.2.21 -> 3.3.6, on 2 ethernet interfaces...???  (worse in 3.4)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:05:18AM +0000, Fangxiaozhi (Franko) wrote:
-> From: fangxiaozhi <huananhu@huawei.com> 
-> 1. This patch is based on the kernel of 3.5 
-> 2. In this patch, we add new micro for matching the series USB devices with vendor ID and interface information.
-> 3. In this patch, we add new declarations into option.c to support the new interfaces of Huawei Data Card devices. And at the same time, remove the redundant declarations from option.c.
-> Signed-off-by: fangxiaozhi <huananhu@huawei.com>
->  -----------------------
 
-You say this is patch 1 of 8, where are the other 8 patches?
 
-confused,
 
-greg k-h
+I tried upgrading directly  from 3.2.5 -> 3.4.4.  Had two probs 
+(the one mentioned in this email, and inability to set MTU size
+on the other card under 3.4.4).  So, I thought to break it down --
+first upgrading to current 3.2 (.22 at the time), then 3.3.6, 
+and then 3.4.4.  
+
+First was went to 3.2.22, which works (running it now) 
+
+Then I tried 3.3.6 -- ethernet related messages from bootlog are below 
+-- you can it finds the broadcom NetXtremeII cards and udev renames 
+the devs back according to it's rules, but NETRTLINK isn't seeing it.
+
+These rename actions are the same under the current kernel and
+stem from trying to keep device names constant over years of
+HW changes -- i.e. they are normal
+
+Note -- "ip link" lists the interface as "down" w/no address.. but try 
+bringing it up:     NTRTLINK says interface not found...?
+
+Any ideas on what might be causing this?  I've combed over the options in
+config(xconfig) at least 4 times now in detail and have tried variations
+but don't see anything that could be causing this -- near as I can tell,
+I'm booting with nearest config to my current as the new config allows.
+
+But NTRTLINK isn't seeing the device?
+
+Ideas?  From the date of the driver it doesn't look like it has been 
+changed recently.
+
+It's not good that the Intel card can no longer have it's packet size 
+set in 3.4 (i.e. network problems trending "worse")....
+
+thanks,
+-l
+
+
+
+
+<6>[    3.219112] bnx2: Broadcom NetXtreme II Gigabit Ethernet Driver 
+bnx2 v2.2.1 (Dec 18, 2011)
+<6>[    3.219930] bnx2 0000:01:00.0: eth0: Broadcom NetXtreme II BCM5709 
+1000Base-T (C0) PCI Express found at mem da000000, IRQ 36, node addr 
+00:26:b9:2c:a4:ef
+<6>[    3.220636] bnx2 0000:01:00.1: eth1: Broadcom NetXtreme II BCM5709 
+1000Base-T (C0) PCI Express found at mem dc000000, IRQ 48, node addr 
+00:26:b9:2c:a4:f1
+e1000e: Intel(R) PRO/1000 Network Driver - 1.5.1-k
+<6>[    3.220691] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+<6>[    3.220729] e1000e 0000:03:00.0: Disabling ASPM  L1
+<7>[    3.220919] e1000e 0000:03:00.0: irq 89 for MSI/MSI-X
+<6>[    3.394181] e1000e 0000:03:00.0: eth2: (PCI Express:2.5GT/s:Width 
+x4) 00:15:17:bf:be:b2
+<6>[    3.394184] e1000e 0000:03:00.0: eth2: Intel(R) PRO/1000 Network 
+Connection
+<6>[    3.394301] e1000e 0000:03:00.0: eth2: MAC: 0, PHY: 4, PBA No: 
+C57721-005
+<6>[    3.394317] e1000e 0000:03:00.1: Disabling ASPM  L1
+<7>[    3.394509] e1000e 0000:03:00.1: irq 90 for MSI/MSI-X
+<6>[    3.566803] e1000e 0000:03:00.1: eth3: (PCI Express:2.5GT/s:Width 
+x4) 00:15:17:bf:be:b3
+<6>[    3.566805] e1000e 0000:03:00.1: eth3: Intel(R) PRO/1000 Network 
+Connection
+<6>[    3.566881] e1000e 0000:03:00.1: eth3: MAC: 0, PHY: 4, PBA No: 
+C57721-005
+<30>[    6.389668] udevd[255]: renamed network interface eth1 to rename3
+<30>[    6.424537] udevd[232]: renamed network interface eth2 to rename4
+<30>[    6.444508] udevd[254]: renamed network interface eth0 to rename2
+<30>[    6.461477] udevd[255]: renamed network interface rename3 to eth3
+<30>[    6.496473] udevd[232]: renamed network interface rename4 to eth0
+<30>[    6.507422] udevd[254]: renamed network interface rename2 to eth2
+Setting up (localfs) network interfaces:
+   lo       
+   lo        IP address: 127.0.0.1/8  
+done    eth0      device: Intel Corporation 82571EB Gigabit Ethernet Co
+   eth0      IP address: 192.168.3.1/24  
+done    eth1      device: Intel Corporation 82571EB Gigabit Ethernet Co
+   eth1      IP address: 192.168.3.129/24  
+done    eth2      device: Broadcom Corporation NetXtreme II BCM5709 Gig
+RTNETLINK answers: No such file or directory
+Cannot enable interface eth2.
+interface eth2 is not up
+failed    eth3      device: Broadcom Corporation NetXtreme II BCM5709 Gig
+   eth3      Startmode is 'off'
+skippedWaiting for mandatory devices:  eth2
+26 25 24 23 22 21 19 18 17 16 15 14 13 11 10 9 8 7 6 4 3 2 1 0
+   eth2      device: Broadcom Corporation NetXtreme II BCM5709 Gig
+   eth2      is down
+failed    eth2      interface could not be set up until now
+failedSetting up service (localfs) network  .  .  .  .  .  .  .  .  .  
+.failed
+
+
+
