@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab2HHJfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 05:35:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57275 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab2HHJfg (ORCPT
+	id S1030189Ab2HHJlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 05:41:15 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40122 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757951Ab2HHJlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 05:35:36 -0400
-Message-ID: <502232DE.30702@linutronix.de>
-Date: Wed, 08 Aug 2012 11:35:26 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 8 Aug 2012 05:41:13 -0400
+Date: Wed, 8 Aug 2012 02:38:58 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] max17042_battery: add support for battery STATUS and
+ CHARGE_TYPE
+Message-ID: <20120808093857.GA1402@lizard>
+References: <1343408181-21988-1-git-send-email-ramakrishna.pallala@intel.com>
 MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH 3/5] uprobes: remove check for uprobe variable in handle_swbp()
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-4-git-send-email-bigeasy@linutronix.de> <50222D11.4010005@in.ibm.com>
-In-Reply-To: <50222D11.4010005@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1343408181-21988-1-git-send-email-ramakrishna.pallala@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 11:10 AM, Suzuki K. Poulose wrote:
->> --- a/kernel/events/uprobes.c
->> +++ b/kernel/events/uprobes.c
->> @@ -1528,17 +1528,15 @@ cleanup_ret:
->> utask->active_uprobe = NULL;
->> utask->state = UTASK_RUNNING;
->> }
->> - if (uprobe) {
->> - if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
->> + if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
->>
-> Shouldn't we check uprobe != NULL before we check the uprobe->flags ?
-> i.e, shouldn't the above line be :
->
-> if (uprobe && ! (uprobe->flags & UPROBE_SKIP_SSTEP)) ?
+On Fri, Jul 27, 2012 at 10:26:21PM +0530, Ramakrishna Pallala wrote:
+> This patch adds the support to report the battery power supply attributes
+> STATUS and CHARGE_TYPE. This patch makes use of power_supply_get_external_attr()
+> API to get these attributes through power supply core.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> ---
+[...]
+>  	switch (psp) {
+> +	case POWER_SUPPLY_PROP_STATUS:
+> +		ret = power_supply_get_external_attr(&query);
+> +		if (ret < 0)
+> +			return ret;
+> +		val->intval = query.res.intval;
+> +		break;
 
-The function starts like this:
+First of, thanks a lot for your work. And sorry that it took me quite
+a while to review it, but these are fundamental changes, so I had to
+thoughtfully consider all this.
 
-          if (!uprobe) {
-                  if (is_swbp > 0) {
-                          send_sig(SIGTRAP, current, 0);
-                  } else {
-                          instruction_pointer_set(regs, bp_vaddr);
-                  }
-                  return;
-          }
+This exact code clearly shows that it is not battery's property. Battery
+itself cannot report it, right? OK, here is what
+Documentation/power/power_supply_class.txt says:
 
-Which makes uprobe != NULL by the time we get there, no?
+A: Most likely, no. This class is designed to export properties which are
+   directly measurable by the specific hardware available.
 
-Sebastian
+   Inferring not available properties using some heuristics or mathematical
+   model is not subject of work for a battery driver. Such functionality
+   should be factored out
+
+So, you basically try to infer battery's properties from the charger hw.
+This is surely doable, but no, I think we should not do this. Instead,
+what we want is to make use of "supplied_to" mechanism of the power
+supply class, and export it via sysfs. Then userland can see all the
+power supply hierarchy, and thus see which hardware provides which data.
+
+See my thoughts about exporting "supplied_to" to the sysfs:
+
+	http://lkml.org/lkml/2011/6/22/258
+
+So, we'll have:
+
+/sys/
+   class/
+      power_supply/
+         charger/
+            supplied_to/battery -> ../../battery
+         battery/
+
+Sure, we'll have to teach userland to operate on this scheme, i.e.
+it must be aware that batteries might be connected to an external
+charger, and if so, userland must query* charging status from the
+charger.
+
+Do you see any problem with this approach?
+
+Thanks!
+
+p.s.
+
+Actually, once userland read all the hierarchy, it can get properties
+pretty easy, e.g. recursively walking the tree (pseudo code):
+
+get_prop(psy, prop, *val)
+{
+	if (prop_exists(psy, prop))
+		return psy->get_property(psy, prop, val);
+	if (psy->supplier)
+		return get_prop(psy->parent, prop, val);
+	return ENODATA;
+}
+
+Note that the pseudo-code above is for the userland, not for the kernel.
+(We can surely implement a similar function in the kernel, it just that
+we don't need it, at least now. But the function would do the similar
+thing you're trying to accomplish: get parent's properties.)
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
