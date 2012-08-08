@@ -1,166 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab2HHVfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:35:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49606 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756980Ab2HHVfq (ORCPT
+	id S1756123Ab2HHViS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:38:18 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39611 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab2HHViQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:35:46 -0400
-Subject: Re: [PATCH 18/19] sched, numa: Per task memory placement for big
- processes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: mingo@kernel.org
-Cc: riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20120731192809.428855038@chello.nl>
-References: <20120731191204.540691987@chello.nl>
-	 <20120731192809.428855038@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Aug 2012 23:35:32 +0200
-Message-ID: <1344461732.16728.19.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Aug 2012 17:38:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, peterz@infradead.org, davem@davemloft.net,
+        tomi.valkeinen@ti.com
+Subject: [PATCHSET] workqueue: use irqsafe timer in delayed_work
+Date: Wed,  8 Aug 2012 14:37:55 -0700
+Message-Id: <1344461882-10149-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-31 at 21:12 +0200, Peter Zijlstra wrote:
-> +#ifdef CONFIG_NUMA
-> +       /*
-> +        * XXX fold this into flags for 64bit or so...
-> +        */
-> +       int nid_last;
-> +#endif 
+Hello,
 
-Something like the below? I still ought to update all the various
-comments about page flag layout etc..
+Because IRQs can happen between delayed_work->timer being dispatched
+and delayed_work_timer_fn() actually queueing delayed_work->work,
+try_to_grab_pending() couldn't be used from IRQ handlers.  If it hits
+the window, it will return -EAGAIN perpetually.  This makes it
+impossible to steal PENDING from IRQ handlers using
+try_to_grab_pending() leading to the following issues.
 
-Also, that #warning gives a very noisy build indeed, I guess we should
-either make it silent or increase the page frame size for those
-configs.. 32bit NUMA is quite rare for normal people (sorry Paul) :)
+* mod_delayed_work() can't be used from IRQ handlers.
 
----
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -611,10 +611,19 @@ static inline pte_t maybe_mkwrite(pte_t 
- #define NODES_WIDTH		0
- #endif
- 
-+#if NODES_WIDTH && (SECTIONS_WIDTH+ZONES_WIDTH+2*NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS)
-+#define LAST_NID_WIDTH	NODES_SHIFT
-+#else
-+#warning "faking page_xchg_last_nid"
-+#define LAST_NID_NOT_IN_PAGE_FLAGS
-+#define LAST_NID_WIDTH	0
-+#endif
-+
- /* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
- #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
- #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
- #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
-+#define LAST_NID_PGOFF		(ZONES_PGOFF - LAST_NID_WIDTH)
- 
- /*
-  * We are going to use the flags for the page to node mapping if its in
-@@ -632,6 +641,7 @@ static inline pte_t maybe_mkwrite(pte_t 
- #define SECTIONS_PGSHIFT	(SECTIONS_PGOFF * (SECTIONS_WIDTH != 0))
- #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
- #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
-+#define LAST_NID_PGSHIFT	(LAST_NID_PGOFF * (LAST_NID_WIDTH != 0))
- 
- /* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
- #ifdef NODE_NOT_IN_PAGE_FLAGS
-@@ -653,6 +663,7 @@ static inline pte_t maybe_mkwrite(pte_t 
- #define ZONES_MASK		((1UL << ZONES_WIDTH) - 1)
- #define NODES_MASK		((1UL << NODES_WIDTH) - 1)
- #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
-+#define LAST_NID_MASK		((1UL << LAST_NID_WIDTH) - 1)
- #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
- 
- static inline enum zone_type page_zonenum(const struct page *page)
-@@ -691,6 +702,39 @@ static inline int page_to_nid(const stru
- }
- #endif
- 
-+#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
-+static inline int page_xchg_last_nid(struct page *page, int nid)
-+{
-+	return nid; /* fakin' it */
-+}
-+
-+static inline int page_last_nid(struct page *page)
-+{
-+	return page_to_nid(page);
-+}	
-+#else
-+static inline int page_xchg_last_nid(struct page *page, int nid)
-+{
-+	unsigned long old_flags, flags;
-+	int last_nid;
-+
-+       	old_flags = flags = page->flags;
-+	last_nid = (flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
-+
-+	flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
-+	flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
-+
-+ 	(void)cmpxchg(&page->flags, old_flags, flags);
-+
-+	return last_nid;
-+}
-+
-+static inline int page_last_nid(struct page *page)
-+{
-+	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
-+}
-+#endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
-+
- static inline struct zone *page_zone(const struct page *page)
- {
- 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -176,12 +176,6 @@ struct page {
- 	 */
- 	void *shadow;
- #endif
--#ifdef CONFIG_NUMA
--	/*
--	 * XXX fold this into flags for 64bit or so...
--	 */
--	int nid_last;
--#endif
- }
- /*
-  * The struct page can be forced to be double word aligned so that atomic ops
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1366,6 +1366,7 @@ static void __split_huge_page_refcount(s
- 		page_tail->mapping = page->mapping;
- 
- 		page_tail->index = page->index + i;
-+		page_xchg_last_nid(page, page_last_nid(tail_page));
- 		page_tail->nid_last = page->nid_last;
- 
- 		BUG_ON(!PageAnon(page_tail));
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2265,10 +2265,9 @@ int mpol_misplaced(struct page *page, st
- 	 * task_tick_numa().
- 	 */
- 	if (multi && (pol->flags & MPOL_F_HOME)) {
--		if (page->nid_last != polnid) {
--			page->nid_last = polnid;
-+		int last_nid = page_xchg_last_nid(page, polnid);
-+		if (last_nid != polnid)
- 			goto out;
--		}
- 	}
- 
- 	if (curnid != polnid)
+* __cancel_delayed_work() can't use the usual try_to_grab_pending()
+  which handles all three states but instead only deals with the first
+  state using a separate implementation.  There's no way to make a
+  delayed_work not pending from IRQ handlers.
 
+* The context / behavior differences among cancel_delayed_work(),
+  __cancel_delayed_work(), cancel_delayed_work_sync() are subtle and
+  confusing (the first two are mostly historical tho).
 
+This patchset makes delayed_work use the irqsafe timer added by the
+pending "timer: clean up initializers and implement irqsafe timers"
+patchset[1].  This enables try_to_grab_pending() to be used from any
+context which in turn makes mod_delayed_work() usable from IRQ
+handlers.  cancel_delayed_work() is reimplemented using
+try_to_grab_pending() so that it also can be used from IRQ handlers
+and its behavior is consitent with other canceling operations.
+__cancel_delayed_work() is no longer necessary and deprecated.
+
+ 0001-workqueue-cosmetic-whitespace-updates-for-macro-defi.patch
+ 0002-workqueue-make-deferrable-delayed_work-initializer-n.patch
+ 0003-workqueue-clean-up-delayed_work-initializers-and-add.patch
+ 0004-workqueue-use-irqsafe-timer-for-delayed_work.patch
+ 0005-workqueue-use-mod_delayed_work-instead-of-__cancel-q.patch
+ 0006-workqueue-reimplement-cancel_delayed_work-using-try_.patch
+ 0007-workqueue-deprecate-__cancel_delayed_work.patch
+
+0001-0003 are prep patches.
+
+0004 makes delayed_work use irqsafe timers.  This makes
+try_to_grab_pending() and mod_delayed_work() safe to use from any
+context.
+
+0005 converts all __cancel_delayed_work() + queue_delayed_work()
+sequences to mod_delayed_work().  The link_watch conversion needs
+David's ack.
+
+0006 reimplements cancel_delayed_work() using try_to_grab_pending().
+
+0007 replaces __cancel_delayed_work() calls with cancel_delayed_work()
+and deprecates the underscored one.
+
+This patchset is on top of
+
+  [2] wq/for-3.7 (8fcd63664f "workqueue: fix CPU binding of flush_delayed...")
++ [1] timer: clean up initializers and implement irqsafe timers
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-delayed_work-irqsafe
+
+diffstat follows.
+
+ arch/powerpc/platforms/cell/cpufreq_spudemand.c |    2 
+ block/blk-core.c                                |    8 -
+ block/blk-throttle.c                            |    7 -
+ drivers/block/floppy.c                          |    5 
+ drivers/cpufreq/cpufreq_conservative.c          |    2 
+ drivers/cpufreq/cpufreq_ondemand.c              |    2 
+ drivers/devfreq/devfreq.c                       |    2 
+ drivers/infiniband/core/mad.c                   |   16 --
+ drivers/input/keyboard/qt2160.c                 |    3 
+ drivers/input/mouse/synaptics_i2c.c             |    7 -
+ drivers/net/ethernet/mellanox/mlx4/sense.c      |    2 
+ drivers/power/ab8500_btemp.c                    |    2 
+ drivers/power/ab8500_charger.c                  |    8 -
+ drivers/power/ab8500_fg.c                       |    8 -
+ drivers/power/abx500_chargalg.c                 |    4 
+ drivers/power/max17040_battery.c                |    2 
+ drivers/video/omap2/displays/panel-taal.c       |    6 
+ drivers/video/omap2/dss/dsi.c                   |    6 
+ include/linux/workqueue.h                       |  155 ++++++++++--------------
+ kernel/workqueue.c                              |   50 ++++++-
+ mm/slab.c                                       |    2 
+ mm/vmstat.c                                     |    2 
+ net/core/link_watch.c                           |   21 ---
+ net/core/neighbour.c                            |    2 
+ net/ipv4/inetpeer.c                             |    2 
+ net/sunrpc/cache.c                              |    2 
+ 26 files changed, 159 insertions(+), 169 deletions(-)
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1340224
+[2] git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
