@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759067Ab2HHRlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:41:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49679 "EHLO mx1.redhat.com"
+	id S1759098Ab2HHRlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:41:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50360 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759049Ab2HHRlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:41:02 -0400
-Date: Wed, 8 Aug 2012 19:37:42 +0200
+	id S1759055Ab2HHRlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 13:41:08 -0400
+Date: Wed, 8 Aug 2012 19:37:49 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] uprobes: change uprobe_mmap() to ignore the errors but
-	check fatal_signal_pending()
-Message-ID: <20120808173742.GA13262@redhat.com>
+Subject: [PATCH 6/7] uprobes: fold uprobe_reset_state() into
+	uprobe_dup_mmap()
+Message-ID: <20120808173749.GA13275@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,87 +24,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once install_breakpoint() fails uprobe_mmap() "ignores" all other
-uprobes and returns the error.
-
-It was never really needed to to stop after the first error, and
-in fact it was always wrong at least in -ENOTSUPP case.
-
-Change uprobe_mmap() to ignore the errors and always return 0.
-This is not what we want in the long term, but until we teach
-the callers to handle the failure it would be better to remove
-the pointless complications. And this doesn't look too bad, the
-only "reasonable" error is ENOMEM but in this case the caller
-should be oom-killed in the likely case or the system has more
-serious problems.
-
-However it makes sense to stop if fatal_signal_pending() == T.
-In particular this helps if the task was oom-killed.
+Now that we have uprobe_dup_mmap() we can fold uprobe_reset_state()
+into the new hook and remove it. mmput()->uprobe_clear_state() can't
+be called before dup_mmap().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   27 ++++++---------------------
- 1 files changed, 6 insertions(+), 21 deletions(-)
+ include/linux/uprobes.h |    4 ----
+ kernel/events/uprobes.c |   10 ++--------
+ kernel/fork.c           |    2 --
+ 3 files changed, 2 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 4a37ab1..30297f9 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -118,7 +118,6 @@ extern void uprobe_notify_resume(struct pt_regs *regs);
+ extern bool uprobe_deny_signal(void);
+ extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern void uprobe_clear_state(struct mm_struct *mm);
+-extern void uprobe_reset_state(struct mm_struct *mm);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
+ };
+@@ -163,8 +162,5 @@ static inline void uprobe_copy_process(struct task_struct *t)
+ static inline void uprobe_clear_state(struct mm_struct *mm)
+ {
+ }
+-static inline void uprobe_reset_state(struct mm_struct *mm)
+-{
+-}
+ #endif /* !CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 08ea627..2e269d1 100644
+index 2a42319..81fb2d8 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -996,23 +996,16 @@ static void build_probe_list(struct inode *inode,
+@@ -1150,16 +1150,10 @@ void uprobe_clear_state(struct mm_struct *mm)
+ 	kfree(area);
  }
  
- /*
-- * Called from mmap_region.
-- * called with mm->mmap_sem acquired.
-+ * Called from mmap_region/vma_adjust with mm->mmap_sem acquired.
-  *
-- * Return -ve no if we fail to insert probes and we cannot
-- * bail-out.
-- * Return 0 otherwise. i.e:
-- *
-- *	- successful insertion of probes
-- *	- (or) no possible probes to be inserted.
-- *	- (or) insertion of probes failed but we can bail-out.
-+ * Currently we ignore all errors and always return 0, the callers
-+ * can't handle the failure anyway.
-  */
- int uprobe_mmap(struct vm_area_struct *vma)
- {
- 	struct list_head tmp_list;
- 	struct uprobe *uprobe, *u;
- 	struct inode *inode;
--	int ret;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, true))
- 		return 0;
-@@ -1024,24 +1017,16 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	mutex_lock(uprobes_mmap_hash(inode));
- 	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
- 
--	ret = 0;
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
--		if (!ret) {
-+		if (!fatal_signal_pending(current)) {
- 			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+-/*
+- * uprobe_reset_state - Free the area allocated for slots.
+- */
+-void uprobe_reset_state(struct mm_struct *mm)
+-{
+-	mm->uprobes_state.xol_area = NULL;
+-}
 -
--			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
--			/*
--			 * We can race against uprobe_register(), see the
--			 * comment near uprobe_hash().
--			 */
--			if (ret == -EEXIST)
--				ret = 0;
-+			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
- 		}
- 		put_uprobe(uprobe);
- 	}
- 	mutex_unlock(uprobes_mmap_hash(inode));
- 
--	return ret;
-+	return 0;
+ void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm)
+ {
++	newmm->uprobes_state.xol_area = NULL;
++
+ 	if (test_bit(MMF_HAS_UPROBES, &oldmm->flags))
+ 		set_bit(MMF_HAS_UPROBES, &newmm->flags);
  }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index ab970c3..5555f51 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -836,8 +836,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+-	uprobe_reset_state(mm);
+-
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
  
- /*
 -- 
 1.5.5.1
 
