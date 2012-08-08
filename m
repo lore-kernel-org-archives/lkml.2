@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab2HHV3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:29:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59223 "EHLO
+	id S933095Ab2HHV3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:29:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61971 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932444Ab2HHV3C (ORCPT
+	with ESMTP id S932885Ab2HHV2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:29:02 -0400
+	Wed, 8 Aug 2012 17:28:23 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
-        Andrew Lunn <andrew@lunn.ch>, Michael Walle <michael@walle.cc>,
-        Nicolas Pitre <nico@linaro.org>, Dave Martin <dave.martin@linaro.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Dan Williams <dan.j.williams@intel.com>, Neil Brown <neilb@suse.de>,
-        Kevin Hilman <khilman@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Andrey Porodko <panda@chelcom.ru>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Bryan Wu <bryan.wu@canonical.com>,
-        Magnus Damm <damm@opensource.se>
-Subject: [PATCH 00/10] ARM: interesting warnings from defconfig builds
-Date: Wed,  8 Aug 2012 23:27:48 +0200
-Message-Id: <1344461278-28245-1-git-send-email-arnd@arndb.de>
+        Dave Martin <dave.martin@linaro.org>
+Subject: [PATCH 04/10] ARM: pass -marm to gcc by default
+Date: Wed,  8 Aug 2012 23:27:52 +0200
+Message-Id: <1344461278-28245-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-X-Provags-ID: V02:K0:LwNVsNO+jyqHOkVVOKM6cSBUzv4QOMCTqa5DL1h42LR
- 7yR9angL1ueY7RoHclvAClLVw3Hi2qDSKSfA8QL5cuTj/lT0U0
- 6FUbFJGi+qoltCW8d7KqgfTDOufZA/X9xuYEexmAlKrnFcxbOs
- t43+PPhztAh9Nk9ScNXkEwIdTyvNw8ssgGOoFhjy68cAhoRDp4
- 53WDu39j4HycpbEihN030o255B2ZgpNq8d7VugzwZdhSCyX2qK
- KaS1ClfqQ/o9rTdOJygFwV7NdnOzs97y4BJ62tzHIJ4SKwsKzZ
- Tl4y2KAPc3twrpYtwx+fWmKrGdn8Js8lqgtGjHRu9HNwDxIStm
- Ex5FwOE8iAw21vsMax2O+0iFNJK9OP5tlY9GRAqeWrB1ryUJRU
- 6t6/inDG6b+1w==
+In-Reply-To: <1344461278-28245-1-git-send-email-arnd@arndb.de>
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:nd8XuSNg3c4SZ09Jhb7+/zeFJBVPUv9+oP3u/DhLaAF
+ u3bRnZAri28uO5kLBSI3z37nC81oIiGUaedz1bpZjJdEHF2Y8A
+ l3yljfBSO31hI2xPRN/QjsDOE9UiJM2xwiFcYqUAwnL9qQY/XY
+ CWAhrv81bM7+xm854i2gHSI+kZOfKpheDaY14OrBDTYDRMJ6MV
+ 7GKIB/9ZS/KP0wh92SHE0sfsQlI/TKNYmUP92WwG/yjyI5VDKA
+ Vltji8f/AB/lO39ZFzv5xNc07EjmfdBLtrDW4QDA9X7DUCbYk0
+ ezsuVRK2qyxvBah1TVYXLx20l5PFfXrhsJuLo2ohXDmTfduYlH
+ vC+9Sb1Q/CvHhj68I0VhbJNua9B3CahDFugDOrQL6MdLGRH0em
+ 59wqKKGItwWLA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of these have been around for quite a while, but I think we
-should fix them nonetheless. In some cases, I'm not very sure about
-my solution, so I'd appreciate any ACK or NAK I can get.
+The Linaro cross toolchain and probably others nowadays default to
+building in THUMB2 mode. When building a kernel for a CPU that does
+not support THUMB2, the compiler complains about incorrect flags.
+We can work around this by setting -marm for all non-T2 builds.
 
-	Arnd
+Without this patch, building assabet_defconfig results in:
 
-Arnd Bergmann (10):
-  ARM: footbridge: nw_gpio_lock is raw_spin_lock
-  ARM: ks8695: __arch_virt_to_dma type handling
-  ARM: mv78xx0: fix win_cfg_base prototype
-  ARM: pass -marm to gcc by default
-  asm-generic: xor: mark static functions as __maybe_unused
-  ARM: davinci: don't use broken ntosd2_init_i2c
-  ARM: rpc: check device_register return code in ecard_probe
-  ARM: s3c24xx: enable CONFIG_BUG for tct_hammer
-  ARM: rpc: Fix building RiscPC
-  leds: renesas: fix error handling
+usr/initramfs_data.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+arch/arm/nwfpe/entry.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+firmware/cis/PCMLM28.cis.gen.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+(and many more)
 
- arch/arm/Kconfig                           |    2 +-
- arch/arm/Makefile                          |    4 +++-
- arch/arm/configs/tct_hammer_defconfig      |    2 +-
- arch/arm/mach-davinci/board-neuros-osd2.c  |    7 +++++++
- arch/arm/mach-ks8695/include/mach/memory.h |    3 ++-
- arch/arm/mach-mv78xx0/addr-map.c           |    2 +-
- arch/arm/mach-rpc/ecard.c                  |    4 +++-
- arch/arm/mm/Kconfig                        |   12 ++----------
- drivers/char/ds1620.c                      |    8 ++++----
- drivers/char/nwflash.c                     |    4 ++--
- drivers/leds/leds-renesas-tpu.c            |    2 +-
- include/asm-generic/xor.h                  |    4 ++--
- sound/oss/waveartist.c                     |    4 ++--
- 13 files changed, 31 insertions(+), 27 deletions(-)
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Dave Martin <dave.martin@linaro.org>
+---
+ arch/arm/Makefile |    3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 30eae87..b4c2296 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -111,6 +111,9 @@ AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
+ ifeq ($(CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11),y)
+ CFLAGS_MODULE	+=-fno-optimize-sibling-calls
+ endif
++else
++CFLAGS_THUMB2  :=-marm
++AFLAGS_THUMB2	:=-marm
+ endif
+ 
+ # Need -Uarm for gcc < 3.x
 -- 
 1.7.10
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Michael Walle <michael@walle.cc>
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Dave Martin <dave.martin@linaro.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Andrey Porodko <panda@chelcom.ru>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Bryan Wu <bryan.wu@canonical.com>
-Cc: Magnus Damm <damm@opensource.se>
