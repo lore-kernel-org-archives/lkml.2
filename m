@@ -1,53 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2HHF6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 01:58:04 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37565 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab2HHF6B (ORCPT
+	id S1757342Ab2HHGAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:00:45 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:37239 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528Ab2HHGAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 01:58:01 -0400
-Date: Tue, 07 Aug 2012 22:58:00 -0700 (PDT)
-Message-Id: <20120807.225800.1450928472652058111.davem@davemloft.net>
-To: albcamus@gmail.com
-Cc: chris@arachsys.com, mchan@broadcom.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to
- bnx2-mips-09-6.2.1b
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com>
-References: <20120713130405.GS13885@arachsys.com>
-	<CANE52KgHpmR7qCUUf3ZiMeskCitcAiMzzdARzy3a4RpKb73_Gg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Aug 2012 02:00:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <50218DB6.2080209@redhat.com>
+References: <20120804181445.6598.6505.stgit@bling.home> <CAErSpo42VMnfzDP6t5eCFfE-5=yPNmNGLs6a2D0KwGMhe71DbQ@mail.gmail.com>
+ <1344232549.3441.7.camel@ul30vt.home> <CAErSpo756PXBNjwEMEX8DKGcEu0R+UuQ+rg9NG8k1c+TZ=j2Gw@mail.gmail.com>
+ <50218DB6.2080209@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 7 Aug 2012 23:00:22 -0700
+Message-ID: <CAErSpo5sFfr=O-Pp=PyaxGauaEajaTr2aK-EQ_rTVUk1zyz8cA@mail.gmail.com>
+Subject: Re: [PATCH] pci: Account for virtual buses in pci_acs_path_enabled
+To: Don Dutile <ddutile@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jike Song <albcamus@gmail.com>
-Date: Wed, 8 Aug 2012 13:50:42 +0800
-
-> On Fri, Jul 13, 2012 at 9:04 PM, Chris Webb <chris@arachsys.com> wrote:
->> Commit c2c20ef43d00 "bnx2: Update driver to use new mips firmware"
->> updated the bnx2 driver to use bnx2-mips-09-6.2.1b in place of
->> bnx2-mips-09-6.2.1a, but didn't replace the copy of bnx2-mips-09-6.2.1a
->> in firmware/bnx2/ with the new version.
+On Tue, Aug 7, 2012 at 2:50 PM, Don Dutile <ddutile@redhat.com> wrote:
+> On 08/06/2012 04:47 PM, Bjorn Helgaas wrote:
 >>
->> This means that the bnx2 driver stopped working altogether for users who
->> use CONFIG_FIRMWARE_IN_KERNEL to compile firmware together with drivers
->> into their kernel, rather than having a runtime firmware loader.
+>> On Sun, Aug 5, 2012 at 11:55 PM, Alex Williamson
+>> <alex.williamson@redhat.com>  wrote:
+>>>
+>>> On Sun, 2012-08-05 at 23:30 -0600, Bjorn Helgaas wrote:
+>>>>
+>>>> On Sat, Aug 4, 2012 at 12:19 PM, Alex Williamson
+>>>> <alex.williamson@redhat.com>  wrote:
+>>>>>
+>>>>> It's possible to have buses without an associated bridge
+>>>>> (bus->self == NULL).  SR-IOV can generate such buses.  When
+>>>>> we find these, skip to the parent bus to look for the next
+>>>>> ACS test.
+>>>>
+>>>>
+>>>> To make sure I understand the problem here, I think you're referring
+>>>> to the situation where an SR-IOV device can span several bus numbers,
+>>>> e.g., the "VFs Spanning Multiple Bus Numbers" implementation note in
+>>>> the SR-IOV 1.1 spec, sec. 2.1.2.
+>>>>
+>>>> It says "All PFs must be located on the Device's captured Bus Number"
+>>>> -- I think that means every PF will be directly on a bridge's
+>>>> secondary bus and hence will have a valid dev->bus->self pointer.
+>>>>
+>>>> However, VFs need not be on the same bus number.  If a VF is on
+>>>> (captured Bus Number plus 1), I think we allocate a new struct pci_bus
+>>>> for it, but there's no P2P bridge that leads to that bus, so the
+>>>> bus->self pointer is probably NULL.
+>>>
+>>>
+>>> Yes, exactly.  virtfn_add_bus() is where we're creating this new bus.
+>>>
+>>>> This makes me quite nervous, because I bet there are many places that
+>>>> assume every non-root bus has a valid bus->self pointer  -- I know I
+>>>> certainly had that assumption.
+>>>>
+>>>> I looked at callers of pci_is_root_bus(), and at first glance, it seems
+>>>> like
+>>>> iommu_init_device(), intel_iommu_add_device(), pci_acs_path_enabled(),
+>>>
+>>>
+>>>
+>>> These 3 are handled by this patch, plus the intel and amd iommu patches
+>>> I sent.
+>>>
+>>>> pci_get_interrupt_pin(), pci_common_swizzle(),
+>>>
+>>>
+>>> If sr-iov is the only source of these virtual buses, these are probably
+>>> ok since VFs don't support INTx.
+>>>
+>>>> pci_find_upstream_pcie_bridge(), and
+>>>
+>>>
+>>> Here the pci_is_root_bus() is after a pci_is_pcie() check, so again if
+>>> sr-iov only (and assuming VFs properly report PCIe capability), we
+>>> shouldn't stumble on it.
+>>>
+>>>> pci_bus_release_bridge_resources() all might have similar problems.
+>>>
+>>>
+>>> This one might deserve further investigation.  Thanks,
 >>
-> 
-> Still not fixed in mainline? I encountered the same problem with
-> v3.6-rc1-133-g42a579a.
+>>
+>> We can fix all these places piecemeal, but that doesn't feel like a
+>> very satisfying solution.  It makes it much harder to know that each
+>> place is correct, and this oddity of a bus with no upstream bridge is
+>> still lying around, waiting to bite us again later.
+>>
+>> What other possible ways of fixing this do we have?  Could we set
+>> bus->self (multiple buses would then point to the same bridge, and I
+>> don't know if that would break something)?  Add something like a
+>> pci_upstream_p2p_bridge() interface that would encapsulate traversing
+>
+>   ^^^ and this name will reduce the confusion? :)
 
-The current firmware for all drivers are not distributed in the kernel
-sources any longer, they are maintained in a completely seperate
-repository.
+I don't claim that :)  I just wanted to explore other possible
+solutions.  Changing every loop that searches the parent chain so it
+knows about this SR-IOV oddity doesn't seem like the ideal solution,
+though maybe it's the best we can do given the constraints.
 
-The old ones are just kept around in the kernel sources for
-compatability.
+>> Since these fake VF buses don't have a bridge that points to them, I
+>
+> Well, they aren't fake busses, just ARI-identifiers, which translate the
+> B:D.F/8:5.3
+> format to simply a 16-bit i.d.
 
-This is a FAQ.
+I think an SR-IOV device can consume multiple bus numbers even without
+ARI (in fact, I think ARI  reduces the number of bus numbers the
+device requires ... e.g., a PF and 15 VFs would require two bus
+numbers without ARI (04:00.0 - 04:00.7 and 05:00.0 - 05:00.7) but only
+one bus number with ARI (04:00.0 - 04:01.7)).  (I think "04:01.7" is
+how Linux would represent the 8-bit function number ARI gives you.
+You could also think of it as "04:00.0f")
+
+> So, VF devices should be attached to same bus->devices list as it's PF.
+
+I don't think it works that way today, does it?  In the SR-IOV spec
+example in sec 2.1.2:
+
+  PF 0 at 04:00.0
+  ARI Capable is set
+  First VF Offset = 1, VF Stride = 1, NumVFs = 600
+
+I think we have three separate bus->devices lists:
+
+  pci_bus 04: devices list contains PF 0 and VF 0,1 through VF 0,255
+  pci_bus 05: devices list contains VF 0,256 - VF 0,511
+  pci_bus 06: devices list contains VF 0,512 - VF 0,600
+
+> pci_dev->bus should be same bus ptr as PF's pci_dev as well, since the
+> VF uses all that's busses resources, support functions (cfg, dma-ops, etc.)
+> as well.
+> Searching the driver/pci area, support of functions like AER want the
+> bus struct that's receiving/handling the PCIe error, associated (hw) port,
+> etc.,
+> so another reason the VF's pci-dev bus ptr should be the same as the PF's.
+
+Maybe every VF *should* have the same dev->bus pointer as the PF, but
+I don't think it does today.  I think we only store the bus number in
+the struct pci_bus, so if we *did* give all the VFs the same dev->bus
+pointer and put all the VFs in the same bus->devices list, we'd have
+to store the bus number elsewhere, e.g., in the struct pci_dev.
+
+That might make sense, but the magnitude of a change like that makes
+my head hurt --  it would affect drivers, arch code, config accessors,
+etc.
