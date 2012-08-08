@@ -1,156 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab2HHGAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:00:45 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37239 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528Ab2HHGAn (ORCPT
+	id S1757432Ab2HHGAw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:00:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39358 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756528Ab2HHGAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:00:43 -0400
+	Wed, 8 Aug 2012 02:00:49 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/+Geh2t5z+gbgz6o2jMUN6ahymufZQp5p7bk5juH
+	7FgqCiQJbHDJMp
+From: Sven Joachim <svenjoac@gmx.de>
+To: Ben Skeggs <skeggsb@gmail.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Aioanei Rares <krnl.list@gmail.com>,
+        "nouveau\@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Martin Nyhus <martin.nyhus@gmx.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [bisected] nouveau: "Failed to idle channel x" after resume
+References: <20120611231842.221bd738@europa> <20120705222429.43586868@europa>
+	<CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
+	<1344091275.4520.1.camel@maxim-laptop>
+	<1344285484.14543.0.camel@maxim-laptop>
+	<20120808053716.GA10092@turiel.bne.redhat.com>
+Date: Wed, 08 Aug 2012 08:00:21 +0200
+In-Reply-To: <20120808053716.GA10092@turiel.bne.redhat.com> (Ben Skeggs's
+	message of "Wed, 8 Aug 2012 15:37:16 +1000")
+Message-ID: <87lihpkjnu.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <50218DB6.2080209@redhat.com>
-References: <20120804181445.6598.6505.stgit@bling.home> <CAErSpo42VMnfzDP6t5eCFfE-5=yPNmNGLs6a2D0KwGMhe71DbQ@mail.gmail.com>
- <1344232549.3441.7.camel@ul30vt.home> <CAErSpo756PXBNjwEMEX8DKGcEu0R+UuQ+rg9NG8k1c+TZ=j2Gw@mail.gmail.com>
- <50218DB6.2080209@redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 7 Aug 2012 23:00:22 -0700
-Message-ID: <CAErSpo5sFfr=O-Pp=PyaxGauaEajaTr2aK-EQ_rTVUk1zyz8cA@mail.gmail.com>
-Subject: Re: [PATCH] pci: Account for virtual buses in pci_acs_path_enabled
-To: Don Dutile <ddutile@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dsahern@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 2:50 PM, Don Dutile <ddutile@redhat.com> wrote:
-> On 08/06/2012 04:47 PM, Bjorn Helgaas wrote:
->>
->> On Sun, Aug 5, 2012 at 11:55 PM, Alex Williamson
->> <alex.williamson@redhat.com>  wrote:
->>>
->>> On Sun, 2012-08-05 at 23:30 -0600, Bjorn Helgaas wrote:
->>>>
->>>> On Sat, Aug 4, 2012 at 12:19 PM, Alex Williamson
->>>> <alex.williamson@redhat.com>  wrote:
->>>>>
->>>>> It's possible to have buses without an associated bridge
->>>>> (bus->self == NULL).  SR-IOV can generate such buses.  When
->>>>> we find these, skip to the parent bus to look for the next
->>>>> ACS test.
->>>>
->>>>
->>>> To make sure I understand the problem here, I think you're referring
->>>> to the situation where an SR-IOV device can span several bus numbers,
->>>> e.g., the "VFs Spanning Multiple Bus Numbers" implementation note in
->>>> the SR-IOV 1.1 spec, sec. 2.1.2.
->>>>
->>>> It says "All PFs must be located on the Device's captured Bus Number"
->>>> -- I think that means every PF will be directly on a bridge's
->>>> secondary bus and hence will have a valid dev->bus->self pointer.
->>>>
->>>> However, VFs need not be on the same bus number.  If a VF is on
->>>> (captured Bus Number plus 1), I think we allocate a new struct pci_bus
->>>> for it, but there's no P2P bridge that leads to that bus, so the
->>>> bus->self pointer is probably NULL.
->>>
->>>
->>> Yes, exactly.  virtfn_add_bus() is where we're creating this new bus.
->>>
->>>> This makes me quite nervous, because I bet there are many places that
->>>> assume every non-root bus has a valid bus->self pointer  -- I know I
->>>> certainly had that assumption.
->>>>
->>>> I looked at callers of pci_is_root_bus(), and at first glance, it seems
->>>> like
->>>> iommu_init_device(), intel_iommu_add_device(), pci_acs_path_enabled(),
->>>
->>>
->>>
->>> These 3 are handled by this patch, plus the intel and amd iommu patches
->>> I sent.
->>>
->>>> pci_get_interrupt_pin(), pci_common_swizzle(),
->>>
->>>
->>> If sr-iov is the only source of these virtual buses, these are probably
->>> ok since VFs don't support INTx.
->>>
->>>> pci_find_upstream_pcie_bridge(), and
->>>
->>>
->>> Here the pci_is_root_bus() is after a pci_is_pcie() check, so again if
->>> sr-iov only (and assuming VFs properly report PCIe capability), we
->>> shouldn't stumble on it.
->>>
->>>> pci_bus_release_bridge_resources() all might have similar problems.
->>>
->>>
->>> This one might deserve further investigation.  Thanks,
->>
->>
->> We can fix all these places piecemeal, but that doesn't feel like a
->> very satisfying solution.  It makes it much harder to know that each
->> place is correct, and this oddity of a bus with no upstream bridge is
->> still lying around, waiting to bite us again later.
->>
->> What other possible ways of fixing this do we have?  Could we set
->> bus->self (multiple buses would then point to the same bridge, and I
->> don't know if that would break something)?  Add something like a
->> pci_upstream_p2p_bridge() interface that would encapsulate traversing
->
->   ^^^ and this name will reduce the confusion? :)
+On 2012-08-08 07:37 +0200, Ben Skeggs wrote:
 
-I don't claim that :)  I just wanted to explore other possible
-solutions.  Changing every loop that searches the parent chain so it
-knows about this SR-IOV oddity doesn't seem like the ideal solution,
-though maybe it's the best we can do given the constraints.
+> On Mon, Aug 06, 2012 at 11:38:04PM +0300, Maxim Levitsky wrote:
+>> On Sat, 2012-08-04 at 17:41 +0300, Maxim Levitsky wrote: 
+>> > On Mon, 2012-07-23 at 18:25 +0300, Aioanei Rares wrote: 
+>> > > On Thu, Jul 5, 2012 at 11:24 PM, Martin Nyhus <martin.nyhus@gmx.com> wrote:
+>> > > >
+>> > > > On Mon, 11 Jun 2012 23:18:42 +0200 Martin Nyhus wrote:
+>> > > > > after resuming from suspend nouveau starts writing Failed to idle
+>> > > > > channel x (where x is 2 or 3) to the log and X appears to stop and
+>> > > > > then restart only to stop again. Starting Firefox after resuming
+>> > > > > triggers the bugs every time, and bisecting leads to 03bd6efa
+>> > > > > ("drm/nv50/fifo: use hardware channel kickoff functionality").
+>> > > >
+>> > > > Hi Ben,
+>> > > > I'm still seeing this bug with the latest from Linus
+>> > > > (v3.5-rc5-98-g9e85a6f) and linux-next (next-20120705).
+>> > > >
+>> > > > lspci output:
+>> > > > 01:00.0 VGA compatible controller: nVidia Corporation G86 [GeForce
+>> > > > 8400M GS] (rev a1)
+>> > > >
+>> > > > Sorry I haven't followed up on this earlier,
+>> > > > Martin
+>> > > 
+>> > > I can confirm this with 3.5.0, Chromium and Arch Linux. It's a HP
+>> > > Pavilion laptop with a G86 [GeForce 8400 M GS] video card .
+>> > > Seems related to this bug:
+>> > > http://lists.freedesktop.org/archives/nouveau/2011-January/007358.html
+>> > > . If I can do anything else
+>> > > to help, I will be glad to.
+>> > Added nouveau@lists.freedesktop.org>
+>> > 
+>> > I confirm the same issue here.
+>> > will try to do dig it.
+>> Nope,can't dig this :-(
+> Interestingly, this works just fine for me after the driver rework.
 
->> Since these fake VF buses don't have a bridge that points to them, I
->
-> Well, they aren't fake busses, just ARI-identifiers, which translate the
-> B:D.F/8:5.3
-> format to simply a 16-bit i.d.
+Not for me on my GeForce 8500 GT, and I still cannot suspend more than
+once, subsequent attempts fail:
 
-I think an SR-IOV device can consume multiple bus numbers even without
-ARI (in fact, I think ARI  reduces the number of bus numbers the
-device requires ... e.g., a PF and 15 VFs would require two bus
-numbers without ARI (04:00.0 - 04:00.7 and 05:00.0 - 05:00.7) but only
-one bus number with ARI (04:00.0 - 04:01.7)).  (I think "04:01.7" is
-how Linux would represent the 8-bit function number ARI gives you.
-You could also think of it as "04:00.0f")
+,----
+| Aug  8 07:49:16 turtle kernel: [   91.697068] nouveau W[  PGRAPH][0000:01:00.0][0x0200502d][ffff880037be1d40] parent failed suspend, -16
+| Aug  8 07:49:16 turtle kernel: [   91.697078] nouveau  [     DRM][0000:01:00.0] resuming display...
+`----
 
-> So, VF devices should be attached to same bus->devices list as it's PF.
+> I can confirm issues on G86 with 3.5/3.6-rc1 stock though.  I'll
+> attempt to find a fix suitable for the non-reworked driver.
 
-I don't think it works that way today, does it?  In the SR-IOV spec
-example in sec 2.1.2:
+Thanks.  I'm currently stuck on 3.4 because of this problem.
 
-  PF 0 at 04:00.0
-  ARI Capable is set
-  First VF Offset = 1, VF Stride = 1, NumVFs = 600
-
-I think we have three separate bus->devices lists:
-
-  pci_bus 04: devices list contains PF 0 and VF 0,1 through VF 0,255
-  pci_bus 05: devices list contains VF 0,256 - VF 0,511
-  pci_bus 06: devices list contains VF 0,512 - VF 0,600
-
-> pci_dev->bus should be same bus ptr as PF's pci_dev as well, since the
-> VF uses all that's busses resources, support functions (cfg, dma-ops, etc.)
-> as well.
-> Searching the driver/pci area, support of functions like AER want the
-> bus struct that's receiving/handling the PCIe error, associated (hw) port,
-> etc.,
-> so another reason the VF's pci-dev bus ptr should be the same as the PF's.
-
-Maybe every VF *should* have the same dev->bus pointer as the PF, but
-I don't think it does today.  I think we only store the bus number in
-the struct pci_bus, so if we *did* give all the VFs the same dev->bus
-pointer and put all the VFs in the same bus->devices list, we'd have
-to store the bus number elsewhere, e.g., in the struct pci_dev.
-
-That might make sense, but the magnitude of a change like that makes
-my head hurt --  it would affect drivers, arch code, config accessors,
-etc.
+Cheers,
+       Sven
