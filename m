@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab2HHOIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:08:12 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:46849 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754763Ab2HHOIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:08:09 -0400
+	id S1757071Ab2HHOQC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:16:02 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:43337 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751932Ab2HHOQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:16:00 -0400
+Message-ID: <5022748E.5040809@parallels.com>
+Date: Wed, 8 Aug 2012 18:15:42 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CAMQu2gzi0_NS_W_DN=D=+3n6sNw_NTfkaNzaqV3QPG4mL+RoRg@mail.gmail.com>
-References: <1344434316-21141-1-git-send-email-tarun.kanti@ti.com>
-	<CAMQu2gzi0_NS_W_DN=D=+3n6sNw_NTfkaNzaqV3QPG4mL+RoRg@mail.gmail.com>
-Date: Wed, 8 Aug 2012 19:38:07 +0530
-Message-ID: <CAC83ZvK9KVpH=7K9eAHQY3WDtEbw_W_Drxqhk=6v+wZzcOYHDw@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio/omap: add *remove* callback in platform_driver
-From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kir Kolyshkin <kir@parallels.com>
+Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
+ for memcg: stripped down version
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com> <4FEC1D63.6000903@parallels.com> <20120628152540.cc13a735.akpm@linux-foundation.org> <50211F3D.2000008@parallels.com>
+In-Reply-To: <50211F3D.2000008@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 7:33 PM, Shilimkar, Santosh
-<santosh.shilimkar@ti.com> wrote:
-> On Wed, Aug 8, 2012 at 7:28 PM, Tarun Kanti DebBarma <tarun.kanti@ti.com> wrote:
->> Add *remove* callback so that necessary cleanup operations are
->> performed when device is unregistered. The device is deleted
->> from the list and associated clock handle is released by
->> calling clk_put() and irq descriptor is released using the
->> irq_free_desc() api.
+On 08/07/2012 05:59 PM, Glauber Costa wrote:
+> On 06/29/2012 02:25 AM, Andrew Morton wrote:
+>> On Thu, 28 Jun 2012 13:01:23 +0400
+>> Glauber Costa <glommer@parallels.com> wrote:
 >>
->> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->> Reported-by: Paul Walmsley <paul@pwsan.com>
->> Reviewed-by: Jon Hunter <jon-hunter@ti.com>
->> Cc: Kevin Hilman <khilman@ti.com>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Cousson, Benoit <b-cousson@ti.com>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> ---
->> v2:
->> Baseline: git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
->> Commit: 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee (Linux 3.6-rc1)
+>>>
+>>> ...
+>>>
 >>
->> (1) Use irq_free_descs() instead of irq_free_desc().
->>     Besides, irq_free_desc() was using wrong parameter,
->>     irq_base, instead of bank->irq.
->> (2) irq_free_descs() moved outside spin_lock/unlock_*()
->>     in order to avoid exception warnings.
+>> OK, that all sounds convincing ;) Please summarise and capture this
+>> discussion in the [patch 0/n] changelog so we (or others) don't have to
+>> go through this all again.  And let's remember this in the next
+>> patchset!
 >>
->> (3) pm_runtime_disable() added so that bind can happen successfully
+>>> Last, but not least, note that it is totally within my interests to
+>>> merge the slab tracking as fast as we can. it'll be a matter of going
+>>> back to it, and agreeing in the final form.
 >>
->> Test Detail:
->> Step 1: Unbind gpio.5 device in order to invoke the *remove* callback.
->> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/unbind
+>> Yes, I'd very much like to have the whole slab implementation in a
+>> reasonably mature state before proceeding too far with this base
+>> patchset.
 >>
->> Step 2: Bind gpio.5 device and confirm probe() for the device succeeds.
->> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/bind
->>
->> Step 3: Execute read/write GPIO test case.
->>
-> Thanks details about test. Whe  you to "Unbind->bind", do
-> you see that PM is not broken.
->
-> In other words, can you also test and ensure that the OMAP3 suspend and
-> CPUIDLE are not broken because of this patch.
-> PER and CORE domains should transition to low power states.
-Sure, I will do the PM test on OMAP3 and confirm this.
----
-Tarun
->
-> Regards
-> Santosh
+> So, that was posted separately as well.
+> 
+> Although there is a thing to fix here and there - all of them I am
+> working on already - I believe that to be mature enough.
+> 
+> Do you have any comments on that? Would you be willing to take this
+> first part (modified with the comments on this thread itself) and let it
+> start sitting in the tree?
+> 
+
+In the mean time, for any interested parties, I've set up a tree at:
+
+git://github.com/glommer/linux.git
+
+branches kmemcg-slab and kmemcg-stack
+
+Intended to be a throw-away tree.
+
+
+
+
