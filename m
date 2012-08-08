@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2HHW2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 18:28:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62394 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756213Ab2HHW2r (ORCPT
+	id S1757287Ab2HHWdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 18:33:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53486 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab2HHWdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 18:28:47 -0400
-Date: Wed, 8 Aug 2012 15:28:41 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 06/12] block: Add an explicit bio flag for bios that
- own their bvec
-Message-ID: <20120808222841.GF6983@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-7-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344290921-25154-7-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Aug 2012 18:33:23 -0400
+Date: Thu, 9 Aug 2012 08:33:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: Re: linux-next: removal of some trees
+Message-Id: <20120809083312.cd9cd8f19cf2f329c8758288@canb.auug.org.au>
+In-Reply-To: <097401cd7473$ce075320$6a15f960$%kim@samsung.com>
+References: <20120802084154.875a13db0ec1ebd3f5a4dab3@canb.auug.org.au>
+	<097401cd7473$ce075320$6a15f960$%kim@samsung.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 06, 2012 at 03:08:35PM -0700, Kent Overstreet wrote:
-> This is for the new bio splitting code. When we split a bio, if the
-> split occured on a bvec boundry we reuse the bvec for the new bio. But
-> that means bio_free() can't free it, hence the explicit flag.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+--Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sans how the flag is preserved,
+Hi,
 
- Acked-by: Tejun Heo <tj@kernel.org>
+On Tue, 07 Aug 2012 17:08:18 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+>
+> I think, now, the 'samsung' can be removed from linux-next but I'm not su=
+re
+> about 'bjdooks-i2c'. If so, please change the name of my tree 's5p' to
+> 'samsung'.
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+> #for-next
 
-Thanks.
+Done.
 
--- 
-tejun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQIukoAAoJEECxmPOUX5FEuJcP/RgQIWFpEcqxEWpFGo6ymOHX
+7sw0Y0YVtYNb/ckIUz+/NU0MvV3DsQfCONh3aJWF3plZN+161Yif6DpmgmW+YKiT
+JCVnlBZmR7LQLPUiD13wQpc+yblChGPqpakcRJ1JsJAqAUuEKc+guSq2o656x4cC
+F9a7/NsaWh8DDdQzYEEuqjtwc5l0sgbkfpllLDL8NwPYXo9uMRf6FJQa39s4APj9
+LGP5rMmvzVa99AnP1++YfxU8CDW54fJkvd659ceNgx+GyCUx7/JwAhyBg9hDNLff
+e6N7a1TQ6cXBnftOUeeEQmgOaz7yshAyLgXTbJEb3jNh2415HEIGfjD7FwCHwOHf
+adpHTXviB7SOv4eSMfYfT+rVvAWD/Pu0Sq75XOvqsND52tIRpR/Y+xOcCsFGbUWS
+LExlEhraOtixSL8WIGJNgylCdzz9keKPYN7+W8DzlLOkwVn8+uphJCMpJZ9l1dEz
+4dAnQ6fWzb01YaMeLupYoibx9ZG/cSuEuDaPuvoCLRaNDUa9ooAD90vKdrbfsfSh
+3IcqFSmg9h8otAejUp5dNvPp2Z6ZTBezl8NvjqUmr3BTNOPTnC6ZFtKoOM0bwBUQ
+LRkEIdrKFh6WFt07E14Prmwul5bSPmuEIpjim/z8sm1mSmeMsJ3GE3SspvXkoGUQ
+GwlxH3VizdZqln2VvS3n
+=IqGX
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Aug_2012_08_33_12_+1000_WaEK7169T8i=lw1Z--
