@@ -1,197 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab2HHKRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:17:49 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:26875 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2HHKRq (ORCPT
+	id S1757447Ab2HHKZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:25:22 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:37009 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab2HHKZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:17:46 -0400
-Message-id: <50223CC5.9060007@samsung.com>
-Date: Wed, 08 Aug 2012 12:17:41 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
+	Wed, 8 Aug 2012 06:25:19 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-e6-50223e8d9863
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
+Cc: "'Tushar Behera'" <tushar.behera@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.hauer@pengutronix.de, patches@linaro.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
+ <098f01cd7488$0d66d630$28348290$%kim@samsung.com>
+ <5020F568.5020204@linaro.org>
+ <0a2d01cd7500$53e26c50$fba744f0$%kim@samsung.com>
+ <20120808061102.GA22417@avionic-0098.mockup.avionic-design.de>
+ <0abe01cd752f$4f96ad80$eec40880$%kim@samsung.com>
+ <20120808065046.GA30832@avionic-0098.mockup.avionic-design.de>
+In-reply-to: <20120808065046.GA30832@avionic-0098.mockup.avionic-design.de>
+Subject: RE: [PATCH] ARM: SAMSUNG: Fix compilation error with s3c2410_defconfig
+Date: Wed, 08 Aug 2012 19:25:17 +0900
+Message-id: <0af001cd7550$1af66040$50e320c0$%kim@samsung.com>
 MIME-version: 1.0
-To: linaro-mm-sig@lists.linaro.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Sumit Semwal <sumit.semwal@linaro.org>, Pawel Osciak <pawel@osciak.com>,
-        Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, Rob Clark <rob@ti.com>,
-        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH] dma-buf: add reference counting for exporter module
-Content-type: text/plain; charset=ISO-8859-1
+Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac11MiaZdi3s362VSqSYklyLRdwjMAAG9irA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jAd1eO6UAg9bdyhaXd81hs5hxfh+T
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBl7dj9gKlgkWtHT+5+lgfGgQBcjJ4eEgInEpINrWCBs
+	MYkL99azdTFycQgJLGKUuHn+GjtIQkjgL6PE6lcqIDabgIbE4ffPwOIiAuYSSxbtZQZpYBY4
+	zChxY+oUJoiGNmaJT58VQWxOAW+Jp9cWATVwcAgL+Es86iwACbMIqEr8b9nLBBLmFbCVeD3d
+	BiTMKyAo8WPyPbB7mAW0JNbvPM4EYctLbF7zlhmkXEJAXeLRX12IC4wkNm6cwAxRIiKx78U7
+	xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4nJ9J72Bc
+	1WBxiFGAg1GJh3dTqmKAEGtiWXFl7iFGCQ5mJRHePQeBQrwpiZVVqUX58UWlOanFhxilOViU
+	xHlNvL/6CwmkJ5akZqemFqQWwWSZODilGhijqnRFGk7tMMvvrTxzdB/DpbWe7sWs8SUcDixM
+	uvrbQ2xCnosFnPIrUO/efszNRO/mi4Jn3jO/utU3dxddSY3ZtsTMwTjG4KMD21yGr2tmBGzu
+	f8Kdzbt5wtPNcls3hPMV2h8JLz7W9IV1+vzqsz85bRzn8dQlPVzH3Ls538RmZmE2v4nQayWW
+	4oxEQy3mouJEAFYyYXZjAgAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds reference counting on a module that exports dma-buf and
-implements its operations. This prevents the module from being unloaded while
-DMABUF file is in use.
+Thierry Reding wrote:
+> 
+> On Wed, Aug 08, 2012 at 03:30:32PM +0900, Kukjin Kim wrote:
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+[...]
+
+> > Yeah, your pointing out is correct, but in this case, it should be
+> 'bool'
+> > not 'tristate' because the PWM driver cannot support module now.
+> 
+> Is there any reason why that is so?
+
+I mean, current pwm-samsung.c does not support module, as you know, the
+pwm_init() of pwm-samsung is called by arch_initcall().
+
+> Looking at the driver it seems like
+> it should be easy to turn it into a module.
+
+Yeah, I know :)
+
+> I know that Jingoo (Cc'ed)
+> has been working on the driver and I've asked him the same question
+> already.
+> 
+I didn't know, would be helpful to me if you could add me in Cc for
+discussion of pwm-samsung. And he is my team member, so I will talk to him
+about the plan.
+
+> Anyway I don't want to force the issue, I just think you should consider
+> it.
+> 
+Thanks.
+
+> > > solve this problem would be to add a default line, like so:
+> > >
+> > > 	default PLAT_SAMSUNG
+> > >
+> > > I've checked this with a s3c2410_defconfig and this causes PWM_SAMSUNG
+> > > to be selected =y, which I guess is what you want.
+> > >
+> > How do you think following, just adding from original one?
+> >
+> > -	tristate "Samsung pwm support"
+> > +	bool "SAMSUNG PWM support"
+> >
+> > Thanks.
+> 
+> If you convert this to bool anyway, then maybe you can still use
+> def_bool:
+> 
+> 	config PWM_SAMSUNG
+> 		prompt "SAMSUNG PWM support" if PLAT_SAMSUNG
+> 		def_bool PLAT_SAMSUNG
+> 
+> Any particular reason why you want "SAMSUNG" capitalized?
+> 
+No, there is no reason, just because...
+
+So, how about following? If PWM is selected on Samsung SoCs, the PWM_SAMSUNG
+will be selected automatically. Of course, it can be de-selected in kernel
+menuconfig. Note that, I think, using 'bool <expr>' and 'depends on <expr>'
+is more clear than 'prompt <prompt> ["if" <expr>]'. However if any your
+preference here, please kindly let me know.
+
 ---
- Documentation/dma-buf-sharing.txt          |    3 ++-
- drivers/base/dma-buf.c                     |   10 +++++++++-
- drivers/gpu/drm/exynos/exynos_drm_dmabuf.c |    1 +
- drivers/gpu/drm/i915/i915_gem_dmabuf.c     |    1 +
- drivers/gpu/drm/nouveau/nouveau_prime.c    |    1 +
- drivers/gpu/drm/radeon/radeon_prime.c      |    1 +
- drivers/staging/omapdrm/omap_gem_dmabuf.c  |    1 +
- include/linux/dma-buf.h                    |    2 ++
- 8 files changed, 18 insertions(+), 2 deletions(-)
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 8fc3808..c74d055 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -58,14 +58,12 @@ config PWM_PXA
+ 	will be called pwm-pxa.
 
-diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-index ad86fb8..2613057 100644
---- a/Documentation/dma-buf-sharing.txt
-+++ b/Documentation/dma-buf-sharing.txt
-@@ -49,7 +49,8 @@ The dma_buf buffer sharing API usage contains the following steps:
-    The buffer exporter announces its wish to export a buffer. In this, it
-    connects its own private buffer data, provides implementation for operations
-    that can be performed on the exported dma_buf, and flags for the file
--   associated with this buffer.
-+   associated with this buffer. The operations structure has owner field.
-+   You should initialize this to THIS_MODULE in most cases.
+ config PWM_SAMSUNG
+-	tristate "Samsung pwm support"
++	bool "Samsung PWM support"
+ 	depends on PLAT_SAMSUNG
++	default y
+ 	help
+ 	  Generic PWM framework driver for Samsung.
+ 
+-	  To compile this driver as a module, choose M here: the module
+-	  will be called pwm-samsung.
+-
+ config PWM_TEGRA
+ 	tristate "NVIDIA Tegra PWM support"
+ 	depends on ARCH_TEGRA
+---
 
-    Interface:
-       struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
-diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-index c30f3e1..d14b2f5 100644
---- a/drivers/base/dma-buf.c
-+++ b/drivers/base/dma-buf.c
-@@ -27,6 +27,7 @@
- #include <linux/dma-buf.h>
- #include <linux/anon_inodes.h>
- #include <linux/export.h>
-+#include <linux/module.h>
+Thanks.
 
- static inline int is_dma_buf_file(struct file *);
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-@@ -40,6 +41,7 @@ static int dma_buf_release(struct inode *inode, struct file *file)
- 	dmabuf = file->private_data;
-
- 	dmabuf->ops->release(dmabuf);
-+	module_put(dmabuf->ops->owner);
- 	kfree(dmabuf);
- 	return 0;
- }
-@@ -96,6 +98,7 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
- 	struct file *file;
-
- 	if (WARN_ON(!priv || !ops
-+			  || !ops->owner
- 			  || !ops->map_dma_buf
- 			  || !ops->unmap_dma_buf
- 			  || !ops->release
-@@ -105,9 +108,14 @@ struct dma_buf *dma_buf_export(void *priv, const struct dma_buf_ops *ops,
- 		return ERR_PTR(-EINVAL);
- 	}
-
-+	if (!try_module_get(ops->owner))
-+		return ERR_PTR(-ENOENT);
-+
- 	dmabuf = kzalloc(sizeof(struct dma_buf), GFP_KERNEL);
--	if (dmabuf == NULL)
-+	if (dmabuf == NULL) {
-+		module_put(ops->owner);
- 		return ERR_PTR(-ENOMEM);
-+	}
-
- 	dmabuf->priv = priv;
- 	dmabuf->ops = ops;
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-index 613bf8a..cf3bc6d 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-@@ -164,6 +164,7 @@ static void exynos_gem_dmabuf_kunmap(struct dma_buf *dma_buf,
- }
-
- static struct dma_buf_ops exynos_dmabuf_ops = {
-+	.owner			= THIS_MODULE,
- 	.map_dma_buf		= exynos_gem_map_dma_buf,
- 	.unmap_dma_buf		= exynos_gem_unmap_dma_buf,
- 	.kmap			= exynos_gem_dmabuf_kmap,
-diff --git a/drivers/gpu/drm/i915/i915_gem_dmabuf.c b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-index aa308e1..07ff03b 100644
---- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-+++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-@@ -152,6 +152,7 @@ static int i915_gem_dmabuf_mmap(struct dma_buf *dma_buf, struct vm_area_struct *
- }
-
- static const struct dma_buf_ops i915_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = i915_gem_map_dma_buf,
- 	.unmap_dma_buf = i915_gem_unmap_dma_buf,
- 	.release = i915_gem_dmabuf_release,
-diff --git a/drivers/gpu/drm/nouveau/nouveau_prime.c b/drivers/gpu/drm/nouveau/nouveau_prime.c
-index a25cf2c..8605033 100644
---- a/drivers/gpu/drm/nouveau/nouveau_prime.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_prime.c
-@@ -127,6 +127,7 @@ static void nouveau_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
- }
-
- static const struct dma_buf_ops nouveau_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = nouveau_gem_map_dma_buf,
- 	.unmap_dma_buf = nouveau_gem_unmap_dma_buf,
- 	.release = nouveau_gem_dmabuf_release,
-diff --git a/drivers/gpu/drm/radeon/radeon_prime.c b/drivers/gpu/drm/radeon/radeon_prime.c
-index 6bef46a..4061fd3 100644
---- a/drivers/gpu/drm/radeon/radeon_prime.c
-+++ b/drivers/gpu/drm/radeon/radeon_prime.c
-@@ -127,6 +127,7 @@ static void radeon_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
- 	mutex_unlock(&dev->struct_mutex);
- }
- const static struct dma_buf_ops radeon_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = radeon_gem_map_dma_buf,
- 	.unmap_dma_buf = radeon_gem_unmap_dma_buf,
- 	.release = radeon_gem_dmabuf_release,
-diff --git a/drivers/staging/omapdrm/omap_gem_dmabuf.c b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-index 42728e0..6a4dd67 100644
---- a/drivers/staging/omapdrm/omap_gem_dmabuf.c
-+++ b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-@@ -179,6 +179,7 @@ out_unlock:
- }
-
- struct dma_buf_ops omap_dmabuf_ops = {
-+		.owner = THIS_MODULE,
- 		.map_dma_buf = omap_gem_map_dma_buf,
- 		.unmap_dma_buf = omap_gem_unmap_dma_buf,
- 		.release = omap_gem_dmabuf_release,
-diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-index eb48f38..22953de 100644
---- a/include/linux/dma-buf.h
-+++ b/include/linux/dma-buf.h
-@@ -37,6 +37,7 @@ struct dma_buf_attachment;
-
- /**
-  * struct dma_buf_ops - operations possible on struct dma_buf
-+ * @owner: the module that implements dma_buf operations
-  * @attach: [optional] allows different devices to 'attach' themselves to the
-  *	    given buffer. It might return -EBUSY to signal that backing storage
-  *	    is already allocated and incompatible with the requirements
-@@ -70,6 +71,7 @@ struct dma_buf_attachment;
-  * @vunmap: [optional] unmaps a vmap from the buffer
-  */
- struct dma_buf_ops {
-+	struct module *owner;
- 	int (*attach)(struct dma_buf *, struct device *,
- 			struct dma_buf_attachment *);
-
--- 
-1.7.9.5
