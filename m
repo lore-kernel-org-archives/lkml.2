@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab2HHM4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 08:56:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60575 "EHLO
+	id S1758240Ab2HHM4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 08:56:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51179 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2HHMzD (ORCPT
+	with ESMTP id S1758177Ab2HHMzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Aug 2012 08:55:03 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, stable@vger.kernel.org (v3.2+),
-        Daniel Mack <zonque@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 2/6] ARM: pxa remove irq_to_gpio from eeti_ts driver
-Date: Wed,  8 Aug 2012 14:54:49 +0200
-Message-Id: <1344430493-5304-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 5/6] ARM: integrator: include <linux/export.h
+Date: Wed,  8 Aug 2012 14:54:52 +0200
+Message-Id: <1344430493-5304-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344430493-5304-1-git-send-email-arnd@arndb.de>
 References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:5KZEO/Fy4nyj/eXxN5uFiNt+o96OxZGOP1OlONedrWu
- aH/GP57xsSzrtC/BWI2tGH34doPdOYreszWY/TcGCwIxaPFihh
- 2SdYbURu1ZyLieDoK8T/aA3Z2/XeAjgWlkXh/HyJi1SzJ1d9gI
- 4YIUObE8ZqKMGxn2oJTacR4i0yxpd7NHJYkMyZtPiBc/WDf8ht
- 17KfWwnkpgBqcl1rCF0BIcZAV6lVWaH24aznK2cE6fnEJKl+75
- y1yAjSKqeNG8CyJEKTmYgP5bt6D7nJIZ4JBK8vv3qH6jkZ0yh2
- Ol2+XvMkoJvVyecGVJ8ZoSUm05J3g4ukarPfxnsDazL6SWICCL
- Zdfm36MD7VW5JFnY+4Uv22xkx3qX+glTI+8NOhidQ97Nmuwaxa
- Js4PeNkkVZFeg==
+X-Provags-ID: V02:K0:+fGNomzR/ONSTTj+4XtP2QNQV9X7zDwC7pG9fla8ptp
+ x5gWHwDhViaK7t0Cxf6BMGdTQSuzBlYfcZiOXU6PqnudwgxMbN
+ SWwcQ3m+xgTRNNVEA+KG/7pJwc638VAzJvv31Y1v7cqWDcEhCa
+ yP5qN3sm4vxfQmmtYdOap6C2aRsuP/3cL2+GskSBRXXN1dSpeC
+ wzyLoXdiVRWDdACTPDnD3CIWEy7zr318VZ0J/Uh+8vA+CNF1Rp
+ DzA+TpskvqgyAwWHkssjMCA0BkzyYJKF1V9XEKJVZ9VGv2wVgO
+ oFqdJccQz0QsnX2FINqYRXRxRgi4lbVHSn8sxruNUiPrPqK6bq
+ g063aRhFgJq6+OwIATT6stm/hE+itZwOaF/v+fe8KuGHoBUCqP
+ vXdj33Xjey0ow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq_to_gpio function was removed from the pxa platform
-in linux-3.2, and this driver has been broken since.
+Without this patch, building integrator_defconfig results in:
 
-Without this patch, building raumfeld_defconfig results in:
-
-drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
-drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+arch/arm/mach-integrator/core.c:150:1: warning: data definition has no type or storage class [enabled by default]
+arch/arm/mach-integrator/core.c:150:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+arch/arm/mach-integrator/core.c:150:1: warning: parameter names (without types) in function declaration [enabled by default]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: stable@vger.kernel.org (v3.2+)
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/mach-pxa/raumfeld.c        |    1 +
- drivers/input/touchscreen/eeti_ts.c |    8 +++++---
- include/linux/input/eeti_ts.h       |    1 +
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ arch/arm/mach-integrator/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
-index 5905ed1..9e1c4ea 100644
---- a/arch/arm/mach-pxa/raumfeld.c
-+++ b/arch/arm/mach-pxa/raumfeld.c
-@@ -953,6 +953,7 @@ static struct i2c_board_info raumfeld_connector_i2c_board_info __initdata = {
- 
- static struct eeti_ts_platform_data eeti_ts_pdata = {
- 	.irq_active_high = 1,
-+	.gpio = GPIO_TOUCH_IRQ,
- };
- 
- static struct i2c_board_info raumfeld_controller_i2c_board_info __initdata = {
-diff --git a/drivers/input/touchscreen/eeti_ts.c b/drivers/input/touchscreen/eeti_ts.c
-index 503c709..45dab18 100644
---- a/drivers/input/touchscreen/eeti_ts.c
-+++ b/drivers/input/touchscreen/eeti_ts.c
-@@ -48,7 +48,7 @@ struct eeti_ts_priv {
- 	struct input_dev *input;
- 	struct work_struct work;
- 	struct mutex mutex;
--	int irq, irq_active_high;
-+	int irq, gpio, irq_active_high;
- };
- 
- #define EETI_TS_BITDEPTH	(11)
-@@ -62,7 +62,7 @@ struct eeti_ts_priv {
- 
- static inline int eeti_ts_irq_active(struct eeti_ts_priv *priv)
- {
--	return gpio_get_value(irq_to_gpio(priv->irq)) == priv->irq_active_high;
-+	return gpio_get_value(priv->gpio) == priv->irq_active_high;
- }
- 
- static void eeti_ts_read(struct work_struct *work)
-@@ -203,8 +203,10 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
- 
- 	pdata = client->dev.platform_data;
- 
--	if (pdata)
-+	if (pdata) {
-+		priv->gpio = pdata->gpio;
- 		priv->irq_active_high = pdata->irq_active_high;
-+	}
- 
- 	irq_flags = priv->irq_active_high ?
- 		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
-diff --git a/include/linux/input/eeti_ts.h b/include/linux/input/eeti_ts.h
-index f875b31..3404504 100644
---- a/include/linux/input/eeti_ts.h
-+++ b/include/linux/input/eeti_ts.h
-@@ -3,6 +3,7 @@
- 
- struct eeti_ts_platform_data {
- 	unsigned int irq_active_high;
-+	unsigned int gpio;
- };
- 
- #endif /* LINUX_INPUT_EETI_TS_H */
+diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
+index ebf680b..3fa6c51 100644
+--- a/arch/arm/mach-integrator/core.c
++++ b/arch/arm/mach-integrator/core.c
+@@ -11,6 +11,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/device.h>
++#include <linux/export.h>
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
 -- 
 1.7.10
 
