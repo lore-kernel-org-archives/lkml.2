@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab2HHIYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:24:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40203 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757865Ab2HHIYB (ORCPT
+	id S932449Ab2HHI0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:26:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56065 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757857Ab2HHI0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:24:01 -0400
-Message-ID: <5022221E.5020804@zankel.net>
-Date: Wed, 08 Aug 2012 01:23:58 -0700
-From: Chris Zankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 04:26:08 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-b2-5022229df6f0
+Date: Wed, 8 Aug 2012 17:27:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
+ reclaim/compaction based on failures
+Message-ID: <20120808082738.GF4247@bbox>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-3-git-send-email-mgorman@suse.de>
+ <20120808014824.GB4247@bbox>
+ <20120808075526.GI29814@suse.de>
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        linux-next@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marc Gauthier <marc@tensilica.com>,
-        Kirill Krinkin <kirill.krinkin@gmail.com>
-Subject: Re: xtensa port maintenance
-References: <50205592.1030205@gmail.com> <5020AA5B.4080407@zankel.net> <CAMo8BfLLxBeUC-vg6sAxWLjqPt=fwsQEQgjsqqbjurT3vzo-Pw@mail.gmail.com>
-In-Reply-To: <CAMo8BfLLxBeUC-vg6sAxWLjqPt=fwsQEQgjsqqbjurT3vzo-Pw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120808075526.GI29814@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Max,
+On Wed, Aug 08, 2012 at 08:55:26AM +0100, Mel Gorman wrote:
+> On Wed, Aug 08, 2012 at 10:48:24AM +0900, Minchan Kim wrote:
+> > Hi Mel,
+> > 
+> > Just out of curiosity.
+> > What's the problem did you see? (ie, What's the problem do this patch solve?)
+> 
+> Everythign in this series is related to the problem in the leader - high
+> order allocation success rates are lower. This patch increases the success
+> rates when allocating under load.
+> 
+> > AFAIUC, it seem to solve consecutive allocation success ratio through
+> > getting several free pageblocks all at once in a process/kswapd
+> > reclaim context. Right?
+> 
+> Only pageblocks if it is order-9 on x86, it reclaims an amount that depends
+> on an allocation size. This only happens during reclaim/compaction context
+> when we know that a high-order allocation has recently failed. The objective
+> is to reclaim enough order-0 pages so that compaction can succeed again.
 
-On 08/07/2012 09:43 AM, Max Filippov wrote:
-> On Tue, Aug 7, 2012 at 9:40 AM, Chris Zankel <chris@zankel.net> wrote:
->> Hi Max,
->>
->> On 08/06/2012 04:38 PM, Max Filippov wrote:
->>> AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
->>> mainline, it fails to build in the linux-next. The latest working kernels
->>> for
->>> xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
->> I wouldn't say it's in bad shape, I just built an vmlinux image from the
->> latest tree (3.6.0-rc1), but it might not be very stable. One of the major
->> issues is not really the kernel but  there's actually no way to build a
->> fairly recent version of the toolchain. I have been using a somewhat more
->> recent buildroot version than what is on xtensa-linux.org, but even that
->> version of buildroot is rather old now and needed a few patches.
-> I've been using userspace built from the buildroot image hosted on
-> linux-xtensa.org with gcc-4.4.5 + binutils-2.20.1. I use gcc-4.6.3
-> (without libc) + binutils-2.22 to build the kernel. I had an impression that
-> mentioned buildroot was able to produce userspace where LTP could
-> run successfully for days. So, my initial plan is to use that userspace
-> with mainline kernel.
-Good plan!
-
-> I have a subset thereof that builds toolchain (without libc) and the kernel.
-> Buildroot gave me an impression of not very reproducible environment, perhaps
-> I spent too little time on it. So I made an image and I hope that
-> pre-built image
-> may be used, at least in the beginning. I had to lightly patch U-boot hosted on
-> linux-xtensa.org to make it work on LX60/110/200 QEMU models. I guess we
-> can start with pre-built image of the bootloader too.
-I'm not settled on Buildroot, but I had the best experience with it so 
-far. OpenEmbedded was a real pain when I used it (it might have improved 
-a lot since, though). I once even started my own build system, but it 
-became fairly complicated once I wanted to build a bootable system with 
-a C library and various packages.
+Your patch increases the number of pages to be reclaimed with considering
+the number of fail case during deferring period and your test proved it's
+really good. Without your patch, why can't VM reclaim enough pages?
+Other processes steal the pages reclaimed?
+Why I ask a question is that I want to know what's the problem at current
+VM.
 
 
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
-> Ok. I'd like to have even generic patches (my current queue is mostly 
-> generic) reviewed. Do you prefer to read them on github or on the 
-> linux-xtensa mailing list? 
-I looked over them briefly, and only had one or two questions. I'll send 
-them tomorrow (our time).
-
-
-Thanks,
--Chris
+-- 
+Kind regards,
+Minchan Kim
