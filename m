@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab2HHDV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 23:21:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34527 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab2HHDVL (ORCPT
+	id S1757798Ab2HHDV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 23:21:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37465 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab2HHDVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Aug 2012 23:21:11 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,14 +16,14 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf lock: Use evsel->tp_format and perf_sample
-Date: Wed,  8 Aug 2012 00:20:55 -0300
-Message-Id: <1344396057-10540-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 7/8] perf sched: Use perf_sample
+Date: Wed,  8 Aug 2012 00:20:56 -0300
+Message-Id: <1344396057-10540-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344396057-10540-1-git-send-email-acme@infradead.org>
 References: <1344396057-10540-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,279 +43,303 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-bipk647rzq357yot9ao6ih73@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-fc537qykjjqzvyol5fecx6ug@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-lock.c |  116 ++++++++++++++++-----------------------------
- 1 file changed, 42 insertions(+), 74 deletions(-)
+ tools/perf/builtin-sched.c |  113 +++++++++++++++-----------------------------
+ 1 file changed, 37 insertions(+), 76 deletions(-)
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 142b303..3f8b955 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -357,28 +357,16 @@ struct trace_release_event {
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 30ef82a..a25a023 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -729,46 +729,30 @@ struct trace_sched_handler {
+ 	void (*switch_event)(struct trace_switch_event *,
+ 			     struct machine *,
+ 			     struct event_format *,
+-			     int cpu,
+-			     u64 timestamp,
+-			     struct thread *thread);
++			     struct perf_sample *sample);
  
- struct trace_lock_handler {
- 	void (*acquire_event)(struct trace_acquire_event *,
+ 	void (*runtime_event)(struct trace_runtime_event *,
+ 			      struct machine *,
 -			      struct event_format *,
 -			      int cpu,
 -			      u64 timestamp,
 -			      struct thread *thread);
-+			      const struct perf_sample *sample);
++			      struct perf_sample *sample);
  
- 	void (*acquired_event)(struct trace_acquired_event *,
--			       struct event_format *,
--			       int cpu,
--			       u64 timestamp,
--			       struct thread *thread);
-+			       const struct perf_sample *sample);
+ 	void (*wakeup_event)(struct trace_wakeup_event *,
+ 			     struct machine *,
+ 			     struct event_format *,
+-			     int cpu,
+-			     u64 timestamp,
+-			     struct thread *thread);
++			     struct perf_sample *sample);
  
- 	void (*contended_event)(struct trace_contended_event *,
--				struct event_format *,
--				int cpu,
--				u64 timestamp,
--				struct thread *thread);
-+				const struct perf_sample *sample);
+ 	void (*fork_event)(struct trace_fork_event *,
+-			   struct event_format *,
+-			   int cpu,
+-			   u64 timestamp,
+-			   struct thread *thread);
++			   struct event_format *event);
  
- 	void (*release_event)(struct trace_release_event *,
--			      struct event_format *,
--			      int cpu,
--			      u64 timestamp,
--			      struct thread *thread);
-+			      const struct perf_sample *sample);
+ 	void (*migrate_task_event)(struct trace_migrate_task_event *,
+-			   struct machine *machine,
+-			   struct event_format *,
+-			   int cpu,
+-			   u64 timestamp,
+-			   struct thread *thread);
++				   struct machine *machine,
++				   struct perf_sample *sample);
  };
  
- static struct lock_seq_stat *get_seq(struct thread_stat *ts, void *addr)
-@@ -417,10 +405,7 @@ enum acquire_flags {
  
  static void
- report_lock_acquire_event(struct trace_acquire_event *acquire_event,
--			struct event_format *__event __used,
--			int cpu __used,
--			u64 timestamp __used,
--			struct thread *thread __used)
-+			  const struct perf_sample *sample)
+ replay_wakeup_event(struct trace_wakeup_event *wakeup_event,
+ 		    struct machine *machine __used,
+-		    struct event_format *event,
+-		    int cpu __used,
+-		    u64 timestamp __used,
+-		    struct thread *thread __used)
++		    struct event_format *event, struct perf_sample *sample)
  {
- 	struct lock_stat *ls;
- 	struct thread_stat *ts;
-@@ -430,7 +415,7 @@ report_lock_acquire_event(struct trace_acquire_event *acquire_event,
- 	if (ls->discard)
- 		return;
+ 	struct task_desc *waker, *wakee;
  
--	ts = thread_stat_findnew(thread->pid);
-+	ts = thread_stat_findnew(sample->tid);
- 	seq = get_seq(ts, acquire_event->addr);
+@@ -784,7 +768,7 @@ replay_wakeup_event(struct trace_wakeup_event *wakeup_event,
+ 	waker = register_pid(wakeup_event->common_pid, "<unknown>");
+ 	wakee = register_pid(wakeup_event->pid, wakeup_event->comm);
  
- 	switch (seq->state) {
-@@ -474,18 +459,16 @@ broken:
- 	}
- 
- 	ls->nr_acquire++;
--	seq->prev_event_time = timestamp;
-+	seq->prev_event_time = sample->time;
- end:
- 	return;
+-	add_sched_event_wakeup(waker, timestamp, wakee);
++	add_sched_event_wakeup(waker, sample->time, wakee);
  }
  
+ static u64 cpu_last_switched[MAX_CPUS];
+@@ -793,12 +777,11 @@ static void
+ replay_switch_event(struct trace_switch_event *switch_event,
+ 		    struct machine *machine __used,
+ 		    struct event_format *event,
+-		    int cpu,
+-		    u64 timestamp,
+-		    struct thread *thread __used)
++		    struct perf_sample *sample)
+ {
+ 	struct task_desc *prev, __used *next;
+-	u64 timestamp0;
++	u64 timestamp0, timestamp = sample->time;
++	int cpu = sample->cpu;
+ 	s64 delta;
+ 
+ 	if (verbose)
+@@ -835,10 +818,7 @@ replay_switch_event(struct trace_switch_event *switch_event,
+ 
  static void
- report_lock_acquired_event(struct trace_acquired_event *acquired_event,
--			 struct event_format *__event __used,
--			 int cpu __used,
--			 u64 timestamp __used,
--			 struct thread *thread __used)
-+			   const struct perf_sample *sample)
+ replay_fork_event(struct trace_fork_event *fork_event,
+-		  struct event_format *event,
+-		  int cpu __used,
+-		  u64 timestamp __used,
+-		  struct thread *thread __used)
++		  struct event_format *event)
+ {
+ 	if (verbose) {
+ 		printf("sched_fork event %p\n", event);
+@@ -944,10 +924,7 @@ static void thread_atoms_insert(struct thread *thread)
+ 
+ static void
+ latency_fork_event(struct trace_fork_event *fork_event __used,
+-		   struct event_format *event __used,
+-		   int cpu __used,
+-		   u64 timestamp __used,
+-		   struct thread *thread __used)
++		   struct event_format *event __used)
+ {
+ 	/* should insert the newcomer */
+ }
+@@ -1027,13 +1004,12 @@ static void
+ latency_switch_event(struct trace_switch_event *switch_event,
+ 		     struct machine *machine,
+ 		     struct event_format *event __used,
+-		     int cpu,
+-		     u64 timestamp,
+-		     struct thread *thread __used)
++		     struct perf_sample *sample)
+ {
+ 	struct work_atoms *out_events, *in_events;
+ 	struct thread *sched_out, *sched_in;
+-	u64 timestamp0;
++	u64 timestamp0, timestamp = sample->time;
++	int cpu = sample->cpu;
+ 	s64 delta;
+ 
+ 	BUG_ON(cpu >= MAX_CPUS || cpu < 0);
+@@ -1078,14 +1054,12 @@ latency_switch_event(struct trace_switch_event *switch_event,
+ 
+ static void
+ latency_runtime_event(struct trace_runtime_event *runtime_event,
+-		     struct machine *machine,
+-		     struct event_format *event __used,
+-		     int cpu,
+-		     u64 timestamp,
+-		     struct thread *this_thread __used)
++		      struct machine *machine, struct perf_sample *sample)
+ {
+ 	struct thread *thread = machine__findnew_thread(machine, runtime_event->pid);
+ 	struct work_atoms *atoms = thread_atoms_search(&atom_root, thread, &cmp_pid);
++	u64 timestamp = sample->time;
++	int cpu = sample->cpu;
+ 
+ 	BUG_ON(cpu >= MAX_CPUS || cpu < 0);
+ 	if (!atoms) {
+@@ -1101,15 +1075,13 @@ latency_runtime_event(struct trace_runtime_event *runtime_event,
+ 
+ static void
+ latency_wakeup_event(struct trace_wakeup_event *wakeup_event,
+-		     struct machine *machine,
+-		     struct event_format *__event __used,
+-		     int cpu __used,
+-		     u64 timestamp,
+-		     struct thread *thread __used)
++		     struct machine *machine, struct event_format *event __used,
++		     struct perf_sample *sample)
+ {
+ 	struct work_atoms *atoms;
+ 	struct work_atom *atom;
+ 	struct thread *wakee;
++	u64 timestamp = sample->time;
+ 
+ 	/* Note for later, it may be interesting to observe the failing cases */
+ 	if (!wakeup_event->success)
+@@ -1149,12 +1121,9 @@ latency_wakeup_event(struct trace_wakeup_event *wakeup_event,
+ 
+ static void
+ latency_migrate_task_event(struct trace_migrate_task_event *migrate_task_event,
+-		     struct machine *machine,
+-		     struct event_format *__event __used,
+-		     int cpu __used,
+-		     u64 timestamp,
+-		     struct thread *thread __used)
++			   struct machine *machine, struct perf_sample *sample)
  {
 +	u64 timestamp = sample->time;
- 	struct lock_stat *ls;
- 	struct thread_stat *ts;
- 	struct lock_seq_stat *seq;
-@@ -495,7 +478,7 @@ report_lock_acquired_event(struct trace_acquired_event *acquired_event,
- 	if (ls->discard)
- 		return;
- 
--	ts = thread_stat_findnew(thread->pid);
-+	ts = thread_stat_findnew(sample->tid);
- 	seq = get_seq(ts, acquired_event->addr);
- 
- 	switch (seq->state) {
-@@ -537,10 +520,7 @@ end:
- 
- static void
- report_lock_contended_event(struct trace_contended_event *contended_event,
--			  struct event_format *__event __used,
--			  int cpu __used,
--			  u64 timestamp __used,
--			  struct thread *thread __used)
-+			    const struct perf_sample *sample)
+ 	struct work_atoms *atoms;
+ 	struct work_atom *atom;
+ 	struct thread *migrant;
+@@ -1364,7 +1333,7 @@ process_sched_wakeup_event(struct perf_tool *tool __used,
+ 			   struct event_format *event,
+ 			   struct perf_sample *sample,
+ 			   struct machine *machine,
+-			   struct thread *thread)
++			   struct thread *thread __used)
  {
- 	struct lock_stat *ls;
- 	struct thread_stat *ts;
-@@ -550,7 +530,7 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
- 	if (ls->discard)
- 		return;
+ 	void *data = sample->raw_data;
+ 	struct trace_wakeup_event wakeup_event;
+@@ -1378,8 +1347,7 @@ process_sched_wakeup_event(struct perf_tool *tool __used,
+ 	FILL_FIELD(wakeup_event, cpu, event, data);
  
--	ts = thread_stat_findnew(thread->pid);
-+	ts = thread_stat_findnew(sample->tid);
- 	seq = get_seq(ts, contended_event->addr);
- 
- 	switch (seq->state) {
-@@ -577,17 +557,14 @@ report_lock_contended_event(struct trace_contended_event *contended_event,
- 
- 	seq->state = SEQ_STATE_CONTENDED;
- 	ls->nr_contended++;
--	seq->prev_event_time = timestamp;
-+	seq->prev_event_time = sample->time;
- end:
- 	return;
+ 	if (trace_handler->wakeup_event)
+-		trace_handler->wakeup_event(&wakeup_event, machine, event,
+-					    sample->cpu, sample->time, thread);
++		trace_handler->wakeup_event(&wakeup_event, machine, event, sample);
  }
  
- static void
- report_lock_release_event(struct trace_release_event *release_event,
--			struct event_format *__event __used,
--			int cpu __used,
--			u64 timestamp __used,
--			struct thread *thread __used)
-+			  const struct perf_sample *sample)
+ /*
+@@ -1399,15 +1367,13 @@ static void
+ map_switch_event(struct trace_switch_event *switch_event,
+ 		 struct machine *machine,
+ 		 struct event_format *event __used,
+-		 int this_cpu,
+-		 u64 timestamp,
+-		 struct thread *thread __used)
++		 struct perf_sample *sample)
  {
- 	struct lock_stat *ls;
- 	struct thread_stat *ts;
-@@ -597,7 +574,7 @@ report_lock_release_event(struct trace_release_event *release_event,
- 	if (ls->discard)
- 		return;
+ 	struct thread *sched_out __used, *sched_in;
+ 	int new_shortname;
+-	u64 timestamp0;
++	u64 timestamp0, timestamp = sample->time;
+ 	s64 delta;
+-	int cpu;
++	int cpu, this_cpu = sample->cpu;
  
--	ts = thread_stat_findnew(thread->pid);
-+	ts = thread_stat_findnew(sample->tid);
- 	seq = get_seq(ts, release_event->addr);
+ 	BUG_ON(this_cpu >= MAX_CPUS || this_cpu < 0);
  
- 	switch (seq->state) {
-@@ -646,14 +623,12 @@ static struct trace_lock_handler report_lock_ops  = {
- 
- static struct trace_lock_handler *trace_handler;
- 
--static void
--process_lock_acquire_event(void *data,
--			   struct event_format *event __used,
--			   int cpu __used,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+static void perf_evsel__process_lock_acquire(struct perf_evsel *evsel,
-+					     struct perf_sample *sample)
+@@ -1479,7 +1445,7 @@ process_sched_switch_event(struct perf_tool *tool __used,
+ 			   struct event_format *event,
+ 			   struct perf_sample *sample,
+ 			   struct machine *machine,
+-			   struct thread *thread)
++			   struct thread *thread __used)
  {
- 	struct trace_acquire_event acquire_event;
-+	struct event_format *event = evsel->tp_format;
-+	void *data = sample->raw_data;
- 	u64 tmp;		/* this is required for casting... */
- 
- 	tmp = raw_field_value(event, "lockdep_addr", data);
-@@ -662,17 +637,15 @@ process_lock_acquire_event(void *data,
- 	acquire_event.flag = (int)raw_field_value(event, "flag", data);
- 
- 	if (trace_handler->acquire_event)
--		trace_handler->acquire_event(&acquire_event, event, cpu, timestamp, thread);
-+		trace_handler->acquire_event(&acquire_event, sample);
- }
- 
--static void
--process_lock_acquired_event(void *data,
--			    struct event_format *event __used,
--			    int cpu __used,
--			    u64 timestamp __used,
--			    struct thread *thread __used)
-+static void perf_evsel__process_lock_acquired(struct perf_evsel *evsel,
-+					      struct perf_sample *sample)
- {
- 	struct trace_acquired_event acquired_event;
-+	struct event_format *event = evsel->tp_format;
-+	void *data = sample->raw_data;
- 	u64 tmp;		/* this is required for casting... */
- 
- 	tmp = raw_field_value(event, "lockdep_addr", data);
-@@ -680,17 +653,15 @@ process_lock_acquired_event(void *data,
- 	acquired_event.name = (char *)raw_field_ptr(event, "name", data);
- 
- 	if (trace_handler->acquire_event)
--		trace_handler->acquired_event(&acquired_event, event, cpu, timestamp, thread);
-+		trace_handler->acquired_event(&acquired_event, sample);
- }
- 
--static void
--process_lock_contended_event(void *data,
--			     struct event_format *event __used,
--			     int cpu __used,
--			     u64 timestamp __used,
--			     struct thread *thread __used)
-+static void perf_evsel__process_lock_contended(struct perf_evsel *evsel,
-+					       struct perf_sample *sample)
- {
- 	struct trace_contended_event contended_event;
-+	struct event_format *event = evsel->tp_format;
-+	void *data = sample->raw_data;
- 	u64 tmp;		/* this is required for casting... */
- 
- 	tmp = raw_field_value(event, "lockdep_addr", data);
-@@ -698,17 +669,15 @@ process_lock_contended_event(void *data,
- 	contended_event.name = (char *)raw_field_ptr(event, "name", data);
- 
- 	if (trace_handler->acquire_event)
--		trace_handler->contended_event(&contended_event, event, cpu, timestamp, thread);
-+		trace_handler->contended_event(&contended_event, sample);
- }
- 
--static void
--process_lock_release_event(void *data,
--			   struct event_format *event __used,
--			   int cpu __used,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+static void perf_evsel__process_lock_release(struct perf_evsel *evsel,
-+					     struct perf_sample *sample)
- {
- 	struct trace_release_event release_event;
-+	struct event_format *event = evsel->tp_format;
-+	void *data = sample->raw_data;
- 	u64 tmp;		/* this is required for casting... */
- 
- 	tmp = raw_field_value(event, "lockdep_addr", data);
-@@ -716,22 +685,22 @@ process_lock_release_event(void *data,
- 	release_event.name = (char *)raw_field_ptr(event, "name", data);
- 
- 	if (trace_handler->acquire_event)
--		trace_handler->release_event(&release_event, event, cpu, timestamp, thread);
-+		trace_handler->release_event(&release_event, sample);
- }
- 
--static void process_raw_event(struct perf_evsel *evsel, void *data, int cpu,
--			      u64 timestamp, struct thread *thread)
-+static void perf_evsel__process_lock_event(struct perf_evsel *evsel,
-+					   struct perf_sample *sample)
- {
- 	struct event_format *event = evsel->tp_format;
- 
- 	if (!strcmp(event->name, "lock_acquire"))
--		process_lock_acquire_event(data, event, cpu, timestamp, thread);
-+		perf_evsel__process_lock_acquire(evsel, sample);
- 	if (!strcmp(event->name, "lock_acquired"))
--		process_lock_acquired_event(data, event, cpu, timestamp, thread);
-+		perf_evsel__process_lock_acquired(evsel, sample);
- 	if (!strcmp(event->name, "lock_contended"))
--		process_lock_contended_event(data, event, cpu, timestamp, thread);
-+		perf_evsel__process_lock_contended(evsel, sample);
- 	if (!strcmp(event->name, "lock_release"))
--		process_lock_release_event(data, event, cpu, timestamp, thread);
-+		perf_evsel__process_lock_release(evsel, sample);
- }
- 
- static void print_bad_events(int bad, int total)
-@@ -857,8 +826,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 		return -1;
+ 	int this_cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+@@ -1504,8 +1470,7 @@ process_sched_switch_event(struct perf_tool *tool __used,
+ 			nr_context_switch_bugs++;
  	}
+ 	if (trace_handler->switch_event)
+-		trace_handler->switch_event(&switch_event, machine, event,
+-					    this_cpu, sample->time, thread);
++		trace_handler->switch_event(&switch_event, machine, event, sample);
  
--	process_raw_event(evsel, sample->raw_data, sample->cpu, sample->time, thread);
--
-+	perf_evsel__process_lock_event(evsel, sample);
- 	return 0;
+ 	curr_pid[this_cpu] = switch_event.next_pid;
+ }
+@@ -1515,7 +1480,7 @@ process_sched_runtime_event(struct perf_tool *tool __used,
+ 			    struct event_format *event,
+ 			    struct perf_sample *sample,
+ 			    struct machine *machine,
+-			    struct thread *thread)
++			    struct thread *thread __used)
+ {
+ 	void *data = sample->raw_data;
+ 	struct trace_runtime_event runtime_event;
+@@ -1526,8 +1491,7 @@ process_sched_runtime_event(struct perf_tool *tool __used,
+ 	FILL_FIELD(runtime_event, vruntime, event, data);
+ 
+ 	if (trace_handler->runtime_event)
+-		trace_handler->runtime_event(&runtime_event, machine, event,
+-					     sample->cpu, sample->time, thread);
++		trace_handler->runtime_event(&runtime_event, machine, sample);
  }
  
+ static void
+@@ -1535,7 +1499,7 @@ process_sched_fork_event(struct perf_tool *tool __used,
+ 			 struct event_format *event,
+ 			 struct perf_sample *sample,
+ 			 struct machine *machine __used,
+-			 struct thread *thread)
++			 struct thread *thread __used)
+ {
+ 	void *data = sample->raw_data;
+ 	struct trace_fork_event fork_event;
+@@ -1548,8 +1512,7 @@ process_sched_fork_event(struct perf_tool *tool __used,
+ 	FILL_FIELD(fork_event, child_pid, event, data);
+ 
+ 	if (trace_handler->fork_event)
+-		trace_handler->fork_event(&fork_event, event,
+-					  sample->cpu, sample->time, thread);
++		trace_handler->fork_event(&fork_event, event);
+ }
+ 
+ static void
+@@ -1568,7 +1531,7 @@ process_sched_migrate_task_event(struct perf_tool *tool __used,
+ 				 struct event_format *event,
+ 				 struct perf_sample *sample,
+ 				 struct machine *machine,
+-				 struct thread *thread)
++				 struct thread *thread __used)
+ {
+ 	void *data = sample->raw_data;
+ 	struct trace_migrate_task_event migrate_task_event;
+@@ -1581,9 +1544,7 @@ process_sched_migrate_task_event(struct perf_tool *tool __used,
+ 	FILL_FIELD(migrate_task_event, cpu, event, data);
+ 
+ 	if (trace_handler->migrate_task_event)
+-		trace_handler->migrate_task_event(&migrate_task_event, machine,
+-						  event, sample->cpu,
+-						  sample->time, thread);
++		trace_handler->migrate_task_event(&migrate_task_event, machine, sample);
+ }
+ 
+ typedef void (*tracepoint_handler)(struct perf_tool *tool, struct event_format *event,
 -- 
 1.7.9.2.358.g22243
 
