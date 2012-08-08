@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab2HHVik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:38:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38439 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab2HHVih (ORCPT
+	id S1757510Ab2HHVjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:39:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59303 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab2HHVig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:38:37 -0400
+	Wed, 8 Aug 2012 17:38:36 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
         tglx@linutronix.de, peterz@infradead.org, davem@davemloft.net,
-        tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
-        Roland Dreier <roland@kernel.org>
-Subject: [PATCH 7/7] workqueue: deprecate __cancel_delayed_work()
-Date: Wed,  8 Aug 2012 14:38:02 -0700
-Message-Id: <1344461882-10149-8-git-send-email-tj@kernel.org>
+        tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 6/7] workqueue: reimplement cancel_delayed_work() using try_to_grab_pending()
+Date: Wed,  8 Aug 2012 14:38:01 -0700
+Message-Id: <1344461882-10149-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344461882-10149-1-git-send-email-tj@kernel.org>
 References: <1344461882-10149-1-git-send-email-tj@kernel.org>
@@ -24,89 +22,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that cancel_delayed_work() can be safely called from IRQ handlers,
-there's no reason to use __cancel_delayed_work().  Use
-cancel_delayed_work() instead of __cancel_delayed_work() and mark the
-latter deprecated.
+cancel_delayed_work() can't be called from IRQ handlers due to its use
+of del_timer_sync() and can't cancel work items which are already
+transferred from timer to worklist.
+
+Also, unlike other flush and cancel functions, a canceled delayed_work
+would still point to the last associated cpu_workqueue.  If the
+workqueue is destroyed afterwards and the work item is re-used on a
+different workqueue, the queueing code can oops trying to dereference
+already freed cpu_workqueue.
+
+This patch reimplements cancel_delayed_work() using
+try_to_grab_pending() and set_work_cpu_and_clear_pending().  This
+allows the function to be called from IRQ handlers and makes its
+behavior consistent with other flush / cancel functions.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- block/blk-core.c              |    2 +-
- drivers/block/floppy.c        |    2 +-
- drivers/infiniband/core/mad.c |    2 +-
- drivers/video/omap2/dss/dsi.c |    2 +-
- include/linux/workqueue.h     |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/workqueue.h |   17 +----------------
+ kernel/workqueue.c        |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 16 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b8b606..dc04a90 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -262,7 +262,7 @@ EXPORT_SYMBOL(blk_start_queue);
-  **/
- void blk_stop_queue(struct request_queue *q)
- {
--	__cancel_delayed_work(&q->delay_work);
-+	cancel_delayed_work(&q->delay_work);
- 	queue_flag_set(QUEUE_FLAG_STOPPED, q);
- }
- EXPORT_SYMBOL(blk_stop_queue);
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 55a5bc0..17c675c 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -890,7 +890,7 @@ static void unlock_fdc(void)
- 
- 	raw_cmd = NULL;
- 	command_status = FD_COMMAND_NONE;
--	__cancel_delayed_work(&fd_timeout);
-+	cancel_delayed_work(&fd_timeout);
- 	do_floppy = NULL;
- 	cont = NULL;
- 	clear_bit(0, &fdc_busy);
-diff --git a/drivers/infiniband/core/mad.c b/drivers/infiniband/core/mad.c
-index b593814..dc3fd1e 100644
---- a/drivers/infiniband/core/mad.c
-+++ b/drivers/infiniband/core/mad.c
-@@ -2004,7 +2004,7 @@ static void adjust_timeout(struct ib_mad_agent_private *mad_agent_priv)
- 	unsigned long delay;
- 
- 	if (list_empty(&mad_agent_priv->wait_list)) {
--		__cancel_delayed_work(&mad_agent_priv->timed_work);
-+		cancel_delayed_work(&mad_agent_priv->timed_work);
- 	} else {
- 		mad_send_wr = list_entry(mad_agent_priv->wait_list.next,
- 					 struct ib_mad_send_wr_private,
-diff --git a/drivers/video/omap2/dss/dsi.c b/drivers/video/omap2/dss/dsi.c
-index fd40f26..05ee046 100644
---- a/drivers/video/omap2/dss/dsi.c
-+++ b/drivers/video/omap2/dss/dsi.c
-@@ -4306,7 +4306,7 @@ static void dsi_framedone_irq_callback(void *data, u32 mask)
- 	 * and is sending the data.
- 	 */
- 
--	__cancel_delayed_work(&dsi->framedone_timeout_work);
-+	cancel_delayed_work(&dsi->framedone_timeout_work);
- 
- 	dsi_handle_framedone(dsidev, 0);
- }
 diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 6306157..6cd8f91 100644
+index 093968e..6306157 100644
 --- a/include/linux/workqueue.h
 +++ b/include/linux/workqueue.h
-@@ -431,7 +431,7 @@ extern unsigned int work_busy(struct work_struct *work);
+@@ -417,6 +417,7 @@ extern bool cancel_work_sync(struct work_struct *work);
+ 
+ extern bool flush_delayed_work(struct delayed_work *dwork);
+ extern bool flush_delayed_work_sync(struct delayed_work *work);
++extern bool cancel_delayed_work(struct delayed_work *dwork);
+ extern bool cancel_delayed_work_sync(struct delayed_work *dwork);
+ 
+ extern void workqueue_set_max_active(struct workqueue_struct *wq,
+@@ -426,22 +427,6 @@ extern unsigned int work_cpu(struct work_struct *work);
+ extern unsigned int work_busy(struct work_struct *work);
+ 
+ /*
+- * Kill off a pending schedule_delayed_work().  Note that the work callback
+- * function may still be running on return from cancel_delayed_work(), unless
+- * it returns 1 and the work doesn't re-arm itself. Run flush_workqueue() or
+- * cancel_work_sync() to wait on it.
+- */
+-static inline bool cancel_delayed_work(struct delayed_work *work)
+-{
+-	bool ret;
+-
+-	ret = del_timer_sync(&work->timer);
+-	if (ret)
+-		work_clear_pending(&work->work);
+-	return ret;
+-}
+-
+-/*
+  * Like above, but uses del_timer() instead of del_timer_sync(). This means,
   * if it returns 0 the timer function may be running and the queueing is in
   * progress.
-  */
--static inline bool __cancel_delayed_work(struct delayed_work *work)
-+static inline bool __deprecated __cancel_delayed_work(struct delayed_work *work)
- {
- 	bool ret;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 9087599..7413242 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3031,6 +3031,36 @@ bool flush_delayed_work_sync(struct delayed_work *dwork)
+ EXPORT_SYMBOL(flush_delayed_work_sync);
  
+ /**
++ * cancel_delayed_work - cancel a delayed work
++ * @dwork: delayed_work to cancel
++ *
++ * Kill off a pending delayed_work.  Returns %true if @dwork was pending
++ * and canceled; %false if wasn't pending.  Note that the work callback
++ * function may still be running on return, unless it returns %true and the
++ * work doesn't re-arm itself.  Explicitly flush or use cancel_work_sync()
++ * to wait on it.
++ *
++ * This function is safe to call from any context including IRQ handler.
++ */
++bool cancel_delayed_work(struct delayed_work *dwork)
++{
++	unsigned long flags;
++	int ret;
++
++	do {
++		ret = try_to_grab_pending(&dwork->work, true, &flags);
++	} while (unlikely(ret == -EAGAIN));
++
++	if (unlikely(ret < 0))
++		return false;
++
++	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
++	local_irq_restore(flags);
++	return true;
++}
++EXPORT_SYMBOL(cancel_delayed_work);
++
++/**
+  * cancel_delayed_work_sync - cancel a delayed work and wait for it to finish
+  * @dwork: the delayed work cancel
+  *
 -- 
 1.7.7.3
 
