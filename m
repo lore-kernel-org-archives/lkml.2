@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab2HHOrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:47:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64940 "EHLO
+	id S1758685Ab2HHOry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:47:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64279 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758580Ab2HHOri (ORCPT
+	with ESMTP id S1758645Ab2HHOrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:47:38 -0400
+	Wed, 8 Aug 2012 10:47:43 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Stefan Roese <sr@denx.de>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 07/11] net/stmmac: mark probe function as __devinit
-Date: Wed,  8 Aug 2012 16:47:24 +0200
-Message-Id: <1344437248-20560-8-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 09/11] regulator/twl: remove fixed resource handling
+Date: Wed,  8 Aug 2012 16:47:26 +0200
+Message-Id: <1344437248-20560-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1344437248-20560-1-git-send-email-arnd@arndb.de>
 References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:inJnpn/HTsDtvNMO87XOsVab1X71ILad0I2BWePxoOW
- xGo8ZZoLI7u9gvf5AL0AmpFRof4Gaaae2jPp4/hF97ka+fy+Bk
- Z2/dTHaSNoA1OhD3Lz5kOdmGZ2EjoVvyA3MiEU8BnD6HZKnaQv
- oyyNvPthgUN4UxkfPX2Rw2dGyrfjyP9zcbEnee6dfuLPa69ivx
- G3m122STy2TehNioRk82G7v3xamRJNBvZDqX1ZeKxnTBYQbCco
- j9g66bLPSK8ANxwEiQSyc2vzHFC+gjSWqqBHfLbAg8PkpMax6o
- FYGI20okyoyfnf4vuGzLdZzgMxAU4XeKS8KPwB7SovYv08kLvt
- 3IxbB4On14lQ9iXNWGknvXWijy54ouMIHdUQohjMrmYEchWFme
- a6F6ZytkfAYf6TTsFTbePg6IRBiR1HaRqg=
+X-Provags-ID: V02:K0:oNYC7vmsw2cglsy0ycU41JsAFocqvDMDG02CMOU7Q5q
+ NoeCVXEY0oEYHBiwFacXHBqbOfdDyylP5AVzhodYiyU9XjTTRR
+ XwcjgybvRoSclnMG4BcXyPdoD0YJ55vlIvEPqtoCtBF2v5zRPV
+ JXUD+MW1WDV/MXcI8u6fuUCikB9P5WU4u7DdFNMmPCsRcB+Im5
+ S9E91OOs6FhYHwF/hxtna1zte/KjI2GxI8qnmV2Yd0J29sQPba
+ fIntloDlbPnY2z/T3D1a7bqA+CiqPFkSmJWd8GYvok520vkpm7
+ Y/Lps3FkaVTpEElItFTEMAG3UAMnHOIR1b5NJ+ICXf0iTjl1M8
+ yEeVjaQiqqW9DpP0rYTyij3VddxHt7gavZPWV31o2gCV3XpiHq
+ zykZSPkZUNpAdAWlE6arVjJa41CvuNXGFw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver probe functions are generally __devinit so they will be
-discarded after initialization for non-hotplug kernels.
-This was found by a new warning after patch 6a228452d "stmmac: Add
-device-tree support" adds a new __devinit function that is called
-from stmmac_pltfr_probe.
+The recent patch 0e8e5c34cf "regulator: twl: Remove references to
+32kHz clock from DT bindings" removed the only use of the fake
+"CLK32KG" regulator but not the TWL6030_FIXED_RESOURCE and
+twl6030_fixed_resource definitions that are unused otherwise.
 
-Without this patch, building socfpga_defconfig results in:
+Without this patch, building omap2plus_defconfig results in:
 
-WARNING: drivers/net/ethernet/stmicro/stmmac/stmmac.o(.text+0x5d4c): Section mismatch in reference from the function stmmac_pltfr_probe() to the function .devinit.text:stmmac_probe_config_dt()
-The function stmmac_pltfr_probe() references
-the function __devinit stmmac_probe_config_dt().
-This is often because stmmac_pltfr_probe lacks a __devinit
-annotation or the annotation of stmmac_probe_config_dt is wrong.
+drivers/regulator/twl-regulator.c:1051:27: warning: 'TWLRES_INFO_CLK32KG' defined but not used [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Stefan Roese <sr@denx.de>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/twl-regulator.c |   21 ---------------------
+ 1 file changed, 21 deletions(-)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index cd01ee7..b93245c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -74,7 +74,7 @@ static int __devinit stmmac_probe_config_dt(struct platform_device *pdev,
-  * the necessary resources and invokes the main to init
-  * the net device, register the mdio bus etc.
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 242fe90..514a84b 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -659,13 +659,6 @@ static struct regulator_ops twl6030fixed_ops = {
+ 	.get_status	= twl6030reg_get_status,
+ };
+ 
+-static struct regulator_ops twl6030_fixed_resource = {
+-	.enable		= twl6030reg_enable,
+-	.disable	= twl6030reg_disable,
+-	.is_enabled	= twl6030reg_is_enabled,
+-	.get_status	= twl6030reg_get_status,
+-};
+-
+ /*
+  * SMPS status and control
   */
--static int stmmac_pltfr_probe(struct platform_device *pdev)
-+static int __devinit stmmac_pltfr_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
- 	struct resource *res;
+@@ -967,19 +960,6 @@ static struct twlreg_info TWLFIXED_INFO_##label = { \
+ 		}, \
+ 	}
+ 
+-#define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) \
+-static struct twlreg_info TWLRES_INFO_##label = { \
+-	.base = offset, \
+-	.desc = { \
+-		.name = #label, \
+-		.id = TWL6030_REG_##label, \
+-		.ops = &twl6030_fixed_resource, \
+-		.type = REGULATOR_VOLTAGE, \
+-		.owner = THIS_MODULE, \
+-		.enable_time = turnon_delay, \
+-		}, \
+-	}
+-
+ #define TWL6025_ADJUSTABLE_SMPS(label, offset) \
+ static struct twlreg_info TWLSMPS_INFO_##label = { \
+ 	.base = offset, \
+@@ -1048,7 +1028,6 @@ TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 0);
+ TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 0);
+ TWL6030_FIXED_LDO(V1V8, 0x16, 1800, 0);
+ TWL6030_FIXED_LDO(V2V1, 0x1c, 2100, 0);
+-TWL6030_FIXED_RESOURCE(CLK32KG, 0x8C, 0);
+ TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34);
+ TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10);
+ TWL6025_ADJUSTABLE_SMPS(VIO, 0x16);
 -- 
 1.7.10
 
