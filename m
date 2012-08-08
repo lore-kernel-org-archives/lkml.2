@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab2HHBnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 21:43:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35848 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab2HHBnM (ORCPT
+	id S1755669Ab2HHBq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 21:46:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42666 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab2HHBqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 21:43:12 -0400
+	Tue, 7 Aug 2012 21:46:55 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-b8-5021c50c031c
+Date: Wed, 8 Aug 2012 10:48:24 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
+ reclaim/compaction based on failures
+Message-ID: <20120808014824.GB4247@bbox>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-3-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FEBDE@DQHE02.ent.ti.com>
-References: <1343824834.3859.2.camel@phoenix> <CAK5ve-+dvpQqj1q9QF8nfST0Ff=W7WCO=_jYdGi7gOjsWO+93w@mail.gmail.com>
- <A874F61F95741C4A9BA573A70FE3998FEBDE@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 8 Aug 2012 09:42:50 +0800
-X-Google-Sender-Auth: oLyjPIX6Xky_qNDzsT1S8vpWRQI
-Message-ID: <CAK5ve-K8BVLYzRyy+LqVyYtirzTXqrYz9a5-g22xV6k1k6sFoA@mail.gmail.com>
-Subject: Re: [PATCH RFT] leds: lp8788: Fix updating scale configuration bits
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Axel Lin <axel.lin@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344342677-5845-3-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 7, 2012 at 4:09 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->> > We need to do left shift (cfg->num + LP8788_ISINK_SCALE_OFFSET) bits
->> for
->> > updating scale configuration.
->> >
->> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> > ---
->>
->> Milo, I think this patch from Axel is reasonable. could you please
->> take a look at this?
->>
->> -Bryan
->
-> Acked-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> Tested-by: Milo(Woogyom) Kim <milo.kim@ti.com>
->
-> Thanks,
-> Milo -
+Hi Mel,
 
-Great, Applied
+Just out of curiosity.
+What's the problem did you see? (ie, What's the problem do this patch solve?)
+AFAIUC, it seem to solve consecutive allocation success ratio through
+getting several free pageblocks all at once in a process/kswapd
+reclaim context. Right?
 
-Thanks,
+On Tue, Aug 07, 2012 at 01:31:13PM +0100, Mel Gorman wrote:
+> If allocation fails after compaction then compaction may be deferred for
+> a number of allocation attempts. If there are subsequent failures,
+> compact_defer_shift is increased to defer for longer periods. This patch
+> uses that information to scale the number of pages reclaimed with
+> compact_defer_shift until allocations succeed again.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 66e4310..0cb2593 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1708,6 +1708,7 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+>  {
+>  	unsigned long pages_for_compaction;
+>  	unsigned long inactive_lru_pages;
+> +	struct zone *zone;
+>  
+>  	/* If not in reclaim/compaction mode, stop */
+>  	if (!in_reclaim_compaction(sc))
+> @@ -1741,6 +1742,15 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
+>  	 * inactive lists are large enough, continue reclaiming
+>  	 */
+>  	pages_for_compaction = (2UL << sc->order);
+> +
+> +	/*
+> +	 * If compaction is deferred for this order then scale the number of
+> +	 * pages reclaimed based on the number of consecutive allocation
+> +	 * failures
+> +	 */
+> +	zone = lruvec_zone(lruvec);
+> +	if (zone->compact_order_failed >= sc->order)
+> +		pages_for_compaction <<= zone->compact_defer_shift;
+>  	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>  	if (nr_swap_pages > 0)
+>  		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
+> -- 
+> 1.7.9.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Kind regards,
+Minchan Kim
