@@ -1,212 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2HHOWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:22:21 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57427 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2HHOWT (ORCPT
+	id S1757878Ab2HHOWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:22:34 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35067 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756548Ab2HHOWb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:22:19 -0400
-Message-ID: <50227615.1090907@gmail.com>
-Date: Wed, 08 Aug 2012 16:22:13 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 8 Aug 2012 10:22:31 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sven Neumann <s.neumann@raumfeld.com>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/6] ARM: pxa remove irq_to_gpio from eeti_ts driver
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <1344430493-5304-3-git-send-email-arnd@arndb.de> <50226843.4080508@gmail.com> <201208081419.17181.arnd@arndb.de>
-In-Reply-To: <201208081419.17181.arnd@arndb.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Date: Wed, 8 Aug 2012 16:22:30 +0200
+Message-ID: <CACRpkdYD-1MbJ2JmG8=zrtbWSEF4NJMWYdk4X+Z1gK+FQ1Mb0A@mail.gmail.com>
+Subject: [GIT PULL] pinctrl fixes for v3.6-rc1
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.08.2012 16:19, Arnd Bergmann wrote:
-> On Wednesday 08 August 2012, Daniel Mack wrote:
->> On 08.08.2012 14:54, Arnd Bergmann wrote:
->>> The irq_to_gpio function was removed from the pxa platform
->>> in linux-3.2, and this driver has been broken since.
->>>
->>> Without this patch, building raumfeld_defconfig results in:
->>>
->>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
->>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
->>
->> I've sent out a slightly different version of such a patch just
->> yesterday. It deferres mainly in the fact that it uses gpio_to_irq() and
->> ignores the i2c_client's irq line. That way, there can't be any
->> inconsitency.
->>
->> I've appended the patch again - I haven't heard back from Dmitry yet.
->>
-> 
-> I've taken your patch instead now, 
+Hi Linus,
 
-Will that go to some other tree than linux-input now?
+here are some pinctrl fixes for v3.6-rc1, info in the tag below.
 
-> because contains the gpio_request_one
-> call that I was missing and you sent it before me, but I also noticed
-> that you forgot to change arch/arm/mach-pxa/raumfeld.c along with the
-> driver. I've put that in there as well now. If Dmitry wants to take this
-> patch, I'll drop it from my tree, otherwise I'll send it myself.
+Please pull them in!
 
-Forget about that raumfeld.c part for now. I'm in the process of
-replacing all that code with DT bindings and wanted to avoid updates to
-that code :)
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-Btw - I have a patch ready that adds eeti_ts DT bindings. I would submit
-that once Dmitry (or you) has taken the other one.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-fixes-for-v3.6-rc1
 
-Daniel
+for you to fetch changes up to 75c353ecacf54dbcca5e2e4388088893aac0fc34:
 
+  drivers/pinctrl/pinctrl-nomadik.c: drop devm_kfree of devm_kzalloc'd
+data (2012-08-07 14:34:12 +0200)
 
-> 8<-----
-> From a919cfbeb9441f5058feec8f790ef90d9299a448 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Mon, 30 Apr 2012 16:21:37 +0000
-> Subject: [PATCH] Input: eeti_ts: pass gpio value instead of IRQ
-> 
-> The EETI touchscreen asserts its IRQ line as soon as it has data in its
-> internal buffers. The line is automatically deasserted once all data has
-> been read via I2C. Hence, the driver has to monitor the GPIO line and
-> cannot simply rely on the interrupt handler reception.
-> 
-> In the current implementation of the driver, irq_to_gpio() is used to
-> determine the GPIO number from the i2c_client's IRQ value.
-> 
-> As irq_to_gpio() is not available on all platforms, this patch changes
-> this and makes the driver ignore the passed in IRQ. Instead, a GPIO is
-> added to the platform_data struct and gpio_to_irq is used to derive the
-> IRQ from that GPIO. If this fails, bail out. The driver is only able to
-> work in environments where the touchscreen GPIO can be mapped to an
-> IRQ.
-> 
-> Without this patch, building raumfeld_defconfig results in:
-> 
-> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
-> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: stable@vger.kernel.org (v3.2+)
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Sven Neumann <s.neumann@raumfeld.com>
-> Cc: linux-input@vger.kernel.org
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> 
-> diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
-> index 5905ed1..d89d87ae 100644
-> --- a/arch/arm/mach-pxa/raumfeld.c
-> +++ b/arch/arm/mach-pxa/raumfeld.c
-> @@ -953,12 +953,12 @@ static struct i2c_board_info raumfeld_connector_i2c_board_info __initdata = {
->  
->  static struct eeti_ts_platform_data eeti_ts_pdata = {
->  	.irq_active_high = 1,
-> +	.irq_gpio = GPIO_TOUCH_IRQ,
->  };
->  
->  static struct i2c_board_info raumfeld_controller_i2c_board_info __initdata = {
->  	.type	= "eeti_ts",
->  	.addr	= 0x0a,
-> -	.irq	= PXA_GPIO_TO_IRQ(GPIO_TOUCH_IRQ),
->  	.platform_data = &eeti_ts_pdata,
->  };
->  
-> diff --git a/drivers/input/touchscreen/eeti_ts.c b/drivers/input/touchscreen/eeti_ts.c
-> index 503c709..908407e 100644
-> --- a/drivers/input/touchscreen/eeti_ts.c
-> +++ b/drivers/input/touchscreen/eeti_ts.c
-> @@ -48,7 +48,7 @@ struct eeti_ts_priv {
->  	struct input_dev *input;
->  	struct work_struct work;
->  	struct mutex mutex;
-> -	int irq, irq_active_high;
-> +	int irq_gpio, irq, irq_active_high;
->  };
->  
->  #define EETI_TS_BITDEPTH	(11)
-> @@ -62,7 +62,7 @@ struct eeti_ts_priv {
->  
->  static inline int eeti_ts_irq_active(struct eeti_ts_priv *priv)
->  {
-> -	return gpio_get_value(irq_to_gpio(priv->irq)) == priv->irq_active_high;
-> +	return gpio_get_value(priv->irq_gpio) == priv->irq_active_high;
->  }
->  
->  static void eeti_ts_read(struct work_struct *work)
-> @@ -157,7 +157,7 @@ static void eeti_ts_close(struct input_dev *dev)
->  static int __devinit eeti_ts_probe(struct i2c_client *client,
->  				   const struct i2c_device_id *idp)
->  {
-> -	struct eeti_ts_platform_data *pdata;
-> +	struct eeti_ts_platform_data *pdata = client->dev.platform_data;
->  	struct eeti_ts_priv *priv;
->  	struct input_dev *input;
->  	unsigned int irq_flags;
-> @@ -199,9 +199,12 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
->  
->  	priv->client = client;
->  	priv->input = input;
-> -	priv->irq = client->irq;
-> +	priv->irq_gpio = pdata->irq_gpio;
-> +	priv->irq = gpio_to_irq(pdata->irq_gpio);
->  
-> -	pdata = client->dev.platform_data;
-> +	err = gpio_request_one(pdata->irq_gpio, GPIOF_IN, client->name);
-> +	if (err < 0)
-> +		goto err1;
->  
->  	if (pdata)
->  		priv->irq_active_high = pdata->irq_active_high;
-> @@ -215,13 +218,13 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
->  
->  	err = input_register_device(input);
->  	if (err)
-> -		goto err1;
-> +		goto err2;
->  
->  	err = request_irq(priv->irq, eeti_ts_isr, irq_flags,
->  			  client->name, priv);
->  	if (err) {
->  		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
-> -		goto err2;
-> +		goto err3;
->  	}
->  
->  	/*
-> @@ -233,9 +236,11 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
->  	device_init_wakeup(&client->dev, 0);
->  	return 0;
->  
-> -err2:
-> +err3:
->  	input_unregister_device(input);
->  	input = NULL; /* so we dont try to free it below */
-> +err2:
-> +	gpio_free(pdata->irq_gpio);
->  err1:
->  	input_free_device(input);
->  	kfree(priv);
-> diff --git a/include/linux/input/eeti_ts.h b/include/linux/input/eeti_ts.h
-> index f875b31..16625d7 100644
-> --- a/include/linux/input/eeti_ts.h
-> +++ b/include/linux/input/eeti_ts.h
-> @@ -2,6 +2,7 @@
->  #define LINUX_INPUT_EETI_TS_H
->  
->  struct eeti_ts_platform_data {
-> +	int irq_gpio;
->  	unsigned int irq_active_high;
->  };
->  
-> 
+----------------------------------------------------------------
+pinctrl fixes for v3.6-rc1:
+- Move MXS pinctrl registration to poscore_initcall
+- Fix up various devm_* managed resources code paths
+- Fix one function group in the Nomadik driver
+- Update MAINTAINERS
 
+----------------------------------------------------------------
+Devendra Naga (2):
+      pinctrl/pinctrl-u300: remove unneeded devm_kfree call
+      pinctrl-sirf: remove devm_kfree at error path
+
+Julia Lawall (1):
+      drivers/pinctrl/pinctrl-nomadik.c: drop devm_kfree of devm_kzalloc'd data
+
+Patrice Chotard (1):
+      pinctrl/nomadik: fix hsi function group list
+
+Shawn Guo (1):
+      pinctrl: mxs: register driver at postcore_initcall time
+
+Uwe Kleine-König (1):
+      MAINTAINERS: fix a few pinctrl related entries
+
+ MAINTAINERS                              | 5 +++--
+ drivers/pinctrl/pinctrl-imx23.c          | 2 +-
+ drivers/pinctrl/pinctrl-imx28.c          | 2 +-
+ drivers/pinctrl/pinctrl-nomadik-db8500.c | 2 +-
+ drivers/pinctrl/pinctrl-nomadik.c        | 1 -
+ drivers/pinctrl/pinctrl-sirf.c           | 1 -
+ drivers/pinctrl/pinctrl-u300.c           | 8 ++------
+ 7 files changed, 8 insertions(+), 13 deletions(-)
+
+Yours,
+Linus Walleij
