@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab2HHLgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 07:36:12 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58091 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab2HHLgK (ORCPT
+	id S1757452Ab2HHLjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 07:39:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65272 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab2HHLjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 07:36:10 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-d6-50224f299a06
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
+	Wed, 8 Aug 2012 07:39:39 -0400
+Date: Wed, 8 Aug 2012 13:39:35 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: "'Tushar Behera'" <tushar.behera@linaro.org>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         s.hauer@pengutronix.de, patches@linaro.org,
         "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: Re: [PATCH] ARM: SAMSUNG: Fix compilation error with
+ s3c2410_defconfig
+Message-ID: <20120808113935.GA20963@avionic-0098.mockup.avionic-design.de>
 References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
  <098f01cd7488$0d66d630$28348290$%kim@samsung.com>
  <5020F568.5020204@linaro.org>
@@ -22,71 +25,84 @@ References: <1344333546-16995-1-git-send-email-tushar.behera@linaro.org>
  <0abe01cd752f$4f96ad80$eec40880$%kim@samsung.com>
  <20120808065046.GA30832@avionic-0098.mockup.avionic-design.de>
  <0af001cd7550$1af66040$50e320c0$%kim@samsung.com>
- <20120808110713.GC20296@avionic-0098.mockup.avionic-design.de>
-In-reply-to: <20120808110713.GC20296@avionic-0098.mockup.avionic-design.de>
-Subject: RE: [PATCH] ARM: SAMSUNG: Fix compilation error with s3c2410_defconfig
-Date: Wed, 08 Aug 2012 20:36:08 +0900
-Message-id: <0b1301cd755a$011e1eb0$035a5c10$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac11Vf4j+RgMDoUzTsm5fHl8VNA9oAAAoL5Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQV1Nf6UAg67T7BaXd81hs5hxfh+T
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBmPXrWzFazkqPi2/jZ7A+Nxti5GTg4JAROJ7kfNrBC2
-	mMSFe+uB4lwcQgLTGSWmNs9mhHD+Mkr8WvmGEaSKTUBD4vD7Z+wgtoiAucSSRXuZQYqYBQ4z
-	StyYOoUJJCEk8JtZYslkORCbU8Bbou37YqAiDg5hAX+JR50FIGEWAVWJqc9vM4GEeQVsJb7P
-	AqvmFRCU+DH5HguIzSygJbF+53EmCFteYvOat2BTJATUJR791YW4wEii7c9idogSEYl9L94x
-	TmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEB/UxqB+PK
-	BotDjAIcjEo8vFHJigFCrIllxZW5hxglOJiVRHj7XZUChHhTEiurUovy44tKc1KLDzFKc7Ao
-	ifMae3/1FxJITyxJzU5NLUgtgskycXBKNTDaTuvkWLK7e7n5OwHZtN7i6pqAUwtt9t8sn90r
-	zfPqTGvAv/lpHC7hvsyq7J9vCMfknbX4u9B9cZA2Q14Tm5ej6NO6rTXshxlfyfy+FeAr8Tgo
-	+eLHeyt/+3E4ab47p3jti53FBdGGy9nJfz4KfZexzqz91rr62zvezGfMSvk/XgbHmaavEFJi
-	Kc5INNRiLipOBAAYbHoPZAIAAA==
-X-TM-AS-MML: No
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <0af001cd7550$1af66040$50e320c0$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:hWXwOnfZCojBI09hhR4nZGuEh5G6O0gEHWA31Sx1i01
+ kkla5oj1KHIVJ4xhQzwbLa/dWZM6pjYJtPvUntLD+iWiYGLZdn
+ KekWaNMudXdxmm3JSzU6I3bIZNRmoR1ENbVd+Dd2NfvCIWVida
+ swaudH5Ojb2mETkDER9jfPzbrFAzwnzWeUJQFvX8sEhiAQSxF4
+ 1lBSm9KQ5rbmnc2Durqg8/5G2f2/VkqL52pK72deV8KE/erMO+
+ MRf36dXgdjyBLcsAsbEp5PtxGLQSc3++8jw88wezwS7KY8Mc6d
+ ju8bB0fSEgi5eozhTPjfzbxzrqNs0dWNMKjuzF5M34+mIRFF0y
+ pdMYzf5NHhYA5L/We292CfgZpbkTctDEUHN2iXpavLvgOe91qN
+ OxAIA92pt5fGs4v8i/Ixy0kva716VXlkQU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry Reding wrote:
-> 
-> On Wed, Aug 08, 2012 at 07:25:17PM +0900, Kukjin Kim wrote:
-> > Thierry Reding wrote:
-> > >
-> > > On Wed, Aug 08, 2012 at 03:30:32PM +0900, Kukjin Kim wrote:
-> >
 
-[...]
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> He (she?) sent two patches:
-> 
-He :-)
+On Wed, Aug 08, 2012 at 07:25:17PM +0900, Kukjin Kim wrote:
+> So, how about following? If PWM is selected on Samsung SoCs, the PWM_SAMS=
+UNG
+> will be selected automatically. Of course, it can be de-selected in kernel
+> menuconfig. Note that, I think, using 'bool <expr>' and 'depends on <expr=
+>'
+> is more clear than 'prompt <prompt> ["if" <expr>]'. However if any your
+> preference here, please kindly let me know.
+>=20
+> ---
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 8fc3808..c74d055 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -58,14 +58,12 @@ config PWM_PXA
+>  	will be called pwm-pxa.
+>=20
+>  config PWM_SAMSUNG
+> -	tristate "Samsung pwm support"
+> +	bool "Samsung PWM support"
+>  	depends on PLAT_SAMSUNG
+> +	default y
+>  	help
+>  	  Generic PWM framework driver for Samsung.
+> =20
+> -	  To compile this driver as a module, choose M here: the module
+> -	  will be called pwm-samsung.
+> -
+>  config PWM_TEGRA
+>  	tristate "NVIDIA Tegra PWM support"
+>  	depends on ARCH_TEGRA
 
-> 	https://lkml.org/lkml/2012/8/2/108
-> 	https://lkml.org/lkml/2012/8/2/109
-> 
-> And followed-up with the following three:
-> 
-> 	https://lkml.org/lkml/2012/8/3/47
-> 	https://lkml.org/lkml/2012/8/3/44
-> 	https://lkml.org/lkml/2012/8/3/45
-> 
-Thanks for above list-up and if any comments, let you know.
+Acked-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-[...]
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-> Yes, that looks good to me. Do you want me to take that through the PWM
-> tree or would you rather take it through yours?
-> 
-Thanks. Since the error happens in arch/arm/ part and this patch touches
-some arch/arm/ files, would be better if this could be sent to upstream via
-samsung tree. Of course, if your ack, would be nice to me ;-)
+iQIcBAEBAgAGBQJQIk/3AAoJEN0jrNd/PrOhvxUQAIBt2ijCeYKWoSUh6Y3PT+5t
+HmCCkUyXfi6VNnKNDd5z8NNrO6PDdRw3QTAXbYJGoe32gH3ehPkKbE+SMvXmXduV
+dUaTkHCX9fGVwNNHdHF079E0tdJ+n0Kt6pbA4ktAA+0oORqK8LF6uDyPGyU8h7z6
+QFl4TgKqBDgGRxTK1mbZwo9EaN5mwm5X3ZvXWpANFfSmF/HP8d/LlTKJ6j4N5Roc
+hecYq9b8ujvbHXvh/0Gi99Vdm0r4J0Q5wGM6ua3pITpU14y5BUpptkQuYKJ7Rn30
+i8gD89NJt5zoahU4hblCmGb7bGyQQ4aFpN35sx+upPMIG3V87gH3W5bzu8DF4XMr
+2D5MvsQhRmhwCaezbaa8Sobj74ifNIJhkEmnlr9TgiUE6OB6KNVj7YyRQ1VLx+Ku
+ubpajGjzaEaWjMiwmMUbqLHIHFiMUEVsHIyFJYXml8LPl4H6TmlUMGQx/bJENnGF
+Mlc2LCU9xTxPPbGNpLWKdNqtw3LZKWLgHCz7KCXrkS2xUGsg1EQ4778ZjAbjw7HO
+yZMPcSn3wbWiLzZu+qdu1btr8FUjnoR9A3mrRaB2FgdqW1O1kLBWpYArC+Gx5Dhr
+j7znpOB5EzmDEY+2aF+5glZL2aqGfj0M8fHtQSUU9DARe90gQvv3ByNS14UXRc2S
+B9Qyfj0u8ciuKBtYO7+3
+=bc1g
+-----END PGP SIGNATURE-----
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+--TB36FDmn/VVEgNH/--
