@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab2HHXFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 19:05:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53158 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758346Ab2HHXFi (ORCPT
+	id S1758859Ab2HHXHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 19:07:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47582 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757919Ab2HHXHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 19:05:38 -0400
-Date: Wed, 8 Aug 2012 16:05:32 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 08/12] block: Introduce new bio_split()
-Message-ID: <20120808230532.GH6983@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-9-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344290921-25154-9-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Aug 2012 19:07:05 -0400
+Date: Wed, 08 Aug 2012 16:07:04 -0700 (PDT)
+Message-Id: <20120808.160704.588005225667606586.davem@davemloft.net>
+To: khoroshilov@ispras.ru
+Cc: edumazet@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: Re: [PATCH] net/core: Fix potential memory leak in dev_set_alias()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344422005-21993-1-git-send-email-khoroshilov@ispras.ru>
+References: <1344422005-21993-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more thing.
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Date: Wed,  8 Aug 2012 14:33:25 +0400
 
-On Mon, Aug 06, 2012 at 03:08:37PM -0700, Kent Overstreet wrote:
-> +	if (bio_integrity(bio)) {
-> +		bio_integrity_clone(ret, bio, gfp, bs);
-> +		bio_integrity_trim(ret, 0, bio_sectors(ret));
-> +		bio_integrity_trim(bio, bio_sectors(ret), bio_sectors(bio));
+> Do not leak memory by updating pointer with potentially NULL realloc return value.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-Is this equivalent to bio_integrity_split() performance-wise?
-
-Thanks.
-
--- 
-tejun
+Applied, thanks.
