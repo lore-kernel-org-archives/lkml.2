@@ -1,64 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab2HHEHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 00:07:24 -0400
-Received: from void.printf.net ([89.145.121.20]:44986 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab2HHEHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 00:07:22 -0400
-From: Chris Ball <cjb@laptop.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Venkatraman S <svenkatr@ti.com>, Balaji T K <balajitk@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MMC/omap_hsmmc: handle failure of regulator_get better.
-References: <20120730101245.7dbe72b0@notabene.brown>
-Date: Wed, 08 Aug 2012 00:07:15 -0400
-In-Reply-To: <20120730101245.7dbe72b0@notabene.brown> (NeilBrown's message of
-	"Mon, 30 Jul 2012 10:12:45 +1000")
-Message-ID: <874noeuivg.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751280Ab2HHEeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 00:34:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61727 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2HHEe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 00:34:29 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-7b-5021ec533b98
+Date: Wed, 8 Aug 2012 13:36:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: have order > 0 compaction start near a pageblock
+ with free pages
+Message-ID: <20120808043600.GD4247@bbox>
+References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
+ <1344342677-5845-7-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344342677-5845-7-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 07, 2012 at 01:31:17PM +0100, Mel Gorman wrote:
+> commit [7db8889a: mm: have order > 0 compaction start off where it left]
+> introduced a caching mechanism to reduce the amount work the free page
+> scanner does in compaction. However, it has a problem. Consider two process
+> simultaneously scanning free pages
+> 
+> 				    			C
+> Process A		M     S     			F
+> 		|---------------------------------------|
+> Process B		M 	FS
+> 
+> C is zone->compact_cached_free_pfn
+> S is cc->start_pfree_pfn
+> M is cc->migrate_pfn
+> F is cc->free_pfn
+> 
+> In this diagram, Process A has just reached its migrate scanner, wrapped
+> around and updated compact_cached_free_pfn accordingly.
+> 
+> Simultaneously, Process B finishes isolating in a block and updates
+> compact_cached_free_pfn again to the location of its free scanner.
+> 
+> Process A moves to "end_of_zone - one_pageblock" and runs this check
+> 
+>                 if (cc->order > 0 && (!cc->wrapped ||
+>                                       zone->compact_cached_free_pfn >
+>                                       cc->start_free_pfn))
+>                         pfn = min(pfn, zone->compact_cached_free_pfn);
+> 
+> compact_cached_free_pfn is above where it started so the free scanner skips
+> almost the entire space it should have scanned. When there are multiple
+> processes compacting it can end in a situation where the entire zone is
+> not being scanned at all.  Further, it is possible for two processes to
+> ping-pong update to compact_cached_free_pfn which is just random.
+> 
+> Overall, the end result wrecks allocation success rates.
+> 
+> There is not an obvious way around this problem without introducing new
+> locking and state so this patch takes a different approach.
+> 
+> First, it gets rid of the skip logic because it's not clear that it matters
+> if two free scanners happen to be in the same block but with racing updates
+> it's too easy for it to skip over blocks it should not.
 
-On Sun, Jul 29 2012, NeilBrown wrote:
-> 1/ if regulator_get fails, return an error.  This is important
->    if it failed with EPROBE_DEFER, as the probe needs to be
->    deferred.
->
-> 2/ Don't set .set_power until the regulator has been found, or
->    the deferred probe will not bother calling omap_hsmmc_reg_get().
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index 389a3ee..f052c29 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -299,12 +299,12 @@ static int omap_hsmmc_reg_get(struct omap_hsmmc_host *host)
->  	struct regulator *reg;
->  	int ocr_value = 0;
+Okay.
+
+> 
+> Second, it updates compact_cached_free_pfn in a more limited set of
+> circumstances.
+> 
+> If a scanner has wrapped, it updates compact_cached_free_pfn to the end
+> 	of the zone. Each time a wrapped scanner isoaltes a page, it
+> 	updates compact_cached_free_pfn. The intention is that after
+> 	wrapping, the compact_cached_free_pfn will be at the highest
+> 	pageblock with free pages when compaction completes.
+
+Okay.
+
+> 
+> If a scanner has not wrapped when compaction completes and
+
+Compaction complete?
+Your code seem to do it in isolate_freepages.
+Isn't it compaction complete?
+
+> 	compact_cached_free_pfn is set the end of the the zone, initialise
+> 	it once.
+
+I can't understad this part.
+Could you elaborate a bit more?
+
+> 
+> This is not optimal and it can still race but the compact_cached_free_pfn
+> will be pointing to or very near a pageblock with free pages.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/compaction.c |   54 ++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 28 insertions(+), 26 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index be310f1..df50f73 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -419,6 +419,20 @@ static bool suitable_migration_target(struct page *page)
+>  }
 >  
-> -	mmc_slot(host).set_power = omap_hsmmc_set_power;
+>  /*
+> + * Returns the start pfn of the last page block in a zone.  This is the starting
+> + * point for full compaction of a zone.  Compaction searches for free pages from
+> + * the end of each zone, while isolate_freepages_block scans forward inside each
+> + * page block.
+> + */
+> +static unsigned long start_free_pfn(struct zone *zone)
+> +{
+> +	unsigned long free_pfn;
+> +	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> +	free_pfn &= ~(pageblock_nr_pages-1);
+> +	return free_pfn;
+> +}
+> +
+> +/*
+>   * Based on information in the current compact_control, find blocks
+>   * suitable for isolating free pages from and then isolate them.
+>   */
+> @@ -457,17 +471,6 @@ static void isolate_freepages(struct zone *zone,
+>  					pfn -= pageblock_nr_pages) {
+>  		unsigned long isolated;
+>  
+> -		/*
+> -		 * Skip ahead if another thread is compacting in the area
+> -		 * simultaneously. If we wrapped around, we can only skip
+> -		 * ahead if zone->compact_cached_free_pfn also wrapped to
+> -		 * above our starting point.
+> -		 */
+> -		if (cc->order > 0 && (!cc->wrapped ||
+> -				      zone->compact_cached_free_pfn >
+> -				      cc->start_free_pfn))
+> -			pfn = min(pfn, zone->compact_cached_free_pfn);
 > -
->  	reg = regulator_get(host->dev, "vmmc");
->  	if (IS_ERR(reg)) {
->  		dev_dbg(host->dev, "vmmc regulator missing\n");
-> +		return PTR_ERR(reg);
->  	} else {
-> +		mmc_slot(host).set_power = omap_hsmmc_set_power;
->  		host->vcc = reg;
->  		ocr_value = mmc_regulator_get_ocrmask(reg);
->  		if (!mmc_slot(host).ocr_mask) {
+>  		if (!pfn_valid(pfn))
+>  			continue;
+>  
+> @@ -510,7 +513,15 @@ static void isolate_freepages(struct zone *zone,
+>  		 */
+>  		if (isolated) {
+>  			high_pfn = max(high_pfn, pfn);
+> -			if (cc->order > 0)
+> +
+> +			/*
+> +			 * If the free scanner has wrapped, update
+> +			 * compact_cached_free_pfn to point to the highest
+> +			 * pageblock with free pages. This reduces excessive
+> +			 * scanning of full pageblocks near the end of the
+> +			 * zone
+> +			 */
+> +			if (cc->order > 0 && cc->wrapped)
+>  				zone->compact_cached_free_pfn = high_pfn;
+>  		}
+>  	}
+> @@ -520,6 +531,11 @@ static void isolate_freepages(struct zone *zone,
+>  
+>  	cc->free_pfn = high_pfn;
+>  	cc->nr_freepages = nr_freepages;
+> +
+> +	/* If compact_cached_free_pfn is reset then set it now */
+> +	if (cc->order > 0 && !cc->wrapped &&
+> +			zone->compact_cached_free_pfn == start_free_pfn(zone))
+> +		zone->compact_cached_free_pfn = high_pfn;
+>  }
+>  
+>  /*
+> @@ -607,20 +623,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  	return ISOLATE_SUCCESS;
+>  }
+>  
+> -/*
+> - * Returns the start pfn of the last page block in a zone.  This is the starting
+> - * point for full compaction of a zone.  Compaction searches for free pages from
+> - * the end of each zone, while isolate_freepages_block scans forward inside each
+> - * page block.
+> - */
+> -static unsigned long start_free_pfn(struct zone *zone)
+> -{
+> -	unsigned long free_pfn;
+> -	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> -	free_pfn &= ~(pageblock_nr_pages-1);
+> -	return free_pfn;
+> -}
+> -
+>  static int compact_finished(struct zone *zone,
+>  			    struct compact_control *cc)
+>  {
+> -- 
+> 1.7.9.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Thanks, pushed to mmc-next for 3.7.
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Kind regards,
+Minchan Kim
