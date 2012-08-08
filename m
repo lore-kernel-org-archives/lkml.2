@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab2HHNRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:17:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52117 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758127Ab2HHNRQ (ORCPT
+	id S1758310Ab2HHNSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:18:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58619 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758256Ab2HHNR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:17:16 -0400
-Date: Wed, 8 Aug 2012 14:17:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] Input: ab8500-ponkey: Make the distinction between
- DT and non-DT boots
-Message-ID: <20120808131714.GT16861@opensource.wolfsonmicro.com>
-References: <20120807170333.GV16861@opensource.wolfsonmicro.com>
- <20120808080411.GB4728@gmail.com>
- <20120808094952.GH16861@opensource.wolfsonmicro.com>
- <20120808114037.GB8227@gmail.com>
+	Wed, 8 Aug 2012 09:17:59 -0400
+Message-ID: <50226700.9000606@linutronix.de>
+Date: Wed, 08 Aug 2012 15:17:52 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808114037.GB8227@gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com
+Subject: Re: [PATCH 2/5] x86/uprobes: implement x86 specific arch_uprobe_*_step
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-3-git-send-email-bigeasy@linutronix.de> <20120808125709.GA4504@redhat.com>
+In-Reply-To: <20120808125709.GA4504@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 12:40:38PM +0100, Lee Jones wrote:
-> On Wed, Aug 08, 2012 at 10:49:52AM +0100, Mark Brown wrote:
+On 08/08/2012 02:57 PM, Oleg Nesterov wrote:
+>> +static int insn_changes_flags(struct arch_uprobe *auprobe)
+>> +{
+>> +	/* popf reads flags from stack */
+>> +	if (auprobe->insn[0] == 0x9d)
+>> +		return 1;
+>
+> Ah, somehow I didn't think about this before.
+>
+> ->insn[0] doesn't look right, we should skip the prefixes.
 
-> > >  - MFD adds the IRQ base to the hwirq and registers it as a virq
+Why? I tried 'lock popf' and I got invalid instruction. The same for
+'rep popf'.
 
-> > Just don't do this step - the only reason to do it is for mapping back
-> > into a linear domain but if you're going to do this...
+> Oleg.
+>
 
-> > >  - AB8500 child devices use *_get_virq() to convert virq to virq - *ERROR*
-
-> > ...then it's redundant.  The mapping functions in the domain code
-> > replace this functionality.
-
-> No, the other way round. This is now required all the time.
-
-> Now we force the use of hwirq, the driver needs to convert that into a
-> virq before requesting the resource. So we need to put *_get_virq()'s into
-> every child device that requests an IRQ.
-
-Yes, that's exactly what I said - and as a result of doing this the
-remapping in the MFD core becomes redundant.
+Sebastian
