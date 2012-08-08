@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab2HHNHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:07:55 -0400
-Received: from smtp2-v.fe.bosch.de ([139.15.237.6]:48585 "EHLO
-	smtp2-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805Ab2HHNHy (ORCPT
+	id S1758249Ab2HHNKG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:10:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45449 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065Ab2HHNKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:07:54 -0400
-Message-ID: <50226409.1060800@de.bosch.com>
-Date: Wed, 8 Aug 2012 15:05:13 +0200
-From: Dirk Behme <dirk.behme@de.bosch.com>
-Organization: Robert Bosch Car Multimedia GmbH
-User-Agent: Thunderbird 2.0.0.19 (Windows/20081209)
+	Wed, 8 Aug 2012 09:10:04 -0400
+Date: Wed, 8 Aug 2012 14:09:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, w.sang@pengutronix.de, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] i2c: Add default configuration into the Nomadik
+ I2C driver.
+Message-ID: <20120808130958.GC8227@gmail.com>
+References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
+ <20120806153503.GH10524@gmail.com>
+ <CACRpkdZjbyQbht+UpXrrVGhAzGYPjb=HRZhJ+TvsEXhGeviJLA@mail.gmail.com>
+ <20120807153112.GF10719@gmail.com>
+ <CACRpkdZj2LqFF_i6f3M2uzUkhG6og5n2cTzUgqRZA1_NmhWBNA@mail.gmail.com>
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <1344430493-5304-7-git-send-email-arnd@arndb.de> <CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
-In-Reply-To: <CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.34.217.145]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZj2LqFF_i6f3M2uzUkhG6og5n2cTzUgqRZA1_NmhWBNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.08.2012 15:01, Fabio Estevam wrote:
-> Hi Arnd,
+On Wed, Aug 08, 2012 at 02:38:23PM +0200, Linus Walleij wrote:
+> On Tue, Aug 7, 2012 at 5:31 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> On Wed, Aug 8, 2012 at 9:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> It is not currently possible to build the gpmi-nand driver without
->> also building the mxs-dma driver. Clarify this Kconfig and enable
->> both in the defconfig file so we can build it again with both enabled.
->>
->> drivers/built-in.o: In function `gpmi_dma_filter':
->> clk-fixed-factor.c:(.text+0xafc18): undefined reference to `mxs_dma_is_apbh'
->> make[1]: *** [vmlinux] Error 1
->> make: *** [sub-make] Error 2
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->> Cc: Sascha Hauer <kernel@pengutronix.de>
+> > From: Lee Jones <lee.jones@linaro.org>
+> > Date: Tue, 7 Aug 2012 12:27:24 +0100
+> > Subject: [PATCH 1/1 v3] i2c: Add default configuration into the Nomadik I2C
+> >  driver.
 > 
-> I have already sent a fix for this to the mtd list:
-> https://patchwork.kernel.org/patch/1236551/
+> This has some bad whitespace damage, and the subject should
+> be "i2c/nomadik:"
 
-Yes. But it seems it's not handled there? I'm trying since ~2 weeks to 
-get something like your patch applied to get the broken mainline fixed, 
-but unfortunately without success so far.
+White space damage? You mean the subject line-wrap? 
 
-Best regards
+`git format-patch` does that. I'll change the subject line to i2c/nomadik.
 
-Dirk
+> > Cc: linux-i2c@vger.kernel.org
+> > Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Double sign-off.
+
+Hmm... this is fast becoming my nemosis patch!
+
+> Unless Wolfram volunteers to fix this up I suggest you
+> fix it nocheinmal und senden einer neues version.
+
+That's okay, it's my error, I'll fix. 
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
