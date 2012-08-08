@@ -1,41 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab2HHGjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 02:39:14 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:32897 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab2HHGjM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 02:39:12 -0400
-Message-Id: <502225A9020000A10000B915@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 08 Aug 2012 08:39:05 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-Subject: Q: diskstats for MD-RAID
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756353Ab2HHGlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 02:41:10 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:50840 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753114Ab2HHGlI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 02:41:08 -0400
+From: Virupax SADASHIVPETIMATH <virupax.sadashivpetimath@stericsson.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Praveena NADAHALLY <praveen.nadahally@stericsson.com>,
+        Rajaram REGUPATHY <ragupathy.rajaram@stericsson.com>,
+        Vikrant BAPAT <vikrant.bapat@stericsson.com>
+Date: Wed, 8 Aug 2012 08:40:04 +0200
+Subject: RE: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
+Thread-Topic: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
+Thread-Index: Ac10xLEUMQGO1YJGRliYZ6gSOaIyDwAZi58g
+Message-ID: <A3217089E06965468FCEC60ADC3A8F925C21652138@EXDCVYMBSTM006.EQ1STM.local>
+References: <1344330980-9064-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+ <Pine.LNX.4.44L0.1208071342410.2400-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1208071342410.2400-100000@iolanthe.rowland.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
 
-I have a question based on the SLES11 SP1 kernel (2.6.32.59-0.3-default):
-In /proc/diskstats the last four values seem to be zero for md-Devices.
 
-So "%util", "await", and "svctm" from "sar" are always reported as zero.
+> -----Original Message-----
+> From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> Sent: Tuesday, August 07, 2012 11:17 PM
+> To: Virupax SADASHIVPETIMATH
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org; linux-
+> kernel@vger.kernel.org; linus.walleij@linaro.org; Praveena NADAHALLY; Rajaram
+> REGUPATHY; Vikrant BAPAT
+> Subject: Re: [PATCH v2] usb:musb:musb_host: Handle highmem in PIO mode
+> 
+> 
+> > +	 */
+> > +	if (!urb->transfer_buffer)
+> > +		use_sg = true;
+> 
+> Here you test urb->transfer_buffer.
 
-Ist this a bug or a feature? I'm tracing a fairness problem resulting from an I/O bottleneck similar to that described in kernel bugzilla #12309...
+I will make the test as 
+	if (!use_sg && !urb->transfer_buffer)
+		use_sg = true;
 
-(If the kernel has about 80GB dirty buffers (yes: 80GB), reads using the same I/O channel seem to starve: The scenario is like this: a FC-SAN disksystem with two different types of disks is used to copy from the faster disks to slower disks using "cp". The files are some ten GB in size (Oracle database). After several minutes (while the "cp" is still runing), unrelated processes accessing different disk devices through the same I/O channel suffer from bad response times. I guess the kernel does not know about the relationship of different disk devices being connected through on I/O channel: If the kernel tries to keep each device busy (specifically trying to flush dirty buffers from one disk to make available buffers, it really reduces the I/O rate of other disks. Despite of that, some layers combine 8-sector-requests to something like 600-sector requests, which probably also needs additional buffers and it will hit the response time. The complete I/O stack is: FC-SAN, multipath (RR), MD-RAID1, LVM, ext3)
+> > +	if (use_sg) {
+> > +		/* sg_miter_start is already done in musb_ep_program */
+> > +		if (!sg_miter_next(&qh->sg_miter)) {
+> > +			dev_err(musb->controller, "error: sg list empty\n");
+> > +			sg_miter_stop(&qh->sg_miter);
+> > +			status = -EINVAL;
+> > +			goto done;
+> > +		}
+> > +		urb->transfer_buffer = qh->sg_miter.addr;
+> 
+> And here you set it.  As a result, on the next iteration of this
+> routine the test above won't work right.  (This function gets invoked
+> once for each entry in the sg list, right?)
+> 
+> Is there any reason to set urb->transfer_buffer here?  You could just
+> use qh->sg_miter.addr directly in the musb_write_fifo() call two lines
+> below.
 
-When replying, please keep me in CC: as I'm not subscribed to the list.
+I will change it. 
 
-Regards,
-Ulrich
+Thanks 
+Virupax S 
 
 
