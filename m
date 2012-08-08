@@ -1,175 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab2HHOfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:35:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62078 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab2HHOfG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:35:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 4/6] ARM: s3c24xx: use new PWM driver
-Date: Wed, 8 Aug 2012 14:34:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Tushar Behera <tushar.behera@linaro.org>
-References: <1344430493-5304-1-git-send-email-arnd@arndb.de> <1344430493-5304-5-git-send-email-arnd@arndb.de> <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
-In-Reply-To: <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201208081434.56198.arnd@arndb.de>
-X-Provags-ID: V02:K0:6bY5eiR/f0fvq5uHQB4BaFgr9DUl/FASEnf7tSIv0JQ
- iPSlFKSbKIM/6RFYdFD/M0URPdhJOGmQ4cwri+DKeaeF8joObt
- oX/54tmt8CTHHpkzKgUseyHdw/F21LCxeVMqEMu3TPJc2GRlJm
- CSg/yQ4gk/LQHfC6XWzWFiqXWoaqU7CgCL9SW8OGoaH0efD9Y8
- s6KXiXCYPaJub3L2mQCbFstKWsyeeotOvPp7kUnK4JfL6ZWQmT
- eeOutF2nLDhQHZWtiahhOOKelGI78qB4NLx6QXHQNgk+2ZFkCr
- 62siuxNZt3VI4nqmmeU3utQc/tiBp+1laDaRxjmkTDI3zMKyGB
- GkKUQxOWJQr7HnB3MPR4=
+	id S1758111Ab2HHOfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:35:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754099Ab2HHOfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:35:20 -0400
+Message-ID: <1344436518.32010.4.camel@eddie.install.bos.redhat.com>
+Subject: Re: [PATCH] Use the UEFI shim to load grub.
+From: Peter Jones <pjones@redhat.com>
+To: dhowells@redhat.com
+Cc: jwboyer@redhat.com, linux-kernel@vger.kernel.org
+Date: Wed, 08 Aug 2012 10:35:18 -0400
+In-Reply-To: <1344435497-6728-1-git-send-email-pjones@redhat.com>
+References: <1344432179-31974-1-git-send-email-pjones@redhat.com>
+	 <1344435497-6728-1-git-send-email-pjones@redhat.com>
+Organization: Red Hat, Inc.
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 August 2012, Kukjin Kim wrote:
+Obviously, this went to the wrong list of addresses.  Sorry for all the
+noise.
 
-> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-> index e249611..d56b0f7 100644
-> --- a/arch/arm/mach-s3c24xx/Kconfig
-> +++ b/arch/arm/mach-s3c24xx/Kconfig
-> @@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
->  	select I2C
->  	select POWER_SUPPLY
->  	select MACH_NEO1973
-> -	select S3C2410_PWM
-> +	select S3C24XX_PWM
->  	select S3C_DEV_USB_HOST
->  	help
->  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
-> Phone
-> @@ -493,7 +493,7 @@ config MACH_RX1950
->  	select S3C24XX_DCLK
->  	select PM_H1940 if PM
->  	select I2C
-> -	select S3C2410_PWM
-> +	select S3C24XX_PWM
->  	select S3C_DEV_NAND
->  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
->  	select S3C2440_XTAL_16934400
-> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-> index 7aca31c..dcdfb77 100644
-> --- a/arch/arm/plat-samsung/Kconfig
-> +++ b/arch/arm/plat-samsung/Kconfig
-> @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
+On Wed, 2012-08-08 at 10:18 -0400, Peter Jones wrote:
+> For UEFI Secure Boot support, we need to install the shim pre-boot
+> loader, and use it to load grub2.
+> ---
+>  pyanaconda/bootloader.py | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/pyanaconda/bootloader.py b/pyanaconda/bootloader.py
+> index ea4de5e..02d0ea8 100644
+> --- a/pyanaconda/bootloader.py
+> +++ b/pyanaconda/bootloader.py
+> @@ -1749,7 +1749,7 @@ class GRUB2(GRUB):
+>          self.stage2_device.format.sync(root=ROOT_PATH)
 >  
->  config S3C24XX_PWM
->  	bool "PWM device support"
-> -	select HAVE_PWM
-> +	select PWM
->  	help
->  	  Support for exporting the PWM timer blocks via the pwm device
->  	  system
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 8fc3808..c74d055 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -58,14 +58,12 @@ config PWM_PXA
->  	  will be called pwm-pxa.
+>  class EFIGRUB(GRUB2):
+> -    packages = ["grub2-efi", "efibootmgr"]
+> +    packages = ["grub2-efi", "efibootmgr", "shim"]
+>      can_dual_boot = False
 >  
->  config PWM_SAMSUNG
-> -	tristate "Samsung pwm support"
-> +	bool "Samsung PWM support"
->  	depends on PLAT_SAMSUNG
-> +	default y
->  	help
->  	  Generic PWM framework driver for Samsung.
->  
-> -	  To compile this driver as a module, choose M here: the module
-> -	  will be called pwm-samsung.
-> -
->  config PWM_TEGRA
->  	tristate "NVIDIA Tegra PWM support"
->  	depends on ARCH_TEGRA
+>      @property
+> @@ -1809,7 +1809,7 @@ class EFIGRUB(GRUB2):
+>          rc = self.efibootmgr("-c", "-w", "-L", productName,
+>                               "-d", boot_disk.path, "-p", boot_part_num,
+>                               "-l",
+> -                             self.efi_dir_as_efifs_dir + "\\grubx64.efi",
+> +                             self.efi_dir_as_efifs_dir + "\\shim.efi",
+>                               root=ROOT_PATH,
+>                               stdout="/dev/tty5", stderr="/dev/tty5")
+>          if rc:
 
-This approach has two disadvantages compared to mine:
-
-* When building for the samsung platforms other than rx1950 or gta02,
-  you can no longer have the PWM driver as a loadable module, for no
-  good reason.
-
-* It is still possible to manually disable PWM_SAMSUNG, even on
-  rx1950 and gta02, because the Kconfig symbol is visible.
-
-I've added a "Reported-by: Tushar Behera <tushar.behera@linaro.org>"
-line to my version of the patch, but I would prefer to keep that
-approach. I have also changed the patch to use the S3C24XX_PWM
-symbol because that lets everyone migrate the defconfig files.
-
-Do you want to give this patch some more testing, or should I keep
-it in arm-soc?
-
-	Arnd
----
->From 438b0cf94adb2528bdeeb71314f7be16512ea5b1 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Sat, 4 Aug 2012 07:52:19 +0000
-Subject: [PATCH] ARM: s3c24xx: use new PWM driver
-
-The samsung PWM driver has moved to the new PWM subsystem, which
-changed the Kconfig symbol for that driver, but the rx1950 and
-gta02 boards still uses the old one.
-
-Without this patch, building s3c2410_defconfig results in:
-
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_lcd_power':
-arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to `pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to `pwm_disable'
-arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to `pwm_config'
-arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to `pwm_enable'
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_exit':
-arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to `pwm_free'
-arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_init':
-arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to `pwm_request'
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Tushar Behera <tushar.behera@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index e249611..d56b0f7 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
- 	select I2C
- 	select POWER_SUPPLY
- 	select MACH_NEO1973
--	select S3C2410_PWM
-+	select S3C24XX_PWM
- 	select S3C_DEV_USB_HOST
- 	help
- 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM Phone
-@@ -493,7 +493,7 @@ config MACH_RX1950
- 	select S3C24XX_DCLK
- 	select PM_H1940 if PM
- 	select I2C
--	select S3C2410_PWM
-+	select S3C24XX_PWM
- 	select S3C_DEV_NAND
- 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
- 	select S3C2440_XTAL_16934400
-diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
-index 7aca31c..9c3b90c 100644
---- a/arch/arm/plat-samsung/Kconfig
-+++ b/arch/arm/plat-samsung/Kconfig
-@@ -403,7 +403,8 @@ config S5P_DEV_USB_EHCI
- 
- config S3C24XX_PWM
- 	bool "PWM device support"
--	select HAVE_PWM
-+	select PWM
-+	select PWM_SAMSUNG
- 	help
- 	  Support for exporting the PWM timer blocks via the pwm device
- 	  system
+-- 
+  Peter
 
