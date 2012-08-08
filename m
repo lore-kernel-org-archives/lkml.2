@@ -1,136 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759114Ab2HHRs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:48:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29292 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759043Ab2HHRs2 convert rfc822-to-8bit (ORCPT
+	id S1759122Ab2HHRtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:49:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44572 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759078Ab2HHRsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:48:28 -0400
+	Wed, 8 Aug 2012 13:48:53 -0400
 MIME-Version: 1.0
-Message-ID: <c90d1b27-280d-4a87-9359-9c0325999392@default>
-Date: Wed, 8 Aug 2012 10:47:48 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Kurt Hackel <kurt.hackel@oracle.com>
-Subject: RE: [PATCH 0/4] promote zcache from staging
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <5021795A.5000509@linux.vnet.ibm.com>
- <3f8dfac9-2b92-442c-800a-f0bfef8a90cb@default>
- <502293E2.8010505@linux.vnet.ibm.com>
-In-Reply-To: <502293E2.8010505@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <50226147.3010309@parallels.com>
+References: <20120711114753.24395.53193.stgit@localhost6.localdomain6> <50226147.3010309@parallels.com>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Wed, 8 Aug 2012 10:48:32 -0700
+Message-ID: <CAK6E8=cpODYa1xURk7BZBnWwx5q3OD8-xkCau7GNPn+1BS0oQQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] tun: don't zeroize sock->file on detach
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "ruanzhijie@hotmail.com" <ruanzhijie@hotmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+On Wed, Aug 8, 2012 at 5:53 AM, Stanislav Kinsbursky
+<skinsbursky@parallels.com> wrote:
+> Hi, Dave.
+> What about this patch?
+>
+>
+> On Wed, Jul 11, 2012 at 03:48:20PM +0400, Stanislav Kinsbursky wrote:
+>>
+>> This is a fix for bug, introduced in 3.4 kernel by commit
+>> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things,
+>> replaced
+>> simple sock_put() by sk_release_kernel(). Below is sequence, which leads
+>> to
+>> oops for non-persistent devices:
+>>
+>> tun_chr_close()
+>> tun_detach()                            <== tun->socket.file = NULL
+>> tun_free_netdev()
+>> sk_release_sock()
+>> sock_release(sock->file == NULL)
+>> iput(SOCK_INODE(sock))                  <== dereference on NULL pointer
+>>
+>> This patch just removes zeroing of socket's file from __tun_detach().
+>> sock_release() will do this.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
 
-Hi Seth --
+I has tested this patch and it works (so my kernel stops crashing
+using tun devices).
 
-Good discussion.  Even though we disagree, I appreciate
-your enthusiasm and your good work on the kernel!
-
-> Subject: Re: [PATCH 0/4] promote zcache from staging
-> 
-> On 08/07/2012 04:47 PM, Dan Magenheimer wrote:
-> > I notice your original published benchmarks [1] include
-> > N=24, N=28, and N=32, but these updated results do not.  Are you planning
-> > on completing the runs?  Second, I now see the numbers I originally
-> > published for what I thought was the same benchmark as yours are actually
-> > an order of magnitude larger (in sec) than yours.  I didn't notice
-> > this in March because we were focused on the percent improvement, not
-> > the raw measurements.  Since the hardware is highly similar, I suspect
-> > it is not a hardware difference but instead that you are compiling
-> > a much smaller kernel.  In other words, your test case is much
-> > smaller, and so exercises zcache much less.  My test case compiles
-> > a full enterprise kernel... what is yours doing?
-> 
-> I am doing a minimal kernel build for my local hardware
-> configuration.
-> 
-> With the reduction in RAM, 1GB to 512MB, I didn't need to do
-> test runs with >20 threads to find the peak of the benefit
-> curve at 16 threads.  Past that, zcache is saturated and I'd
-> just be burning up my disk.
-
-I think that's exactly what I said in a snippet of my response
-that you deleted.  A cache needs to work well both when it
-is non-full and when it is full.  You are only demonstrating
-that it works well when it is non-full.  When it is
-"saturated", bad things can happen.  Finding the "peak of the
-benefit" is only half the work of benchmarking.
-
-So it appears you are trying to prove your point by showing
-the workloads that look good, while _not_ showing the workloads
-that look bad, and then claiming you don't care about those
-bad workloads anyway.
-
-> Also, I provide the magnitude numbers (pages, seconds) just
-> to show my source data.  The %change numbers are the real
-> results as they remove build size as a factor.
-
-You'll have to explain what you mean because, if I understand
-correctly, this is just not true.  Different build sizes
-definitely affect memory management differently, just as
-different values of N (for make -jN) have an effect.
-
-> > At LSFMM, Andrea
-> > Arcangeli pointed out that zcache, for frontswap pages, has no "writeback"
-> > capabilities and, when it is full, it simply rejects further attempts
-> > to put data in its cache.  He said this is unacceptable for KVM and I
-> > agreed that it was a flaw that needed to be fixed before zcache should
-> > be promoted.
-> 
-> KVM (in-tree) is not a current user of zcache.  While the
-> use cases of possible future zcache users should be
-> considered, I don't think they can be used to prevent promotion.
-
-That wasn't my point.  Andrea identified the flaw as an issue
-of zcache.
-
-> > A second flaw is that the "demo" zcache has no concept of LRU for
-> > either cleancache or frontswap pages, or ability to reclaim pageframes
-> > at all for frontswap pages.
-> ...
-> >
-> > A third flaw is that the "demo" version has a very poor policy to
-> > determine what pages are "admitted".
-> ...
-> >
-> > I can add more issues to the list, but will stop here.
-> 
-> All of the flaws you list do not prevent zcache from being
-> beneficial right now, as my results demonstrate.  Therefore,
-> the flaws listed are really potential improvements and can
-> be done in mainline after promotion.  Even if large changes
-> are required to make these improvements, they can be made in
-> mainline in an incremental and public way.
-
-Your results only demonstrate that zcache is beneficial on
-the workloads that you chose to present.  But using the same
-workload with slightly different parameters (-jN or compiling
-a larger kernel), zcache can be _detrimental_, and you've chosen
-to not measure or present those cases, even though you did
-measure and present some of those cases in your first benchmark
-runs posted in March (on an earlier kernel).
-
-I can only speak for myself, but this appears disingenuous to me.
-
-Sorry, but FWIW my vote is still a NACK.  IMHO zcache needs major
-work before it should be promoted, and I think we should be spending
-the time fixing the known flaws rather than arguing about promoting
-"demo" code.
-
-Dan
+>> ---
+>>  drivers/net/tun.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>> index 987aeef..c1639f3 100644
+>> --- a/drivers/net/tun.c
+>> +++ b/drivers/net/tun.c
+>> @@ -185,7 +185,6 @@ static void __tun_detach(struct tun_struct *tun)
+>>         netif_tx_lock_bh(tun->dev);
+>>         netif_carrier_off(tun->dev);
+>>         tun->tfile = NULL;
+>> -       tun->socket.file = NULL;
+>>         netif_tx_unlock_bh(tun->dev);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
