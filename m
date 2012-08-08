@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab2HHCm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 22:42:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20072 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970Ab2HHCm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 22:42:26 -0400
-X-IronPort-AV: E=Sophos;i="4.77,730,1336320000"; 
-   d="scan'208";a="5577074"
-Message-ID: <5021D343.90802@cn.fujitsu.com>
-Date: Wed, 08 Aug 2012 10:47:31 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756226Ab2HHCxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 22:53:37 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:33670
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755961Ab2HHCxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Aug 2012 22:53:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
+From: Huang Shijie <b32955@freescale.com>
+To: <alan@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH V2] serial: mxs-auart: fix the wrong RTS hardware flow control
+Date: Wed, 8 Aug 2012 10:37:59 +0800
+Message-ID: <1344393479-21109-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH v8 6/6] allower the user to disable pv event support
-References: <5021D235.4050800@cn.fujitsu.com>
-In-Reply-To: <5021D235.4050800@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/08 10:42:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/08 10:42:46,
-	Serialize complete at 2012/08/08 10:42:46
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- hw/pc_piix.c    |    6 +++++-
- qemu-config.c   |    4 ++++
- qemu-options.hx |    3 ++-
- 3 files changed, 11 insertions(+), 2 deletions(-)
+Without checking if the auart supports the hardware flow control or not,
+the old mxs_auart_set_mctrl() asserted the RTS pin blindly.
 
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index 4af8403..9b877a7 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -151,6 +151,8 @@ static void pc_init1(MemoryRegion *system_memory,
-     MemoryRegion *pci_memory;
-     MemoryRegion *rom_memory;
-     void *fw_cfg = NULL;
-+    QemuOptsList *list = qemu_find_opts("machine");
-+    bool enable_pv_event;
+This will causes the auart receives wrong data in the following case:
+   The far-end has already started the write operation, and wait for
+the auart asserts the RTS pin. Then the auart starts the read operation,
+but mxs_auart_set_mctrl() may be called before we set the RTSCTS in the
+mxs_auart_settermios(). So the RTS pin is asserted in a wrong situation,
+and we get the wrong data in the end.
+
+This bug has been catched when I connect the mx23(DTE) to the mx53(DCE).
+
+This patch also replaces the AUART_CTRL2_RTS with AUART_CTRL2_RTSEN.
+We should use the real the hardware flow control, not the software-controled
+hardware flow control.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+v1 --> v2:
+	The ASYNC_CTS_FLOW is set in the `flags` field of the tty_port{},
+	not in the `flags` field of uart_port{}.
+	
+   
+ drivers/tty/serial/mxs-auart.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 2e341b8..3a667ee 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -73,6 +73,7 @@
+ #define AUART_CTRL0_CLKGATE			(1 << 30)
  
-     pc_cpus_init(cpu_model);
+ #define AUART_CTRL2_CTSEN			(1 << 15)
++#define AUART_CTRL2_RTSEN			(1 << 14)
+ #define AUART_CTRL2_RTS				(1 << 11)
+ #define AUART_CTRL2_RXE				(1 << 9)
+ #define AUART_CTRL2_TXE				(1 << 8)
+@@ -259,9 +260,12 @@ static void mxs_auart_set_mctrl(struct uart_port *u, unsigned mctrl)
  
-@@ -289,8 +291,10 @@ static void pc_init1(MemoryRegion *system_memory,
-         pc_pci_device_init(pci_bus);
-     }
+ 	u32 ctrl = readl(u->membase + AUART_CTRL2);
  
-+    enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
-+                                        "enable_pv_event", false);
- #ifdef KVM_PV_EVENT_PORT
--    if (kvm_enabled()) {
-+    if (kvm_enabled() && enable_pv_event) {
-         kvm_pv_event_init(isa_bus);
-     }
- #endif
-diff --git a/qemu-config.c b/qemu-config.c
-index 5c3296b..5ec5aa9 100644
---- a/qemu-config.c
-+++ b/qemu-config.c
-@@ -595,6 +595,10 @@ static QemuOptsList qemu_machine_opts = {
-             .name = "dt_compatible",
-             .type = QEMU_OPT_STRING,
-             .help = "Overrides the \"compatible\" property of the dt root node",
-+        }, {
-+            .name = "enable_pv_event",
-+            .type = QEMU_OPT_BOOL,
-+            .help = "handle pv event"
-         },
-         { /* End of list */ }
-     },
-diff --git a/qemu-options.hx b/qemu-options.hx
-index 5e7d0dc..94d7865 100644
---- a/qemu-options.hx
-+++ b/qemu-options.hx
-@@ -37,7 +37,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
-     "                property accel=accel1[:accel2[:...]] selects accelerator\n"
-     "                supported accelerators are kvm, xen, tcg (default: tcg)\n"
-     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
--    "                kvm_shadow_mem=size of KVM shadow MMU\n",
-+    "                kvm_shadow_mem=size of KVM shadow MMU\n"
-+    "                enable_pv_event=on|off controls pv event support\n",
-     QEMU_ARCH_ALL)
- STEXI
- @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
+-	ctrl &= ~AUART_CTRL2_RTS;
+-	if (mctrl & TIOCM_RTS)
+-		ctrl |= AUART_CTRL2_RTS;
++	ctrl &= ~AUART_CTRL2_RTSEN;
++	if (mctrl & TIOCM_RTS) {
++		if (u->state->port.flags & ASYNC_CTS_FLOW)
++			ctrl |= AUART_CTRL2_RTSEN;
++	}
++
+ 	s->ctrl = mctrl;
+ 	writel(ctrl, u->membase + AUART_CTRL2);
+ }
+@@ -359,9 +363,9 @@ static void mxs_auart_settermios(struct uart_port *u,
+ 
+ 	/* figure out the hardware flow control settings */
+ 	if (cflag & CRTSCTS)
+-		ctrl2 |= AUART_CTRL2_CTSEN;
++		ctrl2 |= AUART_CTRL2_CTSEN | AUART_CTRL2_RTSEN;
+ 	else
+-		ctrl2 &= ~AUART_CTRL2_CTSEN;
++		ctrl2 &= ~(AUART_CTRL2_CTSEN | AUART_CTRL2_RTSEN);
+ 
+ 	/* set baud rate */
+ 	baud = uart_get_baud_rate(u, termios, old, 0, u->uartclk);
 -- 
-1.7.1
+1.7.0.4
+
 
