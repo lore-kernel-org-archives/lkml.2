@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759122Ab2HHRtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 13:49:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44572 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759078Ab2HHRsx (ORCPT
+	id S1030470Ab2HHRxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 13:53:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54562 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759061Ab2HHRxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 13:48:53 -0400
+	Wed, 8 Aug 2012 13:53:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="222652008"
+Message-ID: <5022A79E.6050504@codeaurora.org>
+Date: Wed, 08 Aug 2012 10:53:34 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <50226147.3010309@parallels.com>
-References: <20120711114753.24395.53193.stgit@localhost6.localdomain6> <50226147.3010309@parallels.com>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Wed, 8 Aug 2012 10:48:32 -0700
-Message-ID: <CAK6E8=cpODYa1xURk7BZBnWwx5q3OD8-xkCau7GNPn+1BS0oQQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] tun: don't zeroize sock->file on detach
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "ruanzhijie@hotmail.com" <ruanzhijie@hotmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 01/11] ARM: topology: mark init_cpu_topology as __init
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-2-git-send-email-arnd@arndb.de>
+In-Reply-To: <1344437248-20560-2-git-send-email-arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 5:53 AM, Stanislav Kinsbursky
-<skinsbursky@parallels.com> wrote:
-> Hi, Dave.
-> What about this patch?
+On 08/08/12 07:47, Arnd Bergmann wrote:
+> The init_cpu_topology function can be put into the __init section
+> and discarded after boot, because it is only called from
+> smp_prepare_cpus, which is also marked __init. This was reported
+> by gcc after Vincent Guittot added the parse_dt_topology function
+> in 339ca09d7ada "ARM: 7463/1: topology: Update cpu_power according to DT
+> information".
 >
+> Without this patch, building kzm9g_defconfig results in:
 >
-> On Wed, Jul 11, 2012 at 03:48:20PM +0400, Stanislav Kinsbursky wrote:
->>
->> This is a fix for bug, introduced in 3.4 kernel by commit
->> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things,
->> replaced
->> simple sock_put() by sk_release_kernel(). Below is sequence, which leads
->> to
->> oops for non-persistent devices:
->>
->> tun_chr_close()
->> tun_detach()                            <== tun->socket.file = NULL
->> tun_free_netdev()
->> sk_release_sock()
->> sock_release(sock->file == NULL)
->> iput(SOCK_INODE(sock))                  <== dereference on NULL pointer
->>
->> This patch just removes zeroing of socket's file from __tun_detach().
->> sock_release() will do this.
->>
->> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Acked-by: Yuchung Cheng <ycheng@google.com>
+> WARNING: vmlinux.o(.text+0xb5a0): Section mismatch in reference from the function init_cpu_topology() to the function .init.text:parse_dt_topology()
+> The function init_cpu_topology() references
+> the function __init parse_dt_topology().
+> This is often because init_cpu_topology lacks a __init
+> annotation or the annotation of parse_dt_topology is wrong.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
 
-I has tested this patch and it works (so my kernel stops crashing
-using tun devices).
+This is already in the patch tracker
 
->> ---
->>  drivers/net/tun.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index 987aeef..c1639f3 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -185,7 +185,6 @@ static void __tun_detach(struct tun_struct *tun)
->>         netif_tx_lock_bh(tun->dev);
->>         netif_carrier_off(tun->dev);
->>         tun->tfile = NULL;
->> -       tun->socket.file = NULL;
->>         netif_tx_unlock_bh(tun->dev);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7482/1
+
+I also notice that store_cpu_topology() should be marked __cpuinit and
+update_siblings_mask, middle_capacity, cpu_capacity, and
+update_cpu_power should be static. We should probably also rename
+update_cpu_power() so as to not conflict with the one in kernel/sched/fair.c
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
