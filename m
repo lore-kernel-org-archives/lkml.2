@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab2HHHWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 03:22:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757548Ab2HHHWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 03:22:10 -0400
-Date: Wed, 8 Aug 2012 09:22:01 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@localhost
-To: Tomas Racek <tracek@redhat.com>
-cc: linux-xfs@vger.kernel.org, lczerner@redhat.com, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>,
-        "supporter:XFS FILESYSTEM" <xfs@oss.sgi.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] xfs: check for possible overflow in xfs_ioc_trim
-In-Reply-To: <1343828737-5324-1-git-send-email-tracek@redhat.com>
-Message-ID: <alpine.LFD.2.00.1208080909330.19417@localhost>
-References: <1343828737-5324-1-git-send-email-tracek@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757794Ab2HHHYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 03:24:36 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65307 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab2HHHYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 03:24:35 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <878vdqympe.fsf@sejong.aot.lge.com>
+References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+	<87mx26z0it.fsf@sejong.aot.lge.com>
+	<CANaxB-xAWtj8nU0WiE0aV_WHde_iX=rseU9NwwN=VTHOZYW=JQ@mail.gmail.com>
+	<878vdqympe.fsf@sejong.aot.lge.com>
+Date: Wed, 8 Aug 2012 11:24:34 +0400
+Message-ID: <CANaxB-zZp0How3+WUC2BMsRMWBgf1CVkaVQSYWcvCXTgyymSvg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
+From: Andrey Wagin <avagin@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Aug 2012, Tomas Racek wrote:
+2012/8/8 Namhyung Kim <namhyung@kernel.org>:
+> On Wed, 8 Aug 2012 09:02:18 +0400, Andrey Wagin wrote:
+>> 2012/8/8 Namhyung Kim <namhyung@kernel.org>:
+>>>>
+>>>> $ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
+>>>>               -e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
+>>
+>> Actually this string is not completed, because sched:sched_switch
+>> should be filtered by state.
+>>
+>>>> [ perf record: Woken up 1 times to write data ]
+>>>> [ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
+>>>> $ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
+>>>> $ ./perf report -i ~/perf.data
+>>>
+>>> The usage like this is too specific and hard to use IMHO. How about
+>>> putting it somehow into perf sched or new command?
+>>>
+>>> /me don't have an idea though. :-)
+>>>
+>>
+>> I'm going to add a script, so the usage will look like this:
+>> $ perf script record sched-stat -e sched:sched_stat_sleep <command>
+>> This command will collect sched_stat_* and proper sched_switch events
+>
+> ???  That means '-e sched:sched_stat_sleep' part can be removed from
+> command line, no?
 
-> Date: Wed,  1 Aug 2012 15:45:37 +0200
-> From: Tomas Racek <tracek@redhat.com>
-> To: linux-xfs@vger.kernel.org
-> Cc: lczerner@redhat.com, Tomas Racek <tracek@redhat.com>,
->     Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
->     "supporter:XFS FILESYSTEM" <xfs@oss.sgi.com>,
->     open list <linux-kernel@vger.kernel.org>
-> Subject: [PATCH v2] xfs: check for possible overflow in xfs_ioc_trim
-> 
-> If range.start points behind the filesystem, return invalid value error.
-> This fixes possible overflow in
-> 
-> start = BTOBB(range.start)
-> 
-> when range.start is nearly ULLONG_MAX.
-> 
-> Signed-off-by: Tomas Racek <tracek@redhat.com>
-
-The fix looks good to me, but I have one comment bellow.
-
-> ---
->  fs/xfs/xfs_discard.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_discard.c b/fs/xfs/xfs_discard.c
-> index f9c3fe3..33d367f 100644
-> --- a/fs/xfs/xfs_discard.c
-> +++ b/fs/xfs/xfs_discard.c
-> @@ -179,12 +179,13 @@ xfs_ioc_trim(
->  	 * used by the fstrim application.  In the end it really doesn't
->  	 * matter as trimming blocks is an advisory interface.
->  	 */
-> +	if (range.start >= XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks))
-> +		return -XFS_ERROR(EINVAL);
-> +
->  	start = BTOBB(range.start);
->  	end = start + BTOBBT(range.len) - 1;
->  	minlen = BTOBB(max_t(u64, granularity, range.minlen));
-
-It seems that we have the same problem here with range.minlen. It
-is highly unlikely and stupid from the user space to send minlen of
-such size, but it is possible.
-
-Thanks!
--Lukas
-
->  
-> -	if (XFS_BB_TO_FSB(mp, start) >= mp->m_sb.sb_dblocks)
-> -		return -XFS_ERROR(EINVAL);
->  	if (end > XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks) - 1)
->  		end = XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks)- 1;
->  
-> 
+No. My method works for all kind of sched_stat_* events, so you need
+to specify an event type which should be traced.
