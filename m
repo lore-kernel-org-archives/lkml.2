@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab2HHObX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 10:31:23 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58632 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753417Ab2HHObV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 10:31:21 -0400
-Message-ID: <50227837.10400@ti.com>
-Date: Wed, 08 Aug 2012 17:31:19 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
+	id S1758027Ab2HHOcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 10:32:54 -0400
+Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:39210 "EHLO
+	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756548Ab2HHOcx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 10:32:53 -0400
+From: David Cullen <David.Cullen@koe-americas.com>
+To: "mmarek@suse.cz" <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] ARM Fix /usr/bin/xargs: etags: Argument list too long
+Thread-Topic: [RFC PATCH] ARM Fix /usr/bin/xargs: etags: Argument list too
+ long
+Thread-Index: AQHNdXKwUdMPlyBDmEORxEZhcXYKAw==
+Date: Wed, 8 Aug 2012 14:32:51 +0000
+Message-ID: <50227893.7070600@koe-americas.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
+ Thunderbird/14.0
+x-originating-ip: [10.1.5.28]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <9AA143D3EF33FC4581C5AF9B74FF58F6@koe-americas.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
-References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com> <1344418887-5262-5-git-send-email-peter.ujfalusi@ti.com> <20120808131356.GS16861@opensource.wolfsonmicro.com> <50226CF4.1010202@ti.com> <20120808135253.GC16861@opensource.wolfsonmicro.com> <502274DA.9020204@ti.com> <20120808141849.GA24328@opensource.wolfsonmicro.com>
-In-Reply-To: <20120808141849.GA24328@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 05:18 PM, Mark Brown wrote:
-> I'm struggling to see any reason not to just hold the external mute on
-> for the entire time the headset is powered off?
+Patch applies to
 
-I think because it would mean in most cases that we keep a GPIO line enabled
-during the time the HS is not in use, which burns power.
-In most cases the mute is enabled when the GPIO line is up.
+    commit 42a579a0f960081cd16fc945036e4780c3ad3202
 
->> If you are OK with the hassle I can add a patch to the series for
->> include/linux/of.h to handle this.
-> 
-> Yes, please.
+When running "make ARCH=arm TAGS" in a chroot using qemu-arm-static,
+the following message is emitted:
 
-I'll wait for more comments and I'll include it to v2.
+    [user@host:/home/work/linux]: make ARCH=arm TAGS
+      GEN     TAGS
+    /usr/bin/xargs: etags: Argument list too long
 
--- 
-Péter
+This can be fixed by by passing "-L 1024" to xargs in scripts/tags.sh.
+
+The "1024" was a guess. A value of "3862" changes the message to
+
+    /usr/bin/xargs: argument list too long
+
+Using "2048" also fixes the problem. However, I don't know how much
+headroom that leaves
+
+Does anyone know why the argument lists must be shorter for ARM? All
+of the documentation I have available says that 4096 should be the
+limit.
+
+Signed-off-by: David Cullen <david.cullen@koe-americas.com>
+---
+ scripts/tags.sh |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index cff8faa..7f4ebb3 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -121,7 +121,7 @@ dogtags()
+
+ exuberant()
+ {
+-       all_sources | xargs $1 -a                               \
++       all_sources | xargs -L 1024 $1 -a                       \
+        -I __initdata,__exitdata,__acquires,__releases          \
+        -I __read_mostly,____cacheline_aligned                  \
+        -I ____cacheline_aligned_in_smp                         \
+--
+1.7.9.5
