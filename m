@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab2HHIPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 04:15:16 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:28174 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab2HHIPJ (ORCPT
+	id S932432Ab2HHIYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 04:24:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40203 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757865Ab2HHIYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 04:15:09 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-c9-5022200b6e5a
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] PM QoS: Add a metric : Bus Throughput.
-Date: Wed, 08 Aug 2012 17:14:51 +0900
-Message-id: <1344413691-808-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jAV1uBaUAg94ma4vLu+awWXzuPcLo
-	wOTxeZNcAGMUl01Kak5mWWqRvl0CV8btef4F+wUqzm16zdrA2MzXxcjJISFgInHk4n5WCFtM
-	4sK99WxdjFwcQgKLGCXOLbjLAuG0MEks3NPEBFLFJqAj8X/fTXYQW0TASuL0/w5mkCJmgV2M
-	EtNOrAdLCAuYS3w/+gWsgUVAVWLLh7NgcV4BN4lvT96wQ6xTkFhw7y3bBEbuBYwMqxhFUwuS
-	C4qT0nON9IoTc4tL89L1kvNzNzGCvflMegfjqgaLQ4wCHIxKPLybUhUDhFgTy4orcw8xSnAw
-	K4nw7jkIFOJNSaysSi3Kjy8qzUktPsQozcGiJM5r4v3VX0ggPbEkNTs1tSC1CCbLxMEp1cBo
-	lc4k/LpClWuHyObDX23++HYfMu5me/L5X8GZl45s/v4uHdNcuT89XRag8PV8Qlqkx499Dkvv
-	XmO2unye7WbGD4O8Yqb8jNeLJ+UdPm21uvbvXjHvrgB2AdFXnNOTZ32qF5bdePPSp+DT7x3n
-	8CQb3PoYYNfWEcNgfFQrOcmuUlL9I++9iZxKLMUZiYZazEXFiQD8VveQ4gEAAA==
-X-TM-AS-MML: No
+	Wed, 8 Aug 2012 04:24:01 -0400
+Message-ID: <5022221E.5020804@zankel.net>
+Date: Wed, 08 Aug 2012 01:23:58 -0700
+From: Chris Zankel <chris@zankel.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Max Filippov <jcmvbkbc@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        linux-next@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marc Gauthier <marc@tensilica.com>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>
+Subject: Re: xtensa port maintenance
+References: <50205592.1030205@gmail.com> <5020AA5B.4080407@zankel.net> <CAMo8BfLLxBeUC-vg6sAxWLjqPt=fwsQEQgjsqqbjurT3vzo-Pw@mail.gmail.com>
+In-Reply-To: <CAMo8BfLLxBeUC-vg6sAxWLjqPt=fwsQEQgjsqqbjurT3vzo-Pw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bus throughput metric is added to PM QoS in order to control the
-frequency of memory interfaces and busses with PM QoS.
+Hi Max,
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/pm_qos.h |    2 ++
- kernel/power/qos.c     |   15 ++++++++++++++-
- 2 files changed, 16 insertions(+), 1 deletions(-)
+On 08/07/2012 09:43 AM, Max Filippov wrote:
+> On Tue, Aug 7, 2012 at 9:40 AM, Chris Zankel <chris@zankel.net> wrote:
+>> Hi Max,
+>>
+>> On 08/06/2012 04:38 PM, Max Filippov wrote:
+>>> AFAIK xtensa linux port is currently in bad shape: it doesn't work in the
+>>> mainline, it fails to build in the linux-next. The latest working kernels
+>>> for
+>>> xtensa are 2.6.29...31 trees hosted at the git.linux-xtensa.org.
+>> I wouldn't say it's in bad shape, I just built an vmlinux image from the
+>> latest tree (3.6.0-rc1), but it might not be very stable. One of the major
+>> issues is not really the kernel but  there's actually no way to build a
+>> fairly recent version of the toolchain. I have been using a somewhat more
+>> recent buildroot version than what is on xtensa-linux.org, but even that
+>> version of buildroot is rather old now and needed a few patches.
+> I've been using userspace built from the buildroot image hosted on
+> linux-xtensa.org with gcc-4.4.5 + binutils-2.20.1. I use gcc-4.6.3
+> (without libc) + binutils-2.22 to build the kernel. I had an impression that
+> mentioned buildroot was able to produce userspace where LTP could
+> run successfully for days. So, my initial plan is to use that userspace
+> with mainline kernel.
+Good plan!
 
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 233149c..6db4939 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -15,6 +15,7 @@ enum {
- 	PM_QOS_CPU_DMA_LATENCY,
- 	PM_QOS_NETWORK_LATENCY,
- 	PM_QOS_NETWORK_THROUGHPUT,
-+	PM_QOS_BUS_DMA_THROUGHPUT,
- 
- 	/* insert new class ID */
- 	PM_QOS_NUM_CLASSES,
-@@ -26,6 +27,7 @@ enum {
- #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
- #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
-+#define	PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE	0
- 
- struct pm_qos_request {
- 	struct plist_node node;
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 6a031e6..75322cc 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -100,12 +100,25 @@ static struct pm_qos_object network_throughput_pm_qos = {
- 	.name = "network_throughput",
- };
- 
-+static BLOCKING_NOTIFIER_HEAD(bus_dma_throughput_notifier);
-+static struct pm_qos_constraints bus_dma_tput_constraints = {
-+	.list = PLIST_HEAD_INIT(bus_dma_tput_constraints.list),
-+	.target_value = PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_BUS_DMA_THROUGHPUT_DEFAULT_VALUE,
-+	.type = PM_QOS_MAX,
-+	.notifiers = &bus_dma_throughput_notifier,
-+};
-+static struct pm_qos_object bus_dma_throughput_pm_qos = {
-+	.constraints = &bus_dma_tput_constraints,
-+	.name = "bus_dma_throughput",
-+};
- 
- static struct pm_qos_object *pm_qos_array[] = {
- 	&null_pm_qos,
- 	&cpu_dma_pm_qos,
- 	&network_lat_pm_qos,
--	&network_throughput_pm_qos
-+	&network_throughput_pm_qos,
-+	&bus_dma_throughput_pm_qos,
- };
- 
- static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
--- 
-1.7.4.1
+> I have a subset thereof that builds toolchain (without libc) and the kernel.
+> Buildroot gave me an impression of not very reproducible environment, perhaps
+> I spent too little time on it. So I made an image and I hope that
+> pre-built image
+> may be used, at least in the beginning. I had to lightly patch U-boot hosted on
+> linux-xtensa.org to make it work on LX60/110/200 QEMU models. I guess we
+> can start with pre-built image of the bootloader too.
+I'm not settled on Buildroot, but I had the best experience with it so 
+far. OpenEmbedded was a real pain when I used it (it might have improved 
+a lot since, though). I once even started my own build system, but it 
+became fairly complicated once I wanted to build a bootable system with 
+a C library and various packages.
 
+
+
+
+> Ok. I'd like to have even generic patches (my current queue is mostly 
+> generic) reviewed. Do you prefer to read them on github or on the 
+> linux-xtensa mailing list? 
+I looked over them briefly, and only had one or two questions. I'll send 
+them tomorrow (our time).
+
+
+Thanks,
+-Chris
