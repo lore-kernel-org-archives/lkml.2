@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab2HHT1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:27:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56157 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759149Ab2HHT1Q (ORCPT
+	id S1030593Ab2HHT3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:29:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33464 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab2HHT3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:27:16 -0400
-Date: Wed, 8 Aug 2012 21:27:07 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Dave Martin <dave.martin@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/2] ARM: build ssi-fiq.S in ARM mode to prevent
- CONFIG_THUMB2_KERNEL build breakage
-Message-ID: <20120808192707.GL1451@pengutronix.de>
-References: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
- <1344379514-30076-2-git-send-email-matt@genesi-usa.com>
- <20120808065502.GI1451@pengutronix.de>
- <CAKGA1bmUuSZuWDM4QPTxmNR0+=uQ1RbFhw4u-sb9KaSPYwQiVw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKGA1bmUuSZuWDM4QPTxmNR0+=uQ1RbFhw4u-sb9KaSPYwQiVw@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:18:48 up 46 days, 10:30, 43 users,  load average: 0.19, 0.15,
- 0.14
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 8 Aug 2012 15:29:45 -0400
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Paul Moore <paul@paul-moore.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
+In-Reply-To: <5022BAA2.90606@us.ibm.com>
+References: <50215A7E.8000701@linaro.org>
+	 <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com>
+	 <50218F7E.1060004@linaro.org>
+	 <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com>
+	 <20120807221731.GA25441@mail.hallyn.com> <502198B4.8040503@linaro.org>
+	 <5022BAA2.90606@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Aug 2012 21:29:40 +0200
+Message-ID: <1344454180.28967.231.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 12:32:39PM -0500, Matt Sealey wrote:
-> On Wed, Aug 8, 2012 at 1:55 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >>               .text
-> >> +             .arm
-> >>               .global imx_ssi_fiq_start
-> >>               .global imx_ssi_fiq_end
-> >>               .global imx_ssi_fiq_base
+On Wed, 2012-08-08 at 12:14 -0700, John Stultz wrote:
+> On 08/07/2012 03:37 PM, John Stultz wrote:
+> > On 08/07/2012 03:17 PM, Serge E. Hallyn wrote:
+> >> Quoting Paul Moore (paul@paul-moore.com):
+> >>> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> 
+> >>> wrote:
+> >>>> On 08/07/2012 02:50 PM, Paul Moore wrote:
+> >>>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
+> >>>>> wrote:
+> >>>>>> Hi,
+> >>>>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL 
+> >>>>>> pointer
+> >>>>>> dereferences in selinux_ip_postroute_compat(). It looks like the 
+> >>>>>> sksec
+> >>>>>> value
+> >>>>>> is null and we die in the following line:
+> >>>>>>
+> >>>>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
+> >>>>>>
+> >>>>>> This triggers every time I shutdown the machine, but has also 
+> >>>>>> triggered
+> >>>>>> randomly after a few hours.
+> [snip]
+> >> The problem seems to be that selinux_nf_ip_init() was called, which
+> >> registers the selinux_ipv4_ops (and ipv6).  Those should not get 
+> >> registered
+> >> if selinux ends up not being loaded (as in, if apparmor is loaded 
+> >> first),
+> >> since as you've found here the selinux lsm hooks won't be called to set
+> >> call selinux_sk_alloc_security().
+> > This sounds about right:
+> > root@testvm:~# dmesg | grep SELinux
+> > [    0.004578] SELinux:  Initializing.
+> > [    0.005704] SELinux:  Starting in permissive mode
+> > [    2.235034] SELinux:  Registering netfilter hooks
 > >
-> > I think it would be better to add a depends on !THUMB2_KERNEL to
-> > SND_IMX_SOC_PCM_FIQ. The above may result in broken code in a thumb2
-> > kernel, so I'd rather keep the compile error instead.
+> >> I assume what's happening is that 
+> >> CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
+> >> set to 1, but selinux ended up being set to disabled after the
+> >> __initcall(selinux_nf_ip_init) ran?  Weird.
+> > This looks right as well:
+> >
+> > # zcat config.gz | grep SELINUX
+> > CONFIG_SECURITY_SELINUX=y
+> > CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+> > CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
+> > CONFIG_SECURITY_SELINUX_DISABLE=y
+> > CONFIG_SECURITY_SELINUX_DEVELOP=y
+> > CONFIG_SECURITY_SELINUX_AVC_STATS=y
+> > CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
+> > # CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+> > CONFIG_DEFAULT_SECURITY_SELINUX=y
+> >
+> >
+> > Since the problem isn't completely obvious, I'm starting a bisection 
+> > to narrow this down some more.
 > 
-> I'm curious as to how/why would it result in broken code? It's not
-> possible that the processors relying on
-> the imx_ssi_fiq_* stuff cannot run ARM code (unless Freescale shipped
-> a weird version) so it should
-> magically enter and exit. I wonder if it needs some thumb-interworking
-> stuff wrapped around it though.
-> You'd know better than me..
-
-Currently I don't know if the code compiled in arm mode on an otherwise
-thumb2 kernel does work and I do not have a thumb2 capacle hardware with
-sound support to test this.
-
+> So I bisected this down and it seems to be the following commit:
 > 
-> I'm a little worried that making it !CONFIG_THUMB2_KERNEL would
-> basically make more than
-> one of the boards in imx_v6_v7_defconfig suddenly lose audio support
-> for no other reason..
+> commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
+> Author: Eric Dumazet <edumazet@google.com>
+> Date:   Thu Jul 19 07:34:03 2012 +0000
+> 
+>      ipv4: tcp: remove per net tcp_sock
+> 
+> 
+> It doesn't revert totally cleanly, but after fixing up the rejections 
+> and booting with this patch removed on top of Linus' head the oops on 
+> shutdown goes away.
 
-Obviously no v6_v7 board does use this code as it is, because it does
-not compile. So there's no risk of breaking something if we just disable
-FIQ support in thumb2 mode.
+Thanks for doing this.
 
-Better disable an unused feature than add some untested code.
+So sk_security is NULL and selinux crashes on it.
 
-Sascha
+I guess I need to call security_sk_alloc().
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+
