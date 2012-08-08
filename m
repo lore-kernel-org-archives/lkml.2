@@ -1,117 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab2HHAi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Aug 2012 20:38:29 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65263 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2HHAi1 (ORCPT
+	id S1753416Ab2HHAm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Aug 2012 20:42:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41694 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752269Ab2HHAmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Aug 2012 20:38:27 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-9e-5021b500e9ac
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
-References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
-Date: Wed, 08 Aug 2012 09:32:26 +0900
-In-Reply-To: <1344344165-369636-1-git-send-email-avagin@openvz.org> (Andrew
-	Vagin's message of "Tue, 7 Aug 2012 16:56:01 +0400")
-Message-ID: <87mx26z0it.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 7 Aug 2012 20:42:54 -0400
+Message-ID: <1344386425.13142.174.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 02/70] floppy: Cleanup disk->queue before caling put_disk()
+ if add_disk() was never called
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Vivek Goyal <vgoyal@redhat.com>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Date: Wed, 08 Aug 2012 01:40:25 +0100
+In-Reply-To: <20120807224935.GA1008@herton-Z68MA-D2H-B3>
+References: <20120807032755.803571133@decadent.org.uk>
+	 <20120807032756.478538531@decadent.org.uk>
+	 <20120807224935.GA1008@herton-Z68MA-D2H-B3>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-RrBqA+9fVoMRtwZzFumJ"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andrew
 
-On Tue,  7 Aug 2012 16:56:01 +0400, Andrew Vagin wrote:
-> This functionality helps to analize where a task sleeps or waits locks.
-> This feature can help to investigate a scalability problems.
->
-Looks like a nice feature.
+--=-RrBqA+9fVoMRtwZzFumJ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, 2012-08-07 at 19:49 -0300, Herton Ronaldo Krzesinski wrote:
+> On Tue, Aug 07, 2012 at 04:27:57AM +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: Vivek Goyal <vgoyal@redhat.com>
+> >=20
+> > commit 3f9a5aabd0a9fe0e0cd308506f48963d79169aa7 upstream.
+> >=20
+> > add_disk() takes gendisk reference on request queue. If driver failed d=
+uring
+> > initialization and never called add_disk() then that extra reference is=
+ not
+> > taken. That reference is put in put_disk(). floppy driver allocates the
+> > disk, allocates queue, sets disk->queue and then relizes that floppy
+> > controller is not present. It tries to tear down everything and tries t=
+o
+> > put a reference down in put_disk() which was never taken.
+> >=20
+> > In such error cases cleanup disk->queue before calling put_disk() so th=
+at
+> > we never try to put down a reference which was never taken in first pla=
+ce.
+> >=20
+> > Reported-and-tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+> > Tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > Acked-by: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Jens Axboe <axboe@kernel.dk>
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > ---
+> >  drivers/block/floppy.c |    8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> > index 510fb10..401ba78 100644
+> > --- a/drivers/block/floppy.c
+> > +++ b/drivers/block/floppy.c
+> > @@ -4368,8 +4368,14 @@ out_unreg_blkdev:
+> >  out_put_disk:
+> >  	while (dr--) {
+> >  		del_timer_sync(&motor_off_timer[dr]);
+> > -		if (disks[dr]->queue)
+> > +		if (disks[dr]->queue) {
+> >  			blk_cleanup_queue(disks[dr]->queue);
+> > +			/*
+> > +			 * put_disk() is not paired with add_disk() and
+> > +			 * will put queue reference one extra time. fix it.
+> > +			 */
+> > +			disks[dr]->queue =3D NULL;
+> > +		}
+> >  		put_disk(disks[dr]);
+> >  	}
+> >  	return err;
+>=20
+> I was taking a look at this, and noticed some issues with the error
+> handling:
+> * missing cleanup (put_disk) if blk_init_queue fails, dr is decremented
+>   first in the error handling loop
+> * if something fails in the add_disk loop, there is no cleanup of
+>   previous iterations in the error handling.
+> * if (disks[dr]->queue) check is bogus, when reaching there for each dr
+>   should exist an queue allocated, and it doesn't take into account
+>   iterations where add_disk wasn't done, if failure happens in add_disk
+>   loop.
+> * floppy_module_exit doesn't reset queue pointer if add_disk wasn't
+>   done.
 
-> The main idea is that we can combine sched_switch and sched_stat_sleep events.
-> sched_switch contains a callchain, when a task starts sleeping.
-> sched_stat_sleep contains a time period for which a task slept.
->
-> This series teaches "perf inject" to combine this events.
->
-> All kernel related patches were committed committed in 3.6-rc1.
->
-> Here is an example of a report:
-> $ cat ~/foo.c
-> ....
->           for (i = 0; i <  10; i++) {
->                   ts1.tv_sec = 0;
->                   ts1.tv_nsec = 10000000;
->                   nanosleep(&ts1, NULL);
->
->                   tv1.tv_sec = 0;
->                   tv1.tv_usec = 40000;
->                   select(0, NULL, NULL, NULL,&tv1);
->           }
-> ...
->
-> $ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
-> 		-e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
-> $ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
-> $ ./perf report -i ~/perf.data
+I agree with this analysis.
 
-The usage like this is too specific and hard to use IMHO. How about
-putting it somehow into perf sched or new command?
+> I think the more complete diff below (not build tested) is needed, commen=
+ts?
+[...]
 
-/me don't have an idea though. :-)
+There are several off-by-one errors, and 'drive_cnt' is not a
+particularly clear variable name (alongside 'dr' and 'drive'), but I
+think this is on the right track.
 
+Anyway, do you agree that the patch under review does fix *a* bug and
+doesn't introduce a regression?
 
-> # Samples: 40  of event 'sched:sched_switch'
-> # Event count (approx.): 1005527702
-> #
-> # Overhead  Command      Shared Object          Symbol
-> # ........  .......  .................  ..............
-> #
->    100.00%      foo  [kernel.kallsyms]  [k] __schedule
->                 |
->                 --- __schedule
->                     schedule
->                    |          
->                    |--79.81%-- schedule_hrtimeout_range_clock
->                    |          schedule_hrtimeout_range
->                    |          poll_schedule_timeout
->                    |          do_select
->                    |          core_sys_select
->                    |          sys_select
->                    |          system_call_fastpath
->                    |          __select
->                    |          __libc_start_main
->                    |          
->                     --20.19%-- do_nanosleep
->                               hrtimer_nanosleep
->                               sys_nanosleep
->                               system_call_fastpath
->                               __GI___libc_nanosleep
->                               __libc_start_main
->
-> Andrew Vagin (3):
->   perf: teach "perf inject" to work with files
->   perf: teach perf inject to merge sched_stat_* and sched_switch events
->   perf: mark a dso if it's used
->
+Ben.
 
-Seems to be outdated.
+--=20
+Ben Hutchings
+Theory and practice are closer in theory than in practice.
+                                - John Levine, moderator of comp.compilers
 
-Thanks,
-Namhyung
+--=-RrBqA+9fVoMRtwZzFumJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->  tools/perf/builtin-inject.c |  139 ++++++++++++++++++++++++++++++++++++++++---
->  tools/perf/util/build-id.c  |    2 +-
->  tools/perf/util/build-id.h  |    5 ++
->  3 files changed, 137 insertions(+), 9 deletions(-)
+iQIVAwUAUCG1eee/yOyVhhEJAQqRJw//WIkzfOlbPaeuEkkidG/fSUTGZKgRtMWA
+RdYimRIdxaT9IbA0aOaHErHLKumrAJX+C9FIPOC7iiFwwdYNX2yJ8l7k7EJx58OS
+OjKvtgA4rv2d9mrSwpuMfcf5CIGGipOrTzWLjl75FVV2VtRzKbkgEJOHyjq+9/X+
+IRMCkHD3JqCPELp0rxFD8ZqSGuKRGMom4JZLOB0D/p5Gzc5bNBYF8uLyPYr7eqwe
+m2eurosBcgn3BDSDsA1ZZiwHXhn75z/Rt+E6wkRrYYYYRfiZYgU0W5basOV1iQXf
+OuLByqcinvm9rl4Q/ZayMzfgImQbpRff3pAWESB5KQPI488VFLXW6OrjyfFJAv1i
+f3slj4OoJbCNpcZmfSVHKoqMHZDs/t72Tmhz32sGCQ+U4vP+Zz2xNuvUvSXQbhes
+UP+KdnEoKQO8wb0UMGfsRiFAvLC9wjAcboVZbPTXrBIlcuepkRtYIgpRs8RMdepD
+EA+NcxjX9gzat+wge+/znXbsLzmf/8kqUenxT4C76r6KvNZwX4US6GU4zvDPZkZM
+GYOFsTLbbXT0skAFQZl0LoX9//5+zQ9hKt4UV0cT9cq1Ale0be/Htv5Fm1x0wKx5
+Pi55xHQ5RfCUivxePu5S4CyjGNuNPxjSPZdv2g047Qge9OhVmecbuNc7uuboD75E
+wz7OtYZbvfQ=
+=A/SU
+-----END PGP SIGNATURE-----
+
+--=-RrBqA+9fVoMRtwZzFumJ--
