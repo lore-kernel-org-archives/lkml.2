@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab2HHTPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:15:33 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45783 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab2HHTPa (ORCPT
+	id S932956Ab2HHTR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:17:27 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59975 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932896Ab2HHTRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:15:30 -0400
-Message-ID: <5022BAA2.90606@us.ibm.com>
-Date: Wed, 08 Aug 2012 12:14:42 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 8 Aug 2012 15:17:25 -0400
+Message-ID: <5022BB0E.8050706@fb.com>
+Date: Wed, 8 Aug 2012 12:16:30 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Paul Moore <paul@paul-moore.com>, lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com
-Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
-References: <50215A7E.8000701@linaro.org> <CAHC9VhTSS8+-OcX9uK0xqnYC3-y0axVGs1m+kuC6+M6HvmSmgg@mail.gmail.com> <50218F7E.1060004@linaro.org> <CAHC9VhTd-d9NgWoU6_o9qw0bq4ZbuTEj8E_jRYyDXPWQaLLdog@mail.gmail.com> <20120807221731.GA25441@mail.hallyn.com> <502198B4.8040503@linaro.org>
-In-Reply-To: <502198B4.8040503@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v6)
+References: <1333172421-6775-2-git-send-email-asharma@fb.com> <4F769976.3070203@fb.com>
+In-Reply-To: <4F769976.3070203@fb.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080819-6148-0000-0000-00000871C486
+X-Originating-IP: [192.168.18.254]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-08_07:2012-08-08,2012-08-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2012 03:37 PM, John Stultz wrote:
-> On 08/07/2012 03:17 PM, Serge E. Hallyn wrote:
->> Quoting Paul Moore (paul@paul-moore.com):
->>> On Tue, Aug 7, 2012 at 5:58 PM, John Stultz <john.stultz@linaro.org> 
->>> wrote:
->>>> On 08/07/2012 02:50 PM, Paul Moore wrote:
->>>>> On Tue, Aug 7, 2012 at 2:12 PM, John Stultz <john.stultz@linaro.org>
->>>>> wrote:
->>>>>> Hi,
->>>>>>       With my kvm environment using 3.6-rc1+, I'm seeing NULL 
->>>>>> pointer
->>>>>> dereferences in selinux_ip_postroute_compat(). It looks like the 
->>>>>> sksec
->>>>>> value
->>>>>> is null and we die in the following line:
->>>>>>
->>>>>>       if (selinux_xfrm_postroute_last(sksec->sid, skb, &ad, proto))
->>>>>>
->>>>>> This triggers every time I shutdown the machine, but has also 
->>>>>> triggered
->>>>>> randomly after a few hours.
-[snip]
->> The problem seems to be that selinux_nf_ip_init() was called, which
->> registers the selinux_ipv4_ops (and ipv6).  Those should not get 
->> registered
->> if selinux ends up not being loaded (as in, if apparmor is loaded 
->> first),
->> since as you've found here the selinux lsm hooks won't be called to set
->> call selinux_sk_alloc_security().
-> This sounds about right:
-> root@testvm:~# dmesg | grep SELinux
-> [    0.004578] SELinux:  Initializing.
-> [    0.005704] SELinux:  Starting in permissive mode
-> [    2.235034] SELinux:  Registering netfilter hooks
+On 3/30/12 10:43 PM, Arun Sharma wrote:
+> [ Meant to include v6 ChangeLog as well. Technical difficulties.. ]
 >
->> I assume what's happening is that 
->> CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE was
->> set to 1, but selinux ended up being set to disabled after the
->> __initcall(selinux_nf_ip_init) ran?  Weird.
-> This looks right as well:
+> v6 ChangeLog:
 >
-> # zcat config.gz | grep SELINUX
-> CONFIG_SECURITY_SELINUX=y
-> CONFIG_SECURITY_SELINUX_BOOTPARAM=y
-> CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
-> CONFIG_SECURITY_SELINUX_DISABLE=y
-> CONFIG_SECURITY_SELINUX_DEVELOP=y
-> CONFIG_SECURITY_SELINUX_AVC_STATS=y
-> CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
-> # CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
-> CONFIG_DEFAULT_SECURITY_SELINUX=y
->
->
-> Since the problem isn't completely obvious, I'm starting a bisection 
-> to narrow this down some more.
+> rebased to tip:perf/core and fixed a minor problem in computing
+> the total period in hists__remove_entry_filter(). Needed to
+> use period_self instead of period.
 
-So I bisected this down and it seems to be the following commit:
+This patch breaks perf top (symptom: percentages > 100%). Fixed by the 
+following patch.
 
-commit be9f4a44e7d41cee50ddb5f038fc2391cbbb4046
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Thu Jul 19 07:34:03 2012 +0000
+Namhyung: if you're still working on forward porting this, please add 
+this fix to your queue.
 
-     ipv4: tcp: remove per net tcp_sock
+  -Arun
 
+commit 75a1c409a529c9741f8a2f493868d1fc7ce7e06d
+Author: Arun Sharma <asharma@fb.com>
+Date:   Wed Aug 8 11:47:02 2012 -0700
 
-It doesn't revert totally cleanly, but after fixing up the rejections 
-and booting with this patch removed on top of Linus' head the oops on 
-shutdown goes away.
+    perf: update period_self as well on collapsing
+       When running perf top, we have a series of incoming samples,
+    which get aggregated in various user specified ways.
+       Suppose function "foo" had the following samples:
+    101, 103, 99, 105, ...
+       ->period for the corresponding entry looks as follows:
+    101, 204, 303, 408, ...
+       However, due to this bug, ->period_self contains:
+    101, 103, 99, 105, ...
+       and therefore breaks the invariant period == period_self
+    in the default mode (no sort inclusive).
+       Since total_period is computed by summing up period_self,
+       period/total_period can be > 100%
+       Fix the bug by updating period_self as well.
+       Signed-off-by: Arun Sharma <asharma@fb.com>
 
-thanks
--john
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a2a8d91..adc891e 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -462,6 +462,7 @@ static bool hists__collapse_insert_entry(struct 
+hists *hists,
 
-
+		if (!cmp) {
+			iter->period += he->period;
++			iter->period_self += he->period_self;
+			iter->nr_events += he->nr_events;
+			if (symbol_conf.use_callchain) {
+				callchain_cursor_reset(&hists->callchain_cursor);
