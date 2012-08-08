@@ -1,32 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030547Ab2HHSNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 14:13:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49800 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab2HHSNn (ORCPT
+	id S932817Ab2HHSXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 14:23:23 -0400
+Received: from exout102.netflix.com ([69.53.237.163]:21464 "EHLO
+	exout104.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757595Ab2HHSXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 14:13:43 -0400
-Date: Wed, 8 Aug 2012 11:13:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, peterz@infradead.org
-Subject: $SUBJ should have been "[PATCHSET] timer: clean up initializers
- and implement irqsafe timers"
-Message-ID: <20120808181338.GC2985@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org>
+	Wed, 8 Aug 2012 14:23:22 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024;d=netflix.com;
+  h=from:to:cc:subject:date:message-id:content-type:mime-version;
+  b=X8UgO7RtkxUSIVfb3NmorCp7YROkSlopWco72H9Ep48jIiFxiUUwWb35h0Psb6jnE8O7ESGC
+    dTx+UlPAdFM3EmyIwxU/GBvSxQ6AMw7lnT2/cGlj76cYwqCnhfhHQyV3EY6A1Xs2ASRrVyom
+    bjd9Fb59FcugwvFpDhPqo4/uHVA=
+From: Wesley Miaw <wmiaw@netflix.com>
+To: Alasdair Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "msb@google.com" <msb@google.com>,
+        =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
+Subject: [PATCH] dm: verity support data device offset (Linux 3.4.7)
+Thread-Topic: [PATCH] dm: verity support data device offset (Linux 3.4.7)
+Thread-Index: AQHNdZLjOIWAIbPp80KsaTGNtIwdlg==
+Date: Wed, 8 Aug 2012 18:23:20 +0000
+Message-ID: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.2.229.146]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_A168BEBD-DC01-457E-9161-FBB6A59AF5BA";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344449428-24962-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Either I'm keeping forgetting adding Subject: tag or git-send-mail is
-somehow screwed up.  Sorry about that.
+--Apple-Mail=_A168BEBD-DC01-457E-9161-FBB6A59AF5BA
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
--- 
-tejun
+From: Wesley Miaw <wmiaw@netflix.com>
+
+Add data device start block index to dm-verity target parameters to =
+support
+verity targets where the data does not begin at sector 0 of the block =
+device.
+Also fix the hash block index computation so it takes into account data =
+offsets.
+
+Signed-off-by: Wesley Miaw <wmiaw@netflix.com>
+---
+ Documentation/device-mapper/verity.txt |    8 ++++-
+ drivers/md/dm-verity.c                 |   32 +++++++++++++++--------
+ 2 files changed, 27 insertions(+), 13 deletions(-)
+--- a/drivers/md/dm-verity.c	2012-08-07 16:03:03.778759000 -0700
++++ b/drivers/md/dm-verity.c	2012-08-07 17:32:02.130176956 -0700
+@@ -491,7 +491,7 @@ static int verity_map(struct dm_target *
+ 	io->bio =3D bio;
+ 	io->orig_bi_end_io =3D bio->bi_end_io;
+ 	io->orig_bi_private =3D bio->bi_private;
+-	io->block =3D bio->bi_sector >> (v->data_dev_block_bits - =
+SECTOR_SHIFT);
++	io->block =3D (bio->bi_sector - v->data_start) >> =
+(v->data_dev_block_bits - SECTOR_SHIFT);
+ 	io->n_blocks =3D bio->bi_size >> v->data_dev_block_bits;
+=20
+ 	bio->bi_end_io =3D verity_end_io;
+@@ -641,6 +641,7 @@ static void verity_dtr(struct dm_target=20
+  *	<hash device>
+  *	<data block size>
+  *	<hash block size>
++ *	<data start block>
+  *	<the number of data blocks>
+  *	<hash start block>
+  *	<algorithm>
+@@ -671,8 +672,8 @@ static int verity_ctr(struct dm_target *
+ 		goto bad;
+ 	}
+=20
+-	if (argc !=3D 10) {
+-		ti->error =3D "Invalid argument count: exactly 10 =
+arguments required";
++	if (argc !=3D 11) {
++		ti->error =3D "Invalid argument count: exactly 11 =
+arguments required";
+ 		r =3D -EINVAL;
+ 		goto bad;
+ 	}
+@@ -718,6 +719,15 @@ static int verity_ctr(struct dm_target *
+ 	v->hash_dev_block_bits =3D ffs(num) - 1;
+=20
+ 	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) !=3D 1 ||
++		num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
++		(sector_t)num_ll << (v->data_dev_block_bits - =
+SECTOR_SHIFT)) {
++		ti->error =3D "Invalid data start";
++		r =3D -EINVAL;
++		goto bad;
++	}
++	v->data_start =3D num_ll << (v->data_dev_block_bits - =
+SECTOR_SHIFT);
++
++	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
+ 	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=3D
+ 	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) =
+{
+ 		ti->error =3D "Invalid data blocks";
+@@ -732,7 +742,7 @@ static int verity_ctr(struct dm_target *
+ 		goto bad;
+ 	}
+=20
+-	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) !=3D 1 ||
++	if (sscanf(argv[7], "%llu%c", &num_ll, &dummy) !=3D 1 ||
+ 	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=3D
+ 	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) =
+{
+ 		ti->error =3D "Invalid hash start";
+@@ -741,7 +751,7 @@ static int verity_ctr(struct dm_target *
+ 	}
+ 	v->hash_start =3D num_ll;
+=20
+-	v->alg_name =3D kstrdup(argv[7], GFP_KERNEL);
++	v->alg_name =3D kstrdup(argv[8], GFP_KERNEL);
+ 	if (!v->alg_name) {
+ 		ti->error =3D "Cannot allocate algorithm name";
+ 		r =3D -ENOMEM;
+@@ -770,23 +780,23 @@ static int verity_ctr(struct dm_target *
+ 		r =3D -ENOMEM;
+ 		goto bad;
+ 	}
+-	if (strlen(argv[8]) !=3D v->digest_size * 2 ||
+-	    hex2bin(v->root_digest, argv[8], v->digest_size)) {
++	if (strlen(argv[9]) !=3D v->digest_size * 2 ||
++	    hex2bin(v->root_digest, argv[9], v->digest_size)) {
+ 		ti->error =3D "Invalid root digest";
+ 		r =3D -EINVAL;
+ 		goto bad;
+ 	}
+=20
+-	if (strcmp(argv[9], "-")) {
+-		v->salt_size =3D strlen(argv[9]) / 2;
++	if (strcmp(argv[10], "-")) {
++		v->salt_size =3D strlen(argv[10]) / 2;
+ 		v->salt =3D kmalloc(v->salt_size, GFP_KERNEL);
+ 		if (!v->salt) {
+ 			ti->error =3D "Cannot allocate salt";
+ 			r =3D -ENOMEM;
+ 			goto bad;
+ 		}
+-		if (strlen(argv[9]) !=3D v->salt_size * 2 ||
+-		    hex2bin(v->salt, argv[9], v->salt_size)) {
++		if (strlen(argv[10]) !=3D v->salt_size * 2 ||
++		    hex2bin(v->salt, argv[10], v->salt_size)) {
+ 			ti->error =3D "Invalid salt";
+ 			r =3D -EINVAL;
+ 			goto bad;
+--- a/Documentation/device-mapper/verity.txt	2012-08-08 =
+11:02:48.558883756 -0700
++++ b/Documentation/device-mapper/verity.txt	2012-08-08 =
+11:13:01.259982498 -0700
+@@ -9,7 +9,7 @@ Construction Parameters
+ =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+     <version> <dev> <hash_dev>
+     <data_block_size> <hash_block_size>
+-    <num_data_blocks> <hash_start_block>
++    <data_start_block> <num_data_blocks> <hash_start_block>
+     <algorithm> <digest> <salt>
+=20
+ <version>
+@@ -41,6 +41,10 @@ Construction Parameters
+ <hash_block_size>
+     The size of a hash block in bytes.
+=20
++<data_start_block>
++    This is the offset, in <data_block_size>-blocks, from the start of =
+data_dev
++    to the first block of the data.
++
+ <num_data_blocks>
+     The number of data blocks on the data device.  Additional blocks =
+are
+     inaccessible.  You can place hashes to the same partition as data, =
+in this
+@@ -136,7 +140,7 @@ Example
+ =3D=3D=3D=3D=3D=3D=3D
+ Set up a device:
+   # dmsetup create vroot --readonly --table \
+-    "0 2097152 verity 1 /dev/sda1 /dev/sda2 4096 4096 262144 1 sha256 =
+"\
++    "0 2097152 verity 1 /dev/sda1 /dev/sda2 4096 4096 0 262144 1 sha256 =
+"\
+     "4392712ba01368efdf14b05c76f9e4df0d53664630b5d48632ed17a137f39076 =
+"\
+     "1234000000000000000000000000000000000000000000000000000000000000"
+=20
+
+
+--Apple-Mail=_A168BEBD-DC01-457E-9161-FBB6A59AF5BA
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+
+iQEcBAEBAgAGBQJQIq6YAAoJELoPFVk1ivvRGtUH/3LRuqivWDIkOEl3551rhTUa
+2WLqMT7z/ZGYg+ut3uyap4GBg6zLz4fcnSDbZnBHxSPB01H9zgQDneLYRN7BBJEf
++avNpotM+mnC4eubKKZrr0RU1bJZgpSQBLt4232cSVvMCLlZTdFGbTBki2I5Vu/t
+X4U9oSMBGEW0W5/DquT7UrepzByN5wOLyS096YwnZY8mOIYo8V/Zqd2UAvcO+8I4
+Rqvhy1W1+rYq+Vhea3sKvCp5CaLxJOGZelZwcHOUCCYtRYw0Vzcta3JC7hkPJL7J
+Pn3JShKmSKFpK09xpVCmo1HvfOmJWc7hcIOrh28VIWtJ5BcWDzbUNGABO3+LFYk=
+=lLh6
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_A168BEBD-DC01-457E-9161-FBB6A59AF5BA--
