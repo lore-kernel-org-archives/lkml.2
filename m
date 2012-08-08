@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab2HHN01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 09:26:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43064 "EHLO
+	id S1030295Ab2HHN0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 09:26:46 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39317 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758449Ab2HHNV7 (ORCPT
+	with ESMTP id S1758443Ab2HHNV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 09:21:59 -0400
+	Wed, 8 Aug 2012 09:21:58 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v5 08/19] vfs: fix mknodat to retry on ESTALE errors
-Date: Wed,  8 Aug 2012 09:21:31 -0400
-Message-Id: <1344432102-22312-9-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v5 07/19] vfs: add new "reval" argument to kern_path_create
+Date: Wed,  8 Aug 2012 09:21:30 -0400
+Message-Id: <1344432102-22312-8-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
 References: <1344432102-22312-1-git-send-email-jlayton@redhat.com>
@@ -22,83 +22,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+...for now, all of the callers pass in "false". Eventually, we'll set
+that to "true" when we retry the lookup after getting back an ESTALE on
+a call.
+
+While we're at it, change the is_dir arg to a bool since that's how it's
+used currently.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 51 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 33 insertions(+), 18 deletions(-)
+ drivers/base/devtmpfs.c |  7 ++++---
+ fs/namei.c              | 12 +++++++++---
+ include/linux/namei.h   |  2 +-
+ net/unix/af_unix.c      |  2 +-
+ 4 files changed, 15 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index deb4a45..2124437 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -148,7 +148,7 @@ static int dev_mkdir(const char *name, umode_t mode)
+ 	struct path path;
+ 	int err;
+ 
+-	dentry = kern_path_create(AT_FDCWD, name, &path, 1);
++	dentry = kern_path_create(AT_FDCWD, name, &path, true, false);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+@@ -193,10 +193,11 @@ static int handle_create(const char *nodename, umode_t mode, struct device *dev)
+ 	struct path path;
+ 	int err;
+ 
+-	dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
++	dentry = kern_path_create(AT_FDCWD, nodename, &path, false, false);
+ 	if (dentry == ERR_PTR(-ENOENT)) {
+ 		create_path(nodename);
+-		dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
++		dentry = kern_path_create(AT_FDCWD, nodename, &path,
++								false, false);
+ 	}
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
 diff --git a/fs/namei.c b/fs/namei.c
-index f04ba14..0a0397f 100644
+index f0463bc..f04ba14 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3109,34 +3109,49 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 	struct dentry *dentry;
- 	struct path path;
- 	int error;
-+	char *name;
-+	unsigned int try = 0;
- 
- 	error = may_mknod(mode);
- 	if (error)
- 		return error;
- 
--	dentry = user_path_create(dfd, filename, &path, 0);
--	if (IS_ERR(dentry))
--		return PTR_ERR(dentry);
-+	name = getname(filename);
-+	if (IS_ERR(name))
-+		return PTR_ERR(name);
- 
--	if (!IS_POSIXACL(path.dentry->d_inode))
--		mode &= ~current_umask();
--	error = security_path_mknod(&path, dentry, mode, dev);
--	if (error)
--		goto out;
--	switch (mode & S_IFMT) {
--		case 0: case S_IFREG:
--			error = vfs_create(path.dentry->d_inode,dentry,mode,true);
-+	do {
-+		dentry = kern_path_create(dfd, name, &path, false, try);
-+		if (IS_ERR(dentry)) {
-+			error = PTR_ERR(dentry);
- 			break;
--		case S_IFCHR: case S_IFBLK:
--			error = vfs_mknod(path.dentry->d_inode,dentry,mode,
--					new_decode_dev(dev));
-+		}
-+
-+		if (!IS_POSIXACL(path.dentry->d_inode))
-+			mode &= ~current_umask();
-+		error = security_path_mknod(&path, dentry, mode, dev);
-+		if (error)
-+			goto out;
-+		switch (mode & S_IFMT) {
-+		case 0:
-+		case S_IFREG:
-+			error = vfs_create(path.dentry->d_inode, dentry,
-+					mode, true);
- 			break;
--		case S_IFIFO: case S_IFSOCK:
--			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
-+		case S_IFCHR:
-+		case S_IFBLK:
-+			error = vfs_mknod(path.dentry->d_inode, dentry, mode,
-+					new_decode_dev(dev));
- 			break;
--	}
-+		case S_IFIFO:
-+		case S_IFSOCK:
-+			error = vfs_mknod(path.dentry->d_inode, dentry,
-+					mode, 0);
-+		}
- out:
--	done_path_create(&path, dentry);
-+		done_path_create(&path, dentry);
-+	} while (retry_estale(error, try++));
-+	putname(name);
- 	return error;
+@@ -2972,12 +2972,18 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	return file;
  }
  
+-struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
++struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, bool is_dir, bool reval)
+ {
+ 	struct dentry *dentry = ERR_PTR(-EEXIST);
+ 	struct nameidata nd;
+ 	int err2;
+-	int error = do_path_lookup(dfd, pathname, LOOKUP_PARENT, &nd);
++	int error;
++	unsigned int lookup_flags = LOOKUP_PARENT;
++
++	if (reval)
++		lookup_flags |= LOOKUP_REVAL;
++
++	error = do_path_lookup(dfd, pathname, lookup_flags, &nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+ 
+@@ -3047,7 +3053,7 @@ struct dentry *user_path_create(int dfd, const char __user *pathname, struct pat
+ 	struct dentry *res;
+ 	if (IS_ERR(tmp))
+ 		return ERR_CAST(tmp);
+-	res = kern_path_create(dfd, tmp, path, is_dir);
++	res = kern_path_create(dfd, tmp, path, (bool)is_dir, false);
+ 	putname(tmp);
+ 	return res;
+ }
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 491fb48..24c4962 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -65,7 +65,7 @@ extern int user_path_at(int, const char __user *, unsigned, struct path *);
+ 
+ extern int kern_path(const char *, unsigned, struct path *);
+ 
+-extern struct dentry *kern_path_create(int, const char *, struct path *, int);
++extern struct dentry *kern_path_create(int, const char *, struct path *, bool, bool);
+ extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
+ extern void done_path_create(struct path *, struct dentry *);
+ extern struct dentry *kern_path_locked(const char *, struct path *);
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index e4768c1..3f61f4c 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -832,7 +832,7 @@ static int unix_mknod(const char *sun_path, umode_t mode, struct path *res)
+ 	 * Get the parent directory, calculate the hash for last
+ 	 * component.
+ 	 */
+-	dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
++	dentry = kern_path_create(AT_FDCWD, sun_path, &path, false, false);
+ 	err = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		return err;
 -- 
 1.7.11.2
 
