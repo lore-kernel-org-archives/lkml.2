@@ -1,59 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2HHKe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 06:34:28 -0400
-Received: from mail.ispras.ru ([83.149.199.43]:42702 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674Ab2HHKeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 06:34:24 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] net/core: Fix potential memory leak in dev_set_alias()
-Date: Wed,  8 Aug 2012 14:33:25 +0400
-Message-Id: <1344422005-21993-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753587Ab2HHKlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 06:41:36 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37109 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2HHKle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 06:41:34 -0400
+Date: Wed, 8 Aug 2012 11:46:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Subject: Re: [PATCHv2 3/4] modem_shm: u8500-shm: U8500 Shared Memory Driver
+Message-ID: <20120808114606.2a1a3bd3@pyramind.ukuu.org.uk>
+In-Reply-To: <F45880696056844FA6A73F415B568C695B0E7969E3@EXDCVYMBSTM006.EQ1STM.local>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+	<1344322471-3640-4-git-send-email-arun.murthy@stericsson.com>
+	<20120807110156.4d0c2571@pyramind.ukuu.org.uk>
+	<F45880696056844FA6A73F415B568C695B0E7969E3@EXDCVYMBSTM006.EQ1STM.local>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not leak memory by updating pointer with potentially NULL realloc return value.
+> Basically it doesn't suit our protocol of having base addr, read/write
+> pointer, locking etc as the same set of structures and protocol will be
+> used on the modem side implementation.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Ok. What happens about endianness or is the modem always the same
+endianness as the host ?
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- net/core/dev.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 0cb3fe8..3bcc5da 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1055,6 +1055,8 @@ rollback:
-  */
- int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- {
-+	char *new_ifalias;
-+
- 	ASSERT_RTNL();
- 
- 	if (len >= IFALIASZ)
-@@ -1068,9 +1070,10 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- 		return 0;
- 	}
- 
--	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
--	if (!dev->ifalias)
-+	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
-+	if (!new_ifalias)
- 		return -ENOMEM;
-+	dev->ifalias = new_ifalias;
- 
- 	strlcpy(dev->ifalias, alias, len+1);
- 	return len;
--- 
-1.7.9.5
+> > > +   if (len <= 0)
+> > > +           return -EFAULT;
+> >
+> > How can this occur ?
+> 
+> Check for error condition
 
+So how can it occur ? The kernel char layer will never pass a negative
+length to a driver ?
+
+> > What happens with two parallel reads - I don't see what prevents
+> > corruption if that occurs or one racing read freeing the message before
+> > another has finished processing it.
+> 
+> Two parallel reads for different L2 headers can happen, but within the
+> same L2 header is out of the scope. Since the client using this in
+> user space will not know about the message. i.e which msg is for which
+> client. Hence so that scenario is not considered.
+
+What stops a hostile application (or programmer error) from doing so
+deliberately ?
+
+> > > +   if (len <= 0 || buf == NULL)
+> > > +           return -EFAULT;
+> >
+> > len < 0 cannot occur, buf == NULL is not an error
+> 
+> Error handling is for what which is not expected.
+
+Well buf = NULL is not an error (its weird but its not an error)
+
+Also length < 0 is never passed from the char layer to a driver.
+
+> > > +           dev_err(shrm->dev, "Device not opened yet\n");
+> > > +           mutex_unlock(&isa_lock);
+> > > +           return -ENODEV;
+> > > +   }
+> > > +   atomic_set(&isa_context->is_open[idx], 1);
+> >
+> > How do you know it will always be one. Also given it's within the mutex
+> > in all uses I can see why is it an atomic ?
+> >
+> 
+> As per our assumptions/protocol only one client per L2 header.
+
+So why use atomic. Also you can't make that assumption. If you need your
+device to have one user per channel and one write call at a time you must
+enforce it. There is nothing wrong with enforcing it but it needs to be
+done.
+
+That means your open path probably wants to do something (locked) like
+
+	if (foo->users)
+		return -EBUSY;
+
+you still then need to use a mutex or similar in read and write because a
+single open can pass to multiple processes (or multiple writes/reads
+occur at once in a multi-threaded app).
+
+User/Kernel is the security boundary so the kernel code must be robust
+against a hostile user rather than assuming a correctly functioning
+library.
+
+I suspect you simply need to wrap the read/write logic (except for a wait
+for new message) with a mutex and all will be well
+
+> > > +   if (get_boot_state() != BOOT_DONE) {
+> > > +           dev_err(shrm->dev, "Boot is not done\n");
+> > > +           return -EBUSY;
+> > > +   }
+> >
+> > Is it guaranteed that this is a one way path - ie a device never goes
+> > back into BOOT state ?
+> 
+> No, on modem reset, everything happens from first.
+
+So what occurs if this modem reset happens between that test and the next
+line. You have no locking on it so you've got no guarantee that it won't
+reset during the test. So it covers the initial set up case but not a
+reset.
+
+It may not matter providing a reset wakes up things and it is handled
+later. It just looks suspicious.
+
+> > > +   isadev = &isa_context->isadev[idx];
+> > > +   if (filp != NULL)
+> > > +           filp->private_data = isadev;
+> >
+> > How can filp be NULL ?
+> 
+> :-) just a error condition check
+
+These tests are not useful, if anything they hide bugs. If you have a
+real reason to check (eg its a complicated internal path) then use
+
+	WARN_ON(condition)
+
+or
+
+	BUG_ON(condition)
+
+so it gets noticed. For core kernel things however there is no point
+checking. If the kernel ever passes you null as a file pointer the game
+is already over.
+
+> > > +   for (no_dev = 0; no_dev < ISA_DEVICES; no_dev++) {
+> > > +           atomic_set(&isa_context->is_open[no_dev], 1);
+> > > +           device_create(isa_context->shm_class, NULL,
+> > > +                           MKDEV(MAJOR(dev_id),
+> > > +                           map_dev[no_dev].l2_header), NULL,
+> > > +                           map_dev[no_dev].name);
+> > > +   }
+> >
+> > What happens if I open the device right here... ?
+> 
+> It can be opened, but nothing thereafter, since modem is not booted.
+
+You've not yet set up the isa_context but yes.. looks like it is covered
+by the boot check.
+
+(A good rule of thumb is btw to initialise everything, then register
+stuff)
+
+
+Alan
