@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030862Ab2HHTvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 15:51:04 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:39681 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030484Ab2HHTu7 (ORCPT
+	id S1030820Ab2HHT5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 15:57:13 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:15105 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315Ab2HHT5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 15:50:59 -0400
+	Wed, 8 Aug 2012 15:57:12 -0400
+Date: Wed, 8 Aug 2012 21:57:10 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        JJ Ding <dgdunix@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Abraham Arce <x0066660@ti.com>,
+        Syed Rafiuddin <rafiuddin.syed@ti.com>
+Subject: Re: [PATCH] Input: omap4-keypad - don't leak in
+ omap4_keypad_probe()
+In-Reply-To: <1545778.bUhk8oTdlK@dtor-d630.eng.vmware.com>
+Message-ID: <alpine.LNX.2.00.1208082156100.10061@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1208072014140.3227@swampdragon.chaosbits.net> <CAK9yfHxS=VvZ8Cuhd4LAUG+JnOK0g6=xCEoX45mtuVwj-+8D_g@mail.gmail.com> <alpine.LNX.2.00.1208082135410.10061@swampdragon.chaosbits.net> <1545778.bUhk8oTdlK@dtor-d630.eng.vmware.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
-References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
- <CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com> <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
-From: Ben Chan <benchan@chromium.org>
-Date: Wed, 8 Aug 2012 12:50:38 -0700
-X-Google-Sender-Auth: hrGUwETt4V6k-9lvhiiYK5qRSVY
-Message-ID: <CAC5Y2nMMUrxXQo9zSB_SPQrgy96Tr367mpJ+fF=c2eekuZfZ1w@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in gdm_wimax_event_init
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 8 Aug 2012, Dmitry Torokhov wrote:
 
-Does patch v2 make sense?
+> On Wednesday, August 08, 2012 09:36:51 PM Jesper Juhl wrote:
+> > On Wed, 8 Aug 2012, Sachin Kamat wrote:
+> > > On 7 August 2012 23:46, Jesper Juhl <jj@chaosbits.net> wrote:
+> > > > If omap4_keypad_parse_dt() does not return 0 (zero) in
+> > > > omap4_keypad_probe() we will leak the memory we allocated for
+> > > > 'keypad_data' with kzalloc() when we return and the variable goes out
+> > > > of scope.
+> > > 
+> > > How about using devm_kzalloc() instead which will take care of freeing
+> > > the memory on detach?
+> > 
+> > Perhaps. I'm not (yet) familiar with how that function works, so I had
+> > not considered it. I'll look into it.
+> 
+> Actually please not yet - I guess at some point I'll have to add devm_*
+> variants for input_device_* operations but for now I prefer not to mix
+> the 2 styles of managing resources.
+> 
+> BTW, I think I need to redo a few patches so I plan on folding this fix
+> into the original change.
+> 
+Ok. I'll just leave this alone for now then and let you do whatever you 
+feel is best :-) .
 
-Thanks,
-Ben
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-On Wed, Jul 25, 2012 at 6:53 AM, Ben Chan <benchan@chromium.org> wrote:
-> Hi Devendra,
->
-> Thanks for cleaning up the driver.  If I understand the code
-> correctly, the original author wanted to initialize wm_event once and
-> reuse it for multiple devices, and thus reference counted it with
-> ref_cnt.
->
-> For instance, each time gdm_usb_probe() is called, it may call
-> register_wimax_device() / gdm_wimax_event_init(). wm_event is
-> initialized the first time when wm_event.ref_cnt == 0 (alternatively,
-> the code could check !wm_event.sock). Subsequent calls to
-> gdm_wimax_event_init() will simply increase the ref count. Similarly,
-> gdm_usb_disconnect() calls unregister_wimax_device() /
-> gdm_wimax_event_exit(), which decreases the ref count and disposes
-> wm_event when ref_cnt becomes zero.
->
-> The code change in commit 8df858ea76b76dde9a39d4edd9aaded983582cfe
-> only prevents ref_cnt from increasing beyond one. So the code no
-> longer work when there are multiple devices (i.e. wm_event could be
-> disposed even when there is an active device).
->
-> Thanks,
-> Ben
->
->
-> On Tue, Jul 24, 2012 at 9:50 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->> On Tue, Jul 24, 2012 at 8:34 PM, Ben Chan <benchan@chromium.org> wrote:
->>> This patch fixes the commit "staging/gdm72xx: cleanup little at
->>> gdm_wimax_event_rcv" (8df858ea76b76dde9a39d4edd9aaded983582cfe),
->>> which mishandles the reference counting of wm_event.
->>>
->>> Signed-off-by: Ben Chan <benchan@chromium.org>
->>> ---
->>> Fixed the commit message as suggested by Dan Carpenter.
->>>
->>>  drivers/staging/gdm72xx/gdm_wimax.c |   16 ++++++++++------
->>>  1 files changed, 10 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
->>> index 0716efc..6cb8107 100644
->>> --- a/drivers/staging/gdm72xx/gdm_wimax.c
->>> +++ b/drivers/staging/gdm72xx/gdm_wimax.c
->>> @@ -258,12 +258,16 @@ static int gdm_wimax_event_init(void)
->>>         if (!wm_event.ref_cnt) {
->>>                 wm_event.sock = netlink_init(NETLINK_WIMAX,
->>>                                                 gdm_wimax_event_rcv);
->>> -               if (wm_event.sock)
->>> -                       wm_event.ref_cnt++;
->>> -               INIT_LIST_HEAD(&wm_event.evtq);
->>> -               INIT_LIST_HEAD(&wm_event.freeq);
->>> -               INIT_WORK(&wm_event.ws, __gdm_wimax_event_send);
->>> -               spin_lock_init(&wm_event.evt_lock);
->>> +               if (wm_event.sock) {
->>> +                       INIT_LIST_HEAD(&wm_event.evtq);
->>> +                       INIT_LIST_HEAD(&wm_event.freeq);
->>> +                       INIT_WORK(&wm_event.ws, __gdm_wimax_event_send);
->>> +                       spin_lock_init(&wm_event.evt_lock);
->>> +               }
->>> +       }
->>> +
->>> +       if (wm_event.sock) {
->>> +               wm_event.ref_cnt++;
->>>                 return 0;
->>>         }
->>>
->>> --
->>> 1.7.7.3
->>>
->>
->> Hi Ben,
->>
->> I have some basic understanding about this flow of the function,
->>
->> Here is my understanding of the thing i have done when i was doing
->> some cleanups to this driver.
->>
->> The ref_cnt will be 0 at first time. if so the sock creation happens
->> only once, and register_wimax_device only calls this function.
->> so i think doing the ref_cnt++ inside the if (!wm_event.ref_cnt) is valid.
->>
->> Please suggest me if i am wrong.
->>
->> Thanks,
