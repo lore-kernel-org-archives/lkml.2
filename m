@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab2HHVjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 17:39:03 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59303 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab2HHVig (ORCPT
+	id S1757765Ab2HHVj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 17:39:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab2HHVib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 17:38:36 -0400
+	Wed, 8 Aug 2012 17:38:31 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
         tglx@linutronix.de, peterz@infradead.org, davem@davemloft.net,
         tomi.valkeinen@ti.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] workqueue: reimplement cancel_delayed_work() using try_to_grab_pending()
-Date: Wed,  8 Aug 2012 14:38:01 -0700
-Message-Id: <1344461882-10149-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/7] workqueue: use irqsafe timer for delayed_work
+Date: Wed,  8 Aug 2012 14:37:59 -0700
+Message-Id: <1344461882-10149-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344461882-10149-1-git-send-email-tj@kernel.org>
 References: <1344461882-10149-1-git-send-email-tj@kernel.org>
@@ -22,106 +22,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cancel_delayed_work() can't be called from IRQ handlers due to its use
-of del_timer_sync() and can't cancel work items which are already
-transferred from timer to worklist.
+Up to now, for delayed_works, try_to_grab_pending() couldn't be used
+from IRQ handlers because IRQs may happen while
+delayed_work_timer_fn() is in progress leading to indefinite -EAGAIN.
 
-Also, unlike other flush and cancel functions, a canceled delayed_work
-would still point to the last associated cpu_workqueue.  If the
-workqueue is destroyed afterwards and the work item is re-used on a
-different workqueue, the queueing code can oops trying to dereference
-already freed cpu_workqueue.
-
-This patch reimplements cancel_delayed_work() using
-try_to_grab_pending() and set_work_cpu_and_clear_pending().  This
-allows the function to be called from IRQ handlers and makes its
-behavior consistent with other flush / cancel functions.
+This patch makes delayed_work use the new TIMER_IRQSAFE flag for
+delayed_work->timer.  This makes try_to_grab_pending() and thus
+mod_delayed_work_on() safe to call from IRQ handlers.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/workqueue.h |   17 +----------------
- kernel/workqueue.c        |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 16 deletions(-)
+ include/linux/workqueue.h |    8 +++++---
+ kernel/workqueue.c        |   20 +++++++++++---------
+ 2 files changed, 16 insertions(+), 12 deletions(-)
 
 diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 093968e..6306157 100644
+index 83755f4..093968e 100644
 --- a/include/linux/workqueue.h
 +++ b/include/linux/workqueue.h
-@@ -417,6 +417,7 @@ extern bool cancel_work_sync(struct work_struct *work);
+@@ -136,7 +136,8 @@ struct execute_work {
+ #define __DELAYED_WORK_INITIALIZER(n, f, tflags) {			\
+ 	.work = __WORK_INITIALIZER((n).work, (f)),			\
+ 	.timer = __TIMER_INITIALIZER(delayed_work_timer_fn,		\
+-			0, (unsigned long)&(n), (tflags)),		\
++				     0, (unsigned long)&(n),		\
++				     (tflags) | TIMER_IRQSAFE),		\
+ 	}
  
- extern bool flush_delayed_work(struct delayed_work *dwork);
- extern bool flush_delayed_work_sync(struct delayed_work *work);
-+extern bool cancel_delayed_work(struct delayed_work *dwork);
- extern bool cancel_delayed_work_sync(struct delayed_work *dwork);
+ #define DECLARE_WORK(n, f)						\
+@@ -214,7 +215,8 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+ 	do {								\
+ 		INIT_WORK(&(_work)->work, (_func));			\
+ 		__setup_timer(&(_work)->timer, delayed_work_timer_fn,	\
+-			      (unsigned long)(_work), (_tflags));	\
++			      (unsigned long)(_work),			\
++			      (_tflags) | TIMER_IRQSAFE);		\
+ 	} while (0)
  
- extern void workqueue_set_max_active(struct workqueue_struct *wq,
-@@ -426,22 +427,6 @@ extern unsigned int work_cpu(struct work_struct *work);
- extern unsigned int work_busy(struct work_struct *work);
+ #define __INIT_DELAYED_WORK_ONSTACK(_work, _func, _tflags)		\
+@@ -223,7 +225,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
+ 		__setup_timer_on_stack(&(_work)->timer,			\
+ 				       delayed_work_timer_fn,		\
+ 				       (unsigned long)(_work),		\
+-				       (_tflags));			\
++				       (_tflags) | TIMER_IRQSAFE);	\
+ 	} while (0)
  
- /*
-- * Kill off a pending schedule_delayed_work().  Note that the work callback
-- * function may still be running on return from cancel_delayed_work(), unless
-- * it returns 1 and the work doesn't re-arm itself. Run flush_workqueue() or
-- * cancel_work_sync() to wait on it.
-- */
--static inline bool cancel_delayed_work(struct delayed_work *work)
--{
--	bool ret;
--
--	ret = del_timer_sync(&work->timer);
--	if (ret)
--		work_clear_pending(&work->work);
--	return ret;
--}
--
--/*
-  * Like above, but uses del_timer() instead of del_timer_sync(). This means,
-  * if it returns 0 the timer function may be running and the queueing is in
-  * progress.
+ #define INIT_DELAYED_WORK(_work, _func)					\
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 9087599..7413242 100644
+index 11723c5..9087599 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -3031,6 +3031,36 @@ bool flush_delayed_work_sync(struct delayed_work *dwork)
- EXPORT_SYMBOL(flush_delayed_work_sync);
- 
- /**
-+ * cancel_delayed_work - cancel a delayed work
-+ * @dwork: delayed_work to cancel
-+ *
-+ * Kill off a pending delayed_work.  Returns %true if @dwork was pending
-+ * and canceled; %false if wasn't pending.  Note that the work callback
-+ * function may still be running on return, unless it returns %true and the
-+ * work doesn't re-arm itself.  Explicitly flush or use cancel_work_sync()
-+ * to wait on it.
-+ *
-+ * This function is safe to call from any context including IRQ handler.
-+ */
-+bool cancel_delayed_work(struct delayed_work *dwork)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	do {
-+		ret = try_to_grab_pending(&dwork->work, true, &flags);
-+	} while (unlikely(ret == -EAGAIN));
-+
-+	if (unlikely(ret < 0))
-+		return false;
-+
-+	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
-+	local_irq_restore(flags);
-+	return true;
-+}
-+EXPORT_SYMBOL(cancel_delayed_work);
-+
-+/**
-  * cancel_delayed_work_sync - cancel a delayed work and wait for it to finish
-  * @dwork: the delayed work cancel
+@@ -1041,16 +1041,14 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color,
+  *		for arbitrarily long
   *
+  * On >= 0 return, the caller owns @work's PENDING bit.  To avoid getting
+- * preempted while holding PENDING and @work off queue, preemption must be
+- * disabled on entry.  This ensures that we don't return -EAGAIN while
+- * another task is preempted in this function.
++ * interrupted while holding PENDING and @work off queue, irq must be
++ * disabled on entry.  This, combined with delayed_work->timer being
++ * irqsafe, ensures that we return -EAGAIN for finite short period of time.
+  *
+  * On successful return, >= 0, irq is disabled and the caller is
+  * responsible for releasing it using local_irq_restore(*@flags).
+  *
+- * This function is safe to call from any context other than IRQ handler.
+- * An IRQ handler may run on top of delayed_work_timer_fn() which can make
+- * this function return -EAGAIN perpetually.
++ * This function is safe to call from any context including IRQ handler.
+  */
+ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
+ 			       unsigned long *flags)
+@@ -1065,6 +1063,11 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
+ 	if (is_dwork) {
+ 		struct delayed_work *dwork = to_delayed_work(work);
+ 
++		/*
++		 * dwork->timer is irqsafe.  If del_timer() fails, it's
++		 * guaranteed that the timer is not queued anywhere and not
++		 * running on the local CPU.
++		 */
+ 		if (likely(del_timer(&dwork->timer)))
+ 			return 1;
+ 	}
+@@ -1318,9 +1321,8 @@ void delayed_work_timer_fn(unsigned long __data)
+ 	struct delayed_work *dwork = (struct delayed_work *)__data;
+ 	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
+ 
+-	local_irq_disable();
++	/* should have been called from irqsafe timer with irq already off */
+ 	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
+-	local_irq_enable();
+ }
+ EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
+ 
+@@ -1429,7 +1431,7 @@ EXPORT_SYMBOL_GPL(queue_delayed_work);
+  * Returns %false if @dwork was idle and queued, %true if @dwork was
+  * pending and its timer was modified.
+  *
+- * This function is safe to call from any context other than IRQ handler.
++ * This function is safe to call from any context including IRQ handler.
+  * See try_to_grab_pending() for details.
+  */
+ bool mod_delayed_work_on(int cpu, struct workqueue_struct *wq,
 -- 
 1.7.7.3
 
