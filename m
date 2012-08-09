@@ -1,100 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab2HHX6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 19:58:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58147 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2HHX6G (ORCPT
+	id S1758858Ab2HIAAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:00:31 -0400
+Received: from nm27.access.bullet.mail.mud.yahoo.com ([66.94.237.92]:44188
+	"HELO nm27.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752037Ab2HIAA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 19:58:06 -0400
-Date: Wed, 8 Aug 2012 16:57:32 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net, snitzer@redhat.com
-Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for
- dm_rq_clone_bio_info
-Message-ID: <20120808235731.GA7262@moria.home.lan>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-3-git-send-email-koverstreet@google.com>
- <20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 8 Aug 2012 20:00:29 -0400
+X-Yahoo-Newman-Id: 989316.46261.bm@smtp103.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: d9QmmpYVM1lzMlr2jowW4Q3M6gaRU1DmAqmWdb9jzewmlSC
+ oCTSo9J_XYjgO4nch3PUsAy2IcnKVfDSlNEKMJFd96o6rzY_v5S4myjqgpus
+ Gas9jdWpoy9gD0rhFSGYyA5xq9uBY51E0FD5arLOR1ZYeSlsAM8WsXiNToAR
+ d_lD_UqdXdTI4DINcE3q967.dn6gGjbhiqkrbHuqQQKhVh0PKK45Lj8HmODZ
+ 2Xdixsk_SugYvobRDMxaIrtuwcjwBEMU1S79I7pJfmEjH6Q6RCWNEnEuGDrU
+ INqPOJub951BWUx_B9O09VjSnLJmHK6C3EEwks9uZhox_jrJAktX1OzXRZ3r
+ jZ7McXqiSfRJN8X2F3FjU1Qo_ewfoqpWtgGBqgP58CodKQ7nEVC75b2vKt3l
+ yxWed6fWtsEfxJNvhzJE5lUjFzMBdYKuYSUPuuoyCwDwvoLq9rTc1XGh2MJy
+ FQ0k97Z0nZSiCmDGGnR_Gu.ULX6SUOOMQBpa4PC307DAzGIQmK7PZflhqRlV
+ bp1lI4OEkhl65Skatq5sjZlyI6jB3aIwPRZH5SYbzO_fJr9LmSUzE2QyJqyZ
+ AyAFDGGmbYw1uHmfj
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <5022FD9A.4020603@schaufler-ca.com>
+Date: Wed, 08 Aug 2012 17:00:26 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Paul Moore <paul@paul-moore.com>, Eric Paris <eparis@parisplace.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+References: <50215A7E.8000701@linaro.org>  <1344456578.28967.244.camel@edumazet-glaptop>  <1344457972.28967.251.camel@edumazet-glaptop>  <1610114.P5WAdux1ri@sifl> <1344462889.28967.328.camel@edumazet-glaptop>
+In-Reply-To: <1344462889.28967.328.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 03:06:12PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Aug 06, 2012 at 03:08:31PM -0700, Kent Overstreet wrote:
-> > Previously, dm_rq_clone_bio_info needed to be freed by the bio's
-> > destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
-> > This gets rid of a memory allocation and means we can kill
-> > dm_rq_bio_destructor.
-> > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > ---
-> >  drivers/md/dm.c |   31 +++++--------------------------
-> >  1 files changed, 5 insertions(+), 26 deletions(-)
-> > 
-> > diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> > index 40b7735..4014696 100644
-> > --- a/drivers/md/dm.c
-> > +++ b/drivers/md/dm.c
-> > @@ -92,6 +92,7 @@ struct dm_rq_target_io {
-> >  struct dm_rq_clone_bio_info {
-> >  	struct bio *orig;
-> >  	struct dm_rq_target_io *tio;
-> > +	struct bio clone;
-> >  };
-> ...
-> > @@ -2696,7 +2674,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
-> >  	if (!pools->tio_pool)
-> >  		goto free_io_pool_and_out;
-> >  
-> > -	pools->bs = bioset_create(pool_size, 0);
-> > +	pools->bs = bioset_create(pool_size,
-> > +				  offsetof(struct dm_rq_clone_bio_info, orig));
-> >  	if (!pools->bs)
-> >  		goto free_tio_pool_and_out;
-> 
-> I do like this approach much better but this isn't something
-> super-obvious.  Can we please explain what's going on?  Especially,
-> the comment above dm_rq_clone_bio_info is outright misleading now.
+On 8/8/2012 2:54 PM, Eric Dumazet wrote:
 
-This look better to you?
+By the way, once this proved to be an issue that involved
+more than just SELinux it needed to go onto the LSM list as
+well.
 
-/*
- * For request-based dm - the bio clones we allocate are embedded in these
- * structs.
- *
- * We allocate these with bio_alloc_bioset, using the front_pad parameter when
- * the bioset is created - this means the bio has to come at the end of the
- * struct.
- */
-struct dm_rq_clone_bio_info {
-	struct bio *orig;
-	struct dm_rq_target_io *tio;
-	struct bio clone;
-};
+> On Wed, 2012-08-08 at 16:46 -0400, Paul Moore wrote:
+>> On Wednesday, August 08, 2012 10:32:52 PM Eric Dumazet wrote:
+>>> On Wed, 2012-08-08 at 22:09 +0200, Eric Dumazet wrote:
+>>>> On Wed, 2012-08-08 at 15:59 -0400, Eric Paris wrote:
+>>>>> Seems wrong.  We shouldn't ever need ifdef CONFIG_SECURITY in core
+>>>>> code.
+>>>> Sure but it seems include file misses an accessor for this.
+>>>>
+>>>> We could add it on a future cleanup patch, as Paul mentioned.
+>>> I cooked following patch.
+>>> But smack/smack_lsm.c makes a reference to
+>>> smk_of_current()... so it seems we are in a hole...
+>>>
+>>> It makes little sense to me to have any kind of security on this
+>>> internal sockets.
+>>>
+>>> Maybe selinux should not crash if sk->sk_security is NULL ?
+>> I realize our last emails probably passed each other mid-flight, but hopefully 
+>> it explains why we can't just pass packets when sk->sk_security is NULL.
+>>
+>> Regardless, some quick comments below ...
+>>
+>>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+>>> index 6c77f63..459eca6 100644
+>>> --- a/security/selinux/hooks.c
+>>> +++ b/security/selinux/hooks.c
+>>> @@ -4289,10 +4289,13 @@ out:
+>>>  	return 0;
+>>>  }
+>>>
+>>> -static int selinux_sk_alloc_security(struct sock *sk, int family, ...
+>>> +static int selinux_sk_alloc_security(struct sock *sk, int family, ...
+>>>  {
+>>>  	struct sk_security_struct *sksec;
+>>>
+>>> +	if (check && sk->sk_security)
+>>> +		return 0;
+>>> +
+>>>  	sksec = kzalloc(sizeof(*sksec), priority);
+>>>  	if (!sksec)
+>>>  		return -ENOMEM;
+>> I think I might replace the "check" boolean with a "kern/kernel" boolean so 
+>> that in addition to the allocation we can also initialize the socket to 
+>> SECINITSID_KERNEL/kernel_t here in the case when the boolean is set.  The only 
+>> place that would set the boolean to true would be ip_send_unicast_reply(), all 
+>> other callers would set it to false.
+>>
+>>> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+>>> index 8221514..8965cf1 100644
+>>> --- a/security/smack/smack_lsm.c
+>>> +++ b/security/smack/smack_lsm.c
+>>> @@ -1754,11 +1754,14 @@ static void smack_task_to_inode(struct task_struct
+>>> *p, struct inode *inode) *
+>>>   * Returns 0 on success, -ENOMEM is there's no memory
+>>>   */
+>>> -static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t
+>>> gfp_flags) +static int smack_sk_alloc_security(struct sock *sk, int family,
+>>> gfp_t gfp_flags, bool check) {
+>>>  	char *csp = smk_of_current();
+>>>  	struct socket_smack *ssp;
+>>>
+>>> +	if (check && sk->sk_security)
+>>> +		return 0;
+>>> +
+>>>  	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+>>>  	if (ssp == NULL)
+>>>  		return -ENOMEM;
+>> In the case of Smack, when the kernel boolean is true I think the right 
+>> solution is to use smack_net_ambient.
 
-> Can someone more familiar review this one?  Alasdir, Mike?
-> 
-> Also, how was this tested?
+I confess that my understanding of unicast is limited.
+If the intention is to send an unlabeled packet then
+indeed smack_net_ambient is the way to go.
 
-Well, AFAICT the only request based dm target is multipath, and from the
-documentation I've seen it doesn't appear to work without multipath
-hardware, or at least I haven't seen it documented how. So, unless
-there's another user I missed it's not been tested.
+>>
+> cool, here the last version :
+>
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 4e5a73c..4d8e454 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -1601,7 +1601,7 @@ struct security_operations {
+>  	int (*socket_sock_rcv_skb) (struct sock *sk, struct sk_buff *skb);
+>  	int (*socket_getpeersec_stream) (struct socket *sock, char __user *optval, int __user *optlen, unsigned len);
+>  	int (*socket_getpeersec_dgram) (struct socket *sock, struct sk_buff *skb, u32 *secid);
+> -	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority);
+> +	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority, bool kernel);
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+Is there no information already available in the sock
+that will tell us this is a unicast operation?
+
+>  	void (*sk_free_security) (struct sock *sk);
+>  	void (*sk_clone_security) (const struct sock *sk, struct sock *newsk);
+>  	void (*sk_getsecid) (struct sock *sk, u32 *secid);
+> @@ -2539,7 +2539,7 @@ int security_sock_rcv_skb(struct sock *sk, struct sk_buff *skb);
+>  int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
+>  				      int __user *optlen, unsigned len);
+>  int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u32 *secid);
+> -int security_sk_alloc(struct sock *sk, int family, gfp_t priority);
+> +int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel);
+>  void security_sk_free(struct sock *sk);
+>  void security_sk_clone(const struct sock *sk, struct sock *newsk);
+>  void security_sk_classify_flow(struct sock *sk, struct flowi *fl);
+> @@ -2667,7 +2667,7 @@ static inline int security_socket_getpeersec_dgram(struct socket *sock, struct s
+>  	return -ENOPROTOOPT;
+>  }
+>  
+> -static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
+> +static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+>  {
+>  	return 0;
+>  }
+> diff --git a/net/core/sock.c b/net/core/sock.c
+> index 8f67ced..e00cadf 100644
+> --- a/net/core/sock.c
+> +++ b/net/core/sock.c
+> @@ -1186,7 +1186,7 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
+>  	if (sk != NULL) {
+>  		kmemcheck_annotate_bitfield(sk, flags);
+>  
+> -		if (security_sk_alloc(sk, family, priority))
+> +		if (security_sk_alloc(sk, family, priority, false))
+>  			goto out_free;
+>  
+>  		if (!try_module_get(prot->owner))
+> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+> index 76dde25..b233d6e 100644
+> --- a/net/ipv4/ip_output.c
+> +++ b/net/ipv4/ip_output.c
+> @@ -1524,6 +1524,8 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+>  	sk->sk_priority = skb->priority;
+>  	sk->sk_protocol = ip_hdr(skb)->protocol;
+>  	sk->sk_bound_dev_if = arg->bound_dev_if;
+> +	if (security_sk_alloc(sk, PF_INET, GFP_ATOMIC, true))
+> +		goto out;
+>  	sock_net_set(sk, net);
+>  	__skb_queue_head_init(&sk->sk_write_queue);
+>  	sk->sk_sndbuf = sysctl_wmem_default;
+> @@ -1539,7 +1541,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+>  		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
+>  		ip_push_pending_frames(sk, &fl4);
+>  	}
+> -
+> +out:
+>  	put_cpu_var(unicast_sock);
+>  
+>  	ip_rt_put(rt);
+> diff --git a/security/security.c b/security/security.c
+> index 860aeb3..23cf297 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -1146,9 +1146,9 @@ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u
+>  }
+>  EXPORT_SYMBOL(security_socket_getpeersec_dgram);
+>  
+> -int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
+> +int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+>  {
+> -	return security_ops->sk_alloc_security(sk, family, priority);
+> +	return security_ops->sk_alloc_security(sk, family, priority, kernel);
+>  }
+>  
+>  void security_sk_free(struct sock *sk)
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 6c77f63..ccd4374 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -4289,10 +4289,13 @@ out:
+>  	return 0;
+>  }
+>  
+> -static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority)
+> +static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority, bool kernel)
+>  {
+>  	struct sk_security_struct *sksec;
+>  
+> +	if (kernel && sk->sk_security)
+> +		return 0;
+> +
+>  	sksec = kzalloc(sizeof(*sksec), priority);
+>  	if (!sksec)
+>  		return -ENOMEM;
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 8221514..207d9cc 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -1749,20 +1749,25 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+>   * @sk: the socket
+>   * @family: unused
+>   * @gfp_flags: memory allocation flags
+> + * @kernel: true if we should check sk_security being already set
+>   *
+>   * Assign Smack pointers to current
+>   *
+>   * Returns 0 on success, -ENOMEM is there's no memory
+>   */
+> -static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
+> +static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags, bool kernel)
+>  {
+>  	char *csp = smk_of_current();
+>  	struct socket_smack *ssp;
+>  
+> +	if (kernel && sk->sk_security)
+> +		return 0;
+> +
+>  	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+>  	if (ssp == NULL)
+>  		return -ENOMEM;
+> -
+> +	/* kernel is true if called from ip_send_unicast_reply() */
+> +	csp = kernel ? smack_net_ambient : smk_of_current();
+
+How about ...
+
+        if (kernel)
+            csp = smack_net_ambient;
+
+... as csp is set to smk_of_current() in the declaration.
+That, or change the declaration.
+
+>  	ssp->smk_in = csp;
+>  	ssp->smk_out = csp;
+>  	ssp->smk_packet = NULL;
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
