@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab2HIAnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:43:55 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58516 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758675Ab2HIAnw (ORCPT
+	id S932219Ab2HIAt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:49:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31286 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab2HIAtc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:43:52 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-ff-502307c6dd72
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
-References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
-	<87mx26z0it.fsf@sejong.aot.lge.com>
-	<CANaxB-xAWtj8nU0WiE0aV_WHde_iX=rseU9NwwN=VTHOZYW=JQ@mail.gmail.com>
-	<878vdqympe.fsf@sejong.aot.lge.com>
-	<CANaxB-zZp0How3+WUC2BMsRMWBgf1CVkaVQSYWcvCXTgyymSvg@mail.gmail.com>
-Date: Thu, 09 Aug 2012 09:37:56 +0900
-In-Reply-To: <CANaxB-zZp0How3+WUC2BMsRMWBgf1CVkaVQSYWcvCXTgyymSvg@mail.gmail.com>
-	(Andrey Wagin's message of "Wed, 8 Aug 2012 11:24:34 +0400")
-Message-ID: <87zk64yk63.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 8 Aug 2012 20:49:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,735,1336374000"; 
+   d="scan'208";a="131778917"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] proc: add /proc/pid/shmaps
+Thread-Topic: [PATCH 1/1] proc: add /proc/pid/shmaps
+Thread-Index: AQHNdSOFftbSOl+D6U+iHLC+eDM1jZdP5BAAgAC/r4A=
+Date: Thu, 9 Aug 2012 00:49:27 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE37A530@SHSMSX102.ccr.corp.intel.com>
+References: <1344431059-12514-1-git-send-email-qiaowei.ren@intel.com>
+ <alpine.DEB.2.00.1208081409300.7178@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1208081409300.7178@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Aug 2012 11:24:34 +0400, Andrey Wagin wrote:
-> 2012/8/8 Namhyung Kim <namhyung@kernel.org>:
->> On Wed, 8 Aug 2012 09:02:18 +0400, Andrey Wagin wrote:
->>> 2012/8/8 Namhyung Kim <namhyung@kernel.org>:
->>>>>
->>>>> $ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
->>>>>               -e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
->>>
->>> Actually this string is not completed, because sched:sched_switch
->>> should be filtered by state.
->>>
->>>>> [ perf record: Woken up 1 times to write data ]
->>>>> [ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
->>>>> $ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
->>>>> $ ./perf report -i ~/perf.data
->>>>
->>>> The usage like this is too specific and hard to use IMHO. How about
->>>> putting it somehow into perf sched or new command?
->>>>
->>>> /me don't have an idea though. :-)
->>>>
->>>
->>> I'm going to add a script, so the usage will look like this:
->>> $ perf script record sched-stat -e sched:sched_stat_sleep <command>
->>> This command will collect sched_stat_* and proper sched_switch events
->>
->> ???  That means '-e sched:sched_stat_sleep' part can be removed from
->> command line, no?
->
-> No. My method works for all kind of sched_stat_* events, so you need
-> to specify an event type which should be traced.
+Thanks for your reply. There are so many contents in /proc/pid/maps, and usually only a very small minority of those are about shared memory in address space of every process. So I hope that a new file maybe provide some convenience. Could you tell me how to get such information except analyzing 'maps' file?
 
-Ok, so can it be like 'perf script record sched-stat -t sleep <command>'?
+-----Original Message-----
+From: David Rientjes [mailto:rientjes@google.com] 
+Sent: Thursday, August 09, 2012 5:10 AM
+To: Ren, Qiaowei
+Cc: Andrew Morton; Al Viro; Oleg Nesterov; Cyrill Gorcunov; Vasiliy Kulikov; Hugh Dickins; Naoya Horiguchi; Konstantin Khlebnikov; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] proc: add /proc/pid/shmaps
 
-Thanks,
-Namhyung
+On Wed, 8 Aug 2012, Qiaowei Ren wrote:
+
+> Add a shmaps entry to /proc/pid: show information about shared memory in an address space.
+> 
+> People that use shared memory and want to perform an analyzing about it. For example, judge whether any memory address is shared. This file just contains 'share' part of /proc/pid/maps now. There are too many contents in maps, and so we have to do a lot of analysis to obtain relative information every time.
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+
+Nack as unnecessary; /proc/pid/maps already explicitly emits 's' for VM_MAYSHARE and 'p' otherwise so this information is already available to userspace.
