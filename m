@@ -1,214 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab2HIFvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 01:51:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10382 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab2HIFvY convert rfc822-to-8bit (ORCPT
+	id S1753498Ab2HIFwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 01:52:46 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50528 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2HIFwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 01:51:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,738,1336374000"; 
-   d="scan'208,223";a="183465071"
-Date: Thu, 9 Aug 2012 13:46:13 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
+	Thu, 9 Aug 2012 01:52:45 -0400
+X-AuditID: 9c930179-b7b65ae000006d01-10-5023502b7858
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v2] perf script python: Correct handler check and spelling
- errors
-Message-ID: <20120809134613.067104c4@feng-i7>
-In-Reply-To: <87zk64wru6.fsf@sejong.aot.lge.com>
-References: <1344446028-21381-1-git-send-email-acme@infradead.org>
-	<1344446028-21381-12-git-send-email-acme@infradead.org>
-	<878vdoydj2.fsf@sejong.aot.lge.com>
-	<20120809132401.64a18d27@feng-i7>
-	<87zk64wru6.fsf@sejong.aot.lge.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v5 5/5] perf script: Add event_analyzing_sample.py as a sample for general event handling
+References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
+	<1344419875-21665-6-git-send-email-feng.tang@intel.com>
+	<87ipcsyhqd.fsf@sejong.aot.lge.com> <20120809123007.6f3f0a8f@feng-i7>
+	<874nocy74u.fsf@sejong.aot.lge.com> <20120809132843.0e7bac75@feng-i7>
+Date: Thu, 09 Aug 2012 14:46:51 +0900
+In-Reply-To: <20120809132843.0e7bac75@feng-i7> (Feng Tang's message of "Thu, 9
+	Aug 2012 13:28:43 +0800")
+Message-ID: <87vcgswras.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From efbf00591514aa1d6134a3b940dc627d1a7cc8f8 Mon Sep 17 00:00:00 2001
-From: Feng Tang <feng.tang@intel.com>
-Date: Thu, 9 Aug 2012 12:50:56 +0800
-Subject: [PATCH] perf script python: Correct handler check and spelling errors
+On Thu, 9 Aug 2012 13:28:43 +0800, Feng Tang wrote:
+> On Thu, 9 Aug 2012 14:19:29 +0900
+>> Btw, by any chance do you plan to add support to callchains? I think
+>> it's very nice to have.
+>
+> No, it's not on the plan list :). My next plan is to integrate the perf
+> script to the perf report framework, so that users can directly call
+> perf script inside perf report browser like running the annotation.
+>
 
-Correct the checking for handler returned by PyDict_GetItemString(), also
-fix some spelling error and remove some data code in event_analyzing_sample.py,
-as suggested by Namhyung Kim.
+Sounds cool!
 
-v2: restore back the wrongly removed trace_unhandled() func
-
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |    4 +-
- .../perf/scripts/python/event_analyzing_sample.py  |   30 ++++++++-----------
- .../util/scripting-engines/trace-event-python.c    |    8 ++---
- 3 files changed, 18 insertions(+), 24 deletions(-)
-
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-index 6372431..9e09857 100755
---- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-@@ -1,12 +1,12 @@
- # EventClass.py
- #
--# This is a libray defining some events typs classes, which could
-+# This is a library defining some events types classes, which could
- # be used by other scripts to analyzing the perf samples.
- #
- # Currently there are just a few classes defined for examples,
- # PerfEvent is the base class for all perf event sample, PebsEvent
- # is a HW base Intel x86 PEBS event, and user could add more SW/HW
--# event classes based on requriements.
-+# event classes based on requirements.
- 
- import struct
- 
-diff --git a/tools/perf/scripts/python/event_analyzing_sample.py b/tools/perf/scripts/python/event_analyzing_sample.py
-index 46f05aa..163c39f 100644
---- a/tools/perf/scripts/python/event_analyzing_sample.py
-+++ b/tools/perf/scripts/python/event_analyzing_sample.py
-@@ -1,15 +1,15 @@
--# process_event.py: general event handler in python
-+# event_analyzing_sample.py: general event handler in python
- #
--# Current perf report is alreay very powerful with the anotation integrated,
-+# Current perf report is already very powerful with the annotation integrated,
- # and this script is not trying to be as powerful as perf report, but
- # providing end user/developer a flexible way to analyze the events other
- # than trace points.
- #
- # The 2 database related functions in this script just show how to gather
- # the basic information, and users can modify and write their own functions
--# according to their specific requirment.
-+# according to their specific requirement.
- #
--# The first sample "show_general_events" just does a baisc grouping for all
-+# The first function "show_general_events" just does a basic grouping for all
- # generic events with the help of sqlite, and the 2nd one "show_pebs_ll" is
- # for a x86 HW PMU event: PEBS with load latency data.
- #
-@@ -85,7 +85,7 @@ def process_event(param_dict):
-         else:
-                 symbol = "Unknown_symbol"
- 
--        # Creat the event object and insert it to the right table in database
-+        # Create the event object and insert it to the right table in database
-         event = create_event(name, comm, dso, symbol, raw_buf)
-         insert_db(event)
- 
-@@ -109,7 +109,7 @@ def trace_end():
- 
- #
- # As the event number may be very big, so we can't use linear way
--# to show the histgram in real number, but use a log2 algorithm.
-+# to show the histogram in real number, but use a log2 algorithm.
- #
- 
- def num2sym(num):
-@@ -130,18 +130,18 @@ def show_general_events():
- 
-          # Group by thread
-         commq = con.execute("select comm, count(comm) from gen_events group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from gen_events group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dso
--        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histgram", "="*74)
-+        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histogram", "="*74)
-         dsoq = con.execute("select dso, count(dso) from gen_events group by dso order by -count(dso)")
-         for row in dsoq:
-              print "%40s %8d     %s" % (row[0], row[1], num2sym(row[1]))
-@@ -163,31 +163,27 @@ def show_pebs_ll():
- 
-         # Group by thread
-         commq = con.execute("select comm, count(comm) from pebs_ll group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from pebs_ll group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dse
-         dseq = con.execute("select dse, count(dse) from pebs_ll group by dse order by -count(dse)")
--        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histogram", "="*58)
-         for row in dseq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by latency
-         latq = con.execute("select lat, count(lat) from pebs_ll group by lat order by lat")
--        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histogram", "="*58)
-         for row in latq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
- def trace_unhandled(event_name, context, event_fields_dict):
- 		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
--
--def print_header(event_name, cpu, secs, nsecs, pid, comm):
--	print "%-20s %5u %05u.%09u %8u %-20s " % \
--	(event_name, cpu, secs, nsecs, pid, comm),
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 7e3f576..afba097 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -343,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __unused,
--					 struct addr_location *al __unused)
-+					 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *t, *dict;
- 	static char handler_name[64];
-@@ -352,7 +352,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 
- 	/*
- 	 * Use the MAX_FIELDS to make the function expandable, though
--	 * currently there is only one itme for the tuple.
-+	 * currently there is only one item for the tuple.
- 	 */
- 	t = PyTuple_New(MAX_FIELDS);
- 	if (!t)
-@@ -365,10 +365,8 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
- 
- 	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler)) {
--		handler = NULL;
-+	if (!handler || !PyCallable_Check(handler))
- 		goto exit;
--	}
- 
- 	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
- 	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
--- 
-1.7.1
+Thanks,
+Namhyung
