@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab2HISLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 14:11:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43151 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751973Ab2HISLI (ORCPT
+	id S1758882Ab2HISLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 14:11:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37024 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab2HISLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 14:11:08 -0400
-Date: Thu, 9 Aug 2012 19:11:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps6586x: correct vin pin for sm0/sm1/sm2
-Message-ID: <20120809181106.GA24328@opensource.wolfsonmicro.com>
-References: <1343117880-11576-1-git-send-email-ldewangan@nvidia.com>
- <5022E0B0.1070406@wwwdotorg.org>
- <20120809180514.GZ24328@opensource.wolfsonmicro.com>
- <5023FCDB.4080607@wwwdotorg.org>
+	Thu, 9 Aug 2012 14:11:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6798"; a="220785907"
+Date: Thu, 9 Aug 2012 11:11:12 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] msm: io: Change the default static iomappings to be
+ shared
+Message-ID: <20120809181112.GA24633@codeaurora.org>
+References: <1343696061-11445-1-git-send-email-rvaswani@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5023FCDB.4080607@wwwdotorg.org>
-X-Cookie: Be different: conform.
+In-Reply-To: <1343696061-11445-1-git-send-email-rvaswani@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 12:09:31PM -0600, Stephen Warren wrote:
+On Mon, Jul 30, 2012 at 05:54:21PM -0700, Rohit Vaswani wrote:
+> With 3.4 kernel the static iomappings can be shared with the ioremap
+> mappings. If ioremap is called with an address for which a static
+> mapping already exists, then that mapping should be used instead
+> of creating a new one.
+> However, the MT_DEVICE_NONSHARED flag prevents this. Hence, get rid
+> of this flag. Some targets (7X00) that require the static iomappings
+> to be NONSHARED use the MSM_DEVICE_TYPE and MSM_CHIP_DEVICE_TYPE macros.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  arch/arm/mach-msm/io.c |   25 +++++++++++++++++--------
+>  1 files changed, 17 insertions(+), 8 deletions(-)
 
-> The patch in question just showed up again in next-20120809:
+I don't seem to be able to find a tree that this change applies to.
+Can you apply this patch to a recent kernel tree (v3.5 is good), and
+resend.
 
-> 7f852e0 regulator: tps6586x: correct vin pin for sm0/sm1/sm2
+Thanks,
+David
 
-> ... with the exact same content as the previous commit ID.
-
-Oh, in that case I must've missed a branch when I was rebuilding -next.
-I just checked for missing branches.  Problem solved.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
