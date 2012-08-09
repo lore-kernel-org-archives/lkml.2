@@ -1,208 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031150Ab2HIPiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:38:05 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:9018 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031102Ab2HIPh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:37:57 -0400
-X-IronPort-AV: E=Sophos;i="4.77,740,1336348800"; 
-   d="scan'208";a="13934946"
-Date: Thu, 9 Aug 2012 16:37:24 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Dave Martin <dave.martin@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 02/23] xen/arm: hypercalls
-In-Reply-To: <20120808124111.GB2134@linaro.org>
-Message-ID: <alpine.DEB.2.02.1208091046330.21096@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120808124111.GB2134@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1031140Ab2HIPkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:40:55 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:47647 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030774Ab2HIPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:40:53 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jan Beulich <jbeulich@suse.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [RFC PATCH] sysrq: Show architectural registers
+Date: Thu,  9 Aug 2012 17:40:46 +0200
+Message-Id: <1344526846-31905-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Aug 2012, Dave Martin wrote:
-> On Mon, Aug 06, 2012 at 03:27:05PM +0100, Stefano Stabellini wrote:
-> > Use r12 to pass the hypercall number to the hypervisor.
-> > 
-> > We need a register to pass the hypercall number because we might not
-> > know it at compile time and HVC only takes an immediate argument.
-> > 
-> > Among the available registers r12 seems to be the best choice because it
-> > is defined as "intra-procedure call scratch register".
-> > 
-> > Use the ISS to pass an hypervisor specific tag.
-> > 
-> > Changes in v2:
-> > - define an HYPERCALL macro for 5 arguments hypercall wrappers, even if
-> > at the moment is unused;
-> > - use ldm instead of pop;
-> > - fix up comments.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/include/asm/xen/hypercall.h |   50 ++++++++++++++++
-> >  arch/arm/xen/Makefile                |    2 +-
-> >  arch/arm/xen/hypercall.S             |  106 ++++++++++++++++++++++++++++++++++
-> >  3 files changed, 157 insertions(+), 1 deletions(-)
-> >  create mode 100644 arch/arm/include/asm/xen/hypercall.h
-> >  create mode 100644 arch/arm/xen/hypercall.S
-> 
-> [...]
-> 
-> > diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
-> > new file mode 100644
-> > index 0000000..074f5ed
-> > --- /dev/null
-> > +++ b/arch/arm/xen/hypercall.S
-> > @@ -0,0 +1,106 @@
-> > +/******************************************************************************
-> > + * hypercall.S
-> > + *
-> > + * Xen hypercall wrappers
-> > + *
-> > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License version 2
-> > + * as published by the Free Software Foundation; or, when distributed
-> > + * separately from the Linux kernel or incorporated into other
-> > + * software packages, subject to the following license:
-> > + *
-> > + * Permission is hereby granted, free of charge, to any person obtaining a copy
-> > + * of this source file (the "Software"), to deal in the Software without
-> > + * restriction, including without limitation the rights to use, copy, modify,
-> > + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-> > + * and to permit persons to whom the Software is furnished to do so, subject to
-> > + * the following conditions:
-> > + *
-> > + * The above copyright notice and this permission notice shall be included in
-> > + * all copies or substantial portions of the Software.
-> > + *
-> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> > + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> > + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> > + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> > + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-> > + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-> > + * IN THE SOFTWARE.
-> > + */
-> > +
-> > +/*
-> > + * The Xen hypercall calling convention is very similar to the ARM
-> > + * procedure calling convention: the first paramter is passed in r0, the
-> > + * second in r1, the third in r2 and the fourth in r3. Considering that
-> > + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
-> > + * in r4, differently from the procedure calling convention of using the
-> > + * stack for that case.
-> > + *
-> > + * The hypercall number is passed in r12.
-> > + *
-> > + * The return value is in r0.
-> > + *
-> > + * The hvc ISS is required to be 0xEA1, that is the Xen specific ARM
-> > + * hypercall tag.
-> > + */
-> > +
-> > +#include <linux/linkage.h>
-> > +#include <asm/assembler.h>
-> > +#include <xen/interface/xen.h>
-> > +
-> > +
-> > +/* HVC 0xEA1 */
-> > +#ifdef CONFIG_THUMB2_KERNEL
-> > +#define xen_hvc .word 0xf7e08ea1
-> > +#else
-> > +#define xen_hvc .word 0xe140ea71
-> > +#endif
-> 
-> Consider using my opcode injection helpers patch for this (see
-> separate repost: [PATCH v2 REPOST 0/4] ARM: opcodes: Facilitate custom
-> opcode injection), assuming that nobody objects to it.  This should mean
-> that the right opcodes get generated when building a kernel for a big-
-> endian target for example.
-> 
-> I believe the __HVC(imm) macro which I put in <asm/opcodes-virt.h> as an
-> example should do what you need in this case.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Sure I can do that. Maybe I'll add another patch at the end of my series
-to replace xen_hvc with __HVC(0xEA1), so that it remains independent
-from your series.
-I have learned through experience that avoiding cross patch series
-dependencies help to reduce the amount of headaches during merge windows
-:)
+One day I was playing with disabling the caches over CR0.CD and I wanted
+to check the current setting of the CD bit but there wasn't a way to do
+so from userspace because we #GP when accessing CR0.
 
+And then I thought, well, sysrq must have this. And it does:
 
-> > +
-> > +#define HYPERCALL_SIMPLE(hypercall)		\
-> > +ENTRY(HYPERVISOR_##hypercall)			\
-> > +	mov r12, #__HYPERVISOR_##hypercall;	\
-> > +	xen_hvc;							\
-> > +	mov pc, lr;							\
-> > +ENDPROC(HYPERVISOR_##hypercall)
-> > +
-> > +#define HYPERCALL0 HYPERCALL_SIMPLE
-> > +#define HYPERCALL1 HYPERCALL_SIMPLE
-> > +#define HYPERCALL2 HYPERCALL_SIMPLE
-> > +#define HYPERCALL3 HYPERCALL_SIMPLE
-> > +#define HYPERCALL4 HYPERCALL_SIMPLE
-> > +
-> > +#define HYPERCALL5(hypercall)			\
-> > +ENTRY(HYPERVISOR_##hypercall)			\
-> > +	stmdb sp!, {r4}						\
-> > +	ldr r4, [sp, #4]					\
-> > +	mov r12, #__HYPERVISOR_##hypercall;	\
-> > +	xen_hvc								\
-> > +	ldm sp!, {r4}						\
-> > +	mov pc, lr							\
-> > +ENDPROC(HYPERVISOR_##hypercall)
-> > +
-> > +                .text
-> > +
-> > +HYPERCALL2(xen_version);
-> > +HYPERCALL3(console_io);
-> > +HYPERCALL3(grant_table_op);
-> > +HYPERCALL2(sched_op);
-> > +HYPERCALL2(event_channel_op);
-> > +HYPERCALL2(hvm_op);
-> > +HYPERCALL2(memory_op);
-> > +HYPERCALL2(physdev_op);
-> > +
-> > +ENTRY(privcmd_call)
-> > +	stmdb sp!, {r4}
-> > +	mov r12, r0
-> > +	mov r0, r1
-> > +	mov r1, r2
-> > +	mov r2, r3
-> > +	ldr r3, [sp, #8]
-> > +	ldr r4, [sp, #4]
-> > +	xen_hvc
-> > +	ldm sp!, {r4}
-> > +	mov pc, lr
-> 
-> Note that the preferred entry/exit sequences in such cases are:
-> 
-> 	stmfd	sp!, {r4,lr}
-> 	...
-> 	ldmfd	sp!, {r4,pc}
-> 
-> ...but it works either way.  I would bother to change it unless you
-> have other changes to make too.
+$ echo p > /proc/sysrq-trigger
 
-Wouldn't this needlessly save and restore one more register (lr) to the
-stack?
-I would try to keep the hypercall wrappers as small as possible...
+dumps the current registers. However, we don't dump the registers when
+we can't get the last exception frame through get_irq_regs().
+
+But, there are registers (CR0 included) which aren't in the exception
+frame and which can be dumped regardless. This patch does exactly that;
+with it, the output looks like this:
+
+[ 1759.206042] SysRq : Show Regs
+[ 1759.209194] FS:  00007fb1eada3700(0000) GS:ffff880c27c00000(0000) knlGS:0000000000000000
+[ 1759.217593] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1759.223554] CR2: 0000000000910390 CR3: 0000001020b48000 CR4: 00000000000007e0
+[ 1759.230956] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1759.244974] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1759.259052] CPU#18: active:     0000000000000000
+[ 1759.270539] CPU#18:   gen-PMC0 ctrl:  0000030e011afcf6
+[ 1759.270543] CPU#18:   gen-PMC0 count: 00009007d003b500
+[ 1759.270545] CPU#18:   gen-PMC0 left:  0000000000000000
+[ 1759.270548] CPU#18:   gen-PMC1 ctrl:  0000030f059b7efc
+[ 1759.270550] CPU#18:   gen-PMC1 count: 00008003c823b4a0
+[ 1759.270552] CPU#18:   gen-PMC1 left:  0000000000000000
+[ 1759.270555] CPU#18:   gen-PMC2 ctrl:  00000104fe97c87c
+[ 1759.270557] CPU#18:   gen-PMC2 count: 00007c6277e7f5fe
+[ 1759.270560] CPU#18:   gen-PMC2 left:  0000000000000000
+[ 1759.270562] CPU#18:   gen-PMC3 ctrl:  000000040000f0e2
+[ 1759.270564] CPU#18:   gen-PMC3 count: 0000000000000000
+[ 1759.270566] CPU#18:   gen-PMC3 left:  0000000000000000
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jan Beulich <jbeulich@suse.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/bug.h   |  3 +++
+ arch/x86/kernel/process_32.c | 43 ++++++++++++++++++++++------------------
+ arch/x86/kernel/process_64.c | 47 ++++++++++++++++++++++++--------------------
+ drivers/tty/sysrq.c          |  1 +
+ include/asm-generic/bug.h    |  9 +++++++++
+ 5 files changed, 63 insertions(+), 40 deletions(-)
+
+diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
+index 11e1152222d0..e60cf51fdfbd 100644
+--- a/arch/x86/include/asm/bug.h
++++ b/arch/x86/include/asm/bug.h
+@@ -35,6 +35,9 @@ do {								\
+ 
+ #endif /* !CONFIG_BUG */
+ 
++extern void _arch_show_regs(void);
++#define _arch_show_regs _arch_show_regs
++
+ #include <asm-generic/bug.h>
+ 
+ 
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 516fa186121b..6b01b6260f5d 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -66,10 +66,32 @@ unsigned long thread_saved_pc(struct task_struct *tsk)
+ 	return ((unsigned long *)tsk->thread.sp)[3];
+ }
+ 
+-void __show_regs(struct pt_regs *regs, int all)
++void _arch_show_regs(void)
+ {
+ 	unsigned long cr0 = 0L, cr2 = 0L, cr3 = 0L, cr4 = 0L;
+ 	unsigned long d0, d1, d2, d3, d6, d7;
++
++	cr0 = read_cr0();
++	cr2 = read_cr2();
++	cr3 = read_cr3();
++	cr4 = read_cr4_safe();
++	printk(KERN_DEFAULT "CR0: %08lx CR2: %08lx CR3: %08lx CR4: %08lx\n",
++			cr0, cr2, cr3, cr4);
++
++	get_debugreg(d0, 0);
++	get_debugreg(d1, 1);
++	get_debugreg(d2, 2);
++	get_debugreg(d3, 3);
++	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
++			d0, d1, d2, d3);
++
++	get_debugreg(d6, 6);
++	get_debugreg(d7, 7);
++	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n", d6, d7);
++}
++
++void __show_regs(struct pt_regs *regs, int all)
++{
+ 	unsigned long sp;
+ 	unsigned short ss, gs;
+ 
+@@ -100,24 +122,7 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	if (!all)
+ 		return;
+ 
+-	cr0 = read_cr0();
+-	cr2 = read_cr2();
+-	cr3 = read_cr3();
+-	cr4 = read_cr4_safe();
+-	printk(KERN_DEFAULT "CR0: %08lx CR2: %08lx CR3: %08lx CR4: %08lx\n",
+-			cr0, cr2, cr3, cr4);
+-
+-	get_debugreg(d0, 0);
+-	get_debugreg(d1, 1);
+-	get_debugreg(d2, 2);
+-	get_debugreg(d3, 3);
+-	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
+-			d0, d1, d2, d3);
+-
+-	get_debugreg(d6, 6);
+-	get_debugreg(d7, 7);
+-	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
+-			d6, d7);
++	_arch_show_regs();
+ }
+ 
+ void release_thread(struct task_struct *dead_task)
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 0a980c9d7cb8..dbe93bae6524 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -54,30 +54,14 @@ asmlinkage extern void ret_from_fork(void);
+ 
+ DEFINE_PER_CPU(unsigned long, old_rsp);
+ 
+-/* Prints also some state that isn't saved in the pt_regs */
+-void __show_regs(struct pt_regs *regs, int all)
++/* Print also some state that isn't saved in the pt_regs */
++void _arch_show_regs(void)
+ {
+ 	unsigned long cr0 = 0L, cr2 = 0L, cr3 = 0L, cr4 = 0L, fs, gs, shadowgs;
+ 	unsigned long d0, d1, d2, d3, d6, d7;
+ 	unsigned int fsindex, gsindex;
+ 	unsigned int ds, cs, es;
+ 
+-	show_regs_common();
+-	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+-	printk_address(regs->ip, 1);
+-	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+-			regs->sp, regs->flags);
+-	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+-	       regs->ax, regs->bx, regs->cx);
+-	printk(KERN_DEFAULT "RDX: %016lx RSI: %016lx RDI: %016lx\n",
+-	       regs->dx, regs->si, regs->di);
+-	printk(KERN_DEFAULT "RBP: %016lx R08: %016lx R09: %016lx\n",
+-	       regs->bp, regs->r8, regs->r9);
+-	printk(KERN_DEFAULT "R10: %016lx R11: %016lx R12: %016lx\n",
+-	       regs->r10, regs->r11, regs->r12);
+-	printk(KERN_DEFAULT "R13: %016lx R14: %016lx R15: %016lx\n",
+-	       regs->r13, regs->r14, regs->r15);
+-
+ 	asm("movl %%ds,%0" : "=r" (ds));
+ 	asm("movl %%cs,%0" : "=r" (cs));
+ 	asm("movl %%es,%0" : "=r" (es));
+@@ -88,9 +72,6 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	rdmsrl(MSR_GS_BASE, gs);
+ 	rdmsrl(MSR_KERNEL_GS_BASE, shadowgs);
+ 
+-	if (!all)
+-		return;
+-
+ 	cr0 = read_cr0();
+ 	cr2 = read_cr2();
+ 	cr3 = read_cr3();
+@@ -113,6 +94,30 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
+ }
+ 
++void __show_regs(struct pt_regs *regs, int all)
++{
++	show_regs_common();
++	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
++	printk_address(regs->ip, 1);
++	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
++			regs->sp, regs->flags);
++	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
++	       regs->ax, regs->bx, regs->cx);
++	printk(KERN_DEFAULT "RDX: %016lx RSI: %016lx RDI: %016lx\n",
++	       regs->dx, regs->si, regs->di);
++	printk(KERN_DEFAULT "RBP: %016lx R08: %016lx R09: %016lx\n",
++	       regs->bp, regs->r8, regs->r9);
++	printk(KERN_DEFAULT "R10: %016lx R11: %016lx R12: %016lx\n",
++	       regs->r10, regs->r11, regs->r12);
++	printk(KERN_DEFAULT "R13: %016lx R14: %016lx R15: %016lx\n",
++	       regs->r13, regs->r14, regs->r15);
++
++	if (!all)
++		return;
++
++	_arch_show_regs();
++}
++
+ void release_thread(struct task_struct *dead_task)
+ {
+ 	if (dead_task->mm) {
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 05728894a88c..4ad0f884e08e 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -254,6 +254,7 @@ static void sysrq_handle_showregs(int key)
+ 	struct pt_regs *regs = get_irq_regs();
+ 	if (regs)
+ 		show_regs(regs);
++	arch_show_regs();
+ 	perf_event_print_debug();
+ }
+ static struct sysrq_key_op sysrq_showregs_op = {
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 7d10f962aa13..e96d6c31c222 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -202,6 +202,15 @@ extern void warn_slowpath_null(const char *file, const int line);
+ # define WARN_ON_SMP(x)			({0;})
+ #endif
+ 
++#ifdef _arch_show_regs
++static inline void arch_show_regs(void)
++{
++	_arch_show_regs();
++}
++#else
++static inline void arch_show_regs(void) { }
++#endif
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif
+-- 
+1.7.11.rc1
+
