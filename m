@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab2HIXy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:54:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39225 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab2HIXy1 (ORCPT
+	id S1760059Ab2HIX4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:56:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44429 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab2HIX4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:54:27 -0400
-Message-ID: <50244D9A.2070000@gmail.com>
-Date: Thu, 09 Aug 2012 16:54:02 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Avi Kivity <avi@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] tracepoints: Move the work out of line from hotpath
- sections
-References: <1344544823.6935.82.camel@gandalf.stny.rr.com>  <20120809205053.GB15109@Krystal> <1344551131.6935.90.camel@gandalf.stny.rr.com> <502444CC.8030906@linux.intel.com>
-In-Reply-To: <502444CC.8030906@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Thu, 9 Aug 2012 19:56:12 -0400
+Subject: [PATCH] ipv4: tcp: unicast_sock should not land outside of TCP
+ stack
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: eparis@parisplace.org, paul@paul-moore.com, casey@schaufler-ca.com,
+        johnstul@us.ibm.com, serge@hallyn.com, linux-kernel@vger.kernel.org,
+        james.l.morris@oracle.com, selinux@tycho.nsa.gov,
+        john.johansen@canonical.com, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <20120809.163851.1182547052663187702.davem@davemloft.net>
+References: <1344523833.28967.996.camel@edumazet-glaptop>
+	 <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>
+	 <1344547743.31104.582.camel@edumazet-glaptop>
+	 <20120809.163851.1182547052663187702.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Aug 2012 01:56:06 +0200
+Message-ID: <1344556566.31104.808.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 04:16 PM, H. Peter Anvin wrote:
-> On 08/09/2012 03:25 PM, Steven Rostedt wrote:
->>>
->>> It might be better to improve gcc to move really cold branches out of
->>> line (really, really far away), and use the compiler to do this, rather
->>> than to use an extra indirection that adds bloat and complexity to the
->>> kernel.
+From: Eric Dumazet <edumazet@google.com>
 
-Oh, you mean like: -freorder-blocks-and-partition
+commit be9f4a44e7d41cee (ipv4: tcp: remove per net tcp_sock) added a
+selinux regression, reported and bisected by John Stultz
 
->>
->> I think modifying gcc is something that can help more than tracing. But
->> that's been a pipe dream for such a long time that I've started dreaming
->> about winning a gold medal in the Olympics instead. Standing on the
->> podium listening to the crowd chanting your name along with your country
->> is more fun to dream about than seeing your unlikely code stop becoming
->> hurdles for the CPU sprinters.
->>
->
-> At one point, maybe, but lately we have had a lot more traction from the
-> gcc developers, giving us features like __fentry__ and asm goto.
->
+selinux_ip_postroute_compat() expect to find a valid sk->sk_security
+pointer, but this field is NULL for unicast_sock
 
-I don't claim that -freorder-blocks-and-partition is bug free, but I 
-imagine that the GCC developers would be open to fixing any bugs found.
+It turns out that unicast_sock are really temporary stuff to be able
+to reuse  part of IP stack (ip_append_data()/ip_push_pending_frames())
 
-David Daney
+Fact is that frames sent by ip_send_unicast_reply() should be orphaned
+to not fool LSM.
+
+Note IPv6 never had this problem, as tcp_v6_send_response() doesnt use a
+fake socket at all. I'll probably implement tcp_v4_send_response() to
+remove these unicast_sock in linux-3.7
+
+Reported-by: John Stultz <johnstul@us.ibm.com>
+Bisected-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+---
+ net/ipv4/ip_output.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 76dde25..ec410e0 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1536,6 +1536,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ 			  arg->csumoffset) = csum_fold(csum_add(nskb->csum,
+ 								arg->csum));
+ 		nskb->ip_summed = CHECKSUM_NONE;
++		skb_orphan(nskb);
+ 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
+ 		ip_push_pending_frames(sk, &fl4);
+ 	}
+
 
