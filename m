@@ -1,92 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab2HII7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:59:24 -0400
-Received: from mail-qc0-f184.google.com ([209.85.216.184]:54967 "EHLO
-	mail-qc0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756878Ab2HII7W (ORCPT
+	id S1757121Ab2HII75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:59:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64043 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923Ab2HII7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:59:22 -0400
-X-Greylist: delayed 1863 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Aug 2012 04:59:22 EDT
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Thu, 9 Aug 2012 01:17:11 -0700 (PDT)
-In-Reply-To: <fa.lacg30v.3h8di4@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=82.213.2.186; posting-account=S59YrgoAAAC02Kx9mcoQE5h5ezYi4goP
-NNTP-Posting-Host: 82.213.2.186
-References: <fa.hi9ib1v.1d6a50s@ifi.uio.no> <fa.lacg30v.3h8di4@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 82.213.2.186
+	Thu, 9 Aug 2012 04:59:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 06/10] ARM: davinci: don't use broken ntosd2_init_i2c
+Date: Thu, 9 Aug 2012 08:00:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Andrey Porodko <panda@chelcom.ru>
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-7-git-send-email-arnd@arndb.de>
+In-Reply-To: <1344461278-28245-7-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Message-ID: <251e1b72-9ffb-497e-962d-d711a0958c57@googlegroups.com>
-Subject: Re: recv(...,MSG_TRUNC)
-From: ibrahem.batta@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Alan.Cox@linux.org, linux-net@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Samuel Thibault <samuel.thibault@fnac.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208090800.18321.arnd@arndb.de>
+X-Provags-ID: V02:K0:G93hVoDpuiIPMvINb8gbN4CBeXdzg/5gP0/4MF3LIvS
+ wpBkfu+Ar9Thybtu8oDkHL2qLSVLSG1oDsXjPcrH14LqV9yGk/
+ h0U6YWwycvnADP6Xhfmf7kYxZGdbgCiuvurNGVJXvmyCzr83lo
+ wUdyvJIDAKg9EHDhLpjlE/CBouT8kkElTngPhI7lcBCspTAMan
+ q4d06lugGtiTYJqndX4J9Yxqj7M8gEuNkTTXfD700YdGYwKAEv
+ Bgs/8D+exTwKVafnvKAHC5X2vx6d+YQgWZ3GLrTCKqsex67JPy
+ plWes1NG3QRy6fAGibmaN9dZaXCyDbbkEz96kRBGt/0ouMe8CB
+ 0hjJZYwyV3MOcn+VnH68=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 29, 2002 10:40:18 PM UTC+3, Samuel Thibault wrote:
-> (Previous mail seemed to be garbaged by mime attachment)
-> 
-> Hello,
-> 
-> man recv says, about flags :
-> 
->        MSG_TRUNC
->               Return  the real length of the packet, even when it
->               was longer than the passed buffer. Only  valid  for
->               packet sockets.
-> 
-> But it is neither implemented in ipv4/udp.c, nor in ipv6/udp.c, although
-> it is in tcp.c, for instance !
-> 
-> By searching with google, I could read old manpages where it didn't exist,
-> but I find it very useful, especially in conjunction with MSG_PEEK, for
-> trying to read a packet with a little buffer, and then really get it with
-> an appropriate buffer.
-> 
-> So here's a patch which cures 2.4.18, and also works on 2.5 kernels.
-> 
-> Best regards,
-> 
-> Samuel Thibault
-> 
-> diff -urN linux-2.4.18/net/ipv4/udp.c linux-2.4.18-cor/net/ipv4/udp.c
-> --- linux-2.4.18/net/ipv4/udp.c	Mon Jun 10 23:34:59 2002
-> +++ linux-2.4.18-cor/net/ipv4/udp.c	Mon Jun 10 23:35:31 2002
-> @@ -680,7 +680,7 @@
->    	}
->  	if (sk->protinfo.af_inet.cmsg_flags)
->  		ip_cmsg_recv(msg, skb);
-> -	err = copied;
-> +	err = (flags&MSG_TRUNC) ? skb->len - sizeof(struct udphdr) : copied;
-> 
->  out_free:
->    	skb_free_datagram(sk, skb);
-> diff -urN linux-2.4.18/net/ipv6/udp.c linux-2.4.18-cor/net/ipv6/udp.c
-> --- linux-2.4.18/net/ipv6/udp.c	Mon Jun 10 23:35:07 2002
-> +++ linux-2.4.18-cor/net/ipv6/udp.c	Mon Jun 10 23:35:36 2002
-> @@ -432,7 +432,7 @@
->  			}
->  		}
->    	}
-> -	err = copied;
-> +	err = (flags&MSG_TRUNC) ? skb->len - sizeof(struct udphdr) : copied;
-> 
->  out_free:
->  	skb_free_datagram(sk, skb);
-> 
-> -
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On second thought, there is probably no use in keeping the broken function
+around, and we can just kill it off. If someone wants to add an i2c
+device to the bus, they can always add the init code back as well.
 
-man i want to see full example about receivefrom and MSG_TRUNC flag please 
+8<-----
+Subject: ARM: davinci: don't use broken ntosd2_init_i2c
+
+ntosd2_init_i2c walks the ntosd2_i2c_info array, which it expects to
+be populated with at least one member. gcc correctly warns about
+the out-of-bounds access here.
+
+Since this can not possibly work, it's better to disable i2c
+support entirely on this board.
+
+Without this patch, building davinci_all_defconfig results in:
+
+arch/arm/mach-davinci/board-neuros-osd2.c: In function 'davinci_ntosd2_init':
+arch/arm/mach-davinci/board-neuros-osd2.c:187:20: warning: array subscript is above array bounds [-Warray-bounds]
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Andrey Porodko <panda@chelcom.ru>
+
+diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+index 5de69f2..f6b9fc7 100644
+--- a/arch/arm/mach-davinci/board-neuros-osd2.c
++++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+@@ -162,38 +162,6 @@ static void __init davinci_ntosd2_map_io(void)
+ 	dm644x_init();
+ }
+ 
+-/*
+- I2C initialization
+-*/
+-static struct davinci_i2c_platform_data ntosd2_i2c_pdata = {
+-	.bus_freq	= 20 /* kHz */,
+-	.bus_delay	= 100 /* usec */,
+-};
+-
+-static struct i2c_board_info __initdata ntosd2_i2c_info[] =  {
+-};
+-
+-static	int ntosd2_init_i2c(void)
+-{
+-	int	status;
+-
+-	davinci_init_i2c(&ntosd2_i2c_pdata);
+-	status = gpio_request(NTOSD2_MSP430_IRQ, ntosd2_i2c_info[0].type);
+-	if (status == 0) {
+-		status = gpio_direction_input(NTOSD2_MSP430_IRQ);
+-		if (status == 0) {
+-			status = gpio_to_irq(NTOSD2_MSP430_IRQ);
+-			if (status > 0) {
+-				ntosd2_i2c_info[0].irq = status;
+-				i2c_register_board_info(1,
+-					ntosd2_i2c_info,
+-					ARRAY_SIZE(ntosd2_i2c_info));
+-			}
+-		}
+-	}
+-	return status;
+-}
+-
+ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
+ 	.wires		= 4,
+ 	.version	= MMC_CTLR_VERSION_1
+@@ -218,7 +186,6 @@ static __init void davinci_ntosd2_init(void)
+ {
+ 	struct clk *aemif_clk;
+ 	struct davinci_soc_info *soc_info = &davinci_soc_info;
+-	int	status;
+ 
+ 	aemif_clk = clk_get(NULL, "aemif");
+ 	clk_enable(aemif_clk);
+@@ -242,12 +209,6 @@ static __init void davinci_ntosd2_init(void)
+ 	platform_add_devices(davinci_ntosd2_devices,
+ 				ARRAY_SIZE(davinci_ntosd2_devices));
+ 
+-	/* Initialize I2C interface specific for this board */
+-	status = ntosd2_init_i2c();
+-	if (status < 0)
+-		pr_warning("davinci_ntosd2_init: msp430 irq setup failed:"
+-						"	 %d\n", status);
+-
+ 	davinci_serial_init(&uart_config);
+ 	dm644x_init_asp(&dm644x_ntosd2_snd_data);
+ 
