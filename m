@@ -1,76 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab2HILiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:38:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757847Ab2HILiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:38:09 -0400
-Message-ID: <5023A11C.50502@redhat.com>
-Date: Thu, 09 Aug 2012 08:38:04 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1758049Ab2HILmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:42:54 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:38518 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753417Ab2HILmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 07:42:53 -0400
+Date: Thu, 9 Aug 2012 13:42:42 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2] usb: gadget: composite: parse dt values
+Message-ID: <20120809114242.GA4689@breakpoint.cc>
+References: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [GIT PULL for 3.6-rc1] media updates part 2
-References: <5017F674.80404@redhat.com> <alpine.DEB.2.00.1208081526320.11542@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1208081526320.11542@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 08-08-2012 19:28, David Rientjes escreveu:
-> On Tue, 31 Jul 2012, Mauro Carvalho Chehab wrote:
-> 
->>        [media] radio-shark: New driver for the Griffin radioSHARK USB radio receiver
-> 
-> This one gives me a build warning if CONFIG_LEDS_CLASS is disabled:
-> 
-> ERROR: "led_classdev_register" [drivers/media/radio/shark2.ko] undefined!
-> ERROR: "led_classdev_unregister" [drivers/media/radio/shark2.ko] undefined!
-> 
+On Tue, Jul 24, 2012 at 10:15:20AM -0300, Alexandre Pereira da Silva wrote:
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/usb/gadget.txt
+> @@ -0,0 +1,20 @@
+> +Usb Gadget DeviceTree bindings
+> +
+> +These optional properties inside the usb device controller node are used to
+> +change some of the gadget drivers configuration:
+> +- vendor-id: Usb vendor id
+> +- product-id: Usb product id
+> +- release: Version of this device
+> +- vendor: Textual description of the vendor
+> +- device: Textual description of this device
+> +- serial: Textual representation of the device's serial number
+> +
+> +Binding Example:
+> +	usbd@31020000 {
+> +		vendor-id = <0x0525>;
+> +		product-id = <0xa4a6>;
+> +		release = <1>;
+> +		vendor = "Some Corp";
+> +		device = "Test Device";
+> +		serial = "12345";
+> +	};
 
-Could you please test the enclosed patch?
+No, I don't think that this is correct. You put this bindings at device level
+and map those values directly to the composite layer for each gadget. You _can_
+have multiple gadgets compiled and you may want to have load them depending
+on your mood and here you force a special serial or vendor-id for each one of
+them. If I take a look on N800 which I have here, I see that the vendor-id
+changes if I switch from mass storage to modem. How do you want to make this
+possible with device tree? Ah I leave this empty. I see.
 
-Thanks!
-Mauro
+Further more, you model this binding according to what the composite framework
+is doing today instead of what the hardware should look like. Putting the 
+current composite limitations aside the complete UDC node for the driver could 
+look something like this:
 
--
+|	usbd@31020000 {
+|		compatible = "nxp,lpc3220-udc";
+|		reg = <0x31020000 0x300>;
+|		interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
+|		status = "disabled";
+now  this 1:1 copy, nothing new.
 
-[media] radio-shark: make sure LEDS_CLASS is selected
+|
+|		gadget@0 {
+The first gadget we want.
 
-As reported by David:
-	> ERROR: "led_classdev_register" [drivers/media/radio/shark2.ko] undefined!
-	> ERROR: "led_classdev_unregister" [drivers/media/radio/shark2.ko] undefined!
+|			vendor-id = <0x0525>;
+|			product-id = <0xa4a6>;
+|			release = <1>;
+|			vendor = "Some Corp";
+|			device = "Test Device";
+|			serial = "12345";
 
-Reported-by: Dadiv Rientjes <rientjes@google.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+with some presets here
 
+|			config@0 {
+|				max_current = <900>;
+|
+|				function@0 {
+|					compatible = "storage,uas";
+|				};
+|				function@1 {
+|					compatible = "network,ncm";
+|				};
 
-diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-index 8090b87..be68ec2 100644
---- a/drivers/media/radio/Kconfig
-+++ b/drivers/media/radio/Kconfig
-@@ -60,6 +60,7 @@ config RADIO_MAXIRADIO
- config RADIO_SHARK
- 	tristate "Griffin radioSHARK USB radio receiver"
- 	depends on USB && SND
-+	select LEDS_CLASS
- 	---help---
- 	  Choose Y here if you have this radio receiver.
- 
-@@ -77,6 +78,7 @@ config RADIO_SHARK
- config RADIO_SHARK2
- 	tristate "Griffin radioSHARK2 USB radio receiver"
- 	depends on USB
-+	select LEDS_CLASS
- 	---help---
- 	  Choose Y here if you have this radio receiver.
- 
+Two gadgets here. We may could add extra string descriptors here but I would
+have check if this makes sense.
 
+|			};
+|			config@1 {
+|				max_current = <300>;
+|
+|				function@0 {
+|					compatible = "network,ncm";
+|				};
+
+Another config if we don't have enough current, just go for the network and
+let the storage off.
+
+|			};
+|		}
+|
+|		gadget@1 {
+|			vendor-id = <0x0325>;
+|			product-id = <0xa3a1>;
+|			release = <1>;
+|			vendor = "Some Corp";
+|			device = "Test Device";
+|			serial = "1234511";
+|			
+|			config@0 {
+|				max_current = <900>;
+|
+|				function@0 {
+|					compatible = "serial,cdc-acm";
+|				};
+
+a complete different gadget.
+
+|			};
+|		}
+|	};
+
+So _this_ binding would add two gadgets to your UDC and take, lets say, the
+first one as the default one. And *then* you could depending on your mood switch
+between network + storage gadget and modem gadget. Now how does this sound?
+
+I understand that this is not yet possible with current gadget framework. If I
+allow you to merge this it will make the rework more hard and painfull than it
+already will be.
+
+Based on this, I have to say, sorry, no, NAK.
+
+Sebastian
