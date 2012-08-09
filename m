@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030992Ab2HIPOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:14:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48652 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030816Ab2HIPOn (ORCPT
+	id S1030982Ab2HIPRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:17:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38753 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030785Ab2HIPRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:14:43 -0400
-Message-ID: <5023D3DA.8020902@redhat.com>
-Date: Thu, 09 Aug 2012 17:14:34 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 9 Aug 2012 11:17:35 -0400
+Message-ID: <5023D48D.4090901@wwwdotorg.org>
+Date: Thu, 09 Aug 2012 09:17:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-CC: "Michael S. Tsirkin" <mst@redhat.com>, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, mashirle@us.ibm.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        sri@us.ibm.com
-Subject: Re: [net-next RFC V5 3/5] virtio: intorduce an API to set affinity
- for a virtqueue
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-4-git-send-email-jasowang@redhat.com> <5012A7D3.4040800@redhat.com> <20120729204030.GB13802@redhat.com> <5016296A.5070809@redhat.com>
-In-Reply-To: <5016296A.5070809@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 1/3] regulator: add always set/clear masks to regulator_enable_regmap
+References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org> <20120809100930.GH24328@opensource.wolfsonmicro.com>
+In-Reply-To: <20120809100930.GH24328@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/07/2012 08:27, Paolo Bonzini ha scritto:
->>>> >> > Did you set the affinity manually in your experiments, or perhaps there
->>>> >> > is a difference between scsi and networking... (interrupt mitigation?)
->> > 
->> > You need to run irqbalancer in guest to make it actually work. Do you?
-> Yes, of course, now on to debugging that one.  I just wanted to ask
-> before the weekend if I was missing something as obvious as that.
+On 08/09/2012 04:09 AM, Mark Brown wrote:
+> On Wed, Aug 08, 2012 at 03:18:45PM -0600, Stephen Warren wrote:
+> 
+>> +				  rdev->desc->enable_mask |
+>> +				  rdev->desc->en_dis_set_mask |
+>> +				  rdev->desc->en_dis_clr_mask,
+>> +				  rdev->desc->enable_mask |
+>> +				  rdev->desc->en_dis_set_mask);
+> 
+> Two problems here.  One is that the names are *really* obscure and hard
+> to read, the other is that this breaks all existing users.
 
-It was indeed an irqbalance bug, it is fixed now upstream.
+OK. I can change this to whatever names you suggest.
+enable_disable_clear_mask seems the least obscure, but rather long. Just
+let me know what you want.
 
-Paolo
-
+As for breaking existing users, I don't think so: The new fields will
+presumably be initialized to zero for any drivers that don't explicitly
+set them, and the values are simply or'd into the mask/value parameters
+to update_bits(), and or'ing a zero will have no effect.
