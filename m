@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab2HIUUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:20:40 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46021 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab2HIUTE (ORCPT
+	id S1759637Ab2HIUVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:21:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62477 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759583Ab2HIUVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:19:04 -0400
+	Thu, 9 Aug 2012 16:21:06 -0400
+Date: Thu, 9 Aug 2012 22:20:54 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+Message-ID: <20120809202054.GA24503@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+ <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [76.119.162.148]
-In-Reply-To: <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>
-References: <50215A7E.8000701@linaro.org>
-	<1344462889.28967.328.camel@edumazet-glaptop>
-	<5022FD9A.4020603@schaufler-ca.com>
-	<1695034.0lrQgQPOMT@sifl>
-	<1344523833.28967.996.camel@edumazet-glaptop>
-	<CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>
-Date: Thu, 9 Aug 2012 16:19:03 -0400
-Message-ID: <CAHC9VhQo8bh45qcMDo3cC=a0RA50zwBMftbZ3KGdLEXUapuvtw@mail.gmail.com>
-Subject: Re: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
-From: Paul Moore <paul@paul-moore.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        john.johansen@canonical.com,
-        LSM <linux-security-module@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:BZWX0x4PiYbrv8fDaFEmT+FlRjFiXLLUJB5sh0LtCLJ
+ 2DPdinHF+4hjZceLp5pN0G9yqx8x8MqAJfosJWcy5otdqxlYpv
+ 7D9sm8dRm2rZFbIAihyLpHkevNrOF+Eu0lofP/AYSK74HIfUwn
+ iVCRSRnn7oMbM0W4CS1CZ9ToUDG/mdRMHq1eqfEVDo3xnnl+5o
+ XEkt2mZVD+TVk6T9JbdHYZ8wfp8UEM6KXL6w8RacbMt/v+bPZ8
+ YMFdxafhhmJliFVQiyF2KZlDlqZDp8ra2frt5euTkiBmCNqM00
+ sDnSwrjcsDxhuYyXTbl4ZzSzMF+MT19/r4xnTXFtpnMCpvUH2J
+ iUram9bHbe8ptTw5FbDiSiNtanZDpfxxGZCaTmt+XP6hV6XKkC
+ HhVzf3IwMVQCpU9PVCMuLRyboO9oH8Tu67uoAwgUtaKA0HmW0q
+ RpUVh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 4:06 PM, Eric Paris <eparis@parisplace.org> wrote:
-> I'm going to work right now on exposing the equivalent struct sock LSM
-> interface so we can call that as well.  But it's going to take me a
-> bit.
 
-Before you go too far down this path, can you elaborate on what
-exactly you mean by the above?
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm asking because I'm not convinced the labeling, either the old way
-or the new way, was 100% correct and I think we're going to need to
-change things regardless.  I'm just not sure what the right solution
-is just yet.
+On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > +static __devinit int adnp_i2c_probe(struct i2c_client *client,
+> > +                                   const struct i2c_device_id *id)
+> > +{
+> > +       struct adnp *gpio;
+> > +       u32 num_gpios;
+> > +       int err;
+> > +
+> > +       err =3D of_property_read_u32(client->dev.of_node, "nr-gpios",
+> > +                                  &num_gpios);
+> > +       if (err < 0)
+> > +               return err;
+> > +
+> > +       client->irq =3D irq_of_parse_and_map(client->dev.of_node, 0);
+> > +       if (client->irq =3D=3D NO_IRQ)
+>=20
+> Just if (!client->irq) since NO_IRQ is 0 nowadays.
 
--- 
-paul moore
-www.paul-moore.com
+At the risk of seeming pedantic, NO_IRQ is in fact quite often not 0.
+However, irq_of_parse_and_map() returns 0 if the interrupt cannot be
+parsed or mapped, so checking for !client->irq is, as you say, correct.
+
+Thierry
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQJBumAAoJEN0jrNd/PrOh1y0P/irlDC0+1fDn0uL2BEKwhQKj
+R2vI9jIpAzWSifYnqSJ8ivrC3//pmP1ggrPYB/fpo+BHhodPmxTqhP7dTSGMKiL3
+uycQXTfHY6FgqWpziYzLCOdcisTDmseqTDzCU87CKFDQzWOU/wZX2WsHS1Z/hByN
+D464xLzbWi6Yhzbiu0nWhhHLKwasjo38r7/eU1WxucH7Z/74xZF8Y6rEh/GXDvER
+Mk72xcVkdI15jdr5gGgg7aFlwBuXQdhZrbFnX9Om4KovV2ia+B9TpfxE0BMerDFV
+Gonr8caeyd6qxBuSWP1qptYmpW9Zz5q0AsIPOr0ryTB00PxgBj7dEhv3uqwZMgtJ
+SmpKQchTdDulg5Avl1nGIC6IFkAnNi/5ciA6mF6GNn6xbXlSEoPPehfEs2G2r78B
+zD1eUFjbN5+jD4gWm7yqloMgr7g7XgHQ9ro6Dd+b/Za1P/tQY4MDpSp5Cno4Lnt2
+B0C4p9mDUl30yr8yyHVRyF8Ng7ebDfqv/latmMuQNyQZcihlQriIAQ9ZBrTftJG1
+5YgHtzqytppF9JlO/JQayqewWQ4tNG0ooM+OORagiUDpU7He7rPtlDN0BBkMHPbg
+kaxhtzIRIbZeocfoUymSeLw8d9U5HoQkXdZtKxO5b0thrnki2WxFvHrTO8nlr6QH
+z6B3rW8luv8dhoOPJZv/
+=gTxF
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
