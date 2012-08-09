@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab2HIGsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:48:07 -0400
-Received: from plane.gmane.org ([80.91.229.3]:60851 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753424Ab2HIGsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:48:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
-Subject: 3.5 kernel NULL pointer dereference net_tx_action
-Date: Thu, 09 Aug 2012 08:47:44 +0200
-Message-ID: <50235D10.6080009@web.de>
-References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com> <4FBBB11D.7020904@web.de> <20120522155345.GC14339@google.com> <4FBBC461.4060008@web.de> <20120522170320.GD14339@google.com> <jpglns$1uj$1@dough.gmane.org> <CAOS58YPMh_hbJ4a49j4p9H68n8U1LzMUuaxmHx57gVTkmfxF6A@mail.gmail.com> <4FBBEDF2.8060803@web.de> <20120523182457.GD18143@google.com> <4FBD40F4.4090201@web.de> <20120523202657.GB3933@htj.dyndns.org> <s5hehq87meg.wl%tiwai@suse.de> <4FBFA637.6000704@web.de> <s5hhav45jpo.wl%tiwai@suse.de> <4FBFD263.60908@web.de> <4FC2262D.2040105@web.de> <s5hbol86g1p.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: p5b37afe3.dip.t-dialin.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120805 Icedove/10.0.6
-In-Reply-To: <s5hbol86g1p.wl%tiwai@suse.de>
+	id S1755141Ab2HIGta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:49:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41735 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2HIGt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 02:49:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="222859705"
+X-IronPort-AV: E=Sophos;i="4.77,738,1336374000"; 
+   d="scan'208";a="160364884"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: David Miller <davem@davemloft.net>
+CC: "joe@perches.com" <joe@perches.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Subject: RE: [PATCH] net: add new QCA alx ethernet driver
+Thread-Topic: [PATCH] net: add new QCA alx ethernet driver
+Thread-Index: AQHNddTR6PRqpmernk28qOEelr0rNJdQvhvwgACVLgD//5K5UIAAkSUA//+OvXA=
+Date: Thu, 9 Aug 2012 06:49:25 +0000
+Message-ID: <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
+References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+	<1344485382.2024.9.camel@joe2Laptop>
+	<6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+ <20120808.231804.12694947300243733.davem@davemloft.net>
+In-Reply-To: <20120808.231804.12694947300243733.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.48.1]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Dear maintainers,
-
-with kernel 3.5 on debian x86_64 and wpa_supplicant 1.0 on an MSI laptop trying
-to start the wireless network adapter, results in a kernel oops:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000082
-IP: [<ffffffff81325e70>] net_tx_action+0xd0/0xd0
-PGD 392aa067 PUD 390b7067 PMD 0
-Oops: 0002 [#1]
-CPU 0
-Modules linked in: snd_atiixp_modem snd_atiixp snd_ac97_codec snd_pcm
-snd_page_alloc ac97_bus arc4 rt2500pci eeprom_93cx6 snd_seq rt2x00pci
-snd_seq_device snd_timer snd rt2x00lib mac80211 8250_pci soundcore 8139too
-cfg80211 8250 pcmcia mii serial_core sdhci_pci psmouse sdhci k8temp
-
-Pid: 2617, comm: wpa_supplicant Not tainted 3.5.0 #1 MICRO-STAR INT'L CO.,LTD
-MS-1013
-RIP: 0010:[<ffffffff81325e70>]  [<ffffffff81325e70>] net_tx_action+0xd0/0xd0
-RSP: 0018:ffff88003862fc20  EFLAGS: 00010086
-RAX: ffff880039326ef8 RBX: ffff88003932b6c0 RCX: 0000000000000000
-RDX: 00000000ffffffff RSI: 0000000000000001 RDI: 0000000000000002
-RBP: 00000000000000b8 R08: ffffffff813aeee0 R09: ffff88003911aa00
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff88003932b6c1
-R13: 0000000000000000 R14: ffff8800384251d0 R15: ffff8800384244e0
-FS:  00007f6acab12700(0000) GS:ffffffff8153d000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000082 CR3: 000000003972f000 CR4: 00000000000007f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process wpa_supplicant (pid: 2617, threadinfo ffff88003862e000, task
-ffff88003911aa00)
-Stack:
-ffffffffa010189d ffff88003a12c578 ffff88003932b6c0 0000000000000001
-0000000000000246 ffff8800397f2a78 0000000000000000 0000000000000001
-0000000000000000 ffff8800384244e0 ffffffffa0101939 ffff8800397f2a58
-Call Trace:
-[<ffffffffa010189d>] ? ieee80211_propagate_queue_wake+0xfd/0x110 [mac80211]
-[<ffffffffa0101939>] ? ieee80211_wake_queue_by_reason+0x9/0x10 [mac80211]
-[<ffffffffa0128c2d>] ? rt2x00queue_flush_queue+0x6d/0xd0 [rt2x00lib]
-[<ffffffffa01277e0>] ? rt2x00mac_flush+0x20/0x50 [rt2x00lib]
-[<ffffffffa00f1fe2>] ? __ieee80211_recalc_idle+0x202/0x220 [mac80211]
-[<ffffffffa00f280c>] ? ieee80211_do_open+0x19c/0x7f0 [mac80211]
-[<ffffffff8132aa6e>] ? __dev_open+0x8e/0xe0
-[<ffffffff8132acfa>] ? __dev_change_flags+0x9a/0x180
-[<ffffffff8132ae90>] ? dev_change_flags+0x20/0x70
-[<ffffffff81374857>] ? devinet_ioctl+0x667/0x7e0
-[<ffffffff8131722d>] ? sock_ioctl+0x5d/0x260
-[<ffffffff810a47df>] ? do_vfs_ioctl+0x8f/0x550
-[<ffffffff810a8496>] ? d_kill+0xb6/0x110
-[<ffffffff810a8995>] ? dput+0x65/0x130
-[<ffffffff810a4ce9>] ? sys_ioctl+0x49/0x90
-[<ffffffff813a87e0>] ? system_call_fastpath+0x16/0x1b
-Code: db 48 89 df 75 d5 48 83 c4 08 5b 5d c3 be 96 0b 00 00 48 c7 c7 6c bd 4a 81
-e8 9d e3 cf ff e9 75 ff ff ff 0f 1f 84 00 00 00 00 00 <0f> ba af 80 00 00 00 00
-19 c0 85 c0 74 02 f3 c3 53 9c 5b fa 48
-RIP  [<ffffffff81325e70>] net_tx_action+0xd0/0xd0
-RSP <ffff88003862fc20>
-CR2: 0000000000000082
----[ end trace 3590f1d9f55c8367 ]---
-
-Sometimes the machine freezes.
-
-I couldn't find any hints on the web.
-Any clues?
-Further informations about the system can be provided on request.
-
--- 
-Best regards,
-J√∂rg-Volker.
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q796naoK025369
 
 
 
+>-----Original Message-----
+>From: David Miller [mailto:davem@davemloft.net]
+>Sent: 2012ƒÍ8‘¬9»’ 14:18
+>To: Ren, Cloud
+>Cc: joe@perches.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+>qca-linux-team; nic-devel; Huang, Xiong; hao-ran.liu@canonical.com; Rodriguez,
+>Luis
+>Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+>
+>From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+>Date: Thu, 9 Aug 2012 04:44:08 +0000
+>
+>> I only want to do some additional explanations to david. It makes nothing with
+>original patch.
+>
+>Stop this TOP POSTING, it's bad etiquette on a technical mailing list.
+>
+>Look at how other people write their email responses on this mailing list.  They
+>first provide a quoted portion of what they are replying
+>to:
+>
+>> Quoted
+>> something like this.
+>
+>And then they provide their response UNDERNEATH.
+>
+>When you provide your response at the top of the email, it is unexpected, and
+>makes more work for people reading what you write.
+>
+>You guys are doing everything possibly wrong.
+>
+>You have unnecessarily quoted a HUGE patch just to provide some ancillary in
+>formation.
+>
+>You are TOP POSTING.
+>
+>You added a signoff of someone who did not give you explicit permission to do
+>so.
+>
+>And you seem to not comprehend nor care about the implications or effects of
+>your actions that are hurting other people and creating a huge brudon.
+>
+>I very much intend to simply ignore your work completely until you can get your
+>act in gear, write proper emails, and submit patches properly.
+>
+>It is the only deterrant I have for your incredibly rude and inconsiderate
+>behavior.
 
 
+Hi David,
+
+Please calm down. I will follow rule of sending email from now on. Sorry for causing
+your trouble. Luis has ever asked joe for adding as a Signed-off-by. At that time joe agreed
+with it. If joe prefers his name not be listed as a Signed-off-by, I will respect his decision.
+alx driver is innocent. Please help review.  Thanks
+
+cloud
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
