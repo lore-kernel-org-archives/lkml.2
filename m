@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab2HIAk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:40:26 -0400
-Received: from exout102.netflix.com ([69.53.237.163]:42939 "EHLO
+	id S1759443Ab2HIAk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:40:29 -0400
+Received: from exout102.netflix.com ([69.53.237.163]:42944 "EHLO
 	exout104.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752881Ab2HIAkY (ORCPT
+	with ESMTP id S1759426Ab2HIAk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:40:24 -0400
+	Wed, 8 Aug 2012 20:40:26 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024;d=netflix.com;
   h=from:to:cc:subject:date:message-id:references:in-reply-to
     :content-type:mime-version;
-  b=b+CmXYBgsViAjtw+QY9Cx7PRfWC/UMzRJGbuHmgdyRPP7p1X9r7wIvbV4l1QXpzIFKfr4OOc
-    CMkh6Mr5DzKYpBA0JpvIbjaBouLpomTSh2u36LXcF2MKifOMtBtcGVHG9zn2swx7LyWbRLv2
-    gAVFy1zv26bVSNeg+c0A22616J4=
+  b=iH4XqOx8Ob2H4b28A5deKrHSRUZNid8/UkW6JAhKiUz/7zQcQsRQ+d1V7YJzGzPuMQtT7xWr
+    7DGg1T+Y/ioxzaDnaTyyjxSKrxIDlHSjDcdNh3wKL3yr2BdMShtybMiv8nxmoojUK3Ggarz9
+    dzCgaWvBTL/0LSsjjJA2oMY1JcE=
 From: Wesley Miaw <wmiaw@netflix.com>
 To: Milan Broz <mbroz@redhat.com>
 CC: Mikulas Patocka <mpatocka@redhat.com>,
@@ -21,194 +21,406 @@ CC: Mikulas Patocka <mpatocka@redhat.com>,
         Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
-Subject: Re: [dm-devel] [PATCH v2 1/2] dm: verity support data device offset
+Subject: Re: [dm-devel] [PATCH v2 2/2] dm: verity support data device offset
  (Linux 3.4.7)
-Thread-Topic: [dm-devel] [PATCH v2 1/2] dm: verity support data device
+Thread-Topic: [dm-devel] [PATCH v2 2/2] dm: verity support data device
  offset (Linux 3.4.7)
-Thread-Index: AQHNdceP+1MmzaTJnU6WNNgho/xg/A==
-Date: Thu, 9 Aug 2012 00:40:22 +0000
-Message-ID: <0066B4B7-B0FA-4C7F-99C4-0AABB577382C@netflix.com>
+Thread-Index: AQHNdceQq1EArTHW80uk0EvYgIqLrw==
+Date: Thu, 9 Aug 2012 00:40:23 +0000
+Message-ID: <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
 References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
  <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com>
  <5022CC99.30103@redhat.com>
-In-Reply-To: <5022CC99.30103@redhat.com>
+ <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com>
+ <5022D29B.9000402@redhat.com>
+In-Reply-To: <5022D29B.9000402@redhat.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: yes
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.2.229.146]
 Content-Type: multipart/signed;
-	boundary="Apple-Mail=_3C6D505E-6207-4AE9-8F6E-407F18C35D33";
+	boundary="Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558";
 	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_3C6D505E-6207-4AE9-8F6E-407F18C35D33
+--Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/plain;
 	charset=windows-1252
 
-On Aug 8, 2012, at 1:31 PM, Milan Broz wrote:
+On Aug 8, 2012, at 1:56 PM, Milan Broz wrote:
 
-> On 08/08/2012 08:46 PM, Mikulas Patocka wrote:
+> On 08/08/2012 10:46 PM, Wesley Miaw wrote:
 >=20
->> The problem with the patch is that it changes interface to the =
-userspace=20
->> tool. The userspace tool veritysetup already exists in recent =
-cryptsetup=20
->> package, so we can't change the interface - you should change the =
-patch so=20
->> that the starting data block is the last argument and the argument is=20=
+>> I did modify veritysetup on my own so the format and verify commands =
+will work with regular files on disk instead of having to mount through =
+loop devices.
+>=20
+> Which veritysetup? In upstream (cryptsetup repository) it allocates =
+loop automatically.
+> (And for userspace verification it doesn't need loop at all.)
+>=20
+> Anyway, please send a patch for userspace as well then ;-)
 
->> optional - so that it is compatible with the existing userspace too.
->=20
-> yes. Please never change interface without at least increasing target =
-version.
->=20
-> I have to add userspace support as well to veritysetup and we need a =
-way
-> how to detect that option is supported by running kernel.
+This isn't as polished because I pretty much just added support to do =
+what I needed. I'm not sure if the LKML is the right place to post, so =
+let me know if I should send this somewhere else.
 
-Apologies if the version increment is incorrect; I was not sure if the =
-minor or patch number should be incremented. I assume the different =
-version number is what would be used to detect if the data offset option =
-is supported. Thanks.
+Your previous email implied that veritysetup would need a way to =
+determine if the data offset option is supported; I did not modify =
+veritysetup to support this idea as I didn't need it.
+
+Thanks.
 
 From: Wesley Miaw <wmiaw@netflix.com>
 
-Add data device start block index as optional dm-verity target =
-parameters to
-support verity targets where the data does not begin at sector 0 of the =
-block
-device.
-
-Also fix the hash block index computations so they take into account any =
-data
-offset.
+Allow veritysetup format and verify commands to directly operate on =
+regular
+files instead of requiring mounts through loop devices.
 
 Signed-off-by: Wesley Miaw <wmiaw@netflix.com>
 ---
- Documentation/device-mapper/verity.txt |    8 ++++++-
- drivers/md/dm-verity.c                 |   24 ++++++++++++++++++-----
- 2 files changed, 26 insertions(+), 6 deletions(-)
---- a/drivers/md/dm-verity.c	2012-08-07 16:03:03.778759000 -0700
-+++ b/drivers/md/dm-verity.c	2012-08-08 17:04:16.344682266 -0700
-@@ -477,7 +477,7 @@ static int verity_map(struct dm_target *
- 		return -EIO;
- 	}
+ cryptsetup/lib/internal.h        |    1=20
+ cryptsetup/lib/libcryptsetup.h   |   22 ++++
+ cryptsetup/lib/libcryptsetup.sym |    2=20
+ cryptsetup/lib/setup.c           |  133 ++++++++++++++++++++++++++++-
+ cryptsetup/lib/utils.c           |   12 ++
+ cryptsetup/src/veritysetup.c     |   23 +++--
+ 6 files changed, 183 insertions(+), 10 deletions(-)
+--- a/cryptsetup/lib/internal.h	2012-08-08 17:11:20.366392301 -0700
++++ b/cryptsetup/lib/internal.h	2012-08-06 16:17:35.154719491 -0700
+@@ -76,6 +76,7 @@ ssize_t read_blockwise(int fd, void *_bu
+ ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t =
+offset);
+ int device_ready(struct crypt_device *cd, const char *device, int =
+mode);
+ int device_size(const char *device, uint64_t *size);
++int file_size(const char *filename, uint64_t *size);
 =20
--	if ((bio->bi_sector + bio_sectors(bio)) >>
-+	if ((bio->bi_sector - v->data_start + bio_sectors(bio)) >>
- 	    (v->data_dev_block_bits - SECTOR_SHIFT) > v->data_blocks) {
- 		DMERR_LIMIT("io out of range");
- 		return -EIO;
-@@ -491,7 +491,7 @@ static int verity_map(struct dm_target *
- 	io->bio =3D bio;
- 	io->orig_bi_end_io =3D bio->bi_end_io;
- 	io->orig_bi_private =3D bio->bi_private;
--	io->block =3D bio->bi_sector >> (v->data_dev_block_bits - =
-SECTOR_SHIFT);
-+	io->block =3D (bio->bi_sector - v->data_start) >> =
-(v->data_dev_block_bits - SECTOR_SHIFT);
- 	io->n_blocks =3D bio->bi_size >> v->data_dev_block_bits;
+ unsigned crypt_getpagesize(void);
 =20
- 	bio->bi_end_io =3D verity_end_io;
-@@ -646,6 +646,7 @@ static void verity_dtr(struct dm_target=20
-  *	<algorithm>
-  *	<digest>
-  *	<salt>		Hex string or "-" if no salt.
-+ *	<data start block>		Optional. The default is zero.
-  */
- static int verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
- {
-@@ -671,8 +672,8 @@ static int verity_ctr(struct dm_target *
- 		goto bad;
- 	}
+--- a/cryptsetup/lib/libcryptsetup.h	2012-08-08 17:11:20.375392929 =
+-0700
++++ b/cryptsetup/lib/libcryptsetup.h	2012-08-06 16:17:35.159720699 =
+-0700
+@@ -56,6 +57,19 @@ struct crypt_device; /* crypt device han
+ int crypt_init(struct crypt_device **cd, const char *device);
 =20
--	if (argc !=3D 10) {
--		ti->error =3D "Invalid argument count: exactly 10 =
-arguments required";
-+	if (argc !=3D 10 && argc !=3D 11) {
-+		ti->error =3D "Invalid argument count: 10 or 11 =
-arguments required";
- 		r =3D -EINVAL;
- 		goto bad;
- 	}
-@@ -793,6 +794,19 @@ static int verity_ctr(struct dm_target *
- 		}
- 	}
+ /**
++ * Initial crypt device handle from a file and check if provided file =
+exists.
++ *
++ * @param cd Returns pointer to crypt device handle.
++ * @param filename Path to the backing file.
++ *
++ * @return @e 0 on success or negative errno value otherwise.
++ *
++ * @note Note that logging is not initialized here, possible messages =
+uses
++ *       default log function.
++ */
++int crypt_initfile(struct crypt_device **cd, const char *filename);
++
++/**
+  * Initialize crypt device handle from provided active device name,
+  * and, optionally, from separate metadata (header) device
+  * and check if provided device exists.
+@@ -237,6 +251,15 @@ void crypt_set_password_verify(struct cr
+ int crypt_set_data_device(struct crypt_device *cd, const char *device);
 =20
-+	if (argc =3D=3D 11) {
-+		if (sscanf(argv[10], "%llu%c", &num_ll, &dummy) !=3D 1 =
-||
-+			num_ll << (v->data_dev_block_bits - =
-SECTOR_SHIFT) !=3D
-+			(sector_t)num_ll << (v->data_dev_block_bits - =
-SECTOR_SHIFT)) {
-+			ti->error =3D "Invalid data start";
-+			r =3D -EINVAL;
-+			goto bad;
-+		}
-+		v->data_start =3D num_ll << (v->data_dev_block_bits - =
-SECTOR_SHIFT);
-+	} else {
-+		v->data_start =3D 0;
+ /**
++ * Set data file
++ * For VERITY it is data file when hash device is separated.
++ *
++ * @param cd crypt device handle
++ * @param filename path to data file
++ */
++int crypt_set_data_file(struct crypt_device *cd, const char *device);
++
++/**
+  * @defgroup rng "Cryptsetup RNG"
+  *
+  * @addtogroup rng
+--- a/cryptsetup/lib/libcryptsetup.sym	2012-08-08 17:11:20.375392930 =
+-0700
++++ b/cryptsetup/lib/libcryptsetup.sym	2012-08-06 16:17:35.160720941 =
+-0700
+@@ -1,6 +1,7 @@
+ CRYPTSETUP_1.0 {
+ 	global:
+ 		crypt_init;
++		crypt_initfile;
+ 		crypt_init_by_name;
+ 		crypt_init_by_name_and_header;
+ 		crypt_set_log_callback;
+@@ -13,6 +14,7 @@ CRYPTSETUP_1.0 {
+ 		crypt_set_password_verify;
+ 		crypt_set_uuid;
+ 		crypt_set_data_device;
++		crypt_set_data_file;
+=20
+ 		crypt_memory_lock;
+ 		crypt_format;
+--- a/cryptsetup/lib/setup.c	2012-08-08 17:11:20.428396640 -0700
++++ b/cryptsetup/lib/setup.c	2012-08-06 16:17:35.192728669 -0700
+@@ -25,6 +25,8 @@
+ #include <stdarg.h>
+ #include <fcntl.h>
+ #include <errno.h>
++#include <sys/types.h>
++#include <sys/stat.h>
+=20
+ #include "libcryptsetup.h"
+ #include "luks.h"
+@@ -585,6 +587,56 @@ bad:
+ 	return r;
+ }
+=20
++int crypt_initfile(struct crypt_device **cd, const char *filename)
++{
++	struct crypt_device *h =3D NULL;
++	int fd;
++	struct stat st;
++	int r;
++
++	if (!cd)
++		return -EINVAL;
++
++	if (stat(filename, &st) < 0) {
++		log_err(NULL, _("File %s doesn't exist or access =
+denied.\n"), filename);
++		return -EINVAL;
 +	}
 +
- 	v->hash_per_block_bits =3D
- 		fls((1 << v->hash_dev_block_bits) / v->digest_size) - 1;
-=20
-@@ -875,7 +889,7 @@ bad:
-=20
- static struct target_type verity_target =3D {
- 	.name		=3D "verity",
--	.version	=3D {1, 0, 0},
-+	.version	=3D {1, 1, 0},
- 	.module		=3D THIS_MODULE,
- 	.ctr		=3D verity_ctr,
- 	.dtr		=3D verity_dtr,
---- a/Documentation/device-mapper/verity.txt	2012-08-08 =
-11:02:48.558883756 -0700
-+++ b/Documentation/device-mapper/verity.txt	2012-08-08 =
-16:50:04.114864090 -0700
-@@ -11,6 +11,7 @@ Construction Parameters
-     <data_block_size> <hash_block_size>
-     <num_data_blocks> <hash_start_block>
-     <algorithm> <digest> <salt>
-+    [<data_start_block>]
-=20
- <version>
-     This is the type of the on-disk hash format.
-@@ -62,6 +63,10 @@ Construction Parameters
- <salt>
-     The hexadecimal encoding of the salt value.
-=20
-+<data_start_block>
-+    This is the offset, in <data_block_size>-blocks, from the start of =
-data_dev
-+    to the first block of the data.
++	log_dbg("Trying to open and write file %s.", filename);
++	fd =3D open(filename, O_RDWR);
++	if (fd < 0) {
++		log_err(NULL, _("Cannot open file %s for writeable =
+access.\n"), filename);
++		return -EINVAL;
++	}
++	close(fd);
 +
- Theory of operation
- =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
++	log_dbg("Allocating crypt device %s context.", filename);
++
++	if (!(h =3D malloc(sizeof(struct crypt_device))))
++		return -ENOMEM;
++
++	memset(h, 0, sizeof(*h));
++	h->loop_device_fd =3D -1;
++	h->loop_metadata_device_fd =3D -1;
++	h->device =3D strdup(filename);
++	if (!h->device) {
++		r =3D -ENOMEM;
++		goto bad;
++	}
++	h->iteration_time =3D 1000;
++	h->password_verify =3D 0;
++	h->tries =3D 3;
++	h->rng_type =3D crypt_random_default_key_rng();
++	*cd =3D h;
++	return 0;
++bad:
++	if (h) {
++		free(h->device);
++	}
++	free(h);
++	return r;
++}
++
+ static int crypt_check_data_device_size(struct crypt_device *cd)
+ {
+ 	int r;
+@@ -606,6 +658,27 @@ static int crypt_check_data_device_size(
+ 	return r;
+ }
 =20
-@@ -138,7 +143,8 @@ Set up a device:
-   # dmsetup create vroot --readonly --table \
-     "0 2097152 verity 1 /dev/sda1 /dev/sda2 4096 4096 262144 1 sha256 =
-"\
-     "4392712ba01368efdf14b05c76f9e4df0d53664630b5d48632ed17a137f39076 =
-"\
--    "1234000000000000000000000000000000000000000000000000000000000000"
-+    "1234000000000000000000000000000000000000000000000000000000000000 =
-"\
-+    "0"
++static int crypt_check_data_file_size(struct crypt_device *cd)
++{
++	int r;
++	uint64_t size, size_min;
++
++	/* Check data device size, require at least one sector */
++	size_min =3D crypt_get_data_offset(cd) << SECTOR_SHIFT ?: =
+SECTOR_SIZE;
++
++	r =3D file_size(crypt_get_device_name(cd), &size);
++	if (r < 0)
++		return r;
++
++	if (size < size_min) {
++		log_err(cd, _("Header detected but device %s is too =
+small.\n"),
++			crypt_get_device_name(cd));
++		return -EINVAL;
++	}
++
++	return r;
++}
++
+ int crypt_set_data_device(struct crypt_device *cd, const char *device)
+ {
+ 	char *data_device =3D NULL;
+@@ -641,6 +714,52 @@ int crypt_set_data_device(struct crypt_d
+ 	return crypt_check_data_device_size(cd);
+ }
 =20
- A command line tool veritysetup is available to compute or verify
- the hash tree or activate the kernel device. This is available from
++int crypt_set_data_file(struct crypt_device *cd, const char *filename)
++{
++	int fd;
++	struct stat st;
++
++	log_dbg("Setting ciphertext data file to %s.", filename ?: =
+"(none");
++
++	if (!isVERITY(cd->type)) {
++		log_err(cd, _("This operation is not supported for this =
+device type.\n"));
++		return  -EINVAL;
++	}
++
++	/* metadata device must be set */
++	if (!cd->device || !filename)
++		return -EINVAL;
++
++	if (stat(filename, &st) < 0) {
++		log_err(NULL, _("File %s doesn't exist or access =
+denied.\n"), filename);
++		return -EINVAL;
++	}
++
++	log_dbg("Trying to open and read file %s.", filename);
++	fd =3D open(filename, O_RDONLY);
++	if (fd < 0) {
++		log_err(NULL, _("Cannot open file %s for read =
+access.\n"), filename);
++		return -EINVAL;
++	}
++	close(fd);
++
++	if (!cd->metadata_device) {
++		cd->metadata_device =3D cd->device;
++		cd->loop_metadata_device_fd =3D cd->loop_device_fd;
++	} else {
++		free(cd->device);
++		if (cd->loop_device_fd !=3D -1)
++			close(cd->loop_device_fd);
++	}
++
++	cd->device =3D strdup(filename);
++	if (!cd->device)
++		return -ENOMEM;
++	cd->loop_device_fd =3D -1;
++
++	return crypt_check_data_file_size(cd);
++}
++
+ static int _crypt_load_luks1(struct crypt_device *cd, int =
+require_header, int repair)
+ {
+ 	struct luks_phdr hdr;
+@@ -1080,12 +1199,18 @@ static int _crypt_format_verity(struct c
+ 		return -ENOMEM;
+=20
+ 	r =3D crypt_set_data_device(cd, params->data_device);
+-	if (r)
+-		return r;
++	if (r) {
++		r =3D crypt_set_data_file(cd, params->data_device);
++		if (r)
++			return r;
++	}
+ 	if (!params->data_size) {
+ 		r =3D device_size(cd->device, &data_device_size);
+-		if (r < 0)
+-			return r;
++		if (r < 0) {
++			r =3D file_size(cd->device, &data_device_size);
++			if (r < 0)
++				return r;
++		}
+=20
+ 		cd->verity_hdr.data_size =3D data_device_size / =
+params->data_block_size;
+ 	} else
+--- a/cryptsetup/lib/utils.c	2012-08-08 17:11:20.433396990 -0700
++++ b/cryptsetup/lib/utils.c	2012-08-06 16:17:35.202731084 -0700
+@@ -316,6 +316,18 @@ int device_size(const char *device, uint
+ 	return r;
+ }
+=20
++int file_size(const char *filename, uint64_t *size)
++{
++	struct stat st;
++
++	if (stat(filename, &st) < 0)
++		return -EINVAL;
++
++	*size =3D (uint64_t)st.st_size;
++
++	return 0;
++}
++
+ static int get_device_infos(const char *device, enum devcheck =
+device_check,
+ 			    int *readonly, uint64_t *size)
+ {
+--- a/cryptsetup/src/veritysetup.c	2012-08-08 17:11:20.942432624 =
+-0700
++++ b/cryptsetup/src/veritysetup.c	2012-08-06 16:17:35.235739053 =
+-0700
+@@ -142,8 +142,12 @@ static int action_format(int arg)
+ 	uint32_t flags =3D CRYPT_VERITY_CREATE_HASH;
+ 	int r;
+=20
+-	if ((r =3D crypt_init(&cd, action_argv[1])))
+-		goto out;
++	r =3D crypt_init(&cd, action_argv[1]);
++	if (r < 0) {
++		r =3D crypt_initfile(&cd, action_argv[1]);
++		if (r < 0)
++			goto out;
++	}
+=20
+ 	if (!use_superblock)
+ 		flags |=3D CRYPT_VERITY_NO_HEADER;
+@@ -174,8 +178,12 @@ static int _activate(const char *dm_devi
+ 	ssize_t hash_size;
+ 	int r;
+=20
+-	if ((r =3D crypt_init(&cd, hash_device)))
+-		goto out;
++	r =3D crypt_init(&cd, hash_device);
++	if (r < 0) {
++		r =3D crypt_initfile(&cd, hash_device);
++		if (r < 0)
++			goto out;
++	}
+=20
+ 	if (use_superblock) {
+ 		params.flags =3D flags;
+@@ -190,8 +198,11 @@ static int _activate(const char *dm_devi
+ 	if (r < 0)
+ 		goto out;
+ 	r =3D crypt_set_data_device(cd, data_device);
+-	if (r < 0)
+-		goto out;
++	if (r < 0) {
++		r =3D crypt_set_data_file(cd, data_device);
++		if (r < 0)
++			goto out;
++	}
+=20
+ 	hash_size =3D crypt_get_volume_key_size(cd);
+ 	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) !=3D =
+hash_size) {
 
 
---Apple-Mail=_3C6D505E-6207-4AE9-8F6E-407F18C35D33
+--Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="signature.asc"
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -217,13 +429,13 @@ Content-Description: Message signed with OpenPGP using GPGMail
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
 
-iQEcBAEBAgAGBQJQIwb2AAoJELoPFVk1ivvRFbQIAIaiUmz1ylOnEOyl36dGIPzr
-Ms+12z8sq0ACDh5bozNaTEDsonRGZNbkBU+y36Sliw0CGuXp3UfK61dtHO83gAD0
-6cqY6NIYFAXETHPNFgtHzGck5ZaLfxtoaxqnNtkCMp9f+hz6vrEXMzW7164ujCst
-8Lmfg4XSLpL0+qlxiX7Mhchtx2MBn5aDN0lkWsIMxrPbzVDABoKF5ycJo7YrTV9L
-eQJFuP0+mX/Lc+KmhNh6ndYIWEFAjJSsvZfCi1OVA2VJ6vSWXXE511pSjwus7IWm
-vrzfC5CBFw1m1yP/dRdMA8JYoDhBNTJl+8bFmVD3vVXwjosVzRo7mxkekI0DG68=
-=p/kG
+iQEcBAEBAgAGBQJQIwb4AAoJELoPFVk1ivvRTBcH/3TjM9R2UfwRuQ+VzjGSIDLk
+MJuMrtSGWO0Trt7IvZlTym8xh0UsRQ5e+zgBdT6uQV8Nf224akGsBqEBGQqx7lkl
+sQKC0H3xPeb3henn7Y9K8GjJ7L4uHZXHajtDHklLDGx3VrrkOl8G4UDatn1ztoU0
+EwDFy2BW/sUnc4mzPCPZ+DaYcdz/QzsJINAmqwYxDasvb8ItkMU/ciTz3v86AiMu
+AzPWipU9oFOpOI+RXAYVo/jucqFnU02/fK7TOU9I0lAsozH9OPDQ5NySPyeB/JFP
+4JThZ0itOA+ocSQxrkVpimtk2zgcvXhQNFMuOY+eP0xoYvFkfLXMbXbS/pFeZ4Q=
+=7SIg
 -----END PGP SIGNATURE-----
 
---Apple-Mail=_3C6D505E-6207-4AE9-8F6E-407F18C35D33--
+--Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558--
