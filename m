@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2HIC7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 22:59:05 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:35096 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2HIC7D (ORCPT
+	id S1753966Ab2HIDHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 23:07:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50951 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab2HIDHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 22:59:03 -0400
-X-AuditID: b753bd60-a3089ba000000655-6d-5023277364f2
-X-AuditID: b753bd60-a3089ba000000655-6d-5023277364f2
-Message-ID: <50232772.4070102@hitachi.com>
-Date: Thu, 09 Aug 2012 11:58:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 8 Aug 2012 23:07:12 -0400
+Date: Wed, 8 Aug 2012 20:06:38 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v5 12/12] block: Only clone bio vecs that are in use
+Message-ID: <20120809030638.GL7262@moria.home.lan>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-13-git-send-email-koverstreet@google.com>
+ <20120808233007.GM6983@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
- is used
-References: <20120807193845.146666357@goodmis.org>  <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com> <1344430148.6935.17.camel@gandalf.stny.rr.com>
-In-Reply-To: <1344430148.6935.17.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120808233007.GM6983@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/08 21:49), Steven Rostedt wrote:
-> On Wed, 2012-08-08 at 13:34 +0900, Masami Hiramatsu wrote:
->>  
->>> -#ifdef CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST
->>> +#if defined(CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST) && !defined(CC_USING_FENTRY)
->>
->> I think CONFIG_HAVE_FENTRY would better unselect
->> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST in arch/x86/Kconfig explicitly.
+On Wed, Aug 08, 2012 at 04:30:07PM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
-> that it is being used. It only gets used if CC_USING_FENTRY is set,
-> which is set by the Makefile at time of compile.
+> On Mon, Aug 06, 2012 at 03:08:41PM -0700, Kent Overstreet wrote:
+> > @@ -459,10 +460,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+> >  	bio->bi_sector = bio_src->bi_sector;
+> >  	bio->bi_bdev = bio_src->bi_bdev;
+> >  	bio->bi_flags |= 1 << BIO_CLONED;
+> > +	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
 > 
-> If CONFIG_HAVE_FENTRY is defined, a test is done to see if the gcc
-> compiling the kernel supports -mfentry. If it does, then it defines the
-> CC_USING_FENTRY macro, if not, the macro is not defined and the old way
-> is performed.
-> 
-> If the old way is performed, even if CONFIG_HAVE_FENTRY is defined, then
-> we still need the above test. We can not have CONFIG_HAVE_FENTRY
-> unselect CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST.
+> This isn't obvious at all.  Why no explanation anywhere?  Also it
+> would be nice to update comments of the updated functions so that it's
+> clear that only partial cloning happens.
 
-Ah, I see. OK, I don't see any other issue.
+Because it's not obvious to me, either - I had to grep around through a
+fair amount of code to figure out the semantics of BIO_SEG_VALID and I
+doubt I have it 100%. I'm also pretty sure it's not used consistently in
+the existing code...
 
-Thank you,
+If it means what I think it means, it should be obvious - nr_segs isn't
+valid because the number of pages in the iovec changed (though we didn't
+bother to copy it over anyways. So it's not necessary if nr_segs = 0
+means nr_segs isn't valid, but bleh).
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Anyways. yeah. BIO_SEG_VALID should be documented, and if it was I think
+this code would be fine.
 
+I will update the comment for the partial cloning thing:
+
+/**
+ * 	__bio_clone	-	clone a bio
+ * 	@bio: destination bio
+ * 	@bio_src: bio to clone
+ *
+ *	Clone a &bio. Caller will own the returned bio, but not
+ *	the actual data it points to. Reference count of returned
+ * 	bio will be one.
+ *
+ *	We don't clone the entire bvec, just the part from bi_idx to b_vcnt
+ *	(i.e. what the bio currently points to, so the new bio is still
+ *	equivalent to the old bio).
+ */
+void __bio_clone(struct bio *bio, struct bio *bio_src)
+{
+	memcpy(bio->bi_io_vec,
+	       bio_iovec(bio_src),
+	       bio_segments(bio_src) * sizeof(struct bio_vec));
 
