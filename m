@@ -1,441 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab2HIRFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:05:40 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56329 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2HIRFi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:05:38 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="220756514"
-Message-ID: <5023EDE0.3070506@codeaurora.org>
-Date: Thu, 09 Aug 2012 13:05:36 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754863Ab2HIRGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:06:45 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:43843 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab2HIRGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 13:06:43 -0400
+Date: Thu, 9 Aug 2012 13:06:40 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" 
+	<linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4fs error "ext4_mb_generate_buddy:741:group 16, 8160 clusters
+ in bitmap, 4064 in gd" (with repro)
+Message-ID: <20120809170640.GA6607@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Paolo Bonzini <pbonzini@redhat.com>,
+	"Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <50238A29.3060808@redhat.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [09/36] AArch64: Exception handling
-References: <1341608777-12982-10-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1341608777-12982-10-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50238A29.3060808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin and Will,
-
-On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
-> The patch contains the exception entry code (kernel/entry.S), pt_regs
-> structure and related accessors, undefined instruction trapping and
-> stack tracing.
+On Thu, Aug 09, 2012 at 12:00:09PM +0200, Paolo Bonzini wrote:
+> Here is how to reproduce it.  It happens during fstrim.  I found other
+> occurrences of the error in the mailing list, but they were not related
+> to trim so they may be something different.
 > 
-> AArch64 Linux kernel (including kernel threads) runs in EL1 mode using
-> the SP1 stack. The vectors don't have a fixed address, only alignment
-> (2^11) requirements.
+> modprobe scsi_debug dev_size_mb=256 lbpws=1
+> dd if=/dev/zero of=/dev/sdb bs=1M      
+> fdisk /dev/sdb
+>  >> create a new partition accepting all defaults
+> fdisk -lu /dev/sdb|tail -1
+>  >> should show: /dev/sdb1     57      524285      262114+  83  Linux
+> 
+> mkfs.ext4 /dev/sdb1
+> mkdir test
+> mount /dev/sdb1 test
+> fstrim ./test
 
-[...]
+I can confirm that this accurately reproduces file system corruption
+using a 3.5 kernel.  It looks like some block allocation bitmap blocks
+is getting trimmed when it shouldn't have been.  Lukas, can you take a
+look at this?
 
-> diff --git a/arch/aarch64/kernel/entry.S b/arch/aarch64/kernel/entry.S
-> new file mode 100644
-> index 0000000..8ad3995
-> --- /dev/null
-> +++ b/arch/aarch64/kernel/entry.S
-> @@ -0,0 +1,696 @@
-> +/*
-> + * Low-level exception handling code
-
-[...]
-
-> +/*
-> + * Exception vectors.
-> + */
-> +	.macro	ventry	label
-> +	.align	7
-> +	b	\label
-> +	.endm
-> +
-> +	.align	11
-> +ENTRY(vectors)
-> +	ventry	el1_sync_invalid		// Synchronous EL1t
-> +	ventry	el1_irq_invalid			// IRQ EL1t
-> +	ventry	el1_fiq_invalid			// FIQ EL1t
-> +	ventry	el1_error_invalid		// Error EL1t
-> +
-> +	ventry	el1_sync			// Synchronous EL1h
-> +	ventry	el1_irq				// IRQ EL1h
-> +	ventry	el1_fiq_invalid			// FIQ EL1h
-> +	ventry	el1_error_invalid		// Error EL1h
-> +
-> +	ventry	el0_sync			// Synchronous 64-bit EL0
-> +	ventry	el0_irq				// IRQ 64-bit EL0
-> +	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
-> +	ventry	el0_error_invalid		// Error 64-bit EL0
-> +
-> +#ifdef CONFIG_AARCH32_EMULATION
-> +	ventry	el0_sync_compat			// Synchronous 32-bit EL0
-> +	ventry	el0_irq_compat			// IRQ 32-bit EL0
-> +	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
-> +	ventry	el0_error_invalid_compat	// Error 32-bit EL0
-> +#else
-> +	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
-> +	ventry	el0_irq_invalid			// IRQ 32-bit EL0
-> +	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
-> +	ventry	el0_error_invalid		// Error 32-bit EL0
-> +#endif
-> +END(vectors)
-> +
-> +/*
-> + * Invalid mode handlers
-> + */
-> +	.macro	inv_entry, el, reason, regsize = 64
-> +	kernel_entry el, \regsize
-> +	mov	x0, sp
-> +	mov	x1, #\reason
-> +	mrs	x2, esr_el1
-> +	b	bad_mode
-> +	.endm
-
-The code seems to indicate that the invalid mode handlers have different alignment requirements than the valid mode handlers, which puzzles me.
-
-> +
-> +el0_sync_invalid:
-> +	inv_entry 0, BAD_SYNC
-> +ENDPROC(el0_sync_invalid)
-
-Plain labels, the ENTRY macro, the END macro and the ENDPROC macro are used variously throughout this file, and I wonder if a greater amount of consistency might be attainable. The description of the ENDPROC macro in include/linux/linkage.h makes me think its use might not be completely warranted in blocks of assembly that don't end with a return instruction.
-
-> +el0_irq_invalid:
-> +	inv_entry 0, BAD_IRQ
-> +ENDPROC(el0_irq_invalid)
-> +
-> +el0_fiq_invalid:
-> +	inv_entry 0, BAD_FIQ
-> +ENDPROC(el0_fiq_invalid)
-> +
-> +el0_error_invalid:
-> +	inv_entry 0, BAD_ERROR
-> +ENDPROC(el0_error_invalid)
-> +
-> +#ifdef CONFIG_AARCH32_EMULATION
-> +el0_fiq_invalid_compat:
-> +	inv_entry 0, BAD_FIQ, 32
-> +ENDPROC(el0_fiq_invalid_compat)
-> +
-> +el0_error_invalid_compat:
-> +	inv_entry 0, BAD_ERROR, 32
-> +ENDPROC(el0_error_invalid_compat)
-> +#endif
-> +
-> +el1_sync_invalid:
-> +	inv_entry 1, BAD_SYNC
-> +ENDPROC(el1_sync_invalid)
-> +
-> +el1_irq_invalid:
-> +	inv_entry 1, BAD_IRQ
-> +ENDPROC(el1_irq_invalid)
-> +
-> +el1_fiq_invalid:
-> +	inv_entry 1, BAD_FIQ
-> +ENDPROC(el1_fiq_invalid)
-> +
-> +el1_error_invalid:
-> +	inv_entry 1, BAD_ERROR
-> +ENDPROC(el1_error_invalid)
-> +
-> +/*
-> + * EL1 mode handlers.
-> + */
-> +	.align	6
-> +el1_sync:
-> +	kernel_entry 1
-> +	mrs	x1, esr_el1			// read the syndrome register
-> +	lsr	x24, x1, #26			// exception class
-> +	cmp	x24, #0x25			// data abort in EL1
-> +	b.eq	el1_da
-> +	cmp	x24, #0x18			// configurable trap
-> +	b.eq	el1_undef
-> +	cmp	x24, #0x26			// stack alignment exception
-> +	b.eq	el1_sp_pc
-> +	cmp	x24, #0x22			// pc alignment exception
-> +	b.eq	el1_sp_pc
-> +	cmp	x24, #0x00			// unknown exception in EL1
-> +	b.eq	el1_undef
-> +	cmp	x24, #0x30			// debug exception in EL1
-> +	b.ge	el1_dbg
-> +	b	el1_inv
-> +el1_da:
-> +	/*
-> +	 * Data abort handling
-> +	 */
-> +	mrs	x0, far_el1
-> +	enable_dbg_if_not_stepping x2
-> +	// re-enable interrupts if they were enabled in the aborted context
-> +	tbnz	x23, #7, 1f			// PSR_I_BIT
-> +	enable_irq
-> +1:
-> +	mov	x2, sp				// struct pt_regs
-> +	bl	do_mem_abort
-> +
-> +	// disable interrupts before pulling preserved data off the stack
-> +	disable_irq
-> +	kernel_exit 1
-> +el1_sp_pc:
-> +	/*
-> +	 *Stack or PC alignment exception handling
-> +	 */
-> +	mrs	x0, far_el1
-> +	mov	x1, x25
-> +	mov	x2, sp
-> +	b	do_sp_pc_abort
-> +el1_undef:
-> +	/*
-> +	 *Undefined instruction
-> +	 */
-> +	mov	x0, sp
-> +	b	do_undefinstr
-> +el1_dbg:
-> +	/*
-> +	 * Debug exception handling
-> +	 */
-> +	tbz	x24, #0, el1_inv		// EL1 only
-> +	mrs	x0, far_el1
-> +	mov	x2, sp				// struct pt_regs
-> +	bl	do_debug_exception
-> +
-> +	kernel_exit 1
-> +el1_inv:
-> +	// TODO: add support for undefined instructions in kernel mode
-> +	mov	x0, sp
-> +	mov	x1, #BAD_SYNC
-> +	mrs	x2, esr_el1
-> +	b	bad_mode
-> +ENDPROC(el1_sync)
-> +
-> +	.align	6
-> +el1_irq:
-> +	kernel_entry 1
-> +	enable_dbg_if_not_stepping x0
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +	bl	trace_hardirqs_off
-> +#endif
-> +#ifdef CONFIG_PREEMPT
-> +	get_thread_info tsk
-> +	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-> +	add	x0, x24, #1			// increment it
-> +	str	x0, [tsk, #TI_PREEMPT]
-> +#endif
-> +	irq_handler
-> +#ifdef CONFIG_PREEMPT
-> +	str	x24, [tsk, #TI_PREEMPT]		// restore preempt count
-> +	cbnz	x24, 1f				// preempt count != 0
-> +	ldr	x0, [tsk, #TI_FLAGS]		// get flags
-> +	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
-> +	bl	el1_preempt
-> +1:
-> +#endif
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +	bl	trace_hardirqs_on
-> +#endif
-> +	kernel_exit 1
-> +ENDPROC(el1_irq)
-> +
-> +#ifdef CONFIG_PREEMPT
-> +el1_preempt:
-> +	mov	x24, lr
-> +1:	enable_dbg
-> +	bl	preempt_schedule_irq		// irq en/disable is done inside
-> +	ldr	x0, [tsk, #TI_FLAGS]		// get new tasks TI_FLAGS
-> +	tbnz	x0, #TIF_NEED_RESCHED, 1b	// needs rescheduling?
-> +	ret	x24
-> +#endif
-> +
-> +/*
-> + * EL0 mode handlers.
-> + */
-> +	.align	6
-> +el0_sync:
-> +	kernel_entry 0
-> +	mrs	x25, esr_el1			// read the syndrome register
-> +	lsr	x24, x25, #26			// exception class
-> +	cmp	x24, #0x15			// SVC in 64-bit state
-> +	b.eq	el0_svc
-> +	adr	lr, ret_from_exception
-> +	cmp	x24, #0x24			// data abort in EL0
-> +	b.eq	el0_da
-> +	cmp	x24, #0x20			// instruction abort in EL0
-> +	b.eq	el0_ia
-> +	cmp	x24, #0x07			// FP/ASIMD access
-> +	b.eq	el0_fpsimd_acc
-> +	cmp	x24, #0x2c			// FP/ASIMD exception
-> +	b.eq	el0_fpsimd_exc
-> +	cmp	x24, #0x18			// configurable trap
-> +	b.eq	el0_undef
-> +	cmp	x24, #0x26			// stack alignment exception
-> +	b.eq	el0_sp_pc
-> +	cmp	x24, #0x22			// pc alignment exception
-> +	b.eq	el0_sp_pc
-> +	cmp	x24, #0x00			// unknown exception in EL0
-> +	b.eq	el0_undef
-> +	cmp	x24, #0x30			// debug exception in EL0
-> +	b.ge	el0_dbg
-> +	b	el0_inv
-> +
-> +#ifdef CONFIG_AARCH32_EMULATION
-> +	.align	6
-> +el0_sync_compat:
-> +	kernel_entry 0, 32
-> +	mrs	x25, esr_el1			// read the syndrome register
-> +	lsr	x24, x25, #26			// exception class
-> +	cmp	x24, #0x11			// SVC in 32-bit state
-> +	b.eq	el0_svc_compat
-> +	adr	lr, ret_from_exception
-> +	cmp	x24, #0x24			// data abort in EL0
-> +	b.eq	el0_da
-> +	cmp	x24, #0x20			// instruction abort in EL0
-> +	b.eq	el0_ia
-> +	cmp	x24, #0x07			// FP/ASIMD access
-> +	b.eq	el0_fpsimd_acc
-> +	cmp	x24, #0x28			// FP/ASIMD exception
-> +	b.eq	el0_fpsimd_exc
-> +	cmp	x24, #0x00			// unknown exception in EL0
-> +	b.eq	el0_undef
-> +	cmp	x24, #0x30			// debug exception in EL0
-> +	b.ge	el0_dbg
-> +	b	el0_inv
-> +el0_svc_compat:
-> +	/*
-> +	 * AArch32 syscall handling
-> +	 */
-> +	adr	stbl, compat_sys_call_table	// load compat syscall table pointer
-> +	uxtw	scno, w7			// syscall number in w7 (r7)
-> +	mov     sc_nr, #__NR_compat_syscalls
-> +	b	el0_svc_naked
-> +
-> +	.align	6
-> +el0_irq_compat:
-> +	kernel_entry 0, 32
-> +	b	el0_irq_naked
-> +#endif
-> +
-> +el0_da:
-> +	/*
-> +	 * Data abort handling
-> +	 */
-> +	mrs	x0, far_el1
-> +	disable_step x1
-> +	isb
-> +	enable_dbg
-> +	// enable interrupts before calling the main handler
-> +	enable_irq
-> +	mov	x1, x25
-> +	mov	x2, sp
-> +	b	do_mem_abort
-> +el0_ia:
-> +	/*
-> +	 * Instruction abort handling
-> +	 */
-> +	mrs	x0, far_el1
-> +	disable_step x1
-> +	isb
-> +	enable_dbg
-> +	// enable interrupts before calling the main handler
-> +	enable_irq
-> +	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
-> +	mov	x2, sp
-> +	b	do_mem_abort
-> +el0_fpsimd_acc:
-> +	/*
-> +	 * Floating Point or Advanced SIMD access
-> +	 */
-> +	mov	x0, x25
-> +	mov	x1, sp
-> +	b	do_fpsimd_acc
-> +el0_fpsimd_exc:
-> +	/*
-> +	 * Floating Point or Advanced SIMD exception
-> +	 */
-> +	mov	x0, x25
-> +	mov	x1, sp
-> +	b	do_fpsimd_exc
-> +el0_sp_pc:
-> +	/*
-> +	 * Stack or PC alignment exception handling
-> +	 */
-> +	mrs	x0, far_el1
-> +	disable_step x1
-> +	isb
-> +	enable_dbg
-> +	// enable interrupts before calling the main handler
-> +	enable_irq
-> +	mov	x1, x25
-> +	mov	x2, sp
-> +	b	do_sp_pc_abort
-> +el0_undef:
-> +	/*
-> +	 *Undefined instruction
-> +	 */
-> +	mov	x0, sp
-> +	b	do_undefinstr
-> +el0_dbg:
-> +	/*
-> +	 * Debug exception handling
-> +	 */
-> +	tbnz	x24, #0, el0_inv		// EL0 only
-> +	mrs	x0, far_el1
-> +	disable_step x1
-> +	mov	x1, x25
-> +	mov	x2, sp
-> +	b	do_debug_exception
-> +el0_inv:
-> +	mov	x0, sp
-> +	mov	x1, #BAD_SYNC
-> +	mrs	x2, esr_el1
-> +	b	bad_mode
-> +ENDPROC(el0_sync)
-> +
-> +	.align	6
-> +el0_irq:
-> +	kernel_entry 0
-> +el0_irq_naked:
-> +	disable_step x1
-> +	isb
-> +	enable_dbg
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +	bl	trace_hardirqs_off
-> +#endif
-> +	get_thread_info tsk
-> +#ifdef CONFIG_PREEMPT
-> +	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-> +	add	x23, x24, #1			// increment it
-> +	str	x23, [tsk, #TI_PREEMPT]
-> +#endif
-> +	irq_handler
-> +#ifdef CONFIG_PREEMPT
-> +	ldr	x0, [tsk, #TI_PREEMPT]
-> +	str	x24, [tsk, #TI_PREEMPT]
-> +	cmp	x0, x23
-> +	b.eq	1f
-> +	mov	x1, #0
-> +	str	x1, [x1]			// BUG
-
-It looks like the error handling here isn't quite complete.
-
-> +1:
-> +#endif
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +	bl	trace_hardirqs_on
-> +#endif
-> +	b	ret_to_user
-> +ENDPROC(el0_irq)
-
-[...]
-
-Regards,
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+					- Ted
