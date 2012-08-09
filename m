@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030982Ab2HIPRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:17:36 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38753 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030785Ab2HIPRf (ORCPT
+	id S1031027Ab2HIPRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:17:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61882 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030785Ab2HIPRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:17:35 -0400
-Message-ID: <5023D48D.4090901@wwwdotorg.org>
-Date: Thu, 09 Aug 2012 09:17:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 9 Aug 2012 11:17:43 -0400
+Date: Thu, 9 Aug 2012 08:17:39 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
+        Sven Eckelmann <sven@narfation.org>
+Subject: Re: [ 040/122] batman-adv: fix skb->data assignment
+Message-ID: <20120809151739.GA17409@kroah.com>
+References: <20120807221948.220495155@linuxfoundation.org>
+ <20120807221951.826510164@linuxfoundation.org>
+ <1344482008.13142.206.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 1/3] regulator: add always set/clear masks to regulator_enable_regmap
-References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org> <20120809100930.GH24328@opensource.wolfsonmicro.com>
-In-Reply-To: <20120809100930.GH24328@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344482008.13142.206.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 04:09 AM, Mark Brown wrote:
-> On Wed, Aug 08, 2012 at 03:18:45PM -0600, Stephen Warren wrote:
+On Thu, Aug 09, 2012 at 04:13:28AM +0100, Ben Hutchings wrote:
+> On Tue, 2012-08-07 at 15:25 -0700, Greg Kroah-Hartman wrote:
+> > From: Greg KH <gregkh@linuxfoundation.org>
+> > 
+> > 3.5-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Antonio Quartulli <ordex@autistici.org>
+> > 
+> > commit d2b6cc8e460494251442a877fcbc150faa175b4f upstream.
+> [...]
 > 
->> +				  rdev->desc->enable_mask |
->> +				  rdev->desc->en_dis_set_mask |
->> +				  rdev->desc->en_dis_clr_mask,
->> +				  rdev->desc->enable_mask |
->> +				  rdev->desc->en_dis_set_mask);
-> 
-> Two problems here.  One is that the names are *really* obscure and hard
-> to read, the other is that this breaks all existing users.
+> This is a duplicate of commit 2c995ff892313009e336ecc8ec3411022f5b1c39
+> which is already in 3.5.  Please drop it.
 
-OK. I can change this to whatever names you suggest.
-enable_disable_clear_mask seems the least obscure, but rather long. Just
-let me know what you want.
+Thanks for noticing this, now dropped.
 
-As for breaking existing users, I don't think so: The new fields will
-presumably be initialized to zero for any drivers that don't explicitly
-set them, and the values are simply or'd into the mask/value parameters
-to update_bits(), and or'ing a zero will have no effect.
+greg k-h
