@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab2HIIu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:50:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33201 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756111Ab2HIIuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:50:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208081335333287528@gmail.com>
-References: <201208081005308597351@gmail.com>
-	<CANejiEXdHaqtXuR47QRimRNcvjxtUn8__7MK5XwW2t658hz=3g@mail.gmail.com>
-	<201208081335333287528@gmail.com>
-Date: Thu, 9 Aug 2012 16:50:10 +0800
-X-Google-Sender-Auth: REvW0PvslTtd3_KdZ1fZg0_en3M
-Message-ID: <CANejiEWk-TA_vdEwL2CEW5wgjz-dJAkQTxQ0OuUwto1MsdEQVQ@mail.gmail.com>
-Subject: Re: Re: [RFC PATCH] block:Fix some problems about handling plug in blk_queue_bio().
-From: Shaohua Li <shli@kernel.org>
-To: Jianpeng Ma <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756929Ab2HIIvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:51:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33216 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756841Ab2HIIvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 04:51:48 -0400
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
+ clock" prevents my machine from booting
+From: Matt Fleming <matt.fleming@intel.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cJ-ko@zougloub.eu, "H. PeterAnvin" <hpa@zytor.com>
+In-Reply-To: <50210F0702000078000932EB@nat28.tlf.novell.com>
+References: <20120805172903.5f8bb24c@zougloub.eu> <501EF3A2.20200@zytor.com>
+	 <501F83F20200007800092C1C@nat28.tlf.novell.com>
+	 <20120806125216.GA11863@srcf.ucam.org>
+	 <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+	 <20120806091627.2ad5ed2e@zougloub.eu> <20120806223208.5301be0d@zougloub.eu>
+	 <20120806230629.153d33bd@zougloub.eu>
+	 <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+	 <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <50210F0702000078000932EB@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 09 Aug 2012 09:51:35 +0100
+Message-ID: <1344502295.9195.7.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/8 Jianpeng Ma <majianpeng@gmail.com>:
-> On 2012-08-08 11:06 Shaohua Li <shli@kernel.org> Wrote:
->>2012/8/8 Jianpeng Ma <majianpeng@gmail.com>:
->>> I think there are three problems about handling plug in blk_queue_bio():
->>> 1:if request_count >= BLK_MAX_REQUEST_COUNT, avoid unnecessary plug->should_sort judge.
->>this makes sense, though not a big deal, nice to fix it.
-> Thanks
->>
->>> 2:Only two device can trace plug.
->>I didn't get the point, can you have more details?
->
->>>if (plug) {
->>>              /*
->>>               * If this is the first request added after a plug, fire
->>>               * of a plug trace. If others have been added before, check
->>>               * if we have multiple devices in this plug. If so, make a
->>>               * note to sort the list before dispatch.
->>>               */
->>>              if (list_empty(&plug->list))
->>>                      trace_block_plug(q);
->>>              else {
->>>                      if (!plug->should_sort) {
->>>                              struct request *__rq;
->
->>>                              __rq = list_entry_rq(plug->list.prev);
->>>                              if (__rq->q != q)
->>>                                      plug->should_sort = 1;
->>>                      }
->>>                      if (request_count >= BLK_MAX_REQUEST_COUNT) {
->>>                              blk_flush_plug_list(plug, false);
->>>                              trace_block_plug(q);
-> The code only trace two point;
-> A:      list_empty(&plug->list)
-> B:      request_count >= BLK_MAX_REQUEST_COUNT). it's the same like A which plug->list is empty.
-> Suppose:
-> 1;reqA-deviceA firstly come, it will call trace_block_plug because the list_empty(plug->list) is true.
-> 2:reqB-deviceB comed, attempt_plug_merge will failed because not deviceB-request-queue.But it'll not to call trace_block_plug.
->
-> But call blk_flush_plug_list,it will trace_block_unplug all request_queue.
+On Tue, 2012-08-07 at 11:50 +0100, Jan Beulich wrote:
+> > 
+> > I managed to find a machine to reproduce this on and it looks like the
+> > ASUS firmware engineers are upto their old tricks of referencing
+> > physical addresses after we've taken control of the memory map,
+> 
+> Yippie. On such systems we simply can't do any runtime calls.
+> Should we add a command line option forcing efi_native to false,
+> thus suppressing all runtime calls? Or would the "noefi" one be
+> enough already?
 
-ok, this is true. please send a new patch for the item 1&2 then.
+I think a better solution for this, seeing as there appear to be *so*
+many ASUS machines in the wild with this inability to do virtual EFI
+calls, is to provide a 1:1 mapping as well as our regular virt->phys
+mapping for the benefit of the firmware. We can load our special page
+table in efi_call_*, etc.
+
+One thing to note is that because of breakage seen on Apple machines
+last time Matthew tried this approach, we (the kernel) can't actually
+access the 1:1 mapping, it would exist purely for the benefit of
+firmware that was broken enough to reference physical addresses after
+SetVirtualAddressMap().
+
