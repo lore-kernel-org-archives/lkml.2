@@ -1,206 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab2HIIei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:34:38 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41678 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756309Ab2HIIee (ORCPT
+	id S1756516Ab2HIIjh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:39:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58381 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab2HIIje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:34:34 -0400
-X-AuditID: b753bd60-905f3ba000006b7e-cc-502376177acd
-X-AuditID: b753bd60-905f3ba000006b7e-cc-502376177acd
-Message-ID: <5023760E.7040207@hitachi.com>
-Date: Thu, 09 Aug 2012 17:34:22 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 9 Aug 2012 04:39:34 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-f0-50237744a561
+Date: Thu, 9 Aug 2012 17:41:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] mm: compaction: Capture a suitable high-order page
+ immediately when it is made available
+Message-ID: <20120809084110.GA21033@bbox>
+References: <1344452924-24438-1-git-send-email-mgorman@suse.de>
+ <1344452924-24438-4-git-send-email-mgorman@suse.de>
+ <20120809013358.GA18106@bbox>
+ <20120809081120.GB12690@suse.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
-References: <20120807193845.146666357@goodmis.org> <20120807194100.130477900@goodmis.org>
-In-Reply-To: <20120807194100.130477900@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120809081120.GB12690@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/08 4:38), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+On Thu, Aug 09, 2012 at 09:11:20AM +0100, Mel Gorman wrote:
+> On Thu, Aug 09, 2012 at 10:33:58AM +0900, Minchan Kim wrote:
+> > Hi Mel,
+> > 
+> > Just one questoin below.
+> > 
 > 
-> If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
-> then use that instead of mcount.
+> Sure! Your questions usually get me thinking about the right part of the
+> series, this series in particular :)
 > 
-> With mcount, frame pointers are forced with the -pg option and we
-> get something like:
+> > > <SNIP>
+> > > @@ -708,6 +750,10 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> > >  				goto out;
+> > >  			}
+> > >  		}
+> > > +
+> > > +		/* Capture a page now if it is a suitable size */
+> > 
+> > Why do we capture only when we migrate MIGRATE_MOVABLE type?
+> > If you have a reasone, it should have been added as comment.
+> > 
 > 
-> <can_vma_merge_before>:
->        55                      push   %rbp
->        48 89 e5                mov    %rsp,%rbp
->        53                      push   %rbx
->        41 51                   push   %r9
->        e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
->        31 c0                   xor    %eax,%eax
->        48 89 fb                mov    %rdi,%rbx
->        48 89 d7                mov    %rdx,%rdi
->        48 33 73 30             xor    0x30(%rbx),%rsi
->        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
-> 
-> With -mfentry, frame pointers are no longer forced and the call looks
-> like this:
-> 
-> <can_vma_merge_before>:
->        e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
->        53                      push   %rbx
->        48 89 fb                mov    %rdi,%rbx
->        31 c0                   xor    %eax,%eax
->        48 89 d7                mov    %rdx,%rdi
->        41 51                   push   %r9
->        48 33 73 30             xor    0x30(%rbx),%rsi
->        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
-> 
-> This adds the ftrace hook at the beginning of the function before a
-> frame is set up, and allows the function callbacks to be able to access
-> parameters. As kprobes now can use function tracing (at least on x86)
-> this speeds up the kprobe hooks that are at the beginning of the
-> function.
+> Good question and there is an answer. However, I also spotted a problem when
+> thinking about this more where !MIGRATE_MOVABLE allocations are forced to
+> do a full compaction. The simple solution would be to only set cc->page for
+> MIGRATE_MOVABLE but there is a better approach that I've implemented in the
+> patch below. It includes a comment that should answer your question. Does
+> this make sense to you?
 
-This looks good for me:)
+It does make sense.
+I will add my Reviewed-by in your next spin which includes below patch.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
+Thanks, Mel.
 
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/Kconfig                 |    1 +
->  arch/x86/include/asm/ftrace.h    |    7 ++++++-
->  arch/x86/kernel/entry_64.S       |   18 +++++++++++++++++-
->  arch/x86/kernel/x8664_ksyms_64.c |    6 +++++-
->  4 files changed, 29 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index c70684f..bbbf5d8 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -36,6 +36,7 @@ config X86
->  	select HAVE_KRETPROBES
->  	select HAVE_OPTPROBES
->  	select HAVE_FTRACE_MCOUNT_RECORD
-> +	select HAVE_FENTRY if X86_64
->  	select HAVE_C_RECORDMCOUNT
->  	select HAVE_DYNAMIC_FTRACE
->  	select HAVE_FUNCTION_TRACER
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index a6cae0c..9a25b52 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -35,7 +35,11 @@
->  #endif
->  
->  #ifdef CONFIG_FUNCTION_TRACER
-> -#define MCOUNT_ADDR		((long)(mcount))
-> +#ifdef CC_USING_FENTRY
-> +# define MCOUNT_ADDR		((long)(__fentry__))
-> +#else
-> +# define MCOUNT_ADDR		((long)(mcount))
-> +#endif
->  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
->  
->  #ifdef CONFIG_DYNAMIC_FTRACE
-> @@ -46,6 +50,7 @@
->  #ifndef __ASSEMBLY__
->  extern void mcount(void);
->  extern atomic_t modifying_ftrace_code;
-> +extern void __fentry__(void);
->  
->  static inline unsigned long ftrace_call_adjust(unsigned long addr)
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 63af8d2..384164e 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -53,13 +53,31 @@ static inline bool migrate_async_suitable(int migratetype)
+>  static void compact_capture_page(struct compact_control *cc)
 >  {
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 38308fa..2add3bb 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -69,9 +69,16 @@
+>  	unsigned long flags;
+> -	int mtype;
+> +	int mtype, mtype_low, mtype_high;
 >  
->  #ifdef CONFIG_FUNCTION_TRACER
->  #ifdef CONFIG_DYNAMIC_FTRACE
-> +
-> +#ifdef CC_USING_FENTRY
-> +ENTRY(__fentry__)
-> +	retq
-> +END(__fentry__)
-> +#else
->  ENTRY(mcount)
->  	retq
->  END(mcount)
-> +#endif
+>  	if (!cc->page || *cc->page)
+>  		return;
 >  
->  /* skip is set if stack has been adjusted */
->  .macro ftrace_caller_setup skip=0
-> @@ -84,7 +91,11 @@ END(mcount)
->  	movq RIP(%rsp), %rdi
->  	subq $MCOUNT_INSN_SIZE, %rdi
->  	/* Load the parent_ip into the second parameter */
-> +#ifdef CC_USING_FENTRY
-> +	movq SS+16(%rsp), %rsi
-> +#else
->  	movq 8(%rbp), %rsi
-> +#endif
->  .endm
->  
->  ENTRY(ftrace_caller)
-> @@ -215,9 +226,14 @@ END(mcount)
->  ENTRY(ftrace_graph_caller)
->  	MCOUNT_SAVE_FRAME
->  
-> +#ifdef CC_USING_FENTRY
-> +	leaq SS+16(%rsp), %rdi
-> +	movq $0, %rdx	/* No framepointers needed */
-> +#else
->  	leaq 8(%rbp), %rdi
-> -	movq RIP(%rsp), %rsi
->  	movq (%rbp), %rdx
-> +#endif
-> +	movq RIP(%rsp), %rsi
->  	subq $MCOUNT_INSN_SIZE, %rsi
->  
->  	call	prepare_ftrace_return
-> diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-> index 9796c2f..643b236 100644
-> --- a/arch/x86/kernel/x8664_ksyms_64.c
-> +++ b/arch/x86/kernel/x8664_ksyms_64.c
-> @@ -13,9 +13,13 @@
->  #include <asm/ftrace.h>
->  
->  #ifdef CONFIG_FUNCTION_TRACER
-> -/* mcount is defined in assembly */
-> +/* mcount and __fentry__ are defined in assembly */
-> +#ifdef CC_USING_FENTRY
-> +EXPORT_SYMBOL(__fentry__);
-> +#else
->  EXPORT_SYMBOL(mcount);
->  #endif
-> +#endif
->  
->  EXPORT_SYMBOL(__get_user_1);
->  EXPORT_SYMBOL(__get_user_2);
-> 
-
-
+> +	/*
+> +	 * For MIGRATE_MOVABLE allocations we capture a suitable page ASAP
+> +	 * regardless of the migratetype of the freelist is is captured from.
+                                                         ^  ^
+                                                         typo?
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Kind regards,
+Minchan Kim
