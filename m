@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab2HIOgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:36:38 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:48139 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab2HIOgg (ORCPT
+	id S1030683Ab2HIOid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:38:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60789 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964785Ab2HIOib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:36:36 -0400
-X-WSS-ID: 0M8HSKW-0B-2JM-02
-X-M-MSG: 
-X-Server-Uuid: AF72F651-81B1-4134-BA8C-A8E1A4E620FF
-Message-ID: <5023CADC.801@sandia.gov>
-Date: Thu, 9 Aug 2012 08:36:12 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607
- Thunderbird/10.0.5
+	Thu, 9 Aug 2012 10:38:31 -0400
+Date: Thu, 9 Aug 2012 16:38:27 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 v3] ALSA: hda - Deferred probing with
+ request_firmware_nowait()
+Message-ID: <20120809143827.GA10471@avionic-0098.mockup.avionic-design.de>
+References: <s5hd3302ovw.wl%tiwai@suse.de>
+ <s5ha9y42os2.wl%tiwai@suse.de>
+ <5023BAA0.1080304@canonical.com>
+ <s5h4noc2ntn.wl%tiwai@suse.de>
+ <s5h1ujg2nm7.wl%tiwai@suse.de>
+ <5023C0FC.2030207@canonical.com>
+ <s5hsjbw17r0.wl%tiwai@suse.de>
+ <s5hpq7017gw.wl%tiwai@suse.de>
+ <20120809142536.GA1771@avionic-0098.mockup.avionic-design.de>
+ <s5hhasc16d9.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: "Mel Gorman" <mgorman@suse.de>
-cc: Linux-MM <linux-mm@kvack.org>, "Rik van Riel" <riel@redhat.com>,
-        "Minchan Kim" <minchan@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates
- under load V3
-References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1344520165-24419-1-git-send-email-mgorman@suse.de>
-X-TMWD-Spam-Summary: TS=20120809143619; ID=1; SEV=2.3.1;
- DFV=B2012080914; IFV=NA; AIF=B2012080914; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230362E35303233434145332E303030453A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAAAAAAAAAAAAAAAAAAAAAAAfQ==
-X-MMS-Spam-Filter-ID: B2012080914_5.03.0010
-X-WSS-ID: 7C3D156B2I0630698-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: Healthcare Dictionaries, public
-X-RSA-Action: allow
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
+Content-Disposition: inline
+In-Reply-To: <s5hhasc16d9.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:AtZCz+XSPHyrIoi/0hmMnWVP+UtA9ZtLAAqIsHBIUD9
+ 8LP2H8a/ef/WqUZTutrRWfm7hXUoJk2BsBMQaXUxNU4nWZCddV
+ t/G3rwAXdEnFXtgugT185awtXh0YecW6xIZxq9rn+NwHQY3AKT
+ IkQmpLloMZE8FHykUUaaRXulKHfKbww0JsrOvQVZkYmlqWRXIG
+ cnj059YMZ8CuIor8hNF4s62dwzCndLUm2EqjlTNYYhBabGCBuI
+ axr8ZpFVZav1S7JEysbKGTKBZPWRHgjsCqiRZ9+pg6fovtdWRV
+ UeF/OgC+stw9tEGvkzt+bWruhgxqYHZ4ZeIzo195E/cOg8sEr5
+ NkyfM1SUViQZRZEnkGGhGg8j8M1QHp6w9s3hGxvTJBDBwrmBoJ
+ 3/FLqycUHW5ZCfLVRXgnjRsVz/Sv49Undg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
 
-On 08/09/2012 07:49 AM, Mel Gorman wrote:
-> Changelog since V2
-> o Capture !MIGRATE_MOVABLE pages where possible
-> o Document the treatment of MIGRATE_MOVABLE pages while capturing
-> o Expand changelogs
->
-> Changelog since V1
-> o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
-> o Expanded changelogs a little
->
-> Allocation success rates have been far lower since 3.4 due to commit
-> [fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
-> commit was introduced for good reasons and it was known in advance that
-> the success rates would suffer but it was justified on the grounds that
-> the high allocation success rates were achieved by aggressive reclaim.
-> Success rates are expected to suffer even more in 3.6 due to commit
-> [7db8889a: mm: have order>  0 compaction start off where it left] which
-> testing has shown to severely reduce allocation success rates under load -
-> to 0% in one case.  There is a proposed change to that patch in this series
-> and it would be ideal if Jim Schutt could retest the workload that led to
-> commit [7db8889a: mm: have order>  0 compaction start off where it left].
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I was successful at resolving my Ceph issue on 3.6-rc1, but ran
-into some other issue that isn't immediately obvious, and prevents
-me from testing your patch with 3.6-rc1.  Today I will apply your
-patch series to 3.5 and test that way.
+On Thu, Aug 09, 2012 at 04:34:42PM +0200, Takashi Iwai wrote:
+> At Thu, 9 Aug 2012 16:25:36 +0200,
+> Thierry Reding wrote:
+> >=20
+> > On Thu, Aug 09, 2012 at 04:10:55PM +0200, Takashi Iwai wrote:
+> > > For processing the firmware handling properly for built-in kernels,
+> > > implement an asynchronous firmware loading with
+> > > request_firmware_nowait().  This means that the codec probing is
+> > > deferred when the patch option is specified.
+> > >=20
+> > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > > ---
+> > > v1->v2: drop superfluous chip->probe_deferred field
+> > > v2->v3: fix missing chip->fw; renamed the variable to "probe_now"
+> > >=20
+> > >  sound/pci/hda/hda_codec.c |  2 +-
+> > >  sound/pci/hda/hda_intel.c | 42 +++++++++++++++++++++++++++++++++++++=
++----
+> > >  2 files changed, 39 insertions(+), 5 deletions(-)
+> >=20
+> > Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> Thanks, now pushed to sound git tree for-next branch.
+> As mentioned earlier, this is planned for 3.7 merge.
+>=20
+> Also, the patches are found in topic/hda-probe-defer branch so that it
+> can be easily pulled to 3.6 kernel cleanly.
 
-Sorry for the delay.
+Great! Thanks,
+Thierry
 
--- Jim
+--5mCyUwZo2JvN/JJP
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI8tjAAoJEN0jrNd/PrOhNO0P/0gIBluxOk+wsjxK6JO1lOa4
+/e28QygkZ1UhPPniKnIbk4xP7vgoXEKKCsokhK5LRI0wkLTRVifziKXJRHr/MrD7
+FNGxYv7gbyVUt5HTdNaqwSdx02VrRYt0Nb/7vkDMLAUApHFw59OET5yY/Qw1JFhO
+Glf5Wwq4d40Ma9dvNZWRS/D168yPBqc4B+uUawndafYaw6DGVzUBmlhcXMUwaBho
+5Yvz6LUzozDhs7XAmrzbHmELiCUIvUZYkXprggFGXaqknMAbjaMaJWBEgQ0PZUnx
+dQr+1oDjYr8kVGUNe5+ZD+HYF3cH7Im37RWFSrRAymrLim5rUl/7CXcESIl4qRNr
+mEdZnEu+SIOLMfR8aS37I5XIanIEBMy75zCsU3UD5y5KImSi8VxX7qEbg9Ek9u2z
+KDVSLsPY1GfBeNzMQtvDsdVecvSgiTFg3ZeJARhTd6MVEHsRDLbSISKJZT4eDOJZ
+T67o6XKV0glYx6P3c79i5p9Br/XXk9L8LUI14h3EyihWiASDODKeGIEInMNplu/B
+sYzJhzBOpx/oSI1s9KR6GX9P6L9boN9qUUDxDwLWr9aw6iQe2rSBgACfeIziW/xR
+C4bjECqTf4aBKjqP05Oi7Qz/1p+/LJ6EZRniaR+UCpeF7HIPuDRNJ1yQ/ltlVcWB
+C7P2t0xFY5A/2VGYuLo1
+=7nMB
+-----END PGP SIGNATURE-----
+
+--5mCyUwZo2JvN/JJP--
