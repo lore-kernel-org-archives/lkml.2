@@ -1,179 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab2HIB5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:57:22 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:62043 "EHLO mta02.xtra.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752630Ab2HIBzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:55:18 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        Neil Zhang <zhangwm@marvell.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Eric Andersson <eric.andersson@unixphere.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv2 0/8] *** ARM: Update arch-vt8500 to Devicetree ***
-Date: Thu,  9 Aug 2012 13:54:52 +1200
-Message-Id: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754281Ab2HIB52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:57:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab2HIB5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 21:57:23 -0400
+Date: Thu, 9 Aug 2012 11:57:06 +1000
+From: NeilBrown <neilb@suse.de>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: NFS <linux-nfs@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] VFS: d_obtain_alias needs to use "/" as default name.
+Message-ID: <20120809115706.260a1e4b@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/aUhv.Dbm7uu3iPFz_s_lI_v"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset updates arch-vt8500 to devicetree and removes all the old-style
-code. Support for WM8650 has also been added.
-
-Example dts/dtsi files are given for the three currently supported models.
-
-Major changes:
-
-GPIO code has been converted to a platform_device and rewritten as WM8505
-support was broken. Add support for WM8650 gpio controller.
-
-UHCI support was missing. Added this as a generic non-pci uhci controller as
-it doesn't require anything special. Should be usable by any system that doesn't
-have special requirements to get the UHCI controller working.
-
-Framebuffer code patched to support WM8650. The bindings for this are of concern
-but there doesn't seem to be a formalized binding yet. This patch is based off
-Sascha Hauer's current patch on the dri-devel mailing list and should be easily
-patched out when its finalized.
-
-Patchset based on Arnd's arm-soc/for-next branch.
+--Sig_/aUhv.Dbm7uu3iPFz_s_lI_v
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
 
-Could I get this reviewed, hopefully for inclusion into v3.7.
+NFS appears to use d_obtain_alias() to create the root dentry rather
+than d_make_root.  This can cause 'prepend_path()' to complain that the
+root has a weird name if an NFS filesystem is lazily unmounted.
+e.g. if "/mnt" is an NFS mount then
 
-Regards
-Tony Prisk
+ { cd /mnt; umount -l /mnt ; ls -l /proc/self/cwd; }
 
-Changes
-v2:
-Cleanup style/formatting errors
-Removed erroneous commit message about GPIO not being converted to devicetree
-Corrected arch-vt8500/irq.c header to correct filename
-Changed GPIO driver to use module_platform_driver()
-Renamed vt8500_gpio_bank_regs -> vt8500_gpio_bank_regoffsets
-Changed vt8500_gpio_bank_regoffset fields to unsigned int
-Changed bit-setting code to use BIT() macro
-Removed of_find_compatible() and use pdev->dev.of_node in _probe()
-Removed regoff field and related code - leftover from old design
-Added kerneldoc regarding struct vt8500_gpio_bank_regoffsets fields
-Update MODULE_LICENSE on all platform devices to "GPL v2" to match their headers
-Renamed dts board files to clarify product names
+will cause a WARN message like
+   WARNING: at /home/git/linux/fs/dcache.c:2624 prepend_path+0x1d7/0x1e0()
+   ...
+   Root dentry has weird name <>
 
-Tony Prisk (8):
-  arm: vt8500: Add device tree files for VIA/Wondermedia SoC's
-  rtc: vt8500: Add devicetree support for vt8500-rtc
-  serial: vt8500: Add devicetree support for vt8500-serial
-  usb: vt8500: Add devicetree support for vt8500-ehci and -uhci.
-  video: vt8500: Add devicetree support for vt8500-fb and wm8505-fb
-  arm: vt8500: Update arch-vt8500 to devicetree support.
-  arm: vt8500: doc: Add device tree bindings for arch-vt8500 devices
-  ARM: vt8500: gpio: Devicetree support for arch-vt8500
+to appear in kernel logs.
 
- Documentation/devicetree/bindings/arm/vt8500.txt   |   15 +
- .../bindings/arm/vt8500/via,vt8500-intc.txt        |   16 +
- .../bindings/arm/vt8500/via,vt8500-pmc.txt         |   13 +
- .../bindings/arm/vt8500/via,vt8500-timer.txt       |   15 +
- .../devicetree/bindings/gpio/gpio_vt8500.txt       |   24 ++
- .../devicetree/bindings/rtc/via,vt8500-rtc.txt     |   15 +
- .../bindings/tty/serial/via,vt8500-uart.txt        |   15 +
- .../devicetree/bindings/usb/platform-uhci.txt      |   15 +
- .../devicetree/bindings/usb/via,vt8500-ehci.txt    |   15 +
- .../devicetree/bindings/vendor-prefixes.txt        |    2 +
- .../devicetree/bindings/video/via,vt8500-fb.txt    |   46 +++
- .../devicetree/bindings/video/wm,prizm-ge-rops.txt |   13 +
- .../devicetree/bindings/video/wm,wm8505-fb.txt     |   20 ++
- arch/arm/Kconfig                                   |    2 +
- arch/arm/boot/dts/vt8500.dtsi                      |   99 ++++++
- arch/arm/boot/dts/vt8500_ref.dts                   |   31 ++
- arch/arm/boot/dts/wm8505.dtsi                      |  125 ++++++++
- arch/arm/boot/dts/wm8505_ref.dts                   |   31 ++
- arch/arm/boot/dts/wm8650.dtsi                      |   95 ++++++
- arch/arm/boot/dts/wm8650_ref.dts                   |   31 ++
- arch/arm/mach-vt8500/Kconfig                       |   72 +----
- arch/arm/mach-vt8500/Makefile                      |    9 +-
- arch/arm/mach-vt8500/bv07.c                        |   80 -----
- arch/arm/mach-vt8500/common.h                      |   25 ++
- arch/arm/mach-vt8500/devices-vt8500.c              |   91 ------
- arch/arm/mach-vt8500/devices-wm8505.c              |   99 ------
- arch/arm/mach-vt8500/devices.c                     |  270 -----------------
- arch/arm/mach-vt8500/devices.h                     |   88 ------
- arch/arm/mach-vt8500/gpio.c                        |  240 ---------------
- arch/arm/mach-vt8500/include/mach/restart.h        |    4 +-
- arch/arm/mach-vt8500/include/mach/vt8500_irqs.h    |   88 ------
- arch/arm/mach-vt8500/include/mach/vt8500_regs.h    |   79 -----
- arch/arm/mach-vt8500/include/mach/wm8505_irqs.h    |  115 -------
- arch/arm/mach-vt8500/include/mach/wm8505_regs.h    |   78 -----
- arch/arm/mach-vt8500/irq.c                         |  160 +++++-----
- arch/arm/mach-vt8500/restart.c                     |   54 ----
- arch/arm/mach-vt8500/timer.c                       |   56 +++-
- arch/arm/mach-vt8500/vt8500.c                      |  192 ++++++++++++
- arch/arm/mach-vt8500/wm8505_7in.c                  |   79 -----
- drivers/gpio/Kconfig                               |    6 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/gpio-vt8500.c                         |  318 ++++++++++++++++++++
- drivers/rtc/rtc-vt8500.c                           |    7 +
- drivers/tty/serial/vt8500_serial.c                 |    7 +
- drivers/usb/host/Kconfig                           |    4 +-
- drivers/usb/host/ehci-vt8500.c                     |   24 +-
- drivers/usb/host/uhci-hcd.c                        |    5 +
- drivers/usb/host/uhci-platform.c                   |  166 ++++++++++
- drivers/video/Kconfig                              |    6 +-
- drivers/video/vt8500lcdfb.c                        |   77 ++++-
- drivers/video/wm8505fb.c                           |   95 +++++-
- drivers/video/wmt_ge_rops.c                        |    7 +
- 52 files changed, 1674 insertions(+), 1566 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vt8500.txt
- create mode 100644 Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
- create mode 100644 Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
- create mode 100644 Documentation/devicetree/bindings/usb/platform-uhci.txt
- create mode 100644 Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
- create mode 100644 Documentation/devicetree/bindings/video/via,vt8500-fb.txt
- create mode 100644 Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
- create mode 100644 Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
- create mode 100644 arch/arm/boot/dts/vt8500.dtsi
- create mode 100644 arch/arm/boot/dts/vt8500_ref.dts
- create mode 100644 arch/arm/boot/dts/wm8505.dtsi
- create mode 100644 arch/arm/boot/dts/wm8505_ref.dts
- create mode 100644 arch/arm/boot/dts/wm8650.dtsi
- create mode 100644 arch/arm/boot/dts/wm8650_ref.dts
- delete mode 100644 arch/arm/mach-vt8500/bv07.c
- create mode 100644 arch/arm/mach-vt8500/common.h
- delete mode 100644 arch/arm/mach-vt8500/devices-vt8500.c
- delete mode 100644 arch/arm/mach-vt8500/devices-wm8505.c
- delete mode 100644 arch/arm/mach-vt8500/devices.c
- delete mode 100644 arch/arm/mach-vt8500/devices.h
- delete mode 100644 arch/arm/mach-vt8500/gpio.c
- delete mode 100644 arch/arm/mach-vt8500/include/mach/vt8500_irqs.h
- delete mode 100644 arch/arm/mach-vt8500/include/mach/vt8500_regs.h
- delete mode 100644 arch/arm/mach-vt8500/include/mach/wm8505_irqs.h
- delete mode 100644 arch/arm/mach-vt8500/include/mach/wm8505_regs.h
- delete mode 100644 arch/arm/mach-vt8500/restart.c
- create mode 100644 arch/arm/mach-vt8500/vt8500.c
- delete mode 100644 arch/arm/mach-vt8500/wm8505_7in.c
- create mode 100644 drivers/gpio/gpio-vt8500.c
- create mode 100644 drivers/usb/host/uhci-platform.c
+So change d_obtain_alias() to use "/" rather than "" as the anonymous
+name.
 
--- 
-1.7.9.5
+Signed-off-by: NeilBrown <neilb@suse.de>
 
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 8086636..c959e41 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1579,7 +1579,7 @@ EXPORT_SYMBOL(d_find_any_alias);
+  */
+ struct dentry *d_obtain_alias(struct inode *inode)
+ {
+-	static const struct qstr anonstring =3D { .name =3D "" };
++	static const struct qstr anonstring =3D QSTR_INIT("/", 1);
+ 	struct dentry *tmp;
+ 	struct dentry *res;
+=20
+
+--Sig_/aUhv.Dbm7uu3iPFz_s_lI_v
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUCMY8jnsnt1WYoG5AQIJvA/9FgTPiFxUp/e3Jd971qIK2IYynyDGMSKU
+g2R7iyZp1qPEH4A0qDvd7/B9asWlLuhaNOQjXPPyWCKdc6q12UREnw0bluJDfetI
+FeM+oKU+kzytuvAE+pVixtsS+A6vE7DLV4uRW4fYSfdhZoWcQ3UQwvitdAQOQcV9
+fWySE5oBRmp1bmb2MDICM7+BtvJGBW4NyHjdHc/oLmWgCeb1naEilAraralpqCpA
+fnOyvl8VYJ5qIm7lyOUdqEMxCN9wkapmtKnAQGciCXQtbjtUPK3CDVqfNytykWpw
+VWzTTqA7p5vws6i6eQYw22iY1laDhak+4GDfFhzzhpFDnGz/OUyUt7SGopqVO9RL
+TVVkiHeIDaELYCvEhC6+TLfaz8SNJA1Tg2Fp0HpWylYu7RrIG9XWJ4vk+tAZ6VcT
+Grn/WuDknzB0k9ykk8qVeMkK90RBCuaMx+cqFVBsyxb/kndxum8PfB6Lo6UYUd74
+UqAxvCtCCtDK4sE/zunxe1P6tft2C9j6O1GFUM4mzjGJcNku/Y+YvwIyWRCDD+Bo
+bUrP/ZNie7LV+60ckEEAvc+ZaNj7lwn+1A4CWipdBpiW+XDL2eN6Ey+dkNbh9SyA
+KMKd/L+272s4yCcwkQNRppST8bM45e5Gd4vX9s4+kvgBeSzHpimNlPouUoBm9CKh
+JqV9s/VptgA=
+=VhnA
+-----END PGP SIGNATURE-----
+
+--Sig_/aUhv.Dbm7uu3iPFz_s_lI_v--
