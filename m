@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2HILwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:52:44 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:60884 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932147Ab2HILwl (ORCPT
+	id S932297Ab2HILzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:55:14 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36472 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2HILzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:52:41 -0400
-Date: Thu, 9 Aug 2012 14:49:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+	Thu, 9 Aug 2012 07:55:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120809114901.GV12174@arwen.pp.htv.fi>
+References: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
+	<20120809114242.GA4689@breakpoint.cc>
+	<20120809114901.GV12174@arwen.pp.htv.fi>
+Date: Thu, 9 Aug 2012 08:55:11 -0300
+Message-ID: <CAAAP30EgLx70N7JDSQ2DPB_sFEkiTGhUDmBUkrrem07=Pd+KoA@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: gadget: composite: parse dt values
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: balbi@ti.com
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Michal Nazarewicz <mina86@mina86.com>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2] usb: gadget: composite: parse dt values
-Message-ID: <20120809114901.GV12174@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
- <20120809114242.GA4689@breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iytlPraCFSCqrfnM"
-Content-Disposition: inline
-In-Reply-To: <20120809114242.GA4689@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 9, 2012 at 8:49 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Thu, Aug 09, 2012 at 01:42:42PM +0200, Sebastian Andrzej Siewior wrote:
+>> On Tue, Jul 24, 2012 at 10:15:20AM -0300, Alexandre Pereira da Silva wrote:
+>> > --- /dev/null
+>> > +++ b/Documentation/devicetree/bindings/usb/gadget.txt
+>> > @@ -0,0 +1,20 @@
+>> > +Usb Gadget DeviceTree bindings
+>> > +
+>> > +These optional properties inside the usb device controller node are used to
+>> > +change some of the gadget drivers configuration:
+>> > +- vendor-id: Usb vendor id
+>> > +- product-id: Usb product id
+>> > +- release: Version of this device
+>> > +- vendor: Textual description of the vendor
+>> > +- device: Textual description of this device
+>> > +- serial: Textual representation of the device's serial number
+>> > +
+>> > +Binding Example:
+>> > +   usbd@31020000 {
+>> > +           vendor-id = <0x0525>;
+>> > +           product-id = <0xa4a6>;
+>> > +           release = <1>;
+>> > +           vendor = "Some Corp";
+>> > +           device = "Test Device";
+>> > +           serial = "12345";
+>
+> on top of everything Sebastian said, I think we should stick to the
+> field names set forth on the USB specification meaning that instead of
+> vendor-id we should use idVendor, instead of vendor we should use
+> iManufacturer, and so on.
 
---iytlPraCFSCqrfnM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the feedback.
 
-Hi,
+I agree that this should look more like the usb specifications and
+allow mapping between usb interfaces and gadget drivers.
 
-On Thu, Aug 09, 2012 at 01:42:42PM +0200, Sebastian Andrzej Siewior wrote:
-> On Tue, Jul 24, 2012 at 10:15:20AM -0300, Alexandre Pereira da Silva wrot=
-e:
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/usb/gadget.txt
-> > @@ -0,0 +1,20 @@
-> > +Usb Gadget DeviceTree bindings
-> > +
-> > +These optional properties inside the usb device controller node are us=
-ed to
-> > +change some of the gadget drivers configuration:
-> > +- vendor-id: Usb vendor id
-> > +- product-id: Usb product id
-> > +- release: Version of this device
-> > +- vendor: Textual description of the vendor
-> > +- device: Textual description of this device
-> > +- serial: Textual representation of the device's serial number
-> > +
-> > +Binding Example:
-> > +	usbd@31020000 {
-> > +		vendor-id =3D <0x0525>;
-> > +		product-id =3D <0xa4a6>;
-> > +		release =3D <1>;
-> > +		vendor =3D "Some Corp";
-> > +		device =3D "Test Device";
-> > +		serial =3D "12345";
-
-on top of everything Sebastian said, I think we should stick to the
-field names set forth on the USB specification meaning that instead of
-vendor-id we should use idVendor, instead of vendor we should use
-iManufacturer, and so on.
-
---=20
-balbi
-
---iytlPraCFSCqrfnM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQI6OsAAoJEIaOsuA1yqREiFMQAJ3Mp6FHOV9tBsDWhdTXTO/s
-8Jly2fYs8rH7JBqJNvyCw9mPNuKQUxRxUgW6cRM5XbScG21QMkOvo+y1gxYWjzhI
-iWhgoRTODPeyaE1L/c4vUlWoNTWpET6BeS3MRv9vYRVFHSlf6nP8+suF5nlM87sC
-TLuzXfXJdUdLC7gwQaczxfsFBAk3rd2MIBtZt4cMDHx7fgqgrbpMXoxTcKlpzH69
-9pLk4b/OcdRxassEv5Hwgu4f5wgUoaSNF3HzhM7nT1ruXL2jTAV2h3ydUV540+IJ
-nzy8RMvbpUpfCvhPqwvrfvjK5BcAQgTTihPq33XEpJiWIDeAmdJpnhkiyqkxEFcJ
-DD709eLhgFbeulWQ0G+k8UhOxHiJlNNcjjB+R6/0xNDrM5ODjsYQx2qg8I6f5m3H
-pFORORod9zysVO7DX6DvJVL8WdpRw5jDyCR0GvIpg0Uo/BMZ8JjWXTAaUMF16KWu
-4ugn+1ST0/wtUU2u7RaVcupni+XKMIgQXjZQRv6bC/siLv+Gxj4hBWhCNBU5Ers0
-v3FkFzBIEsCNNgVdh4DQC/f0XTs2XJQ3Q8iHFLLb/M8iHcD3yH3RsTnlzissIfn+
-uvthC20fM4eE/umxpgBf14wrDAM8rn5ZbDH3v3czuC7g2c60ec9NI744m8gCPKYp
-mWOyi0hqqqBDFb9LDFwQ
-=m9Ux
------END PGP SIGNATURE-----
-
---iytlPraCFSCqrfnM--
+I will rework this to provide a new patch that at least don't conflict
+with this idea.
