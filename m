@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab2HILdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:33:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57302 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2HILdE (ORCPT
+	id S932223Ab2HILeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:34:25 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38790 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2HILeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:33:04 -0400
-Date: Thu, 9 Aug 2012 13:32:56 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, patches@linaro.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH] ARM: EXYNOS: Use generic pwm driver in Origen board
-Message-ID: <20120809113256.GA15402@avionic-0098.mockup.avionic-design.de>
-References: <1344503035-18127-1-git-send-email-tushar.behera@linaro.org>
- <20120809091526.GA693@avionic-0098.mockup.avionic-design.de>
- <50239DEB.5080209@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
-Content-Disposition: inline
-In-Reply-To: <50239DEB.5080209@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:gcVK51DWcV4LU8vAh7nKiRSDOMjXN7aT7FokDfp6cxM
- GCy4HLAJ9Het8R04nw/O2EtSX8oRS4TxlnwoJyb02ZyrLL/hyQ
- 3ymc/DPXxJpxt3u+xPdNKaQluSm3a+X8gDiq1YnsF6G3MLm1wf
- 6FQ7UsRetzLZJJjC9AtFenXO+1DL/C5UDrDEYv2Eb30u7bS3o9
- xirCaEdV0j4ecSCdFtfofi3FRweNVdtYh7r+1D28LD4K69HeSq
- EEMlzixWCHzUogPnwEqZJCyD5O0v/skw8csuPpEjCJYpNIO4Kv
- ZVmbZ6DinOdBSJ3TkX2M5iZRETmiZ3RbRdNinxo6ebvyBbHzLk
- qcBJd6LyfNC+BX+WNu2G5mHcqfjQG4LMC8qugduBthb7y1JzBp
- lOSqX72kip00TXJB76NhNSIAscKojTjpT4=
+	Thu, 9 Aug 2012 07:34:22 -0400
+Date: Thu, 9 Aug 2012 12:38:55 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Subject: Re: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Message-ID: <20120809123855.1ba0fffb@pyramind.ukuu.org.uk>
+In-Reply-To: <F45880696056844FA6A73F415B568C695B0E797048@EXDCVYMBSTM006.EQ1STM.local>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+	<1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
+	<20120807183809.GC26990@kroah.com>
+	<F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
+	<20120808133748.GA14459@kroah.com>
+	<F45880696056844FA6A73F415B568C695B0E797048@EXDCVYMBSTM006.EQ1STM.local>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Maybe tty can do this, but want to have all modem related  separately.
+> There are many such hardware and many drivers coming up in near future.
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+tty can't do all this. We have similar things with stuff like CAIF. Modem
+has gone from pretending to be a serial port (tty) to appearing as a
+smart multi-function controller.
 
-On Thu, Aug 09, 2012 at 04:54:27PM +0530, Tushar Behera wrote:
-> + linux-kernel@vger.kernel.org
-> - linux-kernel@lists.infradead.org
->=20
-> On 08/09/2012 02:45 PM, Thierry Reding wrote:
-> > On Thu, Aug 09, 2012 at 02:33:55PM +0530, Tushar Behera wrote:
-> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> >> ---
-> >>  arch/arm/mach-exynos/mach-origen.c |   11 +++++++++++
-> >>  1 files changed, 11 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos=
-/mach-origen.c
-> >> index 5ca8030..4c4048d 100644
-> >> --- a/arch/arm/mach-exynos/mach-origen.c
-> >> +++ b/arch/arm/mach-exynos/mach-origen.c
-> > [...]
-> >> @@ -613,6 +614,10 @@ static struct platform_device origen_lcd_hv070wsa=
- =3D {
-> >>  	.dev.platform_data	=3D &origen_lcd_hv070wsa_data,
-> >>  };
-> >> =20
-> >> +static struct pwm_lookup origen_pwm_lookup[] =3D {
-> >> +	PWM_LOOKUP("s3c24xx-pwm.0", 0, "pwm-backlight.0", NULL),
-> >> +};
-> >> +
-> >=20
-> > This might conflict with some other patches that Jingoo (Cc'ed) is
-> > working on. His patches were going to rework the Samsung PWM driver to
-> > register multiple PWM devices per chip. In that case the s3c24xx-pwm
-> > device should probably be modified to use .id =3D -1 and then the .0 can
-> > be dropped from the provider name above.
-> >=20
-> > Otherwise this patch looks good to me.
-> >=20
-> > Thierry
-> >=20
-> Thanks for your review.
->=20
-> It was wrong for me to create s3c24xx-pwm platform device as it is
-> already created in samsung_bl_set(). Hence I would be dropping that.
->=20
-> However, dropping .0 from provider name results in following. (as the
-> device name is s3c24xx-pwm.N).
->=20
-> [    0.240000] pwm-backlight pwm-backlight.0: unable to request PWM,
-> trying legacy API
+tty is the right way to expose any actual 'AT' modem emulation type
+stuff, but it's not really relevant for most uses of a modern 3G/4G modem
+- also also too slow !
 
-That's to be expected. Dropping the .0 requires further changes to the
-driver and in arch/arm/plat-samsung/devs.c to register only a single
-instance of the s3c24xx-pwm device which can handle all 5 PWM devices.
-This should be done separately, though.
-
-Thierry
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQI5/oAAoJEN0jrNd/PrOhe7IP/2s0omYmQ1QHaopg1fjEOJk1
-SOYa1Q0cZJ/yLdhm9nWorgRXRsFlCU54TXp6ltINCVePp8b6Rplw5YOY6leCIbi7
-D/XdAXFA3RGZ2PBFvwxt/AeqjTR2KF5oHAuoycwPH3KkeXFt+hSzyVsEzj93JapL
-IFW6zwCrCM0Li5U7qMLgvDEYpjO5Jiv0TbVWnAKddm0y3WxE38VZ/uFMHTY+dDUM
-a81/QwNQRBVWodBZftmjBaBGLeDachws9sTq0sVBIflmae/6wwYr6y9aWV6Wyj1w
-DNF8oSwQ5JQAhLXv+LDbaNi7dnB6rgL0wjVFe939fN8hHvAywR7Hrc31bPFJILrj
-8lEWD+2zCYEApcrRpqRO8SmJMPxCta9gJ4KKrAN8vgXflX98i329UpHI55iqvfJ2
-xI6DX/elnemfkbo80ilejPAzCClJSKKeDjT0m0VJfjPliqKJ9hRzlSko3Wm5G/au
-St/I4ieYxYGl+N3WpYwzu7stdQFwEn5aRqazEK00quGh7t6qbCCSmAXNdx0eMDMN
-elSmf8dPrX806I2QG74X7UpFJUUOmtHqHYKlqKVtOJhATH20yyjRsCgTF9ZZ3ha3
-5fmVavCRudpaLrIr9YKm9h0opgCpXQSrTd/2H0+xehLeXoPHvd51c1tYO6OSJLnB
-XlAtJ1h/bgEf3u35DI+y
-=1oFd
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
+Alan
