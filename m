@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab2HIXLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:11:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:58957 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759767Ab2HIXLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:11:34 -0400
-Message-ID: <1344553986.28791.13.camel@footlong>
-Subject: [PATCH V2 3/3] drivers/char/tpm: Add securityfs support for event
- log
+	id S1759981Ab2HIXMI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:12:08 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60240 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759767Ab2HIXMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 19:12:06 -0400
+Message-ID: <1344553954.28791.12.camel@footlong>
+Subject: [PATCH V2 2/3] PPC64: Add support for instantiating SML from Open
+ Firmware
 From: Ashley Lai <adlai@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
         rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
         adlai@linux.vnet.ibm.com
-Date: Thu, 09 Aug 2012 18:13:06 -0500
+Date: Thu, 09 Aug 2012 18:12:34 -0500
 In-Reply-To: <1344553253.28791.7.camel@footlong>
 References: <1344553253.28791.7.camel@footlong>
 Content-Type: text/plain; charset="UTF-8"
@@ -23,224 +24,101 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080923-8974-0000-0000-00000C03E533
+x-cbid: 12080923-5518-0000-0000-000006B8C263
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch retrieves the event log data from the device tree
-during file open. The event log data will then displayed through
-securityfs.
+This patch instantiate Stored Measurement Log (SML) and put the
+log address and size in the device tree.
 
 Signed-off-by: Ashley Lai <adlai@us.ibm.com>
 ---
- drivers/char/tpm/Makefile         |    8 ++++-
- drivers/char/tpm/tpm.h            |   12 ------
- drivers/char/tpm/tpm_eventlog.c   |    7 ++++
- drivers/char/tpm/tpm_eventlog.h   |   14 +++++++
- drivers/char/tpm/tpm_noeventlog.c |   21 +++++++++++
- drivers/char/tpm/tpm_of.c         |   68 +++++++++++++++++++++++++++++++++++++
- 6 files changed, 117 insertions(+), 13 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_noeventlog.c
- create mode 100644 drivers/char/tpm/tpm_of.c
+ arch/powerpc/kernel/prom_init.c |   64 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 64 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index 547509d..b53da57 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -2,9 +2,15 @@
- # Makefile for the kernel tpm device drivers.
- #
- obj-$(CONFIG_TCG_TPM) += tpm.o
-+obj-$(CONFIG_TCG_TPM) += tpm_bios.o
- ifdef CONFIG_ACPI
--	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
- 	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
-+else
-+ifdef CONFIG_TCG_IBMVTPM
-+	tpm_bios-objs += tpm_eventlog.o tpm_of.o
-+else
-+	tpm_bios-objs += tpm_eventlog.o tpm_noeventlog.o
-+endif
- endif
- obj-$(CONFIG_TCG_TIS) += tpm_tis.o
- obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index aece857..08f6a07 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -304,15 +304,3 @@ extern int tpm_pm_suspend(struct device *, pm_message_t);
- extern int tpm_pm_resume(struct device *);
- extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
- 			     wait_queue_head_t *);
--#ifdef CONFIG_ACPI
--extern struct dentry ** tpm_bios_log_setup(char *);
--extern void tpm_bios_log_teardown(struct dentry **);
--#else
--static inline struct dentry ** tpm_bios_log_setup(char *name)
--{
--	return NULL;
--}
--static inline void tpm_bios_log_teardown(struct dentry **dir)
--{
--}
--#endif
-diff --git a/drivers/char/tpm/tpm_eventlog.c b/drivers/char/tpm/tpm_eventlog.c
-index 84ddc55..814b202 100644
---- a/drivers/char/tpm/tpm_eventlog.c
-+++ b/drivers/char/tpm/tpm_eventlog.c
-@@ -24,6 +24,7 @@
- #include <linux/security.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
+diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
+index 1b488e5..3f54bd4 100644
+--- a/arch/powerpc/kernel/prom_init.c
++++ b/arch/powerpc/kernel/prom_init.c
+@@ -1624,6 +1624,65 @@ static void __init prom_instantiate_rtas(void)
  
- #include "tpm.h"
- #include "tpm_eventlog.h"
-@@ -369,6 +370,9 @@ struct dentry **tpm_bios_log_setup(char *name)
- {
- 	struct dentry **ret = NULL, *tpm_dir, *bin_file, *ascii_file;
- 
-+	if (TPM_NO_EVENT_LOG)
-+		return NULL;
+ #ifdef CONFIG_PPC64
+ /*
++ * Allocate room for and instantiate Stored Measurement Log (SML)
++ */
++static void __init prom_instantiate_sml(void)
++{
++	phandle ibmvtpm_node;
++	ihandle ibmvtpm_inst;
++	u32 entry = 0, size = 0;
++	u64 base;
 +
- 	tpm_dir = securityfs_create_dir(name, NULL);
- 	if (is_bad(tpm_dir))
- 		goto out;
-@@ -412,6 +416,9 @@ void tpm_bios_log_teardown(struct dentry **lst)
- {
- 	int i;
- 
-+	if (TPM_NO_EVENT_LOG)
++	prom_debug("prom_instantiate_sml: start...\n");
++
++	ibmvtpm_node = call_prom("finddevice", 1, 1, ADDR("/ibm,vtpm"));
++	prom_debug("ibmvtpm_node: %x\n", ibmvtpm_node);
++	if (!PHANDLE_VALID(ibmvtpm_node))
 +		return;
 +
- 	for (i = 0; i < 3; i++)
- 		securityfs_remove(lst[i]);
- }
-diff --git a/drivers/char/tpm/tpm_eventlog.h b/drivers/char/tpm/tpm_eventlog.h
-index 8e23ccd..21ac6af 100644
---- a/drivers/char/tpm/tpm_eventlog.h
-+++ b/drivers/char/tpm/tpm_eventlog.h
-@@ -68,4 +68,18 @@ enum tcpa_pc_event_ids {
- };
- 
- int read_log(struct tpm_bios_log *log);
++	ibmvtpm_inst = call_prom("open", 1, 1, ADDR("/ibm,vtpm"));
++	if (!IHANDLE_VALID(ibmvtpm_inst)) {
++		prom_printf("opening vtpm package failed (%x)\n", ibmvtpm_inst);
++		return;
++	}
 +
-+extern struct dentry **tpm_bios_log_setup(char *);
-+extern void tpm_bios_log_teardown(struct dentry **);
++	if (call_prom_ret("call-method", 2, 2, &size,
++			  ADDR("sml-get-handover-size"),
++			  ibmvtpm_inst) != 0) {
++		prom_printf("SML get handover size failed\n");
++		return;
++	}
++	if (size == 0)
++		return;
 +
-+#ifdef CONFIG_PPC64
-+#define TPM_NO_EVENT_LOG !of_find_node_by_name(NULL, "ibm,vtpm")
-+#else
-+#ifdef CONFIG_ACPI
-+#define TPM_NO_EVENT_LOG 0
-+#else
-+#define TPM_NO_EVENT_LOG 1
-+#endif
-+#endif
++	base = alloc_down(size, PAGE_SIZE, 0);
++	if (base == 0)
++		prom_panic("Could not allocate memory for sml\n");
 +
++	prom_printf("instantiating sml at 0x%x...", base);
++
++	if (call_prom_ret("call-method", 4, 2, &entry,
++			  ADDR("sml-handover"),
++			  ibmvtpm_inst, size, base) != 0 || entry == 0) {
++		prom_printf("SML handover failed\n");
++		return;
++	}
++	prom_printf(" done\n");
++
++	reserve_mem(base, size);
++
++	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-base",
++		     &base, sizeof(base));
++	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-size",
++		     &size, sizeof(size));
++
++	prom_debug("sml base     = 0x%x\n", base);
++	prom_debug("sml size     = 0x%x\n", (long)size);
++
++	prom_debug("prom_instantiate_sml: end...\n");
++}
++
++/*
+  * Allocate room for and initialize TCE tables
+  */
+ static void __init prom_initialize_tce_table(void)
+@@ -2916,6 +2975,11 @@ unsigned long __init prom_init(unsigned long r3, unsigned long r4,
+ 		prom_instantiate_opal();
  #endif
-diff --git a/drivers/char/tpm/tpm_noeventlog.c b/drivers/char/tpm/tpm_noeventlog.c
-new file mode 100644
-index 0000000..f30a2bf
---- /dev/null
-+++ b/drivers/char/tpm/tpm_noeventlog.c
-@@ -0,0 +1,21 @@
-+/*
-+ * Copyright (C) 2012 IBM Corporation
-+ *
-+ * Author: Ashley Lai <adlai@us.ibm.com>
-+ *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ *
-+ */
+ 
++#ifdef CONFIG_PPC64
++	/* instantiate sml */
++	prom_instantiate_sml();
++#endif
 +
-+#include <linux/slab.h>
-+#include "tpm_eventlog.h"
-+
-+int read_log(struct tpm_bios_log *log)
-+{
-+	return -EINVAL;
-+}
-diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
-new file mode 100644
-index 0000000..6d44adb
---- /dev/null
-+++ b/drivers/char/tpm/tpm_of.c
-@@ -0,0 +1,68 @@
-+/*
-+ * Copyright 2012 IBM Corporation
-+ *
-+ * Author: Ashley Lai <adlai@us.ibm.com>
-+ *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-+ *
-+ * Read the event log created by the firmware on PPC64
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+
-+#include "tpm.h"
-+#include "tpm_eventlog.h"
-+
-+int read_log(struct tpm_bios_log *log)
-+{
-+	struct device_node *np;
-+	const u32 *sizep;
-+	const __be64 *basep;
-+
-+	if (log->bios_event_log != NULL) {
-+		pr_err("%s: ERROR - Eventlog already initialized\n", __func__);
-+		return -EFAULT;
-+	}
-+
-+	np = of_find_node_by_name(NULL, "ibm,vtpm");
-+	if (!np) {
-+		pr_err("%s: ERROR - IBMVTPM not supported\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	sizep = of_get_property(np, "linux,sml-size", NULL);
-+	if (sizep == NULL) {
-+		pr_err("%s: ERROR - SML size not found\n", __func__);
-+		return -EIO;
-+	}
-+	if (*sizep == 0) {
-+		pr_err("%s: ERROR - event log area empty\n", __func__);
-+		return -EIO;
-+	}
-+
-+	basep = of_get_property(np, "linux,sml-base", NULL);
-+	if (basep == NULL) {
-+		pr_err(KERN_ERR "%s: ERROR - SML not found\n", __func__);
-+		return -EIO;
-+	}
-+
-+	log->bios_event_log = kmalloc(*sizep, GFP_KERNEL);
-+	if (!log->bios_event_log) {
-+		pr_err("%s: ERROR - Not enough memory for BIOS measurements\n",
-+		       __func__);
-+		return -ENOMEM;
-+	}
-+
-+	log->bios_event_log_end = log->bios_event_log + *sizep;
-+
-+	memcpy(log->bios_event_log, __va(be64_to_cpup(basep)), *sizep);
-+
-+	return 0;
-+}
+ 	/*
+ 	 * On non-powermacs, put all CPUs in spin-loops.
+ 	 *
 -- 
 1.7.1
 
