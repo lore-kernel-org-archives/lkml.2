@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2HIVYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:24:37 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:46818
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751392Ab2HIVX2 (ORCPT
+	id S1756375Ab2HIV3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:29:00 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34303 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab2HIV26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:23:28 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275dhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M8IBEX-02-FMI-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: X86-ML <x86@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 0/5] Only create direct mappings for E820_RAM regions
-Date: Thu, 9 Aug 2012 16:23:04 -0500
-Message-ID: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 9 Aug 2012 17:28:58 -0400
+Message-ID: <50242B4B.4090607@linaro.org>
+Date: Thu, 09 Aug 2012 14:27:39 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Todd Poynor <toddpoynor@google.com>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, arve@android.com
+Subject: Re: [PATCH] alarmtimer: implement minimum alarm interval for allowing
+ suspend
+References: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
+In-Reply-To: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080921-6148-0000-0000-0000087B38C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a revision of an earlier attempt, with suggestions and concernes
-from previous conversation (https://lkml.org/lkml/2011/12/16/486) taken
-into account.
+On 08/09/2012 12:37 AM, Todd Poynor wrote:
+> alarmtimer suspend return -EBUSY if the next alarm will fire in less
+> than 2 seconds.  This allows one RTC seconds tick to occur subsequent
+> to this check before the alarm wakeup time is set, ensuring the wakeup
+> time is still in the future (assuming the RTC does not tick one more
+> second prior to setting the alarm).
+>
+> If suspend is rejected due to an imminent alarm, hold a wakeup source
+> for 2 seconds to process the alarm prior to reattempting suspend.
+>
+> If setting the alarm incurs an -ETIME for an alarm set in the past,
+> or any other problem setting the alarm, abort suspend and hold a
+> wakelock for 1 second while the alarm is allowed to be serviced or
+> other hopefully transient conditions preventing the alarm clear up.
+>
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> ---
+>   kernel/time/alarmtimer.c |   18 +++++++++++++-----
+>   1 files changed, 13 insertions(+), 5 deletions(-)
 
-The following patchset creates direct mappings only for E820_RAM regions
-between 0 ~ max_low_pfn and 4GB ~ max_pfn. And leaves non-E820_RAM
-unmapped.
+Thanks for sending this in!
+I've gone ahead and queued it for 3.7 (with the minor tweak Rafael 
+suggested). I'll try to do some further testing of the edge case this 
+handles as well.
 
-Jacob Shin (5):
-  x86: Only direct map addresses that are marked as E820_RAM
-  x86: find_early_table_space based on memory ranges that are being
-    mapped
-  x86: Keep track of direct mapped pfn ranges
-  x86: Fixup code testing if a pfn is direct mapped
-  x86: Move enabling of PSE and PGE out of init_memory_mapping
-
- arch/x86/include/asm/page_types.h |    9 ++++
- arch/x86/kernel/amd_gart_64.c     |    4 +-
- arch/x86/kernel/cpu/amd.c         |    6 +--
- arch/x86/kernel/setup.c           |   97 ++++++++++++++++++++++++++++++++++---
- arch/x86/mm/init.c                |   67 ++++++++++++-------------
- arch/x86/mm/init_64.c             |    3 +-
- arch/x86/platform/efi/efi.c       |    8 +--
- arch/x86/platform/efi/efi_64.c    |    2 +
- 8 files changed, 139 insertions(+), 57 deletions(-)
-
--- 
-1.7.9.5
-
+thanks again,
+-john
 
