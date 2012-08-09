@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759592Ab2HIUvm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:51:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40527 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab2HIUvj (ORCPT
+	id S1752986Ab2HIU6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:58:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37858 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab2HIU62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:51:39 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: torvalds@linux-foundation.org
-Cc: rdunlap@xenotime.net, tytso@mit.edu, alan@lxorguk.ukuu.org.uk,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH] SubmittingPatches: clarify SOB tag usage when evolving submissions
-Date: Thu,  9 Aug 2012 13:51:33 -0700
-Message-Id: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 9 Aug 2012 16:58:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com>
+Date: Thu, 9 Aug 2012 22:58:27 +0200
+X-Google-Sender-Auth: VJ9PDJBl_IqqJcWC40a_1jZBu9g
+Message-ID: <CAMuHMdUd5x04KyyKa84J3PDB2xPj70xZLezwMJn1J=jwmzcnnA@mail.gmail.com>
+Subject: Re: [PATCH] SubmittingPatches: clarify SOB tag usage when evolving submissions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: torvalds@linux-foundation.org, rdunlap@xenotime.net, tytso@mit.edu,
+        alan@lxorguk.ukuu.org.uk, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On Thu, Aug 9, 2012 at 10:51 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> of a second patch submission must supply their own Siged-off-by
 
-Initial large code submissions typically are not accepted
-on their first patch submission. The developers are
-typically given feedback and at times some developers may
-even submit changes to the original authors for integration
-into their second submission attempt.
+Signed-off-by
 
-Developers wishing to contribute changes to the evolution
-of a second patch submission must supply their own Siged-off-by
-tag to the original authors and must submit their changes
-on a public mailing list or ensure that these submission
-are recorded somewhere publicly.
+> --- a/Documentation/SubmittingPatches
+> +++ b/Documentation/SubmittingPatches
+> @@ -366,6 +366,21 @@ and protect the submitter from complaints. Note that under no circumstances
+>  can you change the author's identity (the From header), as it is the one
+>  which appears in the changelog.
+>
+> +If you are submitting a large change (for example a new driver) at times
+> +you may be asked to make quite a lot of modifications prior to getting
+> +your change accepted. At times you may even receive patches from developers
+> +who not only wish to tell you what you should change to get your changes
+> +upstream but actually send you patches. If those patches were made publicly
+> +and they do contain a Singed-off-by tag you are not expected to provide
 
-To date a few of these type of contributors have expressed
-different preferences for whether or not their own SOB tag
-should be used for a second code submission. Lets keep things
-simple and only require the contributor's SOB tag if so desired
-explicitly. It is not technically required if there already
-is a public record of their contribution somewhere.
+Signed-off-by
 
-Document this on Documentation/SubmittingPatches
+> +their own Singed-off-by tag on the second iteration of the patch so long
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
----
- Documentation/SubmittingPatches |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+idem
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index c379a2a..e018043 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -366,6 +366,21 @@ and protect the submitter from complaints. Note that under no circumstances
- can you change the author's identity (the From header), as it is the one
- which appears in the changelog.
- 
-+If you are submitting a large change (for example a new driver) at times
-+you may be asked to make quite a lot of modifications prior to getting
-+your change accepted. At times you may even receive patches from developers
-+who not only wish to tell you what you should change to get your changes
-+upstream but actually send you patches. If those patches were made publicly
-+and they do contain a Singed-off-by tag you are not expected to provide
-+their own Singed-off-by tag on the second iteration of the patch so long
-+as there is a public record somewhere that can be used to show the
-+contributor had sent their changes with their own Singed-off-by tag.
-+
-+If you receive patches privately during development you may want to
-+ask for these patches to be re-posted publicly or you can also decide
-+to merge the patches as part of a separate historical git tree that
-+will remain online for historical archiving.
-+
- Special note to back-porters: It seems to be a common and useful practise
- to insert an indication of the origin of a patch at the top of the commit
- message (just after the subject line) to facilitate tracking. For instance,
--- 
-1.7.10.4
+> +as there is a public record somewhere that can be used to show the
+> +contributor had sent their changes with their own Singed-off-by tag.
 
+ditto
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
