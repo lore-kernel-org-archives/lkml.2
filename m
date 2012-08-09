@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab2HIJZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:25:14 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:35331 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab2HIJZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:25:12 -0400
-X-AuditID: b753bd60-8fbf2ba000006b7e-e1-502381f507f7
-X-AuditID: b753bd60-8fbf2ba000006b7e-e1-502381f507f7
-Message-ID: <502381EA.80805@hitachi.com>
-Date: Thu, 09 Aug 2012 18:24:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756881Ab2HIJZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:25:35 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:50251 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755884Ab2HIJZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:25:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH] alarmtimer: implement minimum alarm interval for allowing suspend
+Date: Thu, 9 Aug 2012 11:31:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arve@android.com
+References: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
+In-Reply-To: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
- pipe buffer
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp> <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp> <20120809090312.GH3280@amit.redhat.com>
-In-Reply-To: <20120809090312.GH3280@amit.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Message-Id: <201208091131.27362.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/09 18:03), Amit Shah wrote:
-> On (Tue) 24 Jul 2012 [11:37:18], Yoshihiro YUNOMAE wrote:
->> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->> Add a failback memcpy path for unstealable pipe buffer.
->> If buf->ops->steal() fails, virtio-serial tries to
->> copy the page contents to an allocated page, instead
->> of just failing splice().
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Amit Shah <amit.shah@redhat.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->>
->>  drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
->>  1 files changed, 25 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
->> index fe31b2f..911cb3e 100644
->> --- a/drivers/char/virtio_console.c
->> +++ b/drivers/char/virtio_console.c
->> @@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->>  			struct splice_desc *sd)
->>  {
->>  	struct sg_list *sgl = sd->u.data;
->> -	unsigned int len = 0;
->> +	unsigned int offset, len;
->>  
->>  	if (sgl->n == MAX_SPLICE_PAGES)
->>  		return 0;
->> @@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->>  
->>  		len = min(buf->len, sd->len);
->>  		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
->> -		sgl->n++;
->> -		sgl->len += len;
->> +	} else {
->> +		/* Failback to copying a page */
->> +		struct page *page = alloc_page(GFP_KERNEL);
+On Thursday, August 09, 2012, Todd Poynor wrote:
+> alarmtimer suspend return -EBUSY if the next alarm will fire in less
+> than 2 seconds.  This allows one RTC seconds tick to occur subsequent
+> to this check before the alarm wakeup time is set, ensuring the wakeup
+> time is still in the future (assuming the RTC does not tick one more
+> second prior to setting the alarm).
 > 
-> I prefer zeroing out the page.  If there's not enough data to be
-> filled in the page, the remaining data can be leaked to the host.
+> If suspend is rejected due to an imminent alarm, hold a wakeup source
+> for 2 seconds to process the alarm prior to reattempting suspend.
+> 
+> If setting the alarm incurs an -ETIME for an alarm set in the past,
+> or any other problem setting the alarm, abort suspend and hold a
+> wakelock for 1 second while the alarm is allowed to be serviced or
+> other hopefully transient conditions preventing the alarm clear up.
+> 
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> ---
+>  kernel/time/alarmtimer.c |   18 +++++++++++++-----
+>  1 files changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+> index aa27d39..f979d85 100644
+> --- a/kernel/time/alarmtimer.c
+> +++ b/kernel/time/alarmtimer.c
+> @@ -46,6 +46,8 @@ static struct alarm_base {
+>  static ktime_t freezer_delta;
+>  static DEFINE_SPINLOCK(freezer_delta_lock);
+>  
+> +static struct wakeup_source *ws;
+> +
+>  #ifdef CONFIG_RTC_CLASS
+>  /* rtc timer and device for setting alarm wakeups at suspend */
+>  static struct rtc_timer		rtctimer;
+> @@ -250,6 +252,7 @@ static int alarmtimer_suspend(struct device *dev)
+>  	unsigned long flags;
+>  	struct rtc_device *rtc;
+>  	int i;
+> +	int ret;
+>  
+>  	spin_lock_irqsave(&freezer_delta_lock, flags);
+>  	min = freezer_delta;
+> @@ -279,8 +282,10 @@ static int alarmtimer_suspend(struct device *dev)
+>  	if (min.tv64 == 0)
+>  		return 0;
+>  
+> -	/* XXX - Should we enforce a minimum sleep time? */
+> -	WARN_ON(min.tv64 < NSEC_PER_SEC);
+> +	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
+> +		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
+> +		return -EBUSY;
+> +	}
+>  
+>  	/* Setup an rtc timer to fire that far in the future */
+>  	rtc_timer_cancel(rtc, &rtctimer);
+> @@ -288,9 +293,11 @@ static int alarmtimer_suspend(struct device *dev)
+>  	now = rtc_tm_to_ktime(tm);
+>  	now = ktime_add(now, min);
+>  
+> -	rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
+> -
+> -	return 0;
+> +	/* Set alarm, if in the past reject suspend briefly to handle */
+> +	ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
+> +	if (ret < 0)
+> +		__pm_wakeup_event(ws, 1 * MSEC_PER_SEC);
 
-Yeah, it is really easy to fix that.
-But out of curiosity, would that be really a problem?
-I guess that host can access any guest page if need. If that
-is right, is that really insecure to leak randomly allocated
-unused page to the host?
+Why not just MSEC_PER_SEC?
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+> +	return ret;
+>  }
+>  #else
+>  static int alarmtimer_suspend(struct device *dev)
+> @@ -821,6 +828,7 @@ static int __init alarmtimer_init(void)
+>  		error = PTR_ERR(pdev);
+>  		goto out_drv;
+>  	}
+> +	ws = wakeup_source_register("alarmtimer");
+>  	return 0;
+>  
+>  out_drv:
+> 
 
