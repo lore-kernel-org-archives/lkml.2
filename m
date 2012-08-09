@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759949Ab2HIXAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:00:10 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38372 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759892Ab2HIXAH (ORCPT
+	id S1759942Ab2HIXJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:09:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40027 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab2HIXJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:00:07 -0400
-Message-ID: <1344553253.28791.7.camel@footlong>
-Subject: [PATCH V2 0/3] tpm: Add new vTPM device driver for PPC64
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
-        adlai@linux.vnet.ibm.com
-Date: Thu, 09 Aug 2012 18:00:53 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Aug 2012 19:09:09 -0400
+Date: Fri, 10 Aug 2012 09:08:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Amit Kachhap <amit.kachhap@linaro.org>, Guenter Roeck <linux@roeck-us.net>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: Re: thermal patches in linux-next
+Message-Id: <20120810090859.7ec67594f794c38c52096544@canb.auug.org.au>
+In-Reply-To: <1344494746.1682.669.camel@rui.sh.intel.com>
+References: <1344308038.1682.637.camel@rui.sh.intel.com>
+	<1344494746.1682.669.camel@rui.sh.intel.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080923-7282-0000-0000-00000BD34B38
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_Aug_2012_09_08_59_+1000_IbRlwGlNUwowM5Rp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change log V2:
-- Removed unnecessary tpm_bios_log_setup and tpm_bios_log_teardown
-  functions in tpm_eventlog.h (patch 3/3).
-- Added more descriptions on vTPM (patch 1/3).
+--Signature=_Fri__10_Aug_2012_09_08_59_+1000_IbRlwGlNUwowM5Rp
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-These patches add support for IBM vTPM for PPC64. This new device driver
-works on firmware that supports vTPM (firmware release 740 or higher).
+Hi Rui,
 
-Tested on Power7+ system with firmware level ZM770_001.
+On Thu, 09 Aug 2012 14:45:46 +0800 Zhang Rui <rui.zhang@intel.com> wrote:
+>
+> On =E4=BA=8C, 2012-08-07 at 10:53 +0800, Zhang Rui wrote:
+> > Hi, all,
+> >=20
+> > I just created a git tree for catching all thermal changes.
+> > http://git.kernel.org/?p=3Dlinux/kernel/git/rzhang/linux.git;a=3Dsummary
+> > and I also created the next branch, which I'd like to be set for
+> > linux-next inclusion, but don't know how.
+> >=20
+> I create a tree for thermal management,
+> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+>=20
+> could you please include my next branch for linux-next?
 
-Applied to Kent Yoder patch to modularize event log located at:
-https://github.com/shpedoikal/linux/tree/tpmdd-next
+Included from today.
 
-Ashley Lai (3):
-  drivers/char/tpm: Add new device driver to support IBM vTPM
-  PPC64: Add support for instantiating SML from Open Firmware
-  drivers/char/tpm: Add securityfs support for event log
+> And could you please drop these commits
+> ef25a0fe0087963c1611c1c8903886fbea053f76
+> 09ec52fca274ba88d68df3198de92abdaaff417b
+> ab6d2f029358c917508bf88bbd6a9193a8e39fc8
+> 66447fa993cbce56b4076f169a56f62350f6c7b8
+> ec62abb8b46021ca9ee6b8692b26974ace9007f0
+> 5ecbaf57d7885eedd924e391d91847d3df9fe0f8
+> 851414b2249afd8c128d29912dfd7060eaea8932
+> and pull my next branch instead?
 
- arch/powerpc/kernel/prom_init.c   |   64 ++++
- drivers/char/tpm/Kconfig          |    8 +
- drivers/char/tpm/Makefile         |    9 +-
- drivers/char/tpm/tpm.h            |   13 +-
- drivers/char/tpm/tpm_eventlog.c   |    7 +
- drivers/char/tpm/tpm_eventlog.h   |   14 +
- drivers/char/tpm/tpm_ibmvtpm.c    |  750 +++++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm_ibmvtpm.h    |   83 ++++
- drivers/char/tpm/tpm_noeventlog.c |   21 +
- drivers/char/tpm/tpm_of.c         |   68 ++++
- 10 files changed, 1024 insertions(+), 13 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
- create mode 100644 drivers/char/tpm/tpm_noeventlog.c
- create mode 100644 drivers/char/tpm/tpm_of.c
+That is not how linux-next normally works.  Those commits are in Adnrew's
+quilt series, so you need to ask him to drop them.  However, because of
+the way the akpm tree works, any duplicate patches will disappear from my
+copy of Andrew's series.
 
+> these commits either will be rebased or has been applied in my tree.
 
+In this case, I will remove them if they conflict too much or you take
+them (rebased) into your tree.
+
+Andrew, any chance of a new mmotm series?  I am still working off (a reduced
+part) of the mmotm series from July 21 ...
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Fri__10_Aug_2012_09_08_59_+1000_IbRlwGlNUwowM5Rp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQJEMLAAoJEECxmPOUX5FE+qMP/1tgtS7srSeW28VamIBpwp+r
+H0DCK2ejmLcHOXczCvMDgonM9+cuakPOo+EnrBN2jDmnCf7AzxxmYvYtf8IkUaP4
+d4ml1OH3/oumO/bklGDKF+S+HSL8STBqHUrTmFNP9jzB5Ksl5t5CsN19j2nXf137
+p1EaAxsUsufdZNmR2m1jTGijUvrJzPvUyqBgBlUlQWHBixbiLmRKZG72/bfDW/mD
+iV3NEqVR6cSb2AgQXyn+h+aMitEsTB+ZfTYgMDWpDbTKugMKJZoqfDtl7h6GeL5A
+75NlRjPqV8MWhNgBpp4bAJoi0PTcjj7x2+XHc8eEn+EwROWKXQONGdA5lyvaRyUa
+rnI5/cpyX42oxyKQ5emSMru/32o09gKeQFrAAP/SvHoLt08PxpWOShFW2Wh0rdLG
+u1H61EuLuwOG7UW5TnUsbwPZ5ay5pyFYq7iZInDlDaMOJepEZ1jnpaJXpeQ+S3E1
+iyIPvbtbo3bgyMkcxRkSVwqEP+raZa92SOePUVDxeVgWvYS2mpkWdru6gs9povj0
+Q9leM5LDsXZ7cEalhEVmWciqcQoNtF5Af4nR0By+FDALF6ZTZ0QTYFT09AVFtKKY
+CvvbZFuLUbH8bmmT/xD6L1vA8PSXNKEY7O3CaUhkakYQcTOPP/EqzDPsJ3b6fqr3
+TZFwcafbUYAqOYwC85OV
+=M0iz
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Aug_2012_09_08_59_+1000_IbRlwGlNUwowM5Rp--
