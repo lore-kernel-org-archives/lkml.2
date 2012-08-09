@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2HIJAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:00:25 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60638 "EHLO gir.skynet.ie"
+	id S1757171Ab2HIJA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:00:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3567 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757111Ab2HIJAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:00:23 -0400
-Date: Thu, 9 Aug 2012 10:00:19 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v6 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120809090019.GB10288@csn.ul.ie>
-References: <cover.1344463786.git.aquini@redhat.com>
- <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
+	id S1756881Ab2HIJAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:00:55 -0400
+Date: Thu, 9 Aug 2012 14:30:15 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [RFC PATCH 1/6] virtio/console: Add splice_write support
+Message-ID: <20120809090015.GG3280@amit.redhat.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120724023707.6600.69536.stgit@ltc189.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120724023707.6600.69536.stgit@ltc189.sdl.hitachi.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 07:53:19PM -0300, Rafael Aquini wrote:
-> Memory fragmentation introduced by ballooning might reduce significantly
-> the number of 2MB contiguous memory blocks that can be used within a guest,
-> thus imposing performance penalties associated with the reduced number of
-> transparent huge pages that could be used by the guest workload.
+On (Tue) 24 Jul 2012 [11:37:07], Yoshihiro YUNOMAE wrote:
+> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 > 
-> This patch introduces the helper functions as well as the necessary changes
-> to teach compaction and migration bits how to cope with pages which are
-> part of a guest memory balloon, in order to make them movable by memory
-> compaction procedures.
+> Enable to use splice_write from pipe to virtio-console port.
+> This steals pages from pipe and directly send it to host.
 > 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Note that this may accelerate only the guest to host path.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Amit Shah <amit.shah@redhat.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
 
-Mostly looks ok but I have one question;
-
-> <SNIP>
->
-> +/* putback_lru_page() counterpart for a ballooned page */
-> +bool putback_balloon_page(struct page *page)
+> +/* Faster zero-copy write by splicing */
+> +static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+> +				      struct file *filp, loff_t *ppos,
+> +				      size_t len, unsigned int flags)
 > +{
-> +	if (WARN_ON(!movable_balloon_page(page)))
-> +		return false;
+> +	struct port *port = filp->private_data;
+> +	struct sg_list sgl;
+> +	ssize_t ret;
+> +	struct splice_desc sd = {
+> +		.total_len = len,
+> +		.flags = flags,
+> +		.pos = *ppos,
+> +		.u.data = &sgl,
+> +	};
 > +
-> +	if (likely(trylock_page(page))) {
-> +		if (movable_balloon_page(page)) {
-> +			__putback_balloon_page(page);
-> +			put_page(page);
-> +			unlock_page(page);
-> +			return true;
-> +		}
-> +		unlock_page(page);
-> +	}
+> +	sgl.n = 0;
+> +	sgl.len = 0;
+> +	sgl.sg = kmalloc(sizeof(struct scatterlist) * MAX_SPLICE_PAGES,
+> +			 GFP_ATOMIC);
 
-You might have answered this already as I skipped over a few revisions
-and if you have, sorry about that and please add a comment :)
+Do you expect this function to be called from interrupt context?
 
-This trylock_page looks risky as it looks like it can fail if another
-process running compaction tries to isolate this page. It locks the page,
-finds it cant and releases the lock but in the meantime this trylock can
-fail. It triggers a WARN_ON so we'll get a bug report but it leaves the
-reference count elevated and this page has now leaked.
+> +	if (unlikely(!sgl.sg))
+> +		return -ENOMEM;
+> +
+> +	sg_init_table(sgl.sg, MAX_SPLICE_PAGES);
+> +	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
+> +	if (likely(ret > 0))
+> +		ret = send_pages(port, sgl.sg, sgl.n, sgl.len, true);
+> +
+> +	return ret;
+> +}
 
-Why not just lock_page(page)? As you have already isolated this page you
-know that the lock is only going to be held by a parallel compacting
-process checking the reference count and the delay will be short. As a
-bonus you can drop the WARN_ON check in the caller and make this void as
-the WARN_ON check in the caller becomes redundant.
-
--- 
-Mel Gorman
-SUSE Labs
+		Amit
