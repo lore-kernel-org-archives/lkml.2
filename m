@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab2HIJIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:08:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:55175 "EHLO mga01.intel.com"
+	id S1755464Ab2HIJKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:10:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab2HIJIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:08:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,739,1336374000"; 
-   d="scan'208";a="205376419"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH, RFC 2/9] thp: zap_huge_pmd(): zap huge zero pmd
-Date: Thu,  9 Aug 2012 12:08:13 +0300
-Message-Id: <1344503300-9507-3-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1751328Ab2HIJIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:08:44 -0400
+From: Tomas Racek <tracek@redhat.com>
+To: linux-xfs@vger.kernel.org
+Cc: lczerner@redhat.com, Tomas Racek <tracek@redhat.com>,
+        Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM),
+        Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM),
+        xfs@oss.sgi.com (supporter:XFS FILESYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v3] xfs: check for possible overflow in xfs_ioc_trim
+Date: Thu,  9 Aug 2012 11:07:09 +0200
+Message-Id: <1344503229-13022-1-git-send-email-tracek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+If range.start or range.minlen is bigger than filesystem size, return
+invalid value error. This fixes possible overflow in BTOBB macro when
+passed value was nearly ULLONG_MAX.
 
-We don't have a real page to zap in huge zero page case. Let's just
-clear pmd and remove it from tlb.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Tomas Racek <tracek@redhat.com>
 ---
- mm/huge_memory.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+ fs/xfs/xfs_discard.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 88e0a7a..9dcb9e6 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1071,16 +1071,23 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		struct page *page;
- 		pgtable_t pgtable;
- 		pgtable = get_pmd_huge_pte(tlb->mm);
--		page = pmd_page(*pmd);
--		pmd_clear(pmd);
--		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
--		page_remove_rmap(page);
--		VM_BUG_ON(page_mapcount(page) < 0);
--		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
--		VM_BUG_ON(!PageHead(page));
--		tlb->mm->nr_ptes--;
--		spin_unlock(&tlb->mm->page_table_lock);
--		tlb_remove_page(tlb, page);
-+		if (is_huge_zero_pmd(*pmd)) {
-+			pmd_clear(pmd);
-+			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+			tlb->mm->nr_ptes--;
-+			spin_unlock(&tlb->mm->page_table_lock);
-+		} else {
-+			page = pmd_page(*pmd);
-+			pmd_clear(pmd);
-+			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+			page_remove_rmap(page);
-+			VM_BUG_ON(page_mapcount(page) < 0);
-+			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-+			VM_BUG_ON(!PageHead(page));
-+			tlb->mm->nr_ptes--;
-+			spin_unlock(&tlb->mm->page_table_lock);
-+			tlb_remove_page(tlb, page);
-+		}
- 		pte_free(tlb->mm, pgtable);
- 		ret = 1;
- 	}
+diff --git a/fs/xfs/xfs_discard.c b/fs/xfs/xfs_discard.c
+index f9c3fe3..4e07a56 100644
+--- a/fs/xfs/xfs_discard.c
++++ b/fs/xfs/xfs_discard.c
+@@ -179,12 +179,14 @@ xfs_ioc_trim(
+ 	 * used by the fstrim application.  In the end it really doesn't
+ 	 * matter as trimming blocks is an advisory interface.
+ 	 */
++	if (range.start >= XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks) ||
++	    range.minlen > XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks))
++		return -XFS_ERROR(EINVAL);
++
+ 	start = BTOBB(range.start);
+ 	end = start + BTOBBT(range.len) - 1;
+ 	minlen = BTOBB(max_t(u64, granularity, range.minlen));
+ 
+-	if (XFS_BB_TO_FSB(mp, start) >= mp->m_sb.sb_dblocks)
+-		return -XFS_ERROR(EINVAL);
+ 	if (end > XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks) - 1)
+ 		end = XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks)- 1;
+ 
 -- 
 1.7.7.6
 
