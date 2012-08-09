@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab2HIBL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:11:58 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49588 "EHLO
+	id S1757654Ab2HIBQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:16:11 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45673 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758961Ab2HIBL5 (ORCPT
+	with ESMTP id S1754816Ab2HIBQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:11:57 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-6b-50230e5bf754
+	Wed, 8 Aug 2012 21:16:09 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-f4-50230f57491b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Feng Tang <feng.tang@intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,13 +16,13 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
         Robert Richter <robert.richter@amd.com>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v5 3/5] perf script/python: Pass event/thread/dso name and symbol info to event handler in python
+Subject: Re: [PATCH v5 4/5] perf script: Add a python library EventClass.py
 References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
-	<1344419875-21665-4-git-send-email-feng.tang@intel.com>
-Date: Thu, 09 Aug 2012 10:06:02 +0900
-In-Reply-To: <1344419875-21665-4-git-send-email-feng.tang@intel.com> (Feng
-	Tang's message of "Wed, 8 Aug 2012 17:57:53 +0800")
-Message-ID: <87r4rgyiv9.fsf@sejong.aot.lge.com>
+	<1344419875-21665-5-git-send-email-feng.tang@intel.com>
+Date: Thu, 09 Aug 2012 10:10:14 +0900
+In-Reply-To: <1344419875-21665-5-git-send-email-feng.tang@intel.com> (Feng
+	Tang's message of "Wed, 8 Aug 2012 17:57:54 +0800")
+Message-ID: <87mx24yio9.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -31,99 +31,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  8 Aug 2012 17:57:53 +0800, Feng Tang wrote:
-> Also as suggested by Arnaldo, pack all these parameters to a dictionary,
-> which is more expandable for adding new parameters while keeping the
-> compatibility for old scripts.
+On Wed,  8 Aug 2012 17:57:54 +0800, Feng Tang wrote:
+> This library defines several class types for perf events which could
+> help to better analyze the event samples. Currently there are just a
+> few classes, PerfEvent is the base class for all perf events,  PebsEvent
+> is a HW base Intel x86 PEBS event, and user could add more SW/HW event
+> classes based on requriements.
 >
-Just minor nits.
-
-
 > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Stephane Eranian <eranian@google.com>
 > ---
->  .../util/scripting-engines/trace-event-python.c    |   35 ++++++++++++++++---
->  1 files changed, 29 insertions(+), 6 deletions(-)
+>  .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |   95 ++++++++++++++++++++
+>  1 files changed, 95 insertions(+), 0 deletions(-)
+>  create mode 100755 tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
 >
-> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-> index 24711b3..7e3f576 100644
-> --- a/tools/perf/util/scripting-engines/trace-event-python.c
-> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-> @@ -345,15 +345,23 @@ static void python_process_general_event(union perf_event *perf_event __unused,
->  					 struct machine *machine __unused,
->  					 struct addr_location *al __unused)
+> diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
+> new file mode 100755
+> index 0000000..12cd773
+> --- /dev/null
+> +++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
+> @@ -0,0 +1,95 @@
+> +# EventClass.py
+> +#
+> +# This is a libray defining some events typs classes, which could
 
-@al is used now.
+s/typs/type/
 
 
->  {
-> -	PyObject *handler, *retval, *t;
-> +	PyObject *handler, *retval, *t, *dict;
->  	static char handler_name[64];
->  	unsigned n = 0;
-> -	void *data = sample->raw_data;
-> +	struct thread *thread = al->thread;
->  
-> +	/*
-> +	 * Use the MAX_FIELDS to make the function expandable, though
-> +	 * currently there is only one itme for the tuple.
+> +# be used by other scripts to analyzing the perf samples.
+> +#
+> +# Currently there are just a few classes defined for examples,
+> +# PerfEvent is the base class for all perf event sample, PebsEvent
+> +# is a HW base Intel x86 PEBS event, and user could add more SW/HW
+> +# event classes based on requriements.
 
-s/itme/item/
+s/requriements/requirements/
 
 Thanks,
 Namhyung
 
 
-> +	 */
->  	t = PyTuple_New(MAX_FIELDS);
->  	if (!t)
->  		Py_FatalError("couldn't create Python tuple");
->  
-> +	dict = PyDict_New();
-> +	if (!dict)
-> +		Py_FatalError("couldn't create Python dictionary");
 > +
->  	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
->  
->  	handler = PyDict_GetItemString(main_dict, handler_name);
-> @@ -362,11 +370,25 @@ static void python_process_general_event(union perf_event *perf_event __unused,
->  		goto exit;
->  	}
->  
-> -	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
-> -	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
-> -	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
-> -	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
-> +	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
-> +	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
-> +			(const char *)&evsel->attr, sizeof(evsel->attr)));
-> +	PyDict_SetItemString(dict, "sample", PyString_FromStringAndSize(
-> +			(const char *)sample, sizeof(*sample)));
-> +	PyDict_SetItemString(dict, "raw_buf", PyString_FromStringAndSize(
-> +			(const char *)sample->raw_data, sample->raw_size));
-> +	PyDict_SetItemString(dict, "comm",
-> +			PyString_FromString(thread->comm));
-> +	if (al->map) {
-> +		PyDict_SetItemString(dict, "dso",
-> +			PyString_FromString(al->map->dso->name));
-> +	}
-> +	if (al->sym) {
-> +		PyDict_SetItemString(dict, "symbol",
-> +			PyString_FromString(al->sym->name));
-> +	}
->  
-> +	PyTuple_SetItem(t, n++, dict);
->  	if (_PyTuple_Resize(&t, n) == -1)
->  		Py_FatalError("error resizing Python tuple");
->  
-> @@ -374,6 +396,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
->  	if (retval == NULL)
->  		handler_call_die(handler_name);
->  exit:
-> +	Py_DECREF(dict);
->  	Py_DECREF(t);
->  }
+> +import struct
+> +
+> +# Event types, user could add more here
+> +EVTYPE_GENERIC  = 0
+> +EVTYPE_PEBS     = 1     # Basic PEBS event
+> +EVTYPE_PEBS_LL  = 2     # PEBS event with load latency info
+> +EVTYPE_IBS      = 3
+> +
+> +#
+> +# Currently we don't have good way to tell the event type, but by
+> +# the size of raw buffer, raw PEBS event with load latency data's
+> +# size is 176 bytes, while the pure PEBS event's size is 144 bytes.
+> +#
+> +def create_event(name, comm, dso, symbol, raw_buf):
+> +        if (len(raw_buf) == 144):
+> +                event = PebsEvent(name, comm, dso, symbol, raw_buf)
+> +        elif (len(raw_buf) == 176):
+> +                event = PebsNHM(name, comm, dso, symbol, raw_buf)
+> +        else:
+> +                event = PerfEvent(name, comm, dso, symbol, raw_buf)
+> +
+> +        return event
+> +
+> +class PerfEvent(object):
+> +        event_num = 0
+> +        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_GENERIC):
+> +                self.name       = name
+> +                self.comm       = comm
+> +                self.dso        = dso
+> +                self.symbol     = symbol
+> +                self.raw_buf    = raw_buf
+> +                self.ev_type    = ev_type
+> +                PerfEvent.event_num += 1
+> +
+> +        def show(self):
+> +                print "PMU event: name=%12s, symbol=%24s, comm=%8s, dso=%12s" % (self.name, self.symbol, self.comm, self.dso)
+> +
+> +#
+> +# Basic Intel PEBS (Precise Event-based Sampling) event, whose raw buffer
+> +# contains the context info when that event happened: the EFLAGS and
+> +# linear IP info, as well as all the registers.
+> +#
+> +class PebsEvent(PerfEvent):
+> +        pebs_num = 0
+> +        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_PEBS):
+> +                tmp_buf=raw_buf[0:80]
+> +                flags, ip, ax, bx, cx, dx, si, di, bp, sp = struct.unpack('QQQQQQQQQQ', tmp_buf)
+> +                self.flags = flags
+> +                self.ip    = ip
+> +                self.ax    = ax
+> +                self.bx    = bx
+> +                self.cx    = cx
+> +                self.dx    = dx
+> +                self.si    = si
+> +                self.di    = di
+> +                self.bp    = bp
+> +                self.sp    = sp
+> +
+> +                PerfEvent.__init__(self, name, comm, dso, symbol, raw_buf, ev_type)
+> +                PebsEvent.pebs_num += 1
+> +                del tmp_buf
+> +
+> +#
+> +# Intel Nehalem and Westmere support PEBS plus Load Latency info which lie
+> +# in the four 64 bit words write after the PEBS data:
+> +#       Status: records the IA32_PERF_GLOBAL_STATUS register value
+> +#       DLA:    Data Linear Address (EIP)
+> +#       DSE:    Data Source Encoding, where the latency happens, hit or miss
+> +#               in L1/L2/L3 or IO operations
+> +#       LAT:    the actual latency in cycles
+> +#
+> +class PebsNHM(PebsEvent):
+> +        pebs_nhm_num = 0
+> +        def __init__(self, name, comm, dso, symbol, raw_buf, ev_type=EVTYPE_PEBS_LL):
+> +                tmp_buf=raw_buf[144:176]
+> +                status, dla, dse, lat = struct.unpack('QQQQ', tmp_buf)
+> +                self.status = status
+> +                self.dla = dla
+> +                self.dse = dse
+> +                self.lat = lat
+> +
+> +                PebsEvent.__init__(self, name, comm, dso, symbol, raw_buf, ev_type)
+> +                PebsNHM.pebs_nhm_num += 1
+> +                del tmp_buf
+> +
