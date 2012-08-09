@@ -1,50 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2HIP4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:56:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38732 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031420Ab2HIPyH (ORCPT
+	id S1758472Ab2HIP43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:56:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42045 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758396Ab2HIP4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:54:07 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/8] ARM: ux500: Identify the PRCMU as an interrupt controller
-Date: Thu,  9 Aug 2012 16:53:50 +0100
-Message-Id: <1344527635-6163-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
-References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
+	Thu, 9 Aug 2012 11:56:23 -0400
+Date: Thu, 9 Aug 2012 08:56:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.40
+Message-ID: <20120809155618.GA7038@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're just about to provide the DB8500-PRCMU with its own IRQ domain,
-so that its subordinate drivers can use it as an interrupt controller.
-It's obligatory for all IRQ controllers to reference themselves as
-such from its own node in Device Tree. This patch does just that.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi |    2 ++
- 1 file changed, 2 insertions(+)
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 32e063d..6da7ccb 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -194,6 +194,8 @@
- 			interrupts = <0 47 0x4>;
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
- 			ranges;
- 
- 			prcmu-timer-4@80157450 {
--- 
-1.7.9.5
+I'm announcing the release of the 3.0.40 kernel.
 
+All users of the 3.0 kernel series must upgrade.
+
+The updated 3.0.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/stable_kernel_rules.txt      |   19 +++++++---
+ Makefile                                   |    2 -
+ arch/arm/mach-omap2/opp.c                  |    3 -
+ arch/m68k/include/asm/entry_mm.h           |    4 +-
+ arch/m68k/kernel/sys_m68k.c                |    8 +++-
+ arch/powerpc/include/asm/cputime.h         |    6 +--
+ arch/powerpc/include/asm/reg.h             |    3 +
+ arch/powerpc/kernel/ftrace.c               |   12 +++---
+ arch/powerpc/kernel/time.c                 |   10 ++---
+ drivers/acpi/ac.c                          |    4 +-
+ drivers/gpu/drm/radeon/atombios_dp.c       |   10 +++--
+ drivers/gpu/drm/radeon/radeon_connectors.c |   35 +++++++++++++++----
+ drivers/gpu/drm/radeon/radeon_cursor.c     |    8 +++-
+ drivers/mmc/host/sdhci-pci.c               |    1=20
+ drivers/net/bnx2.c                         |    6 +--
+ drivers/net/caif/caif_serial.c             |    3 +
+ drivers/net/tun.c                          |    6 ++-
+ drivers/net/usb/kaweth.c                   |    2 -
+ drivers/scsi/libsas/sas_expander.c         |   47 +++++++++---------------=
+--
+ drivers/scsi/scsi_error.c                  |   14 +++++++
+ drivers/scsi/scsi_lib.c                    |   11 ++++++
+ drivers/scsi/scsi_scan.c                   |    3 +
+ drivers/scsi/scsi_sysfs.c                  |   41 ++++++++++++++---------
+ drivers/usb/core/devio.c                   |   10 +++--
+ drivers/usb/early/ehci-dbgp.c              |    2 -
+ drivers/usb/gadget/u_ether.c               |   12 +++---
+ fs/btrfs/async-thread.c                    |    9 ++++-
+ fs/ext4/balloc.c                           |    3 +
+ fs/ext4/bitmap.c                           |    8 +---
+ fs/ext4/ext4.h                             |    2 -
+ fs/ext4/ialloc.c                           |    3 +
+ fs/ext4/inode.c                            |    9 +++++
+ fs/locks.c                                 |    6 +--
+ fs/nfs/file.c                              |    7 ++-
+ fs/nfsd/nfs4xdr.c                          |    2 -
+ include/linux/cpu.h                        |    5 +-
+ kernel/futex.c                             |   17 +++++----
+ kernel/power/hibernate.c                   |    6 +++
+ kernel/power/suspend.c                     |    3 +
+ kernel/workqueue.c                         |   38 +++++++++++++++++++++
+ net/caif/caif_dev.c                        |    2 -
+ net/core/rtnetlink.c                       |    8 +++-
+ net/ipv4/cipso_ipv4.c                      |    6 ++-
+ net/ipv4/tcp.c                             |    5 ++
+ net/ipv4/tcp_input.c                       |    4 +-
+ net/sched/sch_sfb.c                        |    2 +
+ net/sctp/input.c                           |    7 +--
+ net/sctp/socket.c                          |   12 +++++-
+ net/sunrpc/sched.c                         |    2 +
+ net/sunrpc/xprtrdma/transport.c            |    3 +
+ net/sunrpc/xprtsock.c                      |   10 +++++
+ net/wanrouter/wanmain.c                    |   51 +++++++++++++-----------=
+-----
+ sound/drivers/mpu401/mpu401_uart.c         |    1=20
+ sound/pci/hda/patch_realtek.c              |    1=20
+ sound/soc/codecs/wm8962.c                  |    3 +
+ sound/soc/codecs/wm8994.c                  |    2 -
+ sound/usb/clock.c                          |    3 +
+ 57 files changed, 351 insertions(+), 171 deletions(-)
+
+Alan Cox (3):
+      sch_sfb: Fix missing NULL check
+      caif: fix NULL pointer check
+      wanmain: comparing array with NULL
+
+Andreas Schwab (2):
+      powerpc: Fix wrong divisor in usecs_to_cputime
+      m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
+
+Bart Van Assche (1):
+      SCSI: Avoid dangling pointer in scsi_requeue_command()
+
+Brian Foster (1):
+      ext4: don't let i_reserved_meta_blocks go negative
+
+Chris Mason (1):
+      Btrfs: call the ordered free operation without any locks held
+
+Colin Ian King (1):
+      USB: echi-dbgp: increase the controller wait time to come out of halt.
+
+Dan Carpenter (1):
+      USB: kaweth.c: use GFP_ATOMIC under spin_lock
+
+Dan Williams (4):
+      SCSI: libsas: continue revalidation
+      SCSI: libsas: fix sas_discover_devices return code handling
+      SCSI: fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
+      SCSI: fix hot unplug vs async scan race
+
+Daniel Drake (1):
+      mmc: sdhci-pci: CaFe has broken card detection
+
+Daniel Mack (1):
+      ALSA: snd-usb: fix clock source validity index
+
+Darren Hart (3):
+      futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
+      futex: Fix bug in WARN_ON for NULL q.pi_state
+      futex: Forbid uaddr =3D=3D uaddr2 in futex_wait_requeue_pi()
+
+David Henningsson (1):
+      ALSA: hda - Add support for Realtek ALC282
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.40
+
+Hangbin Liu (1):
+      tcp: Add TCP_USER_TIMEOUT negative value check
+
+Hans de Goede (1):
+      usbdevfs: Correct amount of data copied to user in processcompl_compat
+
+J. Bruce Fields (2):
+      locks: fix checking of fcntl_setlease argument
+      nfsd4: our filesystems are normally case sensitive
+
+Jeff Layton (1):
+      nfs: skip commit in releasepage if we're freeing memory for fs-relate=
+d reasons
+
+Jerome Glisse (3):
+      drm/radeon: fix non revealent error message
+      drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
+      drm/radeon: on hotplug force link training to happen (v2)
+
+Jiri Benc (1):
+      net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+
+Jiri Kosina (1):
+      tcp: perform DMA to userspace only if there is a task waiting for it
+
+Kevin Cernekee (1):
+      usb: gadget: Fix g_ether interface link status
+
+Lan Tianyu (1):
+      ACPI/AC: prevent OOPS on some boxes due to missing check power_supply=
+_register() return value check
+
+Mark Brown (2):
+      ASoC: wm8962: Allow VMID time to fully ramp
+      ASoC: wm8994: Ensure there are enough BCLKs for four channels
+
+Mathias Krause (1):
+      net/tun: fix ioctl() based info leaks
+
+Michael Chan (1):
+      bnx2: Fix bug in bnx2_free_tx_skbs().
+
+Michel D=E4nzer (1):
+      drm/radeon: Try harder to avoid HW cursor ending on a multiple of 128=
+ columns.
+
+Mikael Pettersson (1):
+      m68k: Correct the Atari ALLOWINT definition
+
+Neil Horman (1):
+      sctp: Fix list corruption resulting from freeing an association on a =
+list
+
+Nishanth Menon (1):
+      ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
+
+Paul Gortmaker (1):
+      stable: update references to older 2.6 versions for 3.x
+
+Paul Moore (1):
+      cipso: don't follow a NULL pointer when setsockopt() is called
+
+Sjur Br=E6ndeland (1):
+      caif: Fix access to freed pernet memory
+
+Srivatsa S. Bhat (1):
+      ftrace: Disable function tracing during suspend/resume and hibernatio=
+n, again
+
+Takashi Iwai (1):
+      ALSA: mpu401: Fix missing initialization of irq field
+
+Tejun Heo (1):
+      workqueue: perform cpu down operations from low priority cpu_notifier=
+()
+
+Theodore Ts'o (1):
+      ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
+
+Tiejun Chen (1):
+      powerpc: Add "memory" attribute for mfmsr()
+
+roger blofeld (1):
+      powerpc/ftrace: Fix assembly trampoline register usage
+
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI92iAAoJEDjbvchgkmk+H1UP/j9V5j2tjXociphA60LPgajg
+HLpwn2mroz94vDoiiMSd+9zRQDx/XwQ7ONbEQLA2eApP9jTi5elu9ZehBVTGwT1P
+wsTCMH6cgGRt/QRMk8YKmJ6qp9zfToPPimDWzjoaepFo1zDcCfCjXh+VojJVXIRW
+7fyg+GPFa3/l8d2sj/0AIM/gEMzlMuA6Rq6nfgKI2aqdK59JRmQjqADHORgMblQ8
+pXe7Dc2my1IWfk/qb6V5LrnUsNpiNw2eDsOHxdkY9ogB5s6iTe2LQobCAER04oe3
+KcQzuDL3yYPnfC4tSwjgsjAZ+i1dh73ndghbZHt0FPpImyGA0K1z83jJ2+qVDe7N
+FWFcIyHF2lNGVaGQqpiB+borPa6O9kk0ko2c0ivO1vGTorRKP02y8GbtkgeqhUnB
+c7zXu4+CHPhNoTP74XEK4WRopTW1neYaZxKFRO51tAZw0Ht2unrq7GZJjDCoKTgW
++4ES/f6B2mn/4DMTDt04YzP/gcBSE4YJWB8l4oh09RO5Wt1HSzJRa0IdEHWjdIpo
+IgP8xVCzV059N7VUhXPgfOlSrNYmkCxSAXEMM49z1MuNgRhUxZmMdOSV9qIDgih5
+7kHigCdB/Zhvj78zYabaIjBySJMSBVbaPdPxPVexN+DM5MlPG2AXSz28MonuXNdF
+3xIKk1oEAzICXwWFnfIH
+=48az
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
