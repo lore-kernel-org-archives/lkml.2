@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab2HIJ2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:28:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57543 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370Ab2HIJ2b (ORCPT
+	id S1757142Ab2HIJcC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:32:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37245 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab2HIJb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:28:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
-Date: Thu, 9 Aug 2012 02:28:30 -0700
-Message-ID: <CANN689FzQSLAFw0tNmdiOQ0PwV1nN8FaL0LNkkDMEB10k0jmwA@mail.gmail.com>
-Subject: Re: [PATCH 0/5][RFC] Fallocate Volatile Ranges v6
-From: Michel Lespinasse <walken@google.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 9 Aug 2012 05:31:59 -0400
+From: Keng-Yu Lin <kengyu@canonical.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <kengyu@canonical.com>
+Subject: [PATCH] Intel xhci: Only switch the switchable ports
+Date: Thu,  9 Aug 2012 17:31:51 +0800
+Message-Id: <1344504711-10916-1-git-send-email-kengyu@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+With a previous patch to enable the EHCI/XHCI port switching, it switches
+all the available ports.
 
-On Fri, Jul 27, 2012 at 8:57 PM, John Stultz <john.stultz@linaro.org> wrote:
-> So after not getting too much positive feedback on my last
-> attempt at trying to use a non-shrinker method for managing
-> & purging volatile ranges, I decided I'd go ahead and try
-> to implement something along Minchan's ERECLAIM LRU list
-> idea.
+The assumption is not correct because the BIOS may expect some ports
+not switchable by the OS.
 
-Agree that there hasn't been much feedback from MM folks yet - sorry
-about that :/
+There are two more registers that contains the information of the switchable
+and non-switchable ports.
 
-I think one issue might be that most people don't have a good
-background on how the feature is intended to be used, and it is very
-difficult to comment meaningfully without that.
+This patch adds the checking code for the two register so that only the
+switchable ports are altered.
 
-As for myself, I have been wondering:
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+---
+ drivers/usb/host/pci-quirks.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
-- Why the feature needs to be on a per-range basis, rather than
-per-file. Is this simply to make it easier to transition the android
-use case from whatever they are doing right now, or is it that the
-object boundaries within a file can't be known in advance, and thus
-one wouldn't know how to split objects accross different files ? Or
-could it be that some of the objects would be small (less than a page)
-so space use would be inefficient if they were placed in different
-files ? Or just that there would be too many files for efficient
-management ?
-
-- What are the desired semantics for the volatile objects. Can the
-objects be accessed while they are marked as volatile, or do they have
-to get unmarked first ? Is it really the case that we always want to
-reclaim from volatile objects first, before any other kind of caches
-we might have ? This sounds like a very strong hint, and I think I
-would be more comfortable with something more subtle if that's
-possible. Also, if we have several volatile objects to reclaim from,
-is it desirable to reclaim from the one that's been marked volatile
-the longest or does it make no difference ? When an object is marked
-volatile, would it be sufficient to ensure it gets placed on the
-inactive list (maybe with the referenced bit cleared) and let the
-normal reclaim algorithm get to it, or is that an insufficiently
-strong hint somehow ?
-
-Basically, having some background information of how android would be
-using the feature would help us better understand the design decision
-here, I think.
-
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 833b3c6..89f62f2 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -75,7 +75,9 @@
+ #define	NB_PIF0_PWRDOWN_1	0x01100013
+ 
+ #define USB_INTEL_XUSB2PR      0xD0
++#define USB_INTEL_USB2PRM      0xD4
+ #define USB_INTEL_USB3_PSSEN   0xD8
++#define USB_INTEL_USB3PRM      0xDC
+ 
+ static struct amd_chipset_info {
+ 	struct pci_dev	*nb_dev;
+@@ -772,10 +774,18 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ 		return;
+ 	}
+ 
+-	ports_available = 0xffffffff;
++	/* Read USB3PRM, the USB 3.0 Port Routing Mask Register
++	 * Indicate the ports that can be changed from OS.
++	 */
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB3PRM,
++			&ports_available);
++
++	dev_dbg(&xhci_pdev->dev, "Configurable ports to enable SuperSpeed: 0x%x\n",
++			ports_available);
++
+ 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
+-	 * Register, to turn on SuperSpeed terminations for all
+-	 * available ports.
++	 * Register, to turn on SuperSpeed terminations for the
++	 * switchable ports.
+ 	 */
+ 	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN,
+ 			cpu_to_le32(ports_available));
+@@ -785,7 +795,16 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ 	dev_dbg(&xhci_pdev->dev, "USB 3.0 ports that are now enabled "
+ 			"under xHCI: 0x%x\n", ports_available);
+ 
+-	ports_available = 0xffffffff;
++	/* Read XUSB2PRM, xHCI USB 2.0 Port Routing Mask Register
++	 * Indicate the port to be controlled by the EHCI host.
++	 */
++
++	pci_read_config_dword(xhci_pdev, USB_INTEL_USB2PRM,
++			&ports_available);
++
++	dev_dbg(&xhci_pdev->dev, "Configurable ports to hand over the ECHI host:
++			0x%x\n", ports_available);
++
+ 	/* Write XUSB2PR, the xHC USB 2.0 Port Routing Register, to
+ 	 * switch the USB 2.0 power and data lines over to the xHCI
+ 	 * host.
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.9.5
+
