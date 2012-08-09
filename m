@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031064Ab2HIPEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:04:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22950 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030972Ab2HIPD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:03:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,740,1336374000"; 
-   d="scan'208";a="183643532"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: linux-mm@kvack.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v2 1/6] THP: Use real address for NUMA policy
-Date: Thu,  9 Aug 2012 18:02:58 +0300
-Message-Id: <1344524583-1096-2-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1031066Ab2HIPEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:04:21 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:65477 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030965Ab2HIPEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:04:01 -0400
+MIME-Version: 1.0
+X-Originating-IP: [76.119.162.148]
+In-Reply-To: <1344522472.28967.936.camel@edumazet-glaptop>
+References: <50215A7E.8000701@linaro.org>
+	<1344462889.28967.328.camel@edumazet-glaptop>
+	<5022FD9A.4020603@schaufler-ca.com>
+	<1695034.0lrQgQPOMT@sifl>
+	<1344522472.28967.936.camel@edumazet-glaptop>
+Date: Thu, 9 Aug 2012 11:04:00 -0400
+Message-ID: <CAHC9VhSOQo-6hv09QpwjNEVJPudk60uE=pz-dbuX3T+t3KYaQw@mail.gmail.com>
+Subject: Re: NULL pointer dereference in selinux_ip_postroute_compat
+From: Paul Moore <paul@paul-moore.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Eric Paris <eparis@parisplace.org>, John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        Eric Dumazet <edumazet@google.com>, john.johansen@canonical.com,
+        LSM <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Aug 9, 2012 at 10:27 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Thu, 2012-08-09 at 09:30 -0400, Paul Moore wrote:
+>
+>> In the case of a TCP syn-recv and timewait ACK things are a little less clear.
+>> Eric (Dumazet), it looks like we have a socket in tcp_v4_reqsk_send_ack() and
+>> tcp_v4_timewait_ack(), any reason why we can't propagate the socket down to
+>> ip_send_unicast_reply()?
+>>
+>
+> timewait 'sockets' are not full blown sockets.
+>
+> We need a socket (well, a good part of it) to build the IP frame and
+> send it.
 
-Use the fault address, not the rounded down hpage address for NUMA
-policy purposes. In some circumstances this can give more exact
-NUMA policy.
+Yes, of course you're right.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/huge_memory.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Ideally we need a better solution here from a LSM perspective, but I
+don't think this should hold up the fix as the labeling was broken
+even before the postroute_compat() code broke.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 57c4b93..70737ec 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -681,11 +681,11 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
- 
- static inline struct page *alloc_hugepage_vma(int defrag,
- 					      struct vm_area_struct *vma,
--					      unsigned long haddr, int nd,
-+					      unsigned long address, int nd,
- 					      gfp_t extra_gfp)
- {
- 	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
--			       HPAGE_PMD_ORDER, vma, haddr, nd);
-+			       HPAGE_PMD_ORDER, vma, address, nd);
- }
- 
- #ifndef CONFIG_NUMA
-@@ -710,7 +710,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(khugepaged_enter(vma)))
- 			return VM_FAULT_OOM;
- 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					  vma, haddr, numa_node_id(), 0);
-+					  vma, address, numa_node_id(), 0);
- 		if (unlikely(!page)) {
- 			count_vm_event(THP_FAULT_FALLBACK);
- 			goto out;
-@@ -944,7 +944,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
- 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					      vma, haddr, numa_node_id(), 0);
-+					      vma, address, numa_node_id(), 0);
- 	else
- 		new_page = NULL;
- 
 -- 
-1.7.7.6
-
+paul moore
+www.paul-moore.com
