@@ -1,90 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031343Ab2HIPuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:50:19 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51769 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031311Ab2HIPsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:48:36 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 17/22] ARM: ux500: Remove platform registration of MSP devices
-Date: Thu,  9 Aug 2012 16:47:43 +0100
-Message-Id: <1344527268-5964-18-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+	id S1031371Ab2HIPuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:50:37 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:51981 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030952Ab2HIPud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:50:33 -0400
+X-ASG-Debug-ID: 1344527431-03d6a5623f32e150001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 9 Aug 2012 11:50:29 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Btrfs List <linux-btrfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL 1/2] Btrfs fixes
+Message-ID: <20120809155029.GA29278@shiny>
+X-ASG-Orig-Subj: [GIT PULL 1/2] Btrfs fixes
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Btrfs List <linux-btrfs@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1344527431
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.105150
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes platform device registration of all 4 MSP
-devices. It also takes care of all redundant infrastructure now
-that each of the ux500 audio components have been Device Tree
-enabled.
+Hi everyone,
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-msp.c |   14 --------------
- arch/arm/mach-ux500/board-mop500.c     |    2 --
- arch/arm/mach-ux500/board-mop500.h     |    2 --
- 3 files changed, 18 deletions(-)
+This first pull is the bulk of our changes for the next rc.  It is
+against the 3.5 kernel so people testing the new features have a stable
+point to work against.  This was tested against Linus' current tree as
+well.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
-index 58768c2..326de5a 100644
---- a/arch/arm/mach-ux500/board-mop500-msp.c
-+++ b/arch/arm/mach-ux500/board-mop500-msp.c
-@@ -172,20 +172,6 @@ struct msp_i2s_platform_data msp3_platform_data = {
- 	.msp_i2s_dma_tx	= NULL,
- };
- 
--/* Due for removal once the MSP driver has been fully DT:ed. */
--void mop500_of_msp_init(struct device *parent)
--{
--	pr_info("Initialize MSP I2S-devices.\n");
--	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
--			   &msp0_platform_data);
--	db8500_add_msp_i2s(parent, 1, U8500_MSP1_BASE, IRQ_DB8500_MSP1,
--			   &msp1_platform_data);
--	db8500_add_msp_i2s(parent, 2, U8500_MSP2_BASE, IRQ_DB8500_MSP2,
--			   &msp2_platform_data);
--	db8500_add_msp_i2s(parent, 3, U8500_MSP3_BASE, IRQ_DB8500_MSP1,
--			   &msp3_platform_data);
--}
--
- void mop500_msp_init(struct device *parent)
- {
- 	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 0c141d5..f48d463 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -815,8 +815,6 @@ static void __init u8500_init_machine(void)
- 
- 		mop500_uib_init();
- 
--	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
--		mop500_of_msp_init(parent);
- 	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
- 		/*
- 		 * The HREFv60 board removed a GPIO expander and routed
-diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-index 3fbf48f..e56c983 100644
---- a/arch/arm/mach-ux500/board-mop500.h
-+++ b/arch/arm/mach-ux500/board-mop500.h
-@@ -98,8 +98,6 @@ void __init mop500_pinmaps_init(void);
- void __init snowball_pinmaps_init(void);
- void __init hrefv60_pinmaps_init(void);
- void mop500_msp_init(struct device *parent);
--/* Due for removal once the MSP driver has been fully DT:ed. */
--void mop500_of_msp_init(struct device *parent);
- 
- int __init mop500_uib_init(void);
- void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
--- 
-1.7.9.5
+The second pull is just one fix against 3.6-rc1 (in another email).
 
+Linus, please grab my for-linus branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+Most of these fixes are against the new send/receive code.  Alexander
+fixed a number of bugs in there and I found a more while backing up my
+laptop.  It does nightly incremental runs now about 3x faster than
+rsync, so things are looking pretty good.
+
+On top of that we have fixes for some long standing bugs in the delayed
+reference code (a few more of these are still being worked on),
+deadlocks and other small fixes.
+
+Alexander Block (23) commits (+482/-419):
+    Btrfs: don't treat top/root directory inode as deleted/reused (+20/-1)
+    Btrfs: fix use of radix_tree for name_cache in send/receive (+37/-39)
+    Btrfs: rename backref_ctx::found_in_send_root to found_itself (+4/-4)
+    Btrfs: pass root instead of parent_root to iterate_inode_ref (+2/-2)
+    Btrfs: add correct parent to check_dirs when dir got moved (+11/-0)
+    Btrfs: add missing check for dir != tmp_dir to is_first_ref (+1/-1)
+    Btrfs: fix check for changed extent in is_extent_unchanged (+2/-2)
+    Btrfs: free nce and nce_head on error in name_cache_insert (+5/-1)
+    Btrfs: don't break in the final loop of find_extent_clone (+0/-1)
+    Btrfs: fix cur_ino < parent_ino case for send/receive (+146/-244)
+    Btrfs: add/fix comments/documentation for send/receive (+134/-6)
+    Btrfs: use normal return path for root == send_root case (+0/-6)
+    Btrfs: fix memory leak for name_cache in send/receive (+1/-0)
+    Btrfs: use kmalloc instead of stack for backref_ctx (+18/-11)
+    Btrfs: remove unused use_list from send/receive code (+0/-2)
+    Btrfs: remove unused tmp_path from iterate_dir_item (+0/-8)
+    Btrfs: add rdev to get_inode_info in send/receive (+17/-13)
+    Btrfs: use <= instead of < in is_extent_unchanged (+1/-1)
+    Btrfs: update send_progress at correct places (+20/-6)
+    Btrfs: ignore non-FS inodes for send/receive (+5/-0)
+    Btrfs: code cleanups for send/receive (+35/-48)
+    Btrfs: make aux field of ulist 64 bit (+21/-23)
+    Btrfs: remove unused code with #if 0 (+2/-0)
+
+Josef Bacik (9) commits (+325/-215):
+    Btrfs: don't allocate a seperate csums array for direct reads (+19/-32)
+    Btrfs: do not use missing devices when showing devname (+2/-0)
+    Btrfs: fix enospc problems when deleting a subvol (+1/-1)
+    Btrfs: increase the size of the free space cache (+7/-8)
+    Btrfs: lock extents as we map them in DIO (+127/-129)
+    Btrfs: allow delayed refs to be merged (+142/-27)
+    Btrfs: do not strdup non existent strings (+5/-3)
+    Btrfs: barrier before waitqueue_active (+10/-12)
+    Btrfs: use a slab for btrfs_dio_private (+12/-3)
+
+Dan Carpenter (4) commits (+16/-8):
+    Btrfs: unlock on error in btrfs_delalloc_reserve_metadata() (+3/-1)
+    Btrfs: fix some error codes in btrfs_qgroup_inherit() (+6/-2)
+    Btrfs: fix some endian bugs handling the root times (+4/-4)
+    Btrfs: checking for NULL instead of IS_ERR (+3/-1)
+
+Stefan Behrens (3) commits (+8/-36):
+    Btrfs: fix a misplaced address operator in a condition (+1/-1)
+    Btrfs: remove superblock writing after fatal error (+5/-33)
+    Btrfs: fix that error value is changed by mistake (+2/-2)
+
+Chris Mason (2) commits (+40/-15):
+    Btrfs: fix btrfs send for inline items and compression (+37/-15)
+    Btrfs: don't run __tree_mod_log_free_eb on leaves (+3/-0)
+
+Fengguang Wu (2) commits (+4/-6):
+    btrfs: fix second lock in btrfs_delete_delayed_items() (+3/-2)
+    btrfs: Use PTR_RET in btrfs_resume_balance_async() (+1/-4)
+
+Arne Jansen (2) commits (+38/-73):
+    Btrfs: fix deadlock in wait_for_more_refs (+21/-73)
+    Btrfs: fix race in run_clustered_refs (+17/-0)
+
+Miao Xie (1) commits (+1/-0):
+    Btrfs: fix wrong mtime and ctime when creating snapshots
+
+Total: (46) commits
+
+ fs/btrfs/backref.c       |  12 +-
+ fs/btrfs/compression.c   |   1 +
+ fs/btrfs/ctree.c         |  14 +-
+ fs/btrfs/ctree.h         |   3 +-
+ fs/btrfs/delayed-inode.c |  12 +-
+ fs/btrfs/delayed-ref.c   | 163 +++++++--
+ fs/btrfs/delayed-ref.h   |   4 +
+ fs/btrfs/disk-io.c       |  45 +--
+ fs/btrfs/disk-io.h       |   2 +-
+ fs/btrfs/extent-tree.c   | 123 +++----
+ fs/btrfs/extent_io.c     |   1 -
+ fs/btrfs/file-item.c     |   4 +-
+ fs/btrfs/inode.c         | 318 ++++++++---------
+ fs/btrfs/ioctl.c         |   2 +-
+ fs/btrfs/locking.c       |   2 +-
+ fs/btrfs/qgroup.c        |  32 +-
+ fs/btrfs/root-tree.c     |   4 +-
+ fs/btrfs/send.c          | 895 ++++++++++++++++++++++++++---------------------
+ fs/btrfs/super.c         |   2 +
+ fs/btrfs/transaction.c   |   3 +-
+ fs/btrfs/ulist.c         |   7 +-
+ fs/btrfs/ulist.h         |   9 +-
+ fs/btrfs/volumes.c       |  16 +-
+ 23 files changed, 908 insertions(+), 766 deletions(-)
