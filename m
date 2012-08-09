@@ -1,414 +1,1449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab2HITRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:17:23 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:51870 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759358Ab2HITRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:17:12 -0400
-Message-Id: <20120809190415.512140707@muttley.lan.cathedral>
-User-Agent: quilt/0.60-1
-Date: Thu, 09 Aug 2012 15:04:17 -0400
-From: aris@ruivo.org
-To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH RESEND 3/4] device_cgroup: convert device_cgroup internally to policy + exceptions
-References: <20120809190414.773462171@muttley.lan.cathedral>
-Content-Disposition: inline; filename=handle_whitelist_as_exceptions.patch
+	id S1759359Ab2HITSh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:18:37 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46785 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759222Ab2HITSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:18:34 -0400
+Date: Thu, 9 Aug 2012 16:18:27 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 1/7] perf hists: Separate out hist print functions
+Message-ID: <20120809191827.GE4084@infradead.org>
+References: <1344243462-28403-1-git-send-email-namhyung@kernel.org>
+ <1344243462-28403-2-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344243462-28403-2-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original model of device_cgroup is having a whitelist where all the
-allowed devices are listed. The problem with this approach is that is
-impossible to have the case of allowing everything but few devices.
+Em Mon, Aug 06, 2012 at 05:57:36PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Separate out those functions into ui/hist.c. This is required for
+> upcoming changes.
 
-The reason for that lies in the way the whitelist is handled internally:
-since there's only a whitelist, the "all devices" entry would have to be
-removed and replaced by the entire list of possible devices but the ones
-that are being denied.  Since dev_t is 32 bits long, representing the allowed
-devices as a bitfield is not memory efficient.
+Isn't it better to further separate it by introducing the ui/stdio/
+directory since these functions use fprintf?
 
-This patch replaces the "whitelist" by a "exceptions" list and the default
-policy is kept as "deny_all" variable in dev_cgroup structure.
-
-The current interface determines that whenever "a" is written to devices.allow
-or devices.deny, the entry masking all devices will be added or removed,
-respectively. This behavior is kept and it's what will determine the default
-policy:
-
-	# cat devices.list 
-	a *:* rwm
-	# echo a >devices.deny
-	# cat devices.list 
-	# echo a >devices.allow
-	# cat devices.list 
-	a *:* rwm
-
-The interface is also preserved. For example, if one wants to block only access
-to /dev/null:
-	# ls -l /dev/null
-	crw-rw-rw- 1 root root 1, 3 Jul 24 16:17 /dev/null
-	# echo a >devices.allow
-	# echo "c 1:3 rwm" >devices.deny
-	# cat /dev/null
-	cat: /dev/null: Operation not permitted
-	# echo >/dev/null
-	bash: /dev/null: Operation not permitted
-	mknod /tmp/null c 1 3
-	mknod: ‘/tmp/null’: Operation not permitted
-	# echo "c 1:3 r" >devices.allow
-	# cat /dev/null
-	# echo >/dev/null
-	bash: /dev/null: Operation not permitted
-	mknod /tmp/null c 1 3
-	mknod: ‘/tmp/null’: Operation not permitted
-	# echo "c 1:3 rw" >devices.allow
-	# echo >/dev/null
-	# cat /dev/null
-	# mknod /tmp/null c 1 3
-	mknod: ‘/tmp/null’: Operation not permitted
-	# echo "c 1:3 rwm" >devices.allow
-	# echo >/dev/null
-	# cat /dev/null
-	# mknod /tmp/null c 1 3
-	#
-
-Note that I didn't rename the functions/variables in this patch, but in the
-next one to make reviewing easier.
-
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- security/device_cgroup.c |  228 +++++++++++++++++++++++++++--------------------
- 1 file changed, 132 insertions(+), 96 deletions(-)
-
-Index: github/security/device_cgroup.c
-===================================================================
---- github.orig/security/device_cgroup.c	2012-07-24 17:58:42.984081909 -0400
-+++ github/security/device_cgroup.c	2012-07-24 17:59:11.324823460 -0400
-@@ -96,7 +96,6 @@
- 	return -ENOMEM;
- }
+- Arnaldo
  
--/* Stupid prototype - don't bother combining existing entries */
- /*
-  * called under devcgroup_mutex
-  */
-@@ -136,16 +135,13 @@
- 	struct dev_whitelist_item *walk, *tmp;
- 
- 	list_for_each_entry_safe(walk, tmp, &dev_cgroup->whitelist, list) {
--		if (walk->type == DEV_ALL)
--			goto remove;
- 		if (walk->type != wh->type)
- 			continue;
--		if (walk->major != ~0 && walk->major != wh->major)
-+		if (walk->major != wh->major)
- 			continue;
--		if (walk->minor != ~0 && walk->minor != wh->minor)
-+		if (walk->minor != wh->minor)
- 			continue;
- 
--remove:
- 		walk->access &= ~wh->access;
- 		if (!walk->access) {
- 			list_del_rcu(&walk->list);
-@@ -185,19 +181,9 @@
- 	INIT_LIST_HEAD(&dev_cgroup->whitelist);
- 	parent_cgroup = cgroup->parent;
- 
--	if (parent_cgroup == NULL) {
--		struct dev_whitelist_item *wh;
--		wh = kmalloc(sizeof(*wh), GFP_KERNEL);
--		if (!wh) {
--			kfree(dev_cgroup);
--			return ERR_PTR(-ENOMEM);
--		}
--		wh->minor = wh->major = ~0;
--		wh->type = DEV_ALL;
--		wh->access = ACC_MASK;
-+	if (parent_cgroup == NULL)
- 		dev_cgroup->deny_all = false;
--		list_add(&wh->list, &dev_cgroup->whitelist);
--	} else {
-+	else {
- 		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
- 		mutex_lock(&devcgroup_mutex);
- 		ret = dev_whitelist_copy(&dev_cgroup->whitelist,
-@@ -268,33 +254,48 @@
- 	char maj[MAJMINLEN], min[MAJMINLEN], acc[ACCLEN];
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
--		set_access(acc, wh->access);
--		set_majmin(maj, wh->major);
--		set_majmin(min, wh->minor);
--		seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-+	/*
-+	 * To preserve the compatibility:
-+	 * - Only show the "all devices" when the default policy is to allow
-+	 * - List the exceptions in case the default policy is to deny
-+	 * This way, the file remains as a "whitelist of devices"
-+	 */
-+	if (devcgroup->deny_all == false) {
-+		set_access(acc, ACC_MASK);
-+		set_majmin(maj, ~0);
-+		set_majmin(min, ~0);
-+		seq_printf(m, "%c %s:%s %s\n", type_to_char(DEV_ALL),
- 			   maj, min, acc);
-+	} else {
-+		list_for_each_entry_rcu(wh, &devcgroup->whitelist, list) {
-+			set_access(acc, wh->access);
-+			set_majmin(maj, wh->major);
-+			set_majmin(min, wh->minor);
-+			seq_printf(m, "%c %s:%s %s\n", type_to_char(wh->type),
-+				   maj, min, acc);
-+		}
- 	}
- 	rcu_read_unlock();
- 
- 	return 0;
- }
- 
--/*
-- * may_access_whitelist:
-- * does the access granted to dev_cgroup c contain the access
-- * requested in whitelist item refwh.
-- * return 1 if yes, 0 if no.
-- * call with devcgroup_mutex held
-+/**
-+ * may_access_whitelist - verifies if a new rule is part of what is allowed
-+ *			  by a dev cgroup based on the default policy +
-+ *			  exceptions. This is used to make sure a child cgroup
-+ *			  won't have more privileges than its parent or to
-+ *			  verify if a certain access is allowed.
-+ * @dev_cgroup: dev cgroup to be tested against
-+ * @refwh: new rule
-  */
--static int may_access_whitelist(struct dev_cgroup *c,
--				       struct dev_whitelist_item *refwh)
-+static int may_access_whitelist(struct dev_cgroup *dev_cgroup,
-+			        struct dev_whitelist_item *refwh)
- {
- 	struct dev_whitelist_item *whitem;
-+	bool match = false;
- 
--	list_for_each_entry(whitem, &c->whitelist, list) {
--		if (whitem->type & DEV_ALL)
--			return 1;
-+	list_for_each_entry(whitem, &dev_cgroup->whitelist, list) {
- 		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
- 			continue;
- 		if ((refwh->type & DEV_CHAR) && !(whitem->type & DEV_CHAR))
-@@ -305,8 +306,21 @@
- 			continue;
- 		if (refwh->access & (~whitem->access))
- 			continue;
--		return 1;
-+		match = true;
-+		break;
- 	}
-+
-+	/*
-+	 * In two cases we'll consider this new rule valid:
-+	 * - the dev cgroup has its default policy to allow + exception list:
-+	 *   the new rule should *not* match any of the exceptions
-+	 *   (!deny_all, !match)
-+	 * - the dev cgroup has its default policy to deny + exception list:
-+	 *   the new rule *should* match the exceptions
-+	 *   (deny_all, match)
-+	 */
-+	if (dev_cgroup->deny_all == match)
-+		return 1;
- 	return 0;
- }
- 
-@@ -356,11 +370,21 @@
- 
- 	switch (*b) {
- 	case 'a':
--		wh.type = DEV_ALL;
--		wh.access = ACC_MASK;
--		wh.major = ~0;
--		wh.minor = ~0;
--		goto handle;
-+		switch (filetype) {
-+		case DEVCG_ALLOW:
-+			if (!parent_has_perm(devcgroup, &wh))
-+				return -EPERM;
-+			dev_whitelist_clean(devcgroup);
-+			devcgroup->deny_all = false;
-+			break;
-+		case DEVCG_DENY:
-+			dev_whitelist_clean(devcgroup);
-+			devcgroup->deny_all = true;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		return 0;
- 	case 'b':
- 		wh.type = DEV_BLOCK;
- 		break;
-@@ -419,17 +443,31 @@
- 		}
- 	}
- 
--handle:
- 	switch (filetype) {
- 	case DEVCG_ALLOW:
- 		if (!parent_has_perm(devcgroup, &wh))
- 			return -EPERM;
--		devcgroup->deny_all = false;
-+		/*
-+		 * If the default policy is to allow by default, try to remove
-+		 * an matching exception instead. And be silent about it: we
-+		 * don't want to break compatibility
-+		 */
-+		if (devcgroup->deny_all == false) {
-+			dev_whitelist_rm(devcgroup, &wh);
-+			return 0;
-+		}
- 		return dev_whitelist_add(devcgroup, &wh);
- 	case DEVCG_DENY:
--		dev_whitelist_rm(devcgroup, &wh);
--		devcgroup->deny_all = true;
--		break;
-+		/*
-+		 * If the default policy is to deny by default, try to remove
-+		 * an matching exception instead. And be silent about it: we
-+		 * don't want to break compatibility
-+		 */
-+		if (devcgroup->deny_all == true) {
-+			dev_whitelist_rm(devcgroup, &wh);
-+			return 0;
-+		}
-+		return dev_whitelist_add(devcgroup, &wh);
- 	default:
- 		return -EINVAL;
- 	}
-@@ -476,73 +514,71 @@
- 	.base_cftypes = dev_cgroup_files,
- };
- 
--int __devcgroup_inode_permission(struct inode *inode, int mask)
-+/**
-+ * __devcgroup_check_permission - checks if an inode operation is permitted
-+ * @dev_cgroup: the dev cgroup to be tested against
-+ * @type: device type
-+ * @major: device major number
-+ * @minor: device minor number
-+ * @access: combination of ACC_WRITE, ACC_READ and ACC_MKNOD
-+ *
-+ * returns 0 on success, -EPERM case the operation is not permitted
-+ */
-+static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-+					short type, u32 major, u32 minor,
-+				        short access)
- {
--	struct dev_cgroup *dev_cgroup;
--	struct dev_whitelist_item *wh;
-+	struct dev_whitelist_item wh;
-+	int rc;
-+
-+	memset(&wh, 0, sizeof(wh));
-+	wh.type = type;
-+	wh.major = major;
-+	wh.minor = minor;
-+	wh.access = access;
- 
- 	rcu_read_lock();
-+	rc = may_access_whitelist(dev_cgroup, &wh);
-+	rcu_read_unlock();
- 
--	dev_cgroup = task_devcgroup(current);
-+	if (!rc)
-+		return -EPERM;
- 
--	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
--		if (wh->type & DEV_ALL)
--			goto found;
--		if ((wh->type & DEV_BLOCK) && !S_ISBLK(inode->i_mode))
--			continue;
--		if ((wh->type & DEV_CHAR) && !S_ISCHR(inode->i_mode))
--			continue;
--		if (wh->major != ~0 && wh->major != imajor(inode))
--			continue;
--		if (wh->minor != ~0 && wh->minor != iminor(inode))
--			continue;
-+	return 0;
-+}
- 
--		if ((mask & MAY_WRITE) && !(wh->access & ACC_WRITE))
--			continue;
--		if ((mask & MAY_READ) && !(wh->access & ACC_READ))
--			continue;
--found:
--		rcu_read_unlock();
--		return 0;
--	}
-+int __devcgroup_inode_permission(struct inode *inode, int mask)
-+{
-+	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	short type, access = 0;
- 
--	rcu_read_unlock();
-+	if (S_ISBLK(inode->i_mode))
-+		type = DEV_BLOCK;
-+	if (S_ISCHR(inode->i_mode))
-+		type = DEV_CHAR;
-+	if (mask & MAY_WRITE)
-+		access |= ACC_WRITE;
-+	if (mask & MAY_READ)
-+		access |= ACC_READ;
- 
--	return -EPERM;
-+	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-+					    iminor(inode), access);
- }
- 
- int devcgroup_inode_mknod(int mode, dev_t dev)
- {
--	struct dev_cgroup *dev_cgroup;
--	struct dev_whitelist_item *wh;
-+	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	short type;
- 
- 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
- 		return 0;
- 
--	rcu_read_lock();
--
--	dev_cgroup = task_devcgroup(current);
--
--	list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
--		if (wh->type & DEV_ALL)
--			goto found;
--		if ((wh->type & DEV_BLOCK) && !S_ISBLK(mode))
--			continue;
--		if ((wh->type & DEV_CHAR) && !S_ISCHR(mode))
--			continue;
--		if (wh->major != ~0 && wh->major != MAJOR(dev))
--			continue;
--		if (wh->minor != ~0 && wh->minor != MINOR(dev))
--			continue;
--
--		if (!(wh->access & ACC_MKNOD))
--			continue;
--found:
--		rcu_read_unlock();
--		return 0;
--	}
-+	if (S_ISBLK(mode))
-+		type = DEV_BLOCK;
-+	else
-+		type = DEV_CHAR;
- 
--	rcu_read_unlock();
-+	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-+					    MINOR(dev), ACC_MKNOD);
- 
--	return -EPERM;
- }
-
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Makefile    |   4 +-
+>  tools/perf/ui/hist.c   | 648 ++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/hist.c | 677 ++-----------------------------------------------
+>  tools/perf/util/hist.h |   2 +
+>  4 files changed, 670 insertions(+), 661 deletions(-)
+>  create mode 100644 tools/perf/ui/hist.c
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 35655c3a7b7a..49cff288ac24 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -388,10 +388,10 @@ LIB_OBJS += $(OUTPUT)util/target.o
+>  LIB_OBJS += $(OUTPUT)util/rblist.o
+>  LIB_OBJS += $(OUTPUT)util/intlist.o
+>  
+> -BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+> +LIB_OBJS += $(OUTPUT)ui/hist.o
+>  
+> +BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+> -
+>  # Benchmark modules
+>  BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+>  BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> new file mode 100644
+> index 000000000000..b7936dc6271f
+> --- /dev/null
+> +++ b/tools/perf/ui/hist.c
+> @@ -0,0 +1,648 @@
+> +#include <stdio.h>
+> +#include <math.h>
+> +
+> +#include "../util/util.h"
+> +#include "../util/hist.h"
+> +#include "../util/sort.h"
+> +
+> +
+> +static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+> +{
+> +	int i;
+> +	int ret = fprintf(fp, "            ");
+> +
+> +	for (i = 0; i < left_margin; i++)
+> +		ret += fprintf(fp, " ");
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t ipchain__fprintf_graph_line(FILE *fp, int depth, int depth_mask,
+> +					  int left_margin)
+> +{
+> +	int i;
+> +	size_t ret = callchain__fprintf_left_margin(fp, left_margin);
+> +
+> +	for (i = 0; i < depth; i++)
+> +		if (depth_mask & (1 << i))
+> +			ret += fprintf(fp, "|          ");
+> +		else
+> +			ret += fprintf(fp, "           ");
+> +
+> +	ret += fprintf(fp, "\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+> +				     int depth, int depth_mask, int period,
+> +				     u64 total_samples, u64 hits,
+> +				     int left_margin)
+> +{
+> +	int i;
+> +	size_t ret = 0;
+> +
+> +	ret += callchain__fprintf_left_margin(fp, left_margin);
+> +	for (i = 0; i < depth; i++) {
+> +		if (depth_mask & (1 << i))
+> +			ret += fprintf(fp, "|");
+> +		else
+> +			ret += fprintf(fp, " ");
+> +		if (!period && i == depth - 1) {
+> +			double percent;
+> +
+> +			percent = hits * 100.0 / total_samples;
+> +			ret += percent_color_fprintf(fp, "--%2.2f%%-- ", percent);
+> +		} else
+> +			ret += fprintf(fp, "%s", "          ");
+> +	}
+> +	if (chain->ms.sym)
+> +		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+> +	else
+> +		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+> +
+> +	return ret;
+> +}
+> +
+> +static struct symbol *rem_sq_bracket;
+> +static struct callchain_list rem_hits;
+> +
+> +static void init_rem_hits(void)
+> +{
+> +	rem_sq_bracket = malloc(sizeof(*rem_sq_bracket) + 6);
+> +	if (!rem_sq_bracket) {
+> +		fprintf(stderr, "Not enough memory to display remaining hits\n");
+> +		return;
+> +	}
+> +
+> +	strcpy(rem_sq_bracket->name, "[...]");
+> +	rem_hits.ms.sym = rem_sq_bracket;
+> +}
+> +
+> +static size_t __callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+> +					 u64 total_samples, int depth,
+> +					 int depth_mask, int left_margin)
+> +{
+> +	struct rb_node *node, *next;
+> +	struct callchain_node *child;
+> +	struct callchain_list *chain;
+> +	int new_depth_mask = depth_mask;
+> +	u64 remaining;
+> +	size_t ret = 0;
+> +	int i;
+> +	uint entries_printed = 0;
+> +
+> +	remaining = total_samples;
+> +
+> +	node = rb_first(root);
+> +	while (node) {
+> +		u64 new_total;
+> +		u64 cumul;
+> +
+> +		child = rb_entry(node, struct callchain_node, rb_node);
+> +		cumul = callchain_cumul_hits(child);
+> +		remaining -= cumul;
+> +
+> +		/*
+> +		 * The depth mask manages the output of pipes that show
+> +		 * the depth. We don't want to keep the pipes of the current
+> +		 * level for the last child of this depth.
+> +		 * Except if we have remaining filtered hits. They will
+> +		 * supersede the last child
+> +		 */
+> +		next = rb_next(node);
+> +		if (!next && (callchain_param.mode != CHAIN_GRAPH_REL || !remaining))
+> +			new_depth_mask &= ~(1 << (depth - 1));
+> +
+> +		/*
+> +		 * But we keep the older depth mask for the line separator
+> +		 * to keep the level link until we reach the last child
+> +		 */
+> +		ret += ipchain__fprintf_graph_line(fp, depth, depth_mask,
+> +						   left_margin);
+> +		i = 0;
+> +		list_for_each_entry(chain, &child->val, list) {
+> +			ret += ipchain__fprintf_graph(fp, chain, depth,
+> +						      new_depth_mask, i++,
+> +						      total_samples,
+> +						      cumul,
+> +						      left_margin);
+> +		}
+> +
+> +		if (callchain_param.mode == CHAIN_GRAPH_REL)
+> +			new_total = child->children_hit;
+> +		else
+> +			new_total = total_samples;
+> +
+> +		ret += __callchain__fprintf_graph(fp, &child->rb_root, new_total,
+> +						  depth + 1,
+> +						  new_depth_mask | (1 << depth),
+> +						  left_margin);
+> +		node = next;
+> +		if (++entries_printed == callchain_param.print_limit)
+> +			break;
+> +	}
+> +
+> +	if (callchain_param.mode == CHAIN_GRAPH_REL &&
+> +		remaining && remaining != total_samples) {
+> +
+> +		if (!rem_sq_bracket)
+> +			return ret;
+> +
+> +		new_depth_mask &= ~(1 << (depth - 1));
+> +		ret += ipchain__fprintf_graph(fp, &rem_hits, depth,
+> +					      new_depth_mask, 0, total_samples,
+> +					      remaining, left_margin);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+> +				       u64 total_samples, int left_margin)
+> +{
+> +	struct callchain_node *cnode;
+> +	struct callchain_list *chain;
+> +	u32 entries_printed = 0;
+> +	bool printed = false;
+> +	struct rb_node *node;
+> +	int i = 0;
+> +	int ret = 0;
+> +
+> +	/*
+> +	 * If have one single callchain root, don't bother printing
+> +	 * its percentage (100 % in fractal mode and the same percentage
+> +	 * than the hist in graph mode). This also avoid one level of column.
+> +	 */
+> +	node = rb_first(root);
+> +	if (node && !rb_next(node)) {
+> +		cnode = rb_entry(node, struct callchain_node, rb_node);
+> +		list_for_each_entry(chain, &cnode->val, list) {
+> +			/*
+> +			 * If we sort by symbol, the first entry is the same than
+> +			 * the symbol. No need to print it otherwise it appears as
+> +			 * displayed twice.
+> +			 */
+> +			if (!i++ && sort__first_dimension == SORT_SYM)
+> +				continue;
+> +			if (!printed) {
+> +				ret += callchain__fprintf_left_margin(fp, left_margin);
+> +				ret += fprintf(fp, "|\n");
+> +				ret += callchain__fprintf_left_margin(fp, left_margin);
+> +				ret += fprintf(fp, "---");
+> +				left_margin += 3;
+> +				printed = true;
+> +			} else
+> +				ret += callchain__fprintf_left_margin(fp, left_margin);
+> +
+> +			if (chain->ms.sym)
+> +				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+> +			else
+> +				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
+> +
+> +			if (++entries_printed == callchain_param.print_limit)
+> +				break;
+> +		}
+> +		root = &cnode->rb_root;
+> +	}
+> +
+> +	ret += __callchain__fprintf_graph(fp, root, total_samples,
+> +					  1, 1, left_margin);
+> +	ret += fprintf(fp, "\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t __callchain__fprintf_flat(FILE *fp,
+> +					struct callchain_node *self,
+> +					u64 total_samples)
+> +{
+> +	struct callchain_list *chain;
+> +	size_t ret = 0;
+> +
+> +	if (!self)
+> +		return 0;
+> +
+> +	ret += __callchain__fprintf_flat(fp, self->parent, total_samples);
+> +
+> +
+> +	list_for_each_entry(chain, &self->val, list) {
+> +		if (chain->ip >= PERF_CONTEXT_MAX)
+> +			continue;
+> +		if (chain->ms.sym)
+> +			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
+> +		else
+> +			ret += fprintf(fp, "                %p\n",
+> +					(void *)(long)chain->ip);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t callchain__fprintf_flat(FILE *fp, struct rb_root *self,
+> +				      u64 total_samples)
+> +{
+> +	size_t ret = 0;
+> +	u32 entries_printed = 0;
+> +	struct rb_node *rb_node;
+> +	struct callchain_node *chain;
+> +
+> +	rb_node = rb_first(self);
+> +	while (rb_node) {
+> +		double percent;
+> +
+> +		chain = rb_entry(rb_node, struct callchain_node, rb_node);
+> +		percent = chain->hit * 100.0 / total_samples;
+> +
+> +		ret = percent_color_fprintf(fp, "           %6.2f%%\n", percent);
+> +		ret += __callchain__fprintf_flat(fp, chain, total_samples);
+> +		ret += fprintf(fp, "\n");
+> +		if (++entries_printed == callchain_param.print_limit)
+> +			break;
+> +
+> +		rb_node = rb_next(rb_node);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
+> +					    u64 total_samples, int left_margin,
+> +					    FILE *fp)
+> +{
+> +	switch (callchain_param.mode) {
+> +	case CHAIN_GRAPH_REL:
+> +		return callchain__fprintf_graph(fp, &he->sorted_chain, he->period,
+> +						left_margin);
+> +		break;
+> +	case CHAIN_GRAPH_ABS:
+> +		return callchain__fprintf_graph(fp, &he->sorted_chain, total_samples,
+> +						left_margin);
+> +		break;
+> +	case CHAIN_FLAT:
+> +		return callchain__fprintf_flat(fp, &he->sorted_chain, total_samples);
+> +		break;
+> +	case CHAIN_NONE:
+> +		break;
+> +	default:
+> +		pr_err("Bad callchain mode\n");
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+> +				     size_t size, struct hists *pair_hists,
+> +				     bool show_displacement, long displacement,
+> +				     bool color, u64 total_period)
+> +{
+> +	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
+> +	u64 nr_events;
+> +	const char *sep = symbol_conf.field_sep;
+> +	int ret;
+> +
+> +	if (symbol_conf.exclude_other && !he->parent)
+> +		return 0;
+> +
+> +	if (pair_hists) {
+> +		period = he->pair ? he->pair->period : 0;
+> +		nr_events = he->pair ? he->pair->nr_events : 0;
+> +		total = pair_hists->stats.total_period;
+> +		period_sys = he->pair ? he->pair->period_sys : 0;
+> +		period_us = he->pair ? he->pair->period_us : 0;
+> +		period_guest_sys = he->pair ? he->pair->period_guest_sys : 0;
+> +		period_guest_us = he->pair ? he->pair->period_guest_us : 0;
+> +	} else {
+> +		period = he->period;
+> +		nr_events = he->nr_events;
+> +		total = total_period;
+> +		period_sys = he->period_sys;
+> +		period_us = he->period_us;
+> +		period_guest_sys = he->period_guest_sys;
+> +		period_guest_us = he->period_guest_us;
+> +	}
+> +
+> +	if (total) {
+> +		if (color)
+> +			ret = percent_color_snprintf(s, size,
+> +						     sep ? "%.2f" : "   %6.2f%%",
+> +						     (period * 100.0) / total);
+> +		else
+> +			ret = scnprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
+> +				       (period * 100.0) / total);
+> +		if (symbol_conf.show_cpu_utilization) {
+> +			ret += percent_color_snprintf(s + ret, size - ret,
+> +					sep ? "%.2f" : "   %6.2f%%",
+> +					(period_sys * 100.0) / total);
+> +			ret += percent_color_snprintf(s + ret, size - ret,
+> +					sep ? "%.2f" : "   %6.2f%%",
+> +					(period_us * 100.0) / total);
+> +			if (perf_guest) {
+> +				ret += percent_color_snprintf(s + ret,
+> +						size - ret,
+> +						sep ? "%.2f" : "   %6.2f%%",
+> +						(period_guest_sys * 100.0) /
+> +								total);
+> +				ret += percent_color_snprintf(s + ret,
+> +						size - ret,
+> +						sep ? "%.2f" : "   %6.2f%%",
+> +						(period_guest_us * 100.0) /
+> +								total);
+> +			}
+> +		}
+> +	} else
+> +		ret = scnprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
+> +
+> +	if (symbol_conf.show_nr_samples) {
+> +		if (sep)
+> +			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
+> +		else
+> +			ret += scnprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
+> +	}
+> +
+> +	if (symbol_conf.show_total_period) {
+> +		if (sep)
+> +			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
+> +		else
+> +			ret += scnprintf(s + ret, size - ret, " %12" PRIu64, period);
+> +	}
+> +
+> +	if (pair_hists) {
+> +		char bf[32];
+> +		double old_percent = 0, new_percent = 0, diff;
+> +
+> +		if (total > 0)
+> +			old_percent = (period * 100.0) / total;
+> +		if (total_period > 0)
+> +			new_percent = (he->period * 100.0) / total_period;
+> +
+> +		diff = new_percent - old_percent;
+> +
+> +		if (fabs(diff) >= 0.01)
+> +			scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+> +		else
+> +			scnprintf(bf, sizeof(bf), " ");
+> +
+> +		if (sep)
+> +			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> +		else
+> +			ret += scnprintf(s + ret, size - ret, "%11.11s", bf);
+> +
+> +		if (show_displacement) {
+> +			if (displacement)
+> +				scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+> +			else
+> +				scnprintf(bf, sizeof(bf), " ");
+> +
+> +			if (sep)
+> +				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> +			else
+> +				ret += scnprintf(s + ret, size - ret, "%6.6s", bf);
+> +		}
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
+> +			 struct hists *hists)
+> +{
+> +	const char *sep = symbol_conf.field_sep;
+> +	struct sort_entry *se;
+> +	int ret = 0;
+> +
+> +	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> +		if (se->elide)
+> +			continue;
+> +
+> +		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
+> +		ret += se->se_snprintf(he, s + ret, size - ret,
+> +				       hists__col_len(hists, se->se_width_idx));
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+> +			       struct hists *hists, struct hists *pair_hists,
+> +			       bool show_displacement, long displacement,
+> +			       u64 total_period, FILE *fp)
+> +{
+> +	char bf[512];
+> +	int ret;
+> +
+> +	if (size == 0 || size > sizeof(bf))
+> +		size = sizeof(bf);
+> +
+> +	ret = hist_entry__pcnt_snprintf(he, bf, size, pair_hists,
+> +					show_displacement, displacement,
+> +					true, total_period);
+> +	hist_entry__snprintf(he, bf + ret, size - ret, hists);
+> +	return fprintf(fp, "%s\n", bf);
+> +}
+> +
+> +static size_t hist_entry__fprintf_callchain(struct hist_entry *he,
+> +					    struct hists *hists,
+> +					    u64 total_period, FILE *fp)
+> +{
+> +	int left_margin = 0;
+> +
+> +	if (sort__first_dimension == SORT_COMM) {
+> +		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
+> +							 typeof(*se), list);
+> +		left_margin = hists__col_len(hists, se->se_width_idx);
+> +		left_margin -= thread__comm_len(he->thread);
+> +	}
+> +
+> +	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
+> +}
+> +
+> +size_t hists__fprintf(struct hists *hists, struct hists *pair,
+> +		      bool show_displacement, bool show_header, int max_rows,
+> +		      int max_cols, FILE *fp)
+> +{
+> +	struct sort_entry *se;
+> +	struct rb_node *nd;
+> +	size_t ret = 0;
+> +	u64 total_period;
+> +	unsigned long position = 1;
+> +	long displacement = 0;
+> +	unsigned int width;
+> +	const char *sep = symbol_conf.field_sep;
+> +	const char *col_width = symbol_conf.col_width_list_str;
+> +	int nr_rows = 0;
+> +
+> +	init_rem_hits();
+> +
+> +	if (!show_header)
+> +		goto print_entries;
+> +
+> +	fprintf(fp, "# %s", pair ? "Baseline" : "Overhead");
+> +
+> +	if (symbol_conf.show_cpu_utilization) {
+> +		if (sep) {
+> +			ret += fprintf(fp, "%csys", *sep);
+> +			ret += fprintf(fp, "%cus", *sep);
+> +			if (perf_guest) {
+> +				ret += fprintf(fp, "%cguest sys", *sep);
+> +				ret += fprintf(fp, "%cguest us", *sep);
+> +			}
+> +		} else {
+> +			ret += fprintf(fp, "     sys  ");
+> +			ret += fprintf(fp, "      us  ");
+> +			if (perf_guest) {
+> +				ret += fprintf(fp, "  guest sys  ");
+> +				ret += fprintf(fp, "  guest us  ");
+> +			}
+> +		}
+> +	}
+> +
+> +	if (symbol_conf.show_nr_samples) {
+> +		if (sep)
+> +			fprintf(fp, "%cSamples", *sep);
+> +		else
+> +			fputs("  Samples  ", fp);
+> +	}
+> +
+> +	if (symbol_conf.show_total_period) {
+> +		if (sep)
+> +			ret += fprintf(fp, "%cPeriod", *sep);
+> +		else
+> +			ret += fprintf(fp, "   Period    ");
+> +	}
+> +
+> +	if (pair) {
+> +		if (sep)
+> +			ret += fprintf(fp, "%cDelta", *sep);
+> +		else
+> +			ret += fprintf(fp, "  Delta    ");
+> +
+> +		if (show_displacement) {
+> +			if (sep)
+> +				ret += fprintf(fp, "%cDisplacement", *sep);
+> +			else
+> +				ret += fprintf(fp, " Displ");
+> +		}
+> +	}
+> +
+> +	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> +		if (se->elide)
+> +			continue;
+> +		if (sep) {
+> +			fprintf(fp, "%c%s", *sep, se->se_header);
+> +			continue;
+> +		}
+> +		width = strlen(se->se_header);
+> +		if (symbol_conf.col_width_list_str) {
+> +			if (col_width) {
+> +				hists__set_col_len(hists, se->se_width_idx,
+> +						   atoi(col_width));
+> +				col_width = strchr(col_width, ',');
+> +				if (col_width)
+> +					++col_width;
+> +			}
+> +		}
+> +		if (!hists__new_col_len(hists, se->se_width_idx, width))
+> +			width = hists__col_len(hists, se->se_width_idx);
+> +		fprintf(fp, "  %*s", width, se->se_header);
+> +	}
+> +
+> +	fprintf(fp, "\n");
+> +	if (max_rows && ++nr_rows >= max_rows)
+> +		goto out;
+> +
+> +	if (sep)
+> +		goto print_entries;
+> +
+> +	fprintf(fp, "# ........");
+> +	if (symbol_conf.show_cpu_utilization)
+> +		fprintf(fp, "   .......   .......");
+> +	if (symbol_conf.show_nr_samples)
+> +		fprintf(fp, " ..........");
+> +	if (symbol_conf.show_total_period)
+> +		fprintf(fp, " ............");
+> +	if (pair) {
+> +		fprintf(fp, " ..........");
+> +		if (show_displacement)
+> +			fprintf(fp, " .....");
+> +	}
+> +	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> +		unsigned int i;
+> +
+> +		if (se->elide)
+> +			continue;
+> +
+> +		fprintf(fp, "  ");
+> +		width = hists__col_len(hists, se->se_width_idx);
+> +		if (width == 0)
+> +			width = strlen(se->se_header);
+> +		for (i = 0; i < width; i++)
+> +			fprintf(fp, ".");
+> +	}
+> +
+> +	fprintf(fp, "\n");
+> +	if (max_rows && ++nr_rows >= max_rows)
+> +		goto out;
+> +
+> +	fprintf(fp, "#\n");
+> +	if (max_rows && ++nr_rows >= max_rows)
+> +		goto out;
+> +
+> +print_entries:
+> +	total_period = hists->stats.total_period;
+> +
+> +	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+> +		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+> +
+> +		if (h->filtered)
+> +			continue;
+> +
+> +		if (show_displacement) {
+> +			if (h->pair != NULL)
+> +				displacement = ((long)h->pair->position -
+> +					        (long)position);
+> +			else
+> +				displacement = 0;
+> +			++position;
+> +		}
+> +		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
+> +					   displacement, total_period, fp);
+> +
+> +		if (symbol_conf.use_callchain)
+> +			ret += hist_entry__fprintf_callchain(h, hists, total_period, fp);
+> +		if (max_rows && ++nr_rows >= max_rows)
+> +			goto out;
+> +
+> +		if (h->ms.map == NULL && verbose > 1) {
+> +			__map_groups__fprintf_maps(&h->thread->mg,
+> +						   MAP__FUNCTION, verbose, fp);
+> +			fprintf(fp, "%.10s end\n", graph_dotted_line);
+> +		}
+> +	}
+> +out:
+> +	free(rem_sq_bracket);
+> +
+> +	return ret;
+> +}
+> +
+> +size_t hists__fprintf_nr_events(struct hists *hists, FILE *fp)
+> +{
+> +	int i;
+> +	size_t ret = 0;
+> +
+> +	for (i = 0; i < PERF_RECORD_HEADER_MAX; ++i) {
+> +		const char *name;
+> +
+> +		if (hists->stats.nr_events[i] == 0)
+> +			continue;
+> +
+> +		name = perf_event__name(i);
+> +		if (!strcmp(name, "UNKNOWN"))
+> +			continue;
+> +
+> +		ret += fprintf(fp, "%16s events: %10d\n", name,
+> +			       hists->stats.nr_events[i]);
+> +	}
+> +
+> +	return ret;
+> +}
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index f247ef2789a4..b1817f15bb87 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -45,7 +45,7 @@ bool hists__new_col_len(struct hists *hists, enum hist_column col, u16 len)
+>  	return false;
+>  }
+>  
+> -static void hists__reset_col_len(struct hists *hists)
+> +void hists__reset_col_len(struct hists *hists)
+>  {
+>  	enum hist_column col;
+>  
+> @@ -63,7 +63,7 @@ static void hists__set_unres_dso_col_len(struct hists *hists, int dso)
+>  		hists__set_col_len(hists, dso, unresolved_col_width);
+>  }
+>  
+> -static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+> +void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+>  {
+>  	const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
+>  	u16 len;
+> @@ -114,6 +114,22 @@ static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+>  	}
+>  }
+>  
+> +void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+> +{
+> +	struct rb_node *next = rb_first(&hists->entries);
+> +	struct hist_entry *n;
+> +	int row = 0;
+> +
+> +	hists__reset_col_len(hists);
+> +
+> +	while (next && row++ < max_rows) {
+> +		n = rb_entry(next, struct hist_entry, rb_node);
+> +		if (!n->filtered)
+> +			hists__calc_col_len(hists, n);
+> +		next = rb_next(&n->rb_node);
+> +	}
+> +}
+> +
+>  static void hist_entry__add_cpumode_period(struct hist_entry *he,
+>  					   unsigned int cpumode, u64 period)
+>  {
+> @@ -547,641 +563,6 @@ void hists__output_resort_threaded(struct hists *hists)
+>  	return __hists__output_resort(hists, true);
+>  }
+>  
+> -static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+> -{
+> -	int i;
+> -	int ret = fprintf(fp, "            ");
+> -
+> -	for (i = 0; i < left_margin; i++)
+> -		ret += fprintf(fp, " ");
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t ipchain__fprintf_graph_line(FILE *fp, int depth, int depth_mask,
+> -					  int left_margin)
+> -{
+> -	int i;
+> -	size_t ret = callchain__fprintf_left_margin(fp, left_margin);
+> -
+> -	for (i = 0; i < depth; i++)
+> -		if (depth_mask & (1 << i))
+> -			ret += fprintf(fp, "|          ");
+> -		else
+> -			ret += fprintf(fp, "           ");
+> -
+> -	ret += fprintf(fp, "\n");
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+> -				     int depth, int depth_mask, int period,
+> -				     u64 total_samples, u64 hits,
+> -				     int left_margin)
+> -{
+> -	int i;
+> -	size_t ret = 0;
+> -
+> -	ret += callchain__fprintf_left_margin(fp, left_margin);
+> -	for (i = 0; i < depth; i++) {
+> -		if (depth_mask & (1 << i))
+> -			ret += fprintf(fp, "|");
+> -		else
+> -			ret += fprintf(fp, " ");
+> -		if (!period && i == depth - 1) {
+> -			double percent;
+> -
+> -			percent = hits * 100.0 / total_samples;
+> -			ret += percent_color_fprintf(fp, "--%2.2f%%-- ", percent);
+> -		} else
+> -			ret += fprintf(fp, "%s", "          ");
+> -	}
+> -	if (chain->ms.sym)
+> -		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+> -	else
+> -		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+> -
+> -	return ret;
+> -}
+> -
+> -static struct symbol *rem_sq_bracket;
+> -static struct callchain_list rem_hits;
+> -
+> -static void init_rem_hits(void)
+> -{
+> -	rem_sq_bracket = malloc(sizeof(*rem_sq_bracket) + 6);
+> -	if (!rem_sq_bracket) {
+> -		fprintf(stderr, "Not enough memory to display remaining hits\n");
+> -		return;
+> -	}
+> -
+> -	strcpy(rem_sq_bracket->name, "[...]");
+> -	rem_hits.ms.sym = rem_sq_bracket;
+> -}
+> -
+> -static size_t __callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+> -					 u64 total_samples, int depth,
+> -					 int depth_mask, int left_margin)
+> -{
+> -	struct rb_node *node, *next;
+> -	struct callchain_node *child;
+> -	struct callchain_list *chain;
+> -	int new_depth_mask = depth_mask;
+> -	u64 remaining;
+> -	size_t ret = 0;
+> -	int i;
+> -	uint entries_printed = 0;
+> -
+> -	remaining = total_samples;
+> -
+> -	node = rb_first(root);
+> -	while (node) {
+> -		u64 new_total;
+> -		u64 cumul;
+> -
+> -		child = rb_entry(node, struct callchain_node, rb_node);
+> -		cumul = callchain_cumul_hits(child);
+> -		remaining -= cumul;
+> -
+> -		/*
+> -		 * The depth mask manages the output of pipes that show
+> -		 * the depth. We don't want to keep the pipes of the current
+> -		 * level for the last child of this depth.
+> -		 * Except if we have remaining filtered hits. They will
+> -		 * supersede the last child
+> -		 */
+> -		next = rb_next(node);
+> -		if (!next && (callchain_param.mode != CHAIN_GRAPH_REL || !remaining))
+> -			new_depth_mask &= ~(1 << (depth - 1));
+> -
+> -		/*
+> -		 * But we keep the older depth mask for the line separator
+> -		 * to keep the level link until we reach the last child
+> -		 */
+> -		ret += ipchain__fprintf_graph_line(fp, depth, depth_mask,
+> -						   left_margin);
+> -		i = 0;
+> -		list_for_each_entry(chain, &child->val, list) {
+> -			ret += ipchain__fprintf_graph(fp, chain, depth,
+> -						      new_depth_mask, i++,
+> -						      total_samples,
+> -						      cumul,
+> -						      left_margin);
+> -		}
+> -
+> -		if (callchain_param.mode == CHAIN_GRAPH_REL)
+> -			new_total = child->children_hit;
+> -		else
+> -			new_total = total_samples;
+> -
+> -		ret += __callchain__fprintf_graph(fp, &child->rb_root, new_total,
+> -						  depth + 1,
+> -						  new_depth_mask | (1 << depth),
+> -						  left_margin);
+> -		node = next;
+> -		if (++entries_printed == callchain_param.print_limit)
+> -			break;
+> -	}
+> -
+> -	if (callchain_param.mode == CHAIN_GRAPH_REL &&
+> -		remaining && remaining != total_samples) {
+> -
+> -		if (!rem_sq_bracket)
+> -			return ret;
+> -
+> -		new_depth_mask &= ~(1 << (depth - 1));
+> -		ret += ipchain__fprintf_graph(fp, &rem_hits, depth,
+> -					      new_depth_mask, 0, total_samples,
+> -					      remaining, left_margin);
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+> -				       u64 total_samples, int left_margin)
+> -{
+> -	struct callchain_node *cnode;
+> -	struct callchain_list *chain;
+> -	u32 entries_printed = 0;
+> -	bool printed = false;
+> -	struct rb_node *node;
+> -	int i = 0;
+> -	int ret = 0;
+> -
+> -	/*
+> -	 * If have one single callchain root, don't bother printing
+> -	 * its percentage (100 % in fractal mode and the same percentage
+> -	 * than the hist in graph mode). This also avoid one level of column.
+> -	 */
+> -	node = rb_first(root);
+> -	if (node && !rb_next(node)) {
+> -		cnode = rb_entry(node, struct callchain_node, rb_node);
+> -		list_for_each_entry(chain, &cnode->val, list) {
+> -			/*
+> -			 * If we sort by symbol, the first entry is the same than
+> -			 * the symbol. No need to print it otherwise it appears as
+> -			 * displayed twice.
+> -			 */
+> -			if (!i++ && sort__first_dimension == SORT_SYM)
+> -				continue;
+> -			if (!printed) {
+> -				ret += callchain__fprintf_left_margin(fp, left_margin);
+> -				ret += fprintf(fp, "|\n");
+> -				ret += callchain__fprintf_left_margin(fp, left_margin);
+> -				ret += fprintf(fp, "---");
+> -				left_margin += 3;
+> -				printed = true;
+> -			} else
+> -				ret += callchain__fprintf_left_margin(fp, left_margin);
+> -
+> -			if (chain->ms.sym)
+> -				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+> -			else
+> -				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
+> -
+> -			if (++entries_printed == callchain_param.print_limit)
+> -				break;
+> -		}
+> -		root = &cnode->rb_root;
+> -	}
+> -
+> -	ret += __callchain__fprintf_graph(fp, root, total_samples,
+> -					  1, 1, left_margin);
+> -	ret += fprintf(fp, "\n");
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t __callchain__fprintf_flat(FILE *fp,
+> -					struct callchain_node *self,
+> -					u64 total_samples)
+> -{
+> -	struct callchain_list *chain;
+> -	size_t ret = 0;
+> -
+> -	if (!self)
+> -		return 0;
+> -
+> -	ret += __callchain__fprintf_flat(fp, self->parent, total_samples);
+> -
+> -
+> -	list_for_each_entry(chain, &self->val, list) {
+> -		if (chain->ip >= PERF_CONTEXT_MAX)
+> -			continue;
+> -		if (chain->ms.sym)
+> -			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
+> -		else
+> -			ret += fprintf(fp, "                %p\n",
+> -					(void *)(long)chain->ip);
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t callchain__fprintf_flat(FILE *fp, struct rb_root *self,
+> -				      u64 total_samples)
+> -{
+> -	size_t ret = 0;
+> -	u32 entries_printed = 0;
+> -	struct rb_node *rb_node;
+> -	struct callchain_node *chain;
+> -
+> -	rb_node = rb_first(self);
+> -	while (rb_node) {
+> -		double percent;
+> -
+> -		chain = rb_entry(rb_node, struct callchain_node, rb_node);
+> -		percent = chain->hit * 100.0 / total_samples;
+> -
+> -		ret = percent_color_fprintf(fp, "           %6.2f%%\n", percent);
+> -		ret += __callchain__fprintf_flat(fp, chain, total_samples);
+> -		ret += fprintf(fp, "\n");
+> -		if (++entries_printed == callchain_param.print_limit)
+> -			break;
+> -
+> -		rb_node = rb_next(rb_node);
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
+> -					    u64 total_samples, int left_margin,
+> -					    FILE *fp)
+> -{
+> -	switch (callchain_param.mode) {
+> -	case CHAIN_GRAPH_REL:
+> -		return callchain__fprintf_graph(fp, &he->sorted_chain, he->period,
+> -						left_margin);
+> -		break;
+> -	case CHAIN_GRAPH_ABS:
+> -		return callchain__fprintf_graph(fp, &he->sorted_chain, total_samples,
+> -						left_margin);
+> -		break;
+> -	case CHAIN_FLAT:
+> -		return callchain__fprintf_flat(fp, &he->sorted_chain, total_samples);
+> -		break;
+> -	case CHAIN_NONE:
+> -		break;
+> -	default:
+> -		pr_err("Bad callchain mode\n");
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+> -void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+> -{
+> -	struct rb_node *next = rb_first(&hists->entries);
+> -	struct hist_entry *n;
+> -	int row = 0;
+> -
+> -	hists__reset_col_len(hists);
+> -
+> -	while (next && row++ < max_rows) {
+> -		n = rb_entry(next, struct hist_entry, rb_node);
+> -		if (!n->filtered)
+> -			hists__calc_col_len(hists, n);
+> -		next = rb_next(&n->rb_node);
+> -	}
+> -}
+> -
+> -static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+> -				     size_t size, struct hists *pair_hists,
+> -				     bool show_displacement, long displacement,
+> -				     bool color, u64 total_period)
+> -{
+> -	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
+> -	u64 nr_events;
+> -	const char *sep = symbol_conf.field_sep;
+> -	int ret;
+> -
+> -	if (symbol_conf.exclude_other && !he->parent)
+> -		return 0;
+> -
+> -	if (pair_hists) {
+> -		period = he->pair ? he->pair->period : 0;
+> -		nr_events = he->pair ? he->pair->nr_events : 0;
+> -		total = pair_hists->stats.total_period;
+> -		period_sys = he->pair ? he->pair->period_sys : 0;
+> -		period_us = he->pair ? he->pair->period_us : 0;
+> -		period_guest_sys = he->pair ? he->pair->period_guest_sys : 0;
+> -		period_guest_us = he->pair ? he->pair->period_guest_us : 0;
+> -	} else {
+> -		period = he->period;
+> -		nr_events = he->nr_events;
+> -		total = total_period;
+> -		period_sys = he->period_sys;
+> -		period_us = he->period_us;
+> -		period_guest_sys = he->period_guest_sys;
+> -		period_guest_us = he->period_guest_us;
+> -	}
+> -
+> -	if (total) {
+> -		if (color)
+> -			ret = percent_color_snprintf(s, size,
+> -						     sep ? "%.2f" : "   %6.2f%%",
+> -						     (period * 100.0) / total);
+> -		else
+> -			ret = scnprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
+> -				       (period * 100.0) / total);
+> -		if (symbol_conf.show_cpu_utilization) {
+> -			ret += percent_color_snprintf(s + ret, size - ret,
+> -					sep ? "%.2f" : "   %6.2f%%",
+> -					(period_sys * 100.0) / total);
+> -			ret += percent_color_snprintf(s + ret, size - ret,
+> -					sep ? "%.2f" : "   %6.2f%%",
+> -					(period_us * 100.0) / total);
+> -			if (perf_guest) {
+> -				ret += percent_color_snprintf(s + ret,
+> -						size - ret,
+> -						sep ? "%.2f" : "   %6.2f%%",
+> -						(period_guest_sys * 100.0) /
+> -								total);
+> -				ret += percent_color_snprintf(s + ret,
+> -						size - ret,
+> -						sep ? "%.2f" : "   %6.2f%%",
+> -						(period_guest_us * 100.0) /
+> -								total);
+> -			}
+> -		}
+> -	} else
+> -		ret = scnprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
+> -
+> -	if (symbol_conf.show_nr_samples) {
+> -		if (sep)
+> -			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
+> -		else
+> -			ret += scnprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
+> -	}
+> -
+> -	if (symbol_conf.show_total_period) {
+> -		if (sep)
+> -			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
+> -		else
+> -			ret += scnprintf(s + ret, size - ret, " %12" PRIu64, period);
+> -	}
+> -
+> -	if (pair_hists) {
+> -		char bf[32];
+> -		double old_percent = 0, new_percent = 0, diff;
+> -
+> -		if (total > 0)
+> -			old_percent = (period * 100.0) / total;
+> -		if (total_period > 0)
+> -			new_percent = (he->period * 100.0) / total_period;
+> -
+> -		diff = new_percent - old_percent;
+> -
+> -		if (fabs(diff) >= 0.01)
+> -			scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+> -		else
+> -			scnprintf(bf, sizeof(bf), " ");
+> -
+> -		if (sep)
+> -			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> -		else
+> -			ret += scnprintf(s + ret, size - ret, "%11.11s", bf);
+> -
+> -		if (show_displacement) {
+> -			if (displacement)
+> -				scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+> -			else
+> -				scnprintf(bf, sizeof(bf), " ");
+> -
+> -			if (sep)
+> -				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+> -			else
+> -				ret += scnprintf(s + ret, size - ret, "%6.6s", bf);
+> -		}
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
+> -			 struct hists *hists)
+> -{
+> -	const char *sep = symbol_conf.field_sep;
+> -	struct sort_entry *se;
+> -	int ret = 0;
+> -
+> -	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> -		if (se->elide)
+> -			continue;
+> -
+> -		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
+> -		ret += se->se_snprintf(he, s + ret, size - ret,
+> -				       hists__col_len(hists, se->se_width_idx));
+> -	}
+> -
+> -	return ret;
+> -}
+> -
+> -static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+> -			       struct hists *hists, struct hists *pair_hists,
+> -			       bool show_displacement, long displacement,
+> -			       u64 total_period, FILE *fp)
+> -{
+> -	char bf[512];
+> -	int ret;
+> -
+> -	if (size == 0 || size > sizeof(bf))
+> -		size = sizeof(bf);
+> -
+> -	ret = hist_entry__pcnt_snprintf(he, bf, size, pair_hists,
+> -					show_displacement, displacement,
+> -					true, total_period);
+> -	hist_entry__snprintf(he, bf + ret, size - ret, hists);
+> -	return fprintf(fp, "%s\n", bf);
+> -}
+> -
+> -static size_t hist_entry__fprintf_callchain(struct hist_entry *he,
+> -					    struct hists *hists,
+> -					    u64 total_period, FILE *fp)
+> -{
+> -	int left_margin = 0;
+> -
+> -	if (sort__first_dimension == SORT_COMM) {
+> -		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
+> -							 typeof(*se), list);
+> -		left_margin = hists__col_len(hists, se->se_width_idx);
+> -		left_margin -= thread__comm_len(he->thread);
+> -	}
+> -
+> -	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
+> -}
+> -
+> -size_t hists__fprintf(struct hists *hists, struct hists *pair,
+> -		      bool show_displacement, bool show_header, int max_rows,
+> -		      int max_cols, FILE *fp)
+> -{
+> -	struct sort_entry *se;
+> -	struct rb_node *nd;
+> -	size_t ret = 0;
+> -	u64 total_period;
+> -	unsigned long position = 1;
+> -	long displacement = 0;
+> -	unsigned int width;
+> -	const char *sep = symbol_conf.field_sep;
+> -	const char *col_width = symbol_conf.col_width_list_str;
+> -	int nr_rows = 0;
+> -
+> -	init_rem_hits();
+> -
+> -	if (!show_header)
+> -		goto print_entries;
+> -
+> -	fprintf(fp, "# %s", pair ? "Baseline" : "Overhead");
+> -
+> -	if (symbol_conf.show_cpu_utilization) {
+> -		if (sep) {
+> -			ret += fprintf(fp, "%csys", *sep);
+> -			ret += fprintf(fp, "%cus", *sep);
+> -			if (perf_guest) {
+> -				ret += fprintf(fp, "%cguest sys", *sep);
+> -				ret += fprintf(fp, "%cguest us", *sep);
+> -			}
+> -		} else {
+> -			ret += fprintf(fp, "     sys  ");
+> -			ret += fprintf(fp, "      us  ");
+> -			if (perf_guest) {
+> -				ret += fprintf(fp, "  guest sys  ");
+> -				ret += fprintf(fp, "  guest us  ");
+> -			}
+> -		}
+> -	}
+> -
+> -	if (symbol_conf.show_nr_samples) {
+> -		if (sep)
+> -			fprintf(fp, "%cSamples", *sep);
+> -		else
+> -			fputs("  Samples  ", fp);
+> -	}
+> -
+> -	if (symbol_conf.show_total_period) {
+> -		if (sep)
+> -			ret += fprintf(fp, "%cPeriod", *sep);
+> -		else
+> -			ret += fprintf(fp, "   Period    ");
+> -	}
+> -
+> -	if (pair) {
+> -		if (sep)
+> -			ret += fprintf(fp, "%cDelta", *sep);
+> -		else
+> -			ret += fprintf(fp, "  Delta    ");
+> -
+> -		if (show_displacement) {
+> -			if (sep)
+> -				ret += fprintf(fp, "%cDisplacement", *sep);
+> -			else
+> -				ret += fprintf(fp, " Displ");
+> -		}
+> -	}
+> -
+> -	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> -		if (se->elide)
+> -			continue;
+> -		if (sep) {
+> -			fprintf(fp, "%c%s", *sep, se->se_header);
+> -			continue;
+> -		}
+> -		width = strlen(se->se_header);
+> -		if (symbol_conf.col_width_list_str) {
+> -			if (col_width) {
+> -				hists__set_col_len(hists, se->se_width_idx,
+> -						   atoi(col_width));
+> -				col_width = strchr(col_width, ',');
+> -				if (col_width)
+> -					++col_width;
+> -			}
+> -		}
+> -		if (!hists__new_col_len(hists, se->se_width_idx, width))
+> -			width = hists__col_len(hists, se->se_width_idx);
+> -		fprintf(fp, "  %*s", width, se->se_header);
+> -	}
+> -
+> -	fprintf(fp, "\n");
+> -	if (max_rows && ++nr_rows >= max_rows)
+> -		goto out;
+> -
+> -	if (sep)
+> -		goto print_entries;
+> -
+> -	fprintf(fp, "# ........");
+> -	if (symbol_conf.show_cpu_utilization)
+> -		fprintf(fp, "   .......   .......");
+> -	if (symbol_conf.show_nr_samples)
+> -		fprintf(fp, " ..........");
+> -	if (symbol_conf.show_total_period)
+> -		fprintf(fp, " ............");
+> -	if (pair) {
+> -		fprintf(fp, " ..........");
+> -		if (show_displacement)
+> -			fprintf(fp, " .....");
+> -	}
+> -	list_for_each_entry(se, &hist_entry__sort_list, list) {
+> -		unsigned int i;
+> -
+> -		if (se->elide)
+> -			continue;
+> -
+> -		fprintf(fp, "  ");
+> -		width = hists__col_len(hists, se->se_width_idx);
+> -		if (width == 0)
+> -			width = strlen(se->se_header);
+> -		for (i = 0; i < width; i++)
+> -			fprintf(fp, ".");
+> -	}
+> -
+> -	fprintf(fp, "\n");
+> -	if (max_rows && ++nr_rows >= max_rows)
+> -		goto out;
+> -
+> -	fprintf(fp, "#\n");
+> -	if (max_rows && ++nr_rows >= max_rows)
+> -		goto out;
+> -
+> -print_entries:
+> -	total_period = hists->stats.total_period;
+> -
+> -	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+> -		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+> -
+> -		if (h->filtered)
+> -			continue;
+> -
+> -		if (show_displacement) {
+> -			if (h->pair != NULL)
+> -				displacement = ((long)h->pair->position -
+> -					        (long)position);
+> -			else
+> -				displacement = 0;
+> -			++position;
+> -		}
+> -		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
+> -					   displacement, total_period, fp);
+> -
+> -		if (symbol_conf.use_callchain)
+> -			ret += hist_entry__fprintf_callchain(h, hists, total_period, fp);
+> -		if (max_rows && ++nr_rows >= max_rows)
+> -			goto out;
+> -
+> -		if (h->ms.map == NULL && verbose > 1) {
+> -			__map_groups__fprintf_maps(&h->thread->mg,
+> -						   MAP__FUNCTION, verbose, fp);
+> -			fprintf(fp, "%.10s end\n", graph_dotted_line);
+> -		}
+> -	}
+> -out:
+> -	free(rem_sq_bracket);
+> -
+> -	return ret;
+> -}
+> -
+>  /*
+>   * See hists__fprintf to match the column widths
+>   */
+> @@ -1342,25 +723,3 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
+>  	++hists->stats.nr_events[0];
+>  	++hists->stats.nr_events[type];
+>  }
+> -
+> -size_t hists__fprintf_nr_events(struct hists *hists, FILE *fp)
+> -{
+> -	int i;
+> -	size_t ret = 0;
+> -
+> -	for (i = 0; i < PERF_RECORD_HEADER_MAX; ++i) {
+> -		const char *name;
+> -
+> -		if (hists->stats.nr_events[i] == 0)
+> -			continue;
+> -
+> -		name = perf_event__name(i);
+> -		if (!strcmp(name, "UNKNOWN"))
+> -			continue;
+> -
+> -		ret += fprintf(fp, "%16s events: %10d\n", name,
+> -			       hists->stats.nr_events[i]);
+> -	}
+> -
+> -	return ret;
+> -}
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 0b096c27a419..69fab7d9abcd 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -112,6 +112,8 @@ void hists__filter_by_symbol(struct hists *hists);
+>  u16 hists__col_len(struct hists *self, enum hist_column col);
+>  void hists__set_col_len(struct hists *self, enum hist_column col, u16 len);
+>  bool hists__new_col_len(struct hists *self, enum hist_column col, u16 len);
+> +void hists__reset_col_len(struct hists *hists);
+> +void hists__calc_col_len(struct hists *hists, struct hist_entry *he);
+>  
+>  struct perf_evlist;
+>  
+> -- 
+> 1.7.11.2
