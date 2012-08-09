@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab2HITjK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:39:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38039 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759376Ab2HITjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:39:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,742,1336374000"; 
-   d="scan'208";a="195679811"
-Date: Thu, 9 Aug 2012 12:38:59 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Intel xhci: Only switch the switchable ports
-Message-ID: <20120809193859.GD14429@xanatos>
-References: <1344504711-10916-1-git-send-email-kengyu@canonical.com>
- <20120809142406.GC14429@xanatos>
- <CADXHx7ZbWPb1qLQcdquE9QTkGhOwR0ka1gX2m+o_Y68c9jqtog@mail.gmail.com>
+	id S1759500Ab2HITj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:39:29 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:53529 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759376Ab2HITj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:39:27 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 4DD808210C
+Date: Thu, 9 Aug 2012 21:39:21 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Michel Lespinasse <walken@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/5] [RFC] Add volatile range management code
+Message-ID: <20120809193921.GA1999@thinkpad>
+References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
+ <1343447832-7182-2-git-send-email-john.stultz@linaro.org>
+ <CANN689HWYO5DD_p7yY39ethcFu_JO9hudMcDHd=K8FUfhpHZOg@mail.gmail.com>
+ <20120809133544.GA2086@thinkpad>
+ <5024107D.8070109@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADXHx7ZbWPb1qLQcdquE9QTkGhOwR0ka1gX2m+o_Y68c9jqtog@mail.gmail.com>
+In-Reply-To: <5024107D.8070109@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 12:13:19AM +0800, Keng-Yu Lin wrote:
-> On Thu, Aug 9, 2012 at 10:24 PM, Sarah Sharp
-> <sarah.a.sharp@linux.intel.com> wrote:
-> > On Thu, Aug 09, 2012 at 05:31:51PM +0800, Keng-Yu Lin wrote:
-> >> With a previous patch to enable the EHCI/XHCI port switching, it switches
-> >> all the available ports.
+On Thu, Aug 09, 2012 at 12:33:17PM -0700, John Stultz wrote:
+> On 08/09/2012 06:35 AM, Andrea Righi wrote:
+> >On Thu, Aug 09, 2012 at 02:46:37AM -0700, Michel Lespinasse wrote:
+> >>On Fri, Jul 27, 2012 at 8:57 PM, John Stultz <john.stultz@linaro.org> wrote:
+> >>>v5:
+> >>>* Drop intervaltree for prio_tree usage per Michel &
+> >>>   Dmitry's suggestions.
+> >>Actually, I believe the ranges you need to track are non-overlapping, correct ?
 > >>
-> >> The assumption is not correct because the BIOS may expect some ports
-> >> not switchable by the OS.
+> >>If that is the case, a simple rbtree, sorted by start-of-range
+> >>address, would work best.
+> >>(I am trying to remove prio_tree users... :)
+> >>
+> >John,
 > >
-> > Why would the BIOS expect some ports to not be switchable?  I know that
-> > we internally at Intel had discussed some theoretical reasons why it
-> > might not be good to switch some ports, but when I presented the
-> > original patch with this same code in it to Linux USB mailing list, both
-> > Alan and Greg said, "Why not unconditionally switch ports?"  I had no
-> > good examples at the time.
+> >JFYI, if you want to try a possible rbtree-based implementation, as
+> >suggested by Michel you could try this one:
+> >https://github.com/arighi/kinterval
 > >
-> > Is this causing issues with some particular BIOS?
-> >
+> >This implementation supports insertion, deletion and transparent merging
+> >of adjacent ranges, as well as splitting ranges when chunks removed or
+> >different chunk types are added in the middle of an existing range; so
+> >if I'm not wrong probably you should be able to use this code as is,
+> >without any modification.
+> I do appreciate the suggestion, and considered this earlier when you
+> posted this before.
 > 
-> Yes, this is causing the internal webcam missing on the USB bus as I
-> observed on some HM70-based laptops.
-
-Does anything show up in dmesg when you turn on
-CONFIG_USB_XHCI_HCD_DEBUGGING?  It would be good to know if it is
-totally not electrically present, or if there's some sort of xHCI
-hardware or software issue that's preventing the webcam from being
-enumerated.
-
-> The internal webcam is attached to one port that is controlled by the
-> xhci host.
-> But the other ports with the outer plugs work well after booting. I
-> cannot test the USB port of the internal webcam easily (without
-> tearing down the laptop :-/).
+> Unfotunately the transparent merging/splitting/etc is actually not
+> useful for me, since I manage other data per-range. The earlier
+> generic rangetree/intervaltree implementations I tried limiting the
+> interface to basically add(), remove(), search(), and search_next(),
+> since when we coalesce intervals, we need to free the data in the
+> structure referencing the interval being deleted (and similarly
+> create new structures to reference new intervals created when we
+> remove an interval). So the coalescing/splitting logic can't be
+> pushed into the interval management code cleanly.
 > 
-> I also tried some similar HM77-based models. HM77 has no this issue.
-> This could be some chipset mystery I am not aware now.
+> So while I might be able to make use of your kinterval in a fairly
+> simple manner (only using add/del/lookup), I'm not sure it wins
+> anything over just using an rbtree.  Especially since I'd have to do
+> my own coalesce/splitting logic anyway, it would actually be more
+> expensive as on add() it would still scan to check for overlapping
+> ranges to merge.
+> 
+> I ended up dropping my generic intervaltree implementation because
+> folks objected that it was so trivial (basically just wrapping an
+> rbtree) and didn't handle some of the more complex intervaltree use
+> cases (ie: allowing for overlapping intervals). The priotree seemed
+> to match fairly closely the interface I was using, but apparently
+> its on its way out as well, so unless anyone further objects, I
+> think I'll just fall back to a simple rbtree implementation.
 
-Could be.  Can you use any SMBIOS information to change the port
-switchover only for those HM70-based laptops?  And is it a particular
-laptop vendor or all HM70 laptops?
+OK, everything makes sense now, thanks for the clarifications, and sorry
+for suggesting yet another range/interval tree implementation. :)
 
-As Alan said, I would rather not trust the BIOS to provide the correct
-port mask.
+I'll look at your patch set more in details and try to test/review it
+closely.
 
-Sarah Sharp
+-Andrea
