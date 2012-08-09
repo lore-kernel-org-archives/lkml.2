@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab2HIJtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:49:41 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50311 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab2HIJtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:49:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] mmc: sdio: Fix PM_SLEEP related build warnings
-Date: Thu, 9 Aug 2012 11:55:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Chris Ball <cjb@laptop.org>, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344495413-7164-1-git-send-email-thierry.reding@avionic-design.de> <201208091127.03119.rjw@sisk.pl> <20120809092756.GA1020@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120809092756.GA1020@avionic-0098.mockup.avionic-design.de>
+	id S1757394Ab2HIJxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:53:20 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:53661 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477Ab2HIJxS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:53:18 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Date: Thu, 9 Aug 2012 11:53:12 +0200
+Subject: RE: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Thread-Topic: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
+Thread-Index: Ac11awVi8dUEYflmRQK4a2/SGTnYEgAqNq1w
+Message-ID: <F45880696056844FA6A73F415B568C695B0E797048@EXDCVYMBSTM006.EQ1STM.local>
+References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
+ <1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
+ <20120807183809.GC26990@kroah.com>
+ <F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
+ <20120808133748.GA14459@kroah.com>
+In-Reply-To: <20120808133748.GA14459@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208091155.34573.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 09, 2012, Thierry Reding wrote:
-> On Thu, Aug 09, 2012 at 11:27:02AM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, August 09, 2012, Thierry Reding wrote:
-> > > Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
-> > > the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
-> > > complain about them being unused.
-> > > 
-> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > 
-> > The pm_no_operation() thing is not necessary at all, AFAICT.  I'd just
-> > remove it entirely. :-)
+> On Wed, Aug 08, 2012 at 05:36:05AM +0200, Arun MURTHY wrote:
+> > > On Tue, Aug 07, 2012 at 12:24:28PM +0530, Arun Murthy wrote:
+> > > > Adds Modem Access Framework, which allows for registering platform
+> > > specific
+> > > > modem access mechanisms. The framework also exposes APIs for
+> > > > client
+> > > drivers
+> > > > for getting and releasing access to modem, regardless of the
+> > > underlying
+> > > > platform specific access mechanism.
+> > >
+> > > The term "modems" here has a lot of legacy connotations.  First of
+> > > which is, userspace handles this today as tty devices, why aren't
+> > > you doing the same here?  Why does this have to be something
+> > > "special"?
+> > >
+> >
+> > The main focus over there the modem IPC.
 > 
-> I don't actually have a setup where I can test suspend/resume with this
-> driver, but if you say so I can follow up with a patch that removes
-> pm_no_operation(). It should work because many drivers without proper
-> PM_SLEEP support do not specify .suspend() nor .resume() callbacks
-> either.
+> Over where?
+> 
+> What "modem IPC"?
+> 
 
-Sure, it should work.
+I mean the dir which is added in this patch, "modem_shm" is added to
+have a separate list of such modem access drivers.
 
-Thanks,
-Rafael
+> You need to really explain what you are doing here, as I have no idea.
+> And I have no idea why you still can't just use a tty device, why can't you?
+> 
+
+
+Its not that tty can be used or cant be used, but just to separate out the
+modem related stuff in a separate folder.
+
+> > In doing so, there are some functionality like waking the modem, or
+> > releasing the modem etc. These will be used by the modem IPC drivers
+> > and also few others like sim driver and security drivers.
+> 
+> What's a "sim driver", and what type of "security drivers" are you referring
+> to?
+
+SIM(Subscriber Identity Module) used in mobiles.
+TEE(security) driver
+
+> 
+> > Since this is a shared call and hence has to be synchronized. Hence so
+> > a small framework like is being done to monitor the modem access
+> > related only operations.
+> 
+> Again, why can't the tty layer do this for you?
+> 
+
+Maybe tty can do this, but want to have all modem related  separately.
+There are many such hardware and many drivers coming up in near future.
+
+Thanks and Regards,
+Arun R Murthy
+-----------------
