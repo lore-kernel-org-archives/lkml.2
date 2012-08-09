@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab2HIQnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:43:31 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:56024 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2HIQn3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:43:29 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-pm@lists.linux-foundation.org
-Subject: [REGRESSION] hard lockup on resume from suspend on ThinkPad T23
-Date: Thu, 9 Aug 2012 18:43:28 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-tp520; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201208091843.28342.Martin@lichtvoll.de>
+	id S1758091Ab2HIQoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:44:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43333 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757360Ab2HIQo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:44:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,741,1336374000"; 
+   d="scan'208";a="178057288"
+From: james.d.ralston@intel.com
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Rob Landley <rob@landley.net>
+Cc: Seth Heasley <seth.heasley@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Olof Johansson <olof@lixom.net>, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Subject: [PATCH 4/5] i2c-i801: Add Device IDs for Intel Lynx Point-LP PCH
+Date: Thu,  9 Aug 2012 09:43:52 -0700
+Message-Id: <1344530632-2645-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: James Ralston <james.d.ralston@intel.com>
 
-I thought I report it here – although unless it rings a bell I won´t 
-probably be doing much about it like a git-bisect since that machine is 
-slow and it could take ages…
+This patch adds the SMBus Device IDs for the Intel Lynx Point-LP PCH. The Device IDs are defined in drivers/i2c/busses/i2c-i801.c
 
-With Debian kernel 3.3.0-trunk-686-pae the machine suspends and resume for 
-lots of times for 30-40 days uptime and more if I let it.
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+---
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
 
-With Debian kernel 3.4-trunk-686-pae as well as 3.5-trunk-686-pae tried 
-out today often not always the kernel locks up hard after resume. That is, 
-the image is read back but then when switching to graphics or shortly 
-afterwards the mouse pointer is frozen and the machine does not respond to 
-ping anymore.
-
-Graphics is ancient:
-
-deepdance:~> lspci -nn | grep VGA
-01:00.0 VGA compatible controller [0300]: S3 Inc. SuperSavage IX/C SDR 
-[5333:8c2e] (rev 05)
-
-CPU is Mobile Intel(R) Pentium(R) III CPU - M  1133MHz, the machine has 
-768 MiB of RAM.
-
-Filesystems are (aged) BTRFS (which contributes to the extreme slowness of 
-the machine it seems – apt-get (dist-)upgrade without eatmydata takes 
-long).
-
-Kernel parameters are:
-
-linux /vmlinuz-3.3.0-trunk-686-pae root=/dev/mapper/deepdance-debian ro 
-vga=791 threadirqs init=/bin/systemd resume=/dev/mapper/deepdance-swap
-
-
-I didn´t report this with 3.4 cause I hoped that difficult to debug bug 
-would just go away with 3.5, but it seems it didn´t. If it could just dump 
-out something useful before it crashes… I am using threadirqs since quite 
-some time on various machines, but I could try disabling it if it seems to 
-be suspicious.
-
-I am back on 3.3 right now. It doesn´t matter that much on this machine.
-
-
-Unless any brilliant ideas I might just keep it at this report. Maybe it 
-rings a bell for someone who has a suggestion to try out.
-
-I have 3.4 on ThinkPad T42 with some radeon chip and 3.4 and since some 
-while 3.5 on ThinkPad T520 with Intel Sandybridge graphics – no issues 
-there. So it only seems to affect this machine. T520 uses threadirqs, I 
-think the T42 as well.
-
-Thanks,
+diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+index 615142d..53207df 100644
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -21,6 +21,7 @@ Supported adapters:
+   * Intel DH89xxCC (PCH)
+   * Intel Panther Point (PCH)
+   * Intel Lynx Point (PCH)
++  * Intel Lynx Point_LP (PCH)
+    Datasheets: Publicly available at the Intel website
+ 
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 2e7530a..3500af7 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -104,6 +104,7 @@ config I2C_I801
+ 	    DH89xxCC (PCH)
+ 	    Panther Point (PCH)
+ 	    Lynx Point (PCH)
++	    Lynx Point_LP (PCH)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 898dcf9..c467038 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -52,6 +52,7 @@
+   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
++  Lynx Point_LP (PCH)   0x9c22     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -155,6 +156,7 @@
+ #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
++#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
+ 
+ struct i801_priv {
+ 	struct i2c_adapter adapter;
+@@ -771,6 +773,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
+ 	{ 0, }
+ };
+ 
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+1.7.7.6
+
