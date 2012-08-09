@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2HIRBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:01:39 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:28329 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2HIRBi (ORCPT
+	id S1753508Ab2HIRDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:03:14 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:48209 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab2HIRDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:01:38 -0400
-Message-ID: <1344531695.2393.27.camel@lorien2>
-Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: "Christoph Lameter (Open Source)" <cl@linux.com>
-Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
-Date: Thu, 09 Aug 2012 11:01:35 -0600
-In-Reply-To: <alpine.DEB.2.02.1208090911100.15909@greybox.home>
-References: <1342221125.17464.8.camel@lorien2>
-	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
-	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
-	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 9 Aug 2012 13:03:11 -0400
+Date: Thu, 9 Aug 2012 10:03:07 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: qiang.liu@freescale.com
+Cc: linux-crypto@vger.kernel.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, herbert@gondor.hengli.com.au, arnd@arndb.de,
+        gregkh@linuxfoundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@gmail.com
+Subject: Re: [PATCH v7 0/8] Raid: enable talitos xor offload for improving
+ performance
+Message-ID: <20120809170307.GG14264@ovro.caltech.edu>
+References: <1344500375-8457-1-git-send-email-qiang.liu@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344500375-8457-1-git-send-email-qiang.liu@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (ovro.ovro.caltech.edu); Thu, 09 Aug 2012 10:03:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 09:13 -0500, Christoph Lameter (Open Source)
-wrote:
-> On Mon, 6 Aug 2012, Shuah Khan wrote:
+On Thu, Aug 09, 2012 at 04:19:35PM +0800, qiang.liu@freescale.com wrote:
+> Hi all,
 > 
-> > +#ifdef CONFIG_DEBUG_VM
-> > +static int kmem_cache_sanity_check(const char *name, size_t size)
+> The following 8 patches enabling fsl-dma and talitos offload raid
+> operations for improving raid performance and balancing CPU load.
 > 
-> Why do we pass "size" in? AFAICT there is no need to.
-
-It is an oversight on my part. Will re-work the patch as needed. Please
-see more on your second comment below.
-
+> These patches include talitos, fsl-dma and carma module (caram uses
+> some features of fsl-dma).
 > 
-> > @@ -53,48 +93,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
-> >  {
-> >  	struct kmem_cache *s = NULL;
-> >
-> > -#ifdef CONFIG_DEBUG_VM
-> >  	if (!name || in_interrupt() || size < sizeof(void *) ||
-> >  		size > KMALLOC_MAX_SIZE) {
-> > -		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-> > -			" failed\n", name);
-> > +		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
-> >  		goto out;
-> >  	}
-> > -#endif
-> >
+> Write performance will be improved by 25-30% tested by iozone.
+> Write performance is improved about 2% after using spin_lock_bh replace
+> spin_lock_irqsave.
+> CPU load will be reduced by 8%.
 > 
-> If you move the above code into the sanity check function then you will be
-> using the size as well. These are also sanity checks after all.
+> "fwiw, I gave v5 a test-drive, setting up a RAID5 array on ramdisks
+> [1], and this patchseries, along with FSL_DMA && NET_DMA set seems
+> to be holding water, so this series gets my:"
+> 
+> Tested-by: Kim Phillips <kim.phillips@freescale.com>
+> 
 
-Yes these are also sanity checks, however these checks are common to
-debug and non-debug paths, hence the reasoning to leave them in
-kmem_cache_create(). 
+The fsldma parts of the series all look great to me.
 
-You are right, if these checks get moved into the debug section in
-kmem_cache_sanity_check, size will be used.
+Thanks,
+Ira
 
-Moving these checks into kmem_cache_sanity_check() would mean return
-path handling will change. The first block of sanity checks for name,
-and size etc. are done before holding the slab_mutex and the second
-block that checks the slab lists is done after holding the mutex.
-Depending on which one fails, return handling is going to be different
-in that if second block fails, mutex needs to be unlocked and when the
-first block fails, there is no need to do that. Nothing that is too
-complex to solve, just something that needs to be handled.
-
-Comments, thoughts on
-
-1. just remove size from kmem_cache_sanity_check() parameters
-or
-2. move first block sanity checks into kmem_cache_sanity_check()
-
-Personally I prefer the first option to avoid complexity in return path
-handling. Would like to hear what others think.
-
--- Shuah
-
-
-
+> [1] mdadm --create --verbose --force /dev/md0 --level=raid5 --raid-devices=4 \
+> 	/dev/ram[0123]
+> 
+> Changes in v7:
+> 	- add test result which is provided by Kim Phillips;
+> 	- correct one coding style issue in patch 5/8;
+> 	- add comments by Arnd Bergmann in patch 6/8;
+> 
+> Changes in v6:
+> 	- swap the order of original patch 3/6 and 4/6;
+> 	- merge Ira's patch to reduce the size of original patch;
+> 	- merge Ira's patch of carma in 8/8;
+> 	- update documents and descriptions according to Ira's advice;
+> 
+> Changes in v5:
+> 	- add detail description in patch 3/6 about the process of completed
+> 	descriptor, the process is in align with fsl-dma Reference Manual,
+> 	illustrate the potential risk and how to reproduce it;
+> 	- drop the patch 7/7 in v4 according to Timur's comments;
+> 
+> Changes in v4:
+> 	- fix an error in talitos when dest addr is same with src addr, dest
+> 	should be freed only one time if src is same with dest addr;
+> 	- correct coding style in fsl-dma according to Ira's comments;
+> 	- fix a race condition in fsl-dma fsl_tx_status(), remove the interface
+> 	which is used to free descriptors in queue ld_completed, this interface
+> 	has been included in fsldma_cleanup_descriptor(), in v3, there is one
+> 	place missed spin_lock protect;
+> 	- split the original patch 3/4 up to 2 patches 3/7 and 4/7 according to
+> 	Li Yang's comments;
+> 	- fix a warning of unitialized cookie;
+> 	- add memory copy self test in fsl-dma;
+> 	- add more detail description about use spin_lock_bh() to instead of
+> 	spin_lock_irqsave() according to Timur's comments.
+> 
+> Changes in v3:
+> 	- change release process of fsl-dma descriptor for resolve the
+> 	potential race condition;
+> 	- add test result when use spin_lock_bh replace spin_lock_irqsave;
+> 	- modify the benchmark results according to the latest patch.
+> 
+> Changes in v2:
+> 	- rebase onto cryptodev tree;
+> 	- split the patch 3/4 up to 3 independent patches;
+> 	- remove the patch 4/4, the fix is not for cryptodev tree;
+> 
+> Qiang Liu (8):
+>       Talitos: Support for async_tx XOR offload
+>       fsl-dma: remove attribute DMA_INTERRUPT of dmaengine
+>       fsl-dma: add fsl_dma_free_descriptor() to reduce code duplication
+>       fsl-dma: move functions to avoid forward declarations
+>       fsl-dma: change release process of dma descriptor for supporting async_tx
+>       fsl-dma: use spin_lock_bh to instead of spin_lock_irqsave
+>       fsl-dma: fix a warning of unitialized cookie
+>       carma: remove unnecessary DMA_INTERRUPT capability
+> 
+>  drivers/crypto/Kconfig                  |    9 +
+>  drivers/crypto/talitos.c                |  413 ++++++++++++++++++++++++++
+>  drivers/crypto/talitos.h                |   53 ++++
+>  drivers/dma/fsldma.c                    |  488 +++++++++++++++++--------------
+>  drivers/dma/fsldma.h                    |   17 +-
+>  drivers/misc/carma/carma-fpga-program.c |    1 -
+>  drivers/misc/carma/carma-fpga.c         |    2 +-
+>  7 files changed, 761 insertions(+), 222 deletions(-)
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
