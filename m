@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab2HIIWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:22:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56092 "EHLO comal.ext.ti.com"
+	id S1756277Ab2HIIXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:23:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56112 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755934Ab2HIIWr convert rfc822-to-8bit (ORCPT
+	id S1755934Ab2HIIXJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:22:47 -0400
+	Thu, 9 Aug 2012 04:23:09 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/3] mfd: add lp8788 mfd driver
-Thread-Topic: [PATCH v2 1/3] mfd: add lp8788 mfd driver
-Thread-Index: Ac12CB1InAlCHqp1Tw2q0ybDE4xofw==
-Date: Thu, 9 Aug 2012 08:22:38 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEBC45@DBDE02.ent.ti.com>
+To: "jic23@cam.ac.uk" <jic23@cam.ac.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: [PATCH 2/3] iio: adc: add new lp8788 adc driver
+Thread-Topic: [PATCH 2/3] iio: adc: add new lp8788 adc driver
+Thread-Index: Ac12CCv4fTO8wqIfTuWIQAgiLgvz2w==
+Date: Thu, 9 Aug 2012 08:22:58 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEBC4F@DBDE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,71 +29,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI LP8788 PMU supports regulators, battery charger, RTC,
-ADC, backlight driver and current sinks.
-
-Patch v2.
-(a) For interrupt handling, use generic irq rather than irq-domain
-(b) Replace EXPORT_SYMBOL() with EXPORT_SYMBOL_GPL() for regmap apis
-(c) Remove adc functions in mfd driver
-  : add new iio driver for supporting adc functions.
-    seperate patch will be submitted
+TI LP8788 has ADC function.
+The result of LP878 ADC is used in the LP8788 power supply driver.
+(such like getting the battery voltage, temperature and etc)
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/mfd/Kconfig              |    9 +
- drivers/mfd/Makefile             |    2 +
- drivers/mfd/lp8788-irq.c         |  240 +++++++++++++++++++++++++
- drivers/mfd/lp8788.c             |  255 ++++++++++++++++++++++++++
- include/linux/mfd/lp8788-isink.h |   52 ++++++
- include/linux/mfd/lp8788.h       |  364 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 922 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/lp8788-irq.c
- create mode 100644 drivers/mfd/lp8788.c
- create mode 100644 include/linux/mfd/lp8788-isink.h
- create mode 100644 include/linux/mfd/lp8788.h
+ drivers/iio/adc/Kconfig      |    6 +
+ drivers/iio/adc/Makefile     |    1 +
+ drivers/iio/adc/lp8788_adc.c |  240 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 247 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/iio/adc/lp8788_adc.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index d1facef..c7b6400 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -450,6 +450,15 @@ config PMIC_ADP5520
- 	  individual components like LCD backlight, LEDs, GPIOs and Kepad
- 	  under the corresponding menus.
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 8a78b4f..30c06ed 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -22,4 +22,10 @@ config AT91_ADC
+ 	help
+ 	  Say yes here to build support for Atmel AT91 ADC.
  
-+config MFD_LP8788
-+	bool "Texas Instruments LP8788 Power Management Unit Driver"
-+	depends on I2C=y
-+	select MFD_CORE
-+	select REGMAP_I2C
++config LP8788_ADC
++	bool "LP8788 ADC driver"
++	depends on MFD_LP8788
 +	help
-+	  TI LP8788 PMU supports regulators, battery charger, RTC,
-+	  adc, backlight driver and current sinks.
++	  Say yes here to build support for TI LP8788 ADC.
 +
- config MFD_MAX77686
- 	bool "Maxim Semiconductor MAX77686 PMIC Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 79dd22d..489cab9 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -90,6 +90,8 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
- obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
- obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+ endmenu
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 52eec25..72f9a76 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -4,3 +4,4 @@
  
-+obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
-+
- obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
- obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
- max8925-objs			:= max8925-core.o max8925-i2c.o
-diff --git a/drivers/mfd/lp8788-irq.c b/drivers/mfd/lp8788-irq.c
+ obj-$(CONFIG_AD7266) += ad7266.o
+ obj-$(CONFIG_AT91_ADC) += at91_adc.o
++obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
+diff --git a/drivers/iio/adc/lp8788_adc.c b/drivers/iio/adc/lp8788_adc.c
 new file mode 100644
-index 0000000..5056383
+index 0000000..30767d5
 --- /dev/null
-+++ b/drivers/mfd/lp8788-irq.c
++++ b/drivers/iio/adc/lp8788_adc.c
 @@ -0,0 +1,240 @@
 +/*
-+ * TI LP8788 MFD - interrupt handler
++ * TI LP8788 MFD - ADC driver
 + *
 + * Copyright 2012 Texas Instruments
 + *
@@ -107,922 +87,232 @@ index 0000000..5056383
 +#include <linux/module.h>
 +#include <linux/slab.h>
 +#include <linux/err.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
++#include <linux/platform_device.h>
 +#include <linux/delay.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/driver.h>
 +#include <linux/mfd/lp8788.h>
 +
 +/* register address */
-+#define LP8788_INT_1			0x00
-+#define LP8788_INTEN_1			0x03
++#define LP8788_ADC_CONF			0x60
++#define LP8788_ADC_RAW			0x61
++#define LP8788_ADC_DONE			0x63
 +
-+#define BASE_INTEN_REG			LP8788_INTEN_1
-+#define SIZE_REG			8
-+#define NUM_INTREGS			3
++#define START_ADC_CHANNEL		LPADC_VBATT_5P5
++#define END_ADC_CHANNEL			LPADC_MAX
++#define ADC_CONV_START			1
++#define ADC_CONV_DELAY_US		100
 +
-+/*
-+ * struct lp8788_irq_data
-+ * @lp               : access to lp8788 registers
-+ * @irq_lock         : mutex for enabling/disabling the interrupt
-+ * @enabled          : status of enabled interrupt
-+ * @irq              : pin number of IRQ_N pin
-+ * @irq_base         : used for handling chained interrupt
-+ */
-+struct lp8788_irq_data {
++struct lp8788_adc {
 +	struct lp8788 *lp;
-+	struct mutex irq_lock;
-+	int enabled[LP8788_INT_MAX];
-+	int irq;
-+	int irq_base;
++	struct iio_dev *indio_dev;
 +};
 +
-+static inline u8 _irq_to_addr(enum lp8788_int_id id)
-+{
-+	return id / SIZE_REG;
-+}
-+
-+static inline u8 _irq_to_enable_addr(enum lp8788_int_id id)
-+{
-+	return _irq_to_addr(id) + BASE_INTEN_REG;
-+}
-+
-+static inline u8 _irq_to_mask(enum lp8788_int_id id)
-+{
-+	return 1 << (id % SIZE_REG);
-+}
-+
-+static inline u8 _irq_to_val(enum lp8788_int_id id, int enable)
-+{
-+	return enable << (id % SIZE_REG);
-+}
-+
-+static void lp8788_irq_enable(struct irq_data *data)
-+{
-+	struct lp8788_irq_data *irqd = irq_data_get_irq_chip_data(data);
-+	enum lp8788_int_id irq = data->irq - irqd->irq_base;
-+
-+	irqd->enabled[irq] = 1;
-+}
-+
-+static void lp8788_irq_disable(struct irq_data *data)
-+{
-+	struct lp8788_irq_data *irqd = irq_data_get_irq_chip_data(data);
-+	enum lp8788_int_id irq = data->irq - irqd->irq_base;
-+
-+	irqd->enabled[irq] = 0;
-+}
-+
-+static void lp8788_irq_bus_lock(struct irq_data *data)
-+{
-+	struct lp8788_irq_data *irqd = irq_data_get_irq_chip_data(data);
-+
-+	mutex_lock(&irqd->irq_lock);
-+}
-+
-+static void lp8788_irq_bus_sync_unlock(struct irq_data *data)
-+{
-+	struct lp8788_irq_data *irqd = irq_data_get_irq_chip_data(data);
-+	enum lp8788_int_id irq = data->irq - irqd->irq_base;
-+	u8 addr, mask, val;
-+
-+	addr = _irq_to_enable_addr(irq);
-+	mask = _irq_to_mask(irq);
-+	val = _irq_to_val(irq, irqd->enabled[irq]);
-+
-+	lp8788_update_bits(irqd->lp, addr, mask, val);
-+
-+	mutex_unlock(&irqd->irq_lock);
-+}
-+
-+static struct irq_chip lp8788_irq_chip = {
-+	.name			= "lp8788",
-+	.irq_enable		= lp8788_irq_enable,
-+	.irq_disable		= lp8788_irq_disable,
-+	.irq_bus_lock		= lp8788_irq_bus_lock,
-+	.irq_bus_sync_unlock	= lp8788_irq_bus_sync_unlock,
++static const int adc_const[LPADC_MAX] = {
++	[LPADC_VBATT_5P5] = 1343,
++	[LPADC_VIN_CHG]   = 3052,
++	[LPADC_IBATT]     = 610,
++	[LPADC_IC_TEMP]   = 610,
++	[LPADC_VBATT_6P0] = 1465,
++	[LPADC_VBATT_5P0] = 1221,
++	[LPADC_ADC1]      = 610,
++	[LPADC_ADC2]      = 610,
++	[LPADC_VDD]       = 1025,
++	[LPADC_VCOIN]     = 757,
++	[LPADC_VDD_LDO]   = 610,
++	[LPADC_ADC3]      = 610,
++	[LPADC_ADC4]      = 610,
 +};
 +
-+static irqreturn_t lp8788_irq_handler(int irq, void *ptr)
++static inline unsigned int _get_adc_micro_unit(enum lp8788_adc_id id,
++					unsigned int adc_result)
 +{
-+	struct lp8788_irq_data *irqd = ptr;
-+	struct lp8788 *lp = irqd->lp;
-+	int i, ret, base = irqd->irq_base;
-+	u8 status[NUM_INTREGS], addr, mask;
++	return adc_const[id] * ((adc_result * 1000 + 500) / 1000);
++}
 +
-+	ret = lp8788_read_multi_bytes(lp, LP8788_INT_1, status, NUM_INTREGS);
-+	if (ret)
-+		return IRQ_NONE;
++static int lp8788_adc_read_raw(struct iio_dev *indio_dev,
++			struct iio_chan_spec const *chan,
++			int *val, int *val2, long mask)
++{
++	struct lp8788_adc *adc = iio_priv(indio_dev);
++	int retry = 5;
++	unsigned int msb, lsb;
++	u8 data, rawdata[2], shift;
++	int size = ARRAY_SIZE(rawdata);
 +
-+	for (i = 0 ; i < LP8788_INT_MAX ; i++) {
-+		addr = _irq_to_addr(i);
-+		mask = _irq_to_mask(i);
++	if (mask != IIO_CHAN_INFO_RAW)
++		return -EINVAL;
 +
-+		/* reporting only if the irq is enabled */
-+		if (status[addr] & mask) {
-+			dev_info(lp->dev, "IRQ: %d\n", base + i);
-+			handle_nested_irq(base + i);
++	data = (chan->channel << 1) | ADC_CONV_START;
++	if (lp8788_write_byte(adc->lp, LP8788_ADC_CONF, data))
++		goto err;
++
++	/* retry until adc conversion is done */
++	data = 0;
++	while (retry--) {
++		udelay(ADC_CONV_DELAY_US);
++
++		if (lp8788_read_byte(adc->lp, LP8788_ADC_DONE, &data))
++			goto err;
++
++		/* conversion done */
++		if (data)
++			break;
++	}
++
++	if (lp8788_read_multi_bytes(adc->lp, LP8788_ADC_RAW, rawdata, size))
++		goto err;
++
++	shift = chan->scan_type.shift;
++	msb = (rawdata[0] << shift) & 0x00000ff0;
++	lsb = (rawdata[1] >> shift) & 0x0000000f;
++	*val = _get_adc_micro_unit(chan->channel, msb | lsb);
++
++	return IIO_VAL_INT;
++err:
++	return -EINVAL;
++}
++
++static const struct iio_info lp8788_adc_info = {
++	.read_raw = &lp8788_adc_read_raw,
++	.driver_module = THIS_MODULE,
++};
++
++#define LP8788_COMMON_CH(id)					\
++		.indexed = 1,					\
++		.output = 1,					\
++		.channel = LPADC_##id,				\
++		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT,	\
++		.address = LP8788_ADC_RAW,			\
++		.scan_type = IIO_ST('u', 8, 12, 4),		\
++		.scan_index = 1,				\
++		.datasheet_name = #id,				\
++
++#define LP8788_V_CHAN(id)	{				\
++		.type = IIO_VOLTAGE,				\
++		LP8788_COMMON_CH(id)				\
++}
++
++#define LP8788_I_CHAN(id)	{				\
++		.type = IIO_CURRENT,				\
++		LP8788_COMMON_CH(id)				\
++}
++
++#define LP8788_T_CHAN(id)	{				\
++		.type = IIO_TEMP,				\
++		LP8788_COMMON_CH(id)				\
++}
++
++static struct iio_chan_spec lp8788_adc_channels[] = {
++	[LPADC_VBATT_5P5] = LP8788_V_CHAN(VBATT_5P5),
++	[LPADC_VIN_CHG]   = LP8788_V_CHAN(VIN_CHG),
++	[LPADC_IBATT]     = LP8788_I_CHAN(IBATT),
++	[LPADC_IC_TEMP]   = LP8788_T_CHAN(IC_TEMP),
++	[LPADC_VBATT_6P0] = LP8788_V_CHAN(VBATT_6P0),
++	[LPADC_VBATT_5P0] = LP8788_V_CHAN(VBATT_5P0),
++	[LPADC_ADC1]      = LP8788_V_CHAN(ADC1),
++	[LPADC_ADC2]      = LP8788_V_CHAN(ADC2),
++	[LPADC_VDD]       = LP8788_V_CHAN(VDD),
++	[LPADC_VCOIN]     = LP8788_V_CHAN(VCOIN),
++	[LPADC_VDD_LDO]   = LP8788_V_CHAN(VDD_LDO),
++	[LPADC_ADC3]      = LP8788_V_CHAN(ADC3),
++	[LPADC_ADC4]      = LP8788_V_CHAN(ADC4),
++};
++
++static int __devinit lp8788_adc_probe(struct platform_device *pdev)
++{
++	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
++	struct iio_map *map;
++	struct lp8788_adc *adc;
++	struct iio_dev *indio_dev;
++	int i, ret;
++
++	adc = devm_kzalloc(lp->dev, sizeof(struct lp8788_adc), GFP_KERNEL);
++	if (!adc)
++		return -ENOMEM;
++
++	indio_dev = iio_device_alloc(sizeof(struct iio_dev));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	adc = iio_priv(indio_dev);
++	adc->lp = lp;
++	adc->indio_dev = indio_dev;
++	platform_set_drvdata(pdev, adc);
++
++	if (lp->pdata) {
++		for (i = START_ADC_CHANNEL; i < END_ADC_CHANNEL ; i++) {
++			map = lp->pdata->adc_pdata[i];
++			ret = iio_map_array_register(indio_dev, map);
++			if (ret) {
++				dev_err(lp->dev, "iio map err: %d\n", ret);
++				goto err_iio_map_array;
++			}
 +		}
 +	}
 +
-+	return IRQ_HANDLED;
-+}
++	indio_dev->dev.parent = lp->dev;
++	indio_dev->name = pdev->name;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->info = &lp8788_adc_info;
++	indio_dev->channels = lp8788_adc_channels;
++	indio_dev->num_channels = ARRAY_SIZE(lp8788_adc_channels);
 +
-+static int lp8788_update_enable_irq_status(struct lp8788_irq_data *irqd)
-+{
-+	struct lp8788 *lp = irqd->lp;
-+	u8 data[NUM_INTREGS], addr, mask;
-+	int i, ret;
-+
-+	/* clear interrupts before setting irq data */
-+	ret = lp8788_read_multi_bytes(lp, LP8788_INT_1, data, NUM_INTREGS);
-+	if (ret)
-+		return ret;
-+
-+	/* read irq enable bits and update enabled status */
-+	ret = lp8788_read_multi_bytes(lp, LP8788_INTEN_1, data, NUM_INTREGS);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0 ; i < LP8788_INT_MAX ; i++) {
-+		addr = _irq_to_addr(i);
-+		mask = _irq_to_mask(i);
-+		irqd->enabled[i] = data[addr] & mask ? 1 : 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static void lp8788_set_irq_data(struct lp8788_irq_data *irqd)
-+{
-+	struct irq_chip *chip = &lp8788_irq_chip;
-+	int i, base = irqd->irq_base;
-+
-+	for (i = base ; i < base + LP8788_INT_MAX; i++) {
-+		irq_set_chip_data(i, irqd);
-+		irq_set_chip_and_handler(i, chip, handle_edge_irq);
-+		irq_set_nested_thread(i, 1);
-+
-+#ifdef CONFIG_ARM
-+		set_irq_flags(i, IRQF_VALID);
-+#else
-+		irq_set_noprobe(i);
-+#endif
-+	}
-+}
-+
-+static int lp8788_create_irq_threads(struct lp8788_irq_data *irqd)
-+{
-+	struct device *dev = irqd->lp->dev;
-+	int irq = irqd->irq;
-+	int ret;
-+
-+	/* thread for IRQ_N pin */
-+	ret = request_threaded_irq(irq, NULL, lp8788_irq_handler,
-+				IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+				"lp8788-irq", irqd);
++	ret = iio_device_register(indio_dev);
 +	if (ret) {
-+		dev_err(dev, "failed to create a thread for IRQ_N\n");
-+		return ret;
++		dev_err(lp->dev, "iio dev register err: %d\n", ret);
++		goto err_iio_register;
 +	}
 +
 +	return 0;
-+}
 +
-+int lp8788_irq_init(struct lp8788 *lp, int irq)
-+{
-+	struct lp8788_irq_data *irqd;
-+	int ret, base;
-+
-+	if (!lp->pdata) {
-+		dev_warn(lp->dev, "no platform data for irq\n");
-+		return 0;
++err_iio_map_array:
++	while (--i >= START_ADC_CHANNEL) {
++		map = lp->pdata->adc_pdata[i];
++		iio_map_array_unregister(indio_dev, map);
 +	}
-+
-+	base = lp->pdata->irq_base;
-+	if (base <= 0) {
-+		dev_warn(lp->dev, "invalid irq base number : %d", base);
-+		return 0;
-+	}
-+
-+	irqd = devm_kzalloc(lp->dev, sizeof(*irqd), GFP_KERNEL);
-+	if (!irqd)
-+		return -ENOMEM;
-+
-+	lp->irqd = irqd;
-+	irqd->lp = lp;
-+	irqd->irq = irq;
-+	irqd->irq_base = base;
-+
-+	ret = lp8788_update_enable_irq_status(irqd);
-+	if (ret)
-+		return ret;
-+
-+	mutex_init(&irqd->irq_lock);
-+
-+	lp8788_set_irq_data(irqd);
-+
-+	return lp8788_create_irq_threads(irqd);
-+}
-+
-+void lp8788_irq_exit(struct lp8788 *lp)
-+{
-+	struct lp8788_irq_data *irqd = lp->irqd;
-+
-+	if (irqd->irq)
-+		free_irq(irqd->irq, irqd);
-+}
-diff --git a/drivers/mfd/lp8788.c b/drivers/mfd/lp8788.c
-new file mode 100644
-index 0000000..d6bba0b
---- /dev/null
-+++ b/drivers/mfd/lp8788.c
-@@ -0,0 +1,255 @@
-+/*
-+ * TI LP8788 MFD - core interface
-+ *
-+ * Copyright 2012 Texas Instruments
-+ *
-+ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/err.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/lp8788.h>
-+
-+#define MAX_LP8788_REGISTERS		0xA2
-+
-+#define MFD_DEV_WITH_RESOURCE(_name, _resource, num_resource)	\
-+{								\
-+	.name = LP8788_DEV_##_name,				\
-+	.resources = _resource,					\
-+	.num_resources = num_resource,				\
-+}
-+
-+#define MFD_DEV_WITH_ID(_name, _id)		\
-+{						\
-+	.name = LP8788_DEV_##_name,		\
-+	.id = _id,				\
-+}
-+
-+#define MFD_DEV_SIMPLE(_name)			\
-+{						\
-+	.name = LP8788_DEV_##_name,		\
-+}
-+
-+static struct resource chg_irqs[] = {
-+	/* Charger Interrupts */
-+	{
-+		.start = LP8788_INT_CHG_INPUT_STATE,
-+		.end   = LP8788_INT_PRECHG_TIMEOUT,
-+		.name  = LP8788_CHG_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	/* Power Routing Switch Interrupts */
-+	{
-+		.start = LP8788_INT_ENTER_SYS_SUPPORT,
-+		.end   = LP8788_INT_EXIT_SYS_SUPPORT,
-+		.name  = LP8788_PRSW_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	/* Battery Interrupts */
-+	{
-+		.start = LP8788_INT_BATT_LOW,
-+		.end   = LP8788_INT_NO_BATT,
-+		.name  = LP8788_BATT_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource rtc_irqs[] = {
-+	{
-+		.start = LP8788_INT_RTC_ALARM1,
-+		.end   = LP8788_INT_RTC_ALARM2,
-+		.name  = LP8788_ALM_IRQ,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct mfd_cell lp8788_devs[] = {
-+	/* 4 bucks */
-+	MFD_DEV_WITH_ID(BUCK, 1),
-+	MFD_DEV_WITH_ID(BUCK, 2),
-+	MFD_DEV_WITH_ID(BUCK, 3),
-+	MFD_DEV_WITH_ID(BUCK, 4),
-+	/* 12 digital ldos */
-+	MFD_DEV_WITH_ID(DLDO, 1),
-+	MFD_DEV_WITH_ID(DLDO, 2),
-+	MFD_DEV_WITH_ID(DLDO, 3),
-+	MFD_DEV_WITH_ID(DLDO, 4),
-+	MFD_DEV_WITH_ID(DLDO, 5),
-+	MFD_DEV_WITH_ID(DLDO, 6),
-+	MFD_DEV_WITH_ID(DLDO, 7),
-+	MFD_DEV_WITH_ID(DLDO, 8),
-+	MFD_DEV_WITH_ID(DLDO, 9),
-+	MFD_DEV_WITH_ID(DLDO, 10),
-+	MFD_DEV_WITH_ID(DLDO, 11),
-+	MFD_DEV_WITH_ID(DLDO, 12),
-+	/* 10 analog ldos */
-+	MFD_DEV_WITH_ID(ALDO, 1),
-+	MFD_DEV_WITH_ID(ALDO, 2),
-+	MFD_DEV_WITH_ID(ALDO, 3),
-+	MFD_DEV_WITH_ID(ALDO, 4),
-+	MFD_DEV_WITH_ID(ALDO, 5),
-+	MFD_DEV_WITH_ID(ALDO, 6),
-+	MFD_DEV_WITH_ID(ALDO, 7),
-+	MFD_DEV_WITH_ID(ALDO, 8),
-+	MFD_DEV_WITH_ID(ALDO, 9),
-+	MFD_DEV_WITH_ID(ALDO, 10),
-+	/* ADC */
-+	MFD_DEV_SIMPLE(ADC),
-+	/* battery charger */
-+	MFD_DEV_WITH_RESOURCE(CHARGER, chg_irqs, ARRAY_SIZE(chg_irqs)),
-+	/* rtc */
-+	MFD_DEV_WITH_RESOURCE(RTC, rtc_irqs, ARRAY_SIZE(rtc_irqs)),
-+	/* backlight */
-+	MFD_DEV_SIMPLE(BACKLIGHT),
-+	/* current sink for vibrator */
-+	MFD_DEV_SIMPLE(VIBRATOR),
-+	/* current sink for keypad LED */
-+	MFD_DEV_SIMPLE(KEYLED),
-+};
-+
-+int lp8788_read_byte(struct lp8788 *lp, u8 reg, u8 *data)
-+{
-+	int ret;
-+	unsigned int val;
-+
-+	ret = regmap_read(lp->regmap, reg, &val);
-+	if (ret < 0) {
-+		dev_err(lp->dev, "failed to read 0x%.2x\n", reg);
-+		return ret;
-+	}
-+
-+	*data = (u8)val;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(lp8788_read_byte);
-+
-+int lp8788_read_multi_bytes(struct lp8788 *lp, u8 reg, u8 *data, size_t count)
-+{
-+	return regmap_bulk_read(lp->regmap, reg, data, count);
-+}
-+EXPORT_SYMBOL_GPL(lp8788_read_multi_bytes);
-+
-+int lp8788_write_byte(struct lp8788 *lp, u8 reg, u8 data)
-+{
-+	return regmap_write(lp->regmap, reg, data);
-+}
-+EXPORT_SYMBOL_GPL(lp8788_write_byte);
-+
-+int lp8788_update_bits(struct lp8788 *lp, u8 reg, u8 mask, u8 data)
-+{
-+	return regmap_update_bits(lp->regmap, reg, mask, data);
-+}
-+EXPORT_SYMBOL_GPL(lp8788_update_bits);
-+
-+static int lp8788_platform_init(struct lp8788 *lp)
-+{
-+	struct lp8788_platform_data *pdata = lp->pdata;
-+
-+	return (pdata && pdata->init_func) ? pdata->init_func(lp) : 0;
-+}
-+
-+static int lp8788_add_devices(struct lp8788 *lp)
-+{
-+	int ret;
-+	int irq_base = lp->pdata ? lp->pdata->irq_base : 0;
-+
-+	ret = mfd_add_devices(lp->dev, -1, lp8788_devs, ARRAY_SIZE(lp8788_devs),
-+			NULL, irq_base);
-+	if (ret)
-+		dev_err(lp->dev, "failed to add mfd device: %d\n", ret);
-+
++err_iio_register:
++	iio_device_free(indio_dev);
 +	return ret;
 +}
 +
-+static const struct regmap_config lp8788_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX_LP8788_REGISTERS,
-+};
-+
-+static int lp8788_probe(struct i2c_client *cl, const struct i2c_device_id *id)
++static int __devexit lp8788_adc_remove(struct platform_device *pdev)
 +{
-+	struct lp8788 *lp;
-+	struct lp8788_platform_data *pdata = cl->dev.platform_data;
-+	int ret;
++	struct lp8788_adc *adc = platform_get_drvdata(pdev);
++	struct lp8788 *lp = adc->lp;
++	struct iio_dev *indio_dev = adc->indio_dev;
++	struct iio_map *map;
++	int i;
 +
-+	lp = devm_kzalloc(&cl->dev, sizeof(struct lp8788), GFP_KERNEL);
-+	if (!lp)
-+		return -ENOMEM;
-+
-+	lp->regmap = devm_regmap_init_i2c(cl, &lp8788_regmap_config);
-+	if (IS_ERR(lp->regmap)) {
-+		ret = PTR_ERR(lp->regmap);
-+		dev_err(&cl->dev, "regmap init i2c err: %d\n", ret);
-+		return ret;
++	if (lp->pdata) {
++		for (i = START_ADC_CHANNEL; i < END_ADC_CHANNEL ; i++) {
++			map = lp->pdata->adc_pdata[i];
++			iio_map_array_unregister(indio_dev, map);
++		}
 +	}
 +
-+	lp->pdata = pdata;
-+	lp->dev = &cl->dev;
-+	i2c_set_clientdata(cl, lp);
-+
-+	ret = lp8788_platform_init(lp);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8788_irq_init(lp, cl->irq);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8788_add_devices(lp);
-+	if (ret) {
-+		lp8788_irq_exit(lp);
-+		return ret;
-+	}
++	iio_device_unregister(indio_dev);
++	iio_device_free(indio_dev);
 +
 +	return 0;
 +}
 +
-+static int __devexit lp8788_remove(struct i2c_client *cl)
-+{
-+	struct lp8788 *lp = i2c_get_clientdata(cl);
-+
-+	mfd_remove_devices(lp->dev);
-+	lp8788_irq_exit(lp);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id lp8788_ids[] = {
-+	{"lp8788", 0},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, lp8788_ids);
-+
-+static struct i2c_driver lp8788_driver = {
++static struct platform_driver lp8788_adc_driver = {
++	.probe = lp8788_adc_probe,
++	.remove = __devexit_p(lp8788_adc_remove),
 +	.driver = {
-+		.name = "lp8788",
++		.name = LP8788_DEV_ADC,
 +		.owner = THIS_MODULE,
 +	},
-+	.probe = lp8788_probe,
-+	.remove = __devexit_p(lp8788_remove),
-+	.id_table = lp8788_ids,
 +};
++module_platform_driver(lp8788_adc_driver);
 +
-+static int __init lp8788_init(void)
-+{
-+	return i2c_add_driver(&lp8788_driver);
-+}
-+subsys_initcall(lp8788_init);
-+
-+static void __exit lp8788_exit(void)
-+{
-+	i2c_del_driver(&lp8788_driver);
-+}
-+module_exit(lp8788_exit);
-+
-+MODULE_DESCRIPTION("TI LP8788 MFD Driver");
++MODULE_DESCRIPTION("Texas Instruments LP8788 ADC Driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/lp8788-isink.h b/include/linux/mfd/lp8788-isink.h
-new file mode 100644
-index 0000000..f38262d
---- /dev/null
-+++ b/include/linux/mfd/lp8788-isink.h
-@@ -0,0 +1,52 @@
-+/*
-+ * TI LP8788 MFD - common definitions for current sinks
-+ *
-+ * Copyright 2012 Texas Instruments
-+ *
-+ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __ISINK_LP8788_H__
-+#define __ISINK_LP8788_H__
-+
-+/* register address */
-+#define LP8788_ISINK_CTRL		0x99
-+#define LP8788_ISINK12_IOUT		0x9A
-+#define LP8788_ISINK3_IOUT		0x9B
-+#define LP8788_ISINK1_PWM		0x9C
-+#define LP8788_ISINK2_PWM		0x9D
-+#define LP8788_ISINK3_PWM		0x9E
-+
-+/* mask bits */
-+#define LP8788_ISINK1_IOUT_M		0x0F	/* Addr 9Ah */
-+#define LP8788_ISINK2_IOUT_M		0xF0
-+#define LP8788_ISINK3_IOUT_M		0x0F	/* Addr 9Bh */
-+
-+/* 6 bits used for PWM code : Addr 9C ~ 9Eh */
-+#define LP8788_ISINK_MAX_PWM		63
-+#define LP8788_ISINK_SCALE_OFFSET	3
-+
-+static const u8 lp8788_iout_addr[] = {
-+	LP8788_ISINK12_IOUT,
-+	LP8788_ISINK12_IOUT,
-+	LP8788_ISINK3_IOUT,
-+};
-+
-+static const u8 lp8788_iout_mask[] = {
-+	LP8788_ISINK1_IOUT_M,
-+	LP8788_ISINK2_IOUT_M,
-+	LP8788_ISINK3_IOUT_M,
-+};
-+
-+static const u8 lp8788_pwm_addr[] = {
-+	LP8788_ISINK1_PWM,
-+	LP8788_ISINK2_PWM,
-+	LP8788_ISINK3_PWM,
-+};
-+
-+#endif
-diff --git a/include/linux/mfd/lp8788.h b/include/linux/mfd/lp8788.h
-new file mode 100644
-index 0000000..84c7388
---- /dev/null
-+++ b/include/linux/mfd/lp8788.h
-@@ -0,0 +1,364 @@
-+/*
-+ * TI LP8788 MFD Device
-+ *
-+ * Copyright 2012 Texas Instruments
-+ *
-+ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __MFD_LP8788_H__
-+#define __MFD_LP8788_H__
-+
-+#include <linux/regmap.h>
-+#include <linux/gpio.h>
-+
-+#define LP8788_DEV_BUCK		"lp8788-buck"
-+#define LP8788_DEV_DLDO		"lp8788-dldo"
-+#define LP8788_DEV_ALDO		"lp8788-aldo"
-+#define LP8788_DEV_CHARGER	"lp8788-charger"
-+#define LP8788_DEV_RTC		"lp8788-rtc"
-+#define LP8788_DEV_BACKLIGHT	"lp8788-backlight"
-+#define LP8788_DEV_VIBRATOR	"lp8788-vibrator"
-+#define LP8788_DEV_KEYLED	"lp8788-keyled"
-+#define LP8788_DEV_ADC		"lp8788-adc"
-+
-+#define LP8788_NUM_BUCKS	4
-+#define LP8788_NUM_DLDOS	12
-+#define LP8788_NUM_ALDOS	10
-+#define LP8788_NUM_BUCK2_DVS	2
-+
-+#define LP8788_CHG_IRQ		"CHG_IRQ"
-+#define LP8788_PRSW_IRQ		"PRSW_IRQ"
-+#define LP8788_BATT_IRQ		"BATT_IRQ"
-+#define LP8788_ALM_IRQ		"ALARM_IRQ"
-+
-+enum lp8788_int_id {
-+	/* interrup register 1 : Addr 00h */
-+	LP8788_INT_TSDL,
-+	LP8788_INT_TSDH,
-+	LP8788_INT_UVLO,
-+	LP8788_INT_FLAGMON,
-+	LP8788_INT_PWRON_TIME,
-+	LP8788_INT_PWRON,
-+	LP8788_INT_COMP1,
-+	LP8788_INT_COMP2,
-+
-+	/* interrupt register 2 : Addr 01h */
-+	LP8788_INT_CHG_INPUT_STATE,
-+	LP8788_INT_CHG_STATE,
-+	LP8788_INT_EOC,
-+	LP8788_INT_CHG_RESTART,
-+	LP8788_INT_RESTART_TIMEOUT,
-+	LP8788_INT_FULLCHG_TIMEOUT,
-+	LP8788_INT_PRECHG_TIMEOUT,
-+
-+	/* interrupt register 3 : Addr 02h */
-+	LP8788_INT_RTC_ALARM1 = 17,
-+	LP8788_INT_RTC_ALARM2,
-+	LP8788_INT_ENTER_SYS_SUPPORT,
-+	LP8788_INT_EXIT_SYS_SUPPORT,
-+	LP8788_INT_BATT_LOW,
-+	LP8788_INT_NO_BATT,
-+
-+	LP8788_INT_MAX = 24,
-+};
-+
-+enum lp8788_dvs_sel {
-+	DVS_SEL_V0,
-+	DVS_SEL_V1,
-+	DVS_SEL_V2,
-+	DVS_SEL_V3,
-+};
-+
-+enum lp8788_ext_ldo_en_id {
-+	EN_ALDO1,
-+	EN_ALDO234,
-+	EN_ALDO5,
-+	EN_ALDO7,
-+	EN_DLDO7,
-+	EN_DLDO911,
-+	EN_LDOS_MAX,
-+};
-+
-+enum lp8788_charger_event {
-+	NO_CHARGER,
-+	CHARGER_DETECTED,
-+};
-+
-+enum lp8788_bl_ctrl_mode {
-+	LP8788_BL_REGISTER_ONLY,
-+	LP8788_BL_COMB_PWM_BASED,	/* PWM + I2C, changed by PWM input */
-+	LP8788_BL_COMB_REGISTER_BASED,	/* PWM + I2C, changed by I2C */
-+};
-+
-+enum lp8788_bl_dim_mode {
-+	LP8788_DIM_EXPONENTIAL,
-+	LP8788_DIM_LINEAR,
-+};
-+
-+enum lp8788_bl_full_scale_current {
-+	LP8788_FULLSCALE_5000uA,
-+	LP8788_FULLSCALE_8500uA,
-+	LP8788_FULLSCALE_1200uA,
-+	LP8788_FULLSCALE_1550uA,
-+	LP8788_FULLSCALE_1900uA,
-+	LP8788_FULLSCALE_2250uA,
-+	LP8788_FULLSCALE_2600uA,
-+	LP8788_FULLSCALE_2950uA,
-+};
-+
-+enum lp8788_bl_ramp_step {
-+	LP8788_RAMP_8us,
-+	LP8788_RAMP_1024us,
-+	LP8788_RAMP_2048us,
-+	LP8788_RAMP_4096us,
-+	LP8788_RAMP_8192us,
-+	LP8788_RAMP_16384us,
-+	LP8788_RAMP_32768us,
-+	LP8788_RAMP_65538us,
-+};
-+
-+enum lp8788_bl_pwm_polarity {
-+	LP8788_PWM_ACTIVE_HIGH,
-+	LP8788_PWM_ACTIVE_LOW,
-+};
-+
-+enum lp8788_isink_scale {
-+	LP8788_ISINK_SCALE_100mA,
-+	LP8788_ISINK_SCALE_120mA,
-+};
-+
-+enum lp8788_isink_number {
-+	LP8788_ISINK_1,
-+	LP8788_ISINK_2,
-+	LP8788_ISINK_3,
-+};
-+
-+enum lp8788_alarm_sel {
-+	LP8788_ALARM_1,
-+	LP8788_ALARM_2,
-+	LP8788_ALARM_MAX,
-+};
-+
-+enum lp8788_adc_id {
-+	LPADC_VBATT_5P5,
-+	LPADC_VIN_CHG,
-+	LPADC_IBATT,
-+	LPADC_IC_TEMP,
-+	LPADC_VBATT_6P0,
-+	LPADC_VBATT_5P0,
-+	LPADC_ADC1,
-+	LPADC_ADC2,
-+	LPADC_VDD,
-+	LPADC_VCOIN,
-+	LPADC_VDD_LDO,
-+	LPADC_ADC3,
-+	LPADC_ADC4,
-+	LPADC_MAX,
-+};
-+
-+struct lp8788;
-+struct lp8788_irq_data;
-+
-+/*
-+ * lp8788_buck1_dvs
-+ * @gpio         : gpio pin number for dvs control
-+ * @vsel         : dvs selector for buck v1 register
-+ */
-+struct lp8788_buck1_dvs {
-+	int gpio;
-+	enum lp8788_dvs_sel vsel;
-+};
-+
-+/*
-+ * lp8788_buck2_dvs
-+ * @gpio         : two gpio pin numbers are used for dvs
-+ * @vsel         : dvs selector for buck v2 register
-+ */
-+struct lp8788_buck2_dvs {
-+	int gpio[LP8788_NUM_BUCK2_DVS];
-+	enum lp8788_dvs_sel vsel;
-+};
-+
-+/*
-+ * struct lp8788_ldo_enable_pin
-+ *
-+ *   Basically, all LDOs are enabled through the I2C commands.
-+ *   But ALDO 1 ~ 5, 7, DLDO 7, 9, 11 can be enabled by external gpio pins.
-+ *
-+ * @gpio         : gpio number which is used for enabling ldos
-+ * @init_state   : initial gpio state (ex. GPIOF_OUT_INIT_LOW)
-+ */
-+struct lp8788_ldo_enable_pin {
-+	int gpio;
-+	int init_state;
-+};
-+
-+/*
-+ * struct lp8788_chg_param
-+ * @addr         : charging control register address (range : 0x11 ~ 0x1C)
-+ * @val          : charging parameter value
-+ */
-+struct lp8788_chg_param {
-+	u8 addr;
-+	u8 val;
-+};
-+
-+/*
-+ * struct lp8788_charger_platform_data
-+ * @vbatt_adc         : adc selection id for battery voltage
-+ * @batt_temp_adc     : adc selection id for battery temperature
-+ * @max_vbatt_mv      : used for calculating battery capacity
-+ * @chg_params        : initial charging parameters
-+ * @num_chg_params    : numbers of charging parameters
-+ * @charger_event     : the charger event can be reported to the platform side
-+ */
-+struct lp8788_charger_platform_data {
-+	enum lp8788_adc_id vbatt_adc;
-+	enum lp8788_adc_id batt_temp_adc;
-+	unsigned int max_vbatt_mv;
-+	struct lp8788_chg_param *chg_params;
-+	int num_chg_params;
-+	void (*charger_event) (struct lp8788 *lp,
-+				enum lp8788_charger_event event);
-+};
-+
-+/*
-+ * struct lp8788_bl_pwm_data
-+ * @pwm_set_intensity     : set duty of pwm
-+ * @pwm_get_intensity     : get current duty of pwm
-+ */
-+struct lp8788_bl_pwm_data {
-+	void (*pwm_set_intensity) (int brightness, int max_brightness);
-+	int (*pwm_get_intensity) (int max_brightness);
-+};
-+
-+/*
-+ * struct lp8788_backlight_platform_data
-+ * @name                  : backlight driver name. (default: "lcd-backlight")
-+ * @initial_brightness    : initial value of backlight brightness
-+ * @bl_mode               : brightness control by pwm or lp8788 register
-+ * @dim_mode              : dimming mode selection
-+ * @full_scale            : full scale current setting
-+ * @rise_time             : brightness ramp up step time
-+ * @fall_time             : brightness ramp down step time
-+ * @pwm_pol               : pwm polarity setting when bl_mode is pwm based
-+ * @pwm_data              : platform specific pwm generation functions
-+ *                          only valid when bl_mode is pwm based
-+ */
-+struct lp8788_backlight_platform_data {
-+	char *name;
-+	int initial_brightness;
-+	enum lp8788_bl_ctrl_mode bl_mode;
-+	enum lp8788_bl_dim_mode dim_mode;
-+	enum lp8788_bl_full_scale_current full_scale;
-+	enum lp8788_bl_ramp_step rise_time;
-+	enum lp8788_bl_ramp_step fall_time;
-+	enum lp8788_bl_pwm_polarity pwm_pol;
-+	struct lp8788_bl_pwm_data pwm_data;
-+};
-+
-+/*
-+ * struct lp8788_led_platform_data
-+ * @name         : led driver name. (default: "keyboard-backlight")
-+ * @scale        : current scale
-+ * @num          : current sink number
-+ * @iout_code    : current output value (Addr 9Ah ~ 9Bh)
-+ */
-+struct lp8788_led_platform_data {
-+	char *name;
-+	enum lp8788_isink_scale scale;
-+	enum lp8788_isink_number num;
-+	int iout_code;
-+};
-+
-+/*
-+ * struct lp8788_vib_platform_data
-+ * @name         : vibrator driver name
-+ * @scale        : current scale
-+ * @num          : current sink number
-+ * @iout_code    : current output value (Addr 9Ah ~ 9Bh)
-+ * @pwm_code     : PWM code value (Addr 9Ch ~ 9Eh)
-+ */
-+struct lp8788_vib_platform_data {
-+	char *name;
-+	enum lp8788_isink_scale scale;
-+	enum lp8788_isink_number num;
-+	int iout_code;
-+	int pwm_code;
-+};
-+
-+/*
-+ * struct lp8788_platform_data
-+ * @irq_base     : used in chained interrupt handling
-+ * @init_func    : used for initializing registers
-+ *                 before mfd driver is registered
-+ * @buck_data    : regulator initial data for buck
-+ * @dldo_data    : regulator initial data for digital ldo
-+ * @aldo_data    : regulator initial data for analog ldo
-+ * @buck1_dvs    : gpio configurations for buck1 dvs
-+ * @buck2_dvs    : gpio configurations for buck2 dvs
-+ * @ldo_pin      : gpio configurations for enabling LDOs
-+ * @chg_pdata    : platform data for charger driver
-+ * @alarm_sel    : rtc alarm selection (1 or 2)
-+ * @bl_pdata     : configurable data for backlight driver
-+ * @led_pdata    : configurable data for led driver
-+ * @vib_pdata    : configurable data for vibrator driver
-+ * @adc_pdata    : iio map data for adc driver
-+ */
-+struct lp8788_platform_data {
-+	/* general system information */
-+	int irq_base;
-+	int (*init_func) (struct lp8788 *lp);
-+
-+	/* regulators */
-+	struct regulator_init_data *buck_data[LP8788_NUM_BUCKS];
-+	struct regulator_init_data *dldo_data[LP8788_NUM_DLDOS];
-+	struct regulator_init_data *aldo_data[LP8788_NUM_ALDOS];
-+	struct lp8788_buck1_dvs *buck1_dvs;
-+	struct lp8788_buck2_dvs *buck2_dvs;
-+	struct lp8788_ldo_enable_pin *ldo_pin[EN_LDOS_MAX];
-+
-+	/* charger */
-+	struct lp8788_charger_platform_data *chg_pdata;
-+
-+	/* rtc alarm */
-+	enum lp8788_alarm_sel alarm_sel;
-+
-+	/* backlight */
-+	struct lp8788_backlight_platform_data *bl_pdata;
-+
-+	/* current sinks */
-+	struct lp8788_led_platform_data *led_pdata;
-+	struct lp8788_vib_platform_data *vib_pdata;
-+
-+	/* adc iio map data */
-+	struct iio_map *adc_pdata[LPADC_MAX];
-+};
-+
-+/*
-+ * struct lp8788
-+ * @regmap       : used for i2c communcation on accessing registers
-+ * @irqd         : used for handling interrupts
-+ * @dev          : parent device pointer
-+ * @pdata        : lp8788 platform specific data
-+ */
-+struct lp8788 {
-+	struct regmap *regmap;
-+	struct lp8788_irq_data *irqd;
-+	struct device *dev;
-+	struct lp8788_platform_data *pdata;
-+};
-+
-+int lp8788_irq_init(struct lp8788 *lp, int chip_irq);
-+void lp8788_irq_exit(struct lp8788 *lp);
-+int lp8788_read_byte(struct lp8788 *lp, u8 reg, u8 *data);
-+int lp8788_read_multi_bytes(struct lp8788 *lp, u8 reg, u8 *data, size_t count);
-+int lp8788_write_byte(struct lp8788 *lp, u8 reg, u8 data);
-+int lp8788_update_bits(struct lp8788 *lp, u8 reg, u8 mask, u8 data);
-+#endif
++MODULE_ALIAS("platform:lp8788-adc");
 -- 
 1.7.2.5
-
 
 Best Regards,
 Milo
