@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2HIRXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:23:44 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41791 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634Ab2HIRXm (ORCPT
+	id S1755858Ab2HIRYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:24:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55679 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab2HIRYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:23:42 -0400
-Date: Thu, 9 Aug 2012 18:23:15 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [09/36] AArch64: Exception handling
-Message-ID: <20120809172315.GA12325@arm.com>
-References: <1341608777-12982-10-git-send-email-catalin.marinas@arm.com>
- <5023EDE0.3070506@codeaurora.org>
+	Thu, 9 Aug 2012 13:24:30 -0400
+Message-ID: <5023F24A.7030300@gmail.com>
+Date: Thu, 09 Aug 2012 11:24:26 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5023EDE0.3070506@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
+References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com> <1344522713-27951-2-git-send-email-fweisbec@gmail.com> <20120809163515.GA4084@infradead.org> <5023E7F3.8090701@gmail.com> <20120809171419.GC4084@infradead.org>
+In-Reply-To: <20120809171419.GC4084@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
+On 8/9/12 11:14 AM, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 09, 2012 at 10:40:19AM -0600, David Ahern escreveu:
+>> On 8/9/12 10:35 AM, Arnaldo Carvalho de Melo wrote:
+>>> Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
+>>>> This implements bash completion for perf subcommands such
+>>>> as record, report, script, probe, etc...
+>>>
+>>> Humm, I get this when doing my usual workflow:
+>>>
+>>> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+>>> make: Entering directory `/home/git/linux/tools/perf'
+>>> PERF_VERSION = 3.6.rc1.152.g5758f7
+>>> <SNIP>
+>>> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+>>> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
+>>> install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+>>> install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
+>>> install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
+>>> install -m 755 bash_completion /etc/bash_completion.d/perf
+>>> install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
+>>> make: *** [install] Error 1
+>>> make: Leaving directory `/home/git/linux/tools/perf'
+>>> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+>>>
+>>> 	Shouldn't it install on ~/etc/bash_completion.d/perf ?
+>>>
+>>> 	Is there a way to have per user bash completion files like that?
+>>
+>> 3rd patch should fix this.
+>
+> Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
+> its just that I'm not using sudo nor installing as root, this new bash
+> completion file is the only one that is being installed on the root
+> filesystem, all others are in ~acme/
 
-On Thu, Aug 09, 2012 at 06:05:36PM +0100, Christopher Covington wrote:
-> On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
-> > +/*
-> > + * Exception vectors.
-> > + */
-> > +	.macro	ventry	label
-> > +	.align	7
-> > +	b	\label
-> > +	.endm
-> > +
-> > +	.align	11
-> > +ENTRY(vectors)
-> > +	ventry	el1_sync_invalid		// Synchronous EL1t
-> > +	ventry	el1_irq_invalid			// IRQ EL1t
-> > +	ventry	el1_fiq_invalid			// FIQ EL1t
-> > +	ventry	el1_error_invalid		// Error EL1t
-> > +
-> > +	ventry	el1_sync			// Synchronous EL1h
-> > +	ventry	el1_irq				// IRQ EL1h
-> > +	ventry	el1_fiq_invalid			// FIQ EL1h
-> > +	ventry	el1_error_invalid		// Error EL1h
-> > +
-> > +	ventry	el0_sync			// Synchronous 64-bit EL0
-> > +	ventry	el0_irq				// IRQ 64-bit EL0
-> > +	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
-> > +	ventry	el0_error_invalid		// Error 64-bit EL0
-> > +
-> > +#ifdef CONFIG_AARCH32_EMULATION
-> > +	ventry	el0_sync_compat			// Synchronous 32-bit EL0
-> > +	ventry	el0_irq_compat			// IRQ 32-bit EL0
-> > +	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
-> > +	ventry	el0_error_invalid_compat	// Error 32-bit EL0
-> > +#else
-> > +	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
-> > +	ventry	el0_irq_invalid			// IRQ 32-bit EL0
-> > +	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
-> > +	ventry	el0_error_invalid		// Error 32-bit EL0
-> > +#endif
-> > +END(vectors)
-> > +
-> > +/*
-> > + * Invalid mode handlers
-> > + */
-> > +	.macro	inv_entry, el, reason, regsize = 64
-> > +	kernel_entry el, \regsize
-> > +	mov	x0, sp
-> > +	mov	x1, #\reason
-> > +	mrs	x2, esr_el1
-> > +	b	bad_mode
-> > +	.endm
-> 
-> The code seems to indicate that the invalid mode handlers have
-> different alignment requirements than the valid mode handlers, which
-> puzzles me.
+3rd patch uses sysconfdir_SQ instead of /etc.
 
-I don't see any difference. The whole vector must be 2K aligned while
-each individual entry is found every 128 bytes (to allow for more
-instructions, though we only use a branch).
+ifndef DESTDIR
+prefix = $(HOME)
+endif
+...
 
-The inv_entry macro (as the kernel_entry one) is used in code being
-branched to from the vector and not inside the vector.
+ifeq ($(prefix),/usr)
+sysconfdir = /etc
+ETC_PERFCONFIG = $(sysconfdir)/perfconfig
+else
+sysconfdir = $(prefix)/etc
+ETC_PERFCONFIG = etc/perfconfig
+endif
 
-> > +el0_sync_invalid:
-> > +	inv_entry 0, BAD_SYNC
-> > +ENDPROC(el0_sync_invalid)
-> 
-> Plain labels, the ENTRY macro, the END macro and the ENDPROC macro are
-> used variously throughout this file, and I wonder if a greater amount
-> of consistency might be attainable. The description of the ENDPROC
-> macro in include/linux/linkage.h makes me think its use might not be
-> completely warranted in blocks of assembly that don't end with a
-> return instruction.
+So, sysconfdir should be set to $(HOME)/etc in your case.
 
-We use ENTRY only when we want to export the symbol as it contains the
-.globl directive. The ENDPROC is used to mark a function and it's in
-general useful for debugging information it generates.
-
-> > +	.align	6
-> > +el0_irq:
-> > +	kernel_entry 0
-> > +el0_irq_naked:
-> > +	disable_step x1
-> > +	isb
-> > +	enable_dbg
-> > +#ifdef CONFIG_TRACE_IRQFLAGS
-> > +	bl	trace_hardirqs_off
-> > +#endif
-> > +	get_thread_info tsk
-> > +#ifdef CONFIG_PREEMPT
-> > +	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-> > +	add	x23, x24, #1			// increment it
-> > +	str	x23, [tsk, #TI_PREEMPT]
-> > +#endif
-> > +	irq_handler
-> > +#ifdef CONFIG_PREEMPT
-> > +	ldr	x0, [tsk, #TI_PREEMPT]
-> > +	str	x24, [tsk, #TI_PREEMPT]
-> > +	cmp	x0, x23
-> > +	b.eq	1f
-> > +	mov	x1, #0
-> > +	str	x1, [x1]			// BUG
-> 
-> It looks like the error handling here isn't quite complete.
-
-We trigger a bug by storing to 0 and the kernel will panic, giving the
-full trace. I don't think we can do more in terms of error handling
-here.
-
-Regards.
-
--- 
-Catalin
