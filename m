@@ -1,171 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030778Ab2HIOuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:50:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35984 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030749Ab2HIOuf (ORCPT
+	id S1030837Ab2HIOun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:50:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46082 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030749Ab2HIOuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:50:35 -0400
-Date: Thu, 9 Aug 2012 15:49:53 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
-Message-ID: <20120809144953.GC18486@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 10:50:39 -0400
+Subject: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Paul Moore <paul@paul-moore.com>, David Miller <davem@davemloft.net>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Eric Paris <eparis@parisplace.org>, John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        john.johansen@canonical.com,
+        LSM <linux-security-module@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <1695034.0lrQgQPOMT@sifl>
+References: <50215A7E.8000701@linaro.org>
+	 <1344462889.28967.328.camel@edumazet-glaptop>
+	 <5022FD9A.4020603@schaufler-ca.com>  <1695034.0lrQgQPOMT@sifl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Aug 2012 16:50:33 +0200
+Message-ID: <1344523833.28967.996.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+From: Eric Dumazet <edumazet@google.com>
 
-Thanks for the replies.
+commit be9f4a44e7d41cee (ipv4: tcp: remove per net tcp_sock) added a
+selinux regression, reported and bisected by John Stultz
 
-On Thu, Aug 09, 2012 at 06:12:15AM +0100, Nicolas Pitre wrote:
-> On Tue, 7 Aug 2012, Will Deacon wrote:
-> > diff --git a/kernel/mutex.c b/kernel/mutex.c
-> > index a307cc9..27b7887 100644
-> > --- a/kernel/mutex.c
-> > +++ b/kernel/mutex.c
-> > @@ -170,7 +170,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >                 if (owner && !mutex_spin_on_owner(lock, owner))
-> >                         break;
-> >  
-> > -               if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-> > +               if (atomic_cmpxchg(&lock->count, 1, -1) == 1) {
-> >                         lock_acquired(&lock->dep_map, ip);
-> >                         mutex_set_owner(lock);
-> >                         preempt_enable();
-> > 
-> > 
-> > All comments welcome.
-> 
-> Well... after thinking about this for a while, I came to the conclusion 
-> that the mutex_spin_on_owner code is indeed breaking the contract 
-> between the xchg lock fast path and the slow path.  The xchg fast path 
-> will always set the count to 0 and rely on the slow path to restore a 
-> possible pre-existing negative count.  So the above change would be 
-> needed for correctness in the xchg case, even if it always forces the 
-> unlock into the slow path.
+selinux_ip_postroute_compat() expect to find a valid sk->sk_security
+pointer, but this field is NULL for unicast_sock
 
-Great, so we agree on that.
+Fix this by adding a new 'kernel' parameter to security_sk_alloc(),
+set to true if socket might already have a valid sk->sk_security
+pointer. ip_send_unicast_reply() uses a percpu fake socket, so the first
+call to security_sk_alloc() will populate sk->sk_security pointer,
+subsequent ones will reuse existing context.
 
-> As I mentioned previously, we don't want to force the slow path in all 
-> cases though.  The atomic decrement based fast path doesn't need that, 
-> so I'd suggest this fix instead:
+Reported-by: John Stultz <johnstul@us.ibm.com>
+Bisected-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Paul Moore <paul@paul-moore.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>
+---
+ include/linux/security.h   |    6 +++---
+ net/core/sock.c            |    2 +-
+ net/ipv4/ip_output.c       |    4 +++-
+ security/security.c        |    4 ++--
+ security/selinux/hooks.c   |    5 ++++-
+ security/smack/smack_lsm.c |   10 ++++++++--
+ 6 files changed, 21 insertions(+), 10 deletions(-)
 
-One minor typo and a suggested alternative below...
-
-> diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-> index 580a6d35c7..60964844c8 100644
-> --- a/include/asm-generic/mutex-xchg.h
-> +++ b/include/asm-generic/mutex-xchg.h
-> @@ -108,4 +108,6 @@ __mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
->  	return prev;
->  }
->  
-> +#define __MUTEX_XCHG_FAST_PATH
-> +
->  #endif
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index a307cc9c95..c6a26a4f1c 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -161,6 +161,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  
->  	for (;;) {
->  		struct task_struct *owner;
-> +		int locked_val;
->  
->  		/*
->  		 * If there's an owner, wait for it to either
-> @@ -170,7 +171,19 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		if (owner && !mutex_spin_on_owner(lock, owner))
->  			break;
->  
-> -		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-> +#ifdef __MUTEX_XCHG_FAST_PATH
-> +		/*
-> +		 * The fast path based on xchg sets a transient 0 count,
-> +		 * relying on the slow path to restore a possible
-> +		 * pre-existing contended count.  Without checking the
-> +		 * waiters' list we must presume possible contension here.
-
-s/contension/contention/
-
-> +		 */
-> +		locked_val = -1;
-> +#else
-> +		locked_val = 0;
-> +#endif
-> +
-> +		if (atomic_cmpxchg(&lock->count, 1, locked_val) == 1) {
->  			lock_acquired(&lock->dep_map, ip);
->  			mutex_set_owner(lock);
->  			preempt_enable();
-> 
-> That would be needed for the stable tree as well.
-> 
-> A further cleanup could remove all definitions of 
-> __mutex_slowpath_needs_to_unlock() given that they're all set to 1 
-> except for the xchg fast path, in which case __MUTEX_XCHG_FAST_PATH 
-> could be reused instead.
-
-I think we could actually fix this entirely in mutex-xchg.h by doing
-something in fastpath_lock similar to what we do for trylock:
-
-
-diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-index 580a6d3..c082e99 100644
---- a/include/asm-generic/mutex-xchg.h
-+++ b/include/asm-generic/mutex-xchg.h
-@@ -25,8 +25,19 @@
- static inline void
- __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
- {
--       if (unlikely(atomic_xchg(count, 0) != 1))
--               fail_fn(count);
-+       int prev = atomic_xchg(count, 0);
-+
-+       if (unlikely(prev != 1)) {
-+               if (prev < 0)
-+                       /*
-+                        * The lock was contended, so we need to restore
-+                        * its original state to ensure that any waiting
-+                        * tasks are woken up by the unlock slow path.
-+                        */
-+                       prev = atomic_xchg(count, prev);
-+               if (prev != 1)
-+                       fail_fn(count);
-+       }
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 4e5a73c..4d8e454 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1601,7 +1601,7 @@ struct security_operations {
+ 	int (*socket_sock_rcv_skb) (struct sock *sk, struct sk_buff *skb);
+ 	int (*socket_getpeersec_stream) (struct socket *sock, char __user *optval, int __user *optlen, unsigned len);
+ 	int (*socket_getpeersec_dgram) (struct socket *sock, struct sk_buff *skb, u32 *secid);
+-	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority);
++	int (*sk_alloc_security) (struct sock *sk, int family, gfp_t priority, bool kernel);
+ 	void (*sk_free_security) (struct sock *sk);
+ 	void (*sk_clone_security) (const struct sock *sk, struct sock *newsk);
+ 	void (*sk_getsecid) (struct sock *sk, u32 *secid);
+@@ -2539,7 +2539,7 @@ int security_sock_rcv_skb(struct sock *sk, struct sk_buff *skb);
+ int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
+ 				      int __user *optlen, unsigned len);
+ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u32 *secid);
+-int security_sk_alloc(struct sock *sk, int family, gfp_t priority);
++int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel);
+ void security_sk_free(struct sock *sk);
+ void security_sk_clone(const struct sock *sk, struct sock *newsk);
+ void security_sk_classify_flow(struct sock *sk, struct flowi *fl);
+@@ -2667,7 +2667,7 @@ static inline int security_socket_getpeersec_dgram(struct socket *sock, struct s
+ 	return -ENOPROTOOPT;
  }
  
- /**
+-static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
++static inline int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+ 	return 0;
+ }
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 8f67ced..e00cadf 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1186,7 +1186,7 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
+ 	if (sk != NULL) {
+ 		kmemcheck_annotate_bitfield(sk, flags);
+ 
+-		if (security_sk_alloc(sk, family, priority))
++		if (security_sk_alloc(sk, family, priority, false))
+ 			goto out_free;
+ 
+ 		if (!try_module_get(prot->owner))
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 76dde25..b233d6e 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -1524,6 +1524,8 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ 	sk->sk_priority = skb->priority;
+ 	sk->sk_protocol = ip_hdr(skb)->protocol;
+ 	sk->sk_bound_dev_if = arg->bound_dev_if;
++	if (security_sk_alloc(sk, PF_INET, GFP_ATOMIC, true))
++		goto out;
+ 	sock_net_set(sk, net);
+ 	__skb_queue_head_init(&sk->sk_write_queue);
+ 	sk->sk_sndbuf = sysctl_wmem_default;
+@@ -1539,7 +1541,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
+ 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
+ 		ip_push_pending_frames(sk, &fl4);
+ 	}
+-
++out:
+ 	put_cpu_var(unicast_sock);
+ 
+ 	ip_rt_put(rt);
+diff --git a/security/security.c b/security/security.c
+index 860aeb3..23cf297 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1146,9 +1146,9 @@ int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u
+ }
+ EXPORT_SYMBOL(security_socket_getpeersec_dgram);
+ 
+-int security_sk_alloc(struct sock *sk, int family, gfp_t priority)
++int security_sk_alloc(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+-	return security_ops->sk_alloc_security(sk, family, priority);
++	return security_ops->sk_alloc_security(sk, family, priority, kernel);
+ }
+ 
+ void security_sk_free(struct sock *sk)
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 6c77f63..ccd4374 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4289,10 +4289,13 @@ out:
+ 	return 0;
+ }
+ 
+-static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority)
++static int selinux_sk_alloc_security(struct sock *sk, int family, gfp_t priority, bool kernel)
+ {
+ 	struct sk_security_struct *sksec;
+ 
++	if (kernel && sk->sk_security)
++		return 0;
++
+ 	sksec = kzalloc(sizeof(*sksec), priority);
+ 	if (!sksec)
+ 		return -ENOMEM;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 8221514..0b066d0 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -1749,20 +1749,26 @@ static void smack_task_to_inode(struct task_struct *p, struct inode *inode)
+  * @sk: the socket
+  * @family: unused
+  * @gfp_flags: memory allocation flags
++ * @kernel: true if we should check sk_security being already set
+  *
+  * Assign Smack pointers to current
+  *
+  * Returns 0 on success, -ENOMEM is there's no memory
+  */
+-static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags)
++static int smack_sk_alloc_security(struct sock *sk, int family, gfp_t gfp_flags, bool kernel)
+ {
+-	char *csp = smk_of_current();
++	char *csp;
+ 	struct socket_smack *ssp;
+ 
++	if (kernel && sk->sk_security)
++		return 0;
++
+ 	ssp = kzalloc(sizeof(struct socket_smack), gfp_flags);
+ 	if (ssp == NULL)
+ 		return -ENOMEM;
+ 
++	csp = kernel ? smack_net_ambient : smk_of_current();
++
+ 	ssp->smk_in = csp;
+ 	ssp->smk_out = csp;
+ 	ssp->smk_packet = NULL;
 
 
-What do you reckon?
-
-> Of course that might tilt the balance towards using mutex-dec.h on ARM 
-> v6 and above instead of mutex-xchg.h.  But that is an orthogonal issue, 
-> and that doesn't remove the need for fixing the xchg based case for 
-> correctness.
-
-I'll do some hackbench runs against mutex-dec once we've decided on the final
-xchg code. If it's faster, I'll submit a patch for ARM.
-
-Cheers,
-
-Will
