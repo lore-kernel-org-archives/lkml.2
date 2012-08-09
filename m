@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab2HITJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:09:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24295 "EHLO mx1.redhat.com"
+	id S1759309Ab2HITJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:09:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab2HITJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:09:25 -0400
-Date: Thu, 9 Aug 2012 15:48:44 -0300
+	id S1759265Ab2HITJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:09:42 -0400
+Date: Thu, 9 Aug 2012 15:31:20 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 02/12] KVM: hide KVM_MEMSLOT_INVALID from userspace
-Message-ID: <20120809184844.GA20889@amt.cnet>
-References: <5020E423.9080004@linux.vnet.ibm.com>
- <5020E481.1050203@linux.vnet.ibm.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, X86 <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] Documentation : hypercalls
+Message-ID: <20120809183120.GA20343@amt.cnet>
+References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5020E481.1050203@linux.vnet.ibm.com>
+In-Reply-To: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:48:49PM +0800, Xiao Guangrong wrote:
-> Quote Avi's comment:
-> | KVM_MEMSLOT_INVALID is actually an internal symbol, not used by
-> | userspace.  Please move it to kvm_host.h.
+On Tue, Aug 07, 2012 at 01:09:46PM +0530, Raghavendra K T wrote:
+> This is the hypercall documentation patch series
+> First patch covers KVM specific hypercall information.
 > 
-> Also, move KVM_MEMSLOT_INVALID to the highest bit
+> second patch is has typo fix for vmcall instruction
+> comment in kvm_para.h
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  include/linux/kvm.h      |    1 -
->  include/linux/kvm_host.h |    2 ++
->  2 files changed, 2 insertions(+), 1 deletions(-)
+> Third patch includes a veryful documentation on PowerPC
+> hypercalls originally written by Alex
 > 
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 2ce09aa..dc3aa2a 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -103,7 +103,6 @@ struct kvm_userspace_memory_region {
+> Changes since initial post:
+>  - Added hypercall ABI (Peter)
+>  - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
+>  - Changed vmrun/vmmrun ==> vmcall/vmmcall (Marcelo)
+>  - use Linux KVM hypercall instead of ABI  (Marcelo)
+>  - correct PowerPC typo (Alex)
+>  - Remove value field (Alex)
 > 
->  /* for kvm_memory_region::flags */
->  #define KVM_MEM_LOG_DIRTY_PAGES  1UL
-> -#define KVM_MEMSLOT_INVALID      (1UL << 1)
+> Raghavendra K T (2):
+>  Documentation/kvm : Add documentation on hypercalls
+>  Documentation/header : Correct vmrun to vmcall typo
 > 
->  /* for KVM_IRQ_LINE */
->  struct kvm_irq_level {
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index d2b897e..4c2da5a 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -35,6 +35,8 @@
->  #define KVM_MMIO_SIZE 8
->  #endif
+> Alexander Graf (1) :
+>  Documentation/ppc: Add ppc hypercall documentation
 > 
-> +#define KVM_MEMSLOT_INVALID	(1UL << 31)
-> +
->  /*
->   * If we support unaligned MMIO, at most one fragment will be split into two:
->   */
+>  Documentation/virtual/kvm/hypercalls.txt |   66 ++++++++++++++++++++++++++++++
+>  Documentation/virtual/kvm/ppc-pv.txt     |   22 ++++++++++
+>  arch/x86/include/asm/kvm_para.h          |    2 +-
+>  3 files changed, 89 insertions(+), 1 deletions(-)
 
-Please document which range is for userspace visible flags, which range
-is reserved. Mention that in both headers, point to each other
-("userspace definitions are there" / "internal definitions are there").
-
-16/16 bits for each should be fine.
-
+ACK
 
