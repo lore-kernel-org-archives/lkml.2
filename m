@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2HINyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:54:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30930 "EHLO mga01.intel.com"
+	id S964826Ab2HIN5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:57:53 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:52403 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab2HINyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:54:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,739,1336374000"; 
-   d="scan'208";a="195441380"
-Date: Thu, 9 Aug 2012 21:54:16 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Dave Peterson <dsp@llnl.gov>, kernel-janitors@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20120809135416.GA13100@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932262Ab2HIN5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 09:57:52 -0400
+From: Marina Makienko <makienko@ispras.ru>
+To: Tim Waugh <tim@cyberelk.net>
+Cc: Marina Makienko <makienko@ispras.ru>,
+        "Grant R. Guenther" <grant@torque.net>, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH 01/13] block/paride: Potential null pointer dereference in pd_special_command()
+Date: Thu,  9 Aug 2012 17:54:05 +0400
+Message-Id: <1344520446-13824-1-git-send-email-makienko@ispras.ru>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: possible double free in edac_mc_alloc()
-Reply-To: 
-User-Agent: Heirloom mailx 12.5 6/20/10
+The function blk_get_request() can return NULL in some cases. There are
+checks on it if function is called with argumetns one of which is
+GFP_ATOMIC/GFP_NOIO/etc. If system couldn't find request
+blk_get_request() return NULL.
 
-Hi,
+But if there is function call with argument __GFP_WAIT
+the system will wait until get request or the queue becomes
+dead. If something kills the queue, blk_get_request()
+return NULL and next operations will lead to errors.
 
-coccinelle warns about:
+Found by Linux Driver Verification project (linuxtesting.org).
 
-+ drivers/edac/edac_mc.c:429:9-23: ERROR: reference preceded by free on line 429
-
-and that line does look strange: the 'i' seems like a temporary value
-used in previous loops, and it won't change at all in the current
-loop. Which means the same mci->csrows[i] get freed once and again.
-It might also do double free for the previous kfree(csr) line.
-
-vim +429 drivers/edac/edac_mc.c
-
-   416         if (mci->dimms) {
-   417                 for (i = 0; i < tot_dimms; i++)
-   418                         kfree(mci->dimms[i]);
-   419                 kfree(mci->dimms);
-   420         }
-   421         if (mci->csrows) {
-   422                 for (chn = 0; chn < tot_channels; chn++) {
-   423                         csr = mci->csrows[chn];
-   424                         if (csr) {
-   425                                 for (chn = 0; chn < tot_channels; chn++)
-   426						kfree(csr->channels[chn]);
-   427					kfree(csr);
-   428				}
- > 429				kfree(mci->csrows[i]);
-   430			}
-   431			kfree(mci->csrows);
-   432		}
-
+Signed-off-by: Marina Makienko <makienko@ispras.ru>
 ---
-0-DAY kernel build testing backend         Open Source Technology Centre
-Fengguang Wu <wfg@linux.intel.com>                     Intel Corporation
+ drivers/block/paride/pd.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/block/paride/pd.c b/drivers/block/paride/pd.c
+index 831e3ac..6e28910 100644
+--- a/drivers/block/paride/pd.c
++++ b/drivers/block/paride/pd.c
+@@ -723,6 +723,9 @@ static int pd_special_command(struct pd_unit *disk,
+ 
+ 	rq = blk_get_request(disk->gd->queue, READ, __GFP_WAIT);
+ 
++	if (!rq)
++		return Fail;
++
+ 	rq->cmd_type = REQ_TYPE_SPECIAL;
+ 	rq->special = func;
+ 
+-- 
+1.7.7
+
