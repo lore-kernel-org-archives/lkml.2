@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab2HIA1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:27:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45250 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758674Ab2HIA12 (ORCPT
+	id S932127Ab2HIAjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:39:32 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60085 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2HIAjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:27:28 -0400
-Date: Wed, 8 Aug 2012 17:26:53 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 01/12] block: Generalized bio pool freeing
-Message-ID: <20120809002653.GF7262@moria.home.lan>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-2-git-send-email-koverstreet@google.com>
- <20120808222515.GE6983@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 8 Aug 2012 20:39:31 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-3e-502306c0626c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arun Sharma <asharma@fb.com>
+Cc: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v6)
+References: <1333172421-6775-2-git-send-email-asharma@fb.com>
+	<4F769976.3070203@fb.com> <5022BB0E.8050706@fb.com>
+Date: Thu, 09 Aug 2012 09:33:35 +0900
+In-Reply-To: <5022BB0E.8050706@fb.com> (Arun Sharma's message of "Wed, 8 Aug
+	2012 12:16:30 -0700")
+Message-ID: <874noczyxs.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808222515.GE6983@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 03:25:15PM -0700, Tejun Heo wrote:
-> On Mon, Aug 06, 2012 at 03:08:30PM -0700, Kent Overstreet wrote:
-> > @@ -422,7 +409,11 @@ void bio_put(struct bio *bio)
-> >  	if (atomic_dec_and_test(&bio->bi_cnt)) {
-> >  		bio_disassociate_task(bio);
-> >  		bio->bi_next = NULL;
-> > -		bio->bi_destructor(bio);
-> > +
-> > +		if (bio->bi_pool)
-> > +			bio_free(bio, bio->bi_pool);
-> > +		else
-> > +			bio->bi_destructor(bio);
-> 
-> So, this bi_pool overriding caller specified custom bi_destructor is
-> rather unusual.  I know why it's like that - the patch series is
-> gradually replacing bi_destructor with bi_pool and removes
-> bi_destructor eventually, but it would be far better if at least patch
-> description says why this is unusual like this.
+Hi, Arun
 
-Ok, I'll stick a comment in there:
+On Wed, 8 Aug 2012 12:16:30 -0700, Arun Sharma wrote:
+> On 3/30/12 10:43 PM, Arun Sharma wrote:
+>> [ Meant to include v6 ChangeLog as well. Technical difficulties.. ]
+>>
+>> v6 ChangeLog:
+>>
+>> rebased to tip:perf/core and fixed a minor problem in computing
+>> the total period in hists__remove_entry_filter(). Needed to
+>> use period_self instead of period.
+>
+> This patch breaks perf top (symptom: percentages > 100%). Fixed by the
+> following patch.
+>
+> Namhyung: if you're still working on forward porting this, please add
+> this fix to your queue.
+>
+Will do, thanks.
+Namhyung
 
-	if (atomic_dec_and_test(&bio->bi_cnt)) {
-		bio_disassociate_task(bio);
-		bio->bi_next = NULL;
 
-		/*
-		 * This if statement is temporary - bi_pool is replacing
-		 * bi_destructor, but bi_destructor will be taken out in another
-		 * patch.
-		 */
-		if (bio->bi_pool)
-			bio_free(bio, bio->bi_pool);
-		else
-			bio->bi_destructor(bio);
-	}
-
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+>  -Arun
+>
+> commit 75a1c409a529c9741f8a2f493868d1fc7ce7e06d
+> Author: Arun Sharma <asharma@fb.com>
+> Date:   Wed Aug 8 11:47:02 2012 -0700
+>
+>    perf: update period_self as well on collapsing
+>       When running perf top, we have a series of incoming samples,
+>    which get aggregated in various user specified ways.
+>       Suppose function "foo" had the following samples:
+>    101, 103, 99, 105, ...
+>       ->period for the corresponding entry looks as follows:
+>    101, 204, 303, 408, ...
+>       However, due to this bug, ->period_self contains:
+>    101, 103, 99, 105, ...
+>       and therefore breaks the invariant period == period_self
+>    in the default mode (no sort inclusive).
+>       Since total_period is computed by summing up period_self,
+>       period/total_period can be > 100%
+>       Fix the bug by updating period_self as well.
+>       Signed-off-by: Arun Sharma <asharma@fb.com>
+>
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index a2a8d91..adc891e 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -462,6 +462,7 @@ static bool hists__collapse_insert_entry(struct
+> hists *hists,
+>
+> 		if (!cmp) {
+> 			iter->period += he->period;
+> +			iter->period_self += he->period_self;
+> 			iter->nr_events += he->nr_events;
+> 			if (symbol_conf.use_callchain) {
+> 				callchain_cursor_reset(&hists->callchain_cursor);
