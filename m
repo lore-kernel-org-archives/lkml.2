@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab2HIEQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 00:16:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35403 "EHLO mail.zytor.com"
+	id S1751791Ab2HIEaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 00:30:25 -0400
+Received: from linux-sh.org ([111.68.239.195]:51622 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab2HIEQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 00:16:08 -0400
-Message-ID: <50233968.4090805@zytor.com>
-Date: Wed, 08 Aug 2012 21:15:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
+	id S1750885Ab2HIEaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 00:30:24 -0400
+Date: Thu, 9 Aug 2012 13:30:21 +0900
+From: Paul Mundt <lethal@linux-sh.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
- is used
-References: <20120807193845.146666357@goodmis.org> <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com> <1344430148.6935.17.camel@gandalf.stny.rr.com> <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
-In-Reply-To: <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 3.6-rc2
+Message-ID: <20120809043021.GG1614@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 08:45 PM, Linus Torvalds wrote:
-> 
-> Btw, it might be lovely to consider the concept of "Kconfig variables
-> set by shell-scripts".
-> 
-> We currently have a metric sh*t-ton of Makefile magic for testing
-> various things like this, and integrating it into Kconfig might be a
-> good idea. That way you would be able to use the Kconfig logic on
-> these things.
-> 
-> Kconfig already has the "option env=XYZ" syntax for importing values
-> from the environment variables. Extending it to some kind of "option
-> shell=xyz" would allow for more complex interactions like this
-> (imagine testing compiler options and version dependencies in the
-> Kconfig files instead of the Makefiles)?
-> 
+The following changes since commit f4ba394c1b02e7fc2179fda8d3941a5b3b65efb6:
 
-This is a Frequently Requested Feature over on the kbuild list... and it
-almost certainly would speed up the build given how many times the tests
-are currently run.  Furthermore, it would let us base rules on the
-support existing, which we currently can't.
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-08-08 20:06:43 +0300)
 
-	-hpa
+are available in the git repository at:
 
+
+  git://github.com/pmundt/linux-sh tags/sh-for-linus
+
+for you to fetch changes up to fa75ce649ee2600b117631f8794e0e7dbedb1d68:
+
+  Merge branches 'sh/urgent' and 'sh/gpiolib' into sh-latest (2012-08-09 13:21:13 +0900)
+
+----------------------------------------------------------------
+
+SuperH fixes for 3.6-rc2
+
+----------------------------------------------------------------
+Mike Frysinger (1):
+      sh: dma: fix request_irq usage
+
+Paul Mundt (2):
+      sh: intc: Handle domain association for sparseirq pre-allocated vectors.
+      Merge branches 'sh/urgent' and 'sh/gpiolib' into sh-latest
+
+Phil Edworthy (1):
+      sh: sh7269: Fix LCD pinmux
+
+ arch/sh/drivers/dma/dma-sh.c            |   2 +-
+ arch/sh/include/cpu-sh2a/cpu/sh7269.h   |  36 ++++--
+ arch/sh/kernel/cpu/sh2a/pinmux-sh7269.c | 195 +++++++++++++++++++-------------
+ drivers/sh/intc/core.c                  |  27 ++++-
+ 4 files changed, 165 insertions(+), 95 deletions(-)
