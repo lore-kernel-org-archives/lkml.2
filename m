@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab2HIQkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:40:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64835 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab2HIQkW (ORCPT
+	id S1757521Ab2HIQnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:43:31 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:56024 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2HIQn3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:40:22 -0400
-Message-ID: <5023E7F3.8090701@gmail.com>
-Date: Thu, 09 Aug 2012 10:40:19 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 9 Aug 2012 12:43:29 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-pm@lists.linux-foundation.org
+Subject: [REGRESSION] hard lockup on resume from suspend on ThinkPad T23
+Date: Thu, 9 Aug 2012 18:43:28 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-tp520; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
-References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com> <1344522713-27951-2-git-send-email-fweisbec@gmail.com> <20120809163515.GA4084@infradead.org>
-In-Reply-To: <20120809163515.GA4084@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201208091843.28342.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/9/12 10:35 AM, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
->> This implements bash completion for perf subcommands such
->> as record, report, script, probe, etc...
->
-> Humm, I get this when doing my usual workflow:
->
-> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-> make: Entering directory `/home/git/linux/tools/perf'
-> PERF_VERSION = 3.6.rc1.152.g5758f7
-> <SNIP>
-> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
-> install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
-> install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
-> install -m 755 bash_completion /etc/bash_completion.d/perf
-> install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
-> make: *** [install] Error 1
-> make: Leaving directory `/home/git/linux/tools/perf'
-> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
->
-> 	Shouldn't it install on ~/etc/bash_completion.d/perf ?
->
-> 	Is there a way to have per user bash completion files like that?
+Hello!
 
-3rd patch should fix this.
+I thought I report it here – although unless it rings a bell I won´t 
+probably be doing much about it like a git-bisect since that machine is 
+slow and it could take ages…
 
-David
+With Debian kernel 3.3.0-trunk-686-pae the machine suspends and resume for 
+lots of times for 30-40 days uptime and more if I let it.
+
+With Debian kernel 3.4-trunk-686-pae as well as 3.5-trunk-686-pae tried 
+out today often not always the kernel locks up hard after resume. That is, 
+the image is read back but then when switching to graphics or shortly 
+afterwards the mouse pointer is frozen and the machine does not respond to 
+ping anymore.
+
+Graphics is ancient:
+
+deepdance:~> lspci -nn | grep VGA
+01:00.0 VGA compatible controller [0300]: S3 Inc. SuperSavage IX/C SDR 
+[5333:8c2e] (rev 05)
+
+CPU is Mobile Intel(R) Pentium(R) III CPU - M  1133MHz, the machine has 
+768 MiB of RAM.
+
+Filesystems are (aged) BTRFS (which contributes to the extreme slowness of 
+the machine it seems – apt-get (dist-)upgrade without eatmydata takes 
+long).
+
+Kernel parameters are:
+
+linux /vmlinuz-3.3.0-trunk-686-pae root=/dev/mapper/deepdance-debian ro 
+vga=791 threadirqs init=/bin/systemd resume=/dev/mapper/deepdance-swap
+
+
+I didn´t report this with 3.4 cause I hoped that difficult to debug bug 
+would just go away with 3.5, but it seems it didn´t. If it could just dump 
+out something useful before it crashes… I am using threadirqs since quite 
+some time on various machines, but I could try disabling it if it seems to 
+be suspicious.
+
+I am back on 3.3 right now. It doesn´t matter that much on this machine.
+
+
+Unless any brilliant ideas I might just keep it at this report. Maybe it 
+rings a bell for someone who has a suggestion to try out.
+
+I have 3.4 on ThinkPad T42 with some radeon chip and 3.4 and since some 
+while 3.5 on ThinkPad T520 with Intel Sandybridge graphics – no issues 
+there. So it only seems to affect this machine. T520 uses threadirqs, I 
+think the T42 as well.
+
+Thanks,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
