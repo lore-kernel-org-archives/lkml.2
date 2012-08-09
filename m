@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759365Ab2HIADk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:03:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38827 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2HIADj (ORCPT
+	id S1759390Ab2HIAHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:07:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47581 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab2HIAHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:03:39 -0400
-Date: Thu, 9 Aug 2012 10:03:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Subject: linux-next: manual merge of the osd tree with the nfs tree
-Message-Id: <20120809100328.b8d6af3b95e1537ffcb7b053@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v"
+	Wed, 8 Aug 2012 20:07:46 -0400
+Date: Wed, 8 Aug 2012 17:07:11 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v5 03/12] block: Add bio_reset()
+Message-ID: <20120809000711.GB7262@moria.home.lan>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-4-git-send-email-koverstreet@google.com>
+ <20120808221129.GB6983@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120808221129.GB6983@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 08, 2012 at 03:11:29PM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Mon, Aug 06, 2012 at 03:08:32PM -0700, Kent Overstreet wrote:
+> > Reusing bios is something that's been highly frowned upon in the past,
+> > but driver code keeps doing it anyways. If it's going to happen anyways,
+> > we should provide a generic method.
+> > 
+> > This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+> > was open coding it, by doing a bio_init() and resetting bi_destructor.
+> > 
+> > v5: Add a define BIO_RESET_BITS, to be very explicit about what parts of
+> > bio->bi_flags are saved.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > Change-Id: I4eb2975bd678d3be811d5423d0620b08020be9ff
+> 
+> Please drop Change-Id.  Die gerrit die.
 
-Hi Boaz,
+Bah, missed that one. 
 
-Today's linux-next merge of the osd tree got a conflict in
-fs/nfs/nfs4proc.c between commit 47fbf7976e0b ("NFSv4.1: Remove a bogus
-BUG_ON() in nfs4_layoutreturn_done") from the nfs tree and commit
-d8e8b68405db ("pnfs: Don't BUG on info received from Server") from the
-osd tree.
+> > +void bio_reset(struct bio *bio)
+> > +{
+> > +	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
+> 
+> How many flags are we talking about?  If there aren't too many, I'd
+> prefer explicit BIO_FLAGS_PRESERVED or whatever.
 
-I just used the nfs tree version.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It mostly isn't actual flags that are preserved - the high bits of the
+flags are used for indicating what slab the bvec was allocated from, and
+that's the main thing that has to be preserved.
 
---Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v
-Content-Type: application/pgp-signature
+So that's why I went with defining the things that are reset instead of
+the things that are preserved.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I would prefer if bitfields were used for at least BIO_POOL_IDX, but the
+problem is flags is used as an atomic bit vector for BIO_UPTODATE.
 
-iQIcBAEBCAAGBQJQIv5QAAoJEECxmPOUX5FECQIP/1mtrc9xRsq+dE5TyB9rgMfv
-HlNgZ0FJqabLcqA6aQ2eQJRxrZqSseyFNKxe8Uasfs8Djs0CsJB1dRXxsfsGackI
-6NNgjcERgjus7d6r2bqWELLgPQixDBMihiV4lITCjWnjdVGZf/vzyAORDbk+N//8
-mtFCOdya2lm8cGWxYwEN20BQstsMwlpoFvfTxDrWQiL8C5dpbVBUediccz7xPKtH
-qY7RJOqkf5ZiLOlG9dUS6+UeVXowFCGVfKjKBhBimjcocjcSrX3GM8iFfNTEAa03
-WF1Iozd5OzXqJnjm/hWSvYlb2oTPJCZPD1/j52MTHPjEE6ZHM/E9RZ8HXulEFEiC
-RNOpRAHI4LlsnZjoYw8n9tCITjiaMJPk96yGOXQFP9eevcXtQu0QGw+4tIrD2Tv2
-uFve/JT3S9n/bEtJeYK0+RElFLbsESxQg3wusj55uXchw9bEevp9p0uJdrGRwwtf
-jr4kz4ir0yHs52/0Mt9p3TxOJCH+2tgCTW3OpicbIafQNAy6fkU11maxC42xR7LG
-4Lc9Yj8xaS/GIjxEb3VHzfRKYiXMU9VmUvtIEVUcBMh4un8PrhFgcOxKiOGuNfLN
-jNIsk5G2HSA7TcI3bfYYbokzVI8QEhra6I9VGvX3oU27xzQnNKZztsMnd/RyMfJR
-OoM8nCuLUgzgRyb1RXVD
-=kcfz
------END PGP SIGNATURE-----
+But flags isn't treated as an atomic bit vector elsewhere -
+bio_flagged() doesn't use test_bit(), and flags are set/cleared with
+atomic bit operations in some places but not in others (probably _most_
+of them are technically safe, but... ick).
 
---Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v--
+> 
+> Thanks.
+> 
+> -- 
+> tejun
