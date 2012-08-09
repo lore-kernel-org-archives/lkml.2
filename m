@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab2HIWXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 18:23:15 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:38808 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932418Ab2HIWXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 18:23:06 -0400
+	id S1030475Ab2HIWXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 18:23:24 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44368 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030198Ab2HIWXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 18:23:17 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
@@ -14,366 +15,36 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Matt Hellsley <matthltc@us.ibm.com>,
         David Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 11/16] perf symbol: introduce symsrc structure.
-Date: Thu,  9 Aug 2012 15:18:36 -0700
-Message-Id: <1344550721-21024-12-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 0/16] perf: various symbol resolution fixes, including .opd section use.
+Date: Thu,  9 Aug 2012 15:18:25 -0700
+Message-Id: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080922-5930-0000-0000-00000AB4D1E6
+x-cbid: 12080922-6148-0000-0000-0000087B87F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factors opening of certain sections & tracking certain elf info into an
-external structure.
+1-4,6,7 are small cleanups.
 
-The goal here is to keep multiple elfs (and their looked up
-sections/indexes) around during the symbol generation process (in
-dso__load()).
+5 fixes a potential segfault.
 
-We need this to properly resolve symbols on PPC due to the
-use of function descriptors & the .opd section (ie: symbols which are
-functions don't point to their actual location, they point to their
-function descriptor in .opd which contains their actual location.
+8 fixes a use after free for dso->long_name
 
-It would be possible to just keep the (Elf *) around, but then we'd end
-up with duplicate code for looking up the same sections and checking for
-the existence of an important section wouldn't be as clean.
+9 avoids a segfault in elfutils when a truncated elf is loaded.
 
-Additionally, move dso__swap_init() so we can use it.
+10 properly tracks that a dso had symbols loaded from a vmlinux image
 
-Utilized by the later patch
-"perf symbol: use both runtime and debug images"
+11-16 fix handling of the '.opd' section in the presence of debuginfo. They
+      should also fix plt symbol synthesis (haven't seen the plt issues in
+      practice).
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- tools/perf/util/symbol.c | 240 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 161 insertions(+), 79 deletions(-)
+--
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 662d1a2..00a8226 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -993,6 +993,144 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 	return sec;
- }
- 
-+static int dso__swap_init(struct dso *dso, unsigned char eidata)
-+{
-+	static unsigned int const endian = 1;
-+
-+	dso->needs_swap = DSO_SWAP__NO;
-+
-+	switch (eidata) {
-+	case ELFDATA2LSB:
-+		/* We are big endian, DSO is little endian. */
-+		if (*(unsigned char const *)&endian != 1)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	case ELFDATA2MSB:
-+		/* We are little endian, DSO is big endian. */
-+		if (*(unsigned char const *)&endian != 0)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	default:
-+		pr_err("unrecognized DSO data encoding %d\n", eidata);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+struct symsrc {
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+
-+	Elf_Scn *opdsec;
-+	size_t opdidx;
-+	GElf_Shdr opdshdr;
-+
-+	Elf_Scn *symtab;
-+	GElf_Shdr symshdr;
-+
-+	Elf_Scn *dynsym;
-+	size_t dynsym_idx;
-+	GElf_Shdr dynshdr;
-+
-+	char *name;
-+	int fd;
-+	enum dso_binary_type type;
-+
-+	bool adjust_symbols;
-+};
-+
-+static void symsrc__destroy(struct symsrc *ss)
-+{
-+	free(ss->name);
-+	elf_end(ss->elf);
-+	close(ss->fd);
-+}
-+
-+static int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
-+	enum dso_binary_type type)
-+{
-+	int err = -1;
-+	GElf_Ehdr ehdr;
-+	Elf *elf;
-+	int fd;
-+
-+	fd = open(name, O_RDONLY);
-+	if (fd < 0)
-+		return -1;
-+
-+	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
-+	if (elf == NULL) {
-+		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-+		goto out_close;
-+	}
-+
-+	if (gelf_getehdr(elf, &ehdr) == NULL) {
-+		pr_debug("%s: cannot get elf header.\n", __func__);
-+		goto out_elf_end;
-+	}
-+
-+	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
-+		goto out_elf_end;
-+
-+	/* Always reject images with a mismatched build-id: */
-+	if (dso->has_build_id) {
-+		u8 build_id[BUILD_ID_SIZE];
-+
-+		if (elf_read_build_id(elf, build_id, BUILD_ID_SIZE) < 0)
-+			goto out_elf_end;
-+
-+		if (!dso__build_id_equal(dso, build_id))
-+			goto out_elf_end;
-+	}
-+
-+	ss->symtab = elf_section_by_name(elf, &ehdr, &ss->symshdr, ".symtab",
-+			NULL);
-+	if (ss->symshdr.sh_type != SHT_SYMTAB)
-+		ss->symtab = NULL;
-+
-+	ss->dynsym_idx = 0;
-+	ss->dynsym = elf_section_by_name(elf, &ehdr, &ss->dynshdr, ".dynsym",
-+			&ss->dynsym_idx);
-+	if (ss->dynshdr.sh_type != SHT_DYNSYM)
-+		ss->dynsym = NULL;
-+
-+	ss->opdidx = 0;
-+	ss->opdsec = elf_section_by_name(elf, &ehdr, &ss->opdshdr, ".opd",
-+			&ss->opdidx);
-+	if (ss->opdshdr.sh_type != SHT_PROGBITS)
-+		ss->opdsec = NULL;
-+
-+	if (dso->kernel == DSO_TYPE_USER) {
-+		GElf_Shdr shdr;
-+		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
-+				elf_section_by_name(elf, &ehdr, &shdr,
-+						     ".gnu.prelink_undo",
-+						     NULL) != NULL);
-+	} else {
-+		ss->adjust_symbols = 0;
-+	}
-+
-+	ss->name   = strdup(name);
-+	if (!ss->name)
-+		goto out_elf_end;
-+
-+	ss->elf    = elf;
-+	ss->fd     = fd;
-+	ss->ehdr   = ehdr;
-+	ss->type   = type;
-+
-+	return 0;
-+
-+out_elf_end:
-+	elf_end(elf);
-+out_close:
-+	close(fd);
-+	return err;
-+}
-+
- #define elf_section__for_each_rel(reldata, pos, pos_mem, idx, nr_entries) \
- 	for (idx = 0, pos = gelf_getrel(reldata, 0, &pos_mem); \
- 	     idx < nr_entries; \
-@@ -1192,35 +1330,8 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
- 
--static int dso__swap_init(struct dso *dso, unsigned char eidata)
--{
--	static unsigned int const endian = 1;
--
--	dso->needs_swap = DSO_SWAP__NO;
--
--	switch (eidata) {
--	case ELFDATA2LSB:
--		/* We are big endian, DSO is little endian. */
--		if (*(unsigned char const *)&endian != 1)
--			dso->needs_swap = DSO_SWAP__YES;
--		break;
--
--	case ELFDATA2MSB:
--		/* We are little endian, DSO is big endian. */
--		if (*(unsigned char const *)&endian != 0)
--			dso->needs_swap = DSO_SWAP__YES;
--		break;
--
--	default:
--		pr_err("unrecognized DSO data encoding %d\n", eidata);
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
--static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
--			 int fd, symbol_filter_t filter, int kmodule,
-+static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
-+		         symbol_filter_t filter, int kmodule,
- 			 int want_symtab)
- {
- 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
-@@ -1239,44 +1350,24 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 	int nr = 0;
- 	size_t opdidx = 0;
- 
--	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
--	if (elf == NULL) {
--		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
--		goto out_close;
--	}
-+	elf = ss->elf;
-+	ehdr = ss->ehdr;
-+	sec = ss->symtab;
-+	shdr = ss->symshdr;
- 
--	if (gelf_getehdr(elf, &ehdr) == NULL) {
--		pr_debug("%s: cannot get elf header.\n", __func__);
--		goto out_elf_end;
--	}
--
--	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
--		goto out_elf_end;
--
--	/* Always reject images with a mismatched build-id: */
--	if (dso->has_build_id) {
--		u8 build_id[BUILD_ID_SIZE];
--
--		if (elf_read_build_id(elf, build_id, BUILD_ID_SIZE) < 0)
--			goto out_elf_end;
--
--		if (!dso__build_id_equal(dso, build_id))
--			goto out_elf_end;
--	}
--
--	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
- 	if (sec == NULL) {
- 		if (want_symtab)
- 			goto out_elf_end;
- 
--		sec = elf_section_by_name(elf, &ehdr, &shdr, ".dynsym", NULL);
-+		sec  = ss->dynsym;
-+		shdr = ss->dynshdr;
- 		if (sec == NULL)
- 			goto out_elf_end;
- 	}
- 
--	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
--	if (opdshdr.sh_type != SHT_PROGBITS)
--		opdsec = NULL;
-+	opdsec = ss->opdsec;
-+	opdshdr = ss->opdshdr;
-+	opdidx  = ss->opdidx;
- 	if (opdsec)
- 		opddata = elf_rawdata(opdsec, NULL);
- 
-@@ -1303,14 +1394,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 	nr_syms = shdr.sh_size / shdr.sh_entsize;
- 
- 	memset(&sym, 0, sizeof(sym));
--	if (dso->kernel == DSO_TYPE_USER) {
--		dso->adjust_symbols = (ehdr.e_type == ET_EXEC ||
--				elf_section_by_name(elf, &ehdr, &shdr,
--						     ".gnu.prelink_undo",
--						     NULL) != NULL);
--	} else {
--		dso->adjust_symbols = 0;
--	}
-+	dso->adjust_symbols = ss->adjust_symbols;
- 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
- 		struct symbol *f;
- 		const char *elf_name = elf_sym__name(&sym, symstrs);
-@@ -1466,8 +1550,6 @@ new_symbol:
- 	}
- 	err = nr;
- out_elf_end:
--	elf_end(elf);
--out_close:
- 	return err;
- }
- 
-@@ -1811,7 +1893,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
- 	char *name;
- 	int ret = -1;
--	int fd;
-+	struct symsrc ss;
- 	u_int i;
- 	struct machine *machine;
- 	char *root_dir = (char *) "";
-@@ -1871,13 +1953,12 @@ restart:
- 			continue;
- 
- 		/* Name is now the name of the next image to try */
--		fd = open(name, O_RDONLY);
--		if (fd < 0)
-+		if (symsrc__init(&ss, dso, name, dso->symtab_type) < 0)
- 			continue;
- 
--		ret = dso__load_sym(dso, map, name, fd, filter, 0,
-+		ret = dso__load_sym(dso, map, &ss, filter, 0,
- 				    want_symtab);
--		close(fd);
-+		symsrc__destroy(&ss);
- 
- 		/*
- 		 * Some people seem to have debuginfo files _WITHOUT_ debug
-@@ -2163,22 +2244,23 @@ out_failure:
- int dso__load_vmlinux(struct dso *dso, struct map *map,
- 		      const char *vmlinux, symbol_filter_t filter)
- {
--	int err = -1, fd;
-+	int err = -1;
-+	struct symsrc ss;
- 	char symfs_vmlinux[PATH_MAX];
- 
- 	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
- 		 symbol_conf.symfs, vmlinux);
--	fd = open(symfs_vmlinux, O_RDONLY);
--	if (fd < 0)
--		return -1;
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
- 		dso->symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
- 	else
- 		dso->symtab_type = DSO_BINARY_TYPE__VMLINUX;
- 
--	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
--	close(fd);
-+	if (symsrc__init(&ss, dso, symfs_vmlinux, dso->symtab_type))
-+		return -1;
-+
-+	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
-+	symsrc__destroy(&ss);
- 
- 	if (err > 0) {
- 		dso__set_long_name(dso, (char *)vmlinux);
--- 
-1.7.11.3
+ tools/perf/util/event.c  |   2 +-
+ tools/perf/util/map.c    |   8 -
+ tools/perf/util/map.h    |   1 -
+ tools/perf/util/symbol.c | 416 +++++++++++++++++++++++++++++------------------
+ tools/perf/util/symbol.h |   4 +-
+ 5 files changed, 260 insertions(+), 171 deletions(-)
 
