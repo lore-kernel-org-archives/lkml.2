@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830Ab2HINBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:01:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38361 "EHLO relay.sw.ru"
+	id S964782Ab2HINBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:01:52 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41968 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758125Ab2HINBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753177Ab2HINBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Aug 2012 09:01:51 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
@@ -13,117 +13,108 @@ Cc: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 03/11] memcg: change defines to an enum
-Date: Thu,  9 Aug 2012 17:01:11 +0400
-Message-Id: <1344517279-30646-4-git-send-email-glommer@parallels.com>
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH v2 00/11] Request for Inclusion: kmem controller for memcg.
+Date: Thu,  9 Aug 2012 17:01:08 +0400
+Message-Id: <1344517279-30646-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup patch for clarity of expression.  In earlier
-submissions, people asked it to be in a separate patch, so here it is.
+Hi,
 
-[ v2: use named enum as type throughout the file as well ]
+This is the first part of the kernel memory controller for memcg. It has been
+discussed many times, and I consider this stable enough to be on tree. A follow
+up to this series are the patches to also track slab memory. They are not
+included here because I believe we could benefit from merging them separately
+for better testing coverage. If there are any issues preventing this to be
+merged, let me know. I'll be happy to address them.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+The slab patches are also mature in my self evaluation and could be merged not
+too long after this. For the reference, the last discussion about them happened
+at http://lwn.net/Articles/508087/
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2cef99a..b0e29f4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -393,9 +393,12 @@ enum charge_type {
- };
- 
- /* for encoding cft->private value on file */
--#define _MEM			(0)
--#define _MEMSWAP		(1)
--#define _OOM_TYPE		(2)
-+enum res_type {
-+	_MEM,
-+	_MEMSWAP,
-+	_OOM_TYPE,
-+};
-+
- #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
- #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
- #define MEMFILE_ATTR(val)	((val) & 0xffff)
-@@ -3983,7 +3986,8 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	char str[64];
- 	u64 val;
--	int type, name, len;
-+	int name, len;
-+	enum res_type type;
- 
- 	type = MEMFILE_TYPE(cft->private);
- 	name = MEMFILE_ATTR(cft->private);
-@@ -4019,7 +4023,8 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
- 			    const char *buffer)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
--	int type, name;
-+	enum res_type type;
-+	int name;
- 	unsigned long long val;
- 	int ret;
- 
-@@ -4095,7 +4100,8 @@ out:
- static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
--	int type, name;
-+	int name;
-+	enum res_type type;
- 
- 	type = MEMFILE_TYPE(event);
- 	name = MEMFILE_ATTR(event);
-@@ -4423,7 +4429,7 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_thresholds *thresholds;
- 	struct mem_cgroup_threshold_ary *new;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 	u64 threshold, usage;
- 	int i, size, ret;
- 
-@@ -4506,7 +4512,7 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_thresholds *thresholds;
- 	struct mem_cgroup_threshold_ary *new;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 	u64 usage;
- 	int i, j, size;
- 
-@@ -4584,7 +4590,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *event;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 
- 	BUG_ON(type != _OOM_TYPE);
- 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
-@@ -4609,7 +4615,7 @@ static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *ev, *tmp;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 
- 	BUG_ON(type != _OOM_TYPE);
- 
+A (throwaway) git tree with them is placed at:
+
+	git://github.com/glommer/linux.git kmemcg-slab
+
+A general explanation of what this is all about follows:
+
+The kernel memory limitation mechanism for memcg concerns itself with
+disallowing potentially non-reclaimable allocations to happen in exaggerate
+quantities by a particular set of processes (cgroup). Those allocations could
+create pressure that affects the behavior of a different and unrelated set of
+processes.
+
+Its basic working mechanism is to annotate some allocations with the
+_GFP_KMEMCG flag. When this flag is set, the current process allocating will
+have its memcg identified and charged against. When reaching a specific limit,
+further allocations will be denied.
+
+One example of such problematic pressure that can be prevented by this work is
+a fork bomb conducted in a shell. We prevent it by noting that processes use a
+limited amount of stack pages. Seen this way, a fork bomb is just a special
+case of resource abuse. If the offender is unable to grab more pages for the
+stack, no new processes can be created.
+
+There are also other things the general mechanism protects against. For
+example, using too much of pinned dentry and inode cache, by touching files an
+leaving them in memory forever.
+
+In fact, a simple:
+
+while true; do mkdir x; cd x; done
+
+can halt your system easily because the file system limits are hard to reach
+(big disks), but the kernel memory is not. Those are examples, but the list
+certainly don't stop here.
+
+An important use case for all that, is concerned with people offering hosting
+services through containers. In a physical box we can put a limit to some
+resources, like total number of processes or threads. But in an environment
+where each independent user gets its own piece of the machine, we don't want a
+potentially malicious user to destroy good users' services.
+
+This might be true for systemd as well, that now groups services inside
+cgroups. They generally want to put forward a set of guarantees that limits the
+running service in a variety of ways, so that if they become badly behaved,
+they won't interfere with the rest of the system.
+
+There is, of course, a cost for that. To attempt to mitigate that, static
+branches are used to make sure that even if the feature is compiled in with
+potentially a lot of memory cgroups deployed this code will only be enabled
+after the first user of this service configures any limit. Limits lower than
+the user limit effectively means there is a separate kernel memory limit that
+may be reached independently than the user limit. Values equal or greater than
+the user limit implies only that kernel memory is tracked. This provides a
+unified vision of "maximum memory", be it kernel or user memory. Because this
+is all default-off, existing deployments will see no change in behavior.
+
+Glauber Costa (9):
+  memcg: change defines to an enum
+  kmem accounting basic infrastructure
+  Add a __GFP_KMEMCG flag
+  memcg: kmem controller infrastructure
+  mm: Allocate kernel pages to the right memcg
+  memcg: disable kmem code when not in use.
+  memcg: propagate kmem limiting information to children
+  memcg: allow a memcg with kmem charges to be destructed.
+  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
+    bombs
+
+Suleiman Souhlal (2):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+
+ include/linux/gfp.h         |  10 +-
+ include/linux/memcontrol.h  |  82 ++++++++
+ include/linux/thread_info.h |   2 +
+ kernel/fork.c               |   4 +-
+ mm/memcontrol.c             | 443 +++++++++++++++++++++++++++++++++++++++++---
+ mm/page_alloc.c             |  38 ++++
+ 6 files changed, 546 insertions(+), 33 deletions(-)
+
 -- 
 1.7.11.2
 
