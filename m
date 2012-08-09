@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab2HILmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:42:54 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:38518 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753417Ab2HILmx (ORCPT
+	id S1758094Ab2HILsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:48:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49563 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab2HILsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:42:53 -0400
-Date: Thu, 9 Aug 2012 13:42:42 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2] usb: gadget: composite: parse dt values
-Message-ID: <20120809114242.GA4689@breakpoint.cc>
-References: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
+	Thu, 9 Aug 2012 07:48:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: How to get the irq flags from the dts file
+Date: Thu, 9 Aug 2012 11:48:42 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Wei Ni <wni@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        frankyl@broadcom.com, brcm80211-dev-list@broadcom.com,
+        devicetree-discuss@lists.ozlabs.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+References: <1344509006.2295.148.camel@tegra-chromium-2>
+In-Reply-To: <1344509006.2295.148.camel@tegra-chromium-2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208091148.42748.arnd@arndb.de>
+X-Provags-ID: V02:K0:S/vP8ZTyp5pJMB4Ylwah2PdkEW87I4UJDpvkXHmKlBj
+ tEVXwvgNpaqaD7k7EK8LQIG/bVfooaMggUbXuKBkZMv/hBX9zs
+ nisvzx/lTuSRUXgvavJim5Atdw2VvFUkHrECPcjPDEnrGJeZa1
+ LPDyPnuMstjnHEFunf2vXdD43T9+5D7rBv0y0Raw7Xe3553zrJ
+ UvsNvHsjbgXG3Fa/G67dBBrdfbNjWAtB5hOMjttV9DSxtgVsrs
+ 9P5iSckjy39agj4h2gP8/LFoUMvP7WKm+Q4rcLrIXEVoM9ddHs
+ 0tjcEW51wNbB6HLrWlvCuAckQk9FuxeVrTJVYXBye6eLUqDwKY
+ WrjcRe9JJ8nOcunwwkWc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 10:15:20AM -0300, Alexandre Pereira da Silva wrote:
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/gadget.txt
-> @@ -0,0 +1,20 @@
-> +Usb Gadget DeviceTree bindings
-> +
-> +These optional properties inside the usb device controller node are used to
-> +change some of the gadget drivers configuration:
-> +- vendor-id: Usb vendor id
-> +- product-id: Usb product id
-> +- release: Version of this device
-> +- vendor: Textual description of the vendor
-> +- device: Textual description of this device
-> +- serial: Textual representation of the device's serial number
-> +
-> +Binding Example:
-> +	usbd@31020000 {
-> +		vendor-id = <0x0525>;
-> +		product-id = <0xa4a6>;
-> +		release = <1>;
-> +		vendor = "Some Corp";
-> +		device = "Test Device";
-> +		serial = "12345";
-> +	};
+On Thursday 09 August 2012, Wei Ni wrote:
+> In the wlan driver, it will use platform_get_resource() to get the
+> res->irq, res->flags, the irq number is right, but the flags will be
+> IORESOURCE_IRQ, not the 0x04 (IRQF_TRIGGER_HIGH).
+> The wlan driver wish this flags include the IRQF_TRGGER_* information,
+> and it will use this flags to configure other hw settings. If it is
+> wrong, the wlan can't work.
+> 
+> I checked drivers/of/irq.c, in function of_irq_to_resource(), it will
+> set r->flags = IORESOURCE_IRQ directly, not read the flags from the dtb
+> file. And I didn't find any of_xx api to get this flags.
+> 
+> How can I get this flags, does anyone has suggestion?
 
-No, I don't think that this is correct. You put this bindings at device level
-and map those values directly to the composite layer for each gadget. You _can_
-have multiple gadgets compiled and you may want to have load them depending
-on your mood and here you force a special serial or vendor-id for each one of
-them. If I take a look on N800 which I have here, I see that the vendor-id
-changes if I switch from mass storage to modem. How do you want to make this
-possible with device tree? Ah I leave this empty. I see.
+The driver should not need to know about thie flag. It gets read
+by irq_create_of_mapping when calling teh xlate function and
+gets set using irq_set_irq_type from there too.
 
-Further more, you model this binding according to what the composite framework
-is doing today instead of what the hardware should look like. Putting the 
-current composite limitations aside the complete UDC node for the driver could 
-look something like this:
-
-|	usbd@31020000 {
-|		compatible = "nxp,lpc3220-udc";
-|		reg = <0x31020000 0x300>;
-|		interrupts = <0x3d 0>, <0x3e 0>, <0x3c 0>, <0x3a 0>;
-|		status = "disabled";
-now  this 1:1 copy, nothing new.
-
-|
-|		gadget@0 {
-The first gadget we want.
-
-|			vendor-id = <0x0525>;
-|			product-id = <0xa4a6>;
-|			release = <1>;
-|			vendor = "Some Corp";
-|			device = "Test Device";
-|			serial = "12345";
-
-with some presets here
-
-|			config@0 {
-|				max_current = <900>;
-|
-|				function@0 {
-|					compatible = "storage,uas";
-|				};
-|				function@1 {
-|					compatible = "network,ncm";
-|				};
-
-Two gadgets here. We may could add extra string descriptors here but I would
-have check if this makes sense.
-
-|			};
-|			config@1 {
-|				max_current = <300>;
-|
-|				function@0 {
-|					compatible = "network,ncm";
-|				};
-
-Another config if we don't have enough current, just go for the network and
-let the storage off.
-
-|			};
-|		}
-|
-|		gadget@1 {
-|			vendor-id = <0x0325>;
-|			product-id = <0xa3a1>;
-|			release = <1>;
-|			vendor = "Some Corp";
-|			device = "Test Device";
-|			serial = "1234511";
-|			
-|			config@0 {
-|				max_current = <900>;
-|
-|				function@0 {
-|					compatible = "serial,cdc-acm";
-|				};
-
-a complete different gadget.
-
-|			};
-|		}
-|	};
-
-So _this_ binding would add two gadgets to your UDC and take, lets say, the
-first one as the default one. And *then* you could depending on your mood switch
-between network + storage gadget and modem gadget. Now how does this sound?
-
-I understand that this is not yet possible with current gadget framework. If I
-allow you to merge this it will make the rework more hard and painfull than it
-already will be.
-
-Based on this, I have to say, sorry, no, NAK.
-
-Sebastian
+	Arnd
