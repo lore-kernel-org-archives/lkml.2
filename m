@@ -1,158 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031416Ab2HIPxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:53:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35833 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031239Ab2HIPsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:48:21 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org
-Subject: [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP probe rather than as a device
-Date: Thu,  9 Aug 2012 16:47:33 +0100
-Message-Id: <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+	id S1031404Ab2HIPxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:53:05 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:47722 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031251Ab2HIPsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:48:22 -0400
+Date: Thu, 9 Aug 2012 17:48:17 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jan Beulich <jbeulich@suse.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [RFC PATCH] sysrq: Show architectural registers
+Message-ID: <20120809154817.GF28404@aftab.osrc.amd.com>
+References: <1344526846-31905-1-git-send-email-bp@amd64.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344526846-31905-1-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCM is a pseudo-device. It doesn't have any of it's own registers
-or hardware. It rather acts as a layer of abstraction for DMA
-transfers. Hence, instead of classifying it as a device in its own
-right, we call the initialisation from the MSP driver.
+On Thu, Aug 09, 2012 at 05:40:46PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> One day I was playing with disabling the caches over CR0.CD and I wanted
+> to check the current setting of the CD bit but there wasn't a way to do
+> so from userspace because we #GP when accessing CR0.
+> 
+> And then I thought, well, sysrq must have this. And it does:
+> 
+> $ echo p > /proc/sysrq-trigger
+> 
+> dumps the current registers. However, we don't dump the registers when
+> we can't get the last exception frame through get_irq_regs().
+> 
+> But, there are registers (CR0 included) which aren't in the exception
+> frame and which can be dumped regardless. This patch does exactly that;
+> with it, the output looks like this:
+> 
+> [ 1759.206042] SysRq : Show Regs
+> [ 1759.209194] FS:  00007fb1eada3700(0000) GS:ffff880c27c00000(0000) knlGS:0000000000000000
+> [ 1759.217593] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [ 1759.223554] CR2: 0000000000910390 CR3: 0000001020b48000 CR4: 00000000000007e0
+> [ 1759.230956] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1759.244974] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1759.259052] CPU#18: active:     0000000000000000
+> [ 1759.270539] CPU#18:   gen-PMC0 ctrl:  0000030e011afcf6
+> [ 1759.270543] CPU#18:   gen-PMC0 count: 00009007d003b500
+> [ 1759.270545] CPU#18:   gen-PMC0 left:  0000000000000000
+> [ 1759.270548] CPU#18:   gen-PMC1 ctrl:  0000030f059b7efc
+> [ 1759.270550] CPU#18:   gen-PMC1 count: 00008003c823b4a0
+> [ 1759.270552] CPU#18:   gen-PMC1 left:  0000000000000000
+> [ 1759.270555] CPU#18:   gen-PMC2 ctrl:  00000104fe97c87c
+> [ 1759.270557] CPU#18:   gen-PMC2 count: 00007c6277e7f5fe
+> [ 1759.270560] CPU#18:   gen-PMC2 left:  0000000000000000
+> [ 1759.270562] CPU#18:   gen-PMC3 ctrl:  000000040000f0e2
+> [ 1759.270564] CPU#18:   gen-PMC3 count: 0000000000000000
+> [ 1759.270566] CPU#18:   gen-PMC3 left:  0000000000000000
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jan Beulich <jbeulich@suse.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/include/asm/bug.h   |  3 +++
+>  arch/x86/kernel/process_32.c | 43 ++++++++++++++++++++++------------------
+>  arch/x86/kernel/process_64.c | 47 ++++++++++++++++++++++++--------------------
+>  drivers/tty/sysrq.c          |  1 +
+>  include/asm-generic/bug.h    |  9 +++++++++
+>  5 files changed, 63 insertions(+), 40 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
+> index 11e1152222d0..e60cf51fdfbd 100644
+> --- a/arch/x86/include/asm/bug.h
+> +++ b/arch/x86/include/asm/bug.h
+> @@ -35,6 +35,9 @@ do {								\
+>  
+>  #endif /* !CONFIG_BUG */
+>  
+> +extern void _arch_show_regs(void);
+> +#define _arch_show_regs _arch_show_regs
+> +
+>  #include <asm-generic/bug.h>
+>  
+>  
+> diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+> index 516fa186121b..6b01b6260f5d 100644
+> --- a/arch/x86/kernel/process_32.c
+> +++ b/arch/x86/kernel/process_32.c
+> @@ -66,10 +66,32 @@ unsigned long thread_saved_pc(struct task_struct *tsk)
+>  	return ((unsigned long *)tsk->thread.sp)[3];
+>  }
+>  
+> -void __show_regs(struct pt_regs *regs, int all)
+> +void _arch_show_regs(void)
+>  {
+>  	unsigned long cr0 = 0L, cr2 = 0L, cr3 = 0L, cr4 = 0L;
+>  	unsigned long d0, d1, d2, d3, d6, d7;
+> +
+> +	cr0 = read_cr0();
+> +	cr2 = read_cr2();
+> +	cr3 = read_cr3();
+> +	cr4 = read_cr4_safe();
+> +	printk(KERN_DEFAULT "CR0: %08lx CR2: %08lx CR3: %08lx CR4: %08lx\n",
+> +			cr0, cr2, cr3, cr4);
+> +
+> +	get_debugreg(d0, 0);
+> +	get_debugreg(d1, 1);
+> +	get_debugreg(d2, 2);
+> +	get_debugreg(d3, 3);
+> +	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
+> +			d0, d1, d2, d3);
+> +
+> +	get_debugreg(d6, 6);
+> +	get_debugreg(d7, 7);
+> +	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n", d6, d7);
+> +}
+> +
+> +void __show_regs(struct pt_regs *regs, int all)
+> +{
+>  	unsigned long sp;
+>  	unsigned short ss, gs;
+>  
+> @@ -100,24 +122,7 @@ void __show_regs(struct pt_regs *regs, int all)
+>  	if (!all)
+>  		return;
+>  
+> -	cr0 = read_cr0();
+> -	cr2 = read_cr2();
+> -	cr3 = read_cr3();
+> -	cr4 = read_cr4_safe();
+> -	printk(KERN_DEFAULT "CR0: %08lx CR2: %08lx CR3: %08lx CR4: %08lx\n",
+> -			cr0, cr2, cr3, cr4);
+> -
+> -	get_debugreg(d0, 0);
+> -	get_debugreg(d1, 1);
+> -	get_debugreg(d2, 2);
+> -	get_debugreg(d3, 3);
+> -	printk(KERN_DEFAULT "DR0: %08lx DR1: %08lx DR2: %08lx DR3: %08lx\n",
+> -			d0, d1, d2, d3);
+> -
+> -	get_debugreg(d6, 6);
+> -	get_debugreg(d7, 7);
+> -	printk(KERN_DEFAULT "DR6: %08lx DR7: %08lx\n",
+> -			d6, d7);
+> +	_arch_show_regs();
+>  }
+>  
+>  void release_thread(struct task_struct *dead_task)
+> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+> index 0a980c9d7cb8..dbe93bae6524 100644
+> --- a/arch/x86/kernel/process_64.c
+> +++ b/arch/x86/kernel/process_64.c
+> @@ -54,30 +54,14 @@ asmlinkage extern void ret_from_fork(void);
+>  
+>  DEFINE_PER_CPU(unsigned long, old_rsp);
+>  
+> -/* Prints also some state that isn't saved in the pt_regs */
+> -void __show_regs(struct pt_regs *regs, int all)
+> +/* Print also some state that isn't saved in the pt_regs */
+> +void _arch_show_regs(void)
+>  {
+>  	unsigned long cr0 = 0L, cr2 = 0L, cr3 = 0L, cr4 = 0L, fs, gs, shadowgs;
+>  	unsigned long d0, d1, d2, d3, d6, d7;
+>  	unsigned int fsindex, gsindex;
+>  	unsigned int ds, cs, es;
+>  
+> -	show_regs_common();
+> -	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+> -	printk_address(regs->ip, 1);
+> -	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+> -			regs->sp, regs->flags);
+> -	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+> -	       regs->ax, regs->bx, regs->cx);
+> -	printk(KERN_DEFAULT "RDX: %016lx RSI: %016lx RDI: %016lx\n",
+> -	       regs->dx, regs->si, regs->di);
+> -	printk(KERN_DEFAULT "RBP: %016lx R08: %016lx R09: %016lx\n",
+> -	       regs->bp, regs->r8, regs->r9);
+> -	printk(KERN_DEFAULT "R10: %016lx R11: %016lx R12: %016lx\n",
+> -	       regs->r10, regs->r11, regs->r12);
+> -	printk(KERN_DEFAULT "R13: %016lx R14: %016lx R15: %016lx\n",
+> -	       regs->r13, regs->r14, regs->r15);
+> -
+>  	asm("movl %%ds,%0" : "=r" (ds));
+>  	asm("movl %%cs,%0" : "=r" (cs));
+>  	asm("movl %%es,%0" : "=r" (es));
+> @@ -88,9 +72,6 @@ void __show_regs(struct pt_regs *regs, int all)
+>  	rdmsrl(MSR_GS_BASE, gs);
+>  	rdmsrl(MSR_KERNEL_GS_BASE, shadowgs);
+>  
+> -	if (!all)
+> -		return;
+> -
+>  	cr0 = read_cr0();
+>  	cr2 = read_cr2();
+>  	cr3 = read_cr3();
+> @@ -113,6 +94,30 @@ void __show_regs(struct pt_regs *regs, int all)
+>  	printk(KERN_DEFAULT "DR3: %016lx DR6: %016lx DR7: %016lx\n", d3, d6, d7);
+>  }
+>  
+> +void __show_regs(struct pt_regs *regs, int all)
+> +{
+> +	show_regs_common();
+> +	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+> +	printk_address(regs->ip, 1);
+> +	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+> +			regs->sp, regs->flags);
+> +	printk(KERN_DEFAULT "RAX: %016lx RBX: %016lx RCX: %016lx\n",
+> +	       regs->ax, regs->bx, regs->cx);
+> +	printk(KERN_DEFAULT "RDX: %016lx RSI: %016lx RDI: %016lx\n",
+> +	       regs->dx, regs->si, regs->di);
+> +	printk(KERN_DEFAULT "RBP: %016lx R08: %016lx R09: %016lx\n",
+> +	       regs->bp, regs->r8, regs->r9);
+> +	printk(KERN_DEFAULT "R10: %016lx R11: %016lx R12: %016lx\n",
+> +	       regs->r10, regs->r11, regs->r12);
+> +	printk(KERN_DEFAULT "R13: %016lx R14: %016lx R15: %016lx\n",
+> +	       regs->r13, regs->r14, regs->r15);
+> +
+> +	if (!all)
+> +		return;
+> +
+> +	_arch_show_regs();
+> +}
+> +
+>  void release_thread(struct task_struct *dead_task)
+>  {
+>  	if (dead_task->mm) {
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index 05728894a88c..4ad0f884e08e 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -254,6 +254,7 @@ static void sysrq_handle_showregs(int key)
+>  	struct pt_regs *regs = get_irq_regs();
+>  	if (regs)
+>  		show_regs(regs);
+> +	arch_show_regs();
+>  	perf_event_print_debug();
+>  }
+>  static struct sysrq_key_op sysrq_showregs_op = {
 
-CC: alsa-devel@alsa-project.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- sound/soc/ux500/mop500.c        |    4 ++--
- sound/soc/ux500/ux500_msp_dai.c |   14 +++++++++++++-
- sound/soc/ux500/ux500_pcm.c     |   19 ++++---------------
- sound/soc/ux500/ux500_pcm.h     |    3 +++
- 4 files changed, 22 insertions(+), 18 deletions(-)
+Btw, this hunk should be:
 
-diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
-index 6840df7..fe6223a 100644
---- a/sound/soc/ux500/mop500.c
-+++ b/sound/soc/ux500/mop500.c
-@@ -33,7 +33,7 @@ struct snd_soc_dai_link mop500_dai_links[] = {
- 		.stream_name = "ab8500_0",
- 		.cpu_dai_name = "ux500-msp-i2s.1",
- 		.codec_dai_name = "ab8500-codec-dai.0",
--		.platform_name = "ux500-pcm.0",
-+		.platform_name = "ux500-msp-i2s.1",
- 		.codec_name = "ab8500-codec.0",
- 		.init = mop500_ab8500_machine_init,
- 		.ops = mop500_ab8500_ops,
-@@ -43,7 +43,7 @@ struct snd_soc_dai_link mop500_dai_links[] = {
- 		.stream_name = "ab8500_1",
- 		.cpu_dai_name = "ux500-msp-i2s.3",
- 		.codec_dai_name = "ab8500-codec-dai.1",
--		.platform_name = "ux500-pcm.0",
-+		.platform_name = "ux500-msp-i2s.3",
- 		.codec_name = "ab8500-codec.0",
- 		.init = NULL,
- 		.ops = mop500_ab8500_ops,
-diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
-index 0f7dd49..3476d6a 100644
---- a/sound/soc/ux500/ux500_msp_dai.c
-+++ b/sound/soc/ux500/ux500_msp_dai.c
-@@ -28,6 +28,7 @@
- 
- #include "ux500_msp_i2s.h"
- #include "ux500_msp_dai.h"
-+#include "ux500_pcm.h"
- 
- static int setup_pcm_multichan(struct snd_soc_dai *dai,
- 			struct ux500_msp_config *msp_config)
-@@ -806,11 +807,20 @@ static int __devinit ux500_msp_drv_probe(struct platform_device *pdev)
- 		goto err_init_msp;
- 	}
- 
-+	ret = ux500_pcm_register_platform(pdev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev,
-+			"Error: %s: Failed to register PCM platform device!\n",
-+			__func__);
-+		goto err_reg_plat;
-+	}
-+
- 	return 0;
- 
-+err_reg_plat:
-+	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
- err_init_msp:
- 	clk_put(drvdata->clk);
--
- err_clk:
- 	devm_regulator_put(drvdata->reg_vape);
- 
-@@ -821,6 +831,8 @@ static int __devexit ux500_msp_drv_remove(struct platform_device *pdev)
- {
- 	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(&pdev->dev);
- 
-+	ux500_pcm_unregister_platform(pdev);
-+
- 	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
- 
- 	devm_regulator_put(drvdata->reg_vape);
-diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
-index 1a04e24..894c9f4 100644
---- a/sound/soc/ux500/ux500_pcm.c
-+++ b/sound/soc/ux500/ux500_pcm.c
-@@ -282,7 +282,7 @@ static struct snd_soc_platform_driver ux500_pcm_soc_drv = {
- 	.pcm_new        = ux500_pcm_new,
- };
- 
--static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
-+int __devinit ux500_pcm_register_platform(struct platform_device *pdev)
- {
- 	int ret;
- 
-@@ -296,23 +296,12 @@ static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
- 
- 	return 0;
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 05728894a88c..53dc73699882 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -254,6 +254,8 @@ static void sysrq_handle_showregs(int key)
+        struct pt_regs *regs = get_irq_regs();
+        if (regs)
+                show_regs(regs);
++       else
++               arch_show_regs();
+        perf_event_print_debug();
  }
-+EXPORT_SYMBOL_GPL(ux500_pcm_register_platform);
- 
--static int __devinit ux500_pcm_drv_remove(struct platform_device *pdev)
-+int __devexit ux500_pcm_unregister_platform(struct platform_device *pdev)
- {
- 	snd_soc_unregister_platform(&pdev->dev);
- 
- 	return 0;
- }
--
--static struct platform_driver ux500_pcm_driver = {
--	.driver = {
--		.name = "ux500-pcm",
--		.owner = THIS_MODULE,
--	},
--
--	.probe = ux500_pcm_drv_probe,
--	.remove = __devexit_p(ux500_pcm_drv_remove),
--};
--module_platform_driver(ux500_pcm_driver);
--
--MODULE_LICENSE("GPL v2");
-+EXPORT_SYMBOL_GPL(ux500_pcm_unregister_platform);
-diff --git a/sound/soc/ux500/ux500_pcm.h b/sound/soc/ux500/ux500_pcm.h
-index 77ed44d..76d3444 100644
---- a/sound/soc/ux500/ux500_pcm.h
-+++ b/sound/soc/ux500/ux500_pcm.h
-@@ -32,4 +32,7 @@
- #define UX500_PLATFORM_PERIODS_MAX		48
- #define UX500_PLATFORM_BUFFER_BYTES_MAX		(2048 * PAGE_SIZE)
- 
-+int ux500_pcm_register_platform(struct platform_device *pdev);
-+int ux500_pcm_unregister_platform(struct platform_device *pdev);
-+
- #endif
+ static struct sysrq_key_op sysrq_showregs_op = {
+
+so as not to print the non-pt_regs registers twice.
+
+Already fixed locally.
+
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index 7d10f962aa13..e96d6c31c222 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -202,6 +202,15 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  # define WARN_ON_SMP(x)			({0;})
+>  #endif
+>  
+> +#ifdef _arch_show_regs
+> +static inline void arch_show_regs(void)
+> +{
+> +	_arch_show_regs();
+> +}
+> +#else
+> +static inline void arch_show_regs(void) { }
+> +#endif
+> +
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif
+> -- 
+> 1.7.11.rc1
+> 
+> 
+
 -- 
-1.7.9.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
