@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599Ab2HIQAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:00:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49027 "EHLO
+	id S1758606Ab2HIQAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:00:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35833 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031200Ab2HIPsM (ORCPT
+	with ESMTP id S1031167Ab2HIPsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:48:12 -0400
+	Thu, 9 Aug 2012 11:48:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/22] ARM: ux500: Ensure probing of Audio devices when Device Tree is enabled
-Date: Thu,  9 Aug 2012 16:47:28 +0100
-Message-Id: <1344527268-5964-3-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 01/22] ARM: ux500: Fix merge error, no matching driver name for 'snd_soc_u8500'
+Date: Thu,  9 Aug 2012 16:47:27 +0100
+Message-Id: <1344527268-5964-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
 References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
@@ -22,44 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous attempts to add platform probing of the Audio related devices
-only call from non-DT initialisation functions. This patch extends that
-functionality to the Device Tree related ones too.
+The platform attempts to register platform device 'snd_soc_u8500'
+which doesn't actually exist. Here we change the reference to the
+correct one 'snd_soc_mop500'.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-ux500/board-mop500-msp.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index f413587..5d9600b 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -799,6 +799,7 @@ static void __init u8500_init_machine(void)
- 				ARRAY_SIZE(mop500_platform_devs));
+diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
+index 9960480..df15646 100644
+--- a/arch/arm/mach-ux500/board-mop500-msp.c
++++ b/arch/arm/mach-ux500/board-mop500-msp.c
+@@ -191,9 +191,9 @@ static struct platform_device *db8500_add_msp_i2s(struct device *parent,
+ 	return pdev;
+ }
  
- 		mop500_sdi_init(parent);
-+		mop500_msp_init(parent);
- 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
- 		i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
- 		i2c_register_board_info(2, mop500_i2c2_devices,
-@@ -806,6 +807,8 @@ static void __init u8500_init_machine(void)
+-/* Platform device for ASoC U8500 machine */
+-static struct platform_device snd_soc_u8500 = {
+-		.name = "snd-soc-u8500",
++/* Platform device for ASoC MOP500 machine */
++static struct platform_device snd_soc_mop500 = {
++		.name = "snd-soc-mop500",
+ 		.id = 0,
+ 		.dev = {
+ 			.platform_data = NULL,
+@@ -227,8 +227,8 @@ int mop500_msp_init(struct device *parent)
+ {
+ 	struct platform_device *msp1;
  
- 		mop500_uib_init();
+-	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
+-	platform_device_register(&snd_soc_u8500);
++	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
++	platform_device_register(&snd_soc_mop500);
  
-+	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
-+		mop500_msp_init(parent);
- 	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
- 		/*
- 		 * The HREFv60 board removed a GPIO expander and routed
-@@ -817,6 +820,7 @@ static void __init u8500_init_machine(void)
- 				ARRAY_SIZE(mop500_platform_devs));
- 
- 		hrefv60_sdi_init(parent);
-+		mop500_msp_init(parent);
- 
- 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
- 		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
+ 	pr_info("Initialize MSP I2S-devices.\n");
+ 	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
 -- 
 1.7.9.5
 
