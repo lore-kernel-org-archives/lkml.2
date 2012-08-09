@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2HIGZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:25:33 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54296 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2HIGZb (ORCPT
+	id S1754837Ab2HIG2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:28:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58516 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab2HIG2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:25:31 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 8 Aug 2012 23:25:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thermal: Fix potential NULL pointer accesses
-Message-ID: <20120809062530.GA3779@roeck-us.net>
-References: <1344404205-22861-1-git-send-email-linux@roeck-us.net>
- <1344473095.1682.641.camel@rui.sh.intel.com>
+	Thu, 9 Aug 2012 02:28:15 -0400
+Date: Thu, 9 Aug 2012 08:27:57 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+Message-ID: <20120809062757.GA3151@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+ <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+ <20120730074714.GC15245@avionic-0098.mockup.avionic-design.de>
+ <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1344473095.1682.641.camel@rui.sh.intel.com>
+In-Reply-To: <CACRpkdbrdWw_HR91r72aB_S2+vxiaSBKHwW+Tsmi8pKk9VsgFg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:R34wGplvU9kmzUKPzraywyZ8vyvkE4P9/lxLhOo6xdi
+ qjMewkwt87rrJVv1erJH8XCv4hFOasg+OxV8GdbgK8LN24iDCf
+ QjOdRcClQTK6jIy8a1xMTWADcKcwxoRaL1/HFPuG8Jd1Kax9v+
+ WYPooVAD9I49U4+GEEq8JqDJE4POb/HBsLufhUsdZBcyqrtZ2Q
+ L6uqkMxZ5xUa+NYb67jFaW7x6Qt33dAYUM3EPuAoZKkmi5ZJzi
+ lRh/wJFXa8QxladNOb+Z6TOYnD25ImwXfgmZwP1QUUfOs7d2dz
+ giNU1S5TRsDHU1k8BVfhXci9hISZxCwynXYbd74+ZSxVENBBxT
+ zpgaZXAPnssDSURyQJXV8rLCqcAwPgvhKROV5ONYRBtc0+X5XX
+ ZUK6Ar7tcEWsPD4dbPLGGuQPsyZdPV/e3o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 08:44:55AM +0800, Zhang Rui wrote:
-> On 二, 2012-08-07 at 22:36 -0700, Guenter Roeck wrote:
-> > The type parameter in thermal_zone_device_register and
-> > thermal_cooling_device_register can be NULL, indicating that no sysfs attribute
-> > for the type should be created. Only call strlen() and strcpy() on type if it is
-> > not NULL.
-> > 
-> > This patch addresses Coverity #102180 and #102182: Dereference before null check
-> > 
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> 
-> Acked-by: Zhang Rui <rui.zhang@intel.com>
-> 
-How do we get this patch upstream ? I thought you'd take it through your tree.
 
-Thanks,
-Guenter
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > ---
-> > Applies on top of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git (thermal).
-> > 
-> >  drivers/thermal/thermal_sys.c |    8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index 5be8728..e69f76d 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -900,7 +900,7 @@ thermal_cooling_device_register(char *type, void *devdata,
-> >  	struct thermal_zone_device *pos;
-> >  	int result;
-> >  
-> > -	if (strlen(type) >= THERMAL_NAME_LENGTH)
-> > +	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
-> >  		return ERR_PTR(-EINVAL);
-> >  
-> >  	if (!ops || !ops->get_max_state || !ops->get_cur_state ||
-> > @@ -917,7 +917,7 @@ thermal_cooling_device_register(char *type, void *devdata,
-> >  		return ERR_PTR(result);
-> >  	}
-> >  
-> > -	strcpy(cdev->type, type);
-> > +	strcpy(cdev->type, type ? : "");
-> >  	mutex_init(&cdev->lock);
-> >  	INIT_LIST_HEAD(&cdev->thermal_instances);
-> >  	cdev->ops = ops;
-> > @@ -1343,7 +1343,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
-> >  	int count;
-> >  	int passive = 0;
-> >  
-> > -	if (strlen(type) >= THERMAL_NAME_LENGTH)
-> > +	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
-> >  		return ERR_PTR(-EINVAL);
-> >  
-> >  	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
-> > @@ -1365,7 +1365,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
-> >  		return ERR_PTR(result);
-> >  	}
-> >  
-> > -	strcpy(tz->type, type);
-> > +	strcpy(tz->type, type ? : "");
-> >  	tz->ops = ops;
-> >  	tz->device.class = &thermal_class;
-> >  	tz->devdata = devdata;
-> 
-> 
-> 
+On Sun, Aug 05, 2012 at 12:50:54PM +0200, Linus Walleij wrote:
+> On Mon, Jul 30, 2012 at 9:47 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+> >> On Mon, Jul 23, 2012 at 1:59 PM, Thierry Reding
+> >> <thierry.reding@avionic-design.de> wrote:
+>=20
+> >> > +- interrupt-controller: Marks the device as an interrupt controller.
+> >> > +- nr-gpios: The number of pins supported by the controller.
+> >>
+> >> These two last things look very generic, like something every GPIO
+> >> driver could want to expose.
+> >
+> > As Arnd mentioned, interrupt-controller is a generic property required
+> > by all interrupt controller nodes. Perhaps it shouldn't be listed in the
+> > DT binding for this driver.
+>=20
+> After reading Rob's etc comments I think nr-gpios should be in this
+> binding, but interrupt-controller seems like it should go into
+> Documentation/devicetree/bindings/gpio/gpio.txt
+> can you take care of this?
+>=20
+> (Anyone agains, beat me up...)
+
+Perhaps this should go into some more generic document (perhaps
+something like Documentation/devicetree/bindings/interrupts.txt) to
+describe the common properties for interrupt controllers and refer to
+that document in bindings that use them.
+
+It might be good to document the #interrupt-cells property as well, with
+the common meaning as defined by the various irq_domain_ops.xlate()
+callbacks.
+
+Do you want me to replace occurrences of this in other binding documents
+by a reference to the new document while I'm at it?
+
+Thierry
+
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI1htAAoJEN0jrNd/PrOhp7MP/jTWKrSg9b+Bj9Xcs6fTR2y9
+OBjcNoH7RVr0lpL9n8y2K31CIFkppB4GJeIBrcpYUp6Mfh/rxYSMZTtbvr75yngb
+tktikjE9q8k8iTTvh4zMi1zE94VK4frhyYDkJzfWtP9VKmQ6AuYcVcUTHpvUClid
+h/tIcLhooOvbDuhDeU12uiX9YHXHAm6rH6PuWo6XSYkTgHNVWBxYYHehkVmvmg3U
+TRoXWdwE8dJEJqT5QnEZReb/6qeLL1gCmiXCnN3yE+uBIYaPzBw7qvad3xDU8Grw
+iaewm7Nxe97eGU67azC3ZP5+XDDURlW+vwCa5T8Ox6toO7rBeB1gd64zUnyfdFyE
+RdrNVV+XEPXn9F7N9JAviVl1Kb96gXheCNApv87Zf0Eq4aJ6a4SVEqbDAxQkMfKP
+x9odgbnx54oHKI7ScfakNJ2iNGlcMPzZh1+C+dK1wFf8t5nIJ3K6rWjXdgfNOTq9
+QH428WFJ6mUhvulZWdg/RhYCs2jqMiQSfUQm7GlNSyEmRBRX6qi2BQPsCEh9cFHi
+1eStde60I7jfXUdXlC21tDeQ/VBWZI6jprZbBt2nPamvJNsIrnu+o7CjQAqj7Umu
+kcWKixfOw6vdQQNzpzImO2tPzhtvPs2Mi04ayXe4Zmx/M/yvx2YJttjboRqLMZlc
+voxNQK1GAi7l+FRy/QPm
+=lzOn
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
