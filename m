@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031425Ab2HIPxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:53:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49027 "EHLO
+	id S1031416Ab2HIPxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:53:07 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35833 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031246Ab2HIPsU (ORCPT
+	with ESMTP id S1031239Ab2HIPsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:48:20 -0400
+	Thu, 9 Aug 2012 11:48:21 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
         Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org
-Subject: [PATCH 05/22] ASoC: Ux500: Enable MOP500 driver for Device Tree
-Date: Thu,  9 Aug 2012 16:47:31 +0100
-Message-Id: <1344527268-5964-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP probe rather than as a device
+Date: Thu,  9 Aug 2012 16:47:33 +0100
+Message-Id: <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
 References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
@@ -22,94 +22,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we ensure that the MOP500 audio driver will be probed during a
-Device Tree boot. We also parse the sound node to link together the
-codec, dma and the CPU-side Digital Audio Interface.
+The PCM is a pseudo-device. It doesn't have any of it's own registers
+or hardware. It rather acts as a layer of abstraction for DMA
+transfers. Hence, instead of classifying it as a device in its own
+right, we call the initialisation from the MSP driver.
 
 CC: alsa-devel@alsa-project.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- sound/soc/ux500/mop500.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ sound/soc/ux500/mop500.c        |    4 ++--
+ sound/soc/ux500/ux500_msp_dai.c |   14 +++++++++++++-
+ sound/soc/ux500/ux500_pcm.c     |   19 ++++---------------
+ sound/soc/ux500/ux500_pcm.h     |    3 +++
+ 4 files changed, 22 insertions(+), 18 deletions(-)
 
 diff --git a/sound/soc/ux500/mop500.c b/sound/soc/ux500/mop500.c
-index 31c4d26..6840df7 100644
+index 6840df7..fe6223a 100644
 --- a/sound/soc/ux500/mop500.c
 +++ b/sound/soc/ux500/mop500.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/io.h>
- #include <linux/spi/spi.h>
-+#include <linux/of.h>
+@@ -33,7 +33,7 @@ struct snd_soc_dai_link mop500_dai_links[] = {
+ 		.stream_name = "ab8500_0",
+ 		.cpu_dai_name = "ux500-msp-i2s.1",
+ 		.codec_dai_name = "ab8500-codec-dai.0",
+-		.platform_name = "ux500-pcm.0",
++		.platform_name = "ux500-msp-i2s.1",
+ 		.codec_name = "ab8500-codec.0",
+ 		.init = mop500_ab8500_machine_init,
+ 		.ops = mop500_ab8500_ops,
+@@ -43,7 +43,7 @@ struct snd_soc_dai_link mop500_dai_links[] = {
+ 		.stream_name = "ab8500_1",
+ 		.cpu_dai_name = "ux500-msp-i2s.3",
+ 		.codec_dai_name = "ab8500-codec-dai.1",
+-		.platform_name = "ux500-pcm.0",
++		.platform_name = "ux500-msp-i2s.3",
+ 		.codec_name = "ab8500-codec.0",
+ 		.init = NULL,
+ 		.ops = mop500_ab8500_ops,
+diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
+index 0f7dd49..3476d6a 100644
+--- a/sound/soc/ux500/ux500_msp_dai.c
++++ b/sound/soc/ux500/ux500_msp_dai.c
+@@ -28,6 +28,7 @@
  
- #include <sound/soc.h>
- #include <sound/initval.h>
-@@ -56,8 +57,35 @@ static struct snd_soc_card mop500_card = {
- 	.num_links = ARRAY_SIZE(mop500_dai_links),
+ #include "ux500_msp_i2s.h"
+ #include "ux500_msp_dai.h"
++#include "ux500_pcm.h"
+ 
+ static int setup_pcm_multichan(struct snd_soc_dai *dai,
+ 			struct ux500_msp_config *msp_config)
+@@ -806,11 +807,20 @@ static int __devinit ux500_msp_drv_probe(struct platform_device *pdev)
+ 		goto err_init_msp;
+ 	}
+ 
++	ret = ux500_pcm_register_platform(pdev);
++	if (ret < 0) {
++		dev_err(&pdev->dev,
++			"Error: %s: Failed to register PCM platform device!\n",
++			__func__);
++		goto err_reg_plat;
++	}
++
+ 	return 0;
+ 
++err_reg_plat:
++	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
+ err_init_msp:
+ 	clk_put(drvdata->clk);
+-
+ err_clk:
+ 	devm_regulator_put(drvdata->reg_vape);
+ 
+@@ -821,6 +831,8 @@ static int __devexit ux500_msp_drv_remove(struct platform_device *pdev)
+ {
+ 	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(&pdev->dev);
+ 
++	ux500_pcm_unregister_platform(pdev);
++
+ 	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
+ 
+ 	devm_regulator_put(drvdata->reg_vape);
+diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
+index 1a04e24..894c9f4 100644
+--- a/sound/soc/ux500/ux500_pcm.c
++++ b/sound/soc/ux500/ux500_pcm.c
+@@ -282,7 +282,7 @@ static struct snd_soc_platform_driver ux500_pcm_soc_drv = {
+ 	.pcm_new        = ux500_pcm_new,
  };
  
-+static int __devinit mop500_of_probe(struct platform_device *pdev,
-+				struct device_node *np)
-+{
-+	struct device_node *codec_np, *msp_np[2];
-+	int i;
-+
-+	msp_np[0] = of_parse_phandle(np, "stericsson,cpu-dai", 0);
-+	msp_np[1] = of_parse_phandle(np, "stericsson,cpu-dai", 1);
-+	codec_np  = of_parse_phandle(np, "stericsson,audio-codec", 0);
-+
-+	if (!(msp_np[0] && msp_np[1] && codec_np)) {
-+		dev_err(&pdev->dev, "Phandle missing or invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < 2; i++) {
-+		mop500_dai_links[i].cpu_of_node = msp_np[i];
-+		mop500_dai_links[i].cpu_dai_name = NULL;
-+		mop500_dai_links[i].codec_of_node = codec_np;
-+		mop500_dai_links[i].codec_name = NULL;
-+	}
-+
-+	snd_soc_of_parse_card_name(&mop500_card, "stericsson,card-name");
-+
-+	return 0;
-+}
- static int __devinit mop500_probe(struct platform_device *pdev)
+-static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
++int __devinit ux500_pcm_register_platform(struct platform_device *pdev)
  {
-+	struct device_node *np = pdev->dev.of_node;
  	int ret;
  
- 	pr_debug("%s: Enter.\n", __func__);
-@@ -66,6 +94,12 @@ static int __devinit mop500_probe(struct platform_device *pdev)
+@@ -296,23 +296,12 @@ static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
  
- 	mop500_card.dev = &pdev->dev;
- 
-+	if (np) {
-+		ret = mop500_of_probe(pdev, np);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	dev_dbg(&pdev->dev, "%s: Card %s: Set platform drvdata.\n",
- 		__func__, mop500_card.name);
- 	platform_set_drvdata(pdev, &mop500_card);
-@@ -101,10 +135,16 @@ static int __devexit mop500_remove(struct platform_device *pdev)
  	return 0;
  }
++EXPORT_SYMBOL_GPL(ux500_pcm_register_platform);
  
-+static const struct of_device_id snd_soc_mop500_match[] = {
-+	{ .compatible = "stericsson,snd-soc-mop500", },
-+	{},
-+};
+-static int __devinit ux500_pcm_drv_remove(struct platform_device *pdev)
++int __devexit ux500_pcm_unregister_platform(struct platform_device *pdev)
+ {
+ 	snd_soc_unregister_platform(&pdev->dev);
+ 
+ 	return 0;
+ }
+-
+-static struct platform_driver ux500_pcm_driver = {
+-	.driver = {
+-		.name = "ux500-pcm",
+-		.owner = THIS_MODULE,
+-	},
+-
+-	.probe = ux500_pcm_drv_probe,
+-	.remove = __devexit_p(ux500_pcm_drv_remove),
+-};
+-module_platform_driver(ux500_pcm_driver);
+-
+-MODULE_LICENSE("GPL v2");
++EXPORT_SYMBOL_GPL(ux500_pcm_unregister_platform);
+diff --git a/sound/soc/ux500/ux500_pcm.h b/sound/soc/ux500/ux500_pcm.h
+index 77ed44d..76d3444 100644
+--- a/sound/soc/ux500/ux500_pcm.h
++++ b/sound/soc/ux500/ux500_pcm.h
+@@ -32,4 +32,7 @@
+ #define UX500_PLATFORM_PERIODS_MAX		48
+ #define UX500_PLATFORM_BUFFER_BYTES_MAX		(2048 * PAGE_SIZE)
+ 
++int ux500_pcm_register_platform(struct platform_device *pdev);
++int ux500_pcm_unregister_platform(struct platform_device *pdev);
 +
- static struct platform_driver snd_soc_mop500_driver = {
- 	.driver = {
- 		.owner = THIS_MODULE,
- 		.name = "snd-soc-mop500",
-+		.of_match_table = snd_soc_mop500_match,
- 	},
- 	.probe = mop500_probe,
- 	.remove = __devexit_p(mop500_remove),
+ #endif
 -- 
 1.7.9.5
 
