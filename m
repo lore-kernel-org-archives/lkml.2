@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab2HIRuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:50:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42781 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757744Ab2HIRuj (ORCPT
+	id S1755800Ab2HIR5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:57:17 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:48008 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2HIR5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:50:39 -0400
-Date: Thu, 9 Aug 2012 18:50:20 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
-Message-ID: <20120809175019.GE18486@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
- <20120809144953.GC18486@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
- <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
+	Thu, 9 Aug 2012 13:57:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6798"; a="220780948"
+Date: Thu, 9 Aug 2012 10:57:12 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Damien Cassou <damien.cassou@lifl.fr>
+Cc: kernel-janitors@vger.kernel.org, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-msm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] drivers/video/msm/mddi_client_dummy.c: use devm_
+ functions
+Message-ID: <20120809175712.GA24215@codeaurora.org>
+References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr>
+ <1344008414-2894-6-git-send-email-damien.cassou@lifl.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
+In-Reply-To: <1344008414-2894-6-git-send-email-damien.cassou@lifl.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 05:57:33PM +0100, Nicolas Pitre wrote:
-> On Thu, 9 Aug 2012, Nicolas Pitre wrote:
-> > Yes, that looks fine.  I'd remove that if (prev < 0) entirely though.  
-> > We'll just swap a 0 for a 0 if the count wasn't < 0, or a 0 for a 1 if 
-> > the mutex just got unlocked which is also fine.  This is especially 
-> > beneficial when a native xchg processor instruction is used.
+On Fri, Aug 03, 2012 at 05:40:14PM +0200, Damien Cassou wrote:
+> From: Damien Cassou <damien.cassou@lifl.fr>
 > 
-> In fact, this suggestion isn't entirely correct either. The inner xchg 
-> in this case should be -1 and not 'count'.  If 'count' is 0 and the 
-> mutex becomes contended in the small window between the two xchg's then 
-> the contention mark would be lost again.
+> The various devm_ functions allocate memory that is released when a driver
+> detaches. This patch replaces the use of kzalloc by devm_kzalloc.
 > 
-> In other words, I think this should look like this:
+> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
 > 
-> diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-> index 580a6d35c7..44a66c99c8 100644
-> --- a/include/asm-generic/mutex-xchg.h
-> +++ b/include/asm-generic/mutex-xchg.h
-> @@ -25,8 +25,11 @@
->  static inline void
->  __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+> ---
+>  drivers/video/msm/mddi_client_dummy.c |   12 ++----------
+>  1 file changed, 2 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/video/msm/mddi_client_dummy.c b/drivers/video/msm/mddi_client_dummy.c
+> index d2a091c..4c31325 100644
+> --- a/drivers/video/msm/mddi_client_dummy.c
+> +++ b/drivers/video/msm/mddi_client_dummy.c
+> @@ -51,7 +51,7 @@ static int mddi_dummy_probe(struct platform_device *pdev)
 >  {
-> -	if (unlikely(atomic_xchg(count, 0) != 1))
-> -		fail_fn(count);
-> +	if (unlikely(atomic_xchg(count, 0) != 1)) {
-> +		/* Mark lock contention explicitly */
-> +		if (likely(atomic_xchg(count, -1) != 1))
-> +			fail_fn(count);
-> +	}
->  }
->  
->  /**
+>  	struct msm_mddi_client_data *client_data = pdev->dev.platform_data;
+>  	struct panel_info *panel =
+> -		kzalloc(sizeof(struct panel_info), GFP_KERNEL);
+> +		devm_kzalloc(&pdev->dev, sizeof(struct panel_info), GFP_KERNEL);
+>  	int ret;
+>  	if (!panel)
+>  		return -ENOMEM;
+> @@ -67,18 +67,11 @@ static int mddi_dummy_probe(struct platform_device *pdev)
+>  				      client_data->fb_resource, 1);
+>  	panel->panel_data.fb_data = client_data->private_client_data;
+>  	panel->pdev.dev.platform_data = &panel->panel_data;
+> -	ret = platform_device_register(&panel->pdev);
+> -	if (ret) {
+> -		kfree(panel);
+> -		return ret;
+> -	}
+> -	return 0;
+> +	return platform_device_register(&panel->pdev);
 
-Doesn't this mean that we're no longer just swapping 0 for a 0 if the lock
-was taken, therefore needlessly sending the current owner down the slowpath
-on unlock? If we have the explicit test, that doesn't happen and the
-disassembly isn't much different (an additional cmp/conditional branch).
+Removing this block causes a warning:
+kernel/drivers/video/msm/mddi_client_dummy.c: In function 'mddi_dummy_probe':
+kernel/drivers/video/msm/mddi_client_dummy.c:55:6: warning: unused variable 'ret' [-Wunused-variable]
 
-Will
+Please remove the 'int ret;' line above as well.
+
+Thanks,
+David Brown
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
