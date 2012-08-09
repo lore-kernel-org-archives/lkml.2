@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab2HIMbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:31:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47193 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228Ab2HIMbO (ORCPT
+	id S1758102Ab2HIMb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 08:31:29 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41901 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab2HIMbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:31:14 -0400
-X-AuditID: b753bd60-9fe84ba000000655-f0-5023ad8f4da3
-X-AuditID: b753bd60-9fe84ba000000655-f0-5023ad8f4da3
+	Thu, 9 Aug 2012 08:31:24 -0400
+X-AuditID: b753bd60-932c5ba0000047ca-a3-5023ad991478
+X-AuditID: b753bd60-932c5ba0000047ca-a3-5023ad991478
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PATCH V2 3/6] virtio/console: Wait until the port is ready on splice
+Subject: [PATCH V2 4/6] ftrace: Allow stealing pages from pipe buffer
 To: linux-kernel@vger.kernel.org
 Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
@@ -25,9 +25,10 @@ Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Steven Rostedt <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
         yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Thu, 09 Aug 2012 21:31:00 +0900
-Message-ID: <20120809123100.8542.63507.stgit@ltc189.sdl.hitachi.co.jp>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Thu, 09 Aug 2012 21:31:10 +0900
+Message-ID: <20120809123110.8542.99098.stgit@ltc189.sdl.hitachi.co.jp>
 In-Reply-To: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
 References: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -41,78 +42,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Wait if the port is not connected or full on splice
-like as write is doing.
+Use generic steal operation on pipe buffer to allow stealing
+ring buffer's read page from pipe buffer.
+
+Note that this could reduce the performance of splice on the
+splice_write side operation without affinity setting.
+Since the ring buffer's read pages are allocated on the
+tracing-node, but the splice user does not always execute
+splice write side operation on the same node. In this case,
+the page will be accessed from the another node.
+Thus, it is strongly recommended to assign the splicing
+thread to corresponding node.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 ---
 
- drivers/char/virtio_console.c |   39 +++++++++++++++++++++++++++------------
- 1 files changed, 27 insertions(+), 12 deletions(-)
+ kernel/trace/trace.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 22b7373..b2fc2ab 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -724,6 +724,26 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
- 	return fill_readbuf(port, ubuf, count, true);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a120f98..ae01930 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4194,12 +4194,6 @@ static void buffer_pipe_buf_release(struct pipe_inode_info *pipe,
+ 	buf->private = 0;
  }
  
-+static int wait_port_writable(struct port *port, bool nonblock)
-+{
-+	int ret;
-+
-+	if (will_write_block(port)) {
-+		if (nonblock)
-+			return -EAGAIN;
-+
-+		ret = wait_event_freezable(port->waitqueue,
-+					   !will_write_block(port));
-+		if (ret < 0)
-+			return ret;
-+	}
-+	/* Port got hot-unplugged. */
-+	if (!port->guest_connected)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
- static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
- 			       size_t count, loff_t *offp)
- {
-@@ -740,18 +760,9 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
- 
- 	nonblock = filp->f_flags & O_NONBLOCK;
- 
--	if (will_write_block(port)) {
--		if (nonblock)
--			return -EAGAIN;
+-static int buffer_pipe_buf_steal(struct pipe_inode_info *pipe,
+-				 struct pipe_buffer *buf)
+-{
+-	return 1;
+-}
 -
--		ret = wait_event_freezable(port->waitqueue,
--					   !will_write_block(port));
--		if (ret < 0)
--			return ret;
--	}
--	/* Port got hot-unplugged. */
--	if (!port->guest_connected)
--		return -ENODEV;
-+	ret = wait_port_writable(port, nonblock);
-+	if (ret < 0)
-+		return ret;
+ static void buffer_pipe_buf_get(struct pipe_inode_info *pipe,
+ 				struct pipe_buffer *buf)
+ {
+@@ -4215,7 +4209,7 @@ static const struct pipe_buf_operations buffer_pipe_buf_ops = {
+ 	.unmap			= generic_pipe_buf_unmap,
+ 	.confirm		= generic_pipe_buf_confirm,
+ 	.release		= buffer_pipe_buf_release,
+-	.steal			= buffer_pipe_buf_steal,
++	.steal			= generic_pipe_buf_steal,
+ 	.get			= buffer_pipe_buf_get,
+ };
  
- 	count = min((size_t)(32 * 1024), count);
- 
-@@ -851,6 +862,10 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 		.u.data = &sgl,
- 	};
- 
-+	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
-+	if (ret < 0)
-+		return ret;
-+
- 	sgl.n = 0;
- 	sgl.len = 0;
- 	sgl.sg = kmalloc(sizeof(struct scatterlist) * MAX_SPLICE_PAGES,
 
 
