@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2HIJyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:54:18 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50325 "EHLO ogre.sisk.pl"
+	id S1757500Ab2HIJzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:55:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56842 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab2HIJyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:54:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] mmc: sdio: Fix PM_SLEEP related build warnings
-Date: Thu, 9 Aug 2012 12:00:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Chris Ball <cjb@laptop.org>, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344504741-12081-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1344504741-12081-1-git-send-email-thierry.reding@avionic-design.de>
+	id S1754477Ab2HIJzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:55:46 -0400
+Date: Thu, 9 Aug 2012 15:25:14 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com, Avi Kivity <avi@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
+ pipe buffer
+Message-ID: <20120809095514.GJ3280@amit.redhat.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120809090312.GH3280@amit.redhat.com>
+ <502381EA.80805@hitachi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208091200.11161.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502381EA.80805@hitachi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 09, 2012, Thierry Reding wrote:
-> Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
-> the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
-> complain about them being unused. However, since the callback for this
-> driver doesn't do anything it can just as well be dropped.
+On (Thu) 09 Aug 2012 [18:24:58], Masami Hiramatsu wrote:
+> (2012/08/09 18:03), Amit Shah wrote:
+> > On (Tue) 24 Jul 2012 [11:37:18], Yoshihiro YUNOMAE wrote:
+> >> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >>
+> >> Add a failback memcpy path for unstealable pipe buffer.
+> >> If buf->ops->steal() fails, virtio-serial tries to
+> >> copy the page contents to an allocated page, instead
+> >> of just failing splice().
+> >>
+> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >> Cc: Amit Shah <amit.shah@redhat.com>
+> >> Cc: Arnd Bergmann <arnd@arndb.de>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> ---
+> >>
+> >>  drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
+> >>  1 files changed, 25 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> >> index fe31b2f..911cb3e 100644
+> >> --- a/drivers/char/virtio_console.c
+> >> +++ b/drivers/char/virtio_console.c
+> >> @@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+> >>  			struct splice_desc *sd)
+> >>  {
+> >>  	struct sg_list *sgl = sd->u.data;
+> >> -	unsigned int len = 0;
+> >> +	unsigned int offset, len;
+> >>  
+> >>  	if (sgl->n == MAX_SPLICE_PAGES)
+> >>  		return 0;
+> >> @@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+> >>  
+> >>  		len = min(buf->len, sd->len);
+> >>  		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
+> >> -		sgl->n++;
+> >> -		sgl->len += len;
+> >> +	} else {
+> >> +		/* Failback to copying a page */
+> >> +		struct page *page = alloc_page(GFP_KERNEL);
+> > 
+> > I prefer zeroing out the page.  If there's not enough data to be
+> > filled in the page, the remaining data can be leaked to the host.
 > 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> Yeah, it is really easy to fix that.
+> But out of curiosity, would that be really a problem?
+> I guess that host can access any guest page if need. If that
+> is right, is that really insecure to leak randomly allocated
+> unused page to the host?
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+I'm not sure if there is a way to really attack, but just something I
+had thought about: the host kernel can access any guest page, that's
+not something we can prevent.
 
-> ---
->  drivers/mmc/core/sdio_bus.c | 7 -------
->  1 file changed, 7 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-> index 236842e..6bf6879 100644
-> --- a/drivers/mmc/core/sdio_bus.c
-> +++ b/drivers/mmc/core/sdio_bus.c
-> @@ -193,14 +193,7 @@ static int sdio_bus_remove(struct device *dev)
->  }
->  
->  #ifdef CONFIG_PM
-> -
-> -static int pm_no_operation(struct device *dev)
-> -{
-> -	return 0;
-> -}
-> -
->  static const struct dev_pm_ops sdio_bus_pm_ops = {
-> -	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
-> 
+However, if qemu is restricted from accessing guest pages, and the
+guest shares this page with qemu for r/w purposes via the virtio
+channel, a qemu exploit can expose guest data to host userspace.
 
+I agree this is completely theoretical; can someone else with more
+insight confirm or deny my apprehensions?
+
+		Amit
