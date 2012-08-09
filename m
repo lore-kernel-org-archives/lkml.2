@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab2HIGPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:15:52 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54026 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2HIGPv (ORCPT
+	id S1754725Ab2HIGSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:18:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51755 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab2HIGSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:15:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344461278-28245-11-git-send-email-arnd@arndb.de>
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-11-git-send-email-arnd@arndb.de>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 9 Aug 2012 14:15:29 +0800
-X-Google-Sender-Auth: TBjlwrkOeRrIrj4M7aFLaY_jrrY
-Message-ID: <CAK5ve-LXaA1xi5NDWTUxeVnr6DpDFv4LMzx0knHvO=1bzJO9jQ@mail.gmail.com>
-Subject: Re: [PATCH 10/10] leds: renesas: fix error handling
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Aug 2012 02:18:05 -0400
+Date: Wed, 08 Aug 2012 23:18:04 -0700 (PDT)
+Message-Id: <20120808.231804.12694947300243733.davem@davemloft.net>
+To: cjren@qca.qualcomm.com
+Cc: joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
+        xiong@qca.qualcomm.com, hao-ran.liu@canonical.com,
+        rodrigue@qca.qualcomm.com
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+	<1344485382.2024.9.camel@joe2Laptop>
+	<6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 5:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> bfe4c041 "leds: convert Renesas TPU LED driver to devm_kzalloc() and
-> cleanup error exit path" introduced a possible case in which r_tpu_probe
-> calls iounmap on a wild pointer. This changes the one case that was
-> missed in the same way as the other error paths.
->
-> Without this patch, building kota2_defconfig results in:
->
-> drivers/leds/leds-renesas-tpu.c: In function 'r_tpu_probe':
-> drivers/leds/leds-renesas-tpu.c:246:6: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]
-> drivers/leds/leds-renesas-tpu.c:308:17: warning: 'p' may be used uninitialized in this function [-Wuninitialized]
->
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+Date: Thu, 9 Aug 2012 04:44:08 +0000
 
-Thanks, Arnd. If you don't mind, I will apply this fixing through my led tree.
+> I only want to do some additional explanations to david. It makes nothing with original patch.
 
--Bryan
+Stop this TOP POSTING, it's bad etiquette on a technical mailing list.
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Bryan Wu <bryan.wu@canonical.com>
-> Cc: Magnus Damm <damm@opensource.se>
->
-> --- a/drivers/leds/leds-renesas-tpu.c
-> +++ b/drivers/leds/leds-renesas-tpu.c
-> @@ -247,7 +247,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
->
->         if (!cfg) {
->                 dev_err(&pdev->dev, "missing platform data\n");
-> -               goto err0;
-> +               return -ENODEV;
->         }
->
->         p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
-> ---
->  drivers/leds/leds-renesas-tpu.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
-> index 9ee12c2..771ea06 100644
-> --- a/drivers/leds/leds-renesas-tpu.c
-> +++ b/drivers/leds/leds-renesas-tpu.c
-> @@ -247,7 +247,7 @@ static int __devinit r_tpu_probe(struct platform_device *pdev)
->
->         if (!cfg) {
->                 dev_err(&pdev->dev, "missing platform data\n");
-> -               goto err0;
-> +               return -ENODEV;
->         }
->
->         p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
-> --
-> 1.7.10
->
+Look at how other people write their email responses on this mailing
+list.  They first provide a quoted portion of what they are replying
+to:
 
+> Quoted
+> something like this.
 
+And then they provide their response UNDERNEATH.
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+When you provide your response at the top of the email, it is unexpected,
+and makes more work for people reading what you write.
+
+You guys are doing everything possibly wrong.
+
+You have unnecessarily quoted a HUGE patch just to provide some ancillary
+in formation.
+
+You are TOP POSTING.
+
+You added a signoff of someone who did not give you explicit permission
+to do so.
+
+And you seem to not comprehend nor care about the implications or effects
+of your actions that are hurting other people and creating a huge brudon.
+
+I very much intend to simply ignore your work completely until you can
+get your act in gear, write proper emails, and submit patches
+properly.
+
+It is the only deterrant I have for your incredibly rude and
+inconsiderate behavior.
+
