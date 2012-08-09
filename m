@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab2HIQBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:01:31 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:42577 "EHLO mx1.fusionio.com"
+	id S1031317Ab2HIQES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:04:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62991 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758379Ab2HIQB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:01:28 -0400
-X-ASG-Debug-ID: 1344528087-03d6a5408e234830001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Thu, 9 Aug 2012 12:01:26 -0400
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux Btrfs List <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL 2/2] Btrfs merge fix
-Message-ID: <20120809160126.GA32103@shiny>
-X-ASG-Orig-Subj: [GIT PULL 2/2] Btrfs merge fix
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Linux Btrfs List <linux-btrfs@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1344528087
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.105152
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1758624Ab2HIQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:04:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,741,1336374000"; 
+   d="scan'208";a="178041127"
+From: james.d.ralston@intel.com
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Heasley <seth.heasley@intel.com>,
+        James Ralston <james.d.ralston@intel.com>
+Subject: [PATCH 1/5] ahci: Add Device IDs for Intel Lynx Point-LP PCH
+Date: Thu,  9 Aug 2012 09:02:31 -0700
+Message-Id: <1344528151-2306-1-git-send-email-james.d.ralston@intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: James Ralston <james.d.ralston@intel.com>
 
-Please pull my for-linus-3.6 branch:
+This patch adds the AHCI-mode SATA Device IDs for the Intel Lynx Point-LP PCH
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus-3.6
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+---
+ drivers/ata/ahci.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-It fixes a merging error in rc1.  The calls to mnt_want_write should
-have been removed.
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index ebaf67e..c590259 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -267,6 +267,14 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c07), board_ahci }, /* Lynx Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c0e), board_ahci }, /* Lynx Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c0f), board_ahci }, /* Lynx Point RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c02), board_ahci }, /* Lynx Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c03), board_ahci }, /* Lynx Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9c04), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c05), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c06), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-- 
+1.7.7.6
 
-Alexander Block (1):
-      Btrfs: remove mnt_want_write call in btrfs_mksubvol
-
- fs/btrfs/ioctl.c | 5 -----
- 1 file changed, 5 deletions(-)
