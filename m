@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031160Ab2HIPlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:41:37 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64697 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031126Ab2HIPle (ORCPT
+	id S1031173Ab2HIPpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:45:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49277 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030969Ab2HIPo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:41:34 -0400
+	Thu, 9 Aug 2012 11:44:59 -0400
+Date: Thu, 9 Aug 2012 16:44:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 2/3] regulator: add regulator_get_voltage_fixed helper
+ op
+Message-ID: <20120809154456.GX24328@opensource.wolfsonmicro.com>
+References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
+ <1344460727-6243-2-git-send-email-swarren@wwwdotorg.org>
+ <20120809105910.GN24328@opensource.wolfsonmicro.com>
+ <5023D5CF.1070402@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1343980161-14254-5-git-send-email-wency@cn.fujitsu.com>
-References: <1343980161-14254-1-git-send-email-wency@cn.fujitsu.com>
-	<1343980161-14254-5-git-send-email-wency@cn.fujitsu.com>
-Date: Thu, 9 Aug 2012 17:41:04 +0200
-Message-ID: <CAFEPiEY7gBeLoEJggSjFsF92X1Lw9DzPvEfCxhBx75NKCiL6XQ@mail.gmail.com>
-Subject: Re: [RFC PATCH V6 04/19] memory-hotplug: offline and remove memory
- when removing the memory device
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: wency@cn.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5023D5CF.1070402@wwwdotorg.org>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Aug 09, 2012 at 09:22:55AM -0600, Stephen Warren wrote:
 
-> We should offline and remove memory when removing the memory device.
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->
+> I don't think there's a *get*_voltage_linear. All the existing
+> get_voltage "standard" ops require reading a register, hence why I added
+> this new standard op. I guess I'll look at converting all the existing
+> users.
 
-[snip]
-
-> +
-> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +{
-> +       int result;
-> +
-> +       /*
-> +        * Ask the VM to offline this memory range.
-> +        * Note: Assume that this function returns zero on success
-> +        */
-> +       result = acpi_memory_device_remove_memory(mem_device);
-> +
-
-here we should check the result of acpi_memory_device_remove_memory()
-and not continue if it failed.
-
->         /* Power-off and eject the device */
->         result = acpi_memory_powerdown_device(mem_device);
->         if (result) {
-
-thanks,
-
-- Vasilis
+Hrm, right - the fact that you've not implemented get_voltage_sel() is
+what I noticed here really.  I think the core should really cope with
+this, if the driver has a list voltage operation but no way of reading
+the voltage operation then we should just use the list voltage operation
+to get the voltage back.  We want to be able to list since things that
+check the range of available voltages might want to know.
