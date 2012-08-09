@@ -1,200 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031414Ab2HIP6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:58:25 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43767 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031274Ab2HIP6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:58:21 -0400
-Date: Thu, 9 Aug 2012 10:57:50 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Ashley Lai <adlai@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        adlai@us.ibm.com
-Subject: Re: [PATCH 3/3] drivers/char/tpm: Add securityfs support for event
- log
-Message-ID: <20120809155750.GA7352@linux.vnet.ibm.com>
-References: <1344367748.24990.1.camel@footlong>
- <1344369479.24990.9.camel@footlong>
+	id S1031477Ab2HIP6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:58:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59268 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab2HIP6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:58:34 -0400
+Date: Thu, 9 Aug 2012 08:58:30 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.5.1
+Message-ID: <20120809155830.GA26059@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
 Content-Disposition: inline
-In-Reply-To: <1344369479.24990.9.camel@footlong>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080915-5806-0000-0000-00001833866D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashley,
 
-> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> index 547509d..b53da57 100644
-> --- a/drivers/char/tpm/Makefile
-> +++ b/drivers/char/tpm/Makefile
-> @@ -2,9 +2,15 @@
->  # Makefile for the kernel tpm device drivers.
->  #
->  obj-$(CONFIG_TCG_TPM) += tpm.o
-> +obj-$(CONFIG_TCG_TPM) += tpm_bios.o
->  ifdef CONFIG_ACPI
-> -	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
->  	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
-> +else
-> +ifdef CONFIG_TCG_IBMVTPM
-> +	tpm_bios-objs += tpm_eventlog.o tpm_of.o
-> +else
-> +	tpm_bios-objs += tpm_eventlog.o tpm_noeventlog.o
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  tpm_eventlog.c is included in all cases here...
+I'm announcing the release of the 3.5.1 kernel.
 
-> diff --git a/drivers/char/tpm/tpm_eventlog.h b/drivers/char/tpm/tpm_eventlog.h
-> index 8e23ccd..5fbea94 100644
-> --- a/drivers/char/tpm/tpm_eventlog.h
-> +++ b/drivers/char/tpm/tpm_eventlog.h
-> @@ -68,4 +68,28 @@ enum tcpa_pc_event_ids {
->  };
-> 
->  int read_log(struct tpm_bios_log *log);
-> +
-> +#if defined(CONFIG_ACPI) || defined(CONFIG_PPC64)
-> +extern struct dentry **tpm_bios_log_setup(char *);
-> +extern void tpm_bios_log_teardown(struct dentry **);
-> +#else
-> +static inline struct dentry **tpm_bios_log_setup(char *name)
-> +{
-> +	return NULL;
-> +}
-> +static inline void tpm_bios_log_teardown(struct dentry **dir)
-> +{
-> +}
-> +#endif
+All users of the 3.5 kernel series must upgrade.
 
-  But here, without acpi or ppc64, we compile in stubs, which breaks
-things. It looks like we don't need these stubs at all anymore, and can
-rely on TPM_NO_EVENT_LOG to bail out in the cases on x86 where ACPI is
-disabled.
+The updated 3.5.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.5.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
 
-Kent
+thanks,
 
-> +
-> +#ifdef CONFIG_PPC64
-> +#define TPM_NO_EVENT_LOG !of_find_node_by_name(NULL, "ibm,vtpm")
-> +#else
-> +#ifdef CONFIG_ACPI
-> +#define TPM_NO_EVENT_LOG 0
-> +#else
-> +#define TPM_NO_EVENT_LOG 1
-> +#endif
-> +#endif
-> +
->  #endif
-> diff --git a/drivers/char/tpm/tpm_noeventlog.c b/drivers/char/tpm/tpm_noeventlog.c
-> new file mode 100644
-> index 0000000..f30a2bf
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_noeventlog.c
-> @@ -0,0 +1,21 @@
-> +/*
-> + * Copyright (C) 2012 IBM Corporation
-> + *
-> + * Author: Ashley Lai <adlai@us.ibm.com>
-> + *
-> + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include "tpm_eventlog.h"
-> +
-> +int read_log(struct tpm_bios_log *log)
-> +{
-> +	return -EINVAL;
-> +}
-> diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
-> new file mode 100644
-> index 0000000..6d44adb
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_of.c
-> @@ -0,0 +1,68 @@
-> +/*
-> + * Copyright 2012 IBM Corporation
-> + *
-> + * Author: Ashley Lai <adlai@us.ibm.com>
-> + *
-> + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-> + *
-> + * Read the event log created by the firmware on PPC64
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +
-> +#include "tpm.h"
-> +#include "tpm_eventlog.h"
-> +
-> +int read_log(struct tpm_bios_log *log)
-> +{
-> +	struct device_node *np;
-> +	const u32 *sizep;
-> +	const __be64 *basep;
-> +
-> +	if (log->bios_event_log != NULL) {
-> +		pr_err("%s: ERROR - Eventlog already initialized\n", __func__);
-> +		return -EFAULT;
-> +	}
-> +
-> +	np = of_find_node_by_name(NULL, "ibm,vtpm");
-> +	if (!np) {
-> +		pr_err("%s: ERROR - IBMVTPM not supported\n", __func__);
-> +		return -ENODEV;
-> +	}
-> +
-> +	sizep = of_get_property(np, "linux,sml-size", NULL);
-> +	if (sizep == NULL) {
-> +		pr_err("%s: ERROR - SML size not found\n", __func__);
-> +		return -EIO;
-> +	}
-> +	if (*sizep == 0) {
-> +		pr_err("%s: ERROR - event log area empty\n", __func__);
-> +		return -EIO;
-> +	}
-> +
-> +	basep = of_get_property(np, "linux,sml-base", NULL);
-> +	if (basep == NULL) {
-> +		pr_err(KERN_ERR "%s: ERROR - SML not found\n", __func__);
-> +		return -EIO;
-> +	}
-> +
-> +	log->bios_event_log = kmalloc(*sizep, GFP_KERNEL);
-> +	if (!log->bios_event_log) {
-> +		pr_err("%s: ERROR - Not enough memory for BIOS measurements\n",
-> +		       __func__);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	log->bios_event_log_end = log->bios_event_log + *sizep;
-> +
-> +	memcpy(log->bios_event_log, __va(be64_to_cpup(basep)), *sizep);
-> +
-> +	return 0;
-> +}
-> -- 
-> 1.7.1
-> 
-> 
+greg k-h
 
+------------
+
+ Documentation/sound/alsa/HD-Audio-Models.txt    |    3=20
+ Documentation/stable_kernel_rules.txt           |   19 +-
+ Makefile                                        |    2=20
+ arch/arm/boot/dts/tegra-trimslice.dts           |    2=20
+ arch/arm/mach-omap2/opp.c                       |    3=20
+ arch/m68k/kernel/sys_m68k.c                     |    8 -
+ arch/mips/kernel/kspd.c                         |    2=20
+ arch/powerpc/boot/dts/p1022ds.dtsi              |   16 --
+ arch/powerpc/include/asm/reg.h                  |    3=20
+ arch/powerpc/kernel/ftrace.c                    |   12 -
+ arch/powerpc/platforms/85xx/p1022_ds.c          |  106 ++++++++++++--
+ arch/powerpc/platforms/pseries/eeh_event.c      |    6=20
+ arch/s390/include/asm/mmu_context.h             |   14 +
+ arch/s390/include/asm/processor.h               |    2=20
+ arch/s390/kernel/processor.c                    |    2=20
+ arch/s390/kernel/smp.c                          |    3=20
+ arch/s390/mm/fault.c                            |   13 -
+ arch/s390/mm/mmap.c                             |   12 +
+ arch/s390/mm/pgtable.c                          |    5=20
+ arch/x86/kernel/cpu/mcheck/mce.c                |    6=20
+ arch/x86/kernel/microcode_core.c                |   26 ++-
+ drivers/acpi/ac.c                               |    4=20
+ drivers/acpi/apei/apei-base.c                   |    5=20
+ drivers/base/power/main.c                       |   10 +
+ drivers/char/tpm/tpm.c                          |   12 +
+ drivers/gpu/drm/nouveau/nouveau_drv.h           |    2=20
+ drivers/gpu/drm/nouveau/nouveau_irq.c           |    4=20
+ drivers/gpu/drm/nouveau/nouveau_software.h      |    1=20
+ drivers/gpu/drm/nouveau/nva3_copy.fuc           |    4=20
+ drivers/gpu/drm/nouveau/nva3_copy.fuc.h         |   94 ++++++++++++
+ drivers/gpu/drm/nouveau/nvc0_copy.fuc.h         |   87 +++++++++++-
+ drivers/gpu/drm/radeon/atombios_dp.c            |   10 -
+ drivers/gpu/drm/radeon/atombios_encoders.c      |   12 +
+ drivers/gpu/drm/radeon/radeon_connectors.c      |   35 +++-
+ drivers/gpu/drm/radeon/radeon_cs.c              |    2=20
+ drivers/gpu/drm/radeon/radeon_cursor.c          |    8 -
+ drivers/gpu/drm/radeon/radeon_object.c          |    3=20
+ drivers/hid/hid-multitouch.c                    |   13 +
+ drivers/iommu/amd_iommu.c                       |   17 +-
+ drivers/iommu/amd_iommu_v2.c                    |    2=20
+ drivers/md/dm-thin.c                            |    7=20
+ drivers/mmc/host/sdhci-pci.c                    |    1=20
+ drivers/mmc/host/sdhci.c                        |    8 -
+ drivers/net/caif/caif_serial.c                  |    3=20
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |    5=20
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   16 ++
+ drivers/net/ethernet/broadcom/tg3.c             |   10 -
+ drivers/net/ethernet/emulex/benet/be_ethtool.c  |    5=20
+ drivers/net/ethernet/emulex/benet/be_main.c     |    2=20
+ drivers/net/ethernet/realtek/r8169.c            |   27 ---
+ drivers/net/tun.c                               |    9 -
+ drivers/net/usb/kaweth.c                        |    2=20
+ drivers/net/wireless/b43/b43.h                  |    7=20
+ drivers/net/wireless/b43/main.c                 |   32 +---
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c      |    5=20
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c      |    1=20
+ drivers/net/wireless/mwifiex/cfg80211.c         |    4=20
+ drivers/net/wireless/rt2x00/rt2800usb.c         |    3=20
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c    |    6=20
+ drivers/net/wireless/rtlwifi/usb.c              |   14 +
+ drivers/net/wireless/rtlwifi/wifi.h             |    1=20
+ drivers/s390/net/qeth_l3_main.c                 |    4=20
+ drivers/scsi/hosts.c                            |    7=20
+ drivers/scsi/libsas/sas_expander.c              |   47 ++----
+ drivers/scsi/scsi_error.c                       |   14 +
+ drivers/scsi/scsi_lib.c                         |   43 ++---
+ drivers/scsi/scsi_priv.h                        |    1=20
+ drivers/scsi/scsi_scan.c                        |    3=20
+ drivers/scsi/scsi_sysfs.c                       |   46 +++---
+ drivers/spi/spi-pl022.c                         |    5=20
+ drivers/staging/zsmalloc/zsmalloc-main.c        |   33 ----
+ drivers/target/iscsi/iscsi_target.c             |   22 ---
+ drivers/target/iscsi/iscsi_target_core.h        |    2=20
+ drivers/target/iscsi/iscsi_target_login.c       |   60 --------
+ drivers/target/target_core_transport.c          |   10 +
+ drivers/usb/core/devio.c                        |   10 -
+ drivers/usb/core/hub.c                          |   26 +--
+ drivers/usb/core/message.c                      |    8 -
+ drivers/usb/core/usb.c                          |    1=20
+ drivers/usb/early/ehci-dbgp.c                   |    2=20
+ drivers/usb/gadget/u_ether.c                    |   12 -
+ drivers/usb/serial/option.c                     |    2=20
+ drivers/usb/storage/uas.c                       |   90 ++----------
+ fs/btrfs/async-thread.c                         |    9 +
+ fs/cifs/cifsglob.h                              |    6=20
+ fs/cifs/connect.c                               |    9 -
+ fs/cifs/file.c                                  |   17 +-
+ fs/exec.c                                       |    2=20
+ fs/ext4/balloc.c                                |    3=20
+ fs/ext4/bitmap.c                                |   12 -
+ fs/ext4/ext4.h                                  |    6=20
+ fs/ext4/extents.c                               |   46 ++++--
+ fs/ext4/ialloc.c                                |    3=20
+ fs/ext4/inode.c                                 |   41 ++++-
+ fs/ext4/namei.c                                 |   11 +
+ fs/ext4/resize.c                                |    7=20
+ fs/ext4/super.c                                 |  174 +++++++++++++++++--=
+-----
+ fs/ext4/xattr.c                                 |   11 -
+ fs/locks.c                                      |    6=20
+ fs/nfs/file.c                                   |    7=20
+ fs/nfs/idmap.c                                  |   26 ++-
+ fs/nfsd/nfs4state.c                             |    4=20
+ fs/nfsd/nfs4xdr.c                               |    2=20
+ fs/select.c                                     |   10 -
+ fs/udf/super.c                                  |    2=20
+ include/linux/cpu.h                             |    5=20
+ include/linux/mm.h                              |    1=20
+ include/linux/net.h                             |    1=20
+ include/linux/posix_types.h                     |   18 --
+ include/linux/time.h                            |    8 -
+ include/linux/usb.h                             |    1=20
+ include/target/target_core_base.h               |    1=20
+ kernel/cgroup.c                                 |    2=20
+ kernel/exit.c                                   |    2=20
+ kernel/futex.c                                  |   17 +-
+ kernel/power/hibernate.c                        |    6=20
+ kernel/power/suspend.c                          |    3=20
+ kernel/power/wakelock.c                         |    7=20
+ kernel/printk.c                                 |   33 ++--
+ kernel/workqueue.c                              |   38 +++++
+ mm/memory-failure.c                             |   14 +
+ net/compat.c                                    |    4=20
+ net/core/rtnetlink.c                            |    8 -
+ net/ipv4/tcp.c                                  |    5=20
+ net/ipv4/tcp_input.c                            |    4=20
+ net/mac80211/mlme.c                             |    4=20
+ net/mac80211/tx.c                               |    2=20
+ net/mac80211/util.c                             |   12 +
+ net/socket.c                                    |    3=20
+ net/sunrpc/sched.c                              |    2=20
+ net/sunrpc/xprtrdma/transport.c                 |    3=20
+ net/sunrpc/xprtsock.c                           |   10 +
+ net/wanrouter/wanmain.c                         |   51 +++----
+ security/selinux/hooks.c                        |    2=20
+ security/smack/smackfs.c                        |    8 -
+ sound/drivers/mpu401/mpu401_uart.c              |    1=20
+ sound/pci/hda/hda_codec.c                       |    7=20
+ sound/pci/hda/patch_hdmi.c                      |   12 -
+ sound/pci/hda/patch_realtek.c                   |   29 ++++
+ sound/pci/hda/patch_sigmatel.c                  |   22 ++-
+ sound/pci/hda/patch_via.c                       |    7=20
+ sound/soc/codecs/wm8962.c                       |    6=20
+ sound/soc/codecs/wm8994.c                       |    2=20
+ sound/soc/soc-dapm.c                            |   15 +-
+ sound/usb/clock.c                               |    3=20
+ 145 files changed, 1270 insertions(+), 729 deletions(-)
+
+Aaron Lu (1):
+      mmc: sdhci: fix incorrect command used in tuning
+
+Al Viro (1):
+      iscsi-target: Drop bogus struct file usage for iSCSI/SCTP
+
+Alan Cox (3):
+      smack: off by one error
+      caif: fix NULL pointer check
+      wanmain: comparing array with NULL
+
+Alasdair G Kergon (1):
+      dm thin: reduce endio_hook pool size
+
+Albert Pool (1):
+      rt2800usb: 2001:3c17 is an RT3370 device
+
+Amitkumar Karwar (1):
+      mwifiex: correction in mcs index check
+
+Andreas Schwab (1):
+      m68k: Make sys_atomic_cmpxchg_32 work on classic m68k
+
+Anton Blanchard (1):
+      be2net: Missing byteswap in be_get_fw_log_level causes oops on PowerPC
+
+Ashish Sangwan (1):
+      ext4: fix hole punch failure when depth is greater than 0
+
+Bart Van Assche (2):
+      SCSI: Fix device removal NULL pointer dereference
+      SCSI: Avoid dangling pointer in scsi_requeue_command()
+
+Ben Hutchings (1):
+      staging: zsmalloc: Finish conversion to a separate module
+
+Benjamin Tissoires (1):
+      HID: hid-multitouch: fix input mode feature command
+
+Bj=F8rn Mork (1):
+      USB: option: add ZTE MF821D
+
+Borislav Petkov (1):
+      x86, microcode: Sanitize per-cpu microcode reloading interface
+
+Brian Foster (1):
+      ext4: don't let i_reserved_meta_blocks go negative
+
+Chris Mason (1):
+      Btrfs: call the ordered free operation without any locks held
+
+Christian K=F6nig (1):
+      drm/radeon: fix fence related segfault in CS
+
+Christian Lamparter (1):
+      mac80211: fix read outside array bounds
+
+Cloud Ren (1):
+      atl1c: fix issue of io access mode for AR8152 v2.1
+
+Colin Cross (1):
+      PM / Sleep: call early resume handlers when suspend_noirq fails
+
+Colin Ian King (1):
+      USB: echi-dbgp: increase the controller wait time to come out of halt.
+
+Dan Carpenter (1):
+      USB: kaweth.c: use GFP_ATOMIC under spin_lock
+
+Dan Williams (4):
+      SCSI: libsas: continue revalidation
+      SCSI: libsas: fix sas_discover_devices return code handling
+      SCSI: fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
+      SCSI: fix hot unplug vs async scan race
+
+Daniel Drake (1):
+      mmc: sdhci-pci: CaFe has broken card detection
+
+Daniel Mack (1):
+      ALSA: snd-usb: fix clock source validity index
+
+Darren Hart (3):
+      futex: Test for pi_mutex on fault in futex_wait_requeue_pi()
+      futex: Fix bug in WARN_ON for NULL q.pi_state
+      futex: Forbid uaddr =3D=3D uaddr2 in futex_wait_requeue_pi()
+
+David Henningsson (2):
+      ALSA: hda - Add support for Realtek ALC282
+      ALSA: hda - add dock support for Thinkpad X230 Tablet
+
+David Howells (1):
+      NFS: Fix a number of bugs in the idmapper
+
+Dylan Reid (2):
+      ALSA: hda - Turn on PIN_OUT from hdmi playback prepare.
+      ALSA: hda - Don't power up when not powered down.
+
+Eliad Peller (1):
+      mac80211: fail authentication when AP denied authentication
+
+Forest Bond (1):
+      rtlwifi: rtl8192de: Fix phy-based version calculation
+
+Francois Romieu (1):
+      r8169: revert "add byte queue limit support".
+
+Frank Blaschka (1):
+      qeth: repair crash in qeth_l3_vlan_rx_kill_vid()
+
+Gerd Hoffmann (1):
+      Revert "usb/uas: make sure data urb is gone if we receive status befo=
+re that"
+
+Greg KH (1):
+      tg3: add device id of Apple Thunderbolt Ethernet device
+
+Greg Kroah-Hartman (1):
+      Linux 3.5.1
+
+Hangbin Liu (1):
+      tcp: Add TCP_USER_TIMEOUT negative value check
+
+Hans de Goede (1):
+      usbdevfs: Correct amount of data copied to user in processcompl_compat
+
+Heiko Carstens (2):
+      s390/idle: fix sequence handling vs cpu hotplug
+      s390/mm: fix fault handling for page table walk case
+
+Ilan Peer (1):
+      iwlwifi: Check BSS ctx active before call mac80211
+
+J. Bruce Fields (2):
+      locks: fix checking of fcntl_setlease argument
+      nfsd4: our filesystems are normally case sensitive
+
+Jan Kara (1):
+      udf: Improve table length check to avoid possible overflow
+
+Jean Delvare (1):
+      ACPI, APEI: Fixup common access width firmware bug
+
+Jeff Layton (3):
+      cifs: reinstate sec=3Dntlmv2 mount option
+      cifs: ensure that we always do cifsFileInfo_get under the spinlock
+      nfs: skip commit in releasepage if we're freeing memory for fs-relate=
+d reasons
+
+Jerome Glisse (5):
+      drm/radeon: fix bo creation retry path
+      drm/radeon: fix non revealent error message
+      drm/radeon: fix hotplug of DP to DVI|HDMI passive adapters (v2)
+      drm/radeon: on hotplug force link training to happen (v2)
+      drm/radeon: fix dpms on/off on trinity/aruba v2
+
+Jesper Juhl (1):
+      net: Fix references to out-of-scope variables in put_cmsg_compat()
+
+Jiri Benc (1):
+      net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI handling
+
+Jiri Kosina (1):
+      tcp: perform DMA to userspace only if there is a task waiting for it
+
+Joe Thornber (1):
+      dm thin: fix memory leak in process_prepared_mapping error paths
+
+Joerg Roedel (2):
+      iommu/amd: Add missing spin_lock initialization
+      iommu/amd: Fix hotplug with iommu=3Dpt
+
+Johannes Berg (2):
+      mac80211: fix crash with single-queue drivers
+      b43: fix crash with OpenFWWF
+
+Josh Boyer (1):
+      posix_types.h: Cleanup stale __NFDBITS and related definitions
+
+Kay Sievers (1):
+      kmsg - properly print over-long continuation lines
+
+Kevin Cernekee (1):
+      usb: gadget: Fix g_ether interface link status
+
+Kleber Sacilotto de Souza (1):
+      powerpc/eeh: Check handle_eeh_events() return value
+
+Lan Tianyu (1):
+      ACPI/AC: prevent OOPS on some boxes due to missing check power_supply=
+_register() return value check
+
+Larry Finger (1):
+      rtlwifi: rtl8192cu: Change buffer allocation for synchronous reads
+
+Liam Girdwood (1):
+      ASoC: dapm: Fix locking during codec shutdown
+
+Maarten Lankhorst (1):
+      nouveau: Fix alignment requirements on src and dst addresses
+
+Marcin Slusarz (1):
+      drm/nouveau: init vblank requests list
+
+Mark Brown (4):
+      ASoC: dapm: Fix _PRE and _POST events for DAPM performance improvemen=
+ts
+      ASoC: wm8962: Redo early init of the part on resume
+      ASoC: wm8962: Allow VMID time to fully ramp
+      ASoC: wm8994: Ensure there are enough BCLKs for four channels
+
+Martin Schwidefsky (1):
+      s390/mm: downgrade page table after fork of a 31 bit process
+
+Mathias Krause (1):
+      net/tun: fix ioctl() based info leaks
+
+Meenakshi Venkataraman (1):
+      iwlwifi: fix debug print in iwl_sta_calc_ht_flags
+
+Michael Chan (2):
+      tg3: Fix Read DMA workaround for 5719 A0.
+      tg3: Fix race condition in tg3_get_stats64()
+
+Michel D=E4nzer (1):
+      drm/radeon: Try harder to avoid HW cursor ending on a multiple of 128=
+ columns.
+
+Mikulas Patocka (1):
+      tun: fix a crash bug and a memory leak
+
+Nishanth Menon (1):
+      ARM: OMAP2+: OPP: Fix to ensure check of right oppdef after bad one
+
+Paul Gortmaker (1):
+      stable: update references to older 2.6 versions for 3.x
+
+Rafael J. Wysocki (1):
+      PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
+
+Rajiv Andrade (1):
+      TPM: chip disabled state erronously being reported as error
+
+Roland Dreier (1):
+      target: Add generation of LOGICAL BLOCK ADDRESS OUT OF RANGE
+
+Sarah Sharp (4):
+      USB: Disable LPM while the device is unconfigured.
+      USB: Fix LPM disable/enable during device reset.
+      USB: Remove unused LPM variable.
+      USB: Fix LPM disable count mismatch on driver unbind.
+
+Srivatsa S. Bhat (1):
+      ftrace: Disable function tracing during suspend/resume and hibernatio=
+n, again
+
+Stephen Warren (2):
+      ARM: dt: tegra trimslice: enable USB2 port
+      ARM: dt: tegra trimslice: add vbus-gpio property
+
+Takashi Iwai (6):
+      ALSA: mpu401: Fix missing initialization of irq field
+      ALSA: hda - Fix invalid D3 of headphone DAC on VT202x codecs
+      ALSA: hda - Fix mute-LED GPIO setup for HP Mini 210
+      ALSA: hda - Fix polarity of mute LED on HP Mini 210
+      ALSA: hda - Fix mute-LED GPIO initialization for IDT codecs
+      ALSA: hda - Support dock on Lenovo Thinkpad T530 with ALC269VC
+
+Tao Ma (2):
+      ext4: use proper csum calculation in ext4_rename
+      ext4: use s_csum_seed instead of i_csum_seed for xattr block
+
+Tejun Heo (2):
+      cgroup: cgroup_rm_files() was calling simple_unlink() with the wrong =
+inode
+      workqueue: perform cpu down operations from low priority cpu_notifier=
+()
+
+Theodore Ts'o (3):
+      ext4: pass a char * to ext4_count_free() instead of a buffer_head ptr
+      ext4: fix overhead calculation used by ext4_statfs()
+      ext4: undo ext4_calc_metadata_amount if we fail to claim space
+
+Tiejun Chen (1):
+      powerpc: Add "memory" attribute for mfmsr()
+
+Timur Tabi (1):
+      powerpc/85xx: use the BRx registers to enable indirect mode on the P1=
+022DS
+
+Tony Luck (1):
+      x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faul=
+ts
+
+Virupax Sadashivpetimath (1):
+      spi/pl022: disable port when unused
+
+Vivek Trivedi (1):
+      nfsd4: fix cr_principal comparison check in same_creds
+
+roger blofeld (1):
+      powerpc/ftrace: Fix assembly trampoline register usage
+
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI94mAAoJEDjbvchgkmk+tHEP/RkipVRc3rya3bpIiPfACSKc
+PiDdlvQZLKyv9QyiHLWLZo+/8x+N1B8VjTjC628JfGbAAk97pgOLXmyJNNgFfoZd
+xZVU67zObOm81oQdHIc4xZmD5jLWYWtsKxXs8xK1kcXFPXW/ip9kgNmnF5ftWHCc
+KE+wqu/ea/pC7du0kd2ZSKCuvHBGxHk6xavbCDtPpsas/bICbs7HQLtF6B5XwpZR
+v5GuPcI7IMhvBepXE1K0Zbo2e/YG+MFHRP3ggKaDAT8C5vDjk+X2walPyu74Fu6T
+f3PV4VIXETtdNNjT71kxEY2AgyYJgAepDSumTYr6t4Y/tWNZm14+gNjmKMHJfMhu
+xQG8u7LIV4CKYN6nArw1LrDp2GO2IUYZIMC7NyWkV6H5Hbu5TO1GttlaDk0ucCJG
+RaT07K7sbrQHWG1xL1Sc4C1eXTodaTqW6p900j3EPEYgJYmbDfNxataQ8kfhcsRp
+G7EBr+whjurwugDNixRkZsAsHHe4/DMe0oqmTFzu5FyyHiSAb80hhKfIGRyfw1aO
+zGxtnHdxgY/2lzDpe2GAqTcjOYDRDeS2eVNNTqeUbqSJPqEf2k+7ZZD5Za1/oiMv
+9d7VhjM7Dy+pvBeH7RFF8zx+HdkHt2kgM5dG+sVMbD8+8+5OQYygPh0XexbEvsF/
+ZcGxZ0/L8WYqWm6GWf+Q
+=isyc
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
