@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab2HIXKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:10:21 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:59864 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab2HIXKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:10:18 -0400
-Message-ID: <1344553932.28791.11.camel@footlong>
-Subject: [PATCH V2 1/3] drivers/char/tpm: Add new device driver to support
- IBM vTPM
+	id S1759957Ab2HIXLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:11:36 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:58957 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759767Ab2HIXLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 19:11:34 -0400
+Message-ID: <1344553986.28791.13.camel@footlong>
+Subject: [PATCH V2 3/3] drivers/char/tpm: Add securityfs support for event
+ log
 From: Ashley Lai <adlai@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
         benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
         rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
         adlai@linux.vnet.ibm.com
-Date: Thu, 09 Aug 2012 18:12:12 -0500
+Date: Thu, 09 Aug 2012 18:13:06 -0500
 In-Reply-To: <1344553253.28791.7.camel@footlong>
 References: <1344553253.28791.7.camel@footlong>
 Content-Type: text/plain; charset="UTF-8"
@@ -24,76 +23,129 @@ X-Mailer: Evolution 3.2.2-
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080923-5518-0000-0000-000006B8C070
+x-cbid: 12080923-8974-0000-0000-00000C03E533
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new device driver to support IBM virtual TPM
-(vTPM) for PPC64.  IBM vTPM is supported through the adjunct
-partition with firmware release 740 or higher.  With vTPM
-support, each lpar is able to have its own vTPM without the
-physical TPM hardware.
-
-This driver provides TPM functionalities by communicating with
-the vTPM adjunct partition through Hypervisor calls (Hcalls)
-and Command/Response Queue (CRQ) commands.
+This patch retrieves the event log data from the device tree
+during file open. The event log data will then displayed through
+securityfs.
 
 Signed-off-by: Ashley Lai <adlai@us.ibm.com>
 ---
- drivers/char/tpm/Kconfig       |    8 +
- drivers/char/tpm/Makefile      |    1 +
- drivers/char/tpm/tpm.h         |    1 +
- drivers/char/tpm/tpm_ibmvtpm.c |  750 ++++++++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm_ibmvtpm.h |   83 +++++
- 5 files changed, 843 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
+ drivers/char/tpm/Makefile         |    8 ++++-
+ drivers/char/tpm/tpm.h            |   12 ------
+ drivers/char/tpm/tpm_eventlog.c   |    7 ++++
+ drivers/char/tpm/tpm_eventlog.h   |   14 +++++++
+ drivers/char/tpm/tpm_noeventlog.c |   21 +++++++++++
+ drivers/char/tpm/tpm_of.c         |   68 +++++++++++++++++++++++++++++++++++++
+ 6 files changed, 117 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_noeventlog.c
+ create mode 100644 drivers/char/tpm/tpm_of.c
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index c4aac48..915875e 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -73,4 +73,12 @@ config TCG_INFINEON
- 	  Further information on this driver and the supported hardware
- 	  can be found at http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/ 
-
-+config TCG_IBMVTPM
-+	tristate "IBM VTPM Interface"
-+	depends on PPC64
-+	---help---
-+	  If you have IBM virtual TPM (VTPM) support say Yes and it
-+	  will be accessible from within Linux.  To compile this driver
-+	  as a module, choose M here; the module will be called tpm_ibmvtpm.
-+
- endif # TCG_TPM
 diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index beac52f..547509d 100644
+index 547509d..b53da57 100644
 --- a/drivers/char/tpm/Makefile
 +++ b/drivers/char/tpm/Makefile
-@@ -11,3 +11,4 @@ obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
- obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
- obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
- obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-+obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
+@@ -2,9 +2,15 @@
+ # Makefile for the kernel tpm device drivers.
+ #
+ obj-$(CONFIG_TCG_TPM) += tpm.o
++obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+ ifdef CONFIG_ACPI
+-	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+ 	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
++else
++ifdef CONFIG_TCG_IBMVTPM
++	tpm_bios-objs += tpm_eventlog.o tpm_of.o
++else
++	tpm_bios-objs += tpm_eventlog.o tpm_noeventlog.o
++endif
+ endif
+ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
+ obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index b1c5280..aece857 100644
+index aece857..08f6a07 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -94,6 +94,7 @@ struct tpm_vendor_specific {
- 	bool timeout_adjusted;
- 	unsigned long duration[3]; /* jiffies */
- 	bool duration_adjusted;
-+	void *data;
+@@ -304,15 +304,3 @@ extern int tpm_pm_suspend(struct device *, pm_message_t);
+ extern int tpm_pm_resume(struct device *);
+ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
+ 			     wait_queue_head_t *);
+-#ifdef CONFIG_ACPI
+-extern struct dentry ** tpm_bios_log_setup(char *);
+-extern void tpm_bios_log_teardown(struct dentry **);
+-#else
+-static inline struct dentry ** tpm_bios_log_setup(char *name)
+-{
+-	return NULL;
+-}
+-static inline void tpm_bios_log_teardown(struct dentry **dir)
+-{
+-}
+-#endif
+diff --git a/drivers/char/tpm/tpm_eventlog.c b/drivers/char/tpm/tpm_eventlog.c
+index 84ddc55..814b202 100644
+--- a/drivers/char/tpm/tpm_eventlog.c
++++ b/drivers/char/tpm/tpm_eventlog.c
+@@ -24,6 +24,7 @@
+ #include <linux/security.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
  
- 	wait_queue_head_t read_queue;
- 	wait_queue_head_t int_queue;
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+ #include "tpm.h"
+ #include "tpm_eventlog.h"
+@@ -369,6 +370,9 @@ struct dentry **tpm_bios_log_setup(char *name)
+ {
+ 	struct dentry **ret = NULL, *tpm_dir, *bin_file, *ascii_file;
+ 
++	if (TPM_NO_EVENT_LOG)
++		return NULL;
++
+ 	tpm_dir = securityfs_create_dir(name, NULL);
+ 	if (is_bad(tpm_dir))
+ 		goto out;
+@@ -412,6 +416,9 @@ void tpm_bios_log_teardown(struct dentry **lst)
+ {
+ 	int i;
+ 
++	if (TPM_NO_EVENT_LOG)
++		return;
++
+ 	for (i = 0; i < 3; i++)
+ 		securityfs_remove(lst[i]);
+ }
+diff --git a/drivers/char/tpm/tpm_eventlog.h b/drivers/char/tpm/tpm_eventlog.h
+index 8e23ccd..21ac6af 100644
+--- a/drivers/char/tpm/tpm_eventlog.h
++++ b/drivers/char/tpm/tpm_eventlog.h
+@@ -68,4 +68,18 @@ enum tcpa_pc_event_ids {
+ };
+ 
+ int read_log(struct tpm_bios_log *log);
++
++extern struct dentry **tpm_bios_log_setup(char *);
++extern void tpm_bios_log_teardown(struct dentry **);
++
++#ifdef CONFIG_PPC64
++#define TPM_NO_EVENT_LOG !of_find_node_by_name(NULL, "ibm,vtpm")
++#else
++#ifdef CONFIG_ACPI
++#define TPM_NO_EVENT_LOG 0
++#else
++#define TPM_NO_EVENT_LOG 1
++#endif
++#endif
++
+ #endif
+diff --git a/drivers/char/tpm/tpm_noeventlog.c b/drivers/char/tpm/tpm_noeventlog.c
 new file mode 100644
-index 0000000..491133f
+index 0000000..f30a2bf
 --- /dev/null
-+++ b/drivers/char/tpm/tpm_ibmvtpm.c
-@@ -0,0 +1,750 @@
++++ b/drivers/char/tpm/tpm_noeventlog.c
+@@ -0,0 +1,21 @@
 +/*
 + * Copyright (C) 2012 IBM Corporation
 + *
@@ -101,838 +153,94 @@ index 0000000..491133f
 + *
 + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
 + *
-+ * Device driver for TCG/TCPA TPM (trusted platform module).
-+ * Specifications at www.trustedcomputinggroup.org
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ *
++ */
++
++#include <linux/slab.h>
++#include "tpm_eventlog.h"
++
++int read_log(struct tpm_bios_log *log)
++{
++	return -EINVAL;
++}
+diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
+new file mode 100644
+index 0000000..6d44adb
+--- /dev/null
++++ b/drivers/char/tpm/tpm_of.c
+@@ -0,0 +1,68 @@
++/*
++ * Copyright 2012 IBM Corporation
++ *
++ * Author: Ashley Lai <adlai@us.ibm.com>
++ *
++ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
++ *
++ * Read the event log created by the firmware on PPC64
 + *
 + * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + *
 + */
 +
-+#include <linux/dma-mapping.h>
-+#include <linux/dmapool.h>
 +#include <linux/slab.h>
-+#include <asm/vio.h>
-+#include <asm/irq.h>
-+#include <linux/types.h>
-+#include <linux/list.h>
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/wait.h>
-+#include <asm/prom.h>
++#include <linux/of.h>
 +
 +#include "tpm.h"
-+#include "tpm_ibmvtpm.h"
++#include "tpm_eventlog.h"
 +
-+static const char tpm_ibmvtpm_driver_name[] = "tpm_ibmvtpm";
-+
-+static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
-+	{ "IBM,vtpm", "IBM,vtpm"},
-+	{ "", "" }
-+};
-+MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
-+
-+DECLARE_WAIT_QUEUE_HEAD(wq);
-+
-+/**
-+ * ibmvtpm_send_crq - Send a CRQ request
-+ * @vdev:	vio device struct
-+ * @w1:		first word
-+ * @w2:		second word
-+ *
-+ * Return value:
-+ *	0 -Sucess
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
++int read_log(struct tpm_bios_log *log)
 +{
-+	return plpar_hcall_norets(H_SEND_CRQ, vdev->unit_address, w1, w2);
-+}
++	struct device_node *np;
++	const u32 *sizep;
++	const __be64 *basep;
 +
-+/**
-+ * ibmvtpm_get_data - Retrieve ibm vtpm data
-+ * @dev:	device struct
-+ *
-+ * Return value:
-+ *	vtpm device struct
-+ */
-+static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
-+{
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
-+	if (chip)
-+		return (struct ibmvtpm_dev *)chip->vendor.data;
-+	return NULL;
-+}
-+
-+/**
-+ * tpm_ibmvtpm_recv - Receive data after send
-+ * @chip:	tpm chip struct
-+ * @buf:	buffer to read
-+ * count:	size of buffer
-+ *
-+ * Return value:
-+ *	Number of bytes read
-+ */
-+static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	struct ibmvtpm_dev *ibmvtpm;
-+	u16 len;
-+
-+	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
-+
-+	if (!ibmvtpm->rtce_buf) {
-+		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-+		return 0;
++	if (log->bios_event_log != NULL) {
++		pr_err("%s: ERROR - Eventlog already initialized\n", __func__);
++		return -EFAULT;
 +	}
 +
-+	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-+
-+	if (count < ibmvtpm->crq_res.len) {
-+		dev_err(ibmvtpm->dev,
-+			"Invalid size in recv: count=%ld, crq_size=%d\n",
-+			count, ibmvtpm->crq_res.len);
-+		return -EIO;
-+	}
-+
-+	spin_lock(&ibmvtpm->rtce_lock);
-+	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
-+	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
-+	ibmvtpm->crq_res.valid = 0;
-+	ibmvtpm->crq_res.msg = 0;
-+	len = ibmvtpm->crq_res.len;
-+	ibmvtpm->crq_res.len = 0;
-+	spin_unlock(&ibmvtpm->rtce_lock);
-+	return len;
-+}
-+
-+/**
-+ * tpm_ibmvtpm_send - Send tpm request
-+ * @chip:	tpm chip struct
-+ * @buf:	buffer contains data to send
-+ * count:	size of buffer
-+ *
-+ * Return value:
-+ *	Number of bytes sent
-+ */
-+static int tpm_ibmvtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	struct ibmvtpm_dev *ibmvtpm;
-+	struct ibmvtpm_crq crq;
-+	u64 *word = (u64 *) &crq;
-+	int rc;
-+
-+	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
-+
-+	if (!ibmvtpm->rtce_buf) {
-+		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-+		return 0;
-+	}
-+
-+	if (count > ibmvtpm->rtce_size) {
-+		dev_err(ibmvtpm->dev,
-+			"Invalid size in send: count=%ld, rtce_size=%d\n",
-+			count, ibmvtpm->rtce_size);
-+		return -EIO;
-+	}
-+
-+	spin_lock(&ibmvtpm->rtce_lock);
-+	memcpy((void *)ibmvtpm->rtce_buf, (void *)buf, count);
-+	crq.valid = (u8)IBMVTPM_VALID_CMD;
-+	crq.msg = (u8)VTPM_TPM_COMMAND;
-+	crq.len = (u16)count;
-+	crq.data = ibmvtpm->rtce_dma_handle;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, word[0], word[1]);
-+	if (rc != H_SUCCESS) {
-+		dev_err(ibmvtpm->dev, "tpm_ibmvtpm_send failed rc=%d\n", rc);
-+		rc = 0;
-+	} else
-+		rc = count;
-+
-+	spin_unlock(&ibmvtpm->rtce_lock);
-+	return rc;
-+}
-+
-+static void tpm_ibmvtpm_cancel(struct tpm_chip *chip)
-+{
-+	return;
-+}
-+
-+static u8 tpm_ibmvtpm_status(struct tpm_chip *chip)
-+{
-+	return 0;
-+}
-+
-+/**
-+ * ibmvtpm_crq_get_rtce_size - Send a CRQ request to get rtce size
-+ * @ibmvtpm:	vtpm device struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_crq_get_rtce_size(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	struct ibmvtpm_crq crq;
-+	u64 *buf = (u64 *) &crq;
-+	int rc;
-+
-+	crq.valid = (u8)IBMVTPM_VALID_CMD;
-+	crq.msg = (u8)VTPM_GET_RTCE_BUFFER_SIZE;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-+	if (rc != H_SUCCESS)
-+		dev_err(ibmvtpm->dev,
-+			"ibmvtpm_crq_get_rtce_size failed rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+/**
-+ * ibmvtpm_crq_get_version - Send a CRQ request to get vtpm version
-+ *			   - Note that this is vtpm version and not tpm version
-+ * @ibmvtpm:	vtpm device struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_crq_get_version(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	struct ibmvtpm_crq crq;
-+	u64 *buf = (u64 *) &crq;
-+	int rc;
-+
-+	crq.valid = (u8)IBMVTPM_VALID_CMD;
-+	crq.msg = (u8)VTPM_GET_VERSION;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-+	if (rc != H_SUCCESS)
-+		dev_err(ibmvtpm->dev,
-+			"ibmvtpm_crq_get_version failed rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+/**
-+ * ibmvtpm_crq_send_init_complete - Send a CRQ initialize complete message
-+ * @ibmvtpm:	vtpm device struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_crq_send_init_complete(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	int rc;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, INIT_CRQ_COMP_CMD, 0);
-+	if (rc != H_SUCCESS)
-+		dev_err(ibmvtpm->dev,
-+			"ibmvtpm_crq_send_init_complete failed rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+/**
-+ * ibmvtpm_crq_send_init - Send a CRQ initialize message
-+ * @ibmvtpm:	vtpm device struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_crq_send_init(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	int rc;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, INIT_CRQ_CMD, 0);
-+	if (rc != H_SUCCESS)
-+		dev_err(ibmvtpm->dev,
-+			"ibmvtpm_crq_send_init failed rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+/**
-+ * tpm_ibmvtpm_remove - ibm vtpm remove entry point
-+ * @vdev:	vio device struct
-+ *
-+ * Return value:
-+ *	0
-+ */
-+static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(&vdev->dev);
-+	int rc = 0;
-+
-+	free_irq(vdev->irq, ibmvtpm);
-+	tasklet_kill(&ibmvtpm->tasklet);
-+
-+	do {
-+		if (rc)
-+			msleep(100);
-+		rc = plpar_hcall_norets(H_FREE_CRQ, vdev->unit_address);
-+	} while (rc == H_BUSY || H_IS_LONG_BUSY(rc));
-+
-+	dma_unmap_single(ibmvtpm->dev, ibmvtpm->crq_dma_handle,
-+			 CRQ_RES_BUF_SIZE, DMA_BIDIRECTIONAL);
-+	free_page((unsigned long)ibmvtpm->crq_queue.crq_addr);
-+
-+	if (ibmvtpm->rtce_buf) {
-+		dma_unmap_single(ibmvtpm->dev, ibmvtpm->rtce_dma_handle,
-+				 ibmvtpm->rtce_size, DMA_BIDIRECTIONAL);
-+		kfree(ibmvtpm->rtce_buf);
-+	}
-+
-+	tpm_remove_hardware(ibmvtpm->dev);
-+
-+	kfree(ibmvtpm);
-+
-+	return 0;
-+}
-+
-+/**
-+ * tpm_ibmvtpm_get_desired_dma - Get DMA size needed by this driver
-+ * @vdev:	vio device struct
-+ *
-+ * Return value:
-+ *	Number of bytes the driver needs to DMA map
-+ */
-+static unsigned long tpm_ibmvtpm_get_desired_dma(struct vio_dev *vdev)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(&vdev->dev);
-+	return CRQ_RES_BUF_SIZE + ibmvtpm->rtce_size;
-+}
-+
-+/**
-+ * tpm_ibmvtpm_suspend - Suspend
-+ * @dev:	device struct
-+ *
-+ * Return value:
-+ *	0
-+ */
-+static int tpm_ibmvtpm_suspend(struct device *dev)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-+	struct ibmvtpm_crq crq;
-+	u64 *buf = (u64 *) &crq;
-+	int rc = 0;
-+
-+	crq.valid = (u8)IBMVTPM_VALID_CMD;
-+	crq.msg = (u8)VTPM_PREPARE_TO_SUSPEND;
-+
-+	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-+	if (rc != H_SUCCESS)
-+		dev_err(ibmvtpm->dev,
-+			"tpm_ibmvtpm_suspend failed rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+/**
-+ * ibmvtpm_reset_crq - Reset CRQ
-+ * @ibmvtpm:	ibm vtpm struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	int rc = 0;
-+
-+	do {
-+		if (rc)
-+			msleep(100);
-+		rc = plpar_hcall_norets(H_FREE_CRQ,
-+					ibmvtpm->vdev->unit_address);
-+	} while (rc == H_BUSY || H_IS_LONG_BUSY(rc));
-+
-+	memset(ibmvtpm->crq_queue.crq_addr, 0, CRQ_RES_BUF_SIZE);
-+	ibmvtpm->crq_queue.index = 0;
-+
-+	return plpar_hcall_norets(H_REG_CRQ, ibmvtpm->vdev->unit_address,
-+				  ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE);
-+}
-+
-+/**
-+ * tpm_ibmvtpm_resume - Resume from suspend
-+ * @dev:	device struct
-+ *
-+ * Return value:
-+ *	0
-+ */
-+static int tpm_ibmvtpm_resume(struct device *dev)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-+	unsigned long flags;
-+	int rc = 0;
-+
-+	do {
-+		if (rc)
-+			msleep(100);
-+		rc = plpar_hcall_norets(H_ENABLE_CRQ,
-+					ibmvtpm->vdev->unit_address);
-+	} while (rc == H_IN_PROGRESS || rc == H_BUSY || H_IS_LONG_BUSY(rc));
-+
-+	if (rc) {
-+		dev_err(dev, "Error enabling ibmvtpm rc=%d\n", rc);
-+		return rc;
-+	}
-+
-+	spin_lock_irqsave(&ibmvtpm->lock, flags);
-+	vio_disable_interrupts(ibmvtpm->vdev);
-+	tasklet_schedule(&ibmvtpm->tasklet);
-+	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+
-+	rc = ibmvtpm_crq_send_init(ibmvtpm);
-+	if (rc)
-+		dev_err(dev, "Error send_init rc=%d\n", rc);
-+
-+	return rc;
-+}
-+
-+static const struct file_operations ibmvtpm_ops = {
-+	.owner = THIS_MODULE,
-+	.llseek = no_llseek,
-+	.open = tpm_open,
-+	.read = tpm_read,
-+	.write = tpm_write,
-+	.release = tpm_release,
-+};
-+
-+static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
-+static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
-+static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
-+static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
-+static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
-+static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
-+		   NULL);
-+static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-+static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
-+static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
-+
-+static struct attribute *ibmvtpm_attrs[] = {
-+	&dev_attr_pubek.attr,
-+	&dev_attr_pcrs.attr,
-+	&dev_attr_enabled.attr,
-+	&dev_attr_active.attr,
-+	&dev_attr_owned.attr,
-+	&dev_attr_temp_deactivated.attr,
-+	&dev_attr_caps.attr,
-+	&dev_attr_cancel.attr,
-+	&dev_attr_durations.attr,
-+	&dev_attr_timeouts.attr, NULL,
-+};
-+
-+static struct attribute_group ibmvtpm_attr_grp = { .attrs = ibmvtpm_attrs };
-+
-+static const struct tpm_vendor_specific tpm_ibmvtpm = {
-+	.recv = tpm_ibmvtpm_recv,
-+	.send = tpm_ibmvtpm_send,
-+	.cancel = tpm_ibmvtpm_cancel,
-+	.status = tpm_ibmvtpm_status,
-+	.req_complete_mask = 0,
-+	.req_complete_val = 0,
-+	.req_canceled = 0,
-+	.attr_group = &ibmvtpm_attr_grp,
-+	.miscdev = { .fops = &ibmvtpm_ops, },
-+};
-+
-+static const struct dev_pm_ops tpm_ibmvtpm_pm_ops = {
-+	.suspend = tpm_ibmvtpm_suspend,
-+	.resume = tpm_ibmvtpm_resume,
-+};
-+
-+/**
-+ * ibmvtpm_crq_get_next - Get next responded crq
-+ * @ibmvtpm	vtpm device struct
-+ *
-+ * Return value:
-+ *	vtpm crq pointer
-+ */
-+static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
-+{
-+	struct ibmvtpm_crq_queue *crq_q = &ibmvtpm->crq_queue;
-+	struct ibmvtpm_crq *crq = &crq_q->crq_addr[crq_q->index];
-+
-+	if (crq->valid & VTPM_MSG_RES) {
-+		if (++crq_q->index == crq_q->num_entry)
-+			crq_q->index = 0;
-+		rmb();
-+	} else
-+		crq = NULL;
-+	return crq;
-+}
-+
-+/**
-+ * ibmvtpm_crq_process - Process responded crq
-+ * @crq		crq to be processed
-+ * @ibmvtpm	vtpm device struct
-+ *
-+ * Return value:
-+ *	Nothing
-+ */
-+static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
-+				struct ibmvtpm_dev *ibmvtpm)
-+{
-+	int rc = 0;
-+
-+	switch (crq->valid) {
-+	case VALID_INIT_CRQ:
-+		switch (crq->msg) {
-+		case INIT_CRQ_RES:
-+			dev_info(ibmvtpm->dev, "CRQ initialized\n");
-+			rc = ibmvtpm_crq_send_init_complete(ibmvtpm);
-+			if (rc)
-+				dev_err(ibmvtpm->dev, "Unable to send CRQ init complete rc=%d\n", rc);
-+			return;
-+		case INIT_CRQ_COMP_RES:
-+			dev_info(ibmvtpm->dev,
-+				 "CRQ initialization completed\n");
-+			return;
-+		default:
-+			dev_err(ibmvtpm->dev, "Unknown crq message type: %d\n", crq->msg);
-+			return;
-+		}
-+		return;
-+	case IBMVTPM_VALID_CMD:
-+		switch (crq->msg) {
-+		case VTPM_GET_RTCE_BUFFER_SIZE_RES:
-+			if (crq->len <= 0) {
-+				dev_err(ibmvtpm->dev, "Invalid rtce size\n");
-+				return;
-+			}
-+			ibmvtpm->rtce_size = crq->len;
-+			ibmvtpm->rtce_buf = kmalloc(ibmvtpm->rtce_size,
-+						    GFP_KERNEL);
-+			if (!ibmvtpm->rtce_buf) {
-+				dev_err(ibmvtpm->dev, "Failed to allocate memory for rtce buffer\n");
-+				return;
-+			}
-+
-+			ibmvtpm->rtce_dma_handle = dma_map_single(ibmvtpm->dev,
-+				ibmvtpm->rtce_buf, ibmvtpm->rtce_size,
-+				DMA_BIDIRECTIONAL);
-+
-+			if (dma_mapping_error(ibmvtpm->dev,
-+					      ibmvtpm->rtce_dma_handle)) {
-+				kfree(ibmvtpm->rtce_buf);
-+				ibmvtpm->rtce_buf = NULL;
-+				dev_err(ibmvtpm->dev, "Failed to dma map rtce buffer\n");
-+			}
-+
-+			return;
-+		case VTPM_GET_VERSION_RES:
-+			ibmvtpm->vtpm_version = crq->data;
-+			return;
-+		case VTPM_TPM_COMMAND_RES:
-+			ibmvtpm->crq_res.valid = crq->valid;
-+			ibmvtpm->crq_res.msg = crq->msg;
-+			ibmvtpm->crq_res.len = crq->len;
-+			ibmvtpm->crq_res.data = crq->data;
-+			wake_up_interruptible(&wq);
-+			return;
-+		default:
-+			return;
-+		}
-+	}
-+	return;
-+}
-+
-+/**
-+ * ibmvtpm_interrupt -	Interrupt handler
-+ * @irq:		irq number to handle
-+ * @vtpm_instance:	vtpm that received interrupt
-+ *
-+ * Returns:
-+ *	IRQ_HANDLED
-+ **/
-+static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&ibmvtpm->lock, flags);
-+	vio_disable_interrupts(ibmvtpm->vdev);
-+	tasklet_schedule(&ibmvtpm->tasklet);
-+	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ibmvtpm_tasklet - Interrupt handler tasklet
-+ * @data:	ibm vtpm device struct
-+ *
-+ * Returns:
-+ *	Nothing
-+ **/
-+static void ibmvtpm_tasklet(void *data)
-+{
-+	struct ibmvtpm_dev *ibmvtpm = data;
-+	struct ibmvtpm_crq *crq;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&ibmvtpm->lock, flags);
-+	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
-+		ibmvtpm_crq_process(crq, ibmvtpm);
-+		crq->valid = 0;
-+		wmb();
-+	}
-+
-+	vio_enable_interrupts(ibmvtpm->vdev);
-+	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+}
-+
-+/**
-+ * tpm_ibmvtpm_probe - ibm vtpm initialize entry point
-+ * @vio_dev:	vio device struct
-+ * @id:		vio device id struct
-+ *
-+ * Return value:
-+ *	0 - Success
-+ *	Non-zero - Failure
-+ */
-+static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
-+				   const struct vio_device_id *id)
-+{
-+	struct ibmvtpm_dev *ibmvtpm;
-+	struct device *dev = &vio_dev->dev;
-+	struct ibmvtpm_crq_queue *crq_q;
-+	struct tpm_chip *chip;
-+	int rc = -ENOMEM, rc1;
-+
-+	chip = tpm_register_hardware(dev, &tpm_ibmvtpm);
-+	if (!chip) {
-+		dev_err(dev, "tpm_register_hardware failed\n");
++	np = of_find_node_by_name(NULL, "ibm,vtpm");
++	if (!np) {
++		pr_err("%s: ERROR - IBMVTPM not supported\n", __func__);
 +		return -ENODEV;
 +	}
 +
-+	ibmvtpm = kzalloc(sizeof(struct ibmvtpm_dev), GFP_KERNEL);
-+	if (!ibmvtpm) {
-+		dev_err(dev, "kzalloc for ibmvtpm failed\n");
-+		goto cleanup;
++	sizep = of_get_property(np, "linux,sml-size", NULL);
++	if (sizep == NULL) {
++		pr_err("%s: ERROR - SML size not found\n", __func__);
++		return -EIO;
++	}
++	if (*sizep == 0) {
++		pr_err("%s: ERROR - event log area empty\n", __func__);
++		return -EIO;
 +	}
 +
-+	crq_q = &ibmvtpm->crq_queue;
-+	crq_q->crq_addr = (struct ibmvtpm_crq *)get_zeroed_page(GFP_KERNEL);
-+	if (!crq_q->crq_addr) {
-+		dev_err(dev, "Unable to allocate memory for crq_addr\n");
-+		goto cleanup;
++	basep = of_get_property(np, "linux,sml-base", NULL);
++	if (basep == NULL) {
++		pr_err(KERN_ERR "%s: ERROR - SML not found\n", __func__);
++		return -EIO;
 +	}
 +
-+	crq_q->num_entry = CRQ_RES_BUF_SIZE / sizeof(*crq_q->crq_addr);
-+	ibmvtpm->crq_dma_handle = dma_map_single(dev, crq_q->crq_addr,
-+						 CRQ_RES_BUF_SIZE,
-+						 DMA_BIDIRECTIONAL);
-+
-+	if (dma_mapping_error(dev, ibmvtpm->crq_dma_handle)) {
-+		dev_err(dev, "dma mapping failed\n");
-+		goto cleanup;
++	log->bios_event_log = kmalloc(*sizep, GFP_KERNEL);
++	if (!log->bios_event_log) {
++		pr_err("%s: ERROR - Not enough memory for BIOS measurements\n",
++		       __func__);
++		return -ENOMEM;
 +	}
 +
-+	rc = plpar_hcall_norets(H_REG_CRQ, vio_dev->unit_address,
-+				ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE);
-+	if (rc == H_RESOURCE)
-+		rc = ibmvtpm_reset_crq(ibmvtpm);
++	log->bios_event_log_end = log->bios_event_log + *sizep;
 +
-+	if (rc) {
-+		dev_err(dev, "Unable to register CRQ rc=%d\n", rc);
-+		goto reg_crq_cleanup;
-+	}
++	memcpy(log->bios_event_log, __va(be64_to_cpup(basep)), *sizep);
 +
-+	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
-+		     (unsigned long)ibmvtpm);
-+
-+	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
-+			 tpm_ibmvtpm_driver_name, ibmvtpm);
-+	if (rc) {
-+		dev_err(dev, "Error %d register irq 0x%x\n", rc, vio_dev->irq);
-+		goto init_irq_cleanup;
-+	}
-+
-+	rc = vio_enable_interrupts(vio_dev);
-+	if (rc) {
-+		dev_err(dev, "Error %d enabling interrupts\n", rc);
-+		goto init_irq_cleanup;
-+	}
-+
-+	crq_q->index = 0;
-+
-+	ibmvtpm->dev = dev;
-+	ibmvtpm->vdev = vio_dev;
-+	chip->vendor.data = (void *)ibmvtpm;
-+
-+	spin_lock_init(&ibmvtpm->lock);
-+	spin_lock_init(&ibmvtpm->rtce_lock);
-+
-+	rc = ibmvtpm_crq_send_init(ibmvtpm);
-+	if (rc)
-+		goto init_irq_cleanup;
-+
-+	rc = ibmvtpm_crq_get_version(ibmvtpm);
-+	if (rc)
-+		goto init_irq_cleanup;
-+
-+	rc = ibmvtpm_crq_get_rtce_size(ibmvtpm);
-+	if (rc)
-+		goto init_irq_cleanup;
-+
-+	return rc;
-+init_irq_cleanup:
-+	tasklet_kill(&ibmvtpm->tasklet);
-+	do {
-+		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
-+	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-+reg_crq_cleanup:
-+	dma_unmap_single(dev, ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE,
-+			 DMA_BIDIRECTIONAL);
-+cleanup:
-+	if (ibmvtpm) {
-+		if (crq_q->crq_addr)
-+			free_page((unsigned long)crq_q->crq_addr);
-+		kfree(ibmvtpm);
-+	}
-+
-+	tpm_remove_hardware(dev);
-+
-+	return rc;
++	return 0;
 +}
-+
-+static struct vio_driver ibmvtpm_driver = {
-+	.id_table	 = tpm_ibmvtpm_device_table,
-+	.probe		 = tpm_ibmvtpm_probe,
-+	.remove		 = tpm_ibmvtpm_remove,
-+	.get_desired_dma = tpm_ibmvtpm_get_desired_dma,
-+	.name		 = tpm_ibmvtpm_driver_name,
-+	.pm		 = &tpm_ibmvtpm_pm_ops,
-+};
-+
-+/**
-+ * ibmvtpm_module_init - Initialize ibm vtpm module
-+ *
-+ * Return value:
-+ *	0 -Success
-+ *	Non-zero - Failure
-+ */
-+static int __init ibmvtpm_module_init(void)
-+{
-+	return vio_register_driver(&ibmvtpm_driver);
-+}
-+
-+/**
-+ * ibmvtpm_module_exit - Teardown ibm vtpm module
-+ *
-+ * Return value:
-+ *	Nothing
-+ */
-+static void __exit ibmvtpm_module_exit(void)
-+{
-+	vio_unregister_driver(&ibmvtpm_driver);
-+}
-+
-+module_init(ibmvtpm_module_init);
-+module_exit(ibmvtpm_module_exit);
-+
-+
-+MODULE_AUTHOR("adlai@us.ibm.com");
-+MODULE_DESCRIPTION("IBM vTPM Driver");
-+MODULE_VERSION("1.0");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-new file mode 100644
-index 0000000..fb930dd
---- /dev/null
-+++ b/drivers/char/tpm/tpm_ibmvtpm.h
-@@ -0,0 +1,83 @@
-+/*
-+ * Copyright (C) 2012 IBM Corporation
-+ *
-+ * Author: Ashley Lai <adlai@us.ibm.com>
-+ *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-+ *
-+ * Device driver for TCG/TCPA TPM (trusted platform module).
-+ * Specifications at www.trustedcomputinggroup.org
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ * These difference are required on power because the device must be
-+ * discovered through the device tree and iomap must be used to get
-+ * around the need for holes in the io_page_mask.  This does not happen
-+ * automatically because the tpm is not a normal pci device and lives
-+ * under the root node.
-+ *
-+ */
-+
-+#ifndef __TPM_IBMVTPM_H__
-+#define __TPM_IBMVTPM_H__
-+
-+/* vTPM Message Format 1 */
-+struct ibmvtpm_crq {
-+	u8 valid;
-+	u8 msg;
-+	u16 len;
-+	u32 data;
-+	u64 reserved;
-+} __attribute__((packed, aligned(8)));
-+
-+struct ibmvtpm_crq_queue {
-+	struct ibmvtpm_crq *crq_addr;
-+	u32 index;
-+	u32 num_entry;
-+};
-+
-+struct ibmvtpm_dev {
-+	struct device *dev;
-+	struct vio_dev *vdev;
-+	struct ibmvtpm_crq_queue crq_queue;
-+	dma_addr_t crq_dma_handle;
-+	spinlock_t lock;
-+	struct tasklet_struct tasklet;
-+	u32 rtce_size;
-+	void __iomem *rtce_buf;
-+	dma_addr_t rtce_dma_handle;
-+	spinlock_t rtce_lock;
-+	struct ibmvtpm_crq crq_res;
-+	u32 vtpm_version;
-+};
-+
-+#define CRQ_RES_BUF_SIZE	PAGE_SIZE
-+
-+/* Initialize CRQ */
-+#define INIT_CRQ_CMD		0xC001000000000000LL /* Init cmd */
-+#define INIT_CRQ_COMP_CMD	0xC002000000000000LL /* Init complete cmd */
-+#define INIT_CRQ_RES		0x01	/* Init respond */
-+#define INIT_CRQ_COMP_RES	0x02	/* Init complete respond */
-+#define VALID_INIT_CRQ		0xC0	/* Valid command for init crq */
-+
-+/* vTPM CRQ response is the message type | 0x80 */
-+#define VTPM_MSG_RES		0x80
-+#define IBMVTPM_VALID_CMD	0x80
-+
-+/* vTPM CRQ message types */
-+#define VTPM_GET_VERSION			0x01
-+#define VTPM_GET_VERSION_RES			(0x01 | VTPM_MSG_RES)
-+
-+#define VTPM_TPM_COMMAND			0x02
-+#define VTPM_TPM_COMMAND_RES			(0x02 | VTPM_MSG_RES)
-+
-+#define VTPM_GET_RTCE_BUFFER_SIZE		0x03
-+#define VTPM_GET_RTCE_BUFFER_SIZE_RES		(0x03 | VTPM_MSG_RES)
-+
-+#define VTPM_PREPARE_TO_SUSPEND			0x04
-+#define VTPM_PREPARE_TO_SUSPEND_RES		(0x04 | VTPM_MSG_RES)
-+
-+#endif
 -- 
 1.7.1
 
