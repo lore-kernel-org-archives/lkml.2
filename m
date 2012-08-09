@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab2HIJVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:21:11 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50229 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab2HIJVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:21:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] mmc: sdio: Fix PM_SLEEP related build warnings
-Date: Thu, 9 Aug 2012 11:27:02 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Chris Ball <cjb@laptop.org>, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344495413-7164-1-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1344495413-7164-1-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208091127.03119.rjw@sisk.pl>
+	id S1755621Ab2HIJVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:21:42 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:44161 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2HIJVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:21:41 -0400
+From: Scott Liu <scott.liu@emc.com.tw>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eleghost@gmail.com
+Cc: Scott Liu <scott.liu@emc.com.tw>
+Subject: [patch v2 1/1] HID:hid-multitouch: Add ELAN prouction request when resume
+Date: Thu,  9 Aug 2012 17:22:44 +0800
+Message-Id: <1344504164-2337-1-git-send-email-scott.liu@emc.com.tw>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 09, 2012, Thierry Reding wrote:
-> Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
-> the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
-> complain about them being unused.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Some of ELAN's production need to with set_idle commmand when reusme.
 
-The pm_no_operation() thing is not necessary at all, AFAICT.  I'd just
-remove it entirely. :-)
+Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
+---
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |   20 ++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
 
-Thanks,
-Rafael
-
-
-> ---
->  drivers/mmc/core/sdio_bus.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-> index 236842e..f8f90b4 100644
-> --- a/drivers/mmc/core/sdio_bus.c
-> +++ b/drivers/mmc/core/sdio_bus.c
-> @@ -193,11 +193,12 @@ static int sdio_bus_remove(struct device *dev)
->  }
->  
->  #ifdef CONFIG_PM
-> -
-> +#ifdef CONFIG_PM_SLEEP
->  static int pm_no_operation(struct device *dev)
->  {
->  	return 0;
->  }
-> +#endif
->  
->  static const struct dev_pm_ops sdio_bus_pm_ops = {
->  	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
-> 
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 41c34f2..a4d810c 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -829,4 +829,7 @@
+ #define USB_VENDOR_ID_PRIMAX	0x0461
+ #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+ 
++#define USB_VENDOR_ID_ELAN  0x04f3
++#define USB_DEVICE_ID_ELAN_MOCCA    0x000a
++
+ #endif
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 59c8b5c..b06b7d3 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -767,6 +767,25 @@ static int mt_reset_resume(struct hid_device *hdev)
+ 	mt_set_input_mode(hdev);
+ 	return 0;
+ }
++
++static int mt_resume(struct hid_device *hdev)
++{
++	if (hdev->vendor == USB_VENDOR_ID_ELAN &&
++		hdev->product == USB_DEVICE_ID_ELAN_MOCCA) {
++
++		struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
++		struct usb_host_interface *interface = intf->cur_altsetting;
++		struct usb_device *dev = hid_to_usb_dev(hdev);
++
++		usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++						HID_REQ_SET_IDLE, USB_TYPE_CLASS | USB_RECIP_INTERFACE,
++						0, interface->desc.bInterfaceNumber,
++						NULL, 0, USB_CTRL_SET_TIMEOUT);
++    }
++
++    return 0;
++}
++
+ #endif
+ 
+ static void mt_remove(struct hid_device *hdev)
+@@ -1092,6 +1111,7 @@ static struct hid_driver mt_driver = {
+ 	.event = mt_event,
+ #ifdef CONFIG_PM
+ 	.reset_resume = mt_reset_resume,
++	.resume = mt_resume,
+ #endif
+ };
+ 
+-- 
+1.7.9.5
 
