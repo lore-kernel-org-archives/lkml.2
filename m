@@ -1,173 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2HIOGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:06:36 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:28937 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2HIOGe (ORCPT
+	id S1030262Ab2HIOHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:07:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61266 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2HIOHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:06:34 -0400
-Message-ID: <1344521191.2393.3.camel@lorien2>
-Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: cl@linux.com
-Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuah.khan@hp.com
-Date: Thu, 09 Aug 2012 08:06:31 -0600
-In-Reply-To: <1344287631.2486.57.camel@lorien2>
-References: <1342221125.17464.8.camel@lorien2>
-	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
-	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 9 Aug 2012 10:07:18 -0400
+Message-ID: <5023C410.9030708@gmail.com>
+Date: Thu, 09 Aug 2012 10:07:12 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: ebiederm@xmission.com, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.ariyasu@hp.com,
+        jan.ariyasu@gmail.com, nhorman@tuxdriver.com, tgraf@infradead.org,
+        xi.wang@gmail.com
+Subject: Re: [PATCH net-next 0/7] sctp: network namespace support Part 2:
+ per net tunables
+References: <87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com> <87ipcud3ld.fsf_-_@xmission.com> <20120808.232058.1128673474849407813.davem@davemloft.net>
+In-Reply-To: <20120808.232058.1128673474849407813.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-06 at 15:13 -0600, Shuah Khan wrote:
-> kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
-> is defined. These checks interspersed with the regular code path has
-> lead to compile time warnings when compiled without CONFIG_DEBUG_VM
-> defined. Restructuring the code to move the integrity checks in to a new
-> function would eliminate the current compile warning problem and also
-> will allow for future changes to the debug only code to evolve without
-> introducing new warnings in the regular path. This restructuring work
-> is based on the discussion in the following thread:
-> 
-> https://lkml.org/lkml/2012/7/13/424
-
-Comments, questions. Does this patch look good?
-
-Thanks,
--- Shuah
-> 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> ---
->  mm/slab_common.c |   79 +++++++++++++++++++++++++++++-------------------------
->  1 file changed, 43 insertions(+), 36 deletions(-)
-> 
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 12637ce..67409f7 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -23,6 +23,46 @@ enum slab_state slab_state;
->  LIST_HEAD(slab_caches);
->  DEFINE_MUTEX(slab_mutex);
->  
-> +#ifdef CONFIG_DEBUG_VM
-> +static int kmem_cache_sanity_check(const char *name, size_t size)
-> +{
-> +	struct kmem_cache *s = NULL;
-> +
-> +	list_for_each_entry(s, &slab_caches, list) {
-> +		char tmp;
-> +		int res;
-> +
-> +		/*
-> +		 * This happens when the module gets unloaded and doesn't
-> +		 * destroy its slab cache and no-one else reuses the vmalloc
-> +		 * area of the module.  Print a warning.
-> +		 */
-> +		res = probe_kernel_address(s->name, tmp);
-> +		if (res) {
-> +			pr_err("Slab cache with size %d has lost its name\n",
-> +			       s->object_size);
-> +			continue;
-> +		}
-> +
-> +		if (!strcmp(s->name, name)) {
-> +			pr_err("%s (%s): Cache name already exists.\n",
-> +			       __func__, name);
-> +			dump_stack();
-> +			s = NULL;
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
-> +	return 0;
-> +}
-> +#else
-> +static inline int kmem_cache_sanity_check(const char *name, size_t size)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  /*
->   * kmem_cache_create - Create a cache.
->   * @name: A string which is used in /proc/slabinfo to identify this cache.
-> @@ -53,48 +93,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
->  {
->  	struct kmem_cache *s = NULL;
->  
-> -#ifdef CONFIG_DEBUG_VM
->  	if (!name || in_interrupt() || size < sizeof(void *) ||
->  		size > KMALLOC_MAX_SIZE) {
-> -		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-> -			" failed\n", name);
-> +		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
->  		goto out;
->  	}
-> -#endif
->  
->  	get_online_cpus();
->  	mutex_lock(&slab_mutex);
->  
-> -#ifdef CONFIG_DEBUG_VM
-> -	list_for_each_entry(s, &slab_caches, list) {
-> -		char tmp;
-> -		int res;
-> -
-> -		/*
-> -		 * This happens when the module gets unloaded and doesn't
-> -		 * destroy its slab cache and no-one else reuses the vmalloc
-> -		 * area of the module.  Print a warning.
-> -		 */
-> -		res = probe_kernel_address(s->name, tmp);
-> -		if (res) {
-> -			printk(KERN_ERR
-> -			       "Slab cache with size %d has lost its name\n",
-> -			       s->object_size);
-> -			continue;
-> -		}
-> -
-> -		if (!strcmp(s->name, name)) {
-> -			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
-> -				" already exists.\n",
-> -				name);
-> -			dump_stack();
-> -			s = NULL;
-> -			goto oops;
-> -		}
-> -	}
-> -
-> -	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
-> -#endif
-> +	if (kmem_cache_sanity_check(name, size))
-> +		goto oops;
->  
->  	s = __kmem_cache_create(name, size, align, flags, ctor);
->  
-> @@ -102,9 +111,7 @@ oops:
->  	mutex_unlock(&slab_mutex);
->  	put_online_cpus();
->  
-> -#ifdef CONFIG_DEBUG_VM
->  out:
-> -#endif
->  	if (!s && (flags & SLAB_PANIC))
->  		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
->  
+On 08/09/2012 02:20 AM, David Miller wrote:
+> From: ebiederm@xmission.com (Eric W. Biederman)
+> Date: Tue, 07 Aug 2012 10:17:02 -0700
+>
+>> Since I am motivated to get things done, and since there has been much
+>> grumbling about my patches not implementing tunables, I have added
+>> tunable support on top of my last patchset.
+>>
+>> I have performed basic testing on the these patches and nothing
+>> appears amis.
+>>
+>> The sm statemachine is a major tease as it has all of these association
+>> and endpoint pointers in the common set of function parameters that turn
+>> out to be NULL at the most inconvinient times.  So I added to the common
+>> parameter list a struct net pointer, that is never NULL.
+>
+> I like Eric's patch set and I'd like to apply it to net-next.
+>
+> Vlad?
+>
 
 
+I like these patches much more as well, but not done reviewing yet. 
+I'll try to finish the review tonight
+
+-vlad
