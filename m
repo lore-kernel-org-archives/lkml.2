@@ -1,195 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759761Ab2HIV5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:57:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753831Ab2HIV5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:57:46 -0400
-Date: Thu, 9 Aug 2012 23:57:26 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/19] sched, numa: Per task memory placement for big
- processes
-Message-ID: <20120809215725.GL10459@redhat.com>
-References: <20120731191204.540691987@chello.nl>
- <20120731192809.428855038@chello.nl>
+	id S1759810Ab2HIWDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 18:03:52 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60580 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759785Ab2HIWDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 18:03:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731192809.428855038@chello.nl>
+In-Reply-To: <1344547389-4599-2-git-send-email-jacob.shin@amd.com>
+References: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
+	<1344547389-4599-2-git-send-email-jacob.shin@amd.com>
+Date: Thu, 9 Aug 2012 15:03:49 -0700
+X-Google-Sender-Auth: QJlFZi-1Ea5NVbn9erEMg2VKCiY
+Message-ID: <CAE9FiQXiSq=5VQ5nNELPjDkj0QRjA=sbKfPwAeVDADteY-vdyw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] x86: Only direct map addresses that are marked as E820_RAM
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>
+Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:12:22PM +0200, Peter Zijlstra wrote:
-> Implement a per-task memory placement scheme for 'big' tasks (as per
-> the last patch). It relies on a regular PROT_NONE 'migration' fault to
-> scan the memory space of the procress and uses a two stage migration
-> scheme to reduce the invluence of unlikely usage relations.
-> 
-> It relies on the assumption that the compute part is tied to a
-> paticular task and builds a task<->page relation set to model the
-> compute<->data relation.
-> 
-> Probability says that the task faulting on a page after we protect it,
-> is most likely to be the task that uses that page most.
-> 
-> To decrease the likelyhood of acting on a false relation, we only
-
-Do you prefer me to use the term false relation instead of false
-sharing too? I never was fond of the term false sharing even though at
-the NUMA level it resembles the cache effects.
-
-> migrate a page when two consecutive samples are from the same task.
-> 
-> I'm still not entirely convinced this scheme is sound, esp. for things
-> like virtualization and n:m threading solutions in general the
-> compute<->task relation is fundamentally untrue.
-
-To make it true, virt requires AutoNUMA or hard bindings the guest too
-and just a fake vtopology matching the hardware topology. Anyway we
-can discuss that later, it's not the primary topic here.
-
-> + *
-> + * Once we start doing NUMA placement there's two modes, 'small' process-wide
-> + * and 'big' per-task. For the small mode we have a process-wide home node
-> + * and lazily mirgrate all memory only when this home-node changes.
-> + *
-> + * For big mode we keep a home-node per task and use periodic fault scans
-> + * to try and estalish a task<->page relation. This assumes the task<->page
-> + * relation is a compute<->data relation, this is false for things like virt.
-> + * and n:m threading solutions but its the best we can do given the
-> + * information we have.
-
-Differentiating the way you migrate the memory between small and big
-tasks looks really bad and a major band aid. It is only needed because
-the small mode is too broken to be used on big tasks, and the big mode
-provides too bad performance.
-
-> +	if (big) {
-> +		/*
-> +		 * For 'big' processes we do per-thread home-node, combined
-> +		 * with periodic fault scans.
-> +		 */
-> +		if (p->node != node)
-> +			sched_setnode(p, node);
-> +	} else {
-> +		/*
-> +		 * For 'small' processes we keep the entire process on a
-> +		 * node and migrate all memory once.
-> +		 */
-> +		rcu_read_lock();
-> +		t = p;
-> +		do {
-> +			sched_setnode(t, node);
-> +		} while ((t = next_thread(p)) != p);
-> +		rcu_read_unlock();
-> +	}
-
-The small mode tries to do the right thing, except expressed like
-above is so bad and fixed in stone and can't work ok in all possible
-scenarios (hence you can't use it for big tasks).
-
-AutoNUMA only uses the "small" mode, but it does in a way that works
-perfectly for big tasks too. This is the relevant documentation on how
-the CPU follow memory algorithm of AutoNUMA sorts out the very above
-problem in an optimal way that doesn't require small/big
-classifications or other hacks like that:
-
- * One important thing is how we calculate the weights using
- * task_autonuma or mm_autonuma, depending if the other CPU is running
- * a thread of the current process, or a thread of a different
- * process.
- *
- * We use the mm_autonuma statistics to calculate the NUMA weights of
- * the two task candidate for exchange, if the task in the other CPU
- * belongs to a different processes. This way all threads of the same
- * process will try to converge in the same "mm" best nodes if their
- * "thread local" best CPU is already busy by a thread of a different
- * process. This is important because with threads, there is always
- * the possibility of NUMA false sharing, and so it's better to
- * converge all threads in as fewer nodes as possible.
-
-Your approach will never work ok on large systems, unless all tasks
-are of the small kind of course.
-
-At least now you introduced the autonuma_last_nid numa hinting page
-fault confirmation before starting the migration to mitigate the
-bad behavior of the big mode for big tasks.
-
-> +	/*
-> +	 * Trigger fault driven migration, small processes do direct
-> +	 * lazy migration, big processes do gradual task<->page relations.
-> +	 * See mpol_misplaced().
-> +	 */
->  	lazy_migrate_process(p->mm);
-
-The comment should go in prev patch that introduced the call to
-lazy_migrate_process not here, bad splitup.
-
-> +	/*
-> +	 * Multi-stage node selection is used in conjunction with a periodic
-> +	 * migration fault to build a temporal task<->page relation. By
-> +	 * using a two-stage filter we remove short/unlikely relations.
-> +	 *
-> +	 * Using P(p) ~ n_p / n_t as per frequentist probability, we can
-> +	 * equate a task's usage of a particular page (n_p) per total usage
-> +	 * of this page (n_t) (in a given time-span) to a probability.
-> +	 *
-> +	 * Our periodic faults will then sample this probability and getting
-> +	 * the same result twice in a row, given these samples are fully
-> +	 * independent, is then given by P(n)^2, provided our sample period
-> +	 * is sufficiently short compared to the usage pattern.
-> +	 *
-> +	 * This quadric squishes small probabilities, making it less likely
-> +	 * we act on an unlikely task<->page relation.
-> +	 *
-> +	 * NOTE: effectively we're using task-home-node<->page-node relations
-> +	 * since those are the only thing we can affect.
-> +	 *
-> +	 * NOTE: we're using task-home-node as opposed to the current node
-> +	 * the task might be running on, since the task-home-node is the
-> +	 * long-term node of this task, further reducing noise. Also see
-> +	 * task_tick_numa().
-> +	 */
-> +	if (multi && (pol->flags & MPOL_F_HOME)) {
-> +		if (page->nid_last != polnid) {
-> +			page->nid_last = polnid;
-> +			goto out;
-> +		}
-> +	}
+On Thu, Aug 9, 2012 at 2:23 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
+> and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
+> backed by actual DRAM. This is fine for holes under 4GB which are covered
+> by fixed and variable range MTRRs to be UC. However, we run into trouble
+> on higher memory addresses which cannot be covered by MTRRs.
+>
+> This patch iterates through e820 and only direct maps ranges that are
+> marked as E820_RAM, and keeps track of those pfn ranges.
+>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/include/asm/page_types.h |    9 ++++
+>  arch/x86/kernel/setup.c           |   87 +++++++++++++++++++++++++++++++++----
+>  2 files changed, 88 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+> index e21fdd1..0b8aa52 100644
+> --- a/arch/x86/include/asm/page_types.h
+> +++ b/arch/x86/include/asm/page_types.h
+> @@ -3,6 +3,7 @@
+>
+>  #include <linux/const.h>
+>  #include <linux/types.h>
+> +#include <asm/e820.h>
+>
+>  /* PAGE_SHIFT determines the page size */
+>  #define PAGE_SHIFT     12
+> @@ -40,12 +41,20 @@
+>  #endif /* CONFIG_X86_64 */
+>
+>  #ifndef __ASSEMBLY__
+> +#include <linux/range.h>
+>
+>  extern int devmem_is_allowed(unsigned long pagenr);
+>
+>  extern unsigned long max_low_pfn_mapped;
+>  extern unsigned long max_pfn_mapped;
+>
+> +extern struct range pfn_mapped[E820_X_MAX];
+> +extern int nr_pfn_mapped;
 > +
+> +extern void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn);
+> +extern int pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
+> +extern int pfn_is_mapped(unsigned long pfn);
+> +
+>  static inline phys_addr_t get_max_mapped(void)
+>  {
+>         return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index f4b9b80..4f26944 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -115,13 +115,55 @@
+>  #include <asm/prom.h>
+>
+>  /*
+> - * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+> - * The direct mapping extends to max_pfn_mapped, so that we can directly access
+> - * apertures, ACPI and other tables without having to play with fixmaps.
+> + * max_low_pfn_mapped: highest direct mapped pfn under 4GB
+> + * max_pfn_mapped:     highest direct mapped pfn over 4GB
+> + *
+> + * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
+> + * represented by pfn_mapped
+>   */
+>  unsigned long max_low_pfn_mapped;
+>  unsigned long max_pfn_mapped;
+>
+> +struct range pfn_mapped[E820_X_MAX];
+> +int nr_pfn_mapped;
+> +
+> +void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +       nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
+> +                                            nr_pfn_mapped, start_pfn, end_pfn);
+> +
+> +       if (end_pfn > max_pfn_mapped)
+> +               max_pfn_mapped = end_pfn;
+> +
+> +       if ((end_pfn <= (1UL << (32 - PAGE_SHIFT))) &&
+> +           (end_pfn > max_low_pfn_mapped))
+> +               max_low_pfn_mapped = end_pfn;
+> +}
+> +
+> +int pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < nr_pfn_mapped; i++)
+> +               if ((start_pfn >= pfn_mapped[i].start) &&
+> +                   (end_pfn <= pfn_mapped[i].end))
+> +                       break;
+> +
+> +       return i < nr_pfn_mapped;
+> +}
+> +
+> +int pfn_is_mapped(unsigned long pfn)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < nr_pfn_mapped; i++)
+> +               if ((pfn >= pfn_mapped[i].start) &&
+> +                   (pfn <  pfn_mapped[i].end))
+> +                       break;
+> +
+> +       return i < nr_pfn_mapped;
+> +}
+> +
+>  #ifdef CONFIG_DMI
+>  RESERVE_BRK(dmi_alloc, 65536);
+>  #endif
+> @@ -673,6 +715,9 @@ early_param("reservelow", parse_reservelow);
+>
+>  void __init setup_arch(char **cmdline_p)
+>  {
+> +       int i;
+> +       unsigned long init_pfn, pfn;
+> +
+>  #ifdef CONFIG_X86_32
+>         memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+>         visws_early_detect();
+> @@ -913,14 +958,40 @@ void __init setup_arch(char **cmdline_p)
+>
+>         init_gbpages();
+>
+> -       /* max_pfn_mapped is updated here */
+> -       max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+> -       max_pfn_mapped = max_low_pfn_mapped;
+> +       init_pfn = max_pfn_mapped;
+> +
+> +       memset(pfn_mapped, 0, sizeof(pfn_mapped));
+> +       nr_pfn_mapped = 0;
+> +
+> +       add_pfn_range_mapped(0, max_pfn_mapped);
+> +
+> +       for (i = 0; i < e820.nr_map; i++) {
+> +               struct e820entry *ei = &e820.map[i];
+> +               u64 start = ei->addr;
+> +               u64 end = ei->addr + ei->size;
+> +
+> +               if (ei->type != E820_RAM)
+> +                       continue;
+> +
+> +               if (end <= (init_pfn << PAGE_SHIFT))
+> +                       continue;
+> +
+> +               if (start < (init_pfn << PAGE_SHIFT))
+> +                       start = init_pfn << PAGE_SHIFT;
+> +
+> +#ifdef CONFIG_X86_32
+> +               if ((start >> PAGE_SHIFT) >= max_low_pfn)
+> +                       continue;
+> +
+> +               if ((end >> PAGE_SHIFT) > max_low_pfn)
+> +                       end = max_low_pfn << PAGE_SHIFT;
+> +#endif
+> +               pfn = init_memory_mapping(start, end);
+> +               add_pfn_range_mapped(start >> PAGE_SHIFT, pfn);
+> +       }
 
-Great to see we agree on the autonuma_last_nid logic now that you
-included it into sched-numa, so finally sched-numa also has a
-task<->page relation. You also wrote the math to explain it! I hope if
-you don't mind if I copy the above math in the comment above.
+can you put those line in another function?
 
-I just seen you posted a patch to remove the 8 bytes per page and
-return to zero cost by dropping 32bit support, but it was still
-interesting to see sched-numa for the first time using 8 bytes per
-page unconditionally! (autonuma currently uses 12 per page but only on
-NUMA hardware and zero on non-NUMA, and it works on 32bit archs too
-with the same 12byte cost)
+setup_arch is way too big now.
 
-> @@ -2421,7 +2456,7 @@ void __init numa_policy_init(void)
->  		preferred_node_policy[nid] = (struct mempolicy) {
->  			.refcnt = ATOMIC_INIT(1),
->  			.mode = MPOL_PREFERRED,
-> -			.flags = MPOL_F_MOF,
-> +			.flags = MPOL_F_MOF | MPOL_F_HOME,
->  			.v = { .preferred_node = nid, },
->  		};
->  	}
-> 
-> 
+Also put tj to CC list, because last time I separate page table for
+every node upset him.
+
+Thanks
+
+Yinghai Lu
+
+>
+>  #ifdef CONFIG_X86_64
+>         if (max_pfn > max_low_pfn) {
+> -               max_pfn_mapped = init_memory_mapping(1UL<<32,
+> -                                                    max_pfn<<PAGE_SHIFT);
+>                 /* can we preseve max_low_pfn ?*/
+>                 max_low_pfn = max_pfn;
+>         }
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.7.9.5
+>
+>
