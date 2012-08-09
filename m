@@ -1,116 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab2HIEuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 00:50:19 -0400
-Received: from science.horizon.com ([71.41.210.146]:13912 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750996Ab2HIEuQ (ORCPT
+	id S1752531Ab2HIFMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 01:12:18 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:27650 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab2HIFMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 00:50:16 -0400
-Date: 9 Aug 2012 00:50:14 -0400
-Message-ID: <20120809045014.21475.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: v3.5  Oops in i2c_algo_bit.c:bit_xfer+0x23/0x870: i915 or i2c?
-Cc: linux@horizon.com
+	Thu, 9 Aug 2012 01:12:17 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 09 Aug 2012 01:12:15 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: RFC: mutex: hung tasks on SMP platforms with
+ asm-generic/mutex-xchg.h
+In-reply-to: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+Message-id: <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
+References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to run a v3.5 kernel (plus some -stable patches from Ted Ts'o) on
-an Ubuntu system.  Things are generally working except for the following
-Oops on each boot, which prevents the graphics system from loading.
+On Tue, 7 Aug 2012, Will Deacon wrote:
 
-[   36.187972] [drm] Initialized drm 1.1.0 20060810
-[   36.230306] kvm: VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL does not work properly. Using workaround
-[   36.487606] i915 0000:00:02.0: setting latency timer to 64
-[   36.555464] [drm] GMBUS [i915 gmbus ssc] timed out, falling back to bit banging on pin 0
-[   36.555490] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-[   36.555626] IP: [<ffffffffa01807b3>] bit_xfer+0x23/0x870 [i2c_algo_bit]
-[   36.555701] PGD 212cb0067 PUD 212caf067 PMD 0 
-[   36.555803] Oops: 0000 [#1] SMP 
-[   36.555885] CPU 3 
-[   36.555907] Modules linked in: snd_seq_midi joydev i915(+) snd_rawmidi snd_seq_midi_event snd_seq drm_kms_helper snd_timer snd_seq_device kvm_intel drm kvm snd serio_raw soundcore i2c_algo_bit snd_page_alloc lpc_ich video mei microcode mac_hid eeprom it87 hwmon_vid coretemp lp parport raid10 raid456 async_pq async_xor firewire_ohci firewire_core xor async_memcpy async_raid6_recov hid_microsoft floppy crc_itu_t r8169 pata_jmicron usbhid hid mptsas mptscsih mptbase scsi_transport_sas raid6_pq async_tx raid1 raid0 multipath linear
-[   36.557232] 
-[   36.557271] Pid: 623, comm: modprobe Not tainted 3.5.0 #3 Gigabyte Technology Co., Ltd. H57M-USB3/H57M-USB3
-[   36.557398] RIP: 0010:[<ffffffffa01807b3>]  [<ffffffffa01807b3>] bit_xfer+0x23/0x870 [i2c_algo_bit]
-[   36.557493] RSP: 0000:ffff880212c6d648  EFLAGS: 00010296
-[   36.557544] RAX: ffff88021222c030 RBX: ffff880212c6d7e8 RCX: 0000000000000000
-[   36.557599] RDX: 0000000000000001 RSI: ffff880212c6d7e8 RDI: ffff88021222c030
-[   36.557655] RBP: ffff880212c6d6c8 R08: 0000000000000402 R09: 0000000000000000
-[   36.557710] R10: 0000000000000000 R11: 0000000000000006 R12: 0000000000000001
-[   36.557766] R13: ffff880212c6dfd8 R14: 0000000000000001 R15: ffff88021222c030
-[   36.557822] FS:  00007f5a7b85b700(0000) GS:ffff88021fcc0000(0000) knlGS:0000000000000000
-[   36.557899] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   36.557950] CR2: 0000000000000028 CR3: 0000000212cad000 CR4: 00000000000007e0
-[   36.558006] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   36.558062] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   36.558119] Process modprobe (pid: 623, threadinfo ffff880212c6c000, task ffff88020fdf5b80)
-[   36.558197] Stack:
-[   36.558239]  0000000000000001 ffff880212c6dfd8 0000000000000001 000000011222c000
-[   36.558380]  ffff880212c6d6c8 ffffffff8166341e ffff88020ff6ca72 000c510c00000018
-[   36.558523]  ffff880212c6d6d8 ffff880212c6d698 0000000000000082 ffff880212c6d7e8
-[   36.558671] Call Trace:
-[   36.558719]  [<ffffffff8166341e>] ? printk+0x61/0x63
-[   36.558790]  [<ffffffffa02e5a0b>] gmbus_xfer+0x56b/0x6f0 [i915]
-[   36.558847]  [<ffffffff814ee7dc>] i2c_transfer+0x9c/0xe0
-[   36.558899]  [<ffffffff811be91b>] ? ep_poll_callback+0x10b/0x150
-[   36.558953]  [<ffffffff814ee976>] i2c_smbus_xfer_emulated+0x156/0x5d0
-[   36.559010]  [<ffffffff81321d25>] ? idr_get_empty_slot+0x115/0x320
-[   36.559064]  [<ffffffff814eefb3>] i2c_smbus_xfer+0x113/0x130
-[   36.559118]  [<ffffffff8166e51e>] ? _raw_spin_lock+0xe/0x20
-[   36.559173]  [<ffffffff81642fd9>] ? klist_next+0x89/0x110
-[   36.559225]  [<ffffffff814ef61b>] i2c_default_probe+0xeb/0x130
-[   36.559279]  [<ffffffff814ee18b>] ? i2c_check_addr_busy+0x3b/0x60
-[   36.559332]  [<ffffffff814f077b>] i2c_do_add_adapter+0x1bb/0x290
-[   36.559382]  [<ffffffff811ed1cb>] ? sysfs_do_create_link+0xeb/0x200
-[   36.559433]  [<ffffffff81411897>] ? put_device+0x17/0x20
-[   36.559482]  [<ffffffff814f0880>] ? __process_new_driver+0x30/0x30
-[   36.559535]  [<ffffffff814f0892>] __process_new_adapter+0x12/0x20
-[   36.559590]  [<ffffffff814140ee>] bus_for_each_drv+0x4e/0xa0
-[   36.559642]  [<ffffffff814f029d>] i2c_register_adapter+0x16d/0x270
-[   36.559696]  [<ffffffff814f0443>] i2c_add_adapter+0xa3/0xb0
-[   36.559759]  [<ffffffffa02e5cfc>] intel_setup_gmbus+0xcc/0x1f0 [i915]
-[   36.559821]  [<ffffffffa02a938c>] i915_driver_load+0x2ac/0xb90 [i915]
-[   36.559882]  [<ffffffffa03f1b41>] ? drm_get_minor+0x261/0x300 [drm]
-[   36.559940]  [<ffffffffa03f4236>] drm_get_pci_dev+0x186/0x2d0 [drm]
-[   36.559995]  [<ffffffff8103c3e9>] ? default_spin_lock_flags+0x9/0x10
-[   36.560060]  [<ffffffffa02f2142>] i915_pci_probe+0x16/0x20 [i915]
-[   36.560115]  [<ffffffff813522ac>] local_pci_probe+0x5c/0xd0
-[   36.560168]  [<ffffffff81352431>] pci_device_probe+0x111/0x120
-[   36.560221]  [<ffffffff81415ede>] driver_probe_device+0x7e/0x220
-[   36.560274]  [<ffffffff8141612b>] __driver_attach+0xab/0xb0
-[   36.560327]  [<ffffffff81416080>] ? driver_probe_device+0x220/0x220
-[   36.560375]  [<ffffffff81414195>] bus_for_each_dev+0x55/0x90
-[   36.560421]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-[   36.560470]  [<ffffffff814158de>] driver_attach+0x1e/0x20
-[   36.560522]  [<ffffffff81415598>] bus_add_driver+0x198/0x270
-[   36.560573]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-[   36.560625]  [<ffffffff814167f7>] driver_register+0x77/0x150
-[   36.560677]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-[   36.560729]  [<ffffffff8135110e>] __pci_register_driver+0x5e/0xe0
-[   36.560784]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-[   36.560839]  [<ffffffffa03f449a>] drm_pci_init+0x11a/0x130 [drm]
-[   36.560892]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-[   36.560949]  [<ffffffffa032308b>] i915_init+0x8b/0x8d [i915]
-[   36.561004]  [<ffffffff8100212a>] do_one_initcall+0x12a/0x180
-[   36.561057]  [<ffffffff810af280>] sys_init_module+0x10b0/0x1f40
-[   36.561111]  [<ffffffff810ab760>] ? free_notes_attrs+0x60/0x60
-[   36.561165]  [<ffffffff81676769>] system_call_fastpath+0x16/0x1b
-[   36.561218] Code: 5d c3 45 31 ff eb e9 90 55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83 ec 58 66 66 66 66 90 48 8b 4f 18 49 89 ff 48 89 f3 89 55 9c <48> 8b 41 28 48 89 4d 90 48 85 c0 74 0c ff d0 85 c0 89 c1 0f 88 
-[   36.562478] RIP  [<ffffffffa01807b3>] bit_xfer+0x23/0x870 [i2c_algo_bit]
-[   36.562544]  RSP <ffff880212c6d648>
-[   36.562584] CR2: 0000000000000028
-[   36.562667] ---[ end trace f73eb7bcfaa57c45 ]---
+> Hello,
+> 
+> ARM recently moved to asm-generic/mutex-xchg.h for its mutex implementation
+> after our previous implementation was found to be missing some crucial
+> memory barriers. However, I'm seeing some problems running hackbench on
+> SMP platforms due to the way in which the MUTEX_SPIN_ON_OWNER code operates.
+> 
+> The symptoms are that a bunch of hackbench tasks are left waiting on an
+> unlocked mutex and therefore never get woken up to claim it. I think this
+> boils down to the following sequence:
+> 
+> 
+>         Task A        Task B        Task C        Lock value
+> 0                                                     1
+> 1       lock()                                        0
+> 2                     lock()                          0
+> 3                     spin(A)                         0
+> 4       unlock()                                      1
+> 5                                   lock()            0
+> 6                     cmpxchg(1,0)                    0
+> 7                     contended()                    -1
+> 8       lock()                                        0
+> 9       spin(C)                                       0
+> 10                                  unlock()          1
+> 11      cmpxchg(1,0)                                  0
+> 12      unlock()                                      1
+> 
+> 
+> At this point, the lock is unlocked, but Task B is in an uninterruptible
+> sleep with nobody to wake it up.
+> 
+> The following patch fixes the problem by ensuring we put the lock into
+> the contended state if we acquire it from the spin loop on the slowpath
+> but I'd like to be sure that this won't cause problems with other mutex
+> implementations:
+> 
+> 
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index a307cc9..27b7887 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -170,7 +170,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>                 if (owner && !mutex_spin_on_owner(lock, owner))
+>                         break;
+>  
+> -               if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
+> +               if (atomic_cmpxchg(&lock->count, 1, -1) == 1) {
+>                         lock_acquired(&lock->dep_map, ip);
+>                         mutex_set_owner(lock);
+>                         preempt_enable();
+> 
+> 
+> All comments welcome.
 
-As far as I can tell, the passed i2c_adap->algo_data is NULL,
-so the fetch of adap->pre_xfer is oopsing.
+Well... after thinking about this for a while, I came to the conclusion 
+that the mutex_spin_on_owner code is indeed breaking the contract 
+between the xchg lock fast path and the slow path.  The xchg fast path 
+will always set the count to 0 and rely on the slow path to restore a 
+possible pre-existing negative count.  So the above change would be 
+needed for correctness in the xchg case, even if it always forces the 
+unlock into the slow path.
 
-Unfortunately, I'm trying to run ext4 + metadata_csum, which requires
-3.5+patches.  I don't see anything relevant on the mailing list.
-Do any DRM hackers have any ideas what's up?
+As I mentioned previously, we don't want to force the slow path in all 
+cases though.  The atomic decrement based fast path doesn't need that, 
+so I'd suggest this fix instead:
 
-System is an i3-530 with 8GiB of RAM.  (Its primary job is
-file server, but the display also gets used sometime.)
+diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
+index 580a6d35c7..60964844c8 100644
+--- a/include/asm-generic/mutex-xchg.h
++++ b/include/asm-generic/mutex-xchg.h
+@@ -108,4 +108,6 @@ __mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
+ 	return prev;
+ }
+ 
++#define __MUTEX_XCHG_FAST_PATH
++
+ #endif
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index a307cc9c95..c6a26a4f1c 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -161,6 +161,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 
+ 	for (;;) {
+ 		struct task_struct *owner;
++		int locked_val;
+ 
+ 		/*
+ 		 * If there's an owner, wait for it to either
+@@ -170,7 +171,19 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		if (owner && !mutex_spin_on_owner(lock, owner))
+ 			break;
+ 
+-		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
++#ifdef __MUTEX_XCHG_FAST_PATH
++		/*
++		 * The fast path based on xchg sets a transient 0 count,
++		 * relying on the slow path to restore a possible
++		 * pre-existing contended count.  Without checking the
++		 * waiters' list we must presume possible contension here.
++		 */
++		locked_val = -1;
++#else
++		locked_val = 0;
++#endif
++
++		if (atomic_cmpxchg(&lock->count, 1, locked_val) == 1) {
+ 			lock_acquired(&lock->dep_map, ip);
+ 			mutex_set_owner(lock);
+ 			preempt_enable();
 
-Thanks!
+That would be needed for the stable tree as well.
+
+A further cleanup could remove all definitions of 
+__mutex_slowpath_needs_to_unlock() given that they're all set to 1 
+except for the xchg fast path, in which case __MUTEX_XCHG_FAST_PATH 
+could be reused instead.
+
+Of course that might tilt the balance towards using mutex-dec.h on ARM 
+v6 and above instead of mutex-xchg.h.  But that is an orthogonal issue, 
+and that doesn't remove the need for fixing the xchg based case for 
+correctness.
+
+
+Nicolas
