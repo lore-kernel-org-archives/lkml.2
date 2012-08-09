@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2HIGMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:12:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51195 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab2HIGMN (ORCPT
+	id S1754569Ab2HIGOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:14:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51737 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab2HIGOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:12:13 -0400
-Date: Thu, 9 Aug 2012 02:12:14 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 05/12] block: Kill bi_destructor
-Message-ID: <20120809061214.GA9128@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-6-git-send-email-koverstreet@google.com>
- <20120808222223.GD6983@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809002154.GE7262@moria.home.lan>
- <20120809060517.GB2845@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809060517.GB2845@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 02:14:15 -0400
+Date: Wed, 08 Aug 2012 23:14:14 -0700 (PDT)
+Message-Id: <20120808.231414.2103406027652335204.davem@davemloft.net>
+To: joe@perches.com
+Cc: cjren@qca.qualcomm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
+        nic-devel@qualcomm.com, xiong@qca.qualcomm.com,
+        hao-ran.liu@canonical.com, rodrigue@qca.qualcomm.com
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344485382.2024.9.camel@joe2Laptop>
+References: <1344507270-2907-1-git-send-email-cjren@qca.qualcomm.com>
+	<6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+	<1344485382.2024.9.camel@joe2Laptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 11:05:17PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Aug 08, 2012 at 05:21:54PM -0700, Kent Overstreet wrote:
-> > > What's wrong with good ol' NULL?
-> > 
-> > If it's NULL, we can't distinguish between bios where that field wasn't
-> > set (i.e. bios that were statically allocated somewhere) from bios that
-> > were allocated by bio_kmalloc().
-> > 
-> > It's just there to make debugging easier - if bi_cnt goes to 0 on a bio
-> > where it shouldn't we'll catch it at the BUG_ON() in bio_free() instead
-> > of kfreeing a bad pointer.
-> 
-> I fail to see how that improves anything.  slab will complain clearly
-> if it gets passed in a pointer to static area.  The benefit is
-> imaginery.  If there's no bioset, it's NULL.  Let's please keep things
-> usual.
+From: Joe Perches <joe@perches.com>
+Date: Wed, 08 Aug 2012 21:09:42 -0700
 
-But if it's a pointer to heap allocated memory, but the bio was embedded
-in another struct? I've seen a fair number of instances of that (md, off
-the top of my head).
+> On Thu, 2012-08-09 at 02:27 +0000, Ren, Cloud wrote:
+>> Hi David,
+> []
+>> The alx driver only supports two new nics(l1f/l2f) now.  It doesn't supersede atl1c driver.
+>> Atl1c driver still supports old nics.
+> []
+>> -----Original Message-----
+>> From: Ren, Cloud 
+>> Sent: 2012年8月9日 18:15
+> []
+>> This driver support two new ethernet chipsets:
+> 
+> [+400kb of entire original patch]
+> 
+> Did you really have to quote 400kb of original patch to
+> make that prefixing statement to David?
+> 
+> []
+> 
+>> Signed-off-by: Joe Perches <joe@perches.com>
+>  
+> I would prefer my name not be listed as a Signed-off-by.
 
-If you're sure that in a normal config the slab allocator is going to
-complain right away and not corrupt itself, fine. But I've been bitten
-way too hard by bugs that could've been caught right away by a simple
-assert and instead I had to spend hours backtracking, and the block
-layer is _rife_ with that kind of thing.
+You should never EVER add a signoff, or any other kind of tag, of
+another person unless they give it to you explicitly.  It is beyond
+rude to do this without that person's permission.
+
+You qualcomm guys are really mishandling this patch submission,
+and just like last time you are steadily pissing me off.
+
+You have a very low level of consideration for other people who feel
+the burdon of your work, and you often have no idea what the hell you
+are doing.
