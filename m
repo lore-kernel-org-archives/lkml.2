@@ -1,210 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab2HIF3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 01:29:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63917 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab2HIF3M convert rfc822-to-8bit (ORCPT
+	id S1752831Ab2HIFcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 01:32:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57953 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab2HIFcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 01:29:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,738,1336374000"; 
-   d="scan'208,223";a="183459858"
-Date: Thu, 9 Aug 2012 13:24:01 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf script python: Correct handler check and spelling
- errors
-Message-ID: <20120809132401.64a18d27@feng-i7>
-In-Reply-To: <878vdoydj2.fsf@sejong.aot.lge.com>
-References: <1344446028-21381-1-git-send-email-acme@infradead.org>
-	<1344446028-21381-12-git-send-email-acme@infradead.org>
-	<878vdoydj2.fsf@sejong.aot.lge.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Aug 2012 01:32:01 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-93-50234b4f69e3
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Tushar Behera'" <tushar.behera@linaro.org>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+ <1344430493-5304-5-git-send-email-arnd@arndb.de>
+ <0b6801cd7567$29be48b0$7d3ada10$%kim@samsung.com>
+ <201208081434.56198.arnd@arndb.de>
+In-reply-to: <201208081434.56198.arnd@arndb.de>
+Subject: RE: [PATCH 4/6] ARM: s3c24xx: use new PWM driver
+Date: Thu, 09 Aug 2012 14:31:59 +0900
+Message-id: <0c3901cd75f0$4c26bb60$e4743220$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac11cv8Woj1IT25ySaCBazT1BxUV/AAer0Eg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAV1/b+UAg8tvFS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldGd5dJQYt+xaqLL5gbGJ+odjFyckgImEic/L+RDcIWk7hwbz2Q
+	zcUhJLCIUWLFyj4WCGcek8Tkg32MIFVsAhoSh98/YwexRQSUJY6/vANWxCzQwijRef4dVPsJ
+	Rolra86AzeUU0JfYc20XaxcjB4ewgKXEnQYhkDCLgKrElnnnwUp4BWwluk5PZ4SwBSV+TL7H
+	AmIzC2hJrN95nAnClpfYvOYtM8gYCQF1iUd/dSFuMJLYuns5I0SJiMS+F+8YJzAKzUIyaRaS
+	SbOQTJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBAfia1g3Flg8UhRgEORiUe
+	Xo0NSgFCrIllxZW5hxglOJiVRHh3KSkHCPGmJFZWpRblxxeV5qQWH2KU5mBREuc19v7qLySQ
+	nliSmp2aWpBaBJNl4uCUamB0FL3RtSgxwOHZpq1vXzmrzGfZdTiYwWJ2ZS7Xhf2/u8Nqwnfl
+	BWjI6O/RT/g/p7xl2lGRRlbxd/xnZh1eXtVUxGz4YsHP1sfVR93CHh5Ytqzave/2L8Va3wmc
+	OsfdBa49lXoccej6z7PCnM//tb2tyt11oe/7AW3Jula1U8Jp4bt1LptnrY9TYinOSDTUYi4q
+	TgQA7/w6rmACAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3332f03c6e8f641e26430a25704c364c2f30d833 Mon Sep 17 00:00:00 2001
-From: Feng Tang <feng.tang@intel.com>
-Date: Thu, 9 Aug 2012 12:50:56 +0800
-Subject: [PATCH] perf script python: Correct handler check and spelling errors
+Arnd Bergmann wrote:
+> 
+> On Wednesday 08 August 2012, Kukjin Kim wrote:
+> 
+> > diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-
+> s3c24xx/Kconfig
+> > index e249611..d56b0f7 100644
+> > --- a/arch/arm/mach-s3c24xx/Kconfig
+> > +++ b/arch/arm/mach-s3c24xx/Kconfig
+> > @@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
+> >  	select I2C
+> >  	select POWER_SUPPLY
+> >  	select MACH_NEO1973
+> > -	select S3C2410_PWM
+> > +	select S3C24XX_PWM
+> >  	select S3C_DEV_USB_HOST
+> >  	help
+> >  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
+> > Phone
+> > @@ -493,7 +493,7 @@ config MACH_RX1950
+> >  	select S3C24XX_DCLK
+> >  	select PM_H1940 if PM
+> >  	select I2C
+> > -	select S3C2410_PWM
+> > +	select S3C24XX_PWM
+> >  	select S3C_DEV_NAND
+> >  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
+> >  	select S3C2440_XTAL_16934400
+> > diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-
+> samsung/Kconfig
+> > index 7aca31c..dcdfb77 100644
+> > --- a/arch/arm/plat-samsung/Kconfig
+> > +++ b/arch/arm/plat-samsung/Kconfig
+> > @@ -403,7 +403,7 @@ config S5P_DEV_USB_EHCI
+> >
+> >  config S3C24XX_PWM
+> >  	bool "PWM device support"
+> > -	select HAVE_PWM
+> > +	select PWM
+> >  	help
+> >  	  Support for exporting the PWM timer blocks via the pwm device
+> >  	  system
+> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> > index 8fc3808..c74d055 100644
+> > --- a/drivers/pwm/Kconfig
+> > +++ b/drivers/pwm/Kconfig
+> > @@ -58,14 +58,12 @@ config PWM_PXA
+> >  	  will be called pwm-pxa.
+> >
+> >  config PWM_SAMSUNG
+> > -	tristate "Samsung pwm support"
+> > +	bool "Samsung PWM support"
+> >  	depends on PLAT_SAMSUNG
+> > +	default y
+> >  	help
+> >  	  Generic PWM framework driver for Samsung.
+> >
+> > -	  To compile this driver as a module, choose M here: the module
+> > -	  will be called pwm-samsung.
+> > -
+> >  config PWM_TEGRA
+> >  	tristate "NVIDIA Tegra PWM support"
+> >  	depends on ARCH_TEGRA
+> 
+> This approach has two disadvantages compared to mine:
+> 
+> * When building for the samsung platforms other than rx1950 or gta02,
+>   you can no longer have the PWM driver as a loadable module, for no
+>   good reason.
+> 
+OK I see, I'm still thinking the PWM driver can be selected in kernel
+menuconfig though.
 
-Correct the checking for handler returned by PyDict_GetItemString(), also
-fix some spelling error and remove some data code in event_analyzing_sample.py,
-as suggested by Namhyung Kim.
+My concept is when PWM is selected on Samsung platforms by defconfig or
+manually enabling, PWM_SAMSUNG is selected automatically. In addition,
+current Samsung PWM driver cannot support module now because pwm_init() is
+called by arch_initcall().
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |    4 +-
- .../perf/scripts/python/event_analyzing_sample.py  |   33 ++++++++------------
- .../util/scripting-engines/trace-event-python.c    |    8 ++---
- 3 files changed, 18 insertions(+), 27 deletions(-)
+I think, we can remove S3C24XX_PWM and just select PWM (or using HAVE_PWM)
+and PWM_SAMSUNG can be selected by enabling PWM in samsung platform next
+time :-)
 
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-index 6372431..9e09857 100755
---- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-@@ -1,12 +1,12 @@
- # EventClass.py
- #
--# This is a libray defining some events typs classes, which could
-+# This is a library defining some events types classes, which could
- # be used by other scripts to analyzing the perf samples.
- #
- # Currently there are just a few classes defined for examples,
- # PerfEvent is the base class for all perf event sample, PebsEvent
- # is a HW base Intel x86 PEBS event, and user could add more SW/HW
--# event classes based on requriements.
-+# event classes based on requirements.
- 
- import struct
- 
-diff --git a/tools/perf/scripts/python/event_analyzing_sample.py b/tools/perf/scripts/python/event_analyzing_sample.py
-index 46f05aa..15555bc 100644
---- a/tools/perf/scripts/python/event_analyzing_sample.py
-+++ b/tools/perf/scripts/python/event_analyzing_sample.py
-@@ -1,15 +1,15 @@
--# process_event.py: general event handler in python
-+# event_analyzing_sample.py: general event handler in python
- #
--# Current perf report is alreay very powerful with the anotation integrated,
-+# Current perf report is already very powerful with the annotation integrated,
- # and this script is not trying to be as powerful as perf report, but
- # providing end user/developer a flexible way to analyze the events other
- # than trace points.
- #
- # The 2 database related functions in this script just show how to gather
- # the basic information, and users can modify and write their own functions
--# according to their specific requirment.
-+# according to their specific requirement.
- #
--# The first sample "show_general_events" just does a baisc grouping for all
-+# The first function "show_general_events" just does a basic grouping for all
- # generic events with the help of sqlite, and the 2nd one "show_pebs_ll" is
- # for a x86 HW PMU event: PEBS with load latency data.
- #
-@@ -85,7 +85,7 @@ def process_event(param_dict):
-         else:
-                 symbol = "Unknown_symbol"
- 
--        # Creat the event object and insert it to the right table in database
-+        # Create the event object and insert it to the right table in database
-         event = create_event(name, comm, dso, symbol, raw_buf)
-         insert_db(event)
- 
-@@ -109,7 +109,7 @@ def trace_end():
- 
- #
- # As the event number may be very big, so we can't use linear way
--# to show the histgram in real number, but use a log2 algorithm.
-+# to show the histogram in real number, but use a log2 algorithm.
- #
- 
- def num2sym(num):
-@@ -130,18 +130,18 @@ def show_general_events():
- 
-          # Group by thread
-         commq = con.execute("select comm, count(comm) from gen_events group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from gen_events group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dso
--        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histgram", "="*74)
-+        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histogram", "="*74)
-         dsoq = con.execute("select dso, count(dso) from gen_events group by dso order by -count(dso)")
-         for row in dsoq:
-              print "%40s %8d     %s" % (row[0], row[1], num2sym(row[1]))
-@@ -163,31 +163,24 @@ def show_pebs_ll():
- 
-         # Group by thread
-         commq = con.execute("select comm, count(comm) from pebs_ll group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from pebs_ll group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dse
-         dseq = con.execute("select dse, count(dse) from pebs_ll group by dse order by -count(dse)")
--        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histogram", "="*58)
-         for row in dseq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by latency
-         latq = con.execute("select lat, count(lat) from pebs_ll group by lat order by lat")
--        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histogram", "="*58)
-         for row in latq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
--
--def trace_unhandled(event_name, context, event_fields_dict):
--		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
--
--def print_header(event_name, cpu, secs, nsecs, pid, comm):
--	print "%-20s %5u %05u.%09u %8u %-20s " % \
--	(event_name, cpu, secs, nsecs, pid, comm),
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 7e3f576..afba097 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -343,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __unused,
--					 struct addr_location *al __unused)
-+					 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *t, *dict;
- 	static char handler_name[64];
-@@ -352,7 +352,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 
- 	/*
- 	 * Use the MAX_FIELDS to make the function expandable, though
--	 * currently there is only one itme for the tuple.
-+	 * currently there is only one item for the tuple.
- 	 */
- 	t = PyTuple_New(MAX_FIELDS);
- 	if (!t)
-@@ -365,10 +365,8 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
- 
- 	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler)) {
--		handler = NULL;
-+	if (!handler || !PyCallable_Check(handler))
- 		goto exit;
--	}
- 
- 	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
- 	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
--- 
-1.7.1
+> * It is still possible to manually disable PWM_SAMSUNG, even on
+>   rx1950 and gta02, because the Kconfig symbol is visible.
+> 
+Yeah you're right, makes sense.
+
+> I've added a "Reported-by: Tushar Behera <tushar.behera@linaro.org>"
+> line to my version of the patch, but I would prefer to keep that
+> approach. I have also changed the patch to use the S3C24XX_PWM
+> symbol because that lets everyone migrate the defconfig files.
+> 
+OK.
+
+> Do you want to give this patch some more testing, or should I keep
+> it in arm-soc?
+> 
+Looks good to me, please keep going on.
+
+> ---
+> From 438b0cf94adb2528bdeeb71314f7be16512ea5b1 Mon Sep 17 00:00:00 2001
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Sat, 4 Aug 2012 07:52:19 +0000
+> Subject: [PATCH] ARM: s3c24xx: use new PWM driver
+> 
+> The samsung PWM driver has moved to the new PWM subsystem, which
+> changed the Kconfig symbol for that driver, but the rx1950 and
+> gta02 boards still uses the old one.
+> 
+> Without this patch, building s3c2410_defconfig results in:
+> 
+> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_lcd_power':
+> arch/arm/mach-s3c24xx/mach-rx1950.c:430: undefined reference to
+> `pwm_config'
+> arch/arm/mach-s3c24xx/mach-rx1950.c:431: undefined reference to
+> `pwm_disable'
+> arch/arm/mach-s3c24xx/mach-rx1950.c:437: undefined reference to
+> `pwm_config'
+> arch/arm/mach-s3c24xx/mach-rx1950.c:438: undefined reference to
+> `pwm_enable'
+> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_exit':
+> arch/arm/mach-s3c24xx/mach-rx1950.c:504: undefined reference to `pwm_free'
+> arch/arm/mach-s3c24xx/built-in.o: In function `rx1950_backlight_init':
+> arch/arm/mach-s3c24xx/mach-rx1950.c:487: undefined reference to
+> `pwm_request'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Reported-by: Tushar Behera <tushar.behera@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> 
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+> index e249611..d56b0f7 100644
+> --- a/arch/arm/mach-s3c24xx/Kconfig
+> +++ b/arch/arm/mach-s3c24xx/Kconfig
+> @@ -483,7 +483,7 @@ config MACH_NEO1973_GTA02
+>  	select I2C
+>  	select POWER_SUPPLY
+>  	select MACH_NEO1973
+> -	select S3C2410_PWM
+> +	select S3C24XX_PWM
+>  	select S3C_DEV_USB_HOST
+>  	help
+>  	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM
+> Phone
+> @@ -493,7 +493,7 @@ config MACH_RX1950
+>  	select S3C24XX_DCLK
+>  	select PM_H1940 if PM
+>  	select I2C
+> -	select S3C2410_PWM
+> +	select S3C24XX_PWM
+>  	select S3C_DEV_NAND
+>  	select S3C2410_IOTIMING if S3C2440_CPUFREQ
+>  	select S3C2440_XTAL_16934400
+> diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+> index 7aca31c..9c3b90c 100644
+> --- a/arch/arm/plat-samsung/Kconfig
+> +++ b/arch/arm/plat-samsung/Kconfig
+> @@ -403,7 +403,8 @@ config S5P_DEV_USB_EHCI
+> 
+>  config S3C24XX_PWM
+>  	bool "PWM device support"
+> -	select HAVE_PWM
+> +	select PWM
+> +	select PWM_SAMSUNG
+>  	help
+>  	  Support for exporting the PWM timer blocks via the pwm device
+>  	  system
+
