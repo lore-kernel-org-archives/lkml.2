@@ -1,150 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab2HIXZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:25:56 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53668 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2HIXZy (ORCPT
+	id S1760034Ab2HIXbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:31:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48244 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2HIXbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:25:54 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-02-50244700188e
-Date: Fri, 10 Aug 2012 08:27:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
- reclaim/compaction based on failures
-Message-ID: <20120809232733.GD21033@bbox>
-References: <1344342677-5845-1-git-send-email-mgorman@suse.de>
- <1344342677-5845-3-git-send-email-mgorman@suse.de>
- <20120808014824.GB4247@bbox>
- <20120808075526.GI29814@suse.de>
- <20120808082738.GF4247@bbox>
- <20120808085112.GJ29814@suse.de>
- <20120808235127.GA17835@bbox>
- <20120809074949.GA12690@suse.de>
- <20120809082715.GA19802@bbox>
- <20120809092035.GD12690@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809092035.GD12690@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 9 Aug 2012 19:31:02 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-rdma@vger.kernel.org, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] infiniband: Fix typo in infiniband driver
+Date: Fri, 10 Aug 2012 08:31:40 +0900
+Message-Id: <1344555100-3992-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc1.37.gb1d9b1d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 10:20:35AM +0100, Mel Gorman wrote:
-> On Thu, Aug 09, 2012 at 05:27:15PM +0900, Minchan Kim wrote:
-> > > > > +      * pages reclaimed based on the number of consecutive allocation
-> > > > > +      * failures
-> > > > > +      */
-> > > > > +     zone = lruvec_zone(lruvec);
-> > > > > +     if (zone->compact_order_failed >= sc->order)
-> > > > 
-> > > > I can't understand this part.
-> > > > We don't defer lower order than compact_order_failed by aff62249.
-> > > > Do you mean lower order compaction context should be a lamb for
-> > > > deferred higher order allocation request success? I think it's not fair
-> > > > and even I can't understand rationale why it has to scale the number of pages
-> > > > reclaimed with the number of recent compaction failture.
-> > > > Your changelog just says "What we have to do, NOT Why we have to do".
-> > > > 
-> > > 
-> > > I'm a moron, that should be <=, not >=. All my tests were based on order==9
-> > > and that was the only order using reclaim/compaction so it happened to
-> > > work as expected. Thanks! I fixed that and added the following
-> > > clarification to the changelog
-> > > 
-> > > The rationale is that reclaiming the normal number of pages still allowed
-> > > compaction to fail and its success depends on the number of pages. If it's
-> > > failing, reclaim more pages until it succeeds again.
-> > > 
-> > > Does that make more sense?
-> > 
-> > If compaction is defered, requestors fails to get high-order page and
-> > they normally do fallback by order-0 or something.
-> 
-> Yes. At least, one hopes they fell back to order-0.
-> 
-> > In this context, if they don't depends on fallback and retrying higher order
-> > allocation, your patch makes sense to me because your algorithm is based on
-> > past allocation request fail rate.
-> > Do I miss something?
-> 
-> Your question is difficult to parse but I think you are making an implicit
-> assumption that it's the same caller retrying the high order allocation.
-> That is not the case, not do I want it to be because that would be similar
-> to the caller using __GFP_REPEAT. Retrying with more reclaim until the
-> allocation succeeds would both stall and reclaim excessively.
-> 
-> The intention is that an allocation can fail but each subsequent attempt will
-> try harder until there is success. Each allocation request does a portion
-> of the necessary work to spread the cost between multiple requests. Take
-> THP for example where there is a constant request for THP allocations
-> for whatever reason (heavy fork workload, large buffer allocation being
-> populated etc.). Some of those allocations fail but if they do, future
-> THP requests will reclaim more pages. When compaction resumes again, it
-> will be more likely to succeed and compact_defer_shift gets reset. In the
-> specific case of THP there will be allocations that fail but khugepaged
-> will promote them later if the process is long-lived.
+Correct spelling typo in infiniband/hw and infiniband/ulp
 
-You assume high-order allocation are *constant* and I guess your test enviroment
-is optimal for it. I agree your patch if we can make sure such high-order
-allocation are always constant. But, is it true? Otherwise, your patch could reclaim
-too many pages unnecessary and it could reduce system performance by eviction
-of page cache and swap out of workingset part. That's a concern to me.
-In summary, I think your patch is rather agressive so how about this?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/infiniband/hw/amso1100/c2_rnic.c | 2 +-
+ drivers/infiniband/hw/cxgb3/iwch_cm.c    | 2 +-
+ drivers/infiniband/hw/qib/qib_sd7220.c   | 2 +-
+ drivers/infiniband/ulp/srpt/ib_srpt.c    | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 66e4310..0cb2593 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1708,6 +1708,7 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
- {
-        unsigned long pages_for_compaction;
-        unsigned long inactive_lru_pages;
-+       struct zone *zone;
-
-        /* If not in reclaim/compaction mode, stop */
-        if (!in_reclaim_compaction(sc))
-@@ -1741,6 +1742,15 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
-         * inactive lists are large enough, continue reclaiming
-         */
-        pages_for_compaction = (2UL << sc->order);
-+
-+       /*
-+        * If compaction is deferred for this order then scale the number of
-+        * pages reclaimed based on the number of consecutive allocation
-+        * failures
-+        */
-+       zone = lruvec_zone(lruvec);
-+       if (zone->compact_order_failed <= sc->order) {
-+               if (zone->compact_defer_shift)
-+                       /*
-+                        * We can't make sure deferred requests will come again
-+                        * The probability is 50:50.
-+                        */
-+                       pages_for_compaction <<= (zone->compact_defer_shift - 1);
-        }
-        inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
-        if (nr_swap_pages > 0)
-                inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
-
-
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/infiniband/hw/amso1100/c2_rnic.c b/drivers/infiniband/hw/amso1100/c2_rnic.c
+index 8c81992..b80867e 100644
+--- a/drivers/infiniband/hw/amso1100/c2_rnic.c
++++ b/drivers/infiniband/hw/amso1100/c2_rnic.c
+@@ -439,7 +439,7 @@ static int c2_rnic_close(struct c2_dev *c2dev)
+ 
+ /*
+  * Called by c2_probe to initialize the RNIC. This principally
+- * involves initalizing the various limits and resouce pools that
++ * involves initalizing the various limits and resource pools that
+  * comprise the RNIC instance.
+  */
+ int __devinit c2_rnic_init(struct c2_dev *c2dev)
+diff --git a/drivers/infiniband/hw/cxgb3/iwch_cm.c b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+index 77b6b18..aaf88ef9 100644
+--- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+@@ -1680,7 +1680,7 @@ static int close_con_rpl(struct t3cdev *tdev, struct sk_buff *skb, void *ctx)
+  * T3A does 3 things when a TERM is received:
+  * 1) send up a CPL_RDMA_TERMINATE message with the TERM packet
+  * 2) generate an async event on the QP with the TERMINATE opcode
+- * 3) post a TERMINATE opcde cqe into the associated CQ.
++ * 3) post a TERMINATE opcode cqe into the associated CQ.
+  *
+  * For (1), we save the message in the qp for later consumer consumption.
+  * For (2), we move the QP into TERMINATE, post a QP event and disconnect.
+diff --git a/drivers/infiniband/hw/qib/qib_sd7220.c b/drivers/infiniband/hw/qib/qib_sd7220.c
+index a322d51..50a8a0d 100644
+--- a/drivers/infiniband/hw/qib/qib_sd7220.c
++++ b/drivers/infiniband/hw/qib/qib_sd7220.c
+@@ -372,7 +372,7 @@ static void qib_sd_trimdone_monitor(struct qib_devdata *dd,
+ 		/* Read CTRL reg for each channel to check TRIMDONE */
+ 		if (baduns & (1 << chn)) {
+ 			qib_dev_err(dd,
+-				"Reseting TRIMDONE on chn %d (%s)\n",
++				"Resetting TRIMDONE on chn %d (%s)\n",
+ 				chn, where);
+ 			ret = qib_sd7220_reg_mod(dd, IB_7220_SERDES,
+ 				IB_CTRL2(chn), 0x10, 0x10);
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index 7a0ce8d..9e1449f 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1469,7 +1469,7 @@ static void srpt_handle_send_comp(struct srpt_rdma_ch *ch,
+  *
+  * XXX: what is now target_execute_cmd used to be asynchronous, and unmapping
+  * the data that has been transferred via IB RDMA had to be postponed until the
+- * check_stop_free() callback.  None of this is nessecary anymore and needs to
++ * check_stop_free() callback.  None of this is necessary anymore and needs to
+  * be cleaned up.
+  */
+ static void srpt_handle_rdma_comp(struct srpt_rdma_ch *ch,
 -- 
-Kind regards,
-Minchan Kim
+1.7.12.rc1.37.gb1d9b1d
+
