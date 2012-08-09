@@ -1,57 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031138Ab2HIPho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:37:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031060Ab2HIPhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:37:42 -0400
-Message-ID: <5023D8D1.3060604@redhat.com>
-Date: Thu, 09 Aug 2012 18:35:45 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1031150Ab2HIPiF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:38:05 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:9018 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031102Ab2HIPh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:37:57 -0400
+X-IronPort-AV: E=Sophos;i="4.77,740,1336348800"; 
+   d="scan'208";a="13934946"
+Date: Thu, 9 Aug 2012 16:37:24 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Dave Martin <dave.martin@linaro.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 02/23] xen/arm: hypercalls
+In-Reply-To: <20120808124111.GB2134@linaro.org>
+Message-ID: <alpine.DEB.2.02.1208091046330.21096@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1208061428060.4645@kaball.uk.xensource.com> <1344263246-28036-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120808124111.GB2134@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>, mst@redhat.com, mashirle@us.ibm.com,
-        krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 3/5] virtio: intorduce an API to set affinity
- for a virtqueue
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-4-git-send-email-jasowang@redhat.com> <5023D3A1.8040102@redhat.com>
-In-Reply-To: <5023D3A1.8040102@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 06:13 PM, Paolo Bonzini wrote:
-> Il 05/07/2012 12:29, Jason Wang ha scritto:
->> Sometimes, virtio device need to configure irq affiniry hint to maximize the
->> performance. Instead of just exposing the irq of a virtqueue, this patch
->> introduce an API to set the affinity for a virtqueue.
->> 
->> The api is best-effort, the affinity hint may not be set as expected due to
->> platform support, irq sharing or irq type. Currently, only pci method were
->> implemented and we set the affinity according to:
->> 
->> - if device uses INTX, we just ignore the request
->> - if device has per vq vector, we force the affinity hint
->> - if the virtqueues share MSI, make the affinity OR over all affinities
->>  requested
->> 
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On Wed, 8 Aug 2012, Dave Martin wrote:
+> On Mon, Aug 06, 2012 at 03:27:05PM +0100, Stefano Stabellini wrote:
+> > Use r12 to pass the hypercall number to the hypervisor.
+> > 
+> > We need a register to pass the hypercall number because we might not
+> > know it at compile time and HVC only takes an immediate argument.
+> > 
+> > Among the available registers r12 seems to be the best choice because it
+> > is defined as "intra-procedure call scratch register".
+> > 
+> > Use the ISS to pass an hypervisor specific tag.
+> > 
+> > Changes in v2:
+> > - define an HYPERCALL macro for 5 arguments hypercall wrappers, even if
+> > at the moment is unused;
+> > - use ldm instead of pop;
+> > - fix up comments.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/include/asm/xen/hypercall.h |   50 ++++++++++++++++
+> >  arch/arm/xen/Makefile                |    2 +-
+> >  arch/arm/xen/hypercall.S             |  106 ++++++++++++++++++++++++++++++++++
+> >  3 files changed, 157 insertions(+), 1 deletions(-)
+> >  create mode 100644 arch/arm/include/asm/xen/hypercall.h
+> >  create mode 100644 arch/arm/xen/hypercall.S
 > 
-> It looks like both I and Jason will need these patches during the 3.7
-> merge window, and from different trees (net-next vs. scsi).  How do we
-> synchronize?
+> [...]
+> 
+> > diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
+> > new file mode 100644
+> > index 0000000..074f5ed
+> > --- /dev/null
+> > +++ b/arch/arm/xen/hypercall.S
+> > @@ -0,0 +1,106 @@
+> > +/******************************************************************************
+> > + * hypercall.S
+> > + *
+> > + * Xen hypercall wrappers
+> > + *
+> > + * Stefano Stabellini <stefano.stabellini@eu.citrix.com>, Citrix, 2012
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License version 2
+> > + * as published by the Free Software Foundation; or, when distributed
+> > + * separately from the Linux kernel or incorporated into other
+> > + * software packages, subject to the following license:
+> > + *
+> > + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> > + * of this source file (the "Software"), to deal in the Software without
+> > + * restriction, including without limitation the rights to use, copy, modify,
+> > + * merge, publish, distribute, sublicense, and/or sell copies of the Software,
+> > + * and to permit persons to whom the Software is furnished to do so, subject to
+> > + * the following conditions:
+> > + *
+> > + * The above copyright notice and this permission notice shall be included in
+> > + * all copies or substantial portions of the Software.
+> > + *
+> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> > + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> > + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> > + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> > + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> > + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+> > + * IN THE SOFTWARE.
+> > + */
+> > +
+> > +/*
+> > + * The Xen hypercall calling convention is very similar to the ARM
+> > + * procedure calling convention: the first paramter is passed in r0, the
+> > + * second in r1, the third in r2 and the fourth in r3. Considering that
+> > + * Xen hypercalls have 5 arguments at most, the fifth paramter is passed
+> > + * in r4, differently from the procedure calling convention of using the
+> > + * stack for that case.
+> > + *
+> > + * The hypercall number is passed in r12.
+> > + *
+> > + * The return value is in r0.
+> > + *
+> > + * The hvc ISS is required to be 0xEA1, that is the Xen specific ARM
+> > + * hypercall tag.
+> > + */
+> > +
+> > +#include <linux/linkage.h>
+> > +#include <asm/assembler.h>
+> > +#include <xen/interface/xen.h>
+> > +
+> > +
+> > +/* HVC 0xEA1 */
+> > +#ifdef CONFIG_THUMB2_KERNEL
+> > +#define xen_hvc .word 0xf7e08ea1
+> > +#else
+> > +#define xen_hvc .word 0xe140ea71
+> > +#endif
+> 
+> Consider using my opcode injection helpers patch for this (see
+> separate repost: [PATCH v2 REPOST 0/4] ARM: opcodes: Facilitate custom
+> opcode injection), assuming that nobody objects to it.  This should mean
+> that the right opcodes get generated when building a kernel for a big-
+> endian target for example.
+> 
+> I believe the __HVC(imm) macro which I put in <asm/opcodes-virt.h> as an
+> example should do what you need in this case.
 
-Get one of them to promise not to rebase, merge it, and base your
-patches on top of the merge.
+Sure I can do that. Maybe I'll add another patch at the end of my series
+to replace xen_hvc with __HVC(0xEA1), so that it remains independent
+from your series.
+I have learned through experience that avoiding cross patch series
+dependencies help to reduce the amount of headaches during merge windows
+:)
 
--- 
-error compiling committee.c: too many arguments to function
+
+> > +
+> > +#define HYPERCALL_SIMPLE(hypercall)		\
+> > +ENTRY(HYPERVISOR_##hypercall)			\
+> > +	mov r12, #__HYPERVISOR_##hypercall;	\
+> > +	xen_hvc;							\
+> > +	mov pc, lr;							\
+> > +ENDPROC(HYPERVISOR_##hypercall)
+> > +
+> > +#define HYPERCALL0 HYPERCALL_SIMPLE
+> > +#define HYPERCALL1 HYPERCALL_SIMPLE
+> > +#define HYPERCALL2 HYPERCALL_SIMPLE
+> > +#define HYPERCALL3 HYPERCALL_SIMPLE
+> > +#define HYPERCALL4 HYPERCALL_SIMPLE
+> > +
+> > +#define HYPERCALL5(hypercall)			\
+> > +ENTRY(HYPERVISOR_##hypercall)			\
+> > +	stmdb sp!, {r4}						\
+> > +	ldr r4, [sp, #4]					\
+> > +	mov r12, #__HYPERVISOR_##hypercall;	\
+> > +	xen_hvc								\
+> > +	ldm sp!, {r4}						\
+> > +	mov pc, lr							\
+> > +ENDPROC(HYPERVISOR_##hypercall)
+> > +
+> > +                .text
+> > +
+> > +HYPERCALL2(xen_version);
+> > +HYPERCALL3(console_io);
+> > +HYPERCALL3(grant_table_op);
+> > +HYPERCALL2(sched_op);
+> > +HYPERCALL2(event_channel_op);
+> > +HYPERCALL2(hvm_op);
+> > +HYPERCALL2(memory_op);
+> > +HYPERCALL2(physdev_op);
+> > +
+> > +ENTRY(privcmd_call)
+> > +	stmdb sp!, {r4}
+> > +	mov r12, r0
+> > +	mov r0, r1
+> > +	mov r1, r2
+> > +	mov r2, r3
+> > +	ldr r3, [sp, #8]
+> > +	ldr r4, [sp, #4]
+> > +	xen_hvc
+> > +	ldm sp!, {r4}
+> > +	mov pc, lr
+> 
+> Note that the preferred entry/exit sequences in such cases are:
+> 
+> 	stmfd	sp!, {r4,lr}
+> 	...
+> 	ldmfd	sp!, {r4,pc}
+> 
+> ...but it works either way.  I would bother to change it unless you
+> have other changes to make too.
+
+Wouldn't this needlessly save and restore one more register (lr) to the
+stack?
+I would try to keep the hypercall wrappers as small as possible...
