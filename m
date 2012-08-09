@@ -1,373 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab2HIBcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:32:24 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62935 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab2HIBcX (ORCPT
+	id S1752442Ab2HIBgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:36:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52501 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2HIBg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:32:23 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-63-502313259280
-Date: Thu, 9 Aug 2012 10:33:58 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] mm: compaction: Capture a suitable high-order page
- immediately when it is made available
-Message-ID: <20120809013358.GA18106@bbox>
-References: <1344452924-24438-1-git-send-email-mgorman@suse.de>
- <1344452924-24438-4-git-send-email-mgorman@suse.de>
+	Wed, 8 Aug 2012 21:36:29 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-bc-5023141b199a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v5 5/5] perf script: Add event_analyzing_sample.py as a sample for general event handling
+References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
+	<1344419875-21665-6-git-send-email-feng.tang@intel.com>
+Date: Thu, 09 Aug 2012 10:30:34 +0900
+In-Reply-To: <1344419875-21665-6-git-send-email-feng.tang@intel.com> (Feng
+	Tang's message of "Wed, 8 Aug 2012 17:57:55 +0800")
+Message-ID: <87ipcsyhqd.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344452924-24438-4-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+On Wed,  8 Aug 2012 17:57:55 +0800, Feng Tang wrote:
+> Currently only trace point events are supported in perf/python script,
+> the first 3 patches of this serie add the support for all types of
 
-Just one questoin below.
+s/serie/series/
 
-On Wed, Aug 08, 2012 at 08:08:42PM +0100, Mel Gorman wrote:
-> While compaction is migrating pages to free up large contiguous blocks for
-> allocation it races with other allocation requests that may steal these
-> blocks or break them up. This patch alters direct compaction to capture a
-> suitable free page as soon as it becomes available to reduce this race. It
-> uses similar logic to split_free_page() to ensure that watermarks are
-> still obeyed.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+> events. This script is just a simple sample to show how to gather the
+> basic information of the events and analyze them.
+>
+> This script will create one object for each event sample and insert
+> them into a table in a database, then leverage the simple SQL commands
+> to sort/group them. User can modify or write their brand new functions
+> according to their specific requirment.
+
+s/requirment/requirement/
+
+>
+> Here is the sample of how to use the script:
+> feng@feng-i7:/dev/shm$perf record -a tree
+> feng@feng-i7:/dev/shm$perf script -s process_event.py
+
+s/process_event/event_analyzing_sample/
+
+>
+> ---------------------------------
+> There is 100 records in gen_events table
+> Statistics about the general events grouped by thread/symbol/dso:
+>
+>             comm   number         histgram
+> ==========================================
+>          swapper       56     ######
+>             tree       20     #####
+>             perf       10     ####
+>             sshd        8     ####
+>      kworker/7:2        4     ###
+>      ksoftirqd/7        1     #
+>  plugin-containe        1     #
+>
+>                           symbol   number         histgram
+> ==========================================================
+>            native_write_msr_safe       40     ######
+>                   __lock_acquire        8     ####
+>              ftrace_graph_caller        4     ###
+>            prepare_ftrace_return        4     ###
+>                       intel_idle        3     ##
+>               native_sched_clock        3     ##
+>                   Unknown_symbol        2     ##
+>                       do_softirq        2     ##
+>                     lock_release        2     ##
+>            lock_release_holdtime        2     ##
+>                trace_graph_entry        2     ##
+>                         _IO_putc        1     #
+>                   __d_lookup_rcu        1     #
+>                       __do_fault        1     #
+>                       __schedule        1     #
+>                   _raw_spin_lock        1     #
+>                        delay_tsc        1     #
+>              generic_exec_single        1     #
+>                 generic_fillattr        1     #
+>
+>                                      dso   number         histgram
+> ==================================================================
+>                        [kernel.kallsyms]       95     #######
+>                      /lib/libc-2.12.1.so        5     ###
+>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
 > ---
->  include/linux/compaction.h |    4 +--
->  include/linux/mm.h         |    1 +
->  mm/compaction.c            |   71 +++++++++++++++++++++++++++++++++++++-------
->  mm/internal.h              |    1 +
->  mm/page_alloc.c            |   63 +++++++++++++++++++++++++++++----------
->  5 files changed, 111 insertions(+), 29 deletions(-)
-> 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 51a90b7..5673459 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -22,7 +22,7 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
->  extern int fragmentation_index(struct zone *zone, unsigned int order);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask,
-> -			bool sync);
-> +			bool sync, struct page **page);
->  extern int compact_pgdat(pg_data_t *pgdat, int order);
->  extern unsigned long compaction_suitable(struct zone *zone, int order);
->  
-> @@ -64,7 +64,7 @@ static inline bool compaction_deferred(struct zone *zone, int order)
->  #else
->  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
-> -			bool sync)
-> +			bool sync, struct page **page)
->  {
->  	return COMPACT_CONTINUE;
->  }
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index b36d08c..0812e86 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -454,6 +454,7 @@ void put_pages_list(struct list_head *pages);
->  
->  void split_page(struct page *page, unsigned int order);
->  int split_free_page(struct page *page);
-> +int capture_free_page(struct page *page, int alloc_order, int migratetype);
->  
->  /*
->   * Compound pages have a destructor function.  Provide a
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 95ca967..63af8d2 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -50,6 +50,41 @@ static inline bool migrate_async_suitable(int migratetype)
->  	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
->  }
->  
-> +static void compact_capture_page(struct compact_control *cc)
-> +{
-> +	unsigned long flags;
-> +	int mtype;
-> +
-> +	if (!cc->page || *cc->page)
-> +		return;
-> +
-> +	/* Speculatively examine the free lists without zone lock */
-> +	for (mtype = 0; mtype < MIGRATE_PCPTYPES; mtype++) {
-> +		int order;
-> +		for (order = cc->order; order < MAX_ORDER; order++) {
-> +			struct page *page;
-> +			struct free_area *area;
-> +			area = &(cc->zone->free_area[order]);
-> +			if (list_empty(&area->free_list[mtype]))
-> +				continue;
-> +
-> +			/* Take the lock and attempt capture of the page */
-> +			spin_lock_irqsave(&cc->zone->lock, flags);
-> +			if (!list_empty(&area->free_list[mtype])) {
-> +				page = list_entry(area->free_list[mtype].next,
-> +							struct page, lru);
-> +				if (capture_free_page(page, cc->order, mtype)) {
-> +					spin_unlock_irqrestore(&cc->zone->lock,
-> +									flags);
-> +					*cc->page = page;
-> +					return;
-> +				}
-> +			}
-> +			spin_unlock_irqrestore(&cc->zone->lock, flags);
-> +		}
-> +	}
-> +}
-> +
->  /*
->   * Isolate free pages onto a private freelist. Caller must hold zone->lock.
->   * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-> @@ -561,7 +596,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  static int compact_finished(struct zone *zone,
->  			    struct compact_control *cc)
->  {
-> -	unsigned int order;
->  	unsigned long watermark;
->  
->  	if (fatal_signal_pending(current))
-> @@ -586,14 +620,22 @@ static int compact_finished(struct zone *zone,
->  		return COMPACT_CONTINUE;
->  
->  	/* Direct compactor: Is a suitable page free? */
-> -	for (order = cc->order; order < MAX_ORDER; order++) {
-> -		/* Job done if page is free of the right migratetype */
-> -		if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
-> -			return COMPACT_PARTIAL;
-> -
-> -		/* Job done if allocation would set block type */
-> -		if (order >= pageblock_order && zone->free_area[order].nr_free)
-> +	if (cc->page) {
-> +		/* Was a suitable page captured? */
-> +		if (*cc->page)
->  			return COMPACT_PARTIAL;
-> +	} else {
-> +		unsigned int order;
-> +		for (order = cc->order; order < MAX_ORDER; order++) {
-> +			struct free_area *area = &zone->free_area[cc->order];
-> +			/* Job done if page is free of the right migratetype */
-> +			if (!list_empty(&area->free_list[cc->migratetype]))
-> +				return COMPACT_PARTIAL;
-> +
-> +			/* Job done if allocation would set block type */
-> +			if (cc->order >= pageblock_order && area->nr_free)
-> +				return COMPACT_PARTIAL;
-> +		}
->  	}
->  
->  	return COMPACT_CONTINUE;
-> @@ -708,6 +750,10 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  				goto out;
->  			}
->  		}
-> +
-> +		/* Capture a page now if it is a suitable size */
+>  .../perf/scripts/python/event_analyzing_sample.py  |  193 ++++++++++++++++++++
+>  1 files changed, 193 insertions(+), 0 deletions(-)
+>  create mode 100644 tools/perf/scripts/python/event_analyzing_sample.py
+>
+> diff --git a/tools/perf/scripts/python/event_analyzing_sample.py b/tools/perf/scripts/python/event_analyzing_sample.py
+> new file mode 100644
+> index 0000000..46f05aa
+> --- /dev/null
+> +++ b/tools/perf/scripts/python/event_analyzing_sample.py
+> @@ -0,0 +1,193 @@
+> +# process_event.py: general event handler in python
 
-Why do we capture only when we migrate MIGRATE_MOVABLE type?
-If you have a reasone, it should have been added as comment.
+s/process_event/event_analyzing_sample/
 
-> +		if (cc->migratetype == MIGRATE_MOVABLE)
-> +			compact_capture_page(cc);
->  	}
->  
->  out:
-> @@ -720,7 +766,7 @@ out:
->  
->  static unsigned long compact_zone_order(struct zone *zone,
->  				 int order, gfp_t gfp_mask,
-> -				 bool sync)
-> +				 bool sync, struct page **page)
->  {
->  	struct compact_control cc = {
->  		.nr_freepages = 0,
-> @@ -729,6 +775,7 @@ static unsigned long compact_zone_order(struct zone *zone,
->  		.migratetype = allocflags_to_migratetype(gfp_mask),
->  		.zone = zone,
->  		.sync = sync,
-> +		.page = page,
->  	};
->  	INIT_LIST_HEAD(&cc.freepages);
->  	INIT_LIST_HEAD(&cc.migratepages);
-> @@ -750,7 +797,7 @@ int sysctl_extfrag_threshold = 500;
->   */
->  unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
-> -			bool sync)
-> +			bool sync, struct page **page)
->  {
->  	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
->  	int may_enter_fs = gfp_mask & __GFP_FS;
-> @@ -770,7 +817,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  								nodemask) {
->  		int status;
->  
-> -		status = compact_zone_order(zone, order, gfp_mask, sync);
-> +		status = compact_zone_order(zone, order, gfp_mask, sync, page);
->  		rc = max(status, rc);
->  
->  		/* If a normal allocation would succeed, stop compacting */
-> @@ -825,6 +872,7 @@ int compact_pgdat(pg_data_t *pgdat, int order)
->  	struct compact_control cc = {
->  		.order = order,
->  		.sync = false,
-> +		.page = NULL,
->  	};
->  
->  	return __compact_pgdat(pgdat, &cc);
-> @@ -835,6 +883,7 @@ static int compact_node(int nid)
->  	struct compact_control cc = {
->  		.order = -1,
->  		.sync = true,
-> +		.page = NULL,
->  	};
->  
->  	return __compact_pgdat(NODE_DATA(nid), &cc);
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 2ba87fb..9156714 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -124,6 +124,7 @@ struct compact_control {
->  	int order;			/* order a direct compactor needs */
->  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
->  	struct zone *zone;
-> +	struct page **page;		/* Page captured of requested size */
->  };
->  
->  unsigned long
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 4a4f921..adc3aa8 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1374,16 +1374,11 @@ void split_page(struct page *page, unsigned int order)
->  }
->  
->  /*
-> - * Similar to split_page except the page is already free. As this is only
-> - * being used for migration, the migratetype of the block also changes.
-> - * As this is called with interrupts disabled, the caller is responsible
-> - * for calling arch_alloc_page() and kernel_map_page() after interrupts
-> - * are enabled.
-> - *
-> - * Note: this is probably too low level an operation for use in drivers.
-> - * Please consult with lkml before using this in your driver.
-> + * Similar to the split_page family of functions except that the page
-> + * required at the given order and being isolated now to prevent races
-> + * with parallel allocators
->   */
-> -int split_free_page(struct page *page)
-> +int capture_free_page(struct page *page, int alloc_order, int migratetype)
->  {
->  	unsigned int order;
->  	unsigned long watermark;
-> @@ -1405,10 +1400,11 @@ int split_free_page(struct page *page)
->  	rmv_page_order(page);
->  	__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
->  
-> -	/* Split into individual pages */
-> -	set_page_refcounted(page);
-> -	split_page(page, order);
-> +	if (alloc_order != order)
-> +		expand(zone, page, alloc_order, order,
-> +			&zone->free_area[order], migratetype);
->  
-> +	/* Set the pageblock if the captured page is at least a pageblock */
->  	if (order >= pageblock_order - 1) {
->  		struct page *endpage = page + (1 << order) - 1;
->  		for (; page < endpage; page += pageblock_nr_pages) {
-> @@ -1419,7 +1415,35 @@ int split_free_page(struct page *page)
->  		}
->  	}
->  
-> -	return 1 << order;
-> +	return 1UL << order;
-> +}
-> +
-> +/*
-> + * Similar to split_page except the page is already free. As this is only
-> + * being used for migration, the migratetype of the block also changes.
-> + * As this is called with interrupts disabled, the caller is responsible
-> + * for calling arch_alloc_page() and kernel_map_page() after interrupts
-> + * are enabled.
-> + *
-> + * Note: this is probably too low level an operation for use in drivers.
-> + * Please consult with lkml before using this in your driver.
-> + */
-> +int split_free_page(struct page *page)
-> +{
-> +	unsigned int order;
-> +	int nr_pages;
-> +
-> +	BUG_ON(!PageBuddy(page));
-> +	order = page_order(page);
-> +
-> +	nr_pages = capture_free_page(page, order, 0);
-> +	if (!nr_pages)
-> +		return 0;
-> +
-> +	/* Split into individual pages */
-> +	set_page_refcounted(page);
-> +	split_page(page, order);
-> +	return nr_pages;
->  }
->  
->  /*
-> @@ -2065,7 +2089,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  	bool *deferred_compaction,
->  	unsigned long *did_some_progress)
->  {
-> -	struct page *page;
-> +	struct page *page = NULL;
->  
->  	if (!order)
->  		return NULL;
-> @@ -2077,10 +2101,16 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  
->  	current->flags |= PF_MEMALLOC;
->  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
-> -						nodemask, sync_migration);
-> +					nodemask, sync_migration, &page);
->  	current->flags &= ~PF_MEMALLOC;
-> -	if (*did_some_progress != COMPACT_SKIPPED) {
->  
-> +	/* If compaction captured a page, prep and use it */
-> +	if (page) {
-> +		prep_new_page(page, order, gfp_mask);
-> +		goto got_page;
-> +	}
-> +
-> +	if (*did_some_progress != COMPACT_SKIPPED) {
->  		/* Page migration frees to the PCP lists but we want merging */
->  		drain_pages(get_cpu());
->  		put_cpu();
-> @@ -2090,6 +2120,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
->  				alloc_flags, preferred_zone,
->  				migratetype);
->  		if (page) {
-> +got_page:
->  			preferred_zone->compact_considered = 0;
->  			preferred_zone->compact_defer_shift = 0;
->  			if (order >= preferred_zone->compact_order_failed)
-> -- 
-> 1.7.9.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> +#
+> +# Current perf report is alreay very powerful with the anotation integrated,
 
--- 
-Kind regards,
-Minchan Kim
+s/alreay/already/  s/anotation/annotation/
+
+> +# and this script is not trying to be as powerful as perf report, but
+> +# providing end user/developer a flexible way to analyze the events other
+> +# than trace points.
+> +#
+> +# The 2 database related functions in this script just show how to gather
+> +# the basic information, and users can modify and write their own functions
+> +# according to their specific requirment.
+
+s/requirment/requirement/
+
+> +#
+> +# The first sample "show_general_events" just does a baisc grouping for all
+
+s/sample/function/  s/baisc/basic/
+
+> +# generic events with the help of sqlite, and the 2nd one "show_pebs_ll" is
+> +# for a x86 HW PMU event: PEBS with load latency data.
+> +#
+> +
+> +import os
+> +import sys
+> +import math
+> +import struct
+> +import sqlite3
+> +
+> +sys.path.append(os.environ['PERF_EXEC_PATH'] + \
+> +        '/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
+> +
+> +from perf_trace_context import *
+> +from EventClass import *
+> +
+> +#
+> +# If the perf.data has a big number of samples, then the insert operation
+> +# will be very time consuming (about 10+ minutes for 10000 samples) if the
+> +# .db database is on disk. Move the .db file to RAM based FS to speedup
+> +# the handling, which will cut the time down to several seconds.
+> +#
+> +con = sqlite3.connect("/dev/shm/perf.db")
+> +con.isolation_level = None
+> +
+> +def trace_begin():
+> +	print "In trace_begin:\n"
+
+It seems it's not aligned with other statements, and even not needed at
+all. Does it work?
+
+
+> +
+> +        #
+> +        # Will create several tables at the start, pebs_ll is for PEBS data with
+> +        # load latency info, while gen_events is for general event.
+> +        #
+> +        con.execute("""
+> +                create table if not exists gen_events (
+> +                        name text,
+> +                        symbol text,
+> +                        comm text,
+> +                        dso text
+> +                );""")
+> +        con.execute("""
+> +                create table if not exists pebs_ll (
+> +                        name text,
+> +                        symbol text,
+> +                        comm text,
+> +                        dso text,
+> +                        flags integer,
+> +                        ip integer,
+> +                        status integer,
+> +                        dse integer,
+> +                        dla integer,
+> +                        lat integer
+> +                );""")
+> +
+> +#
+> +# Create and insert event object to a database so that user could
+> +# do more analysis with simple database commands.
+> +#
+> +def process_event(param_dict):
+> +        event_attr = param_dict["attr"]
+> +        sample     = param_dict["sample"]
+> +        raw_buf    = param_dict["raw_buf"]
+> +        comm       = param_dict["comm"]
+> +        name       = param_dict["ev_name"]
+> +
+> +        # Symbol and dso info are not always resolved
+> +        if (param_dict.has_key("dso")):
+> +                dso = param_dict["dso"]
+> +        else:
+> +                dso = "Unknown_dso"
+> +
+> +        if (param_dict.has_key("symbol")):
+> +                symbol = param_dict["symbol"]
+> +        else:
+> +                symbol = "Unknown_symbol"
+> +
+> +        # Creat the event object and insert it to the right table in database
+> +        event = create_event(name, comm, dso, symbol, raw_buf)
+> +        insert_db(event)
+> +
+> +def insert_db(event):
+> +        if event.ev_type == EVTYPE_GENERIC:
+> +                con.execute("insert into gen_events values(?, ?, ?, ?)",
+> +                                (event.name, event.symbol, event.comm, event.dso))
+> +        elif event.ev_type == EVTYPE_PEBS_LL:
+> +                event.ip &= 0x7fffffffffffffff
+> +                event.dla &= 0x7fffffffffffffff
+> +                con.execute("insert into pebs_ll values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+> +                        (event.name, event.symbol, event.comm, event.dso, event.flags,
+> +                                event.ip, event.status, event.dse, event.dla, event.lat))
+> +
+> +def trace_end():
+> +	print "In trace_end:\n"
+
+Ditto.
+
+
+> +        # We show the basic info for the 2 type of event classes
+> +        show_general_events()
+> +        show_pebs_ll()
+> +        con.close()
+> +
+> +#
+> +# As the event number may be very big, so we can't use linear way
+> +# to show the histgram in real number, but use a log2 algorithm.
+> +#
+> +
+> +def num2sym(num):
+> +        # Each number will have at least one '#'
+> +        snum = '#' * (int)(math.log(num, 2) + 1)
+> +        return snum
+> +
+> +def show_general_events():
+> +
+> +        # Check the total record number in the table
+> +        count = con.execute("select count(*) from gen_events")
+> +        for t in count:
+> +                print "There is %d records in gen_events table" % t[0]
+> +                if t[0] == 0:
+> +                        return
+> +
+> +        print "Statistics about the general events grouped by thread/symbol/dso: \n"
+> +
+> +         # Group by thread
+> +        commq = con.execute("select comm, count(comm) from gen_events group by comm order by -count(comm)")
+> +        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
+> +        for row in commq:
+> +             print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +        # Group by symbol
+> +        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
+> +        symbolq = con.execute("select symbol, count(symbol) from gen_events group by symbol order by -count(symbol)")
+> +        for row in symbolq:
+> +             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +        # Group by dso
+> +        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histgram", "="*74)
+> +        dsoq = con.execute("select dso, count(dso) from gen_events group by dso order by -count(dso)")
+> +        for row in dsoq:
+> +             print "%40s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +#
+> +# This function just shows the basic info, and we could do more with the
+> +# data in the tables, like checking the function parameters when some
+> +# big latency events happen.
+> +#
+> +def show_pebs_ll():
+> +
+> +        count = con.execute("select count(*) from pebs_ll")
+> +        for t in count:
+> +                print "There is %d records in pebs_ll table" % t[0]
+> +                if t[0] == 0:
+> +                        return
+> +
+> +        print "Statistics about the PEBS Load Latency events grouped by thread/symbol/dse/latency: \n"
+> +
+> +        # Group by thread
+> +        commq = con.execute("select comm, count(comm) from pebs_ll group by comm order by -count(comm)")
+> +        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
+> +        for row in commq:
+> +             print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +        # Group by symbol
+> +        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
+> +        symbolq = con.execute("select symbol, count(symbol) from pebs_ll group by symbol order by -count(symbol)")
+> +        for row in symbolq:
+> +             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +        # Group by dse
+> +        dseq = con.execute("select dse, count(dse) from pebs_ll group by dse order by -count(dse)")
+> +        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histgram", "="*58)
+> +        for row in dseq:
+> +             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +        # Group by latency
+> +        latq = con.execute("select lat, count(lat) from pebs_ll group by lat order by lat")
+> +        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histgram", "="*58)
+> +        for row in latq:
+> +             print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
+> +
+> +def trace_unhandled(event_name, context, event_fields_dict):
+> +		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
+> +
+> +def print_header(event_name, cpu, secs, nsecs, pid, comm):
+> +	print "%-20s %5u %05u.%09u %8u %-20s " % \
+> +	(event_name, cpu, secs, nsecs, pid, comm),
+
+It seems this function was not called anywhere.
+
+Thanks,
+Namhyung
