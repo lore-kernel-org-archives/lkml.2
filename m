@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab2HIJZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:25:35 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50251 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab2HIJZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:25:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Todd Poynor <toddpoynor@google.com>
-Subject: Re: [PATCH] alarmtimer: implement minimum alarm interval for allowing suspend
-Date: Thu, 9 Aug 2012 11:31:27 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, arve@android.com
-References: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
-In-Reply-To: <1344497847-7161-1-git-send-email-toddpoynor@google.com>
+	id S1755916Ab2HIJ2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:28:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61719 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab2HIJ2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:28:15 -0400
+Date: Thu, 9 Aug 2012 11:27:56 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Chris Ball <cjb@laptop.org>, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdio: Fix PM_SLEEP related build warnings
+Message-ID: <20120809092756.GA1020@avionic-0098.mockup.avionic-design.de>
+References: <1344495413-7164-1-git-send-email-thierry.reding@avionic-design.de>
+ <201208091127.03119.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208091131.27362.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+Content-Disposition: inline
+In-Reply-To: <201208091127.03119.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:zT/ff9CdHTXsD3/SQSkcFCR1ZvBMTdtp9sK/uHNswx2
+ pjFBfTMzLbJksoSg8tNEpZuCRxjaXk9/vVTy6cuYf5x+unYXui
+ gUpWmFe/uXMfo6TKTRzD9me2wFRgMarQrna+1gSM0GURuUebbT
+ Y4OlEIC/ofhFdSQ7wpRgCDj6P1Y2QltAGY7GDePjVDzNjP8FV+
+ C75M1ASSd0BjdJtNeLkBIDJ0fiMoJp9RAXcJJ6Vwc9WQ4dWimN
+ dSfRU1FUUWbDSIiLGgR19iytj7+wIxJi9AH74CtIPnAKRXGCKO
+ jtsAKT9IYDPmQqQPLGotjUO3qMWbhGpz6cSEGlM+SYklPD6nBt
+ +d8bbcDULcpRcVV8L61jxfLHR0PTyhi8HZpYWk50NQHQaM0+m4
+ xSXyzJleuDzpu7A3yFupj1N1x6kYqR8JODZGyEIskiOk7Dh6eU
+ OAw89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 09, 2012, Todd Poynor wrote:
-> alarmtimer suspend return -EBUSY if the next alarm will fire in less
-> than 2 seconds.  This allows one RTC seconds tick to occur subsequent
-> to this check before the alarm wakeup time is set, ensuring the wakeup
-> time is still in the future (assuming the RTC does not tick one more
-> second prior to setting the alarm).
-> 
-> If suspend is rejected due to an imminent alarm, hold a wakeup source
-> for 2 seconds to process the alarm prior to reattempting suspend.
-> 
-> If setting the alarm incurs an -ETIME for an alarm set in the past,
-> or any other problem setting the alarm, abort suspend and hold a
-> wakelock for 1 second while the alarm is allowed to be serviced or
-> other hopefully transient conditions preventing the alarm clear up.
-> 
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
-> ---
->  kernel/time/alarmtimer.c |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-> index aa27d39..f979d85 100644
-> --- a/kernel/time/alarmtimer.c
-> +++ b/kernel/time/alarmtimer.c
-> @@ -46,6 +46,8 @@ static struct alarm_base {
->  static ktime_t freezer_delta;
->  static DEFINE_SPINLOCK(freezer_delta_lock);
->  
-> +static struct wakeup_source *ws;
-> +
->  #ifdef CONFIG_RTC_CLASS
->  /* rtc timer and device for setting alarm wakeups at suspend */
->  static struct rtc_timer		rtctimer;
-> @@ -250,6 +252,7 @@ static int alarmtimer_suspend(struct device *dev)
->  	unsigned long flags;
->  	struct rtc_device *rtc;
->  	int i;
-> +	int ret;
->  
->  	spin_lock_irqsave(&freezer_delta_lock, flags);
->  	min = freezer_delta;
-> @@ -279,8 +282,10 @@ static int alarmtimer_suspend(struct device *dev)
->  	if (min.tv64 == 0)
->  		return 0;
->  
-> -	/* XXX - Should we enforce a minimum sleep time? */
-> -	WARN_ON(min.tv64 < NSEC_PER_SEC);
-> +	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
-> +		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
-> +		return -EBUSY;
-> +	}
->  
->  	/* Setup an rtc timer to fire that far in the future */
->  	rtc_timer_cancel(rtc, &rtctimer);
-> @@ -288,9 +293,11 @@ static int alarmtimer_suspend(struct device *dev)
->  	now = rtc_tm_to_ktime(tm);
->  	now = ktime_add(now, min);
->  
-> -	rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
-> -
-> -	return 0;
-> +	/* Set alarm, if in the past reject suspend briefly to handle */
-> +	ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
-> +	if (ret < 0)
-> +		__pm_wakeup_event(ws, 1 * MSEC_PER_SEC);
 
-Why not just MSEC_PER_SEC?
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +	return ret;
->  }
->  #else
->  static int alarmtimer_suspend(struct device *dev)
-> @@ -821,6 +828,7 @@ static int __init alarmtimer_init(void)
->  		error = PTR_ERR(pdev);
->  		goto out_drv;
->  	}
-> +	ws = wakeup_source_register("alarmtimer");
->  	return 0;
->  
->  out_drv:
-> 
+On Thu, Aug 09, 2012 at 11:27:02AM +0200, Rafael J. Wysocki wrote:
+> On Thursday, August 09, 2012, Thierry Reding wrote:
+> > Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
+> > the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
+> > complain about them being unused.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> The pm_no_operation() thing is not necessary at all, AFAICT.  I'd just
+> remove it entirely. :-)
 
+I don't actually have a setup where I can test suspend/resume with this
+driver, but if you say so I can follow up with a patch that removes
+pm_no_operation(). It should work because many drivers without proper
+PM_SLEEP support do not specify .suspend() nor .resume() callbacks
+either.
+
+Thierry
+
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI4KcAAoJEN0jrNd/PrOhLjkP/AgpUObNA0zfD5YE1FWq6877
+mXhKka6tEFxjNfDUsmyPeaduXNit6elm7jkfejK46HsOSZsOta46Kn+4B7E3YgAo
+VCBXcCnJnhRdS9VGXsVmbDZAfNLAnTKTY1nYxfUeyvNNe0Sz/4LL0vLvtZ+09QkF
+ngidZX4pWEGdsz7O6WiS7e29riUfvmZtrmAINCAfNh/Oi5esqZEt3EsNmhtX2Stl
+Hvb2e6n5i9ecfnOJG7cAHM+SLBYpFcZGtEB3SeLmXqzQJ5XJg4uUqL/TL+5UX5WZ
+bZ96HkgwMysLuxUxJvvxYqjFoYoqD7mq5iB7e/ySMt56aUBCysFfF4/DGOLpEYVH
+IlUr2fiOAAaOIF8Sq2JUAVPMIkgFm4eHqFGpkv/xqKrDLMGfTXAsGqXBhTX5+vrq
+CNGibQqJFTVS3W2K/X4Ch7PVzWaQLW47+UTc1f+qRaIA/bDYtDzwcEKwTBdSWEkp
+wjhK5jwXTQqV3R6Gq9PKXhO1NFwgtdmUROCA2tU3n8wYqC6KABlbpXBOg4aXc5TW
+GT0dKUht/wDjphuS7xc0t8NfroyWQPamQML4NQM/m80LT4ipLhiVGo41ue6eoUSn
+SvelnZpwejquJXzkcxZSr5a5xpvstwGVDLnHh6U6NDPeBMjaevzttXQVDIy0C5JM
+7dyJEKP2pQCoyNQDNSsl
+=b1HL
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
