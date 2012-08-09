@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab2HIN7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:59:17 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:52415 "EHLO smtp.ispras.ru"
+	id S1030257Ab2HIN7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:59:20 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:52431 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932653Ab2HIN7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:59:13 -0400
+	id S932653Ab2HIN7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 09:59:18 -0400
 From: Marina Makienko <makienko@ispras.ru>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Marina Makienko <makienko@ispras.ru>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH 05/13] ide: Potential null pointer dereference in ide_raw_taskfile()
-Date: Thu,  9 Aug 2012 17:55:22 +0400
-Message-Id: <1344520529-19164-3-git-send-email-makienko@ispras.ru>
+Subject: [PATCH 11/13] ide: Potential null pointer dereference in idetape_queue_rw_tail()
+Date: Thu,  9 Aug 2012 17:55:28 +0400
+Message-Id: <1344520529-19164-9-git-send-email-makienko@ispras.ru>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
 References: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
@@ -34,24 +34,22 @@ Found by Linux Driver Verification project (linuxtesting.org).
 
 Signed-off-by: Marina Makienko <makienko@ispras.ru>
 ---
- drivers/ide/ide-taskfile.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/ide/ide-tape.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ide/ide-taskfile.c b/drivers/ide/ide-taskfile.c
-index 729428e..655d894 100644
---- a/drivers/ide/ide-taskfile.c
-+++ b/drivers/ide/ide-taskfile.c
-@@ -432,6 +432,10 @@ int ide_raw_taskfile(ide_drive_t *drive, struct ide_cmd *cmd, u8 *buf,
- 	int rw = !(cmd->tf_flags & IDE_TFLAG_WRITE) ? READ : WRITE;
+diff --git a/drivers/ide/ide-tape.c b/drivers/ide/ide-tape.c
+index ce8237d..c27b05c 100644
+--- a/drivers/ide/ide-tape.c
++++ b/drivers/ide/ide-tape.c
+@@ -853,6 +853,8 @@ static int idetape_queue_rw_tail(ide_drive_t *drive, int cmd, int size)
+ 	BUG_ON(size < 0 || size % tape->blk_size);
  
- 	rq = blk_get_request(drive->queue, rw, __GFP_WAIT);
-+
+ 	rq = blk_get_request(drive->queue, READ, __GFP_WAIT);
 +	if (!rq)
 +		return -EIO;
-+
- 	rq->cmd_type = REQ_TYPE_ATA_TASKFILE;
- 
- 	/*
+ 	rq->cmd_type = REQ_TYPE_SPECIAL;
+ 	rq->cmd[13] = cmd;
+ 	rq->rq_disk = tape->disk;
 -- 
 1.7.7
 
