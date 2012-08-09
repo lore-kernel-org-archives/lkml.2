@@ -1,295 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759771Ab2HIVva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:51:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759730Ab2HIVvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:51:16 -0400
-Date: Thu, 9 Aug 2012 23:51:01 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 15/19] sched: Implement home-node awareness
-Message-ID: <20120809215101.GK10459@redhat.com>
-References: <20120731191204.540691987@chello.nl>
- <20120731192809.247593041@chello.nl>
+	id S1759755Ab2HIVvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:51:38 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:30748 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759775Ab2HIVvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:51:36 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-160.messagelabs.com!1344549076!7888270!16
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/4] staging: comedi: adl_pci6208: split the digital i/o subdevice
+Date: Thu, 9 Aug 2012 14:51:26 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120731192809.247593041@chello.nl>
+Message-ID: <201208091451.26918.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:12:19PM +0200, Peter Zijlstra wrote:
-> @@ -2699,6 +2705,29 @@ select_task_rq_fair(struct task_struct *
->  	}
->  
->  	rcu_read_lock();
-> +	if (sched_feat_numa(NUMA_BIAS) && node != -1) {
-> +		int node_cpu;
-> +
-> +		node_cpu = cpumask_any_and(tsk_cpus_allowed(p), cpumask_of_node(node));
-> +		if (node_cpu >= nr_cpu_ids)
-> +			goto find_sd;
-> +
-> +		/*
-> +		 * For fork,exec find the idlest cpu in the home-node.
-> +		 */
-> +		if (sd_flag & (SD_BALANCE_FORK|SD_BALANCE_EXEC)) {
-> +			new_cpu = cpu = node_cpu;
-> +			sd = per_cpu(sd_node, cpu);
-> +			goto pick_idlest;
-> +		}
-> +
-> +		/*
-> +		 * For wake, pretend we were running in the home-node.
-> +		 */
-> +		prev_cpu = node_cpu;
-> +	}
-> +
-> +find_sd:
->  	for_each_domain(cpu, tmp) {
->  		if (!(tmp->flags & SD_LOAD_BALANCE))
->  			continue;
+The PCI-6208/6216 cards have 4 digital inputs and 4 digital outputs.
+These are currently being handled by an 8 channel COMEDI_SUBD_DIO
+subdevice in this driver. This causes the 4 digital outputs to
+appear as channels 0 thru 3 and the 4 digital inputs to appear as
+channels 4 thru 7. Userspace can only work out part thisby doing the
+COMEDI_INSNLIST ioctl with the INSN_CONFIG_DIO_QUERY instruction
+for each channel to determine the io direction.
 
-This won't work right. I allow fork/clone to go anywhere if there are
-more idle cpus. I won't limit to the idlest in the home node.
+Make things a bit cleaner for userspace by creating two subdevices
+instead. One for the 4 digital inputs and one for the 4 digital
+outputs. For both subdevices the channel number indicates the
+actual digital input/output signal.
 
-tsk->task_selected_nid with AutoNUMA is an hint, never an
-"enforcement" no matter if it's a wakeup or fork or execve. Idle cpus
-always gets priority over NUMA affinity. Not doing it, will regress
-performance instead of improving it.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci6208.c | 78 ++++++++++++++++------------
+ 1 file changed, 44 insertions(+), 34 deletions(-)
 
-The only way to get good performance is what AutoNUMA does:
+diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
+index 43e23e1..74695bb 100644
+--- a/drivers/staging/comedi/drivers/adl_pci6208.c
++++ b/drivers/staging/comedi/drivers/adl_pci6208.c
+@@ -125,46 +125,41 @@ static int pci6208_ao_rinsn(struct comedi_device *dev,
+ 	return insn->n;
+ }
+ 
+-static int pci6208_dio_insn_bits(struct comedi_device *dev,
+-				 struct comedi_subdevice *s,
+-				 struct comedi_insn *insn,
+-				 unsigned int *data)
++static int pci6208_di_insn_bits(struct comedi_device *dev,
++				struct comedi_subdevice *s,
++				struct comedi_insn *insn,
++				unsigned int *data)
+ {
+-	unsigned int mask = data[0] & PCI6208_DIO_DO_MASK;
++	unsigned int val;
++
++	val = inw(dev->iobase + PCI6208_DIO);
++	val = (val & PCI6208_DIO_DI_MASK) >> PCI6208_DIO_DI_SHIFT;
++
++	data[1] = val;
++
++	return insn->n;
++}
++
++static int pci6208_do_insn_bits(struct comedi_device *dev,
++				struct comedi_subdevice *s,
++				struct comedi_insn *insn,
++				unsigned int *data)
++{
++	unsigned int mask = data[0];
+ 	unsigned int bits = data[1];
+ 
+ 	if (mask) {
+ 		s->state &= ~mask;
+-		s->state |= bits & mask;
++		s->state |= (bits & mask);
+ 
+ 		outw(s->state, dev->iobase + PCI6208_DIO);
+ 	}
+ 
+-	s->state = inw(dev->iobase + PCI6208_DIO);
+ 	data[1] = s->state;
+ 
+ 	return insn->n;
+ }
+ 
+-static int pci6208_dio_insn_config(struct comedi_device *dev,
+-				   struct comedi_subdevice *s,
+-				   struct comedi_insn *insn,
+-				   unsigned int *data)
+-{
+-	int chan = CR_CHAN(insn->chanspec);
+-	unsigned int mask = 1 << chan;
+-
+-	switch (data[0]) {
+-	case INSN_CONFIG_DIO_QUERY:
+-		data[1] = (s->io_bits & mask) ? COMEDI_OUTPUT : COMEDI_INPUT;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	return insn->n;
+-}
+-
+ static const void *pci6208_find_boardinfo(struct comedi_device *dev,
+ 					  struct pci_dev *pcidev)
+ {
+@@ -185,6 +180,7 @@ static int pci6208_attach_pci(struct comedi_device *dev,
+ 	const struct pci6208_board *boardinfo;
+ 	struct pci6208_private *devpriv;
+ 	struct comedi_subdevice *s;
++	unsigned int val;
+ 	int ret;
+ 
+ 	comedi_set_hw_dev(dev, &pcidev->dev);
+@@ -208,7 +204,7 @@ static int pci6208_attach_pci(struct comedi_device *dev,
+ 	}
+ 	dev->iobase = pci_resource_start(pcidev, 2);
+ 
+-	ret = comedi_alloc_subdevices(dev, 2);
++	ret = comedi_alloc_subdevices(dev, 3);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -223,17 +219,31 @@ static int pci6208_attach_pci(struct comedi_device *dev,
+ 	s->insn_read	= pci6208_ao_rinsn;
+ 
+ 	s = dev->subdevices + 1;
+-	/* digital i/o subdevice */
+-	s->type		= COMEDI_SUBD_DIO;
+-	s->subdev_flags	= SDF_READABLE | SDF_WRITABLE;
+-	s->n_chan	= 8;
++	/* digital input subdevice */
++	s->type		= COMEDI_SUBD_DI;
++	s->subdev_flags	= SDF_READABLE;
++	s->n_chan	= 4;
+ 	s->maxdata	= 1;
+ 	s->range_table	= &range_digital;
+-	s->insn_bits	= pci6208_dio_insn_bits;
+-	s->insn_config	= pci6208_dio_insn_config;
++	s->insn_bits	= pci6208_di_insn_bits;
+ 
++	s = dev->subdevices + 2;
++	/* digital output subdevice */
++	s->type		= COMEDI_SUBD_DO;
++	s->subdev_flags	= SDF_WRITABLE;
++	s->n_chan	= 4;
++	s->maxdata	= 1;
++	s->range_table	= &range_digital;
++	s->insn_bits	= pci6208_do_insn_bits;
++
++	/*
++	 * Get the read back signals from the digital outputs
++	 * and save it as the initial state for the subdevice.
++	 */
++	val = inw(dev->iobase + PCI6208_DIO);
++	val = (val & PCI6208_DIO_DO_MASK) >> PCI6208_DIO_DO_SHIFT;
++	s->state	= val;
+ 	s->io_bits	= 0x0f;
+-	s->state	= inw(dev->iobase + PCI6208_DIO);
+ 
+ 	dev_info(dev->class_dev, "%s: %s, I/O base=0x%04lx\n",
+ 		dev->driver->driver_name, dev->board_name, dev->iobase);
+-- 
+1.7.11
 
-1) once in a while verify if tsk has a better node to go
-
-2) if yes, move it to the better node and set task_selected_nid
-
-3) in CFS during regular load balancing and idle balancing use
-   task_selected_nid as a _not_strict_ hint until 1) runs again
-
-> @@ -3092,6 +3124,23 @@ static void move_task(struct task_struct
->  	check_preempt_curr(env->dst_rq, p, 0);
->  }
->  
-> +static int task_numa_hot(struct task_struct *p, int from_cpu, int to_cpu)
-> +{
-> +	int from_dist, to_dist;
-> +	int node = tsk_home_node(p);
-> +
-> +	if (!sched_feat_numa(NUMA_HOT) || node == -1)
-> +		return 0; /* no node preference */
-> +
-> +	from_dist = node_distance(cpu_to_node(from_cpu), node);
-> +	to_dist = node_distance(cpu_to_node(to_cpu), node);
-> +
-> +	if (to_dist < from_dist)
-> +		return 0; /* getting closer is ok */
-
-Getting closer is not ok if 30% of the ram is in the current node, 70%
-is in the "home node" and "to_dist" has 0% of the ram. In short you're
-taking things into account that are almost irrelevant (distance) and
-ignoring the real important stuff to decide if you're improving the
-overall NUMA convergence or not.
-
-The objective of any CPU migration to different nodes has to be only a
-global overall improvement of numa convergence, not to move the local
-30% closer to the remote 70%, that's a regression in convergence if
-you end up with 15% here, 15% there and 70% there.
-
-You can take distance into account but only after you know the
-mm->mm_autonuma statistical data.
-
-> @@ -3177,6 +3226,7 @@ int can_migrate_task(struct task_struct 
->  	 */
->  
->  	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
-> +	tsk_cache_hot |= task_numa_hot(p, env->src_cpu, env->dst_cpu);
->  	if (!tsk_cache_hot ||
->  		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
->  #ifdef CONFIG_SCHEDSTATS
-> @@ -3202,11 +3252,11 @@ int can_migrate_task(struct task_struct 
->   *
->   * Called with both runqueues locked.
->   */
-> -static int move_one_task(struct lb_env *env)
-> +static int __move_one_task(struct lb_env *env)
->  {
->  	struct task_struct *p, *n;
->  
-> -	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
-> +	list_for_each_entry_safe(p, n, env->tasks, se.group_node) {
->  		if (throttled_lb_pair(task_group(p), env->src_rq->cpu, env->dst_cpu))
->  			continue;
->  
-> @@ -3225,6 +3275,21 @@ static int move_one_task(struct lb_env *
->  	return 0;
->  }
->  
-> +static int move_one_task(struct lb_env *env)
-> +{
-> +	if (sched_feat_numa(NUMA_PULL)) {
-> +		env->tasks = offnode_tasks(env->src_rq);
-> +		if (__move_one_task(env))
-> +			return 1;
-> +	}
-> +
-> +	env->tasks = &env->src_rq->cfs_tasks;
-> +	if (__move_one_task(env))
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
->  static unsigned long task_h_load(struct task_struct *p);
->  
->  static const unsigned int sched_nr_migrate_break = 32;
-> @@ -3238,7 +3303,6 @@ static const unsigned int sched_nr_migra
->   */
->  static int move_tasks(struct lb_env *env)
->  {
-> -	struct list_head *tasks = &env->src_rq->cfs_tasks;
->  	struct task_struct *p;
->  	unsigned long load;
->  	int pulled = 0;
-> @@ -3246,8 +3310,9 @@ static int move_tasks(struct lb_env *env
->  	if (env->imbalance <= 0)
->  		return 0;
->  
-> -	while (!list_empty(tasks)) {
-> -		p = list_first_entry(tasks, struct task_struct, se.group_node);
-> +again:
-> +	while (!list_empty(env->tasks)) {
-> +		p = list_first_entry(env->tasks, struct task_struct, se.group_node);
->  
->  		env->loop++;
->  		/* We've more or less seen every task there is, call it quits */
-> @@ -3258,7 +3323,7 @@ static int move_tasks(struct lb_env *env
->  		if (env->loop > env->loop_break) {
->  			env->loop_break += sched_nr_migrate_break;
->  			env->flags |= LBF_NEED_BREAK;
-> -			break;
-> +			goto out;
->  		}
->  
->  		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
-> @@ -3286,7 +3351,7 @@ static int move_tasks(struct lb_env *env
->  		 * the critical section.
->  		 */
->  		if (env->idle == CPU_NEWLY_IDLE)
-> -			break;
-> +			goto out;
->  #endif
->  
->  		/*
-> @@ -3294,13 +3359,20 @@ static int move_tasks(struct lb_env *env
->  		 * weighted load.
->  		 */
->  		if (env->imbalance <= 0)
-> -			break;
-> +			goto out;
->  
->  		continue;
->  next:
-> -		list_move_tail(&p->se.group_node, tasks);
-> +		list_move_tail(&p->se.group_node, env->tasks);
->  	}
->  
-> +	if (env->tasks == offnode_tasks(env->src_rq)) {
-> +		env->tasks = &env->src_rq->cfs_tasks;
-> +		env->loop = 0;
-> +		goto again;
-> +	}
-> +
-> +out:
->  	/*
->  	 * Right now, this is one of only two places move_task() is called,
->  	 * so we can safely collect move_task() stats here rather than
-> @@ -3447,6 +3519,11 @@ struct sd_lb_stats {
->  	unsigned int  busiest_group_weight;
->  
->  	int group_imb; /* Is there imbalance in this sd */
-> +#ifdef CONFIG_NUMA
-> +	struct sched_group *numa_group; /* group which has offnode_tasks */
-> +	unsigned long numa_group_weight;
-> +	unsigned long numa_group_running;
-> +#endif
->  };
->  
->  /*
-> @@ -3462,6 +3539,10 @@ struct sg_lb_stats {
->  	unsigned long group_weight;
->  	int group_imb; /* Is there an imbalance in the group ? */
->  	int group_has_capacity; /* Is there extra capacity in the group? */
-> +#ifdef CONFIG_NUMA
-> +	unsigned long numa_weight;
-> +	unsigned long numa_running;
-> +#endif
->  };
->  
->  /**
-> @@ -3490,6 +3571,117 @@ static inline int get_sd_load_idx(struct
->  	return load_idx;
->  }
->  
-> +#ifdef CONFIG_NUMA
-> +static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
-> +{
-> +	sgs->numa_weight += rq->offnode_weight;
-> +	sgs->numa_running += rq->offnode_running;
-> +}
-> +
-
-offnode weight is never increased in this patch, maybe the increase to
-numa_weight could be moved in later patches that increases
-offnode_weight.
-
-> +/*
-> + * Since the offnode lists are indiscriminate (they contain tasks for all other
-> + * nodes) it is impossible to say if there's any task on there that wants to
-> + * move towards the pulling cpu. Therefore select a random offnode list to pull
-> + * from such that eventually we'll try them all.
-> + */
-> +static inline bool pick_numa_rand(void)
-> +{
-> +	return get_random_int() & 1;
-> +}
-
-This is what you have to do to pick tasks. I think having to resort to
-the random generator to generate your algorithm input, shows had bad
-this really is.
-
-In comparison AutoNUMA never a single time _anywhere_ does anything in
-function of random. Try to find a single place in AutoNUMA where I
-take a random decision.
-
-AutoNUMA always takes decisions it is sure they will improve overall
-NUMA convergence.
-
-AutoNUMA because it does things incrementally, and it's not fully
-synchronous (leaves CFS alone with the hint for some period of time)
-will behave slightly different too, but when it kicks in, it is fully
-deterministic.
-
-
-The only way to create a converging algorithm without
-mm_autonuma/task_autonuma is by enforcing a overcommit_memory=2 model
-where you account perfectly everything and you decide where the memory
-is yourself and you can enforce it (no matter mlocks, tmpfs memory,
-slab, or whatever). That kind of real strict model will never happen,
-so you could try approximate it maybe making wild (sometime false)
-assumptions like pagecache is always freeable.
-
-But that's not what you're doing here. You're trying to solve the
-problem in an incremental way like AutoNUMA, so without recalculating
-the whole layout of the whole system at every page fault that
-allocates 4k and could require to rebalance and move everything by
-spilling something over a new node. Problem you lack enough
-information to solve it with the incremental algorithm, so it'll never
-work.
