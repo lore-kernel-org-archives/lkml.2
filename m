@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030262Ab2HIOHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:07:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61266 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2HIOHS (ORCPT
+	id S932868Ab2HIOJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:09:14 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39017 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2HIOJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:07:18 -0400
-Message-ID: <5023C410.9030708@gmail.com>
-Date: Thu, 09 Aug 2012 10:07:12 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: ebiederm@xmission.com, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.ariyasu@hp.com,
-        jan.ariyasu@gmail.com, nhorman@tuxdriver.com, tgraf@infradead.org,
-        xi.wang@gmail.com
-Subject: Re: [PATCH net-next 0/7] sctp: network namespace support Part 2:
- per net tunables
-References: <87mx27rig7.fsf@xmission.com> <87zk67q31q.fsf_-_@xmission.com> <87ipcud3ld.fsf_-_@xmission.com> <20120808.232058.1128673474849407813.davem@davemloft.net>
-In-Reply-To: <20120808.232058.1128673474849407813.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 9 Aug 2012 10:09:13 -0400
+Date: Thu, 9 Aug 2012 15:13:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Marina Makienko <makienko@ispras.ru>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH 03/13] ide: Potential null pointer dereference in
+ ide_queue_pc_tail()
+Message-ID: <20120809151342.2941f851@pyramind.ukuu.org.uk>
+In-Reply-To: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
+References: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 02:20 AM, David Miller wrote:
-> From: ebiederm@xmission.com (Eric W. Biederman)
-> Date: Tue, 07 Aug 2012 10:17:02 -0700
->
->> Since I am motivated to get things done, and since there has been much
->> grumbling about my patches not implementing tunables, I have added
->> tunable support on top of my last patchset.
->>
->> I have performed basic testing on the these patches and nothing
->> appears amis.
->>
->> The sm statemachine is a major tease as it has all of these association
->> and endpoint pointers in the common set of function parameters that turn
->> out to be NULL at the most inconvinient times.  So I added to the common
->> parameter list a struct net pointer, that is never NULL.
->
-> I like Eric's patch set and I'd like to apply it to net-next.
->
-> Vlad?
->
+On Thu,  9 Aug 2012 17:55:20 +0400
+Marina Makienko <makienko@ispras.ru> wrote:
 
+> The function blk_get_request() can return NULL in some cases. There are
+> checks on it if function is called with argumetns one of which is
+> GFP_ATOMIC/GFP_NOIO/etc. If system couldn't find request
+> blk_get_request() return NULL.
 
-I like these patches much more as well, but not done reviewing yet. 
-I'll try to finish the review tonight
-
--vlad
+drivers/ide is obsolete and scheduled for removal. I'm not sure messing
+with it is remotely useful at this point ?
