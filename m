@@ -1,441 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab2HIAk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:40:29 -0400
-Received: from exout102.netflix.com ([69.53.237.163]:42944 "EHLO
-	exout104.netflix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759426Ab2HIAk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:40:26 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024;d=netflix.com;
-  h=from:to:cc:subject:date:message-id:references:in-reply-to
-    :content-type:mime-version;
-  b=iH4XqOx8Ob2H4b28A5deKrHSRUZNid8/UkW6JAhKiUz/7zQcQsRQ+d1V7YJzGzPuMQtT7xWr
-    7DGg1T+Y/ioxzaDnaTyyjxSKrxIDlHSjDcdNh3wKL3yr2BdMShtybMiv8nxmoojUK3Ggarz9
-    dzCgaWvBTL/0LSsjjJA2oMY1JcE=
-From: Wesley Miaw <wmiaw@netflix.com>
-To: Milan Broz <mbroz@redhat.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?Windows-1252?Q?Will_Drewry=99?= <w@google.com>
-Subject: Re: [dm-devel] [PATCH v2 2/2] dm: verity support data device offset
- (Linux 3.4.7)
-Thread-Topic: [dm-devel] [PATCH v2 2/2] dm: verity support data device
- offset (Linux 3.4.7)
-Thread-Index: AQHNdceQq1EArTHW80uk0EvYgIqLrw==
-Date: Thu, 9 Aug 2012 00:40:23 +0000
-Message-ID: <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
-References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com>
- <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com>
- <5022CC99.30103@redhat.com>
- <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com>
- <5022D29B.9000402@redhat.com>
-In-Reply-To: <5022D29B.9000402@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.229.146]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558";
-	protocol="application/pgp-signature"; micalg=pgp-sha1
-MIME-Version: 1.0
+	id S1759429Ab2HIAnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:43:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11943 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab2HIAnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 20:43:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,735,1336374000"; 
+   d="scan'208";a="177761915"
+Message-ID: <1344473095.1682.641.camel@rui.sh.intel.com>
+Subject: Re: [PATCH] thermal: Fix potential NULL pointer accesses
+From: Zhang Rui <rui.zhang@intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 09 Aug 2012 08:44:55 +0800
+In-Reply-To: <1344404205-22861-1-git-send-email-linux@roeck-us.net>
+References: <1344404205-22861-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=windows-1252
+On 二, 2012-08-07 at 22:36 -0700, Guenter Roeck wrote:
+> The type parameter in thermal_zone_device_register and
+> thermal_cooling_device_register can be NULL, indicating that no sysfs attribute
+> for the type should be created. Only call strlen() and strcpy() on type if it is
+> not NULL.
+> 
+> This patch addresses Coverity #102180 and #102182: Dereference before null check
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-On Aug 8, 2012, at 1:56 PM, Milan Broz wrote:
+Acked-by: Zhang Rui <rui.zhang@intel.com>
 
-> On 08/08/2012 10:46 PM, Wesley Miaw wrote:
->=20
->> I did modify veritysetup on my own so the format and verify commands =
-will work with regular files on disk instead of having to mount through =
-loop devices.
->=20
-> Which veritysetup? In upstream (cryptsetup repository) it allocates =
-loop automatically.
-> (And for userspace verification it doesn't need loop at all.)
->=20
-> Anyway, please send a patch for userspace as well then ;-)
-
-This isn't as polished because I pretty much just added support to do =
-what I needed. I'm not sure if the LKML is the right place to post, so =
-let me know if I should send this somewhere else.
-
-Your previous email implied that veritysetup would need a way to =
-determine if the data offset option is supported; I did not modify =
-veritysetup to support this idea as I didn't need it.
-
-Thanks.
-
-From: Wesley Miaw <wmiaw@netflix.com>
-
-Allow veritysetup format and verify commands to directly operate on =
-regular
-files instead of requiring mounts through loop devices.
-
-Signed-off-by: Wesley Miaw <wmiaw@netflix.com>
----
- cryptsetup/lib/internal.h        |    1=20
- cryptsetup/lib/libcryptsetup.h   |   22 ++++
- cryptsetup/lib/libcryptsetup.sym |    2=20
- cryptsetup/lib/setup.c           |  133 ++++++++++++++++++++++++++++-
- cryptsetup/lib/utils.c           |   12 ++
- cryptsetup/src/veritysetup.c     |   23 +++--
- 6 files changed, 183 insertions(+), 10 deletions(-)
---- a/cryptsetup/lib/internal.h	2012-08-08 17:11:20.366392301 -0700
-+++ b/cryptsetup/lib/internal.h	2012-08-06 16:17:35.154719491 -0700
-@@ -76,6 +76,7 @@ ssize_t read_blockwise(int fd, void *_bu
- ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t =
-offset);
- int device_ready(struct crypt_device *cd, const char *device, int =
-mode);
- int device_size(const char *device, uint64_t *size);
-+int file_size(const char *filename, uint64_t *size);
-=20
- unsigned crypt_getpagesize(void);
-=20
---- a/cryptsetup/lib/libcryptsetup.h	2012-08-08 17:11:20.375392929 =
--0700
-+++ b/cryptsetup/lib/libcryptsetup.h	2012-08-06 16:17:35.159720699 =
--0700
-@@ -56,6 +57,19 @@ struct crypt_device; /* crypt device han
- int crypt_init(struct crypt_device **cd, const char *device);
-=20
- /**
-+ * Initial crypt device handle from a file and check if provided file =
-exists.
-+ *
-+ * @param cd Returns pointer to crypt device handle.
-+ * @param filename Path to the backing file.
-+ *
-+ * @return @e 0 on success or negative errno value otherwise.
-+ *
-+ * @note Note that logging is not initialized here, possible messages =
-uses
-+ *       default log function.
-+ */
-+int crypt_initfile(struct crypt_device **cd, const char *filename);
-+
-+/**
-  * Initialize crypt device handle from provided active device name,
-  * and, optionally, from separate metadata (header) device
-  * and check if provided device exists.
-@@ -237,6 +251,15 @@ void crypt_set_password_verify(struct cr
- int crypt_set_data_device(struct crypt_device *cd, const char *device);
-=20
- /**
-+ * Set data file
-+ * For VERITY it is data file when hash device is separated.
-+ *
-+ * @param cd crypt device handle
-+ * @param filename path to data file
-+ */
-+int crypt_set_data_file(struct crypt_device *cd, const char *device);
-+
-+/**
-  * @defgroup rng "Cryptsetup RNG"
-  *
-  * @addtogroup rng
---- a/cryptsetup/lib/libcryptsetup.sym	2012-08-08 17:11:20.375392930 =
--0700
-+++ b/cryptsetup/lib/libcryptsetup.sym	2012-08-06 16:17:35.160720941 =
--0700
-@@ -1,6 +1,7 @@
- CRYPTSETUP_1.0 {
- 	global:
- 		crypt_init;
-+		crypt_initfile;
- 		crypt_init_by_name;
- 		crypt_init_by_name_and_header;
- 		crypt_set_log_callback;
-@@ -13,6 +14,7 @@ CRYPTSETUP_1.0 {
- 		crypt_set_password_verify;
- 		crypt_set_uuid;
- 		crypt_set_data_device;
-+		crypt_set_data_file;
-=20
- 		crypt_memory_lock;
- 		crypt_format;
---- a/cryptsetup/lib/setup.c	2012-08-08 17:11:20.428396640 -0700
-+++ b/cryptsetup/lib/setup.c	2012-08-06 16:17:35.192728669 -0700
-@@ -25,6 +25,8 @@
- #include <stdarg.h>
- #include <fcntl.h>
- #include <errno.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-=20
- #include "libcryptsetup.h"
- #include "luks.h"
-@@ -585,6 +587,56 @@ bad:
- 	return r;
- }
-=20
-+int crypt_initfile(struct crypt_device **cd, const char *filename)
-+{
-+	struct crypt_device *h =3D NULL;
-+	int fd;
-+	struct stat st;
-+	int r;
-+
-+	if (!cd)
-+		return -EINVAL;
-+
-+	if (stat(filename, &st) < 0) {
-+		log_err(NULL, _("File %s doesn't exist or access =
-denied.\n"), filename);
-+		return -EINVAL;
-+	}
-+
-+	log_dbg("Trying to open and write file %s.", filename);
-+	fd =3D open(filename, O_RDWR);
-+	if (fd < 0) {
-+		log_err(NULL, _("Cannot open file %s for writeable =
-access.\n"), filename);
-+		return -EINVAL;
-+	}
-+	close(fd);
-+
-+	log_dbg("Allocating crypt device %s context.", filename);
-+
-+	if (!(h =3D malloc(sizeof(struct crypt_device))))
-+		return -ENOMEM;
-+
-+	memset(h, 0, sizeof(*h));
-+	h->loop_device_fd =3D -1;
-+	h->loop_metadata_device_fd =3D -1;
-+	h->device =3D strdup(filename);
-+	if (!h->device) {
-+		r =3D -ENOMEM;
-+		goto bad;
-+	}
-+	h->iteration_time =3D 1000;
-+	h->password_verify =3D 0;
-+	h->tries =3D 3;
-+	h->rng_type =3D crypt_random_default_key_rng();
-+	*cd =3D h;
-+	return 0;
-+bad:
-+	if (h) {
-+		free(h->device);
-+	}
-+	free(h);
-+	return r;
-+}
-+
- static int crypt_check_data_device_size(struct crypt_device *cd)
- {
- 	int r;
-@@ -606,6 +658,27 @@ static int crypt_check_data_device_size(
- 	return r;
- }
-=20
-+static int crypt_check_data_file_size(struct crypt_device *cd)
-+{
-+	int r;
-+	uint64_t size, size_min;
-+
-+	/* Check data device size, require at least one sector */
-+	size_min =3D crypt_get_data_offset(cd) << SECTOR_SHIFT ?: =
-SECTOR_SIZE;
-+
-+	r =3D file_size(crypt_get_device_name(cd), &size);
-+	if (r < 0)
-+		return r;
-+
-+	if (size < size_min) {
-+		log_err(cd, _("Header detected but device %s is too =
-small.\n"),
-+			crypt_get_device_name(cd));
-+		return -EINVAL;
-+	}
-+
-+	return r;
-+}
-+
- int crypt_set_data_device(struct crypt_device *cd, const char *device)
- {
- 	char *data_device =3D NULL;
-@@ -641,6 +714,52 @@ int crypt_set_data_device(struct crypt_d
- 	return crypt_check_data_device_size(cd);
- }
-=20
-+int crypt_set_data_file(struct crypt_device *cd, const char *filename)
-+{
-+	int fd;
-+	struct stat st;
-+
-+	log_dbg("Setting ciphertext data file to %s.", filename ?: =
-"(none");
-+
-+	if (!isVERITY(cd->type)) {
-+		log_err(cd, _("This operation is not supported for this =
-device type.\n"));
-+		return  -EINVAL;
-+	}
-+
-+	/* metadata device must be set */
-+	if (!cd->device || !filename)
-+		return -EINVAL;
-+
-+	if (stat(filename, &st) < 0) {
-+		log_err(NULL, _("File %s doesn't exist or access =
-denied.\n"), filename);
-+		return -EINVAL;
-+	}
-+
-+	log_dbg("Trying to open and read file %s.", filename);
-+	fd =3D open(filename, O_RDONLY);
-+	if (fd < 0) {
-+		log_err(NULL, _("Cannot open file %s for read =
-access.\n"), filename);
-+		return -EINVAL;
-+	}
-+	close(fd);
-+
-+	if (!cd->metadata_device) {
-+		cd->metadata_device =3D cd->device;
-+		cd->loop_metadata_device_fd =3D cd->loop_device_fd;
-+	} else {
-+		free(cd->device);
-+		if (cd->loop_device_fd !=3D -1)
-+			close(cd->loop_device_fd);
-+	}
-+
-+	cd->device =3D strdup(filename);
-+	if (!cd->device)
-+		return -ENOMEM;
-+	cd->loop_device_fd =3D -1;
-+
-+	return crypt_check_data_file_size(cd);
-+}
-+
- static int _crypt_load_luks1(struct crypt_device *cd, int =
-require_header, int repair)
- {
- 	struct luks_phdr hdr;
-@@ -1080,12 +1199,18 @@ static int _crypt_format_verity(struct c
- 		return -ENOMEM;
-=20
- 	r =3D crypt_set_data_device(cd, params->data_device);
--	if (r)
--		return r;
-+	if (r) {
-+		r =3D crypt_set_data_file(cd, params->data_device);
-+		if (r)
-+			return r;
-+	}
- 	if (!params->data_size) {
- 		r =3D device_size(cd->device, &data_device_size);
--		if (r < 0)
--			return r;
-+		if (r < 0) {
-+			r =3D file_size(cd->device, &data_device_size);
-+			if (r < 0)
-+				return r;
-+		}
-=20
- 		cd->verity_hdr.data_size =3D data_device_size / =
-params->data_block_size;
- 	} else
---- a/cryptsetup/lib/utils.c	2012-08-08 17:11:20.433396990 -0700
-+++ b/cryptsetup/lib/utils.c	2012-08-06 16:17:35.202731084 -0700
-@@ -316,6 +316,18 @@ int device_size(const char *device, uint
- 	return r;
- }
-=20
-+int file_size(const char *filename, uint64_t *size)
-+{
-+	struct stat st;
-+
-+	if (stat(filename, &st) < 0)
-+		return -EINVAL;
-+
-+	*size =3D (uint64_t)st.st_size;
-+
-+	return 0;
-+}
-+
- static int get_device_infos(const char *device, enum devcheck =
-device_check,
- 			    int *readonly, uint64_t *size)
- {
---- a/cryptsetup/src/veritysetup.c	2012-08-08 17:11:20.942432624 =
--0700
-+++ b/cryptsetup/src/veritysetup.c	2012-08-06 16:17:35.235739053 =
--0700
-@@ -142,8 +142,12 @@ static int action_format(int arg)
- 	uint32_t flags =3D CRYPT_VERITY_CREATE_HASH;
- 	int r;
-=20
--	if ((r =3D crypt_init(&cd, action_argv[1])))
--		goto out;
-+	r =3D crypt_init(&cd, action_argv[1]);
-+	if (r < 0) {
-+		r =3D crypt_initfile(&cd, action_argv[1]);
-+		if (r < 0)
-+			goto out;
-+	}
-=20
- 	if (!use_superblock)
- 		flags |=3D CRYPT_VERITY_NO_HEADER;
-@@ -174,8 +178,12 @@ static int _activate(const char *dm_devi
- 	ssize_t hash_size;
- 	int r;
-=20
--	if ((r =3D crypt_init(&cd, hash_device)))
--		goto out;
-+	r =3D crypt_init(&cd, hash_device);
-+	if (r < 0) {
-+		r =3D crypt_initfile(&cd, hash_device);
-+		if (r < 0)
-+			goto out;
-+	}
-=20
- 	if (use_superblock) {
- 		params.flags =3D flags;
-@@ -190,8 +198,11 @@ static int _activate(const char *dm_devi
- 	if (r < 0)
- 		goto out;
- 	r =3D crypt_set_data_device(cd, data_device);
--	if (r < 0)
--		goto out;
-+	if (r < 0) {
-+		r =3D crypt_set_data_file(cd, data_device);
-+		if (r < 0)
-+			goto out;
-+	}
-=20
- 	hash_size =3D crypt_get_volume_key_size(cd);
- 	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) !=3D =
-hash_size) {
+> ---
+> Applies on top of git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git (thermal).
+> 
+>  drivers/thermal/thermal_sys.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 5be8728..e69f76d 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -900,7 +900,7 @@ thermal_cooling_device_register(char *type, void *devdata,
+>  	struct thermal_zone_device *pos;
+>  	int result;
+>  
+> -	if (strlen(type) >= THERMAL_NAME_LENGTH)
+> +	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
+>  		return ERR_PTR(-EINVAL);
+>  
+>  	if (!ops || !ops->get_max_state || !ops->get_cur_state ||
+> @@ -917,7 +917,7 @@ thermal_cooling_device_register(char *type, void *devdata,
+>  		return ERR_PTR(result);
+>  	}
+>  
+> -	strcpy(cdev->type, type);
+> +	strcpy(cdev->type, type ? : "");
+>  	mutex_init(&cdev->lock);
+>  	INIT_LIST_HEAD(&cdev->thermal_instances);
+>  	cdev->ops = ops;
+> @@ -1343,7 +1343,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  	int count;
+>  	int passive = 0;
+>  
+> -	if (strlen(type) >= THERMAL_NAME_LENGTH)
+> +	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
+>  		return ERR_PTR(-EINVAL);
+>  
+>  	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
+> @@ -1365,7 +1365,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  		return ERR_PTR(result);
+>  	}
+>  
+> -	strcpy(tz->type, type);
+> +	strcpy(tz->type, type ? : "");
+>  	tz->ops = ops;
+>  	tz->device.class = &thermal_class;
+>  	tz->devdata = devdata;
 
 
---Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
-
-iQEcBAEBAgAGBQJQIwb4AAoJELoPFVk1ivvRTBcH/3TjM9R2UfwRuQ+VzjGSIDLk
-MJuMrtSGWO0Trt7IvZlTym8xh0UsRQ5e+zgBdT6uQV8Nf224akGsBqEBGQqx7lkl
-sQKC0H3xPeb3henn7Y9K8GjJ7L4uHZXHajtDHklLDGx3VrrkOl8G4UDatn1ztoU0
-EwDFy2BW/sUnc4mzPCPZ+DaYcdz/QzsJINAmqwYxDasvb8ItkMU/ciTz3v86AiMu
-AzPWipU9oFOpOI+RXAYVo/jucqFnU02/fK7TOU9I0lAsozH9OPDQ5NySPyeB/JFP
-4JThZ0itOA+ocSQxrkVpimtk2zgcvXhQNFMuOY+eP0xoYvFkfLXMbXbS/pFeZ4Q=
-=7SIg
------END PGP SIGNATURE-----
-
---Apple-Mail=_D124A280-E6F2-4BAB-A177-31EDBE0A9558--
