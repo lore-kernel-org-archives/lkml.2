@@ -1,212 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab2HILQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:16:54 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9441 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916Ab2HILQP (ORCPT
+	id S932123Ab2HILTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:19:32 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:37369 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757972Ab2HILT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:16:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 09 Aug 2012 04:16:06 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>, <olof@lixom.net>
-CC: <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH v2 1/3] ARM: dt: tegra: cardhu: add entry for PMIC TPS65911.
-Date: Thu, 9 Aug 2012 16:30:37 +0530
-Message-ID: <1344510039-17754-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1344510039-17754-1-git-send-email-ldewangan@nvidia.com>
-References: <1344510039-17754-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 9 Aug 2012 07:19:29 -0400
+Date: Thu, 9 Aug 2012 14:15:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Infinite looping in omap2430.c USB driver
+Message-ID: <20120809111549.GT12174@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <20120707083949.2cf91eeb@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GAoked8QSizNecZ5"
+Content-Disposition: inline
+In-Reply-To: <20120707083949.2cf91eeb@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra30 based platform "cardhu" have the power management
-IC TPS65911 for the regulator.
-Adding DT entry for this device.
-Data are chosen from downstream kernel and making the
-voltage output as require by default for device to
-operate.
-The default interrupt line is HIGH from PMIC device and so
-inverting the interrupt detection line of PMU interrupt
-through configuring PMC.
-In this patch, do not registering LDO5 because the input
-supply for this rail is different for different version of
-cardhu i..e A02 and A04. The registration will be done once
-the dts file for cardhu A02 and A04 are added in follow on
-patches.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1-->V2:
-- No changes.
+--GAoked8QSizNecZ5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- arch/arm/boot/dts/tegra30-cardhu.dts |  134 ++++++++++++++++++++++++++++++++++
- 1 files changed, 134 insertions(+), 0 deletions(-)
+On Sat, Jul 07, 2012 at 08:39:49AM +1000, NeilBrown wrote:
+>=20
+> Hello `./scripts/get_maintainer.pl -f drivers/usb/musb/omap2430.c`
+>=20
+> omap2430_musb_set_vbus in omap2430.c contains:
+>=20
+> 			while (musb_readb(musb->mregs, MUSB_DEVCTL) & 0x80) {
+>=20
+> 				cpu_relax();
+>=20
+> 				if (time_after(jiffies, timeout)) {
+> 					dev_err(musb->controller,
+> 					"configured as A device timeout");
+> 					ret =3D -EINVAL;
+> 					break;
+> 				}
+> 			}
+>=20
+> having set
+> 	unsigned long timeout =3D jiffies + msecs_to_jiffies(1000);
 
-diff --git a/arch/arm/boot/dts/tegra30-cardhu.dts b/arch/arm/boot/dts/tegra30-cardhu.dts
-index c169bce..6f9daae 100644
---- a/arch/arm/boot/dts/tegra30-cardhu.dts
-+++ b/arch/arm/boot/dts/tegra30-cardhu.dts
-@@ -126,6 +126,120 @@
- 			ti,vsel0-state-high;
- 			ti,vsel1-state-high;
- 		};
-+
-+		pmic: tps65911@2d {
-+			compatible = "ti,tps65911";
-+			reg = <0x2d>;
-+
-+			interrupts = <0 86 0x4>;
-+			#interrupt-cells = <2>;
-+			interrupt-controller;
-+
-+			#gpio-cells = <2>;
-+			gpio-controller;
-+
-+			vcc1-supply = <&vdd_ac_bat_reg>;
-+			vcc2-supply = <&vdd_ac_bat_reg>;
-+			vcc3-supply = <&vio_reg>;
-+			vcc5-supply = <&vdd_ac_bat_reg>;
-+			vcc6-supply = <&vdd2_reg>;
-+			vcc7-supply = <&vdd_ac_bat_reg>;
-+			vccio-supply = <&vdd_ac_bat_reg>;
-+
-+			regulators {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				vdd1_reg: regulator@0 {
-+					reg = <0>;
-+					regulator-compatible = "vdd1";
-+					regulator-name = "vddio_ddr_1v2";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				vdd2_reg: regulator@1 {
-+					reg = <1>;
-+					regulator-compatible = "vdd2";
-+					regulator-name = "vdd_1v5_gen";
-+					regulator-min-microvolt = <1500000>;
-+					regulator-max-microvolt = <1500000>;
-+					regulator-always-on;
-+				};
-+
-+				vddctrl_reg: regulator@2 {
-+					reg = <2>;
-+					regulator-compatible = "vddctrl";
-+					regulator-name = "vdd_cpu,vdd_sys";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+
-+				vio_reg: regulator@3 {
-+					reg = <3>;
-+					regulator-compatible = "vio";
-+					regulator-name = "vdd_1v8_gen";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo1_reg: regulator@4 {
-+					reg = <4>;
-+					regulator-compatible = "ldo1";
-+					regulator-name = "vdd_pexa,vdd_pexb";
-+					regulator-min-microvolt = <1050000>;
-+					regulator-max-microvolt = <1050000>;
-+				};
-+
-+				ldo2_reg: regulator@5 {
-+					reg = <5>;
-+					regulator-compatible = "ldo2";
-+					regulator-name = "vdd_sata,avdd_plle";
-+					regulator-min-microvolt = <1050000>;
-+					regulator-max-microvolt = <1050000>;
-+				};
-+
-+				/* LDO3 is not connected to anything */
-+
-+				ldo4_reg: regulator@7 {
-+					reg = <7>;
-+					regulator-compatible = "ldo4";
-+					regulator-name = "vdd_rtc";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo6_reg: regulator@9 {
-+					reg = <9>;
-+					regulator-compatible = "ldo6";
-+					regulator-name = "avdd_dsi_csi,pwrdet_mipi";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+				};
-+
-+				ldo7_reg: regulator@10 {
-+					reg = <10>;
-+					regulator-compatible = "ldo7";
-+					regulator-name = "vdd_pllm,x,u,a_p_c_s";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo8_reg: regulator@11 {
-+					reg = <11>;
-+					regulator-compatible = "ldo8";
-+					regulator-name = "vdd_ddr_hs";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+			};
-+		};
- 	};
- 
- 	ahub {
-@@ -134,6 +248,11 @@
- 		};
- 	};
- 
-+	pmc {
-+		status = "okay";
-+		nvidia,invert-interrupt;
-+	};
-+
- 	sdhci@78000000 {
- 		status = "okay";
- 		cd-gpios = <&gpio 69 0>; /* gpio PI5 */
-@@ -147,6 +266,21 @@
- 		bus-width = <8>;
- 	};
- 
-+	regulators {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		vdd_ac_bat_reg: regulator@0 {
-+			compatible = "regulator-fixed";
-+			reg = <0>;
-+			regulator-name = "vdd_ac_bat";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
-+	};
-+
- 	sound {
- 		compatible = "nvidia,tegra-audio-wm8903-cardhu",
- 			     "nvidia,tegra-audio-wm8903";
--- 
-1.7.1.1
+hehe, that's nasty. Please send a patch converting to a try count and a
+udelay_range(), or something.
 
+--=20
+balbi
+
+--GAoked8QSizNecZ5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQI5vlAAoJEIaOsuA1yqRE0OQQAJVpTeRaEXVUCW3l3963QpS7
+vVYt8rjIudRYVHwqFE5oZf6RnRY2tPuzsKMVJABK/7r2lXm0Dia3lG9oJxO7heT+
+9vFUahXJcxZenmv/XHmNJYUqcvmiVV/aD6VBrZRZCb+uqlkVzOLhnEvo8v11yU7b
+Y3zj5emoUePYUQH+sPQrXZK1Sdgk35IsBPD/4DxTioFjKYt43h2gzaUcqIb4Sf0T
+5eR+0hekPOQMMDP95NO5M210r+RearTX4EwPnRVxw4w6iBWeDszxJGim4Y7apmSz
+rmBF1tCD8crLicW0/CBrI3JgNkqWAyxJ2Yi3SpMidv1JN3Gb/xVfQurcXiY35VI0
+lW7soC/YpSZMh5lTcS3Fax5xqkMcEedZU9oHVZymWNQzrc/Dq5p5uKnUYsGTwBEL
+9376//lrG7d3Rt7odsKCERPVB2DeYW7D6f5Xil6WBHZrJN21zJnNau1XXMPf1dL4
+uhg/q23DRh8Qmadt/dDiUGt3q458AyrwgwZVgWIVNUA1ZN8U+kAt0nCkOilLJHHH
+iSSfukpfQtpMFKkecIgmDyxkjTlkhbo/xFb8wMPyDiLCk83J1paeZWwqKhnyEVqQ
+0cm+G5+nikSusDFraarTnRvk5DmE8BmoLBjjKKkt1RP4R7TxpkMytSVmRjT5iQ0B
+pe1dt0QXCojk4o8u5CNV
+=7GnU
+-----END PGP SIGNATURE-----
+
+--GAoked8QSizNecZ5--
