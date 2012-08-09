@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab2HIVsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:48:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37121 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758971Ab2HIVsi (ORCPT
+	id S1759685Ab2HIVtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:49:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60844 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759301Ab2HIVtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:48:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUd5x04KyyKa84J3PDB2xPj70xZLezwMJn1J=jwmzcnnA@mail.gmail.com>
-References: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com> <CAMuHMdUd5x04KyyKa84J3PDB2xPj70xZLezwMJn1J=jwmzcnnA@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 9 Aug 2012 14:48:17 -0700
-X-Google-Sender-Auth: qwKf4JXX37jYZYPtvAUtkGWfaxM
-Message-ID: <CAB=NE6WJ79U6OzmSDncXoxONd948_zKvCAc9LCo-dG3f+vQCgw@mail.gmail.com>
-Subject: Re: [PATCH] SubmittingPatches: clarify SOB tag usage when evolving submissions
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: torvalds@linux-foundation.org, rdunlap@xenotime.net, tytso@mit.edu,
-        alan@lxorguk.ukuu.org.uk, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Aug 2012 17:49:05 -0400
+Date: Thu, 09 Aug 2012 14:49:04 -0700 (PDT)
+Message-Id: <20120809.144904.985433220461322851.davem@davemloft.net>
+To: alan@lxorguk.ukuu.org.uk
+Cc: makienko@ispras.ru, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH 03/13] ide: Potential null pointer dereference in
+ ide_queue_pc_tail()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120809151342.2941f851@pyramind.ukuu.org.uk>
+References: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
+	<20120809151342.2941f851@pyramind.ukuu.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 1:58 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Aug 9, 2012 at 10:51 PM, Luis R. Rodriguez
-> <mcgrof@do-not-panic.com> wrote:
->> of a second patch submission must supply their own Siged-off-by
->
-> Signed-off-by
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Thu, 9 Aug 2012 15:13:42 +0100
 
-will send a v2.
+> On Thu,  9 Aug 2012 17:55:20 +0400
+> Marina Makienko <makienko@ispras.ru> wrote:
+> 
+>> The function blk_get_request() can return NULL in some cases. There are
+>> checks on it if function is called with argumetns one of which is
+>> GFP_ATOMIC/GFP_NOIO/etc. If system couldn't find request
+>> blk_get_request() return NULL.
+> 
+> drivers/ide is obsolete and scheduled for removal. I'm not sure messing
+> with it is remotely useful at this point ?
 
-  Luis
+Agreed, I'm not applying this stuff.
