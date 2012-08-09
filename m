@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab2HIJBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:01:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41495 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412Ab2HIJBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:01:32 -0400
+	id S1757194Ab2HIJDk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756982Ab2HIJDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:03:39 -0400
+Date: Thu, 9 Aug 2012 14:33:12 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
+ pipe buffer
+Message-ID: <20120809090312.GH3280@amit.redhat.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUV51Bk=jxnfrGL4xo6MQXnVdhUCago_RPZM-iL+twpF1A@mail.gmail.com>
-References: <CAB=NE6WZWEO=b5Usx4RKDLC--TvLWnOom0P+HmXsxh7QZQQXQA@mail.gmail.com>
- <CAFub=KRtuTDn1DnHP0aKZT6RBeA2kNkLm6ud-4Z=1ESPs==h0g@mail.gmail.com>
- <CAB=NE6V7Tx1ioDafPmOprwzd0Q61dDe8XK5gBghXHVROXOBA=Q@mail.gmail.com> <CA+icZUV51Bk=jxnfrGL4xo6MQXnVdhUCago_RPZM-iL+twpF1A@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Thu, 9 Aug 2012 02:01:11 -0700
-X-Google-Sender-Auth: NSQioZOg2bDA895tw-fG3PfwbyY
-Message-ID: <CAB=NE6UP7JfP+Uxo1Px67-xsGrsfddyyqTVP=ybbZCnE=2kxFw@mail.gmail.com>
-Subject: Re: Using vanilla kernels headers to do backport testing -- issues
- with memcpy()
-To: sedat.dilek@gmail.com
-Cc: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 12:27 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> I am not an English native but this sentence sounds a bit strange to
-> me ("used" followed by "require" and double "Linux"?).
-> I can imagine what you want to express but have no better wording right now.
->
-> 180 +  echo -e "   This was added since kernels >= 3.4 used require"
-> 181 +  echo -e "   a glibc >= 2.14 for memcpy(), and not all Linux"
-> 182 +  echo -e "   Linux distributions have such glibc.
+On (Tue) 24 Jul 2012 [11:37:18], Yoshihiro YUNOMAE wrote:
+> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> Add a failback memcpy path for unstealable pipe buffer.
+> If buf->ops->steal() fails, virtio-serial tries to
+> copy the page contents to an allocated page, instead
+> of just failing splice().
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Amit Shah <amit.shah@redhat.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> 
+>  drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
+>  1 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index fe31b2f..911cb3e 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+>  			struct splice_desc *sd)
+>  {
+>  	struct sg_list *sgl = sd->u.data;
+> -	unsigned int len = 0;
+> +	unsigned int offset, len;
+>  
+>  	if (sgl->n == MAX_SPLICE_PAGES)
+>  		return 0;
+> @@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+>  
+>  		len = min(buf->len, sd->len);
+>  		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
+> -		sgl->n++;
+> -		sgl->len += len;
+> +	} else {
+> +		/* Failback to copying a page */
+> +		struct page *page = alloc_page(GFP_KERNEL);
 
-Fixed.
+I prefer zeroing out the page.  If there's not enough data to be
+filled in the page, the remaining data can be leaked to the host.
 
- Luis
+		Amit
