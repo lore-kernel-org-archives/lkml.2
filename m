@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031020Ab2HIPDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:03:43 -0400
+	id S1031046Ab2HIPDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:03:55 -0400
 Received: from mga01.intel.com ([192.55.52.88]:21172 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030991Ab2HIPDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:03:39 -0400
+	id S1031002Ab2HIPDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:03:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,740,1336374000"; 
-   d="scan'208";a="195494524"
+   d="scan'208";a="195494521"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -26,9 +26,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v2 2/6] mm: make clear_huge_page tolerate non aligned address
-Date: Thu,  9 Aug 2012 18:02:59 +0300
-Message-Id: <1344524583-1096-3-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v2 3/6] THP: Pass real, not rounded, address to clear_huge_page
+Date: Thu,  9 Aug 2012 18:03:00 +0300
+Message-Id: <1344524583-1096-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -38,42 +38,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-hugetlb does not necessarily pass in an aligned address, so the
-low level address computation is wrong.
-
-This will fix architectures that actually use the address for flushing
-the cleared address (very few, like xtensa/sparc/...?)
-
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/memory.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 5736170..b47199a 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3987,16 +3987,17 @@ void clear_huge_page(struct page *page,
- 		     unsigned long addr, unsigned int pages_per_huge_page)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 70737ec..ecd93f8 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -633,7 +633,8 @@ static inline pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 
+ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+-					unsigned long haddr, pmd_t *pmd,
++					unsigned long haddr,
++					unsigned long address, pmd_t *pmd,
+ 					struct page *page)
  {
- 	int i;
-+	unsigned long haddr = addr & HPAGE_PMD_MASK;
+ 	pgtable_t pgtable;
+@@ -643,7 +644,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 	if (unlikely(!pgtable))
+ 		return VM_FAULT_OOM;
  
- 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
--		clear_gigantic_page(page, addr, pages_per_huge_page);
-+		clear_gigantic_page(page, haddr, pages_per_huge_page);
- 		return;
- 	}
+-	clear_huge_page(page, haddr, HPAGE_PMD_NR);
++	clear_huge_page(page, address, HPAGE_PMD_NR);
+ 	__SetPageUptodate(page);
  
- 	might_sleep();
- 	for (i = 0; i < pages_per_huge_page; i++) {
- 		cond_resched();
--		clear_user_highpage(page + i, addr + i * PAGE_SIZE);
-+		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
- 	}
- }
- 
+ 	spin_lock(&mm->page_table_lock);
+@@ -720,8 +721,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			put_page(page);
+ 			goto out;
+ 		}
+-		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
+-							  page))) {
++		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr,
++						address, pmd, page))) {
+ 			mem_cgroup_uncharge_page(page);
+ 			put_page(page);
+ 			goto out;
 -- 
 1.7.7.6
 
