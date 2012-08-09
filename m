@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758524Ab2HIRn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:43:28 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:51951 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab2HIRn1 (ORCPT
+	id S1758594Ab2HIRqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:46:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40494 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab2HIRqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:43:27 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: dedekind1@gmail.com
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Adrian Hunter <adrian.hunter@intel.com>,
-        linux-mtd@lists.infradead.org, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] ubifs: remove __DATE__ and __TIME__
-Date: Thu,  9 Aug 2012 19:43:14 +0200
-Message-Id: <1344534194-16321-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 9 Aug 2012 13:46:19 -0400
+Subject: Re: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Paul Moore <paul@paul-moore.com>, David Miller <davem@davemloft.net>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        john.johansen@canonical.com,
+        LSM <linux-security-module@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <CACLa4ptTfMzvhYk7_DaUJd-9u406FXf2CUHjn1mQrPDa4fFW4w@mail.gmail.com>
+References: <50215A7E.8000701@linaro.org> <1695034.0lrQgQPOMT@sifl>
+	 <1344523833.28967.996.camel@edumazet-glaptop> <5799181.tjlnF0gIh2@sifl>
+	 <1344526608.28967.1092.camel@edumazet-glaptop>
+	 <CACLa4ptTfMzvhYk7_DaUJd-9u406FXf2CUHjn1mQrPDa4fFW4w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Aug 2012 19:46:13 +0200
+Message-ID: <1344534373.31104.34.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tag is useless and it breaks automatic builds. It causes rebuilds
-for packages that depend on kernel for no real reason.
+On Thu, 2012-08-09 at 12:05 -0400, Eric Paris wrote:
+> On Thu, Aug 9, 2012 at 11:36 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > On Thu, 2012-08-09 at 11:07 -0400, Paul Moore wrote:
+> >
+> >> Is is possible to do the call to security_sk_alloc() in the ip_init() function
+> >> or does the per-cpu nature of the socket make this a pain?
+> >>
+> >
+> > Its a pain, if we want NUMA affinity.
+> >
+> > Here, each cpu should get memory from its closest node.
+> 
+> I really really don't like it.  I won't say NAK, but it is the first
+> and only place in the kernel where I believe we allocate an object and
+> don't allocate the security blob until some random later point in
+> time.
 
-Further, quoting Michal, who removed most of the users already:
-The kernel already prints its build timestamp during boot, no need to
-repeat it in random drivers and produce different object files each
-time.
+...
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-mtd@lists.infradead.org
-Cc: Michal Marek <mmarek@suse.cz>
----
- fs/ubifs/super.c |    1 -
- 1 file changed, 1 deletion(-)
+>   If it is such a performance issue to have the security blob in
+> the same numa node, isn't adding a number of branches and putting this
+> function call on every output at least as bad?  Aren't we discouraged
+> from GFP_ATOMIC?  In __init we can use GFP_KERNEL.
 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index e354832..67af316 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1431,7 +1431,6 @@ static int mount_ubifs(struct ubifs_info *c)
- 	ubifs_msg("reserved for root:  %llu bytes (%llu KiB)",
- 		c->report_rp_size, c->report_rp_size >> 10);
- 
--	dbg_msg("compiled on:         " __DATE__ " at " __TIME__);
- 	dbg_msg("min. I/O unit size:  %d bytes", c->min_io_size);
- 	dbg_msg("max. write size:     %d bytes", c->max_write_size);
- 	dbg_msg("LEB size:            %d bytes (%d KiB)",
--- 
-1.7.10.4
+What a big deal. Its done _once_ time per cpu, and this is so small blob
+of memory you'll have to show us one single failure out of one million
+boots.
+
+If the security_sk_alloc() fails, we dont care. We are about sending a
+RESET or ACK packet. They can be lost by the network, or even skb
+allocation can fail. Nobody ever noticed and complained.
+
+Every time we accept() a new socket (and call security_sk_alloc()), its
+done under soft irq, thus GFP_ATOMIC, and you didn't complain yet, while
+a socket needs about 2 Kbytes of memory...
+
+> 
+> This still doesn't fix these sockets entirely.  We now have the
+> security blob allocated, but it was never set to something useful.
+> Paul, are you looking into this?  This is a bandaide, not a fix....
+> 
+
+Please do so, on a followup patch, dont pretend I must fix all this
+stuff.
 
 
