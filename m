@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab2HIJDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:03:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57380 "EHLO mx1.redhat.com"
+	id S1752573Ab2HIJIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:08:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33777 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756982Ab2HIJDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:03:39 -0400
-Date: Thu, 9 Aug 2012 14:33:12 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
- pipe buffer
-Message-ID: <20120809090312.GH3280@amit.redhat.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
- <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
+	id S1750996Ab2HIJIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:08:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,739,1336374000"; 
+   d="scan'208";a="195262071"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 1/9] thp: huge zero page: basic preparation
+Date: Thu,  9 Aug 2012 12:08:12 +0300
+Message-Id: <1344503300-9507-2-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 24 Jul 2012 [11:37:18], Yoshihiro YUNOMAE wrote:
-> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> Add a failback memcpy path for unstealable pipe buffer.
-> If buf->ops->steal() fails, virtio-serial tries to
-> copy the page contents to an allocated page, instead
-> of just failing splice().
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Amit Shah <amit.shah@redhat.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> 
->  drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
->  1 files changed, 25 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> index fe31b2f..911cb3e 100644
-> --- a/drivers/char/virtio_console.c
-> +++ b/drivers/char/virtio_console.c
-> @@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->  			struct splice_desc *sd)
->  {
->  	struct sg_list *sgl = sd->u.data;
-> -	unsigned int len = 0;
-> +	unsigned int offset, len;
->  
->  	if (sgl->n == MAX_SPLICE_PAGES)
->  		return 0;
-> @@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
->  
->  		len = min(buf->len, sd->len);
->  		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
-> -		sgl->n++;
-> -		sgl->len += len;
-> +	} else {
-> +		/* Failback to copying a page */
-> +		struct page *page = alloc_page(GFP_KERNEL);
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-I prefer zeroing out the page.  If there's not enough data to be
-filled in the page, the remaining data can be leaked to the host.
+For now let's allocate the page on hugepage_init(). We'll switch to lazy
+allocation later.
 
-		Amit
+We are not going to map the huge zero page until we can handle it
+properly on all code paths.
+
+is_huge_zero_{pfn,pmd}() functions will be used by following patches to
+check whether the pfn/pmd is huge zero page.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 57c4b93..88e0a7a 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -46,6 +46,7 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
+ /* during fragmentation poll the hugepage allocator once every minute */
+ static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
+ static struct task_struct *khugepaged_thread __read_mostly;
++static unsigned long huge_zero_pfn __read_mostly;
+ static DEFINE_MUTEX(khugepaged_mutex);
+ static DEFINE_SPINLOCK(khugepaged_mm_lock);
+ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+@@ -167,6 +168,28 @@ out:
+ 	return err;
+ }
+ 
++static int init_huge_zero_page(void)
++{
++	struct page *hpage;
++
++	hpage = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
++	if (!hpage)
++		return -ENOMEM;
++
++	huge_zero_pfn = page_to_pfn(hpage);
++	return 0;
++}
++
++static inline bool is_huge_zero_pfn(unsigned long pfn)
++{
++	return pfn == huge_zero_pfn;
++}
++
++static inline bool is_huge_zero_pmd(pmd_t pmd)
++{
++	return is_huge_zero_pfn(pmd_pfn(pmd));
++}
++
+ #ifdef CONFIG_SYSFS
+ 
+ static ssize_t double_flag_show(struct kobject *kobj,
+@@ -550,6 +573,10 @@ static int __init hugepage_init(void)
+ 	if (err)
+ 		return err;
+ 
++	err = init_huge_zero_page();
++	if (err)
++		goto out;
++
+ 	err = khugepaged_slab_init();
+ 	if (err)
+ 		goto out;
+@@ -574,6 +601,8 @@ static int __init hugepage_init(void)
+ 
+ 	return 0;
+ out:
++	if (huge_zero_pfn)
++		__free_page(pfn_to_page(huge_zero_pfn));
+ 	hugepage_exit_sysfs(hugepage_kobj);
+ 	return err;
+ }
+-- 
+1.7.7.6
+
