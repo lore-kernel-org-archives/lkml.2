@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2HIRO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:14:26 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52795 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2HIROY (ORCPT
+	id S1758404Ab2HIRSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:18:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37690 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab2HIRSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:14:24 -0400
-Date: Thu, 9 Aug 2012 14:14:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+	Thu, 9 Aug 2012 13:18:04 -0400
+Date: Thu, 9 Aug 2012 19:18:02 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
-Message-ID: <20120809171419.GC4084@infradead.org>
-References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
- <1344522713-27951-2-git-send-email-fweisbec@gmail.com>
- <20120809163515.GA4084@infradead.org>
- <5023E7F3.8090701@gmail.com>
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
+        gdb-patches@sourceware.org
+Subject: Re: [RFC 5/5] uprobes: add global breakpoints
+Message-ID: <20120809171802.GB27835@linutronix.de>
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de>
+ <1344355952-2382-6-git-send-email-bigeasy@linutronix.de>
+ <20120808131457.GA5309@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <5023E7F3.8090701@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120808131457.GA5309@redhat.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Aug 09, 2012 at 10:40:19AM -0600, David Ahern escreveu:
-> On 8/9/12 10:35 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
-> >>This implements bash completion for perf subcommands such
-> >>as record, report, script, probe, etc...
-> >
-> >Humm, I get this when doing my usual workflow:
-> >
-> >[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-> >make: Entering directory `/home/git/linux/tools/perf'
-> >PERF_VERSION = 3.6.rc1.152.g5758f7
-> ><SNIP>
-> >install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> >install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
-> >install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> >install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
-> >install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
-> >install -m 755 bash_completion /etc/bash_completion.d/perf
-> >install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
-> >make: *** [install] Error 1
-> >make: Leaving directory `/home/git/linux/tools/perf'
-> >[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-> >
-> >	Shouldn't it install on ~/etc/bash_completion.d/perf ?
-> >
-> >	Is there a way to have per user bash completion files like that?
-> 
-> 3rd patch should fix this.
+* Oleg Nesterov | 2012-08-08 15:14:57 [+0200]:
 
-Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
-its just that I'm not using sudo nor installing as root, this new bash
-completion file is the only one that is being installed on the root
-filesystem, all others are in ~acme/
+>> What I miss right now is an interface to tell the user/gdb that there is a
+>> program that hit a global breakpoint and is waiting for further instructions.
+>> A "tail -f trace" does not work and may contain also a lot of other
+>> informations. I've been thinking about a poll()able file which returns pids of
+>> tasks which are put on hold. Other suggestions?
+>
+>Honestly, I am not sure this is that useful...
 
-- Arnaldo
+How would you notify gdb that there is a new task that hit a breakpoint?
+Or learn yourself?
+
+>OK, I'll try to read this patch later. But, at first glance,
+Thank you.
+
+>> @@ -286,8 +286,10 @@ static int ptrace_attach(struct task_struct *task, long request,
+>>  	__ptrace_link(task, current);
+>>
+>>  	/* SEIZE doesn't trap tracee on attach */
+>> -	if (!seize)
+>> +	if (!seize) {
+>>  		send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
+>> +		uprobe_wakeup_task(task, 1);
+>> +	}
+>
+>Can't understand why uprobe_wakeup_task() depends on !PTRACE_SEIZE
+
+because in the SEIZE case the task isn't halted, it continues to run. Or
+do you want to use PTRACE_SEIZE for tasks which hit the global
+breakpoint and you have no interrest in them and want them to continue
+like nothing happend?
+
+>> +
+>> +	set_current_state(TASK_TRACED);
+>> +	schedule();
+>> +}
+>
+>Suppose that uprobe_wakeup_task() is called in the WINDOW above.
+>
+>OTOH, uprobe_wakeup_task() can race with itself if it is called
+>twice at the same time, say from uprobes_gp_wakeup_write() and
+>ptrace_attach().
+Okay, I'm going to close the window.
+
+>
+>Oleg.
+
+Sebastian
