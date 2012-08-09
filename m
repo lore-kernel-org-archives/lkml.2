@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab2HITbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:31:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43172 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759223Ab2HITbW (ORCPT
+	id S1759438Ab2HITde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:33:34 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:13484 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759376Ab2HITdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:31:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAB=NE6X4JQmQgtgcy9is0hn0nNypTKJN-d2RHFR7vvg=vO_eHQ@mail.gmail.com>
-References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
- <1344485382.2024.9.camel@joe2Laptop> <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
- <20120808.231804.12694947300243733.davem@davemloft.net> <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
- <20120809145454.GA21195@home.goodmis.org> <1344525758.3165.8.camel@joe2Laptop>
- <1344526098.6935.44.camel@gandalf.stny.rr.com> <CAB=NE6X4JQmQgtgcy9is0hn0nNypTKJN-d2RHFR7vvg=vO_eHQ@mail.gmail.com>
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Date: Thu, 9 Aug 2012 12:31:01 -0700
-X-Google-Sender-Auth: 7dEHIOt6ovhIGC3cwhEjyA45Is4
-Message-ID: <CAB=NE6V5trmCP+PL3wmOsaVmN1whoiCa=K9EWY7z57mYMKrp2A@mail.gmail.com>
-Subject: Re: [PATCH] net: add new QCA alx ethernet driver
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Aug 2012 15:33:33 -0400
+Message-ID: <1344540801.2393.42.camel@lorien2>
+Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
+ cache integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: "Christoph Lameter (Open Source)" <cl@linux.com>
+Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, shuah.khan@hp.com
+Date: Thu, 09 Aug 2012 13:33:21 -0600
+In-Reply-To: <alpine.DEB.2.02.1208091406590.20908@greybox.home>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
+	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
+	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
+	 <1344531695.2393.27.camel@lorien2>
+	 <alpine.DEB.2.02.1208091406590.20908@greybox.home>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 12:13 PM, Luis R. Rodriguez
-<rodrigue@qca.qualcomm.com> wrote:
-> So -- are we OK to *not* include SOBs of evolutions sent to developers
-> of joojoo-1 when company x submits joojoo-2 so long as those patches
-> were sent publicly or a record is kept somewhere ?
+On Thu, 2012-08-09 at 14:08 -0500, Christoph Lameter (Open Source)
+wrote:
+> On Thu, 9 Aug 2012, Shuah Khan wrote:
+> 
+> > Moving these checks into kmem_cache_sanity_check() would mean return
+> > path handling will change. The first block of sanity checks for name,
+> > and size etc. are done before holding the slab_mutex and the second
+> > block that checks the slab lists is done after holding the mutex.
+> > Depending on which one fails, return handling is going to be different
+> > in that if second block fails, mutex needs to be unlocked and when the
+> > first block fails, there is no need to do that. Nothing that is too
+> > complex to solve, just something that needs to be handled.
+> 
+> Right. The taking of the mutex etc is not depending on the parameters at
+> all. So its possible. Its rather simple.
+> 
+> > Comments, thoughts on
+> >
+> > 1. just remove size from kmem_cache_sanity_check() parameters
+> > or
+> > 2. move first block sanity checks into kmem_cache_sanity_check()
+> >
+> > Personally I prefer the first option to avoid complexity in return path
+> > handling. Would like to hear what others think.
+> 
+> We already have to deal with the return path handling for other failure
+> cases.
 
-And lets be fair, some folks *may* want their SOB passed along to the
-second joojoo-2, its hard to please everyone but so long as we can
-decide on a method -- then great, we don't have to come back to this
-again and then we can add this as documentation. I'm inclined to
-prefer to not have the small patch submitters SOB tag if their patch
-to joojoo-1 was public and in it they did have a SOB tag, given that
-in practice *a few* secondary patch submitters tend to get surprised
-when their SOB is added to a secondary patch submission if they only
-contributed a few lines. To be clear the SOB does not have anything to
-do with how many lines you contributed, its meaning is here:
+Thanks for the feedback. I will send v3 patch with the changes we
+discussed.
 
-http://gerrit.googlecode.com/svn-history/r1526/documentation/2.1.2/user-signedoffby.html
+-- Shuah
 
-So even if those secondary patch submitters *think* it has to do with
-volume of code, perhaps its best in practice to not include them so
-long as we have a record of the original small patch submission
-publicly and with a SOB tag.
 
-  Luis
