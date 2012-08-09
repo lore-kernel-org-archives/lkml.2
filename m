@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2HIVWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:22:34 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35942 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab2HIVWd (ORCPT
+	id S1756058Ab2HIVXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:23:34 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:1451
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754849Ab2HIVX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:22:33 -0400
-Date: Thu, 9 Aug 2012 17:22:30 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [PATCH 04/10] ARM: pass -marm to gcc by default
-In-Reply-To: <20120809211717.GW18957@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1208091721460.5231@xanadu.home>
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-5-git-send-email-arnd@arndb.de> <alpine.LFD.2.02.1208091709010.5231@xanadu.home> <20120809211717.GW18957@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 9 Aug 2012 17:23:29 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M8IBEY-01-H5E-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: X86-ML <x86@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 3/5] x86: Keep track of direct mapped pfn ranges
+Date: Thu, 9 Aug 2012 16:23:07 -0500
+Message-ID: <1344547389-4599-4-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
+References: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Aug 2012, Russell King - ARM Linux wrote:
+Update later calls to init_memory_mapping to keep track of direct mapped
+pfn ranges.
 
-> On Thu, Aug 09, 2012 at 05:12:58PM -0400, Nicolas Pitre wrote:
-> > CFLAGS_THUMB2 should probably be renamed to something more appropriate 
-> > in this case, e.g. CFLAGS_MODE.
-> 
-> CFLAGS_ISA would be more relevant to it, because it's selecting the
-> instruction set.
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/kernel/amd_gart_64.c  |    4 +++-
+ arch/x86/mm/init_64.c          |    3 +--
+ arch/x86/platform/efi/efi_64.c |    2 ++
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
-Agreed.  This particular TLA escaped my mind somehow.
+diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
+index e663112..5ac26b9 100644
+--- a/arch/x86/kernel/amd_gart_64.c
++++ b/arch/x86/kernel/amd_gart_64.c
+@@ -770,7 +770,9 @@ int __init gart_iommu_init(void)
+ 
+ 	if (end_pfn > max_low_pfn_mapped) {
+ 		start_pfn = (aper_base>>PAGE_SHIFT);
+-		init_memory_mapping(start_pfn<<PAGE_SHIFT, end_pfn<<PAGE_SHIFT);
++		end_pfn = init_memory_mapping(start_pfn<<PAGE_SHIFT,
++					      end_pfn<<PAGE_SHIFT);
++		add_pfn_range_mapped(start_pfn, end_pfn);
+ 	}
+ 
+ 	pr_info("PCI-DMA: using GART IOMMU.\n");
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 2b6b4a3..cbed965 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -662,8 +662,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 	int ret;
+ 
+ 	last_mapped_pfn = init_memory_mapping(start, start + size);
+-	if (last_mapped_pfn > max_pfn_mapped)
+-		max_pfn_mapped = last_mapped_pfn;
++	add_pfn_range_mapped(start_pfn, last_mapped_pfn);
+ 
+ 	ret = __add_pages(nid, zone, start_pfn, nr_pages);
+ 	WARN_ON_ONCE(ret);
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ac3aa54..e822c89 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -90,6 +90,8 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+ 		return ioremap(phys_addr, size);
+ 
+ 	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
++	add_pfn_range_mapped(phys_addr >> PAGE_SHIFT, last_map_pfn);
++
+ 	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
+ 		unsigned long top = last_map_pfn << PAGE_SHIFT;
+ 		efi_ioremap(top, size - (top - phys_addr), type);
+-- 
+1.7.9.5
 
 
-Nicolas
