@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab2HIGit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:38:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49457 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab2HIGir (ORCPT
+	id S1755014Ab2HIGlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:41:40 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:49462
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753135Ab2HIGlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:38:47 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: Fix debug message in of_get_named_gpio_flags()
-Date: Thu,  9 Aug 2012 08:38:43 +0200
-Message-Id: <1344494323-4992-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.11.4
-X-Provags-ID: V02:K0:31UVKSl9T1BU1aNEg0DtreIriNVr3sZkSMFTGNxtmw+
- q/5G9PbuZ/ZvcZbW7JlOS/oMRVXoSS3ga3cDvFcyxqFdLw/Zlj
- k4ym3qyx1r8BqXZY431CQgTiiZ+aBj5DSaYKaotqr0YZ79+seY
- OIKh3nrT7lzQzrV6IpB82d3IwWhKgRfalsm1+4/YF96ZWBfJmG
- D3F1iVFl1fOdOG7eJPAGQDM8EUwz8lsD7l/9jKfmnMtNZedRzY
- +MAWoWJ6eWNhb7d4hF6R0+Hfv06FSQ/YbFsgcBDjNGMCSSsihF
- drndAU2zDtaKsSJagWN5TE1pUtYoT3kobpCzH10datlLOcsoLM
- YE0xtLkz0uy5G5hKkrdvUXMRU3TDxtBIwIr0B6PKn9sK7qFJhF
- z/SzCV9rU/9N0HrtQNKgXVM0+8vX1ooI6CuWdhkG6nC5X8Xz1X
- TFxC+
+	Thu, 9 Aug 2012 02:41:39 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q796fMhw010579
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Rob Landley <rob@landley.net>, Milton Miller <miltonm@bga.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Jan Engelhardt <jengelh@inai.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening port
+In-Reply-To: <50228781.7040502@gmail.com> (Cong Wang's message of "Wed, 08 Aug
+	2012 23:36:33 +0800")
+References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com>
+	<501937F7.2070600@landley.net> <gi3946lin5.fsf@mx10.gouders.net>
+	<gisjc5hvun.fsf@mx10.gouders.net>
+	<CAM_iQpWoKGJTUjohn9_guktpBNbOazKY1_eUQozz_O6ZkRmyPg@mail.gmail.com>
+	<giobmsiixa.fsf@mx10.gouders.net> <50228781.7040502@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Thu, 09 Aug 2012 08:41:19 +0200
+Message-ID: <gi4noc36uo.fsf@mx10.gouders.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Thu, 09 Aug 2012 08:41:24 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was probably missed in the conversion done in commit 3d0f7cf
-("gpio: Adjust of_xlate API to support multiple GPIO chips").
+Cong Wang <xiyou.wangcong@gmail.com> writes:
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- drivers/gpio/gpiolib-of.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On 08/03/2012 02:33 PM, Dirk Gouders wrote:
+>>
+>>  From b3aec70d785d338b1b643fece6606cd32addaf0c Mon Sep 17 00:00:00 2001
+>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>> Date: Thu, 2 Aug 2012 22:20:16 +0200
+>> Subject: [PATCH] netconsole.txt: revision of examples for the receiver of kernel messages
+>>
+>> There are at least 4 implementations of netcat with the BSD-based
+>> being the only one that has to be used without the -p switch to
+>> specify the listening port.
+>>
+>> Jan Engelhardt suggested to add an example for socat(1).
+>>
+>> Signed-off-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>
+> It looks like no one takes this patch, so I will take it together with
+> my other netpoll/netconsole patches and send them to netdev.
 
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index a18c4aa..f1a4599 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -82,7 +82,7 @@ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
- 	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
- 
- 	of_node_put(gg_data.gpiospec.np);
--	pr_debug("%s exited with status %d\n", __func__, ret);
-+	pr_debug("%s exited with status %d\n", __func__, gg_data.out_gpio);
- 	return gg_data.out_gpio;
- }
- EXPORT_SYMBOL(of_get_named_gpio_flags);
--- 
-1.7.11.4
+Thank you for taking care of it.
+
+Dirk
 
