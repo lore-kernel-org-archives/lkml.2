@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab2HIV3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:29:15 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52531 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab2HIV3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:29:09 -0400
-Subject: Re: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Paul Moore <paul@paul-moore.com>, David Miller <davem@davemloft.net>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        john.johansen@canonical.com,
-        LSM <linux-security-module@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>
-References: <50215A7E.8000701@linaro.org>
-	 <1344462889.28967.328.camel@edumazet-glaptop>
-	 <5022FD9A.4020603@schaufler-ca.com> <1695034.0lrQgQPOMT@sifl>
-	 <1344523833.28967.996.camel@edumazet-glaptop>
-	 <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Aug 2012 23:29:03 +0200
-Message-ID: <1344547743.31104.582.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757605Ab2HIVld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:41:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64743 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753647Ab2HIVlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:41:32 -0400
+Date: Thu, 9 Aug 2012 23:41:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/19] mm/mpol: Remove NUMA_INTERLEAVE_HIT
+Message-ID: <20120809214111.GF10459@redhat.com>
+References: <20120731191204.540691987@chello.nl>
+ <20120731192808.459705289@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731192808.459705289@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 16:06 -0400, Eric Paris wrote:
-> NAK.
+Hi,
+
+On Tue, Jul 31, 2012 at 09:12:06PM +0200, Peter Zijlstra wrote:
+> Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+> to be compared to either a total of interleave allocations or to a miss
+> count, remove it.
 > 
-> I personally think commit be9f4a44e7d41cee should be reverted until it
-> is fixed.  Let me explain what all I believe it broke and how.
+> Fixing it would be possible, but since we've gone years without these
+> statistics I figure we can continue that way.
 > 
-
-Suggesting to revert this commit while we have known working fixes is a
-bit of strange reaction.
-
-I understand you are upset, but I believe we tried to fix it.
-
-> Old callchain of the creation of the 'equivalent' socket previous to
-> the patch in question just for reference:
+> Also NUMA_HIT fully includes NUMA_INTERLEAVE_HIT so users might
+> switch to using that.
 > 
->     inet_ctl_sock_create
->       sock_create_kern
->         __sock_create
->           pf->create (inet_create)
->             sk_alloc
->               sk_prot_alloc
->                 security_sk_alloc()
+> This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
+
+It's not apparent why you need to remove it for sched-numa. I think I
+see it but it'd be nicer if it would explained so one doesn't need to
+read an internal bit of several patches later to understand why this
+is needed.
+
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -169,7 +169,7 @@ static ssize_t node_read_numastat(struct
+>  		       node_page_state(dev->id, NUMA_HIT),
+>  		       node_page_state(dev->id, NUMA_MISS),
+>  		       node_page_state(dev->id, NUMA_FOREIGN),
+> -		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
+> +		       0UL,
+>  		       node_page_state(dev->id, NUMA_LOCAL),
+>  		       node_page_state(dev->id, NUMA_OTHER));
+>  }
+
+Not so nice to leave forever a 0 here. It doesn't matter if nobody can
+act on it because it wants to be compared, it's still useful as an
+informative value for vmstat below:
+
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -717,7 +717,6 @@ const char * const vmstat_text[] = {
+>  	"numa_hit",
+>  	"numa_miss",
+>  	"numa_foreign",
+> -	"numa_interleave",
+>  	"numa_local",
+>  	"numa_other",
+>  #endif
 > 
 > 
-> This WAS working properly.  All of it. 
-
-Nobody denies it. But acknowledge my patch uncovered a fundamental
-issue.
-
-What kind of 'security module' can decide to let RST packets being sent
-or not, on a global scale ? (one socket for the whole machine)
-
-smack_sk_alloc_security() uses smk_of_current() : What can be the
-meaning of smk_of_current() in the context of 'kernel' sockets...
-
-Your patch tries to maintain this status quo.
-
-In fact I suggest the following one liner patch, unless you can really
-demonstrate what can be the meaning of providing a fake socket for these
-packets.
-
-This mess only happened because ip_append_data()/ip_push_pending_frames()
-are so complex and use an underlying socket.
-
-But this socket should not be ever used outside of its scope.
-
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 76dde25..ec410e0 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1536,6 +1536,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 			  arg->csumoffset) = csum_fold(csum_add(nskb->csum,
- 								arg->csum));
- 		nskb->ip_summed = CHECKSUM_NONE;
-+		skb_orphan(nskb);
- 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
- 		ip_push_pending_frames(sk, &fl4);
- 	}
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
