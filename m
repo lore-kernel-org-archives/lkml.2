@@ -1,63 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895Ab2HIOFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:05:15 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45158 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932626Ab2HIOFL (ORCPT
+	id S932857Ab2HIOGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:06:36 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:28937 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2HIOGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:05:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <50235ED0.5010107@intel.com>
-References: <CABPqkBRWLcP_9WOL_VvucnY7A2AcpzuvsUt4_ZUgYMREo-65dA@mail.gmail.com>
-	<50235ED0.5010107@intel.com>
-Date: Thu, 9 Aug 2012 16:05:09 +0200
-Message-ID: <CABPqkBT-pvmhyOHfMXs7dXsJXpEVmaSST1xFFHzCu4CDBf7baw@mail.gmail.com>
-Subject: Re: [BUG] perf: sharing of cpuctx between core and ibs PMU causes problems
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Thu, 9 Aug 2012 10:06:34 -0400
+Message-ID: <1344521191.2393.3.camel@lorien2>
+Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
+ cache integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: cl@linux.com
+Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, shuah.khan@hp.com
+Date: Thu, 09 Aug 2012 08:06:31 -0600
+In-Reply-To: <1344287631.2486.57.camel@lorien2>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
+	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 8:55 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> On 08/09/2012 08:51 AM, Stephane Eranian wrote:
->> Hi,
->>
->> I ran into a problem on my AMD box whereby I would hit the
->> WARN_ON_ONCE(cpuctx->cgrp) in perf_cgroup_switch().
->>
->> It took me a while to track this down. It turns out that the
->> list_for_each_entry_rcu() loop had multiple iterations. That's
->> normal, we have CPU PMU and IBS PMU.  But what caused
->> the warning to fire is that both the core and IBS PMU were
->> pointing to the same cpuctx struct. Thus, the cpuctx->cgrp
->> was already set  in the second iteration.
->>
->> Is the warning a false positive?
->
-> I think it's a false positive, I'm not sure.
->
-Well, but then you're doing the same work twice.
+On Mon, 2012-08-06 at 15:13 -0600, Shuah Khan wrote:
+> kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
+> is defined. These checks interspersed with the regular code path has
+> lead to compile time warnings when compiled without CONFIG_DEBUG_VM
+> defined. Restructuring the code to move the integrity checks in to a new
+> function would eliminate the current compile warning problem and also
+> will allow for future changes to the debug only code to evolve without
+> introducing new warnings in the regular path. This restructuring work
+> is based on the discussion in the following thread:
+> 
+> https://lkml.org/lkml/2012/7/13/424
 
->>
->> In perf_pmu_register(), there is a search for a matching
->> pmu->task_ctx_nr. Given that the field is pointing to
->> perf_hw_context for both cpu and IBS PMU, there is
->> a match and therefore the cpuctx are shared.
->>
->> The question is: why do we have to share the cpuctx?
->>
->> Note that the same issue probably exists with the Intel
->> uncore PMU.
->
-> uncore PMU does not have this issue because uncore_pmu->task_ctx_nr
-> is 'perf_invalid_context'. find_pmu_context() always return NULL in
-> that case.
->
-Yes, I think IBS should do the same and that should fix the problem
-there too. Will try that.
+Comments, questions. Does this patch look good?
+
+Thanks,
+-- Shuah
+> 
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>  mm/slab_common.c |   79 +++++++++++++++++++++++++++++-------------------------
+>  1 file changed, 43 insertions(+), 36 deletions(-)
+> 
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 12637ce..67409f7 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -23,6 +23,46 @@ enum slab_state slab_state;
+>  LIST_HEAD(slab_caches);
+>  DEFINE_MUTEX(slab_mutex);
+>  
+> +#ifdef CONFIG_DEBUG_VM
+> +static int kmem_cache_sanity_check(const char *name, size_t size)
+> +{
+> +	struct kmem_cache *s = NULL;
+> +
+> +	list_for_each_entry(s, &slab_caches, list) {
+> +		char tmp;
+> +		int res;
+> +
+> +		/*
+> +		 * This happens when the module gets unloaded and doesn't
+> +		 * destroy its slab cache and no-one else reuses the vmalloc
+> +		 * area of the module.  Print a warning.
+> +		 */
+> +		res = probe_kernel_address(s->name, tmp);
+> +		if (res) {
+> +			pr_err("Slab cache with size %d has lost its name\n",
+> +			       s->object_size);
+> +			continue;
+> +		}
+> +
+> +		if (!strcmp(s->name, name)) {
+> +			pr_err("%s (%s): Cache name already exists.\n",
+> +			       __func__, name);
+> +			dump_stack();
+> +			s = NULL;
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+> +	return 0;
+> +}
+> +#else
+> +static inline int kmem_cache_sanity_check(const char *name, size_t size)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  /*
+>   * kmem_cache_create - Create a cache.
+>   * @name: A string which is used in /proc/slabinfo to identify this cache.
+> @@ -53,48 +93,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+>  {
+>  	struct kmem_cache *s = NULL;
+>  
+> -#ifdef CONFIG_DEBUG_VM
+>  	if (!name || in_interrupt() || size < sizeof(void *) ||
+>  		size > KMALLOC_MAX_SIZE) {
+> -		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+> -			" failed\n", name);
+> +		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+>  		goto out;
+>  	}
+> -#endif
+>  
+>  	get_online_cpus();
+>  	mutex_lock(&slab_mutex);
+>  
+> -#ifdef CONFIG_DEBUG_VM
+> -	list_for_each_entry(s, &slab_caches, list) {
+> -		char tmp;
+> -		int res;
+> -
+> -		/*
+> -		 * This happens when the module gets unloaded and doesn't
+> -		 * destroy its slab cache and no-one else reuses the vmalloc
+> -		 * area of the module.  Print a warning.
+> -		 */
+> -		res = probe_kernel_address(s->name, tmp);
+> -		if (res) {
+> -			printk(KERN_ERR
+> -			       "Slab cache with size %d has lost its name\n",
+> -			       s->object_size);
+> -			continue;
+> -		}
+> -
+> -		if (!strcmp(s->name, name)) {
+> -			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
+> -				" already exists.\n",
+> -				name);
+> -			dump_stack();
+> -			s = NULL;
+> -			goto oops;
+> -		}
+> -	}
+> -
+> -	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+> -#endif
+> +	if (kmem_cache_sanity_check(name, size))
+> +		goto oops;
+>  
+>  	s = __kmem_cache_create(name, size, align, flags, ctor);
+>  
+> @@ -102,9 +111,7 @@ oops:
+>  	mutex_unlock(&slab_mutex);
+>  	put_online_cpus();
+>  
+> -#ifdef CONFIG_DEBUG_VM
+>  out:
+> -#endif
+>  	if (!s && (flags & SLAB_PANIC))
+>  		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
+>  
+
+
