@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab2HIFPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 01:15:03 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43843 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2HIFPB (ORCPT
+	id S1752556Ab2HIFZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 01:25:24 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54717 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab2HIFZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 01:15:01 -0400
+	Thu, 9 Aug 2012 01:25:23 -0400
+X-AuditID: 9c930179-b7b65ae000006d01-61-502349c16102
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v5 5/5] perf script: Add event_analyzing_sample.py as a sample for general event handling
+References: <1344419875-21665-1-git-send-email-feng.tang@intel.com>
+	<1344419875-21665-6-git-send-email-feng.tang@intel.com>
+	<87ipcsyhqd.fsf@sejong.aot.lge.com> <20120809123007.6f3f0a8f@feng-i7>
+Date: Thu, 09 Aug 2012 14:19:29 +0900
+In-Reply-To: <20120809123007.6f3f0a8f@feng-i7> (Feng Tang's message of "Thu, 9
+	Aug 2012 12:30:07 +0800")
+Message-ID: <874nocy74u.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120809132459.6ed7fc7e@notabene.brown>
-References: <alpine.LRH.2.02.1208081308380.30954@praktifix.dwd.de>
-	<20120809132459.6ed7fc7e@notabene.brown>
-Date: Thu, 9 Aug 2012 13:14:59 +0800
-X-Google-Sender-Auth: wHZD8sc3Mo5ReB3bM55j6Jzlt7I
-Message-ID: <CANejiEUJ=kMMUdogEDsw=-ni1GrFu+QbewTOUbquyg8uVZ-N0w@mail.gmail.com>
-Subject: Re: What happened to TRIM support for raid linear/0/1/10?
-From: Shaohua Li <shli@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Holger Kiehl <Holger.Kiehl@dwd.de>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/9 NeilBrown <neilb@suse.de>:
-> On Wed, 8 Aug 2012 13:10:51 +0000 (GMT) Holger Kiehl <Holger.Kiehl@dwd.de>
-> wrote:
->
->> Hello,
->>
->> I have been using the patches posted by Shaohua Li on 16th March 2012:
->>
->>     http://lkml.indiana.edu/hypermail/linux/kernel/1203.2/00048.html
->>
->> for several month on a very busy file server (serving 9 million files
->> with 5.3 TiB daily) without any problems.
->>
->> Is there any chance that these patches will go into the official kernel?
->> Or what is the reason that these patches are no applied?
->
-> I'm trying to appear to be an incompetent maintainer so that someone will
-> offer to take over.  It isn't working yet.  I'm probably scuttling the
-> attempt just by replying to this email - drat.
->
->>
->> I have attached the patch set in one big patch for 3.5. Please do not
->> use it since I am not sure if it is correct. Shaohua could you please
->> take a look if it is correct and maybe post a new one?
->>
->> Personally, I would think that TRIM support MD would be a very good thing.
->
-> Probably.  Maybe if they get posted again I'll feel guilty and do something
-> about them.
->
-> One issue that needs to be fixed is that a few places assumed that the
-> "discard_zeros_data" flag is always set, which is not the case (else we
-> wouldn't have that flag).  That was only a couple of places though, not a
-> wide spread problem.
+Hi,
 
-The big problem is SATA discard request merge is broken, while doing
-MD discard will trigger discard request merge. In this form, I bet Neil will
-not accept the patches. So not the problem MD discard patch itself.
+On Thu, 9 Aug 2012 12:30:07 +0800, Feng Tang wrote:
+> Hi Namhyung,
+>
+> Many thanks for your valuable comments, I'll fold the fixes into an
+> incremental patch.
+>
+> On Thu, 9 Aug 2012 10:30:34 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> On Wed,  8 Aug 2012 17:57:55 +0800, Feng Tang wrote:
+>> > Currently only trace point events are supported in perf/python script,
+>> > the first 3 patches of this serie add the support for all types of
+>> 
+>
+>> > +con = sqlite3.connect("/dev/shm/perf.db")
+>> > +con.isolation_level = None
+>> > +
+>> > +def trace_begin():
+>> > +	print "In trace_begin:\n"
+>> 
+>> It seems it's not aligned with other statements, and even not needed at
+>> all. Does it work?
+>
+> trace_begin() is a must have for a python script, the <print "In trace_begin:\n">
+> is automatically generated from "perf script -g", I guess its intension is
+> to help developer debug their own patches. and same for the trace_end().
+>
+I meant the print statement not trace_begin function :)
 
-Last time Martin said he is working on SCSI discard request merge
-patches. That isn't happened yet. Maybe I should ping Jens
-to disable discard request merge currently, it's broken for a long
-time anyway.
+Btw, by any chance do you plan to add support to callchains? I think
+it's very nice to have.
+
+Thanks,
+Namhyung
+
+
+>> > +def print_header(event_name, cpu, secs, nsecs, pid, comm):
+>> > +	print "%-20s %5u %05u.%09u %8u %-20s " % \
+>> > +	(event_name, cpu, secs, nsecs, pid, comm),
+>> 
+>> It seems this function was not called anywhere.
+>
+> It is auto-generated too, and you are right, it is not needed at all,
+> will remove it.
+>
+> Thanks,
+> Feng
