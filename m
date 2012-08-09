@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab2HIWcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 18:32:24 -0400
-Received: from n2-vm3.bullet.mail.ne1.yahoo.com ([98.138.229.211]:40727 "EHLO
-	n2-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755607Ab2HIWcV (ORCPT
+	id S1759890Ab2HIWev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 18:34:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3495 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab2HIWet convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 18:32:21 -0400
-X-Yahoo-Newman-Id: 700993.38762.bm@smtp102.biz.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WmniT2YVM1lp9IMnXg1llmaLNFsE36IbsYLT863YNlEp2zO
- Fh9BiJUCqdaahm99PXcSdZr9H.PMyEc2J21e9RTWQGgPxwOsaDid.LlcVSrD
- 0EHETdiS_02.UjsPXbAYTwZ7M5YA_Nl33F6rmN0MEH_XxzAAF0jWP1mR6rEK
- gNhAZsiQELIoMLnGN1W33X75.20BF4mrzpwsyrlayMn8jEm.Nfq3f0AHwVuB
- t8HsYSdV33xYs8dADLbfkdBhREBHNmmm9tCjjTiM_BNmQQvGQTarWZ_fqiff
- _ts15o15DaFScmUFzwRQLcb4hDdkbghf2tDZWKIZrSyOsgd5YLJs_Xk._7r.
- 7IOsiNvbgIx7gs2pmJiq1LyotfNvF_x2QzX7bRiV5v3dEgdTN.i1pHkcbuSZ
- wkwt7fGodKP8JGcDP6yQYuHk1DA.hGgQJR677R6wHoO8Gc20dzRyI.lKwy0Y
- pBYbjTcXNEw--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <5024392D.3060608@schaufler-ca.com>
-Date: Thu, 09 Aug 2012 15:26:53 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 9 Aug 2012 18:34:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 09 Aug 2012 15:34:49 -0700
+From: Peter Boonstoppel <pboonstoppel@nvidia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Date: Thu, 9 Aug 2012 15:34:47 -0700
+Subject: [PATCH 1/1] sched: unthrottle rt runqueues in __disable_runtime()
+Thread-Topic: [PATCH 1/1] sched: unthrottle rt runqueues in
+ __disable_runtime()
+Thread-Index: AQHNdnxkmK9n7MnoZU6UiybaJm1h9Q==
+Message-ID: <5FBF8E85CA34454794F0F7ECBA79798F379D3648B7@HQMAIL04.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        john.johansen@canonical.com,
-        LSM <linux-security-module@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
-References: <50215A7E.8000701@linaro.org>  <1344462889.28967.328.camel@edumazet-glaptop>  <5022FD9A.4020603@schaufler-ca.com> <1695034.0lrQgQPOMT@sifl>  <1344523833.28967.996.camel@edumazet-glaptop>  <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com>  <1344547743.31104.582.camel@edumazet-glaptop>  <5024313F.1010404@schaufler-ca.com> <1344549920.31104.701.camel@edumazet-glaptop>
-In-Reply-To: <1344549920.31104.701.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/9/2012 3:05 PM, Eric Dumazet wrote:
-> On Thu, 2012-08-09 at 14:53 -0700, Casey Schaufler wrote:
->> On 8/9/2012 2:29 PM, Eric Dumazet wrote:
->>> smack_sk_alloc_security() uses smk_of_current() : What can be the
->>> meaning of smk_of_current() in the context of 'kernel' sockets...
->> Yes, and all of it's callers - to date - have had an appropriate
->> value of current. It is using the API in the way it is supposed to.
->> It is assuming a properly formed socket. You want to give it a
->> cobbled together partial socket structure without task context.
->> Your predecessor did not have this problem.
-> My predecessor ? You mean before the patch ?
->
-> tcp socket was preallocated by at kernel boot time.
->
-> What is the 'user' owning this socket ?
->
-> You guys focus on an implementation detail of TCP stack.
-> You should never use this fake socket.
->
-> I repeat : There are no true socket for these control packets.
->
-> If you want them, then you'll have to add fields in timewait socket.
->
-> I can decide to rewrite the whole thing just building a TCP packet on
-> its own, and send it without any fake socket.
->
-> Some guy 15 years ago tried to reuse some high level functions, able to
-> build super packets and use sophisticated tricks, while we only want so
-> send a 40 or 60 bytes packet.
+migrate_tasks() uses _pick_next_task_rt() to get tasks from the
+real-time runqueues to be migrated. When rt_rq is throttled
+_pick_next_task_rt() won't return anything, in which case
+migrate_tasks() can't move all threads over and gets stuck in an
+infinite loop.
 
-OK, fine. You have an optimization. I'm good with that. Just don't
-expect that the entire software stack you are taking advantage of
-is going to change to accommodate your special case.
+Instead unthrottle rt runqueues before migrating tasks.
 
+Additionally: move unthrottle_offline_cfs_rqs() to rq_offline_fair()
+
+Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+---
+ kernel/sched/core.c  |    3 ---
+ kernel/sched/fair.c  |    7 +++++--
+ kernel/sched/rt.c    |    1 +
+ kernel/sched/sched.h |    1 -
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2df035a..2e7ecff 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5221,9 +5221,6 @@ static void migrate_tasks(unsigned int dead_cpu)
+ 	 */
+ 	rq->stop = NULL;
+ 
+-	/* Ensure any throttled groups are reachable by pick_next_task */
+-	unthrottle_offline_cfs_rqs(rq);
+-
+ 	for ( ; ; ) {
+ 		/*
+ 		 * There's this thread running, bail when that's the only
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3704ad3..dc8341b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2057,7 +2057,7 @@ static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+ 	hrtimer_cancel(&cfs_b->slack_timer);
+ }
+ 
+-void unthrottle_offline_cfs_rqs(struct rq *rq)
++static void unthrottle_offline_cfs_rqs(struct rq *rq)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 
+@@ -2111,7 +2111,7 @@ static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
+ 	return NULL;
+ }
+ static inline void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
+-void unthrottle_offline_cfs_rqs(struct rq *rq) {}
++static inline void unthrottle_offline_cfs_rqs(struct rq *rq) {}
+ 
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ 
+@@ -5086,6 +5086,9 @@ static void rq_online_fair(struct rq *rq)
+ static void rq_offline_fair(struct rq *rq)
+ {
+ 	update_sysctl();
++
++	/* Ensure any throttled groups are reachable by pick_next_task */
++	unthrottle_offline_cfs_rqs(rq);
+ }
+ 
+ #endif /* CONFIG_SMP */
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 573e1ca..b9a94fb 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -691,6 +691,7 @@ balanced:
+ 		 * runtime - in which case borrowing doesn't make sense.
+ 		 */
+ 		rt_rq->rt_runtime = RUNTIME_INF;
++		rt_rq->rt_throttled = 0;
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		raw_spin_unlock(&rt_b->rt_runtime_lock);
+ 	}
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4134d37..5d9aabe 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1167,7 +1167,6 @@ extern void print_rt_stats(struct seq_file *m, int cpu);
+ 
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+-extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ 
+ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+ 
+-- 
+1.7.0.4
