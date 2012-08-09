@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab2HII75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:59:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64043 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab2HII7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:59:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 06/10] ARM: davinci: don't use broken ntosd2_init_i2c
-Date: Thu, 9 Aug 2012 08:00:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Andrey Porodko <panda@chelcom.ru>
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-7-git-send-email-arnd@arndb.de>
-In-Reply-To: <1344461278-28245-7-git-send-email-arnd@arndb.de>
+	id S1757204Ab2HIJAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:00:25 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:60638 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757111Ab2HIJAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:00:23 -0400
+Date: Thu, 9 Aug 2012 10:00:19 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v6 1/3] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120809090019.GB10288@csn.ul.ie>
+References: <cover.1344463786.git.aquini@redhat.com>
+ <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208090800.18321.arnd@arndb.de>
-X-Provags-ID: V02:K0:G93hVoDpuiIPMvINb8gbN4CBeXdzg/5gP0/4MF3LIvS
- wpBkfu+Ar9Thybtu8oDkHL2qLSVLSG1oDsXjPcrH14LqV9yGk/
- h0U6YWwycvnADP6Xhfmf7kYxZGdbgCiuvurNGVJXvmyCzr83lo
- wUdyvJIDAKg9EHDhLpjlE/CBouT8kkElTngPhI7lcBCspTAMan
- q4d06lugGtiTYJqndX4J9Yxqj7M8gEuNkTTXfD700YdGYwKAEv
- Bgs/8D+exTwKVafnvKAHC5X2vx6d+YQgWZ3GLrTCKqsex67JPy
- plWes1NG3QRy6fAGibmaN9dZaXCyDbbkEz96kRBGt/0ouMe8CB
- 0hjJZYwyV3MOcn+VnH68=
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On second thought, there is probably no use in keeping the broken function
-around, and we can just kill it off. If someone wants to add an i2c
-device to the bus, they can always add the init code back as well.
+On Wed, Aug 08, 2012 at 07:53:19PM -0300, Rafael Aquini wrote:
+> Memory fragmentation introduced by ballooning might reduce significantly
+> the number of 2MB contiguous memory blocks that can be used within a guest,
+> thus imposing performance penalties associated with the reduced number of
+> transparent huge pages that could be used by the guest workload.
+> 
+> This patch introduces the helper functions as well as the necessary changes
+> to teach compaction and migration bits how to cope with pages which are
+> part of a guest memory balloon, in order to make them movable by memory
+> compaction procedures.
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
-8<-----
-Subject: ARM: davinci: don't use broken ntosd2_init_i2c
+Mostly looks ok but I have one question;
 
-ntosd2_init_i2c walks the ntosd2_i2c_info array, which it expects to
-be populated with at least one member. gcc correctly warns about
-the out-of-bounds access here.
+> <SNIP>
+>
+> +/* putback_lru_page() counterpart for a ballooned page */
+> +bool putback_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!movable_balloon_page(page)))
+> +		return false;
+> +
+> +	if (likely(trylock_page(page))) {
+> +		if (movable_balloon_page(page)) {
+> +			__putback_balloon_page(page);
+> +			put_page(page);
+> +			unlock_page(page);
+> +			return true;
+> +		}
+> +		unlock_page(page);
+> +	}
 
-Since this can not possibly work, it's better to disable i2c
-support entirely on this board.
+You might have answered this already as I skipped over a few revisions
+and if you have, sorry about that and please add a comment :)
 
-Without this patch, building davinci_all_defconfig results in:
+This trylock_page looks risky as it looks like it can fail if another
+process running compaction tries to isolate this page. It locks the page,
+finds it cant and releases the lock but in the meantime this trylock can
+fail. It triggers a WARN_ON so we'll get a bug report but it leaves the
+reference count elevated and this page has now leaked.
 
-arch/arm/mach-davinci/board-neuros-osd2.c: In function 'davinci_ntosd2_init':
-arch/arm/mach-davinci/board-neuros-osd2.c:187:20: warning: array subscript is above array bounds [-Warray-bounds]
+Why not just lock_page(page)? As you have already isolated this page you
+know that the lock is only going to be held by a parallel compacting
+process checking the reference count and the delay will be short. As a
+bonus you can drop the WARN_ON check in the caller and make this void as
+the WARN_ON check in the caller becomes redundant.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Andrey Porodko <panda@chelcom.ru>
-
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index 5de69f2..f6b9fc7 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -162,38 +162,6 @@ static void __init davinci_ntosd2_map_io(void)
- 	dm644x_init();
- }
- 
--/*
-- I2C initialization
--*/
--static struct davinci_i2c_platform_data ntosd2_i2c_pdata = {
--	.bus_freq	= 20 /* kHz */,
--	.bus_delay	= 100 /* usec */,
--};
--
--static struct i2c_board_info __initdata ntosd2_i2c_info[] =  {
--};
--
--static	int ntosd2_init_i2c(void)
--{
--	int	status;
--
--	davinci_init_i2c(&ntosd2_i2c_pdata);
--	status = gpio_request(NTOSD2_MSP430_IRQ, ntosd2_i2c_info[0].type);
--	if (status == 0) {
--		status = gpio_direction_input(NTOSD2_MSP430_IRQ);
--		if (status == 0) {
--			status = gpio_to_irq(NTOSD2_MSP430_IRQ);
--			if (status > 0) {
--				ntosd2_i2c_info[0].irq = status;
--				i2c_register_board_info(1,
--					ntosd2_i2c_info,
--					ARRAY_SIZE(ntosd2_i2c_info));
--			}
--		}
--	}
--	return status;
--}
--
- static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
- 	.wires		= 4,
- 	.version	= MMC_CTLR_VERSION_1
-@@ -218,7 +186,6 @@ static __init void davinci_ntosd2_init(void)
- {
- 	struct clk *aemif_clk;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
--	int	status;
- 
- 	aemif_clk = clk_get(NULL, "aemif");
- 	clk_enable(aemif_clk);
-@@ -242,12 +209,6 @@ static __init void davinci_ntosd2_init(void)
- 	platform_add_devices(davinci_ntosd2_devices,
- 				ARRAY_SIZE(davinci_ntosd2_devices));
- 
--	/* Initialize I2C interface specific for this board */
--	status = ntosd2_init_i2c();
--	if (status < 0)
--		pr_warning("davinci_ntosd2_init: msp430 irq setup failed:"
--						"	 %d\n", status);
--
- 	davinci_serial_init(&uart_config);
- 	dm644x_init_asp(&dm644x_ntosd2_snd_data);
- 
+-- 
+Mel Gorman
+SUSE Labs
