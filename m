@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab2HIMbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:31:06 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41867 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228Ab2HIMbE (ORCPT
+	id S932560Ab2HIMbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 08:31:17 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:47193 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab2HIMbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:31:04 -0400
-X-AuditID: b753bd60-9f483ba000000655-c1-5023ad84ae78
-X-AuditID: b753bd60-9f483ba000000655-c1-5023ad84ae78
+	Thu, 9 Aug 2012 08:31:14 -0400
+X-AuditID: b753bd60-9fe84ba000000655-f0-5023ad8f4da3
+X-AuditID: b753bd60-9fe84ba000000655-f0-5023ad8f4da3
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PATCH V2 2/6] virtio/console: Add a failback for unstealable pipe
- buffer
+Subject: [PATCH V2 3/6] virtio/console: Wait until the port is ready on splice
 To: linux-kernel@vger.kernel.org
 Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
@@ -27,8 +26,8 @@ Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
         virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Thu, 09 Aug 2012 21:30:50 +0900
-Message-ID: <20120809123049.8542.21179.stgit@ltc189.sdl.hitachi.co.jp>
+Date: Thu, 09 Aug 2012 21:31:00 +0900
+Message-ID: <20120809123100.8542.63507.stgit@ltc189.sdl.hitachi.co.jp>
 In-Reply-To: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
 References: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -42,63 +41,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Add a failback memcpy path for unstealable pipe buffer.
-If buf->ops->steal() fails, virtio-serial tries to
-copy the page contents to an allocated page, instead
-of just failing splice().
+Wait if the port is not connected or full on splice
+like as write is doing.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
+ drivers/char/virtio_console.c |   39 +++++++++++++++++++++++++++------------
+ 1 files changed, 27 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 730816c..22b7373 100644
+index 22b7373..b2fc2ab 100644
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
- 			struct splice_desc *sd)
- {
- 	struct sg_list *sgl = sd->u.data;
--	unsigned int len = 0;
-+	unsigned int offset, len;
- 
- 	if (sgl->n == MAX_SPLICE_PAGES)
- 		return 0;
-@@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
- 
- 		len = min(buf->len, sd->len);
- 		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
--		sgl->n++;
--		sgl->len += len;
-+	} else {
-+		/* Failback to copying a page */
-+		struct page *page = alloc_page(GFP_KERNEL);
-+		char *src = buf->ops->map(pipe, buf, 1);
-+		char *dst;
-+
-+		if (!page)
-+			return -ENOMEM;
-+		dst = kmap(page);
-+
-+		offset = sd->pos & ~PAGE_MASK;
-+
-+		len = sd->len;
-+		if (len + offset > PAGE_SIZE)
-+			len = PAGE_SIZE - offset;
-+
-+		memcpy(dst + offset, src + buf->offset, len);
-+
-+		kunmap(page);
-+		buf->ops->unmap(pipe, buf, src);
-+
-+		sg_set_page(&(sgl->sg[sgl->n]), page, len, offset);
- 	}
-+	sgl->n++;
-+	sgl->len += len;
- 
- 	return len;
+@@ -724,6 +724,26 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 	return fill_readbuf(port, ubuf, count, true);
  }
+ 
++static int wait_port_writable(struct port *port, bool nonblock)
++{
++	int ret;
++
++	if (will_write_block(port)) {
++		if (nonblock)
++			return -EAGAIN;
++
++		ret = wait_event_freezable(port->waitqueue,
++					   !will_write_block(port));
++		if (ret < 0)
++			return ret;
++	}
++	/* Port got hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
++
++	return 0;
++}
++
+ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
+ 			       size_t count, loff_t *offp)
+ {
+@@ -740,18 +760,9 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
+ 
+ 	nonblock = filp->f_flags & O_NONBLOCK;
+ 
+-	if (will_write_block(port)) {
+-		if (nonblock)
+-			return -EAGAIN;
+-
+-		ret = wait_event_freezable(port->waitqueue,
+-					   !will_write_block(port));
+-		if (ret < 0)
+-			return ret;
+-	}
+-	/* Port got hot-unplugged. */
+-	if (!port->guest_connected)
+-		return -ENODEV;
++	ret = wait_port_writable(port, nonblock);
++	if (ret < 0)
++		return ret;
+ 
+ 	count = min((size_t)(32 * 1024), count);
+ 
+@@ -851,6 +862,10 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 		.u.data = &sgl,
+ 	};
+ 
++	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
++	if (ret < 0)
++		return ret;
++
+ 	sgl.n = 0;
+ 	sgl.len = 0;
+ 	sgl.sg = kmalloc(sizeof(struct scatterlist) * MAX_SPLICE_PAGES,
 
 
