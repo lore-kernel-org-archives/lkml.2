@@ -1,94 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab2HIJBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:01:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37095 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab2HIJBJ (ORCPT
+	id S1757288Ab2HIJBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:01:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41495 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab2HIJBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:01:09 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.59+drm33.26
-Date: Thu,  9 Aug 2012 11:01:07 +0200
-Message-Id: <1344502867-10186-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 9 Aug 2012 05:01:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUV51Bk=jxnfrGL4xo6MQXnVdhUCago_RPZM-iL+twpF1A@mail.gmail.com>
+References: <CAB=NE6WZWEO=b5Usx4RKDLC--TvLWnOom0P+HmXsxh7QZQQXQA@mail.gmail.com>
+ <CAFub=KRtuTDn1DnHP0aKZT6RBeA2kNkLm6ud-4Z=1ESPs==h0g@mail.gmail.com>
+ <CAB=NE6V7Tx1ioDafPmOprwzd0Q61dDe8XK5gBghXHVROXOBA=Q@mail.gmail.com> <CA+icZUV51Bk=jxnfrGL4xo6MQXnVdhUCago_RPZM-iL+twpF1A@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Thu, 9 Aug 2012 02:01:11 -0700
+X-Google-Sender-Auth: NSQioZOg2bDA895tw-fG3PfwbyY
+Message-ID: <CAB=NE6UP7JfP+Uxo1Px67-xsGrsfddyyqTVP=ybbZCnE=2kxFw@mail.gmail.com>
+Subject: Re: Using vanilla kernels headers to do backport testing -- issues
+ with memcpy()
+To: sedat.dilek@gmail.com
+Cc: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.59+drm33.26 longterm tree.
+On Thu, Aug 9, 2012 at 12:27 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> I am not an English native but this sentence sounds a bit strange to
+> me ("used" followed by "require" and double "Linux"?).
+> I can imagine what you want to express but have no better wording right now.
+>
+> 180 +  echo -e "   This was added since kernels >= 3.4 used require"
+> 181 +  echo -e "   a glibc >= 2.14 for memcpy(), and not all Linux"
+> 182 +  echo -e "   Linux distributions have such glibc.
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+Fixed.
 
-This release updates the DRM subsystem only.
-
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-or
-  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
-
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-or
-  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
-
--Stefan
-
-------
-
-* drm: integer overflow in drm_mode_dirtyfb_ioctl()
-* Linux 2.6.32.59+drm33.26
-
- Makefile                   |    2 +-
- drivers/gpu/drm/drm_crtc.c |    4 ++++
- include/drm/drm_mode.h     |    2 ++
- 3 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/Makefile b/Makefile
-index 7667dad..a9c82a4 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .59+drm33.25
-+EXTRAVERSION = .59+drm33.26
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 81ba0e6..ec9e97e 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1832,6 +1832,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_device *dev,
- 	}
-
- 	if (num_clips && clips_ptr) {
-+		if (num_clips < 0 || num_clips > DRM_MODE_FB_DIRTY_MAX_CLIPS) {
-+			ret = -EINVAL;
-+			goto out_err1;
-+		}
- 		clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
- 		if (!clips) {
- 			ret = -ENOMEM;
-diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
-index c5ba163..9cf639c 100644
---- a/include/drm/drm_mode.h
-+++ b/include/drm/drm_mode.h
-@@ -232,6 +232,8 @@ struct drm_mode_fb_cmd {
- #define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
- #define DRM_MODE_FB_DIRTY_FLAGS         0x03
-
-+#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
-+
- /*
-  * Mark a region of a framebuffer as dirty.
-  *
+ Luis
