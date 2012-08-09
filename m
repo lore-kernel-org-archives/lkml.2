@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab2HIGta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:49:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41735 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab2HIGt2 (ORCPT
+	id S1755354Ab2HIGty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:49:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51047 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755064Ab2HIGtx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:49:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="222859705"
-X-IronPort-AV: E=Sophos;i="4.77,738,1336374000"; 
-   d="scan'208";a="160364884"
-From: "Ren, Cloud" <cjren@qca.qualcomm.com>
-To: David Miller <davem@davemloft.net>
-CC: "joe@perches.com" <joe@perches.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>,
-        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-Subject: RE: [PATCH] net: add new QCA alx ethernet driver
-Thread-Topic: [PATCH] net: add new QCA alx ethernet driver
-Thread-Index: AQHNddTR6PRqpmernk28qOEelr0rNJdQvhvwgACVLgD//5K5UIAAkSUA//+OvXA=
-Date: Thu, 9 Aug 2012 06:49:25 +0000
-Message-ID: <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
-References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
-	<1344485382.2024.9.camel@joe2Laptop>
-	<6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
- <20120808.231804.12694947300243733.davem@davemloft.net>
-In-Reply-To: <20120808.231804.12694947300243733.davem@davemloft.net>
+	Thu, 9 Aug 2012 02:49:53 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+CC: "'Richard Purdie'" <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] backlight: lp855x: add FAST bit description for LP8556
+Thread-Topic: [PATCH] backlight: lp855x: add FAST bit description for LP8556
+Thread-Index: Ac11+xij+HVzYfmDSVW1u46vF1axJg==
+Date: Thu, 9 Aug 2012 06:49:22 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEBC13@DBDE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.48.1]
-Content-Type: text/plain; charset="gb2312"
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q796naoK025369
+
+LP8556 backlight driver supports fast refresh mode when exiting
+the low power mode.
+This bit can be configurable in the platform side.
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ include/linux/platform_data/lp855x.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/platform_data/lp855x.h b/include/linux/platform_data/lp855x.h
+index cc76f1f..761f317 100644
+--- a/include/linux/platform_data/lp855x.h
++++ b/include/linux/platform_data/lp855x.h
+@@ -46,6 +46,8 @@
+ #define LP8556_I2C_CONFIG	((ENABLE_BL << BL_CTL_SHFT) | \
+ 				(LP8556_I2C_ONLY << BRT_MODE_SHFT))
+ #define LP8556_COMB2_CONFIG	(LP8556_COMBINED2 << BRT_MODE_SHFT)
++#define LP8556_FAST_CONFIG	BIT(7) /* use it if EPROMs should be maintained
++					  when exiting the low power mode */
+ 
+ enum lp855x_chip_id {
+ 	LP8550,
+-- 
+1.7.2.5
 
 
-
->-----Original Message-----
->From: David Miller [mailto:davem@davemloft.net]
->Sent: 2012Äê8ÔÂ9ÈÕ 14:18
->To: Ren, Cloud
->Cc: joe@perches.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->qca-linux-team; nic-devel; Huang, Xiong; hao-ran.liu@canonical.com; Rodriguez,
->Luis
->Subject: Re: [PATCH] net: add new QCA alx ethernet driver
->
->From: "Ren, Cloud" <cjren@qca.qualcomm.com>
->Date: Thu, 9 Aug 2012 04:44:08 +0000
->
->> I only want to do some additional explanations to david. It makes nothing with
->original patch.
->
->Stop this TOP POSTING, it's bad etiquette on a technical mailing list.
->
->Look at how other people write their email responses on this mailing list.  They
->first provide a quoted portion of what they are replying
->to:
->
->> Quoted
->> something like this.
->
->And then they provide their response UNDERNEATH.
->
->When you provide your response at the top of the email, it is unexpected, and
->makes more work for people reading what you write.
->
->You guys are doing everything possibly wrong.
->
->You have unnecessarily quoted a HUGE patch just to provide some ancillary in
->formation.
->
->You are TOP POSTING.
->
->You added a signoff of someone who did not give you explicit permission to do
->so.
->
->And you seem to not comprehend nor care about the implications or effects of
->your actions that are hurting other people and creating a huge brudon.
->
->I very much intend to simply ignore your work completely until you can get your
->act in gear, write proper emails, and submit patches properly.
->
->It is the only deterrant I have for your incredibly rude and inconsiderate
->behavior.
+Best Regards,
+Milo
 
 
-Hi David,
-
-Please calm down. I will follow rule of sending email from now on. Sorry for causing
-your trouble. Luis has ever asked joe for adding as a Signed-off-by. At that time joe agreed
-with it. If joe prefers his name not be listed as a Signed-off-by, I will respect his decision.
-alx driver is innocent. Please help review.  Thanks
-
-cloud
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
