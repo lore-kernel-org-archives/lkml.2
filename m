@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab2HICP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 22:15:28 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38999 "EHLO
+	id S1753062Ab2HIC1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 22:27:43 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14409 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2HICPT (ORCPT
+	with ESMTP id S1751114Ab2HIC1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 22:15:19 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="220521122"
+	Wed, 8 Aug 2012 22:27:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6797"; a="220523700"
 X-IronPort-AV: E=Sophos;i="4.77,736,1336374000"; 
-   d="scan'208";a="308142547"
-From: <cjren@qca.qualcomm.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
-        Cloud Ren <cjren@qca.qualcomm.com>,
-        Xiong Huang <xiong@qca.qualcomm.com>,
+   d="scan'208";a="364595585"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
         "Hao-Ran Liu(Joseph Liu)" <hao-ran.liu@canonical.com>,
         Joe Perches <joe@perches.com>,
-        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Subject: [PATCH] net: add new QCA alx ethernet driver
-Date: Thu, 9 Aug 2012 18:14:30 +0800
-Message-ID: <1344507270-2907-1-git-send-email-cjren@qca.qualcomm.com>
-X-Mailer: git-send-email 1.7.7
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Subject: RE: [PATCH] net: add new QCA alx ethernet driver
+Thread-Topic: [PATCH] net: add new QCA alx ethernet driver
+Thread-Index: AQHNddTR6PRqpmernk28qOEelr0rNJdQvhvw
+Date: Thu, 9 Aug 2012 02:27:35 +0000
+Message-ID: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+References: <1344507270-2907-1-git-send-email-cjren@qca.qualcomm.com>
+In-Reply-To: <1344507270-2907-1-git-send-email-cjren@qca.qualcomm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.48.1]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q792SAol024619
+
+Hi David,
+
+The alx driver only supports two new nics(l1f/l2f) now.  It doesn't supersede atl1c driver.
+Atl1c driver still supports old nics.
+
+Thank
+Cloud ren
+
+
+-----Original Message-----
+From: Ren, Cloud 
+Sent: 2012Äê8ÔÂ9ÈÕ 18:15
+To: davem@davemloft.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Cc: qca-linux-team; nic-devel; Ren, Cloud; Huang, Xiong; Hao-Ran Liu(Joseph Liu); Joe Perches; Rodriguez, Luis
+Subject: [PATCH] net: add new QCA alx ethernet driver
 
 From: Cloud Ren <cjren@qca.qualcomm.com>
 
@@ -11442,3 +11468,4 @@ index 0000000..9780813
 -- 
 1.7.7
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
