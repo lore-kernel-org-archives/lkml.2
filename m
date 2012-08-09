@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab2HIFx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 01:53:27 -0400
-Received: from mail.ispras.ru ([83.149.199.43]:46055 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab2HIFx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 01:53:26 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH] bio: Fix potential memory leak in bio_find_or_create_slab()
-Date: Thu,  9 Aug 2012 09:52:12 +0400
-Message-Id: <1344491532-4969-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754173Ab2HIFxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 01:53:55 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24286 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab2HIFxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 01:53:53 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-f3-5023506f51f8
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        linaro-mm-sig@lists.linaro.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [GIT PULL] DMA-mapping fixups for v3.6-rc2
+Date: Thu, 09 Aug 2012 07:53:25 +0200
+Message-id: <1344491605-19770-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jAd38AOUAg9uPDS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGnmUrmQoWsVe0HNnP3sD4lrWLkZNDQsBEYvrmNcwQtpjEhXvr
+	2boYuTiEBBYxSrzsmswM4axmkji0bSsbSBWbgKFE19suMFtEwEji84srrCBFzAJdTBLfLsxh
+	BEkICxhLfF96jR3EZhFQlZjQeRNoEgcHr4CHxN9l0RDb5CWe3u9jm8DIvYCRYRWjaGpBckFx
+	UnquoV5xYm5xaV66XnJ+7iZGsA+fSe1gXNlgcYhRgINRiYdXY4NSgBBrYllxZe4hRgkOZiUR
+	3l1KygFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeY29v/oLCaQnlqRmp6YWpBbBZJk4OKUaGNXO
+	W5rG1V8z89uxqSPL1fnIUvU2f4agorOzE7d9nmIp0Jqmv0Bw+VFn7ldSssqfPG8dkdtsL9fM
+	aMPTN/tGxDuFyR5mifPY9++oS7rCeSRHZv+d8va1kddDhJ/lTQpZeWqVaOoHeVevB9mtj3p+
+	73nvNMH8ZlXEgj//9ZN7Mn4WZPc27brOqMRSnJFoqMVcVJwIAN9TjivdAQAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not leak memory by updating pointer with potentially NULL realloc return value.
+Hi Linus,
 
-Found by Linux Driver Verification project (linuxtesting.org).
+I would like to ask for pulling a set of fixup patches for ARM
+dma-mapping extensions merged in v3.6-rc1.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/bio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 5eaa70c..3fb4380 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -73,7 +73,7 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
- {
- 	unsigned int sz = sizeof(struct bio) + extra_size;
- 	struct kmem_cache *slab = NULL;
--	struct bio_slab *bslab;
-+	struct bio_slab *bslab, *new_bio_slabs;
- 	unsigned int i, entry = -1;
- 
- 	mutex_lock(&bio_slab_lock);
-@@ -97,11 +97,12 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
- 
- 	if (bio_slab_nr == bio_slab_max && entry == -1) {
- 		bio_slab_max <<= 1;
--		bio_slabs = krealloc(bio_slabs,
--				     bio_slab_max * sizeof(struct bio_slab),
--				     GFP_KERNEL);
--		if (!bio_slabs)
-+		new_bio_slabs = krealloc(bio_slabs,
-+					 bio_slab_max * sizeof(struct bio_slab),
-+					 GFP_KERNEL);
-+		if (!new_bio_slabs)
- 			goto out_unlock;
-+		bio_slabs = new_bio_slabs;
- 	}
- 	if (entry == -1)
- 		entry = bio_slab_nr++;
--- 
-1.7.9.5
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
+with the top-most commit d9e0d149b5dcc2ef4688afc572b9906bcda941ef
+
+  ARM: dma-mapping: fix incorrect freeing of atomic allocations
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-linus-for-3.6-rc2
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Patch summary:
+
+Aaro Koskinen (2):
+      ARM: dma-mapping: fix atomic allocation alignment
+      ARM: dma-mapping: fix incorrect freeing of atomic allocations
+
+Chris Brand (1):
+      ARM: mm: fix MMU mapping of CMA regions
+
+ arch/arm/mm/dma-mapping.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
