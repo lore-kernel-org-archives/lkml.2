@@ -1,138 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759629Ab2HIUVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:21:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23127 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab2HIUVq convert rfc822-to-8bit (ORCPT
+	id S1759583Ab2HIUWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:22:38 -0400
+Received: from keetweej.vanheusden.com ([80.101.105.103]:33330 "EHLO
+	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab2HIUWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:21:46 -0400
+	Thu, 9 Aug 2012 16:22:36 -0400
+Date: Thu, 9 Aug 2012 22:22:31 +0200
+From: folkert <folkert@vanheusden.com>
+To: nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: nbd randomly disconnecting
+Message-ID: <20120809202229.GF14886@belle.intranet.vanheusden.com>
 MIME-Version: 1.0
-Message-ID: <2e9ccb4f-1339-4c26-88dd-ea294b022127@default>
-Date: Thu, 9 Aug 2012 13:20:55 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Kurt Hackel <kurt.hackel@oracle.com>
-Subject: RE: [PATCH 0/4] promote zcache from staging
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <5021795A.5000509@linux.vnet.ibm.com> <5024067F.3010602@linux.vnet.ibm.com>
-In-Reply-To: <5024067F.3010602@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Disposition: inline
+Organization: www.unixexpert.nl
+X-Chameleon-Return-To: folkert@vanheusden.com
+X-Xfmail-Return-To: folkert@vanheusden.com
+X-Phonenumber: +31-6-41278122
+X-URL: http://www.vanheusden.com/
+X-PGP-KeyID: 1F28D8AE
+X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
+X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
+Read-Receipt-To: <folkert@vanheusden.com>
+Reply-By: Sun Aug  5 16:09:01 CEST 2012
+X-Message-Flag: www.unixexpert.nl
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH 0/4] promote zcache from staging
-> 
-> On 08/07/2012 03:23 PM, Seth Jennings wrote:
-> > On 07/27/2012 01:18 PM, Seth Jennings wrote:
-> >> Some benchmarking numbers demonstrating the I/O saving that can be had
-> >> with zcache:
-> >>
-> >> https://lkml.org/lkml/2012/3/22/383
-> >
-> > There was concern that kernel changes external to zcache since v3.3 may
-> > have mitigated the benefit of zcache.  So I re-ran my kernel building
-> > benchmark and confirmed that zcache is still providing I/O and runtime
-> > savings.
-> 
-> There was a request made to test with even greater memory pressure to
-> demonstrate that, at some unknown point, zcache doesn't have real
-> problems.  So I continued out to 32 threads:
+Hi,
 
-Hi Seth --
+I'm investigating some strange behaviour with NBD. Randomly my
+nbd-client disconnects:
 
-Thanks for continuing with running the 24-32 thread benchmarks.
+21:04:20.514159 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776733737:3776735185, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
+21:04:20.514164 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776735185:3776736633, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
+21:04:20.514170 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776736633:3776738081, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
+21:04:20.514175 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [P.], seq 3776738081:3776739081, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1000
+21:04:20.514287 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+21:04:20.514379 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+21:04:20.514435 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+21:04:20.514486 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+21:04:20.514549 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+21:04:21.183393 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
 
-> Runtime (in seconds)
-> N	normal	zcache	%change
-> 4	126	127	1%
+The 'R' flag means that .129 "resets the connection" which means
+terminates the connection.
+.1 = server, .129 = client
+this happens with both kernel 3.0 and 3.5. With nbd-client 1:3.2-1.
 
-> threads, even though the absolute runtime is suboptimal due to the
-> extreme memory pressure.
 
-I am not in a position right now to reproduce your results or
-mine (due to a house move which is limiting my time and access
-to my test machines, plus two presentations later this month at
-Linuxcon NA and Plumbers) but I still don't think you've really
-saturated the cache, which is when the extreme memory pressure
-issues will show up in zcache.  I suspect that adding more threads
-to a minimal kernel compile doesn't increase the memory pressure as
-much as I was seeing, so you're not seeing what I was seeing:
-the zcache number climb to as much as 150% WORSE than non-zcache.
-In various experiments trying variations, I have seen four-fold
-degradations and worse.
+I ran nbd-client without forking and it then shows no error message at
+all on the console. The kernel log shows only:
 
-My test case is a kernel compile using a full OL kernel config
-file, which is roughly equivalent to a RHEL6 config.  Compiling
-this kernel, using similar hardware, I have never seen a runtime
-less than ~800 seconds for any value of N.  I suspect that my
-test case, having much more source to compile, causes the N threads
-in a "make -jN" each have more work to do, in parallel.
+Aug  9 21:04:21 mdd1 kernel: [  866.104603] block nbd0: shutting down socket
+Aug  9 21:04:21 mdd1 kernel: [  866.104748] end_request: I/O error, dev nbd0, sector 3395936
+Aug  9 21:04:21 mdd1 kernel: [  866.105132] end_request: I/O error, dev nbd0, sector 3396184
+Aug  9 21:04:21 mdd1 kernel: [  866.105501] block nbd0: queue cleared
 
-Since your test harness is obviously all set up, would you be
-willing to reproduce your/my non-zcache/zcache runs with a RHEL6
-config file and publish the results (using a 3.5 zcache)?
+and then a panic (which is expected as the block-layer gets upset when
+its requests are not handled).
+So no reason for this problem is shown by the nbd driver.
 
-IIRC, the really bad zcache results starting showing up at N=24.
-I also wonder if you have anything else unusual in your
-test setup, such as a fast swap disk (mine is a partition
-on the same rotating disk as source and target of the kernel build,
-the default install for a RHEL6 system)?  Or have you disabled
-cleancache?  Or have you changed any sysfs parameters or
-other kernel files?  Also, whether zcache or non-zcache,
-I've noticed that the runtime of this workload when swapping
-can vary by as much as 30-40%, so it would be wise to take at
-least three samples to ensure a statistically valid comparison.
-And are you using 512M of physical memory or relying on
-kernel boot parameters to reduce visible memory... and
-if the latter have you confirmed with /proc/meminfo?
-Obviously, I'm baffled at the difference in our observations.
+Tried it again with full debugging of the nbd kernel module:
 
-While I am always willing to admit that my numbers may be wrong,
-I still can't imagine why you are in such a hurry to promote
-zcache when these questions are looming.  Would you care to
-explain why?  It seems reckless to me, and unlike the IBM
-behavior I expect, so I really wonder about the motivation.
+...
+[  728.431017] nbd0: request ffff88000d943ae8: got 4096 bytes data
+[  728.431021] nbd0: request ffff88000d943ae8: got 4096 bytes data
+[  728.431024] nbd0: request ffff88000d943ae8: got 4096 bytes data
+[  728.431029] nbd0: request ffff88000d943ae8: got 4096 bytes data
+[  728.431030] nbd0: request ffff88000d943ae8: done
+[  728.431036] nbd0: request ffff88000df75bd8: got reply
+[  728.431040] nbd0: request ffff88000df75bd8: got 4096 bytes data
+[  728.431046] nbd0: request ffff88000df75bd8: got 4096 bytes data
+[  728.431047] nbd0: request ffff88000df75bd8: done
+[  728.431169] nbd0: request ffff88001497fdc8: dequeued (flags=1)
+[  728.431175] nbd0: request ffff880016395158: dequeued (flags=1)
+[  728.431177] nbd0: request ffff88000d943808: dequeued (flags=1)
+[  728.431182] nbd0: request ffff88001497fdc8: sending control (read@2452893696,126976B)
+[  728.432807] nbd0: request ffff880016395158: sending control (read@2453020672,126976B)
+[  728.433981] nbd0: request ffff88000d943808: sending control (read@2453147648,8192B)
+[  728.434443] block nbd0: shutting down socket
+[  728.435348] nbd0: request ffff88000d943808: failed
+[  728.435351] end_request: I/O error, dev nbd0, sector 4791304
+[  728.435807] nbd0: request ffff880016395158: failed
+[  728.435809] end_request: I/O error, dev nbd0, sector 4791056
+[  728.436196] nbd0: request ffff88001497fdc8: failed
+[  728.436198] end_request: I/O error, dev nbd0, sector 4790808
 
-My goal is very simple: "First do no harm".  I don't think
-zcache should be enabled for distros (and users) until we can
-reasonably demonstrate that running a workload with zcache
-is never substantially worse than running the same workload
-without zcache.  If you can tell your customer: "Yes, always enable
-zcache", great!  But if you have to tell your customer: "It
-depends on the workload, enable it if it works for you, disable
-it otherwise", then zcache will get a bad reputation, and
-will/should never be enabled in a reputable non-hobbyist distro.
-I fear the "demo" zcache will get a bad reputation
-so prefer to delay promotion while there is serious doubt
-about whether "harm" may occur.
+So for some reason the nbd subsystem shuts down the socket without any
+error message.
 
-Last, you've never explained what problems zcache solves
-for you that zram does not.  With Minchan pushing for
-the promotion of zram+zsmalloc, does zram solve your problem?
-Another alternative might be to promote zcache as "demozcache"
-(i.e. fork it for now).
+This shutting down socket message is emitted by sock_shutdown().
 
-It's hard to identify a reasonable compromise when you
-are just saying "Gotta promote zcache NOW!" and not
-explaining the problem you are trying to solve or motivations
-behind it.
+There are 2 places were this function is called: when a signal is
+retrieved (which gives a kernel warning error which is not logged in
+this situation).
+The other situation is where nbd_do_it returns, either with an error
+(which would be send to nbd-client but that program does not show any
+errors so this is not the problem here) so it must be nbd_read_stat
+(which is repeatingly invoked by nbd_do_it) or the nbd_thread.
 
-OK, Seth, I think all my cards are on the table.  Where's yours?
-(And, hello, is anyone else following this anyway? :-)
+nbd_do_it returns without a message when nbd_find_request does not
+return an -ENOENT. All other paths (also nbd_thread) seem to nicely log
+a message when there's something wrong.
 
-Thanks,
-Dan
+nbd_find_request returns an error different from -ENOENT when
+wait_event_interruptible returns an error. That function returns
+-ERESTARTSYS when the wait is interrupted.
+
+So what I think should be done (but I'm not a kernel developer so not
+entirely sure) is wrap that wait_event_interruptible in some loop that
+when it returns -ERESTARTSYS, that it just tries again.
+
+Also enhance nbd_read_stat so that in this code:
+
+        req = nbd_find_request(lo, *(struct request **)reply.handle);
+        if (IS_ERR(req)) {
+                result = PTR_ERR(req);
+                if (result != -ENOENT)
+                        goto harderror;
+
+that then an error is shown in the kernel log, e.g.:
+
+                if (result != -ENOENT) {
+			dev_err(disk_to_dev(lo->disk), "Search for %p interrupted: %d\n", reply.handle, result);
+                        goto harderror;
+		}
+
+OR
+In nbd_do_it check if lo -> harderror != 0 and in such case, do not
+return 0 (like it does now) but return the lo->harderror value.
+
+Please note that this system is actually a VM under vmware workstation
+7.1.4 with the vmware tools modules not installed because I have not
+gotten around to upgrade them to a 3.5 kernel.
+It is a 64 bit system with 8GB ram.
+
+
+Folkert van Heusden
+
+-- 
+----------------------------------------------------------------------
+Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
