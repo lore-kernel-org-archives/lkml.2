@@ -1,148 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab2HIUWi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:22:38 -0400
-Received: from keetweej.vanheusden.com ([80.101.105.103]:33330 "EHLO
-	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab2HIUWg (ORCPT
+	id S1759655Ab2HIUYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:24:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48990 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab2HIUYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:22:36 -0400
-Date: Thu, 9 Aug 2012 22:22:31 +0200
-From: folkert <folkert@vanheusden.com>
-To: nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: nbd randomly disconnecting
-Message-ID: <20120809202229.GF14886@belle.intranet.vanheusden.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: www.unixexpert.nl
-X-Chameleon-Return-To: folkert@vanheusden.com
-X-Xfmail-Return-To: folkert@vanheusden.com
-X-Phonenumber: +31-6-41278122
-X-URL: http://www.vanheusden.com/
-X-PGP-KeyID: 1F28D8AE
-X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
-X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
-Read-Receipt-To: <folkert@vanheusden.com>
-Reply-By: Sun Aug  5 16:09:01 CEST 2012
-X-Message-Flag: www.unixexpert.nl
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 16:24:42 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V3] regulator: add MAX8907 driver
+Date: Thu,  9 Aug 2012 14:24:34 -0600
+Message-Id: <1344543874-4726-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
 
-I'm investigating some strange behaviour with NBD. Randomly my
-nbd-client disconnects:
+The MAX8907 is an I2C-based power-management IC containing voltage
+regulators, a reset controller, a real-time clock, and a touch-screen
+controller.
 
-21:04:20.514159 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776733737:3776735185, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
-21:04:20.514164 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776735185:3776736633, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
-21:04:20.514170 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [.], seq 3776736633:3776738081, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1448
-21:04:20.514175 IP 172.16.86.1.12341 > 172.16.86.129.39633: Flags [P.], seq 3776738081:3776739081, ack 2604128070, win 11181, options [nop,nop,TS val 1145422093 ecr 141526], length 1000
-21:04:20.514287 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
-21:04:20.514379 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
-21:04:20.514435 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
-21:04:20.514486 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
-21:04:20.514549 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
-21:04:21.183393 IP 172.16.86.129.39633 > 172.16.86.1.12341: Flags [R], seq 315327654, win 0, length 0
+The original driver was written by:
+* Gyungoh Yoo <jack.yoo@maxim-ic.com>
 
-The 'R' flag means that .129 "resets the connection" which means
-terminates the connection.
-.1 = server, .129 = client
-this happens with both kernel 3.0 and 3.5. With nbd-client 1:3.2-1.
+Various fixes and enhancements by:
+* Jin Park <jinyoungp@nvidia.com>
+* Tom Cherry <tcherry@nvidia.com>
+* Prashant Gaikwad <pgaikwad@nvidia.com>
+* Dan Willemsen <dwillemsen@nvidia.com>
+* Laxman Dewangan <ldewangan@nvidia.com>
 
+During upstreaming, I (swarren):
+* Converted to regmap.
+* Allowed probing from device tree.
+* Reworked the regulator driver to be represented as a single device that
+  provides multiple regulators, rather than as a device per regulator.
+* Replaced many regulator ops with standard functions.
+* Added ability to specify supplies for each regulator.
+* Removed the WLED regulator. If/when we expose this in the driver, it
+  should be a backlight object not a regulator object.
+* Renamed from max8907c->max8907, since the driver covers at least the
+  C and B revisions.
+* General cleanup.
 
-I ran nbd-client without forking and it then shows no error message at
-all on the console. The kernel log shows only:
+Signed-off-by: Gyungoh Yoo <jack.yoo@maxim-ic.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This depends on patch "regulator: core: Use list_voltage() to read single
+voltage regulators".
 
-Aug  9 21:04:21 mdd1 kernel: [  866.104603] block nbd0: shutting down socket
-Aug  9 21:04:21 mdd1 kernel: [  866.104748] end_request: I/O error, dev nbd0, sector 3395936
-Aug  9 21:04:21 mdd1 kernel: [  866.105132] end_request: I/O error, dev nbd0, sector 3396184
-Aug  9 21:04:21 mdd1 kernel: [  866.105501] block nbd0: queue cleared
+v3:
+* Don't provide a get_voltage op for fixed regulators; rely on list_voltage.
+* Remove dependence on patch "regulator: add always set/clear masks to
+  regulator_enable_regmap". Instead, only provide enable/disable/is_enabled
+  ops for regulators where the HW is already in SW-controlled mode. If in the
+  future we need to select which regulators are SW-controlled, we can add
+  platform data (and a DT property) to explicitly configure this. However, I
+  don't see a specific need to override the HW defaults right now.
+* Explicitly assign indices to entries in max8907_regulators[] and
+  max8907_matches[], since the code expect them to be in a specific order.
+v2:
+* Removed WLED regulator.
+* Replaced list_voltage, set_voltage(_sel), get_voltage(_sel), enable,
+  disable ops with standard regulator core functions.
+* Got rid of struct max8907_regulator_info; everything we need now is
+  part of the standard struct regulator_desc.
+---
+ drivers/regulator/Kconfig             |    8 +
+ drivers/regulator/Makefile            |    1 +
+ drivers/regulator/max8907-regulator.c |  383 +++++++++++++++++++++++++++++++++
+ 3 files changed, 392 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/max8907-regulator.c
 
-and then a panic (which is expected as the block-layer gets upset when
-its requests are not handled).
-So no reason for this problem is shown by the nbd driver.
-
-Tried it again with full debugging of the nbd kernel module:
-
-...
-[  728.431017] nbd0: request ffff88000d943ae8: got 4096 bytes data
-[  728.431021] nbd0: request ffff88000d943ae8: got 4096 bytes data
-[  728.431024] nbd0: request ffff88000d943ae8: got 4096 bytes data
-[  728.431029] nbd0: request ffff88000d943ae8: got 4096 bytes data
-[  728.431030] nbd0: request ffff88000d943ae8: done
-[  728.431036] nbd0: request ffff88000df75bd8: got reply
-[  728.431040] nbd0: request ffff88000df75bd8: got 4096 bytes data
-[  728.431046] nbd0: request ffff88000df75bd8: got 4096 bytes data
-[  728.431047] nbd0: request ffff88000df75bd8: done
-[  728.431169] nbd0: request ffff88001497fdc8: dequeued (flags=1)
-[  728.431175] nbd0: request ffff880016395158: dequeued (flags=1)
-[  728.431177] nbd0: request ffff88000d943808: dequeued (flags=1)
-[  728.431182] nbd0: request ffff88001497fdc8: sending control (read@2452893696,126976B)
-[  728.432807] nbd0: request ffff880016395158: sending control (read@2453020672,126976B)
-[  728.433981] nbd0: request ffff88000d943808: sending control (read@2453147648,8192B)
-[  728.434443] block nbd0: shutting down socket
-[  728.435348] nbd0: request ffff88000d943808: failed
-[  728.435351] end_request: I/O error, dev nbd0, sector 4791304
-[  728.435807] nbd0: request ffff880016395158: failed
-[  728.435809] end_request: I/O error, dev nbd0, sector 4791056
-[  728.436196] nbd0: request ffff88001497fdc8: failed
-[  728.436198] end_request: I/O error, dev nbd0, sector 4790808
-
-So for some reason the nbd subsystem shuts down the socket without any
-error message.
-
-This shutting down socket message is emitted by sock_shutdown().
-
-There are 2 places were this function is called: when a signal is
-retrieved (which gives a kernel warning error which is not logged in
-this situation).
-The other situation is where nbd_do_it returns, either with an error
-(which would be send to nbd-client but that program does not show any
-errors so this is not the problem here) so it must be nbd_read_stat
-(which is repeatingly invoked by nbd_do_it) or the nbd_thread.
-
-nbd_do_it returns without a message when nbd_find_request does not
-return an -ENOENT. All other paths (also nbd_thread) seem to nicely log
-a message when there's something wrong.
-
-nbd_find_request returns an error different from -ENOENT when
-wait_event_interruptible returns an error. That function returns
--ERESTARTSYS when the wait is interrupted.
-
-So what I think should be done (but I'm not a kernel developer so not
-entirely sure) is wrap that wait_event_interruptible in some loop that
-when it returns -ERESTARTSYS, that it just tries again.
-
-Also enhance nbd_read_stat so that in this code:
-
-        req = nbd_find_request(lo, *(struct request **)reply.handle);
-        if (IS_ERR(req)) {
-                result = PTR_ERR(req);
-                if (result != -ENOENT)
-                        goto harderror;
-
-that then an error is shown in the kernel log, e.g.:
-
-                if (result != -ENOENT) {
-			dev_err(disk_to_dev(lo->disk), "Search for %p interrupted: %d\n", reply.handle, result);
-                        goto harderror;
-		}
-
-OR
-In nbd_do_it check if lo -> harderror != 0 and in such case, do not
-return 0 (like it does now) but return the lo->harderror value.
-
-Please note that this system is actually a VM under vmware workstation
-7.1.4 with the vmware tools modules not installed because I have not
-gotten around to upgrade them to a 3.5 kernel.
-It is a 64 bit system with 8GB ram.
-
-
-Folkert van Heusden
-
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 9bc7749..129c827 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -171,6 +171,14 @@ config REGULATOR_MAX8660
+ 	  This driver controls a Maxim 8660/8661 voltage output
+ 	  regulator via I2C bus.
+ 
++config REGULATOR_MAX8907
++	tristate "Maxim 8907 voltage regulator"
++	depends on MFD_MAX8907
++	help
++	  This driver controls a Maxim 8907 voltage output regulator
++	  via I2C bus. The provided regulator is suitable for Tegra
++	  chip to control Step-Down DC-DC and LDOs.
++
+ config REGULATOR_MAX8925
+ 	tristate "Maxim MAX8925 Power Management IC"
+ 	depends on MFD_MAX8925
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 3342615..3a0dbc5 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
+ obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+ obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
++obj-$(CONFIG_REGULATOR_MAX8907) += max8907-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
+ obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
+diff --git a/drivers/regulator/max8907-regulator.c b/drivers/regulator/max8907-regulator.c
+new file mode 100644
+index 0000000..bd3b28b
+--- /dev/null
++++ b/drivers/regulator/max8907-regulator.c
+@@ -0,0 +1,383 @@
++/*
++ * max8907-regulator.c -- support regulators in max8907
++ *
++ * Copyright (C) 2010 Gyungoh Yoo <jack.yoo@maxim-ic.com>
++ * Copyright (C) 2010-2012, NVIDIA CORPORATION. All rights reserved.
++ *
++ * Portions based on drivers/regulator/tps65910-regulator.c,
++ *     Copyright 2010 Texas Instruments Inc.
++ *     Author: Graeme Gregory <gg@slimlogic.co.uk>
++ *     Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/max8907.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++
++#define MAX8907_II2RR_VERSION_MASK	0xF0
++#define MAX8907_II2RR_VERSION_REV_A	0x00
++#define MAX8907_II2RR_VERSION_REV_B	0x10
++#define MAX8907_II2RR_VERSION_REV_C	0x30
++
++struct max8907_regulator {
++	struct regulator_desc desc[MAX8907_NUM_REGULATORS];
++	struct regulator_dev *rdev[MAX8907_NUM_REGULATORS];
++};
++
++#define REG_MBATT() \
++	[MAX8907_MBATT] = { \
++		.name = "MBATT", \
++		.supply_name = "mbatt", \
++		.id = MAX8907_MBATT, \
++		.ops = &max8907_mbatt_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++	}
++
++#define REG_LDO(ids, supply, base, min, max, step) \
++	[MAX8907_##ids] = { \
++		.name = #ids, \
++		.supply_name = supply, \
++		.id = MAX8907_##ids, \
++		.n_voltages = ((max) - (min)) / (step) + 1, \
++		.ops = &max8907_ldo_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++		.min_uV = (min), \
++		.uV_step = (step), \
++		.vsel_reg = (base) + MAX8907_VOUT, \
++		.vsel_mask = 0x3f, \
++		.enable_reg = (base) + MAX8907_CTL, \
++		.enable_mask = MAX8907_MASK_LDO_EN, \
++	}
++
++#define REG_FIXED(ids, supply, voltage) \
++	[MAX8907_##ids] = { \
++		.name = #ids, \
++		.supply_name = supply, \
++		.id = MAX8907_##ids, \
++		.n_voltages = 1, \
++		.ops = &max8907_fixed_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++		.min_uV = (voltage), \
++	}
++
++#define REG_OUT5V(ids, supply, base, voltage) \
++	[MAX8907_##ids] = { \
++		.name = #ids, \
++		.supply_name = supply, \
++		.id = MAX8907_##ids, \
++		.n_voltages = 1, \
++		.ops = &max8907_out5v_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++		.min_uV = (voltage), \
++		.enable_reg = (base), \
++		.enable_mask = MAX8907_MASK_OUT5V_EN, \
++	}
++
++#define REG_BBAT(ids, supply, base, min, max, step) \
++	[MAX8907_##ids] = { \
++		.name = #ids, \
++		.supply_name = supply, \
++		.id = MAX8907_##ids, \
++		.n_voltages = ((max) - (min)) / (step) + 1, \
++		.ops = &max8907_bbat_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++		.min_uV = (min), \
++		.uV_step = (step), \
++		.vsel_reg = (base), \
++		.vsel_mask = MAX8907_MASK_VBBATTCV, \
++	}
++
++#define LDO_750_50(id, supply, base) REG_LDO(id, supply, (base), \
++			750000, 3900000, 50000)
++#define LDO_650_25(id, supply, base) REG_LDO(id, supply, (base), \
++			650000, 2225000, 25000)
++
++static struct regulator_ops max8907_mbatt_ops = {
++};
++
++static struct regulator_ops max8907_ldo_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static struct regulator_ops max8907_ldo_hwctl_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++};
++
++static struct regulator_ops max8907_fixed_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++};
++
++static struct regulator_ops max8907_out5v_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static struct regulator_ops max8907_out5v_hwctl_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++};
++
++static struct regulator_ops max8907_bbat_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++};
++
++static struct regulator_desc max8907_regulators[] = {
++	REG_MBATT(),
++	REG_LDO(SD1, "in-v1", MAX8907_REG_SDCTL1, 650000, 2225000, 25000),
++	REG_LDO(SD2, "in-v2", MAX8907_REG_SDCTL2, 637500, 1425000, 12500),
++	REG_LDO(SD3, "in-v3", MAX8907_REG_SDCTL3, 750000, 3900000, 50000),
++	LDO_750_50(LDO1, "in1", MAX8907_REG_LDOCTL1),
++	LDO_650_25(LDO2, "in2", MAX8907_REG_LDOCTL2),
++	LDO_650_25(LDO3, "in3", MAX8907_REG_LDOCTL3),
++	LDO_750_50(LDO4, "in4", MAX8907_REG_LDOCTL4),
++	LDO_750_50(LDO5, "in5", MAX8907_REG_LDOCTL5),
++	LDO_750_50(LDO6, "in6", MAX8907_REG_LDOCTL6),
++	LDO_750_50(LDO7, "in7", MAX8907_REG_LDOCTL7),
++	LDO_750_50(LDO8, "in8", MAX8907_REG_LDOCTL8),
++	LDO_750_50(LDO9, "in9", MAX8907_REG_LDOCTL9),
++	LDO_750_50(LDO10, "in10", MAX8907_REG_LDOCTL10),
++	LDO_750_50(LDO11, "in11", MAX8907_REG_LDOCTL11),
++	LDO_750_50(LDO12, "in12", MAX8907_REG_LDOCTL12),
++	LDO_750_50(LDO13, "in13", MAX8907_REG_LDOCTL13),
++	LDO_750_50(LDO14, "in14", MAX8907_REG_LDOCTL14),
++	LDO_750_50(LDO15, "in15", MAX8907_REG_LDOCTL15),
++	LDO_750_50(LDO16, "in16", MAX8907_REG_LDOCTL16),
++	LDO_650_25(LDO17, "in17", MAX8907_REG_LDOCTL17),
++	LDO_650_25(LDO18, "in18", MAX8907_REG_LDOCTL18),
++	LDO_750_50(LDO19, "in19", MAX8907_REG_LDOCTL19),
++	LDO_750_50(LDO20, "in20", MAX8907_REG_LDOCTL20),
++	REG_OUT5V(OUT5V, "mbatt", MAX8907_REG_OUT5VEN, 5000000),
++	REG_OUT5V(OUT33V, "mbatt",  MAX8907_REG_OUT33VEN, 3300000),
++	REG_BBAT(BBAT, "MBATT", MAX8907_REG_BBAT_CNFG,
++						2400000, 3000000, 200000),
++	REG_FIXED(SDBY, "MBATT", 1200000),
++	REG_FIXED(VRTC, "MBATT", 3300000),
++};
++
++#ifdef CONFIG_OF
++
++#define MATCH(_name, _id) \
++	[MAX8907_##_id] = { \
++		.name = #_name, \
++		.driver_data = (void *)&max8907_regulators[MAX8907_##_id], \
++	}
++
++static struct of_regulator_match max8907_matches[] = {
++	MATCH(mbatt, MBATT),
++	MATCH(sd1, SD1),
++	MATCH(sd2, SD2),
++	MATCH(sd3, SD3),
++	MATCH(ldo1, LDO1),
++	MATCH(ldo2, LDO2),
++	MATCH(ldo3, LDO3),
++	MATCH(ldo4, LDO4),
++	MATCH(ldo5, LDO5),
++	MATCH(ldo6, LDO6),
++	MATCH(ldo7, LDO7),
++	MATCH(ldo8, LDO8),
++	MATCH(ldo9, LDO9),
++	MATCH(ldo10, LDO10),
++	MATCH(ldo11, LDO11),
++	MATCH(ldo12, LDO12),
++	MATCH(ldo13, LDO13),
++	MATCH(ldo14, LDO14),
++	MATCH(ldo15, LDO15),
++	MATCH(ldo16, LDO16),
++	MATCH(ldo17, LDO17),
++	MATCH(ldo18, LDO18),
++	MATCH(ldo19, LDO19),
++	MATCH(ldo20, LDO20),
++	MATCH(out5v, OUT5V),
++	MATCH(out33v, OUT33V),
++	MATCH(bbat, BBAT),
++	MATCH(sdby, SDBY),
++	MATCH(vrtc, VRTC),
++};
++
++static int max8907_regulator_parse_dt(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.parent->of_node;
++	struct device_node *regulators;
++	int ret;
++
++	if (!pdev->dev.parent->of_node)
++		return 0;
++
++	regulators = of_find_node_by_name(np, "regulators");
++	if (!regulators) {
++		dev_err(&pdev->dev, "regulators node not found\n");
++		return -EINVAL;
++	}
++
++	ret = of_regulator_match(pdev->dev.parent, regulators,
++				 max8907_matches,
++				 ARRAY_SIZE(max8907_matches));
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
++			ret);
++		return ret;
++	}
++
++	return 0;
++}
++#else
++static int max8907_regulator_parse_dt(struct platform_device *pdev)
++{
++	return 0;
++}
++#endif
++
++static __devinit int max8907_regulator_probe(struct platform_device *pdev)
++{
++	struct max8907 *max8907 = dev_get_drvdata(pdev->dev.parent);
++	struct max8907_platform_data *pdata = dev_get_platdata(max8907->dev);
++	int ret;
++	struct max8907_regulator *pmic;
++	unsigned int val;
++	int i;
++	struct regulator_config config = {};
++	struct regulator_init_data *idata;
++	const char *mbatt_rail_name = NULL;
++
++	ret = max8907_regulator_parse_dt(pdev);
++	if (ret)
++		return ret;
++
++	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
++	if (!pmic) {
++		dev_err(&pdev->dev, "Failed to alloc pmic\n");
++		return -ENOMEM;
++	}
++	platform_set_drvdata(pdev, pmic);
++
++	memcpy(pmic->desc, max8907_regulators, sizeof(pmic->desc));
++
++	/* Backwards compatibility with MAX8907B; SD1 uses different voltages */
++	regmap_read(max8907->regmap_gen, MAX8907_REG_II2RR, &val);
++	if ((val & MAX8907_II2RR_VERSION_MASK) ==
++	    MAX8907_II2RR_VERSION_REV_B) {
++		pmic->desc[MAX8907_SD1].min_uV = 637500;
++		pmic->desc[MAX8907_SD1].uV_step = 12500;
++		pmic->desc[MAX8907_SD1].n_voltages = (1425000 - 637500) / 12500;
++	}
++
++	for (i = 0; i < MAX8907_NUM_REGULATORS; i++) {
++		config.dev = pdev->dev.parent;
++		if (pdata)
++			idata = pdata->init_data[i];
++		else
++			idata = max8907_matches[i].init_data;
++		config.init_data = idata;
++		config.driver_data = pmic;
++		config.regmap = max8907->regmap_gen;
++		config.of_node = max8907_matches[i].of_node;
++
++		switch (pmic->desc[i].id) {
++		case MAX8907_MBATT:
++			mbatt_rail_name = idata->constraints.name;
++			break;
++		case MAX8907_BBAT:
++		case MAX8907_SDBY:
++		case MAX8907_VRTC:
++			idata->supply_regulator = mbatt_rail_name;
++			break;
++		}
++
++		if (pmic->desc[i].ops == &max8907_ldo_ops) {
++			regmap_read(config.regmap, pmic->desc[i].enable_reg,
++				    &val);
++			if ((val & MAX8907_MASK_LDO_SEQ) !=
++			    MAX8907_MASK_LDO_SEQ)
++				pmic->desc[i].ops = &max8907_ldo_hwctl_ops;
++		} else if (pmic->desc[i].ops == &max8907_out5v_ops) {
++			regmap_read(config.regmap, pmic->desc[i].enable_reg,
++				    &val);
++			if ((val & (MAX8907_MASK_OUT5V_VINEN |
++						MAX8907_MASK_OUT5V_ENSRC)) !=
++			    MAX8907_MASK_OUT5V_ENSRC)
++				pmic->desc[i].ops = &max8907_out5v_hwctl_ops;
++		}
++
++		pmic->rdev[i] = regulator_register(&pmic->desc[i], &config);
++		if (IS_ERR(pmic->rdev[i])) {
++			dev_err(&pdev->dev,
++				"failed to register %s regulator\n",
++				pmic->desc[i].name);
++			ret = PTR_ERR(pmic->rdev[i]);
++			goto err_unregister_regulator;
++		}
++	}
++
++	return 0;
++
++err_unregister_regulator:
++	while (--i >= 0)
++		regulator_unregister(pmic->rdev[i]);
++	return ret;
++}
++
++static __devexit int max8907_regulator_remove(struct platform_device *pdev)
++{
++	struct max8907_regulator *pmic;
++	int i;
++
++	for (i = 0; i < MAX8907_NUM_REGULATORS; i++)
++		regulator_unregister(pmic->rdev[i]);
++
++	return 0;
++}
++
++static struct platform_driver max8907_regulator_driver = {
++	.driver = {
++		   .name = "max8907-regulator",
++		   .owner = THIS_MODULE,
++		   },
++	.probe = max8907_regulator_probe,
++	.remove = __devexit_p(max8907_regulator_remove),
++};
++
++static int __init max8907_regulator_init(void)
++{
++	return platform_driver_register(&max8907_regulator_driver);
++}
++
++subsys_initcall(max8907_regulator_init);
++
++static void __exit max8907_reg_exit(void)
++{
++	platform_driver_unregister(&max8907_regulator_driver);
++}
++
++module_exit(max8907_reg_exit);
++
++MODULE_DESCRIPTION("MAX8907 regulator driver");
++MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@maxim-ic.com>");
++MODULE_LICENSE("GPL v2");
 -- 
-----------------------------------------------------------------------
-Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
+1.7.0.4
+
