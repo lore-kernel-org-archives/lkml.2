@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2HIBzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:55:23 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:61911 "EHLO mta02.xtra.co.nz"
+	id S1754051Ab2HIBzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:55:38 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:62175 "EHLO mta02.xtra.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751766Ab2HIBzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:55:13 -0400
+	id S1753198Ab2HIBzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 21:55:22 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: vt8500-wm8505-linux-kernel@googlegroups.com
 Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
@@ -26,9 +26,9 @@ Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
         linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv2 3/8] serial: vt8500: Add devicetree support for vt8500-serial
-Date: Thu,  9 Aug 2012 13:54:55 +1200
-Message-Id: <1344477300-25251-4-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCHv2 7/8] arm: vt8500: doc: Add device tree bindings for arch-vt8500 devices
+Date: Thu,  9 Aug 2012 13:54:59 +1200
+Message-Id: <1344477300-25251-8-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
 References: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
@@ -36,48 +36,348 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bindings for gpio, interrupt controller, power management controller,
+timer, realtime clock, serial uart, ehci and uhci controllers and
+framebuffer controllers used on the arch-vt8500 platform.
+
+Framebuffer binding also specifies a 'display' node which is required
+for determining the lcd panel data.
+
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/tty/serial/vt8500_serial.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/arm/vt8500.txt   |   15 +++++++
+ .../bindings/arm/vt8500/via,vt8500-intc.txt        |   16 +++++++
+ .../bindings/arm/vt8500/via,vt8500-pmc.txt         |   13 ++++++
+ .../bindings/arm/vt8500/via,vt8500-timer.txt       |   15 +++++++
+ .../devicetree/bindings/gpio/gpio_vt8500.txt       |   24 ++++++++++
+ .../devicetree/bindings/rtc/via,vt8500-rtc.txt     |   15 +++++++
+ .../bindings/tty/serial/via,vt8500-uart.txt        |   15 +++++++
+ .../devicetree/bindings/usb/platform-uhci.txt      |   15 +++++++
+ .../devicetree/bindings/usb/via,vt8500-ehci.txt    |   15 +++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    2 +
+ .../devicetree/bindings/video/via,vt8500-fb.txt    |   46 ++++++++++++++++++++
+ .../devicetree/bindings/video/wm,prizm-ge-rops.txt |   13 ++++++
+ .../devicetree/bindings/video/wm,wm8505-fb.txt     |   20 +++++++++
+ 13 files changed, 224 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/platform-uhci.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+ create mode 100644 Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+ create mode 100644 Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+ create mode 100644 Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
 
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index 2be006f..dee6715 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <linux/clk.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- 
- /*
-  * UART Register offsets
-@@ -603,12 +604,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id wmt_dt_ids[] = {
-+	{ .compatible = "via,vt8500-uart", },
-+	{}
-+};
+diff --git a/Documentation/devicetree/bindings/arm/vt8500.txt b/Documentation/devicetree/bindings/arm/vt8500.txt
+new file mode 100644
+index 0000000..1b3b187
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Platforms Device Tree Bindings
++---------------------------------------
 +
- static struct platform_driver vt8500_platform_driver = {
- 	.probe  = vt8500_serial_probe,
- 	.remove = __devexit_p(vt8500_serial_remove),
- 	.driver = {
- 		.name = "vt8500_serial",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(wmt_dt_ids),
- 	},
- };
- 
-@@ -642,4 +649,4 @@ module_exit(vt8500_serial_exit);
- 
- MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
- MODULE_DESCRIPTION("Driver for vt8500 serial device");
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("GPL v2");
++Boards with the VIA VT8500 SoC shall have the following properties:
++Required root node property:
++compatible = "via,vt8500";
++
++Boards with the Wondermedia WM8505 SoC shall have the following properties:
++Required root node property:
++compatible = "wm,wm8505";
++
++Boards with the Wondermedia WM8650 SoC shall have the following properties:
++Required root node property:
++compatible = "wm,wm8650";
++
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+new file mode 100644
+index 0000000..0a4ce10
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+@@ -0,0 +1,16 @@
++VIA/Wondermedia VT8500 Interrupt Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-intc"
++- reg : Should contain 1 register ranges(address and length)
++- #interrupt-cells : should be <1>
++
++Example:
++
++	intc: interrupt-controller@d8140000 {
++		compatible = "via,vt8500-intc";
++		interrupt-controller;
++		reg = <0xd8140000 0x10000>;
++		#interrupt-cells = <1>;
++	};
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+new file mode 100644
+index 0000000..521b9c7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+@@ -0,0 +1,13 @@
++VIA/Wondermedia VT8500 Power Management Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-pmc"
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++
++	pmc@d8130000 {
++		compatible = "via,vt8500-pmc";
++		reg = <0xd8130000 0x1000>;
++	};
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+new file mode 100644
+index 0000000..901c73f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Timer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-timer"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : interrupt for the timer
++
++Example:
++
++	timer@d8130100 {
++		compatible = "via,vt8500-timer";
++		reg = <0xd8130100 0x28>;
++		interrupts = <36>;
++	};
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_vt8500.txt b/Documentation/devicetree/bindings/gpio/gpio_vt8500.txt
+new file mode 100644
+index 0000000..1a122bf
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_vt8500.txt
+@@ -0,0 +1,24 @@
++VIA/Wondermedia VT8500 GPIO Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-gpio", "wm,wm8505-gpio"
++	or "wm,wm8650-gpio" depending on your SoC
++- reg : Should contain 1 register range (address and length)
++- #gpio-cells : should be <3>.
++	1) bank
++	2) pin number
++	3) flags
++
++Example:
++
++	gpio: gpio-controller@d8110000 {
++		compatible = "via,vt8500-gpio";
++		gpio-controller;
++		reg = <0xd8110000 0x10000>;
++		#gpio-cells = <3>;
++	};
++
++	vibrate {
++		gpios = <&gpio 0 1 0>; /* Bank 0, Pin 1, No flags */
++	};
+diff --git a/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+new file mode 100644
+index 0000000..3c0484c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Realtime Clock Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-rtc"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : alarm interrupt
++
++Example:
++
++	rtc@d8100000 {
++		compatible = "via,vt8500-rtc";
++		reg = <0xd8100000 0x10000>;
++		interrupts = <48>;
++	};
+diff --git a/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+new file mode 100644
+index 0000000..3222502
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 UART Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-uart"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : UART interrupt
++
++Example:
++
++	uart@d8210000 {
++		compatible = "via,vt8500-uart";
++		reg = <0xd8210000 0x1040>;
++		interrupts = <47>;
++	};
+diff --git a/Documentation/devicetree/bindings/usb/platform-uhci.txt b/Documentation/devicetree/bindings/usb/platform-uhci.txt
+new file mode 100644
+index 0000000..a4fb071
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/platform-uhci.txt
+@@ -0,0 +1,15 @@
++Generic Platform UHCI Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "platform-uhci"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : UHCI controller interrupt
++
++Example:
++
++	uhci@d8007b00 {
++		compatible = "platform-uhci";
++		reg = <0xd8007b00 0x200>;
++		interrupts = <43>;
++	};
+diff --git a/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+new file mode 100644
+index 0000000..17b3ad1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 EHCI Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-ehci"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : ehci controller interrupt
++
++Example:
++
++	ehci@d8007900 {
++		compatible = "via,vt8500-ehci";
++		reg = <0xd8007900 0x200>;
++		interrupts = <43>;
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index db4d3af..5c63da2 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -47,5 +47,7 @@ sirf	SiRF Technology, Inc.
+ st	STMicroelectronics
+ stericsson	ST-Ericsson
+ ti	Texas Instruments
++via	VIA Technologies, Inc.
+ wlf	Wolfson Microelectronics
++wm	Wondermedia Technologies, Inc.
+ xlnx	Xilinx
+diff --git a/Documentation/devicetree/bindings/video/via,vt8500-fb.txt b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+new file mode 100644
+index 0000000..ccd15b9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+@@ -0,0 +1,46 @@
++VIA VT8500 Framebuffer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-fb"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : framebuffer controller interrupt
++
++Required nodes:
++- display: a display node is required to initialize the lcd panel
++	This should be in the board dts.
++
++Example:
++
++	fb@d800e400 {
++		compatible = "via,vt8500-fb";
++		reg = <0xd800e400 0x400>;
++		interrupts = <12>;
++	};
++
++VIA VT8500 Display
++-----------------------------------------------------
++Required properties:
++- xres : lcd panel horizontal resolution
++- yres : lcd panel vertical resolution
++- left-margin,
++- right-margin,
++- hsync-len: lcd panel horizontal timings in pixels
++- upper-margin,
++- lower-margin,
++- vsync-len: lcd panel verticals timings in pixels
++- bpp: lcd panel bit-depth.
++	<16> for RGB565, <32> for RGB888
++
++Example:
++	display {
++		xres = <800>;
++		yres = <480>;
++		left-margin = <88>;
++		right-margin = <40>;
++		hsync-len = <0>;
++		upper-margin = <32>;
++		lower-margin = <11>;
++		vsync-len = <1>;
++		bpp = <16>;
++	};
+diff --git a/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+new file mode 100644
+index 0000000..a850fa0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+@@ -0,0 +1,13 @@
++VIA/Wondermedia Graphics Engine Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "wm,prizm-ge-rops"
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++
++	ge_rops@d8050400 {
++		compatible = "wm,prizm-ge-rops";
++		reg = <0xd8050400 0x100>;
++	};
+diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+new file mode 100644
+index 0000000..ab67382
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+@@ -0,0 +1,20 @@
++Wondermedia WM8505 Framebuffer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "wm,wm8505-fb"
++- reg : Should contain 1 register ranges(address and length)
++
++Required nodes:
++- display: a display node is required to initialize the lcd panel
++	This should be in the board dts. See definition in
++	Documentation/devicetree/bindings/video/via,vt8500-fb.txt
++
++
++Example:
++
++	fb@d8050800 {
++		compatible = "wm,wm8505-fb";
++		reg = <0xd8050800 0x200>;
++	};
++
 -- 
 1.7.9.5
 
