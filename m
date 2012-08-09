@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab2HIJIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:08:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33777 "EHLO mga11.intel.com"
+	id S1756551Ab2HIJIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:08:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55175 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab2HIJIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:08:37 -0400
+	id S1752045Ab2HIJIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:08:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,739,1336374000"; 
-   d="scan'208";a="195262071"
+   d="scan'208";a="205376417"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
@@ -16,93 +16,74 @@ Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH, RFC 1/9] thp: huge zero page: basic preparation
-Date: Thu,  9 Aug 2012 12:08:12 +0300
-Message-Id: <1344503300-9507-2-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 0/9] Introduce huge zero page
+Date: Thu,  9 Aug 2012 12:08:11 +0300
+Message-Id: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-For now let's allocate the page on hugepage_init(). We'll switch to lazy
-allocation later.
+During testing I noticed big (up to 2.5 times) memory consumption overhead
+on some workloads (e.g. ft.A from NPB) if THP is enabled.
 
-We are not going to map the huge zero page until we can handle it
-properly on all code paths.
+The main reason for that big difference is lacking zero page in THP case.
+We have to allocate a real page on read page fault.
 
-is_huge_zero_{pfn,pmd}() functions will be used by following patches to
-check whether the pfn/pmd is huge zero page.
+A program to demonstrate the issue:
+#include <assert.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/huge_memory.c |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+#define MB 1024*1024
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 57c4b93..88e0a7a 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -46,6 +46,7 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
- /* during fragmentation poll the hugepage allocator once every minute */
- static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
- static struct task_struct *khugepaged_thread __read_mostly;
-+static unsigned long huge_zero_pfn __read_mostly;
- static DEFINE_MUTEX(khugepaged_mutex);
- static DEFINE_SPINLOCK(khugepaged_mm_lock);
- static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
-@@ -167,6 +168,28 @@ out:
- 	return err;
- }
- 
-+static int init_huge_zero_page(void)
-+{
-+	struct page *hpage;
-+
-+	hpage = alloc_pages(GFP_TRANSHUGE | __GFP_ZERO, HPAGE_PMD_ORDER);
-+	if (!hpage)
-+		return -ENOMEM;
-+
-+	huge_zero_pfn = page_to_pfn(hpage);
-+	return 0;
-+}
-+
-+static inline bool is_huge_zero_pfn(unsigned long pfn)
-+{
-+	return pfn == huge_zero_pfn;
-+}
-+
-+static inline bool is_huge_zero_pmd(pmd_t pmd)
-+{
-+	return is_huge_zero_pfn(pmd_pfn(pmd));
-+}
-+
- #ifdef CONFIG_SYSFS
- 
- static ssize_t double_flag_show(struct kobject *kobj,
-@@ -550,6 +573,10 @@ static int __init hugepage_init(void)
- 	if (err)
- 		return err;
- 
-+	err = init_huge_zero_page();
-+	if (err)
-+		goto out;
-+
- 	err = khugepaged_slab_init();
- 	if (err)
- 		goto out;
-@@ -574,6 +601,8 @@ static int __init hugepage_init(void)
- 
- 	return 0;
- out:
-+	if (huge_zero_pfn)
-+		__free_page(pfn_to_page(huge_zero_pfn));
- 	hugepage_exit_sysfs(hugepage_kobj);
- 	return err;
- }
+int main(int argc, char **argv)
+{
+        char *p;
+        int i;
+
+        posix_memalign((void **)&p, 2 * MB, 200 * MB);
+        for (i = 0; i < 200 * MB; i+= 4096)
+                assert(p[i] == 0);
+        pause();
+        return 0;
+}
+
+With thp-never RSS is about 400k, but with thp-always it's 200M.
+After the patcheset thp-always RSS is 400k too.
+
+H. Peter Anvin proposed to use a "virtual huge zero page" -- a pmd table
+with all pte set to 4k zero page. I haven't tried that approach and I'm
+not sure if it's good idea (cache vs. tlb trashing). And I guess it will
+require more code to handle.
+For now, I just allocate 2M page and use it.
+
+Kirill A. Shutemov (9):
+  thp: huge zero page: basic preparation
+  thp: zap_huge_pmd(): zap huge zero pmd
+  thp: copy_huge_pmd(): copy huge zero page
+  thp: do_huge_pmd_wp_page(): handle huge zero page
+  thp: change_huge_pmd(): keep huge zero page write-protected
+  thp: add address parameter to split_huge_page_pmd()
+  thp: implement splitting pmd for huge zero page
+  thp: setup huge zero page on non-write page fault
+  thp: lazy huge zero page allocation
+
+ Documentation/vm/transhuge.txt |    4 +-
+ arch/x86/kernel/vm86_32.c      |    2 +-
+ fs/proc/task_mmu.c             |    2 +-
+ include/linux/huge_mm.h        |   10 +-
+ include/linux/mm.h             |    8 ++
+ mm/huge_memory.c               |  228 +++++++++++++++++++++++++++++++++++-----
+ mm/memory.c                    |   11 +--
+ mm/mempolicy.c                 |    2 +-
+ mm/mprotect.c                  |    2 +-
+ mm/mremap.c                    |    3 +-
+ mm/pagewalk.c                  |    2 +-
+ 11 files changed, 226 insertions(+), 48 deletions(-)
+
 -- 
 1.7.7.6
 
