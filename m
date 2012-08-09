@@ -1,124 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab2HIVxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:53:07 -0400
-Received: from nm29.access.bullet.mail.mud.yahoo.com ([66.94.237.94]:21349
-	"HELO nm29.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753544Ab2HIVxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:53:03 -0400
-X-Yahoo-Newman-Id: 805358.40558.bm@smtp103.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OoFKM5UVM1nhsZEBc_U4Z.82uJ7kiACR3iA_hcNp6HdzXB6
- A2Qg1ibpjFAtgqtp1BvjDoa2IH6lkEZKwuDn54Imk3oILYAWxezafDweKtXx
- T5SEmif_oWGggcl6wwO3fkDRM7645Xsd6MY4Pj5sGt.DMPLjZLOTMUfMyfsC
- 06..prg.tXnBHi_acILMMBTccwE2ogURftTZU__Hp._Hzn1.Fqflan4OXNVg
- kzrQ_wL6NPRRi9SQ48XDo2hg4jdZqYVura4DzaaAKsMZhHQcLNzuZS.zUUr.
- FXIPCzrY5zX_rpkWGsTr3EE9JK4IyMJoEbyadSLy0jQjZbmhEvB4VRMd474b
- CGEVWvDMXehDdvsP1KYRUSW3IicPhyOBxMYKFE9Y5sHDsB3n9gJRBTat0YoV
- m0gSS5Fl0mB1jlDCWHksqQqgnY6iSL1rF5cfu0Cr8SAtBx2dnSHgLAs.x9jZ
- zdHsTYp5HC9AGowHpE0VC3kzPmoV1UUHi5AP8DSgM0QGRE2LzcHE.Wi8WxLv
- jjNQFXRq2
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <5024313F.1010404@schaufler-ca.com>
-Date: Thu, 09 Aug 2012 14:53:03 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1759761Ab2HIV5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:57:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34743 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753831Ab2HIV5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:57:46 -0400
+Date: Thu, 9 Aug 2012 23:57:26 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/19] sched, numa: Per task memory placement for big
+ processes
+Message-ID: <20120809215725.GL10459@redhat.com>
+References: <20120731191204.540691987@chello.nl>
+ <20120731192809.428855038@chello.nl>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
-        john.johansen@canonical.com,
-        LSM <linux-security-module@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] ipv4: tcp: security_sk_alloc() needed for unicast_sock
-References: <50215A7E.8000701@linaro.org>  <1344462889.28967.328.camel@edumazet-glaptop>  <5022FD9A.4020603@schaufler-ca.com> <1695034.0lrQgQPOMT@sifl>  <1344523833.28967.996.camel@edumazet-glaptop>  <CACLa4ptkvKj2GT4ZL+msMuWOHW885Hugk8nz3hvptOoY9-totw@mail.gmail.com> <1344547743.31104.582.camel@edumazet-glaptop>
-In-Reply-To: <1344547743.31104.582.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120731192809.428855038@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/9/2012 2:29 PM, Eric Dumazet wrote:
-> On Thu, 2012-08-09 at 16:06 -0400, Eric Paris wrote:
->> NAK.
->>
->> I personally think commit be9f4a44e7d41cee should be reverted until it
->> is fixed.  Let me explain what all I believe it broke and how.
->>
-> Suggesting to revert this commit while we have known working fixes is a
-> bit of strange reaction.
+On Tue, Jul 31, 2012 at 09:12:22PM +0200, Peter Zijlstra wrote:
+> Implement a per-task memory placement scheme for 'big' tasks (as per
+> the last patch). It relies on a regular PROT_NONE 'migration' fault to
+> scan the memory space of the procress and uses a two stage migration
+> scheme to reduce the invluence of unlikely usage relations.
+> 
+> It relies on the assumption that the compute part is tied to a
+> paticular task and builds a task<->page relation set to model the
+> compute<->data relation.
+> 
+> Probability says that the task faulting on a page after we protect it,
+> is most likely to be the task that uses that page most.
+> 
+> To decrease the likelyhood of acting on a false relation, we only
 
-A couple of potential short term workarounds have been identified,
-but no one is happy with them for the long term. That does not
-qualify as a "working fix" in engineering terms.
+Do you prefer me to use the term false relation instead of false
+sharing too? I never was fond of the term false sharing even though at
+the NUMA level it resembles the cache effects.
 
-> I understand you are upset, but I believe we tried to fix it.
->
->> Old callchain of the creation of the 'equivalent' socket previous to
->> the patch in question just for reference:
->>
->>     inet_ctl_sock_create
->>       sock_create_kern
->>         __sock_create
->>           pf->create (inet_create)
->>             sk_alloc
->>               sk_prot_alloc
->>                 security_sk_alloc()
->>
->>
->> This WAS working properly.  All of it. 
-> Nobody denies it. But acknowledge my patch uncovered a fundamental
-> issue.
->
-> What kind of 'security module' can decide to let RST packets being sent
-> or not, on a global scale ? (one socket for the whole machine)
+> migrate a page when two consecutive samples are from the same task.
+> 
+> I'm still not entirely convinced this scheme is sound, esp. for things
+> like virtualization and n:m threading solutions in general the
+> compute<->task relation is fundamentally untrue.
 
-The short answer is "any security module that wants to".
+To make it true, virt requires AutoNUMA or hard bindings the guest too
+and just a fake vtopology matching the hardware topology. Anyway we
+can discuss that later, it's not the primary topic here.
 
-And before we go any further, I'm a little surprised that
-SELinux doesn't do this already.
+> + *
+> + * Once we start doing NUMA placement there's two modes, 'small' process-wide
+> + * and 'big' per-task. For the small mode we have a process-wide home node
+> + * and lazily mirgrate all memory only when this home-node changes.
+> + *
+> + * For big mode we keep a home-node per task and use periodic fault scans
+> + * to try and estalish a task<->page relation. This assumes the task<->page
+> + * relation is a compute<->data relation, this is false for things like virt.
+> + * and n:m threading solutions but its the best we can do given the
+> + * information we have.
 
->
-> smack_sk_alloc_security() uses smk_of_current() : What can be the
-> meaning of smk_of_current() in the context of 'kernel' sockets...
+Differentiating the way you migrate the memory between small and big
+tasks looks really bad and a major band aid. It is only needed because
+the small mode is too broken to be used on big tasks, and the big mode
+provides too bad performance.
 
-Yes, and all of it's callers - to date - have had an appropriate
-value of current. It is using the API in the way it is supposed to.
-It is assuming a properly formed socket. You want to give it a
-cobbled together partial socket structure without task context.
-Your predecessor did not have this problem.
+> +	if (big) {
+> +		/*
+> +		 * For 'big' processes we do per-thread home-node, combined
+> +		 * with periodic fault scans.
+> +		 */
+> +		if (p->node != node)
+> +			sched_setnode(p, node);
+> +	} else {
+> +		/*
+> +		 * For 'small' processes we keep the entire process on a
+> +		 * node and migrate all memory once.
+> +		 */
+> +		rcu_read_lock();
+> +		t = p;
+> +		do {
+> +			sched_setnode(t, node);
+> +		} while ((t = next_thread(p)) != p);
+> +		rcu_read_unlock();
+> +	}
 
->
-> Your patch tries to maintain this status quo.
->
-> In fact I suggest the following one liner patch, unless you can really
-> demonstrate what can be the meaning of providing a fake socket for these
-> packets.
->
-> This mess only happened because ip_append_data()/ip_push_pending_frames()
-> are so complex and use an underlying socket.
->
-> But this socket should not be ever used outside of its scope.
->
-> diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-> index 76dde25..ec410e0 100644
-> --- a/net/ipv4/ip_output.c
-> +++ b/net/ipv4/ip_output.c
-> @@ -1536,6 +1536,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
->  			  arg->csumoffset) = csum_fold(csum_add(nskb->csum,
->  								arg->csum));
->  		nskb->ip_summed = CHECKSUM_NONE;
-> +		skb_orphan(nskb);
->  		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
->  		ip_push_pending_frames(sk, &fl4);
+The small mode tries to do the right thing, except expressed like
+above is so bad and fixed in stone and can't work ok in all possible
+scenarios (hence you can't use it for big tasks).
+
+AutoNUMA only uses the "small" mode, but it does in a way that works
+perfectly for big tasks too. This is the relevant documentation on how
+the CPU follow memory algorithm of AutoNUMA sorts out the very above
+problem in an optimal way that doesn't require small/big
+classifications or other hacks like that:
+
+ * One important thing is how we calculate the weights using
+ * task_autonuma or mm_autonuma, depending if the other CPU is running
+ * a thread of the current process, or a thread of a different
+ * process.
+ *
+ * We use the mm_autonuma statistics to calculate the NUMA weights of
+ * the two task candidate for exchange, if the task in the other CPU
+ * belongs to a different processes. This way all threads of the same
+ * process will try to converge in the same "mm" best nodes if their
+ * "thread local" best CPU is already busy by a thread of a different
+ * process. This is important because with threads, there is always
+ * the possibility of NUMA false sharing, and so it's better to
+ * converge all threads in as fewer nodes as possible.
+
+Your approach will never work ok on large systems, unless all tasks
+are of the small kind of course.
+
+At least now you introduced the autonuma_last_nid numa hinting page
+fault confirmation before starting the migration to mitigate the
+bad behavior of the big mode for big tasks.
+
+> +	/*
+> +	 * Trigger fault driven migration, small processes do direct
+> +	 * lazy migration, big processes do gradual task<->page relations.
+> +	 * See mpol_misplaced().
+> +	 */
+>  	lazy_migrate_process(p->mm);
+
+The comment should go in prev patch that introduced the call to
+lazy_migrate_process not here, bad splitup.
+
+> +	/*
+> +	 * Multi-stage node selection is used in conjunction with a periodic
+> +	 * migration fault to build a temporal task<->page relation. By
+> +	 * using a two-stage filter we remove short/unlikely relations.
+> +	 *
+> +	 * Using P(p) ~ n_p / n_t as per frequentist probability, we can
+> +	 * equate a task's usage of a particular page (n_p) per total usage
+> +	 * of this page (n_t) (in a given time-span) to a probability.
+> +	 *
+> +	 * Our periodic faults will then sample this probability and getting
+> +	 * the same result twice in a row, given these samples are fully
+> +	 * independent, is then given by P(n)^2, provided our sample period
+> +	 * is sufficiently short compared to the usage pattern.
+> +	 *
+> +	 * This quadric squishes small probabilities, making it less likely
+> +	 * we act on an unlikely task<->page relation.
+> +	 *
+> +	 * NOTE: effectively we're using task-home-node<->page-node relations
+> +	 * since those are the only thing we can affect.
+> +	 *
+> +	 * NOTE: we're using task-home-node as opposed to the current node
+> +	 * the task might be running on, since the task-home-node is the
+> +	 * long-term node of this task, further reducing noise. Also see
+> +	 * task_tick_numa().
+> +	 */
+> +	if (multi && (pol->flags & MPOL_F_HOME)) {
+> +		if (page->nid_last != polnid) {
+> +			page->nid_last = polnid;
+> +			goto out;
+> +		}
+> +	}
+> +
+
+Great to see we agree on the autonuma_last_nid logic now that you
+included it into sched-numa, so finally sched-numa also has a
+task<->page relation. You also wrote the math to explain it! I hope if
+you don't mind if I copy the above math in the comment above.
+
+I just seen you posted a patch to remove the 8 bytes per page and
+return to zero cost by dropping 32bit support, but it was still
+interesting to see sched-numa for the first time using 8 bytes per
+page unconditionally! (autonuma currently uses 12 per page but only on
+NUMA hardware and zero on non-NUMA, and it works on 32bit archs too
+with the same 12byte cost)
+
+> @@ -2421,7 +2456,7 @@ void __init numa_policy_init(void)
+>  		preferred_node_policy[nid] = (struct mempolicy) {
+>  			.refcnt = ATOMIC_INIT(1),
+>  			.mode = MPOL_PREFERRED,
+> -			.flags = MPOL_F_MOF,
+> +			.flags = MPOL_F_MOF | MPOL_F_HOME,
+>  			.v = { .preferred_node = nid, },
+>  		};
 >  	}
->
->
->
-
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
