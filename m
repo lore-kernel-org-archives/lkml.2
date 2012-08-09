@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759269Ab2HITNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:13:09 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:53498 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755071Ab2HITNH (ORCPT
+	id S1759321Ab2HITOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:14:03 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57001 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab2HITOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:13:07 -0400
-Message-ID: <50240B70.3000800@xenotime.net>
-Date: Thu, 09 Aug 2012 12:11:44 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 9 Aug 2012 15:14:00 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: Tree for Aug 9 (staging/csr)
-References: <20120809131317.3d289a0b98a13c72001154fb@canb.auug.org.au>
-In-Reply-To: <20120809131317.3d289a0b98a13c72001154fb@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+In-Reply-To: <1344526098.6935.44.camel@gandalf.stny.rr.com>
+References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+ <1344485382.2024.9.camel@joe2Laptop> <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+ <20120808.231804.12694947300243733.davem@davemloft.net> <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
+ <20120809145454.GA21195@home.goodmis.org> <1344525758.3165.8.camel@joe2Laptop>
+ <1344526098.6935.44.camel@gandalf.stny.rr.com>
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Date: Thu, 9 Aug 2012 12:13:38 -0700
+X-Google-Sender-Auth: aFXs4lHhmdTgcIRhbHQ-K-NqqWY
+Message-ID: <CAB=NE6X4JQmQgtgcy9is0hn0nNypTKJN-d2RHFR7vvg=vO_eHQ@mail.gmail.com>
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 08:13 PM, Stephen Rothwell wrote:
+On Thu, Aug 9, 2012 at 8:28 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2012-08-09 at 08:22 -0700, Joe Perches wrote:
+>
+>> Yes, I sent signed-off patches to their original RFC submission
+>> (back last year?).
 
-> Hi all,
-> 
-> Changes since 20120807:
-> 
+And that is why your SOB was kept.
 
+>> To me, this single large patch is like a
+>> snapshot of a git tree and not all contributors to that git
+>> tree should be noted as signers of the entire thing.
 
+I am not sure we really ever addressed this technical difference and
+from what I have seen we always run into this question on new driver
+submissions.
 
-(on i386)
+Entity x goes on and posts driver joojoo-1, and we some folks in the
+community may merge such patch onto their tree and edit the driver and
+send some of their own changes and improvements to the developers /
+mailing list. Typically if the patches sent had a SOB tag the right
+thing to due given the legal implications of the Developer's
+Certificate of Origin is to add those SOBs to the new driver
+submission if company x goes on and posts joojoo-2.. but...
 
-ERROR: "register_inetaddr_notifier" [drivers/staging/csr/csr_wifi.ko] undefined!
-ERROR: "unregister_inetaddr_notifier" [drivers/staging/csr/csr_wifi.ko] undefined!
+> Ouch, that looks like we are losing all history.
 
-when CONFIG_INET is not enabled.
+Agreed! It'd be best instead to have such changes as part of a linear
+history somewhere so maybe what would be right prior to inclusion
+upstream is for such patches to be merged on an external github tree
+or wherever to be able to keep record of the submissions done during
+development. Then upon submission to the Linux kernel again as
+joojoo-2 instead of joojoo-1 company x would simply provide their own
+SOB, and the record of the previous SOBs would be kept on the forked
+git tree.
 
-CSR_WIFI probably should depend on INET.
+Whether or not it is required to have the SOB tog of previous patch
+submitters is not clear but to me its not necessary if you have a
+record somewhere that they were submitted and merged in some other
+tree. The mailing list alone may serve as a good place holder for this
+information as well so a separate tree may not be required.
 
+So -- are we OK to *not* include SOBs of evolutions sent to developers
+of joojoo-1 when company x submits joojoo-2 so long as those patches
+were sent publicly or a record is kept somewhere ?
 
--- 
-~Randy
+> One large patch should not be submitted. If it was developed in steps,
+> then it is best to show those steps when they are incorporated into the
+> Linux repository.
+
+Sure, but at times some changes are asked after a submission of
+joojoo-1, and at times this may be ongoing until maybe even joojoo-10,
+before we are happy to merge it upstream.
+
+  Luis
