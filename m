@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab2HIIsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:48:18 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:17480
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726Ab2HIIsP (ORCPT
+	id S1756739Ab2HIIsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:48:32 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:57079
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756533Ab2HIIs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:48:15 -0400
+	Thu, 9 Aug 2012 04:48:28 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
@@ -16,10 +16,11 @@ To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
         <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
 CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
         <davem@davemloft.net>, <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        Qiang Liu <qiang.liu@freescale.com>, Li Yang <leoli@freescale.com>
-Subject: [PATCH v7 2/8] fsl-dma: remove attribute DMA_INTERRUPT of dmaengine
-Date: Thu, 9 Aug 2012 16:21:11 +0800
-Message-ID: <1344500471-10967-1-git-send-email-qiang.liu@freescale.com>
+        Qiang Liu <qiang.liu@freescale.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH v7 3/8] fsl-dma: add fsl_dma_free_descriptor() to reduce code duplication
+Date: Thu, 9 Aug 2012 16:21:40 +0800
+Message-ID: <1344500500-11003-1-git-send-email-qiang.liu@freescale.com>
 X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -30,71 +31,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Qiang Liu <qiang.liu@freescale.com>
 
-Delete attribute DMA_INTERRUPT because fsl-dma doesn't support this function,
-exception will be thrown if talitos is used to offload xor at the same time.
+There are several places where descriptors are freed using identical
+code. Put this code into a function to reduce code duplication.
 
 Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Dan Williams <dan.j.williams@gmail.com>
 Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Li Yang <leoli@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
-Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/dma/fsldma.c |   31 -------------------------------
- 1 files changed, 0 insertions(+), 31 deletions(-)
+ drivers/dma/fsldma.c |   38 ++++++++++++++++++++------------------
+ 1 files changed, 20 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 8f84761..4f2f212 100644
+index 4f2f212..d4720d3 100644
 --- a/drivers/dma/fsldma.c
 +++ b/drivers/dma/fsldma.c
-@@ -543,35 +543,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+@@ -427,6 +427,21 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
  }
 
- static struct dma_async_tx_descriptor *
--fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
--{
--	struct fsldma_chan *chan;
--	struct fsl_desc_sw *new;
--
--	if (!dchan)
--		return NULL;
--
--	chan = to_fsl_chan(dchan);
--
--	new = fsl_dma_alloc_descriptor(chan);
--	if (!new) {
--		chan_err(chan, "%s\n", msg_ld_oom);
--		return NULL;
--	}
--
--	new->async_tx.cookie = -EBUSY;
--	new->async_tx.flags = flags;
--
--	/* Insert the link descriptor to the LD ring */
--	list_add_tail(&new->node, &new->tx_list);
--
--	/* Set End-of-link to the last link descriptor of new list */
--	set_ld_eol(chan, new);
--
--	return &new->async_tx;
--}
--
--static struct dma_async_tx_descriptor *
- fsl_dma_prep_memcpy(struct dma_chan *dchan,
- 	dma_addr_t dma_dst, dma_addr_t dma_src,
- 	size_t len, unsigned long flags)
-@@ -1352,12 +1323,10 @@ static int __devinit fsldma_of_probe(struct platform_device *op)
- 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ /**
++ * fsl_dma_free_descriptor - Free descriptor from channel's DMA pool.
++ * @chan : Freescale DMA channel
++ * @desc: descriptor to be freed
++ */
++static void fsl_dma_free_descriptor(struct fsldma_chan *chan,
++		struct fsl_desc_sw *desc)
++{
++	list_del(&desc->node);
++#ifdef FSL_DMA_LD_DEBUG
++	chan_dbg(chan, "LD %p free\n", desc);
++#endif
++	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++}
++
++/**
+  * fsl_dma_alloc_descriptor - Allocate descriptor from channel's DMA pool.
+  * @chan : Freescale DMA channel
+  *
+@@ -500,13 +515,8 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
+ {
+ 	struct fsl_desc_sw *desc, *_desc;
 
- 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
--	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
- 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
- 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
--	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
- 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
- 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
- 	fdev->common.device_tx_status = fsl_tx_status;
+-	list_for_each_entry_safe(desc, _desc, list, node) {
+-		list_del(&desc->node);
+-#ifdef FSL_DMA_LD_DEBUG
+-		chan_dbg(chan, "LD %p free\n", desc);
+-#endif
+-		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+-	}
++	list_for_each_entry_safe(desc, _desc, list, node)
++		fsl_dma_free_descriptor(chan, desc);
+ }
+
+ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+@@ -514,13 +524,8 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+ {
+ 	struct fsl_desc_sw *desc, *_desc;
+
+-	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
+-		list_del(&desc->node);
+-#ifdef FSL_DMA_LD_DEBUG
+-		chan_dbg(chan, "LD %p free\n", desc);
+-#endif
+-		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+-	}
++	list_for_each_entry_safe_reverse(desc, _desc, list, node)
++		fsl_dma_free_descriptor(chan, desc);
+ }
+
+ /**
+@@ -855,10 +860,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
+ 			dma_unmap_page(dev, src, len, DMA_TO_DEVICE);
+ 	}
+
+-#ifdef FSL_DMA_LD_DEBUG
+-	chan_dbg(chan, "LD %p free\n", desc);
+-#endif
+-	dma_pool_free(chan->desc_pool, desc, txd->phys);
++	fsl_dma_free_descriptor(chan, desc);
+ }
+
+ /**
 --
 1.7.5.1
 
