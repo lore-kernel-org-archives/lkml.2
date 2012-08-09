@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab2HIMfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:35:12 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5233 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab2HIMfK (ORCPT
+	id S1757665Ab2HIMfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 08:35:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab2HIMfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:35:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 09 Aug 2012 05:35:09 -0700
-Message-ID: <5023AAE5.90603@nvidia.com>
-Date: Thu, 9 Aug 2012 17:49:49 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 3/3] regulator: add MAX8907 driver
-References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org> <1344460727-6243-3-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1344460727-6243-3-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 9 Aug 2012 08:35:36 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=tzqJOWxOEVwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=WHaCPJD69tGyA_AYuqYA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344515732.6935.30.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
+ pipe buffer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Thu, 09 Aug 2012 08:35:32 -0400
+In-Reply-To: <502381EA.80805@hitachi.com>
+References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
+	 <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
+	 <20120809090312.GH3280@amit.redhat.com> <502381EA.80805@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 August 2012 02:48 AM, Stephen Warren wrote:
-> From: Gyungoh Yoo<jack.yoo@maxim-ic.com>
->
-> The MAX8907 is an I2C-based power-management IC containing voltage
-> regulators, a reset controller, a real-time clock, and a touch-screen
+On Thu, 2012-08-09 at 18:24 +0900, Masami Hiramatsu wrote:
 
-> +       for (i = 0; i<  MAX8907_NUM_REGULATORS; i++) {
-> +               config.dev = pdev->dev.parent;
-> +               if (pdata)
-> +                       idata = pdata->init_data[i];
-> +               else
-> +                       idata = max8907_matches[i].init_data;
+> Yeah, it is really easy to fix that.
+> But out of curiosity, would that be really a problem?
+> I guess that host can access any guest page if need. If that
+> is right, is that really insecure to leak randomly allocated
+> unused page to the host?
 
-Can we check whether idata is valid or not?
-There may be possibility that some of regulator node is not populated 
-and that case, the idata will be NULL and hence regulator registration 
-can be bypass for that regulator.
+Yeah, it's like protecting userspace pages from the kernel ;-)
+
+-- Steve
+
 
