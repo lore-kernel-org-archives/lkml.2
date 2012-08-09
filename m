@@ -1,307 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2HIUl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:41:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19824 "EHLO mga01.intel.com"
+	id S1755369Ab2HIUqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:46:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56630 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab2HIUly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:41:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,742,1336374000"; 
-   d="scan'208";a="205679024"
-Subject: Re: [tip:x86:fpu 2/2] arch/x86/kernel/signal.c:626:4: error:
- implicit declaration of function '__setup_frame'
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 09 Aug 2012 13:38:56 -0700
-In-Reply-To: <5022E963.9020809@zytor.com>
-References: <20120725232716.GB5758@localhost>
-	 <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
-	 <5022E963.9020809@zytor.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1344544736.8326.17.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1751221Ab2HIUqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 16:46:35 -0400
+Date: Thu, 9 Aug 2012 21:46:30 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates under
+ load V3
+Message-ID: <20120809204630.GJ12690@suse.de>
+References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
+ <5023FE83.4090200@sandia.gov>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5023FE83.4090200@sandia.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 15:34 -0700, H. Peter Anvin wrote:
-> With this patch applied I get an error at:
+On Thu, Aug 09, 2012 at 12:16:35PM -0600, Jim Schutt wrote:
+> On 08/09/2012 07:49 AM, Mel Gorman wrote:
+> >Changelog since V2
+> >o Capture !MIGRATE_MOVABLE pages where possible
+> >o Document the treatment of MIGRATE_MOVABLE pages while capturing
+> >o Expand changelogs
+> >
+> >Changelog since V1
+> >o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
+> >o Expanded changelogs a little
+> >
+> >Allocation success rates have been far lower since 3.4 due to commit
+> >[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
+> >commit was introduced for good reasons and it was known in advance that
+> >the success rates would suffer but it was justified on the grounds that
+> >the high allocation success rates were achieved by aggressive reclaim.
+> >Success rates are expected to suffer even more in 3.6 due to commit
+> >[7db8889a: mm: have order>  0 compaction start off where it left] which
+> >testing has shown to severely reduce allocation success rates under load -
+> >to 0% in one case.  There is a proposed change to that patch in this series
+> >and it would be ideal if Jim Schutt could retest the workload that led to
+> >commit [7db8889a: mm: have order>  0 compaction start off where it left].
 > 
-> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: error: 
-> static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
-> In file included from 
-> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:29:0:
-> /home/hpa/kernel/tip.x86-fpu/arch/x86/include/asm/fpu-internal.h:62:5: 
-> note: previous declaration of ‘x32_setup_rt_frame’ was here
-> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: warning: 
-> ‘x32_setup_rt_frame’ defined but not used [-Wunused-function]
-> make[4]: *** [arch/x86/kernel/signal.o] Error 1
-> make[3]: *** [arch/x86/kernel] Error 2
-> make[2]: *** [arch/x86] Error 2
-> make[1]: *** [sub-make] Error 2
-> make[1]: Leaving directory `/home/hpa/kernel/tip.x86-fpu'
+> On my first test of this patch series on top of 3.5, I ran into an
+> instance of what I think is the sort of thing that patch 4/5 was
+> fixing.  Here's what vmstat had to say during that period:
 > 
-> ... for an x86-64 allyesconfig.
+> <SNIP>
 
-Sorry my binutils didn't have x32 support, so didn't catch this earlier.
-Here is the updated patch fixing all the compilation issues. Thanks.
+My conclusion looking at the vmstat data is that everything is looking ok
+until system CPU usage goes through the roof. I'm assuming that's what we
+are all still looking at.
+
+I am still concerned that what patch 4/5 was actually doing was bypassing
+compaction almost entirely in the contended case which "works" but not
+exactly expected
+
+> And here's a perf report, captured/displayed with
+>   perf record -g -a sleep 10
+>   perf report --sort symbol --call-graph fractal,5
+> sometime during that period just after 12:00:09, when
+> the run queueu was > 100.
+> 
+> ----------
+> 
+> Processed 0 events and LOST 1175296!
+> 
+> <SNIP>
+> #
+>     34.63%  [k] _raw_spin_lock_irqsave
+>             |
+>             |--97.30%-- isolate_freepages
+>             |          compaction_alloc
+>             |          unmap_and_move
+>             |          migrate_pages
+>             |          compact_zone
+>             |          compact_zone_order
+>             |          try_to_compact_pages
+>             |          __alloc_pages_direct_compact
+>             |          __alloc_pages_slowpath
+>             |          __alloc_pages_nodemask
+>             |          alloc_pages_vma
+>             |          do_huge_pmd_anonymous_page
+>             |          handle_mm_fault
+>             |          do_page_fault
+>             |          page_fault
+>             |          |
+>             |          |--87.39%-- skb_copy_datagram_iovec
+>             |          |          tcp_recvmsg
+>             |          |          inet_recvmsg
+>             |          |          sock_recvmsg
+>             |          |          sys_recvfrom
+>             |          |          system_call
+>             |          |          __recv
+>             |          |          |
+>             |          |           --100.00%-- (nil)
+>             |          |
+>             |           --12.61%-- memcpy
+>              --2.70%-- [...]
+
+So lets just consider this. My interpretation of that is that we are
+receiving data from the network and copying it into a buffer that is
+faulted for the first time and backed by THP.
+
+All good so far *BUT* we are contending like crazy on the zone lock and
+probably blocking normal page allocations in the meantime.
+
+> 
+>     14.31%  [k] _raw_spin_lock_irq
+>             |
+>             |--98.08%-- isolate_migratepages_range
+
+This is a variation of the same problem but on the LRU lock this time.
+
+> <SNIP>
+> 
+> ----------
+> 
+> If I understand what this is telling me, skb_copy_datagram_iovec
+> is responsible for triggering the calls to isolate_freepages_block,
+> isolate_migratepages_range, and isolate_freepages?
+> 
+
+Sortof. I do not think it's the jumbo frames that are doing it, it's the
+faulting of the buffer it copies to.
+
+> FWIW, I'm using a Chelsio T4 NIC in these hosts, with jumbo frames
+> and the Linux TCP stack (i.e., no stateful TCP offload).
+> 
+
+Ok, this is an untested hack and I expect it would drop allocation success
+rates again under load (but not as much). Can you test again and see what
+effect, if any, it has please?
+
+---8<---
+mm: compaction: back out if contended
 
 ---
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: x86, fpu: fix build issues with CONFIG_IA32_EMULATION, CONFIG_X86_X32_ABI
+ include/linux/compaction.h |    4 ++--
+ mm/compaction.c            |   45 ++++++++++++++++++++++++++++++++++++++------
+ mm/internal.h              |    1 +
+ mm/page_alloc.c            |   13 +++++++++----
+ 4 files changed, 51 insertions(+), 12 deletions(-)
 
-Fengguang's automated build reported some compilation failures:
-> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
-> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
-> ...
-
-Code saving fsave prefix is applicable only for CONFIG_X86_32 or
-CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
-code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
-
-Peter reported some build failures with CONFIG_X86_X32_ABI:
-> arch/x86/kernel/signal.c:792:12: error: 
-> static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
-> ...
-
-Fix it by moving the x32_setup_rt_frame() code around and removing the
-non-static declaration.
-
-Also while we are at this, fix a spurious warning:
-> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value
-> of ‘__clear_user’, declared with attribute warn_unused_result
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/fpu-internal.h |    7 +--
- arch/x86/kernel/signal.c            |  134 ++++++++++++++++++-----------------
- arch/x86/kernel/xsave.c             |   10 ++-
- 3 files changed, 77 insertions(+), 74 deletions(-)
-
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 35ad161..ba83a08 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -22,7 +22,7 @@
- #include <asm/uaccess.h>
- #include <asm/xsave.h>
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 5673459..9c94cba 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -22,7 +22,7 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+ extern int fragmentation_index(struct zone *zone, unsigned int order);
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+-			bool sync, struct page **page);
++			bool sync, bool *contended, struct page **page);
+ extern int compact_pgdat(pg_data_t *pgdat, int order);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
  
--#ifdef CONFIG_IA32_EMULATION
-+#ifdef CONFIG_X86_64
- # include <asm/sigcontext32.h>
- # include <asm/user32.h>
- int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-@@ -52,17 +52,12 @@ extern user_regset_get_fn fpregs_get, xfpregs_get, fpregs_soft_get,
- extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
- 				 xstateregs_set;
- 
--
- /*
-  * xstateregs_active == fpregs_active. Please refer to the comment
-  * at the definition of fpregs_active.
-  */
- #define xstateregs_active	fpregs_active
- 
--int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
--		       siginfo_t *info, compat_sigset_t *set,
--		       struct pt_regs *regs);
--
- #ifdef CONFIG_MATH_EMULATION
- # define HAVE_HWFP             (boot_cpu_data.hard_math)
- extern void finit_soft_fpu(struct i387_soft_struct *soft);
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 356e442..e10f96a 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -472,6 +472,74 @@ static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+@@ -64,7 +64,7 @@ static inline bool compaction_deferred(struct zone *zone, int order)
+ #else
+ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+-			bool sync, struct page **page)
++			bool sync, bool *contended, struct page **page)
+ {
+ 	return COMPACT_CONTINUE;
  }
- #endif /* CONFIG_X86_32 */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c2d0958..8e290d2 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -50,6 +50,27 @@ static inline bool migrate_async_suitable(int migratetype)
+ 	return is_migrate_cma(migratetype) || migratetype == MIGRATE_MOVABLE;
+ }
  
-+static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
-+			      siginfo_t *info, compat_sigset_t *set,
-+			      struct pt_regs *regs)
++/*
++ * Compaction requires the taking of some coarse locks that are potentially
++ * very heavily contended. For async compaction, back out in the event there
++ * is contention.
++ */
++static bool compact_trylock_irqsave(spinlock_t *lock, unsigned long *flags,
++				    struct compact_control *cc)
 +{
-+#ifdef CONFIG_X86_X32_ABI
-+	struct rt_sigframe_x32 __user *frame;
-+	void __user *restorer;
-+	int err = 0;
-+	void __user *fpstate = NULL;
-+
-+	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
-+
-+	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
-+		return -EFAULT;
-+
-+	if (ka->sa.sa_flags & SA_SIGINFO) {
-+		if (copy_siginfo_to_user32(&frame->info, info))
-+			return -EFAULT;
++	if (cc->sync) {
++		spin_lock_irqsave(lock, *flags);
++	} else {
++		if (!spin_trylock_irqsave(lock, *flags)) {
++			if (cc->contended)
++				*cc->contended = true;
++			return false;
++		}
 +	}
 +
-+	put_user_try {
-+		/* Create the ucontext.  */
-+		if (cpu_has_xsave)
-+			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
-+		else
-+			put_user_ex(0, &frame->uc.uc_flags);
-+		put_user_ex(0, &frame->uc.uc_link);
-+		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
-+		put_user_ex(sas_ss_flags(regs->sp),
-+			    &frame->uc.uc_stack.ss_flags);
-+		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
-+		put_user_ex(0, &frame->uc.uc__pad0);
-+		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
-+					regs, set->sig[0]);
-+		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
-+
-+		if (ka->sa.sa_flags & SA_RESTORER) {
-+			restorer = ka->sa.sa_restorer;
-+		} else {
-+			/* could use a vstub here */
-+			restorer = NULL;
-+			err |= -EFAULT;
-+		}
-+		put_user_ex(restorer, &frame->pretcode);
-+	} put_user_catch(err);
-+
-+	if (err)
-+		return -EFAULT;
-+
-+	/* Set up registers for signal handler */
-+	regs->sp = (unsigned long) frame;
-+	regs->ip = (unsigned long) ka->sa.sa_handler;
-+
-+	/* We use the x32 calling convention here... */
-+	regs->di = sig;
-+	regs->si = (unsigned long) &frame->info;
-+	regs->dx = (unsigned long) &frame->uc;
-+
-+	loadsegment(ds, __USER_DS);
-+	loadsegment(es, __USER_DS);
-+
-+	regs->cs = __USER_CS;
-+	regs->ss = __USER_DS;
-+#endif	/* CONFIG_X86_X32_ABI */
-+
-+	return 0;
++	return true;
 +}
 +
- #ifdef CONFIG_X86_32
- /*
-  * Atomically swap in the new signal mask, and wait for a signal.
-@@ -789,72 +857,6 @@ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
- }
- 
- #ifdef CONFIG_X86_X32_ABI
--static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
--			      siginfo_t *info, compat_sigset_t *set,
--			      struct pt_regs *regs)
--{
--	struct rt_sigframe_x32 __user *frame;
--	void __user *restorer;
--	int err = 0;
--	void __user *fpstate = NULL;
--
--	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
--
--	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
--		return -EFAULT;
--
--	if (ka->sa.sa_flags & SA_SIGINFO) {
--		if (copy_siginfo_to_user32(&frame->info, info))
--			return -EFAULT;
--	}
--
--	put_user_try {
--		/* Create the ucontext.  */
--		if (cpu_has_xsave)
--			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
--		else
--			put_user_ex(0, &frame->uc.uc_flags);
--		put_user_ex(0, &frame->uc.uc_link);
--		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
--		put_user_ex(sas_ss_flags(regs->sp),
--			    &frame->uc.uc_stack.ss_flags);
--		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
--		put_user_ex(0, &frame->uc.uc__pad0);
--		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
--					regs, set->sig[0]);
--		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
--
--		if (ka->sa.sa_flags & SA_RESTORER) {
--			restorer = ka->sa.sa_restorer;
--		} else {
--			/* could use a vstub here */
--			restorer = NULL;
--			err |= -EFAULT;
--		}
--		put_user_ex(restorer, &frame->pretcode);
--	} put_user_catch(err);
--
--	if (err)
--		return -EFAULT;
--
--	/* Set up registers for signal handler */
--	regs->sp = (unsigned long) frame;
--	regs->ip = (unsigned long) ka->sa.sa_handler;
--
--	/* We use the x32 calling convention here... */
--	regs->di = sig;
--	regs->si = (unsigned long) &frame->info;
--	regs->dx = (unsigned long) &frame->uc;
--
--	loadsegment(ds, __USER_DS);
--	loadsegment(es, __USER_DS);
--
--	regs->cs = __USER_CS;
--	regs->ss = __USER_DS;
--
--	return 0;
--}
--
- asmlinkage long sys32_x32_rt_sigreturn(struct pt_regs *regs)
+ static void compact_capture_page(struct compact_control *cc)
  {
- 	struct rt_sigframe_x32 __user *frame;
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 2917e34..a23d100 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -205,8 +205,8 @@ static inline int save_user_xstate(struct xsave_struct __user *buf)
- 	else
- 		err = fsave_user((struct i387_fsave_struct __user *) buf);
+ 	unsigned long flags;
+@@ -87,7 +108,8 @@ static void compact_capture_page(struct compact_control *cc)
+ 				continue;
  
--	if (unlikely(err))
--		__clear_user(buf, xstate_size);
-+	if (unlikely(err) && __clear_user(buf, xstate_size))
-+		err = -EFAULT;
- 	return err;
+ 			/* Take the lock and attempt capture of the page */
+-			spin_lock_irqsave(&cc->zone->lock, flags);
++			if (!compact_trylock_irqsave(&cc->zone->lock, &flags, cc))
++				return;
+ 			if (!list_empty(&area->free_list[mtype])) {
+ 				page = list_entry(area->free_list[mtype].next,
+ 							struct page, lru);
+@@ -514,7 +536,16 @@ static void isolate_freepages(struct zone *zone,
+ 		 * are disabled
+ 		 */
+ 		isolated = 0;
+-		spin_lock_irqsave(&zone->lock, flags);
++
++		/*
++		 * The zone lock must be held to isolate freepages. This
++		 * unfortunately this is a very coarse lock and can be
++		 * heavily contended if there are parallel allocations
++		 * or parallel compactions. For async compaction do not
++		 * spin on the lock
++		 */
++		if (!compact_trylock_irqsave(&zone->lock, &flags, cc))
++			break;
+ 		if (suitable_migration_target(page)) {
+ 			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
+ 			trace_mm_compaction_freepage_scanpfn(pfn);
+@@ -837,8 +868,8 @@ out:
  }
  
-@@ -236,6 +236,9 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	struct task_struct *tsk = current;
- 	int ia32_fxstate = (buf != buf_fx);
+ static unsigned long compact_zone_order(struct zone *zone,
+-				 int order, gfp_t gfp_mask,
+-				 bool sync, struct page **page)
++				 int order, gfp_t gfp_mask, bool sync,
++				 bool *contended, struct page **page)
+ {
+ 	struct compact_control cc = {
+ 		.nr_freepages = 0,
+@@ -848,6 +879,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+ 		.zone = zone,
+ 		.sync = sync,
+ 		.page = page,
++		.contended = contended,
+ 	};
+ 	INIT_LIST_HEAD(&cc.freepages);
+ 	INIT_LIST_HEAD(&cc.migratepages);
+@@ -869,7 +901,7 @@ int sysctl_extfrag_threshold = 500;
+  */
+ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+-			bool sync, struct page **page)
++			bool sync, bool *contended, struct page **page)
+ {
+ 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+ 	int may_enter_fs = gfp_mask & __GFP_FS;
+@@ -889,7 +921,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 								nodemask) {
+ 		int status;
  
-+	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
-+			 config_enabled(CONFIG_IA32_EMULATION));
-+
- 	if (!access_ok(VERIFY_WRITE, buf, size))
- 		return -EACCES;
+-		status = compact_zone_order(zone, order, gfp_mask, sync, page);
++		status = compact_zone_order(zone, order, gfp_mask, sync,
++						contended, page);
+ 		rc = max(status, rc);
  
-@@ -333,6 +336,9 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	u64 xstate_bv = 0;
- 	int fx_only = 0;
+ 		/* If a normal allocation would succeed, stop compacting */
+diff --git a/mm/internal.h b/mm/internal.h
+index 064f6ef..344b555 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -130,6 +130,7 @@ struct compact_control {
+ 	int order;			/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+ 	struct zone *zone;
++	bool *contended;		/* True if a lock was contended */
+ 	struct page **page;		/* Page captured of requested size */
+ };
  
-+	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
-+			 config_enabled(CONFIG_IA32_EMULATION));
-+
- 	if (!buf) {
- 		drop_fpu(tsk);
- 		return 0;
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 781d6e4..75b30ea 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2086,7 +2086,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+ 	int migratetype, bool sync_migration,
+-	bool *deferred_compaction,
++	bool *contended_compaction, bool *deferred_compaction,
+ 	unsigned long *did_some_progress)
+ {
+ 	struct page *page = NULL;
+@@ -2101,7 +2101,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 
+ 	current->flags |= PF_MEMALLOC;
+ 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+-					nodemask, sync_migration, &page);
++					nodemask, sync_migration,
++					contended_compaction, &page);
+ 	current->flags &= ~PF_MEMALLOC;
+ 
+ 	/* If compaction captured a page, prep and use it */
+@@ -2154,7 +2155,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+ 	int migratetype, bool sync_migration,
+-	bool *deferred_compaction,
++	bool *contended_compaction, bool *deferred_compaction,
+ 	unsigned long *did_some_progress)
+ {
+ 	return NULL;
+@@ -2318,6 +2319,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	unsigned long did_some_progress;
+ 	bool sync_migration = false;
+ 	bool deferred_compaction = false;
++	bool contended_compaction = false;
+ 
+ 	/*
+ 	 * In the slowpath, we sanity check order to avoid ever trying to
+@@ -2399,6 +2401,7 @@ rebalance:
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+ 					migratetype, sync_migration,
++					&contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+ 	if (page)
+@@ -2411,7 +2414,8 @@ rebalance:
+ 	 * has requested the system not be heavily disrupted, fail the
+ 	 * allocation now instead of entering direct reclaim
+ 	 */
+-	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
++	if ((deferred_compaction || contended_compaction) &&
++						(gfp_mask & __GFP_NO_KSWAPD))
+ 		goto nopage;
+ 
+ 	/* Try direct reclaim and then allocating */
+@@ -2482,6 +2486,7 @@ rebalance:
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+ 					migratetype, sync_migration,
++					&contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+ 		if (page)
 
