@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2HIIuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:50:22 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:30581 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751051Ab2HIIuR (ORCPT
+	id S1756916Ab2HIIu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:50:57 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33201 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab2HIIuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:50:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: <qiang.liu@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <dan.j.williams@intel.com>, <arnd@arndb.de>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@gmail.com>, <vinod.koul@intel.com>
-CC: <kim.phillips@freescale.com>, <herbert@gondor.hengli.com.au>,
-        <davem@davemloft.net>, Qiang Liu <qiang.liu@freescale.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH v7 8/8] carma: remove unnecessary DMA_INTERRUPT capability
-Date: Thu, 9 Aug 2012 16:23:31 +0800
-Message-ID: <1344500611-11178-1-git-send-email-qiang.liu@freescale.com>
-X-Mailer: git-send-email 1.7.5.1
+	Thu, 9 Aug 2012 04:50:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+In-Reply-To: <201208081335333287528@gmail.com>
+References: <201208081005308597351@gmail.com>
+	<CANejiEXdHaqtXuR47QRimRNcvjxtUn8__7MK5XwW2t658hz=3g@mail.gmail.com>
+	<201208081335333287528@gmail.com>
+Date: Thu, 9 Aug 2012 16:50:10 +0800
+X-Google-Sender-Auth: REvW0PvslTtd3_KdZ1fZg0_en3M
+Message-ID: <CANejiEWk-TA_vdEwL2CEW5wgjz-dJAkQTxQ0OuUwto1MsdEQVQ@mail.gmail.com>
+Subject: Re: Re: [RFC PATCH] block:Fix some problems about handling plug in blk_queue_bio().
+From: Shaohua Li <shli@kernel.org>
+To: Jianpeng Ma <majianpeng@gmail.com>
+Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qiang Liu <qiang.liu@freescale.com>
+2012/8/8 Jianpeng Ma <majianpeng@gmail.com>:
+> On 2012-08-08 11:06 Shaohua Li <shli@kernel.org> Wrote:
+>>2012/8/8 Jianpeng Ma <majianpeng@gmail.com>:
+>>> I think there are three problems about handling plug in blk_queue_bio():
+>>> 1:if request_count >= BLK_MAX_REQUEST_COUNT, avoid unnecessary plug->should_sort judge.
+>>this makes sense, though not a big deal, nice to fix it.
+> Thanks
+>>
+>>> 2:Only two device can trace plug.
+>>I didn't get the point, can you have more details?
+>
+>>>if (plug) {
+>>>              /*
+>>>               * If this is the first request added after a plug, fire
+>>>               * of a plug trace. If others have been added before, check
+>>>               * if we have multiple devices in this plug. If so, make a
+>>>               * note to sort the list before dispatch.
+>>>               */
+>>>              if (list_empty(&plug->list))
+>>>                      trace_block_plug(q);
+>>>              else {
+>>>                      if (!plug->should_sort) {
+>>>                              struct request *__rq;
+>
+>>>                              __rq = list_entry_rq(plug->list.prev);
+>>>                              if (__rq->q != q)
+>>>                                      plug->should_sort = 1;
+>>>                      }
+>>>                      if (request_count >= BLK_MAX_REQUEST_COUNT) {
+>>>                              blk_flush_plug_list(plug, false);
+>>>                              trace_block_plug(q);
+> The code only trace two point;
+> A:      list_empty(&plug->list)
+> B:      request_count >= BLK_MAX_REQUEST_COUNT). it's the same like A which plug->list is empty.
+> Suppose:
+> 1;reqA-deviceA firstly come, it will call trace_block_plug because the list_empty(plug->list) is true.
+> 2:reqB-deviceB comed, attempt_plug_merge will failed because not deviceB-request-queue.But it'll not to call trace_block_plug.
+>
+> But call blk_flush_plug_list,it will trace_block_unplug all request_queue.
 
-These drivers set the DMA_INTERRUPT capability bit when requesting a DMA
-controller channel. This was historical, and is no longer needed.
-
-Recent changes to the drivers/dma/fsldma.c driver have removed support
-for this flag. This makes the carma drivers unable to find a DMA channel
-with the required capabilities.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
-Based on git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
-against branch char-misc-next.
-
- drivers/misc/carma/carma-fpga-program.c |    1 -
- drivers/misc/carma/carma-fpga.c         |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
-index a2d25e4..eaddfe9 100644
---- a/drivers/misc/carma/carma-fpga-program.c
-+++ b/drivers/misc/carma/carma-fpga-program.c
-@@ -978,7 +978,6 @@ static int fpga_of_probe(struct platform_device *op)
- 	dev_set_drvdata(priv->dev, priv);
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_MEMCPY, mask);
--	dma_cap_set(DMA_INTERRUPT, mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 	dma_cap_set(DMA_SG, mask);
-
-diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
-index 8c279da..0c43297 100644
---- a/drivers/misc/carma/carma-fpga.c
-+++ b/drivers/misc/carma/carma-fpga.c
-@@ -666,7 +666,7 @@ static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
- 	src = SYS_FPGA_BLOCK;
- 	tx = chan->device->device_prep_dma_memcpy(chan, dst, src,
- 						  REG_BLOCK_SIZE,
--						  DMA_PREP_INTERRUPT);
-+						  0);
- 	if (!tx) {
- 		dev_err(priv->dev, "unable to prep SYS-FPGA DMA\n");
- 		return -ENOMEM;
---
-1.7.5.1
-
-
+ok, this is true. please send a new patch for the item 1&2 then.
