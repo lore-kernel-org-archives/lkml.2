@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab2HIMfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:35:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2935 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2HIMfg (ORCPT
+	id S1757286Ab2HIMhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 08:37:54 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:49279 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab2HIMhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:35:36 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=tzqJOWxOEVwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=WHaCPJD69tGyA_AYuqYA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344515732.6935.30.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
- pipe buffer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
+	Thu, 9 Aug 2012 08:37:53 -0400
+Date: Thu, 9 Aug 2012 14:37:46 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Thu, 09 Aug 2012 08:35:32 -0400
-In-Reply-To: <502381EA.80805@hitachi.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
-	 <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
-	 <20120809090312.GH3280@amit.redhat.com> <502381EA.80805@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry is used
+Message-ID: <20120809123746.GC11413@one.firstfloor.org>
+References: <20120807193845.146666357@goodmis.org> <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com> <1344430148.6935.17.camel@gandalf.stny.rr.com> <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 18:24 +0900, Masami Hiramatsu wrote:
+On Thu, Aug 09, 2012 at 06:45:37AM +0300, Linus Torvalds wrote:
+> On Wed, Aug 8, 2012 at 3:49 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
+> > that it is being used. It only gets used if CC_USING_FENTRY is set,
+> > which is set by the Makefile at time of compile.
+> 
+> Btw, it might be lovely to consider the concept of "Kconfig variables
+> set by shell-scripts".
 
-> Yeah, it is really easy to fix that.
-> But out of curiosity, would that be really a problem?
-> I guess that host can access any guest page if need. If that
-> is right, is that really insecure to leak randomly allocated
-> unused page to the host?
+I looked into it some time ago because I needed it for something else.
+But no mergeable patch produced. Will try again.
 
-Yeah, it's like protecting userspace pages from the kernel ;-)
+One issue was that it will break some odd cross compiling or ccache
+setups where the compiler is not set correctly at config time. 
+But I think it would be worth it.
 
--- Steve
+> We currently have a metric sh*t-ton of Makefile magic for testing
+> various things like this, and integrating it into Kconfig might be a
+> good idea. That way you would be able to use the Kconfig logic on
+> these things.
 
+Also another big win would be to make the empty do nothing build faster,
+because the decisions would be cached.
 
+I measured recently and we execute 30+ gccs on a empty build.
+
+-Andi
