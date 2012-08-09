@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab2HILQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:16:41 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1460 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757954Ab2HILQP (ORCPT
+	id S1758079Ab2HILQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:16:54 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9441 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757916Ab2HILQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Aug 2012 07:16:15 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 09 Aug 2012 04:16:08 -0700
+	by hqnvupgp05.nvidia.com on Thu, 09 Aug 2012 04:16:06 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>, <olof@lixom.net>
 CC: <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH v2 2/3] ARM: dt: tegra: cardhu: split dts file for support multiple board versions
-Date: Thu, 9 Aug 2012 16:30:38 +0530
-Message-ID: <1344510039-17754-3-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH v2 1/3] ARM: dt: tegra: cardhu: add entry for PMIC TPS65911.
+Date: Thu, 9 Aug 2012 16:30:37 +0530
+Message-ID: <1344510039-17754-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1344510039-17754-1-git-send-email-ldewangan@nvidia.com>
 References: <1344510039-17754-1-git-send-email-ldewangan@nvidia.com>
@@ -25,112 +25,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is multiple version of cardhu starting from A01 to A07.
-Cardhu A01 and A03 are not supported. Cardhu A02 will have
-different sets of GPIOs for fixed regulator compare to
-cardhu A04. The Cardhu A05, A06, A07 are compatibe with A04.
-Based on cardhu version, the related dts file need to be chosen
-like for cardhu A02, use tegra30-cardhu-a02.dts, cardhu A04 and
-more, use tegra30-cardhu-a04.dts.
-This patch create the DTS file A02 and A04 and convert tegra30-cardhu.dts
-as dts include file.
+Tegra30 based platform "cardhu" have the power management
+IC TPS65911 for the regulator.
+Adding DT entry for this device.
+Data are chosen from downstream kernel and making the
+voltage output as require by default for device to
+operate.
+The default interrupt line is HIGH from PMIC device and so
+inverting the interrupt detection line of PMU interrupt
+through configuring PMC.
+In this patch, do not registering LDO5 because the input
+supply for this rail is different for different version of
+cardhu i..e A02 and A04. The registration will be done once
+the dts file for cardhu A02 and A04 are added in follow on
+patches.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
 Changes from V1-->V2:
-- Add i2c eeprom address in board-identification paragraph.
+- No changes.
 
- arch/arm/boot/dts/tegra30-cardhu-a02.dts           |   11 ++++++++
- arch/arm/boot/dts/tegra30-cardhu-a04.dts           |   10 ++++++++
- .../{tegra30-cardhu.dts => tegra30-cardhu.dtsi}    |   25 ++++++++++++++++++-
- arch/arm/mach-tegra/Makefile.boot                  |    3 +-
- 4 files changed, 46 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/dts/tegra30-cardhu-a02.dts
- create mode 100644 arch/arm/boot/dts/tegra30-cardhu-a04.dts
- rename arch/arm/boot/dts/{tegra30-cardhu.dts => tegra30-cardhu.dtsi} (84%)
+ arch/arm/boot/dts/tegra30-cardhu.dts |  134 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 134 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra30-cardhu-a02.dts b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
-new file mode 100644
-index 0000000..dd870b7
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra30-cardhu-a02.dts
-@@ -0,0 +1,11 @@
-+/dts-v1/;
-+
-+/include/ "tegra30-cardhu.dtsi"
-+
-+/* This dts file support the cardhu A02 version of board */
-+
-+/ {
-+	model = "NVIDIA Tegra30 Cardhu A02 evaluation board";
-+	compatible = "nvidia,cardhu-a02", "nvidia,cardhu", "nvidia,tegra30";
-+};
-+
-diff --git a/arch/arm/boot/dts/tegra30-cardhu-a04.dts b/arch/arm/boot/dts/tegra30-cardhu-a04.dts
-new file mode 100644
-index 0000000..a4cae6c
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra30-cardhu-a04.dts
-@@ -0,0 +1,10 @@
-+/dts-v1/;
-+
-+/include/ "tegra30-cardhu.dtsi"
-+
-+/* This dts file support the cardhu A04 and later versions of board */
-+
-+/ {
-+	model = "NVIDIA Tegra30 Cardhu A04 (A05, A06, A07) evaluation board";
-+	compatible = "nvidia,cardhu-a04", "nvidia,cardhu", "nvidia,tegra30";
-+};
-diff --git a/arch/arm/boot/dts/tegra30-cardhu.dts b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-similarity index 84%
-rename from arch/arm/boot/dts/tegra30-cardhu.dts
-rename to arch/arm/boot/dts/tegra30-cardhu.dtsi
-index 6f9daae..ba38527 100644
+diff --git a/arch/arm/boot/dts/tegra30-cardhu.dts b/arch/arm/boot/dts/tegra30-cardhu.dts
+index c169bce..6f9daae 100644
 --- a/arch/arm/boot/dts/tegra30-cardhu.dts
-+++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-@@ -1,7 +1,28 @@
--/dts-v1/;
--
- /include/ "tegra30.dtsi"
- 
-+/**
-+ * This file contains common DT entry for all fab version of Cardhu.
-+ * There is multiple fab version of Cardhu starting from A01 to A07.
-+ * Cardhu fab version A01 and A03 are not supported. Cardhu fab version
-+ * A02 will have different sets of GPIOs for fixed regulator compare to
-+ * Cardhu fab version A04. The Cardhu fab version A05, A06, A07 are
-+ * compatible with fab version A04. Based on Cardhu fab version, the
-+ * related dts file need to be chosen like for Cardhu fab version A02,
-+ * use tegra30-cardhu-a02.dts, Cardhu fab version A04 and later, use
-+ * tegra30-cardhu-a04.dts.
-+ * The identification of board is done in two ways, by looking the sticker
-+ * on PCB and by reading board id eeprom.
-+ * The stciker will have number like 600-81291-1000-002 C.3. In this 4th
-+ * number is the fab version like here it is 002 and hence fab version A02.
-+ * The (downstream internal) U-Boot of Cardhu display the board-id as
-+ * follows:
-+ * BoardID: 0C5B, SKU: 0A01, Fab: 02, Rev: 45.00
-+ * In this Fab version is 02 i.e. A02.
-+ * The BoardID I2C eeprom is interfaced through i2c5 (pwr_i2c address 0x56).
-+ * The location 0x8 of this eeprom contains the Fab version. It is 1 byte
-+ * wide.
-+ */
++++ b/arch/arm/boot/dts/tegra30-cardhu.dts
+@@ -126,6 +126,120 @@
+ 			ti,vsel0-state-high;
+ 			ti,vsel1-state-high;
+ 		};
 +
- / {
- 	model = "NVIDIA Tegra30 Cardhu evaluation board";
- 	compatible = "nvidia,cardhu", "nvidia,tegra30";
-diff --git a/arch/arm/mach-tegra/Makefile.boot b/arch/arm/mach-tegra/Makefile.boot
-index 7a1bb62..6e35207 100644
---- a/arch/arm/mach-tegra/Makefile.boot
-+++ b/arch/arm/mach-tegra/Makefile.boot
-@@ -8,4 +8,5 @@ dtb-$(CONFIG_ARCH_TEGRA_2x_SOC) += tegra20-seaboard.dtb
- dtb-$(CONFIG_ARCH_TEGRA_2x_SOC) += tegra20-trimslice.dtb
- dtb-$(CONFIG_ARCH_TEGRA_2x_SOC) += tegra20-ventana.dtb
- dtb-$(CONFIG_ARCH_TEGRA_2x_SOC) += tegra20-whistler.dtb
--dtb-$(CONFIG_ARCH_TEGRA_3x_SOC) += tegra30-cardhu.dtb
-+dtb-$(CONFIG_ARCH_TEGRA_3x_SOC) += tegra30-cardhu-a02.dtb
-+dtb-$(CONFIG_ARCH_TEGRA_3x_SOC) += tegra30-cardhu-a04.dtb
++		pmic: tps65911@2d {
++			compatible = "ti,tps65911";
++			reg = <0x2d>;
++
++			interrupts = <0 86 0x4>;
++			#interrupt-cells = <2>;
++			interrupt-controller;
++
++			#gpio-cells = <2>;
++			gpio-controller;
++
++			vcc1-supply = <&vdd_ac_bat_reg>;
++			vcc2-supply = <&vdd_ac_bat_reg>;
++			vcc3-supply = <&vio_reg>;
++			vcc5-supply = <&vdd_ac_bat_reg>;
++			vcc6-supply = <&vdd2_reg>;
++			vcc7-supply = <&vdd_ac_bat_reg>;
++			vccio-supply = <&vdd_ac_bat_reg>;
++
++			regulators {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				vdd1_reg: regulator@0 {
++					reg = <0>;
++					regulator-compatible = "vdd1";
++					regulator-name = "vddio_ddr_1v2";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++				};
++
++				vdd2_reg: regulator@1 {
++					reg = <1>;
++					regulator-compatible = "vdd2";
++					regulator-name = "vdd_1v5_gen";
++					regulator-min-microvolt = <1500000>;
++					regulator-max-microvolt = <1500000>;
++					regulator-always-on;
++				};
++
++				vddctrl_reg: regulator@2 {
++					reg = <2>;
++					regulator-compatible = "vddctrl";
++					regulator-name = "vdd_cpu,vdd_sys";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				vio_reg: regulator@3 {
++					reg = <3>;
++					regulator-compatible = "vio";
++					regulator-name = "vdd_1v8_gen";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++				};
++
++				ldo1_reg: regulator@4 {
++					reg = <4>;
++					regulator-compatible = "ldo1";
++					regulator-name = "vdd_pexa,vdd_pexb";
++					regulator-min-microvolt = <1050000>;
++					regulator-max-microvolt = <1050000>;
++				};
++
++				ldo2_reg: regulator@5 {
++					reg = <5>;
++					regulator-compatible = "ldo2";
++					regulator-name = "vdd_sata,avdd_plle";
++					regulator-min-microvolt = <1050000>;
++					regulator-max-microvolt = <1050000>;
++				};
++
++				/* LDO3 is not connected to anything */
++
++				ldo4_reg: regulator@7 {
++					reg = <7>;
++					regulator-compatible = "ldo4";
++					regulator-name = "vdd_rtc";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++				};
++
++				ldo6_reg: regulator@9 {
++					reg = <9>;
++					regulator-compatible = "ldo6";
++					regulator-name = "avdd_dsi_csi,pwrdet_mipi";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++				};
++
++				ldo7_reg: regulator@10 {
++					reg = <10>;
++					regulator-compatible = "ldo7";
++					regulator-name = "vdd_pllm,x,u,a_p_c_s";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++				};
++
++				ldo8_reg: regulator@11 {
++					reg = <11>;
++					regulator-compatible = "ldo8";
++					regulator-name = "vdd_ddr_hs";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++			};
++		};
+ 	};
+ 
+ 	ahub {
+@@ -134,6 +248,11 @@
+ 		};
+ 	};
+ 
++	pmc {
++		status = "okay";
++		nvidia,invert-interrupt;
++	};
++
+ 	sdhci@78000000 {
+ 		status = "okay";
+ 		cd-gpios = <&gpio 69 0>; /* gpio PI5 */
+@@ -147,6 +266,21 @@
+ 		bus-width = <8>;
+ 	};
+ 
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vdd_ac_bat_reg: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vdd_ac_bat";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			regulator-always-on;
++		};
++	};
++
+ 	sound {
+ 		compatible = "nvidia,tegra-audio-wm8903-cardhu",
+ 			     "nvidia,tegra-audio-wm8903";
 -- 
 1.7.1.1
 
