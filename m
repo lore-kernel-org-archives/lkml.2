@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab2HIJ2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:28:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61719 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab2HIJ2P (ORCPT
+	id S1757177Ab2HIJ2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:28:33 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57543 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756370Ab2HIJ2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:28:15 -0400
-Date: Thu, 9 Aug 2012 11:27:56 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Chris Ball <cjb@laptop.org>, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: sdio: Fix PM_SLEEP related build warnings
-Message-ID: <20120809092756.GA1020@avionic-0098.mockup.avionic-design.de>
-References: <1344495413-7164-1-git-send-email-thierry.reding@avionic-design.de>
- <201208091127.03119.rjw@sisk.pl>
+	Thu, 9 Aug 2012 05:28:31 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
-Content-Disposition: inline
-In-Reply-To: <201208091127.03119.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:zT/ff9CdHTXsD3/SQSkcFCR1ZvBMTdtp9sK/uHNswx2
- pjFBfTMzLbJksoSg8tNEpZuCRxjaXk9/vVTy6cuYf5x+unYXui
- gUpWmFe/uXMfo6TKTRzD9me2wFRgMarQrna+1gSM0GURuUebbT
- Y4OlEIC/ofhFdSQ7wpRgCDj6P1Y2QltAGY7GDePjVDzNjP8FV+
- C75M1ASSd0BjdJtNeLkBIDJ0fiMoJp9RAXcJJ6Vwc9WQ4dWimN
- dSfRU1FUUWbDSIiLGgR19iytj7+wIxJi9AH74CtIPnAKRXGCKO
- jtsAKT9IYDPmQqQPLGotjUO3qMWbhGpz6cSEGlM+SYklPD6nBt
- +d8bbcDULcpRcVV8L61jxfLHR0PTyhi8HZpYWk50NQHQaM0+m4
- xSXyzJleuDzpu7A3yFupj1N1x6kYqR8JODZGyEIskiOk7Dh6eU
- OAw89
+In-Reply-To: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
+References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
+Date: Thu, 9 Aug 2012 02:28:30 -0700
+Message-ID: <CANN689FzQSLAFw0tNmdiOQ0PwV1nN8FaL0LNkkDMEB10k0jmwA@mail.gmail.com>
+Subject: Re: [PATCH 0/5][RFC] Fallocate Volatile Ranges v6
+From: Michel Lespinasse <walken@google.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi John,
 
---OgqxwSJOaUobr8KG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jul 27, 2012 at 8:57 PM, John Stultz <john.stultz@linaro.org> wrote:
+> So after not getting too much positive feedback on my last
+> attempt at trying to use a non-shrinker method for managing
+> & purging volatile ranges, I decided I'd go ahead and try
+> to implement something along Minchan's ERECLAIM LRU list
+> idea.
 
-On Thu, Aug 09, 2012 at 11:27:02AM +0200, Rafael J. Wysocki wrote:
-> On Thursday, August 09, 2012, Thierry Reding wrote:
-> > Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
-> > the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
-> > complain about them being unused.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> The pm_no_operation() thing is not necessary at all, AFAICT.  I'd just
-> remove it entirely. :-)
+Agree that there hasn't been much feedback from MM folks yet - sorry
+about that :/
 
-I don't actually have a setup where I can test suspend/resume with this
-driver, but if you say so I can follow up with a patch that removes
-pm_no_operation(). It should work because many drivers without proper
-PM_SLEEP support do not specify .suspend() nor .resume() callbacks
-either.
+I think one issue might be that most people don't have a good
+background on how the feature is intended to be used, and it is very
+difficult to comment meaningfully without that.
 
-Thierry
+As for myself, I have been wondering:
 
---OgqxwSJOaUobr8KG
-Content-Type: application/pgp-signature
+- Why the feature needs to be on a per-range basis, rather than
+per-file. Is this simply to make it easier to transition the android
+use case from whatever they are doing right now, or is it that the
+object boundaries within a file can't be known in advance, and thus
+one wouldn't know how to split objects accross different files ? Or
+could it be that some of the objects would be small (less than a page)
+so space use would be inefficient if they were placed in different
+files ? Or just that there would be too many files for efficient
+management ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+- What are the desired semantics for the volatile objects. Can the
+objects be accessed while they are marked as volatile, or do they have
+to get unmarked first ? Is it really the case that we always want to
+reclaim from volatile objects first, before any other kind of caches
+we might have ? This sounds like a very strong hint, and I think I
+would be more comfortable with something more subtle if that's
+possible. Also, if we have several volatile objects to reclaim from,
+is it desirable to reclaim from the one that's been marked volatile
+the longest or does it make no difference ? When an object is marked
+volatile, would it be sufficient to ensure it gets placed on the
+inactive list (maybe with the referenced bit cleared) and let the
+normal reclaim algorithm get to it, or is that an insufficiently
+strong hint somehow ?
 
-iQIcBAEBAgAGBQJQI4KcAAoJEN0jrNd/PrOhLjkP/AgpUObNA0zfD5YE1FWq6877
-mXhKka6tEFxjNfDUsmyPeaduXNit6elm7jkfejK46HsOSZsOta46Kn+4B7E3YgAo
-VCBXcCnJnhRdS9VGXsVmbDZAfNLAnTKTY1nYxfUeyvNNe0Sz/4LL0vLvtZ+09QkF
-ngidZX4pWEGdsz7O6WiS7e29riUfvmZtrmAINCAfNh/Oi5esqZEt3EsNmhtX2Stl
-Hvb2e6n5i9ecfnOJG7cAHM+SLBYpFcZGtEB3SeLmXqzQJ5XJg4uUqL/TL+5UX5WZ
-bZ96HkgwMysLuxUxJvvxYqjFoYoqD7mq5iB7e/ySMt56aUBCysFfF4/DGOLpEYVH
-IlUr2fiOAAaOIF8Sq2JUAVPMIkgFm4eHqFGpkv/xqKrDLMGfTXAsGqXBhTX5+vrq
-CNGibQqJFTVS3W2K/X4Ch7PVzWaQLW47+UTc1f+qRaIA/bDYtDzwcEKwTBdSWEkp
-wjhK5jwXTQqV3R6Gq9PKXhO1NFwgtdmUROCA2tU3n8wYqC6KABlbpXBOg4aXc5TW
-GT0dKUht/wDjphuS7xc0t8NfroyWQPamQML4NQM/m80LT4ipLhiVGo41ue6eoUSn
-SvelnZpwejquJXzkcxZSr5a5xpvstwGVDLnHh6U6NDPeBMjaevzttXQVDIy0C5JM
-7dyJEKP2pQCoyNQDNSsl
-=b1HL
------END PGP SIGNATURE-----
+Basically, having some background information of how android would be
+using the feature would help us better understand the design decision
+here, I think.
 
---OgqxwSJOaUobr8KG--
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
