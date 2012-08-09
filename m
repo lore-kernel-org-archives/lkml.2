@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab2HIMKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:10:04 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1827 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153Ab2HIMKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:10:02 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <5023A88F.8040402@broadcom.com>
-Date: Thu, 9 Aug 2012 14:09:51 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
- Thunderbird/14.0
+	id S932434Ab2HIMKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 08:10:24 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:39117 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932153Ab2HIMKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 08:10:21 -0400
+Message-ID: <5023A8AE.5050300@ti.com>
+Date: Thu, 09 Aug 2012 15:10:22 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120723 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Wei Ni" <wni@nvidia.com>
-cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        frankyl@broadcom.com, devicetree-discuss@lists.ozlabs.org,
-        brcm80211-dev-list@broadcom.com, linux-wireless@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: How to get the irq flags from the dts file
-References: <1344509006.2295.148.camel@tegra-chromium-2>
-In-Reply-To: <1344509006.2295.148.camel@tegra-chromium-2>
-X-Enigmail-Version: 1.5a1pre
-X-WSS-ID: 7C3D77C13NK13567476-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sergio Aguirre <saaguirre@ti.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 2/3] mfd: twl6040: Add twl6040-gpio child
+References: <1342603220-13287-1-git-send-email-peter.ujfalusi@ti.com> <1342603220-13287-3-git-send-email-peter.ujfalusi@ti.com> <CACRpkdZJcy5HOZkjMCVJW5beExoCHOBb=BiB4GOGR7sM+5Xsww@mail.gmail.com> <5016967D.2020104@ti.com> <20120809115531.GB8474@sirena.org.uk>
+In-Reply-To: <20120809115531.GB8474@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 12:43 PM, Wei Ni wrote:
-> Hi, all
-> I'm working on tegra wlan upstream issue.
-> The tegra board use the Broadcom 4329 as wlan device, and the driver is
-> the brcmfmac. 
+On 08/09/2012 02:55 PM, Mark Brown wrote:
+> On Mon, Jul 30, 2012 at 05:13:17PM +0300, Peter Ujfalusi wrote:
 > 
-> This wlan driver support out-band-interrupt (OOB), I want to add DT
-> support to use this OOB.
-> I can add following lines in the dts file to create platform device and
-> pass the interrupt resource to the driver.
+>> If the board needs the gpo driver, but in the driver(s) I need to check for
+>> the existence of the "ti,twl6040-gpo" node and check if the status is "okay".
+>> I think it is easier to just get the value of "ti,use-gpo", if it exist and it
+>> is 1 I enable the GPIO driver otherwise I don't.
 > 
-> wlan {
->         compatible = "broadcome, brcmf_sdio_pd";
+> Will having the GPIO driver actually cause any problems if it's not in
+> use?  It's not like things like RTC which are directly visible to
+> userspace and so can create problems if they're non-functional, unless
+> it does something like grab resources that might be needed by another
+> subfunction driver there's not really a substantial cost in just
+> instantiating it (people who are really space pressured probably won't
+> build the driver in in the first place).
 
-I don't know the DT syntax, but I assume broadcome should be broadcom,
-right? ;-)
+Fair enough, I'll make the change for the v2.
 
->         interrupt-parten = <&gpio>;
->         interrupts = <144, 0x04>; /* IRQF_TRIGGER_HIGH */
-> };
-> 
-> In the wlan driver, it will use platform_get_resource() to get the
-> res->irq, res->flags, the irq number is right, but the flags will be
-> IORESOURCE_IRQ, not the 0x04 (IRQF_TRIGGER_HIGH).
-> The wlan driver wish this flags include the IRQF_TRGGER_* information,
-> and it will use this flags to configure other hw settings. If it is
-> wrong, the wlan can't work.
-> 
-> I checked drivers/of/irq.c, in function of_irq_to_resource(), it will
-> set r->flags = IORESOURCE_IRQ directly, not read the flags from the dtb
-> file. And I didn't find any of_xx api to get this flags.
-> 
-> How can I get this flags, does anyone has suggestion?
-
-I did a quick search in the kernel and there are a number of platform
-drivers that seem to expect the IRQF_TRIGGER_* info by using (res->flags
-& IRQF_TRIGGER_MASK) and to determine IRQF_SHARED as well.
-
-Gr. AvS
-
+-- 
+Péter
