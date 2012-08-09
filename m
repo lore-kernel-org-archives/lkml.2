@@ -1,139 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab2HIWnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 18:43:49 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:33422 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759779Ab2HIWno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 18:43:44 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: swarren@wwwdotorg.org, Patrice Chotard <patrice.chotard@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] ARM: nomadik: configure Nomadik for pin control
-Date: Fri, 10 Aug 2012 00:43:40 +0200
-Message-Id: <1344552220-995-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1759949Ab2HIXAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:00:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38372 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759892Ab2HIXAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 19:00:07 -0400
+Message-ID: <1344553253.28791.7.camel@footlong>
+Subject: [PATCH V2 0/3] tpm: Add new vTPM device driver for PPC64
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
+        adlai@linux.vnet.ibm.com
+Date: Thu, 09 Aug 2012 18:00:53 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080923-7282-0000-0000-00000BD34B38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts the Nomadik to using pin control using the
-driver for the STN8815 ASIC.
+Change log V2:
+- Removed unnecessary tpm_bios_log_setup and tpm_bios_log_teardown
+  functions in tpm_eventlog.h (patch 3/3).
+- Added more descriptions on vTPM (patch 1/3).
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/Kconfig                      |  1 +
- arch/arm/mach-nomadik/board-nhk8815.c | 36 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-nomadik/cpu-8815.c      | 13 +++++++++++++
- 3 files changed, 50 insertions(+)
+These patches add support for IBM vTPM for PPC64. This new device driver
+works on firmware that supports vTPM (firmware release 740 or higher).
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e91c7cd..2bd9953 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -962,6 +962,7 @@ config ARCH_NOMADIK
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
- 	select PINCTRL
-+	select PINCTRL_STN8815
- 	select MIGHT_HAVE_CACHE_L2X0
- 	select ARCH_REQUIRE_GPIOLIB
- 	help
-diff --git a/arch/arm/mach-nomadik/board-nhk8815.c b/arch/arm/mach-nomadik/board-nhk8815.c
-index f4535a7..66862fb 100644
---- a/arch/arm/mach-nomadik/board-nhk8815.c
-+++ b/arch/arm/mach-nomadik/board-nhk8815.c
-@@ -23,6 +23,7 @@
- #include <linux/mtd/partitions.h>
- #include <linux/i2c.h>
- #include <linux/io.h>
-+#include <linux/pinctrl/machine.h>
- #include <asm/hardware/vic.h>
- #include <asm/sizes.h>
- #include <asm/mach-types.h>
-@@ -33,6 +34,7 @@
- 
- #include <plat/gpio-nomadik.h>
- #include <plat/mtu.h>
-+#include <plat/pincfg.h>
- 
- #include <mach/nand.h>
- #include <mach/fsmc.h>
-@@ -291,8 +293,42 @@ static struct i2c_board_info __initdata nhk8815_i2c2_devices[] = {
- 	},
- };
- 
-+static unsigned long out_low[] = { PIN_OUTPUT_LOW };
-+static unsigned long out_high[] = { PIN_OUTPUT_HIGH };
-+static unsigned long in_nopull[] = { PIN_INPUT_NOPULL };
-+static unsigned long in_pullup[] = { PIN_INPUT_PULLUP };
-+
-+static struct pinctrl_map __initdata nhk8815_pinmap[] = {
-+	PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-stn8815", "u0_a_1", "u0"),
-+	PIN_MAP_MUX_GROUP_DEFAULT("uart1", "pinctrl-stn8815", "u1_a_1", "u1"),
-+	/* Hog in MMC/SD card mux */
-+	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-stn8815", "mmcsd_a_1", "mmcsd"),
-+	/* MCCLK */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO8_B10", out_low),
-+	/* MCCMD */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO9_A10", in_pullup),
-+	/* MCCMDDIR */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO10_C11", out_high),
-+	/* MCDAT3-0 */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO11_B11", in_pullup),
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO12_A11", in_pullup),
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO13_C12", in_pullup),
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO14_B12", in_pullup),
-+	/* MCDAT0DIR */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO15_A12", out_high),
-+	/* MCDAT31DIR */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO16_C13", out_high),
-+	/* MCMSFBCLK */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO24_C15", in_pullup),
-+	/* CD input GPIO */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO111_H21", in_nopull),
-+	/* CD bias drive */
-+	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO112_J21", out_low),
-+};
-+
- static void __init nhk8815_platform_init(void)
- {
-+	pinctrl_register_mappings(nhk8815_pinmap, ARRAY_SIZE(nhk8815_pinmap));
- 	cpu8815_platform_init();
- 	nhk8815_onenand_init();
- 	platform_add_devices(nhk8815_platform_devices,
-diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index 6fd8e46..b617eae 100644
---- a/arch/arm/mach-nomadik/cpu-8815.c
-+++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -83,6 +83,18 @@ void cpu8815_add_gpios(resource_size_t *base, int num, int irq,
- 	}
- }
- 
-+static inline void
-+cpu8815_add_pinctrl(struct device *parent, const char *name)
-+{
-+	struct platform_device_info pdevinfo = {
-+		.parent = parent,
-+		.name = name,
-+		.id = -1,
-+	};
-+
-+	platform_device_register_full(&pdevinfo);
-+}
-+
- static int __init cpu8815_init(void)
- {
- 	struct nmk_gpio_platform_data pdata = {
-@@ -91,6 +103,7 @@ static int __init cpu8815_init(void)
- 
- 	cpu8815_add_gpios(cpu8815_gpio_base, ARRAY_SIZE(cpu8815_gpio_base),
- 			  IRQ_GPIO0, &pdata);
-+	cpu8815_add_pinctrl(NULL, "pinctrl-stn8815");
- 	amba_apb_device_add(NULL, "rng", NOMADIK_RNG_BASE, SZ_4K, 0, 0, NULL, 0);
- 	amba_apb_device_add(NULL, "rtc-pl031", NOMADIK_RTC_BASE, SZ_4K, IRQ_RTC_RTT, 0, NULL, 0);
- 	return 0;
--- 
-1.7.11.2
+Tested on Power7+ system with firmware level ZM770_001.
+
+Applied to Kent Yoder patch to modularize event log located at:
+https://github.com/shpedoikal/linux/tree/tpmdd-next
+
+Ashley Lai (3):
+  drivers/char/tpm: Add new device driver to support IBM vTPM
+  PPC64: Add support for instantiating SML from Open Firmware
+  drivers/char/tpm: Add securityfs support for event log
+
+ arch/powerpc/kernel/prom_init.c   |   64 ++++
+ drivers/char/tpm/Kconfig          |    8 +
+ drivers/char/tpm/Makefile         |    9 +-
+ drivers/char/tpm/tpm.h            |   13 +-
+ drivers/char/tpm/tpm_eventlog.c   |    7 +
+ drivers/char/tpm/tpm_eventlog.h   |   14 +
+ drivers/char/tpm/tpm_ibmvtpm.c    |  750 +++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_ibmvtpm.h    |   83 ++++
+ drivers/char/tpm/tpm_noeventlog.c |   21 +
+ drivers/char/tpm/tpm_of.c         |   68 ++++
+ 10 files changed, 1024 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
+ create mode 100644 drivers/char/tpm/tpm_noeventlog.c
+ create mode 100644 drivers/char/tpm/tpm_of.c
+
 
