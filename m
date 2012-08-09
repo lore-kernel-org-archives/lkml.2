@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab2HIQfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:35:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65087 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757896Ab2HIQfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:35:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,741,1336374000"; 
-   d="scan'208";a="183683267"
-From: james.d.ralston@intel.com
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>,
-        James Ralston <james.d.ralston@intel.com>
-Subject: [PATCH 2/5] ata_piix: Add Device IDs for Intel Lynx Point-LP PCH
-Date: Thu,  9 Aug 2012 09:34:20 -0700
-Message-Id: <1344530060-2435-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1758684Ab2HIQfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:35:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58302 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757926Ab2HIQfv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:35:51 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] perf lock record: improve message when tracepoints are not enabled
+Date: Thu,  9 Aug 2012 10:35:37 -0600
+Message-Id: <1344530137-25521-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Ralston <james.d.ralston@intel.com>
+If CONFIG options required for perf-lock are not enabled then the
+corresponding tracepoints will not be enabled. Currently, the message to
+the user is:
+  $ perf lock record -a -- sleep 1
+  invalid or unsupported event: 'lock:lock_acquire'
+  Run 'perf list' for a list of valid events
 
-This patch adds the IDE-mode SATA Device IDs for the Intel Lynx Point-LP PCH
+Improve the message with a suggestion on which CONFIG options are needed:
+  $ perf lock record -a -- sleep 1
+  tracepoint lock:lock_acquire is not enabled. Are CONFIG_LOCKDEP and CONFIG_LOCK_STAT enabled?
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ tools/perf/builtin-lock.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 3c809bf..ef773e1 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -329,6 +329,14 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
- 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 3f8b955..585aae2 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -903,16 +903,19 @@ static const struct option lock_options[] = {
+ 	OPT_END()
+ };
+ 
++static const char * const lock_tracepoints[] = {
++	"lock:lock_acquire",    /* CONFIG_LOCKDEP */
++	"lock:lock_acquired",   /* CONFIG_LOCKDEP, CONFIG_LOCK_STAT */
++	"lock:lock_contended",  /* CONFIG_LOCKDEP, CONFIG_LOCK_STAT */
++	"lock:lock_release",    /* CONFIG_LOCKDEP */
++};
++
+ static const char *record_args[] = {
+ 	"record",
+ 	"-R",
+ 	"-f",
+ 	"-m", "1024",
+ 	"-c", "1",
+-	"-e", "lock:lock_acquire",
+-	"-e", "lock:lock_acquired",
+-	"-e", "lock:lock_contended",
+-	"-e", "lock:lock_release",
+ };
+ 
+ static int __cmd_record(int argc, const char **argv)
+@@ -920,15 +923,31 @@ static int __cmd_record(int argc, const char **argv)
+ 	unsigned int rec_argc, i, j;
+ 	const char **rec_argv;
+ 
++	for (i = 0; i < ARRAY_SIZE(lock_tracepoints); i++) {
++		if (!is_valid_tracepoint(lock_tracepoints[i])) {
++				pr_err("tracepoint %s is not enabled. "
++				       "Are CONFIG_LOCKDEP and CONFIG_LOCK_STAT enabled?\n",
++				       lock_tracepoints[i]);
++				return 1;
++		}
++	}
++
+ 	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
+-	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++	/* factor of 2 is for -e in front of each tracepoint */
++	rec_argc += 2 * ARRAY_SIZE(lock_tracepoints);
+ 
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 	if (rec_argv == NULL)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
+ 		rec_argv[i] = strdup(record_args[i]);
+ 
++	for (j = 0; j < ARRAY_SIZE(lock_tracepoints); j++) {
++		rec_argv[i++] = "-e";
++		rec_argv[i++] = strdup(lock_tracepoints[j]);
++	}
++
+ 	for (j = 1; j < (unsigned int)argc; j++, i++)
+ 		rec_argv[i] = argv[j];
+ 
 -- 
-1.7.7.6
+1.7.10.1
 
