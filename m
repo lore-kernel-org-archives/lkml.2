@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab2HIThL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:37:11 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51421 "EHLO ogre.sisk.pl"
+	id S1759484Ab2HITjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:39:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38039 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759292Ab2HIThI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:37:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] timekeeping: Fix build when generic clockevents are enabled
-Date: Thu, 9 Aug 2012 21:43:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-References: <1344513580-9571-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1344513580-9571-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1759376Ab2HITjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:39:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,742,1336374000"; 
+   d="scan'208";a="195679811"
+Date: Thu, 9 Aug 2012 12:38:59 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Keng-Yu Lin <kengyu@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Intel xhci: Only switch the switchable ports
+Message-ID: <20120809193859.GD14429@xanatos>
+References: <1344504711-10916-1-git-send-email-kengyu@canonical.com>
+ <20120809142406.GC14429@xanatos>
+ <CADXHx7ZbWPb1qLQcdquE9QTkGhOwR0ka1gX2m+o_Y68c9jqtog@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208092143.03871.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADXHx7ZbWPb1qLQcdquE9QTkGhOwR0ka1gX2m+o_Y68c9jqtog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 09, 2012, Mark Brown wrote:
-> Commit a2c204 (timekeeping: Add suspend and resume of clock event devices)
-> added suspend and resume operations for clockevents but did not provide
-> stubs for these functions, breaking the build when clockevents are not
-> being built. Add the stubs.
+On Fri, Aug 10, 2012 at 12:13:19AM +0800, Keng-Yu Lin wrote:
+> On Thu, Aug 9, 2012 at 10:24 PM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> > On Thu, Aug 09, 2012 at 05:31:51PM +0800, Keng-Yu Lin wrote:
+> >> With a previous patch to enable the EHCI/XHCI port switching, it switches
+> >> all the available ports.
+> >>
+> >> The assumption is not correct because the BIOS may expect some ports
+> >> not switchable by the OS.
+> >
+> > Why would the BIOS expect some ports to not be switchable?  I know that
+> > we internally at Intel had discussed some theoretical reasons why it
+> > might not be good to switch some ports, but when I presented the
+> > original patch with this same code in it to Linux USB mailing list, both
+> > Alan and Greg said, "Why not unconditionally switch ports?"  I had no
+> > good examples at the time.
+> >
+> > Is this causing issues with some particular BIOS?
+> >
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Yes, this is causing the internal webcam missing on the USB bus as I
+> observed on some HM70-based laptops.
 
-I've fixed that already in my tree.
+Does anything show up in dmesg when you turn on
+CONFIG_USB_XHCI_HCD_DEBUGGING?  It would be good to know if it is
+totally not electrically present, or if there's some sort of xHCI
+hardware or software issue that's preventing the webcam from being
+enumerated.
 
-Thanks,
-Rafael
-
-
-> ---
->  include/linux/clockchips.h |    2 ++
->  1 file changed, 2 insertions(+)
+> The internal webcam is attached to one port that is controlled by the
+> xhci host.
+> But the other ports with the outer plugs work well after booting. I
+> cannot test the USB port of the internal webcam easily (without
+> tearing down the laptop :-/).
 > 
-> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> index ca060db..4f9c280 100644
-> --- a/include/linux/clockchips.h
-> +++ b/include/linux/clockchips.h
-> @@ -170,6 +170,8 @@ extern void clockevents_notify(unsigned long reason, void *arg);
->  #else /* CONFIG_GENERIC_CLOCKEVENTS_BUILD */
->  
->  #define clockevents_notify(reason, arg) do { } while (0)
-> +#define clockevents_suspend() do { } while (0)
-> +#define clockevents_resume() do { } while (0)
->  
->  #endif
->  
-> 
+> I also tried some similar HM77-based models. HM77 has no this issue.
+> This could be some chipset mystery I am not aware now.
 
+Could be.  Can you use any SMBIOS information to change the port
+switchover only for those HM70-based laptops?  And is it a particular
+laptop vendor or all HM70 laptops?
+
+As Alan said, I would rather not trust the BIOS to provide the correct
+port mask.
+
+Sarah Sharp
