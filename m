@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab2HILzO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:55:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36472 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab2HILzM (ORCPT
+	id S932339Ab2HILzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:55:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40770 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932261Ab2HILzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:55:12 -0400
+	Thu, 9 Aug 2012 07:55:38 -0400
+Date: Thu, 9 Aug 2012 12:55:31 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sergio Aguirre <saaguirre@ti.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 2/3] mfd: twl6040: Add twl6040-gpio child
+Message-ID: <20120809115531.GB8474@sirena.org.uk>
+References: <1342603220-13287-1-git-send-email-peter.ujfalusi@ti.com>
+ <1342603220-13287-3-git-send-email-peter.ujfalusi@ti.com>
+ <CACRpkdZJcy5HOZkjMCVJW5beExoCHOBb=BiB4GOGR7sM+5Xsww@mail.gmail.com>
+ <5016967D.2020104@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120809114901.GV12174@arwen.pp.htv.fi>
-References: <1343135720-26559-1-git-send-email-aletes.xgr@gmail.com>
-	<20120809114242.GA4689@breakpoint.cc>
-	<20120809114901.GV12174@arwen.pp.htv.fi>
-Date: Thu, 9 Aug 2012 08:55:11 -0300
-Message-ID: <CAAAP30EgLx70N7JDSQ2DPB_sFEkiTGhUDmBUkrrem07=Pd+KoA@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: gadget: composite: parse dt values
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: balbi@ti.com
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5016967D.2020104@ti.com>
+X-Cookie: This report is filled with omissions.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 8:49 AM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Thu, Aug 09, 2012 at 01:42:42PM +0200, Sebastian Andrzej Siewior wrote:
->> On Tue, Jul 24, 2012 at 10:15:20AM -0300, Alexandre Pereira da Silva wrote:
->> > --- /dev/null
->> > +++ b/Documentation/devicetree/bindings/usb/gadget.txt
->> > @@ -0,0 +1,20 @@
->> > +Usb Gadget DeviceTree bindings
->> > +
->> > +These optional properties inside the usb device controller node are used to
->> > +change some of the gadget drivers configuration:
->> > +- vendor-id: Usb vendor id
->> > +- product-id: Usb product id
->> > +- release: Version of this device
->> > +- vendor: Textual description of the vendor
->> > +- device: Textual description of this device
->> > +- serial: Textual representation of the device's serial number
->> > +
->> > +Binding Example:
->> > +   usbd@31020000 {
->> > +           vendor-id = <0x0525>;
->> > +           product-id = <0xa4a6>;
->> > +           release = <1>;
->> > +           vendor = "Some Corp";
->> > +           device = "Test Device";
->> > +           serial = "12345";
->
-> on top of everything Sebastian said, I think we should stick to the
-> field names set forth on the USB specification meaning that instead of
-> vendor-id we should use idVendor, instead of vendor we should use
-> iManufacturer, and so on.
+On Mon, Jul 30, 2012 at 05:13:17PM +0300, Peter Ujfalusi wrote:
 
-Thanks for the feedback.
+> If the board needs the gpo driver, but in the driver(s) I need to check for
+> the existence of the "ti,twl6040-gpo" node and check if the status is "okay".
+> I think it is easier to just get the value of "ti,use-gpo", if it exist and it
+> is 1 I enable the GPIO driver otherwise I don't.
 
-I agree that this should look more like the usb specifications and
-allow mapping between usb interfaces and gadget drivers.
-
-I will rework this to provide a new patch that at least don't conflict
-with this idea.
+Will having the GPIO driver actually cause any problems if it's not in
+use?  It's not like things like RTC which are directly visible to
+userspace and so can create problems if they're non-functional, unless
+it does something like grab resources that might be needed by another
+subfunction driver there's not really a substantial cost in just
+instantiating it (people who are really space pressured probably won't
+build the driver in in the first place).
