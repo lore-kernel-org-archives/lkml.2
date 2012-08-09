@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab2HINqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:46:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13745 "EHLO
+	id S1756409Ab2HINsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:48:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3944 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2HINqN (ORCPT
+	with ESMTP id S1755984Ab2HINso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:46:13 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=6BT9eh2GF10A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=WfulkdPnAAAA:8 a=AECJP_EDw2Pmm2iyCfMA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Thu, 9 Aug 2012 09:48:44 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=6BT9eh2GF10A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=91Vx31u4lCIN2Xx8wLIA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-ID: <1344519970.6935.34.camel@gandalf.stny.rr.com>
+Message-ID: <1344520123.6935.36.camel@gandalf.stny.rr.com>
 Subject: Re: [RFC PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>
-Date: Thu, 09 Aug 2012 09:46:10 -0400
-In-Reply-To: <20120807194100.130477900@goodmis.org>
+Date: Thu, 09 Aug 2012 09:48:43 -0400
+In-Reply-To: <1344519970.6935.34.camel@gandalf.stny.rr.com>
 References: <20120807193845.146666357@goodmis.org>
 	 <20120807194100.130477900@goodmis.org>
+	 <1344519970.6935.34.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
@@ -32,143 +34,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter and Masami
-
-During my final tests, I found that this change breaks the
-!DYNAMIC_FTRACE config. That is, when we don't do the run-time updates
-of mcount calls to nops, the compiler will use fentry but the code still
-uses mcount.
-
-I fixed this in the patch below. But as you two have acked and reviewed
-it, I can't add your tags if I have changed the code. Can you ack/review
-it again.
-
-Thanks!
-
--- Steve
-
-
-On Tue, 2012-08-07 at 15:38 -0400, Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+On Thu, 2012-08-09 at 09:46 -0400, Steven Rostedt wrote:
+> Peter and Masami
 > 
-> If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
-> then use that instead of mcount.
+> During my final tests, I found that this change breaks the
+> !DYNAMIC_FTRACE config. That is, when we don't do the run-time updates
+> of mcount calls to nops, the compiler will use fentry but the code still
+> uses mcount.
 > 
-> With mcount, frame pointers are forced with the -pg option and we
-> get something like:
+> I fixed this in the patch below. But as you two have acked and reviewed
+> it, I can't add your tags if I have changed the code. Can you ack/review
+> it again.
 > 
-> <can_vma_merge_before>:
->        55                      push   %rbp
->        48 89 e5                mov    %rsp,%rbp
->        53                      push   %rbx
->        41 51                   push   %r9
->        e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
->        31 c0                   xor    %eax,%eax
->        48 89 fb                mov    %rdi,%rbx
->        48 89 d7                mov    %rdx,%rdi
->        48 33 73 30             xor    0x30(%rbx),%rsi
->        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+> Thanks!
 > 
-> With -mfentry, frame pointers are no longer forced and the call looks
-> like this:
-> 
-> <can_vma_merge_before>:
->        e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
->        53                      push   %rbx
->        48 89 fb                mov    %rdi,%rbx
->        31 c0                   xor    %eax,%eax
->        48 89 d7                mov    %rdx,%rdi
->        41 51                   push   %r9
->        48 33 73 30             xor    0x30(%rbx),%rsi
->        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
-> 
-> This adds the ftrace hook at the beginning of the function before a
-> frame is set up, and allows the function callbacks to be able to access
-> parameters. As kprobes now can use function tracing (at least on x86)
-> this speeds up the kprobe hooks that are at the beginning of the
-> function.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-(change log kept the same)
+This is the changes that were made against the original patch:
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..bbbf5d8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -36,6 +36,7 @@ config X86
- 	select HAVE_KRETPROBES
- 	select HAVE_OPTPROBES
- 	select HAVE_FTRACE_MCOUNT_RECORD
-+	select HAVE_FENTRY if X86_64
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FUNCTION_TRACER
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index a6cae0c..9a25b52 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -35,7 +35,11 @@
- #endif
- 
- #ifdef CONFIG_FUNCTION_TRACER
--#define MCOUNT_ADDR		((long)(mcount))
-+#ifdef CC_USING_FENTRY
-+# define MCOUNT_ADDR		((long)(__fentry__))
-+#else
-+# define MCOUNT_ADDR		((long)(mcount))
-+#endif
- #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
-@@ -46,6 +50,7 @@
- #ifndef __ASSEMBLY__
- extern void mcount(void);
- extern atomic_t modifying_ftrace_code;
-+extern void __fentry__(void);
- 
- static inline unsigned long ftrace_call_adjust(unsigned long addr)
- {
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 38308fa..a698521 100644
+index 2add3bb..a698521 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -68,10 +68,18 @@
+@@ -68,18 +68,19 @@
  	.section .entry.text, "ax"
  
  #ifdef CONFIG_FUNCTION_TRACER
-+
-+#ifdef CC_USING_FENTRY
+-#ifdef CONFIG_DYNAMIC_FTRACE
+ 
+ #ifdef CC_USING_FENTRY
+-ENTRY(__fentry__)
+-	retq
+-END(__fentry__)
 +# define function_hook	__fentry__
-+#else
-+# define function_hook	mcount
-+#endif
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
+ #else
 -ENTRY(mcount)
+-	retq
+-END(mcount)
++# define function_hook	mcount
+ #endif
+ 
++#ifdef CONFIG_DYNAMIC_FTRACE
 +
 +ENTRY(function_hook)
- 	retq
--END(mcount)
++	retq
 +END(function_hook)
- 
++
  /* skip is set if stack has been adjusted */
  .macro ftrace_caller_setup skip=0
-@@ -84,7 +92,11 @@ END(mcount)
- 	movq RIP(%rsp), %rdi
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 	/* Load the parent_ip into the second parameter */
-+#ifdef CC_USING_FENTRY
-+	movq SS+16(%rsp), %rsi
-+#else
- 	movq 8(%rbp), %rsi
-+#endif
- .endm
- 
- ENTRY(ftrace_caller)
-@@ -177,7 +189,8 @@ END(ftrace_regs_caller)
+ 	MCOUNT_SAVE_FRAME \skip
+@@ -188,7 +189,8 @@ END(ftrace_regs_caller)
  
  
  #else /* ! CONFIG_DYNAMIC_FTRACE */
@@ -178,7 +92,7 @@ index 38308fa..a698521 100644
  	cmpl $0, function_trace_stop
  	jne  ftrace_stub
  
-@@ -199,7 +212,11 @@ trace:
+@@ -210,7 +212,11 @@ trace:
  	MCOUNT_SAVE_FRAME
  
  	movq RIP(%rsp), %rdi
@@ -190,7 +104,7 @@ index 38308fa..a698521 100644
  	subq $MCOUNT_INSN_SIZE, %rdi
  
  	call   *ftrace_trace_function
-@@ -207,7 +224,7 @@ trace:
+@@ -218,7 +224,7 @@ trace:
  	MCOUNT_RESTORE_FRAME
  
  	jmp ftrace_stub
@@ -199,40 +113,5 @@ index 38308fa..a698521 100644
  #endif /* CONFIG_DYNAMIC_FTRACE */
  #endif /* CONFIG_FUNCTION_TRACER */
  
-@@ -215,9 +232,14 @@ END(mcount)
- ENTRY(ftrace_graph_caller)
- 	MCOUNT_SAVE_FRAME
- 
-+#ifdef CC_USING_FENTRY
-+	leaq SS+16(%rsp), %rdi
-+	movq $0, %rdx	/* No framepointers needed */
-+#else
- 	leaq 8(%rbp), %rdi
--	movq RIP(%rsp), %rsi
- 	movq (%rbp), %rdx
-+#endif
-+	movq RIP(%rsp), %rsi
- 	subq $MCOUNT_INSN_SIZE, %rsi
- 
- 	call	prepare_ftrace_return
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 9796c2f..643b236 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -13,9 +13,13 @@
- #include <asm/ftrace.h>
- 
- #ifdef CONFIG_FUNCTION_TRACER
--/* mcount is defined in assembly */
-+/* mcount and __fentry__ are defined in assembly */
-+#ifdef CC_USING_FENTRY
-+EXPORT_SYMBOL(__fentry__);
-+#else
- EXPORT_SYMBOL(mcount);
- #endif
-+#endif
- 
- EXPORT_SYMBOL(__get_user_1);
- EXPORT_SYMBOL(__get_user_2);
 
 
