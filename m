@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2HIHWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 03:22:25 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36483 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305Ab2HIHWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 03:22:23 -0400
-Date: Thu, 9 Aug 2012 00:22:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 08/12] block: Introduce new bio_split()
-Message-ID: <20120809072217.GH2845@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-9-git-send-email-koverstreet@google.com>
- <20120808230532.GH6983@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809013923.GH7262@moria.home.lan>
+	id S1755928Ab2HIH1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 03:27:32 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46301 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755695Ab2HIH1a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 03:27:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809013923.GH7262@moria.home.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAB=NE6V7Tx1ioDafPmOprwzd0Q61dDe8XK5gBghXHVROXOBA=Q@mail.gmail.com>
+References: <CAB=NE6WZWEO=b5Usx4RKDLC--TvLWnOom0P+HmXsxh7QZQQXQA@mail.gmail.com>
+	<CAFub=KRtuTDn1DnHP0aKZT6RBeA2kNkLm6ud-4Z=1ESPs==h0g@mail.gmail.com>
+	<CAB=NE6V7Tx1ioDafPmOprwzd0Q61dDe8XK5gBghXHVROXOBA=Q@mail.gmail.com>
+Date: Thu, 9 Aug 2012 09:27:29 +0200
+Message-ID: <CA+icZUV51Bk=jxnfrGL4xo6MQXnVdhUCago_RPZM-iL+twpF1A@mail.gmail.com>
+Subject: Re: Using vanilla kernels headers to do backport testing -- issues
+ with memcpy()
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Cc: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 06:39:23PM -0700, Kent Overstreet wrote:
-> On Wed, Aug 08, 2012 at 04:05:32PM -0700, Tejun Heo wrote:
-> > One more thing.
-> > 
-> > On Mon, Aug 06, 2012 at 03:08:37PM -0700, Kent Overstreet wrote:
-> > > +	if (bio_integrity(bio)) {
-> > > +		bio_integrity_clone(ret, bio, gfp, bs);
-> > > +		bio_integrity_trim(ret, 0, bio_sectors(ret));
-> > > +		bio_integrity_trim(bio, bio_sectors(ret), bio_sectors(bio));
-> > 
-> > Is this equivalent to bio_integrity_split() performance-wise?
-> 
-> Strictly speaking, no. But it has the advantage of being drastically
-> simpler - and the only one only worked for single page bios so I
-> would've had to come up with something new from scratch, and as
-> confusing as the integrity stuff is I wouldn't trust the result.
+On Thu, Aug 9, 2012 at 5:30 AM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> On Wed, Aug 8, 2012 at 5:43 AM, Ozan Çağlayan <ozancag@gmail.com> wrote:
+>> On Tue, Aug 7, 2012 at 10:28 PM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+>
+>>> mcgrof@garbanzo ~/compat (git::master)$ objdump -T
+>>> /home/mcgrof/compat-ksrc/lib/modules/3.4.4-030404-generic/build/scripts/genksyms/genksyms
+>
+> <-- snip -->
+>
+>>> Bleh:
+>>>
+>>> 0000000000000000      DF *UND*  0000000000000000  GLIBC_2.14  memcpy
+>
+> <-- snip -->
+>
+>> Can't we just rebuild genksyms in compat? I already have glibc 2.15 on
+>> my system so I can't test this but normally this should adapt to the
+>> build environment as it rebuilds and relinks the binary.
+>
+> Indeed! Implemented and pushed upstream:
+>
+> https://github.com/mcgrof/compat/commit/42faf2dc8d8bbbdc5b8913183fcd021a27e953c9
+>
 
-There's already bio_integrity_split() and you're actively dropping it.
+I am not an English native but this sentence sounds a bit strange to
+me ("used" followed by "require" and double "Linux"?).
+I can imagine what you want to express but have no better wording right now.
 
-> I'm skeptical that it's going to matter in practice given how much
-> iteration is done elsewhere in the course of processing a bio and given
-> that this stuff isn't used with high end SSDs...
+180 +  echo -e "   This was added since kernels >= 3.4 used require"
+181 +  echo -e "   a glibc >= 2.14 for memcpy(), and not all Linux"
+182 +  echo -e "   Linux distributions have such glibc.
 
-If you think the active dropping is justified, please let the change
-and justification clearly stated.  You're burying the active change in
-two separate patches without even mentioning it or cc'ing people who
-care about bio-integrity (Martin K. Petersen).  Ummm.... this is
-simply unacceptable and makes me a lot more suspicious about the
-patchset.  Please be explicit about changes you make.  Peer-review
-breaks down unless such trust can be maintained.
+- Sedat -
 
-Thanks.
-
--- 
-tejun
+> So if you run into this issue all you have to do now is run:
+>
+> ./bin/get-compat-kernels -r
+>
+> New users of the script will automatically have this run after it
+> downloads and installs the kernel headers.
+>
+> Case closed, thanks :)
+>
+>   Luis
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
