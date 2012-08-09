@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab2HITOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:14:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57001 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2HITOA (ORCPT
+	id S1759342Ab2HITOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:14:23 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52966 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab2HITOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:14:00 -0400
+	Thu, 9 Aug 2012 15:14:20 -0400
+Message-ID: <50240B77.2060204@linaro.org>
+Date: Thu, 09 Aug 2012 12:11:51 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1344526098.6935.44.camel@gandalf.stny.rr.com>
-References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
- <1344485382.2024.9.camel@joe2Laptop> <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
- <20120808.231804.12694947300243733.davem@davemloft.net> <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
- <20120809145454.GA21195@home.goodmis.org> <1344525758.3165.8.camel@joe2Laptop>
- <1344526098.6935.44.camel@gandalf.stny.rr.com>
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Date: Thu, 9 Aug 2012 12:13:38 -0700
-X-Google-Sender-Auth: aFXs4lHhmdTgcIRhbHQ-K-NqqWY
-Message-ID: <CAB=NE6X4JQmQgtgcy9is0hn0nNypTKJN-d2RHFR7vvg=vO_eHQ@mail.gmail.com>
-Subject: Re: [PATCH] net: add new QCA alx ethernet driver
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Michel Lespinasse <walken@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/5] [RFC] Add volatile range management code
+References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org> <1343447832-7182-2-git-send-email-john.stultz@linaro.org> <CANN689HWYO5DD_p7yY39ethcFu_JO9hudMcDHd=K8FUfhpHZOg@mail.gmail.com>
+In-Reply-To: <CANN689HWYO5DD_p7yY39ethcFu_JO9hudMcDHd=K8FUfhpHZOg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12080919-7282-0000-0000-00000BD1BC6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 8:28 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2012-08-09 at 08:22 -0700, Joe Perches wrote:
->
->> Yes, I sent signed-off patches to their original RFC submission
->> (back last year?).
+On 08/09/2012 02:46 AM, Michel Lespinasse wrote:
+> On Fri, Jul 27, 2012 at 8:57 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> v5:
+>> * Drop intervaltree for prio_tree usage per Michel &
+>>    Dmitry's suggestions.
+> Actually, I believe the ranges you need to track are non-overlapping, correct ?
+Correct.  Any overlapping range is coalesced.
 
-And that is why your SOB was kept.
+> If that is the case, a simple rbtree, sorted by start-of-range
+> address, would work best.
+> (I am trying to remove prio_tree users... :)
 
->> To me, this single large patch is like a
->> snapshot of a git tree and not all contributors to that git
->> tree should be noted as signers of the entire thing.
+Sigh.  Sure.  Although I've blown with the wind on a number of different 
+approaches for storing the ranges. I'm not particularly passionate about 
+it, but the continual conflicting suggestions are a slight frustration.  :)
 
-I am not sure we really ever addressed this technical difference and
-from what I have seen we always run into this question on new driver
-submissions.
 
-Entity x goes on and posts driver joojoo-1, and we some folks in the
-community may merge such patch onto their tree and edit the driver and
-send some of their own changes and improvements to the developers /
-mailing list. Typically if the patches sent had a SOB tag the right
-thing to due given the legal implications of the Developer's
-Certificate of Origin is to add those SOBs to the new driver
-submission if company x goes on and posts joojoo-2.. but...
+>> +       /* First, find any existing intervals that overlap */
+>> +       prio_tree_iter_init(&iter, root, start, end);
+> Note that prio tree iterations take intervals as [start; last] not [start; end[
+> So if you want to stick with prio trees, you would have to use end-1 here.
+Thanks!  I think I hit this off-by-one issue in my testing, but fixed it 
+on the backend  w/ :
 
-> Ouch, that looks like we are losing all history.
+     modify_range(&inode->i_data, start, end-1, &mark_nonvolatile_page);
 
-Agreed! It'd be best instead to have such changes as part of a linear
-history somewhere so maybe what would be right prior to inclusion
-upstream is for such patches to be merged on an external github tree
-or wherever to be able to keep record of the submissions done during
-development. Then upon submission to the Linux kernel again as
-joojoo-2 instead of joojoo-1 company x would simply provide their own
-SOB, and the record of the previous SOBs would be kept on the forked
-git tree.
+Clearly fixing it at the start instead of papering over it is better.
 
-Whether or not it is required to have the SOB tog of previous patch
-submitters is not clear but to me its not necessary if you have a
-record somewhere that they were submitted and merged in some other
-tree. The mailing list alone may serve as a good place holder for this
-information as well so a separate tree may not be required.
 
-So -- are we OK to *not* include SOBs of evolutions sent to developers
-of joojoo-1 when company x submits joojoo-2 so long as those patches
-were sent publicly or a record is kept somewhere ?
+>> +       node = prio_tree_next(&iter);
+>> +       while (node) {
+> I'm confused, I don't think you ever expect more than one range to
+> match, do you ???
 
-> One large patch should not be submitted. If it was developed in steps,
-> then it is best to show those steps when they are incorporated into the
-> Linux repository.
+So yea.  If you already have two ranges (0-5),(10-15) and then add range 
+(0-20) we need to coalesce the two existing ranges into the new one.
 
-Sure, but at times some changes are asked after a submission of
-joojoo-1, and at times this may be ongoing until maybe even joojoo-10,
-before we are happy to merge it upstream.
 
-  Luis
+> This is far from a complete code review, but I just wanted to point
+> out a couple details that jumped to me first. I am afraid I am missing
+> some of the background about how the feature is to be used to really
+> dig into the rest of the changes at this point :/
+
+Well, I really appreciate any feedback here.
+
+thanks
+-john
+
