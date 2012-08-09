@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab2HIVop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:44:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757387Ab2HIVon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:44:43 -0400
-Date: Thu, 9 Aug 2012 23:44:30 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, riel@redhat.com, oleg@redhat.com, pjt@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, Lee.Schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/19] mm, mpol: Use special PROT_NONE to migrate pages
-Message-ID: <20120809214430.GJ10459@redhat.com>
-References: <20120731191204.540691987@chello.nl>
- <20120731192808.950441936@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120731192808.950441936@chello.nl>
+	id S1758694Ab2HIVsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:48:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36471 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab2HIVs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:48:29 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: torvalds@linux-foundation.org
+Cc: rdunlap@xenotime.net, tytso@mit.edu, alan@lxorguk.ukuu.org.uk,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [PATCH v2] SubmittingPatches: clarify SOB tag usage when evolving submissions
+Date: Thu,  9 Aug 2012 14:48:23 -0700
+Message-Id: <1344548903-23117-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 31, 2012 at 09:12:14PM +0200, Peter Zijlstra wrote:
-> +#ifdef CONFIG_NUMA
->  	/*
-> -	 * Do fancy stuff...
-> +	 * For NUMA systems we use the special PROT_NONE maps to drive
-> +	 * lazy page migration, see MPOL_MF_LAZY and related.
->  	 */
-> +	page = vm_normal_page(vma, address, entry);
-> +	if (!page)
-> +		goto do_fixup_locked;
-> +
-> +	get_page(page);
-> +	pte_unmap_unlock(ptep, ptl);
-> +
-> +	node = mpol_misplaced(page, vma, address);
-> +	if (node == -1)
-> +		goto do_fixup;
->  
->  	/*
-> +	 * Page migration will install a new pte with vma->vm_page_prot,
-> +	 * otherwise fall-through to the fixup. Next time,.. perhaps.
-> +	 */
-> +	if (!migrate_misplaced_page(mm, page, node)) {
-> +		put_page(page);
-> +		return 0;
-> +	}
-> +
-> +do_fixup:
-> +	/*
->  	 * OK, nothing to do,.. change the protection back to what it
->  	 * ought to be.
->  	 */
-> @@ -3467,6 +3493,9 @@ static int do_prot_none(struct mm_struct
->  	if (unlikely(!pte_same(*ptep, entry)))
->  		goto unlock;
->  
-> +do_fixup_locked:
-> +#endif /* CONFIG_NUMA */
-> +
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-Do fancy stuff would better of be in a separate file instead of mixing
-it with the numa hinting page fault entry points in memory.c. My
-"fancy stuff" happens in mm/autonuma.c. memory.c calls it.
+Initial large code submissions typically are not accepted
+on their first patch submission. The developers are
+typically given feedback and at times some developers may
+even submit changes to the original authors for integration
+into their second submission attempt.
 
->  	flush_cache_page(vma, address, pte_pfn(entry));
->  
->  	ptep_modify_prot_start(mm, address, ptep);
-> @@ -3476,8 +3505,9 @@ static int do_prot_none(struct mm_struct
->  	update_mmu_cache(vma, address, ptep);
->  unlock:
->  	pte_unmap_unlock(ptep, ptl);
-> -out:
-> -	return ret;
-> +	if (page)
-> +		put_page(page);
-> +	return 0;
->  }
->  
->  /*
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Developers wishing to contribute changes to the evolution
+of a second patch submission must supply their own Siged-off-by
+tag to the original authors and must submit their changes
+on a public mailing list or ensure that these submission
+are recorded somewhere publicly.
+
+To date a few of these type of contributors have expressed
+different preferences for whether or not their own SOB tag
+should be used for a second code submission. Lets keep things
+simple and only require the contributor's SOB tag if so desired
+explicitly. It is not technically required if there already
+is a public record of their contribution somewhere.
+
+Document this on Documentation/SubmittingPatches
+
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+---
+
+This v2 has Singed/Signed typo fixes.
+
+ Documentation/SubmittingPatches |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index c379a2a..3154565 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -366,6 +366,21 @@ and protect the submitter from complaints. Note that under no circumstances
+ can you change the author's identity (the From header), as it is the one
+ which appears in the changelog.
+ 
++If you are submitting a large change (for example a new driver) at times
++you may be asked to make quite a lot of modifications prior to getting
++your change accepted. At times you may even receive patches from developers
++who not only wish to tell you what you should change to get your changes
++upstream but actually send you patches. If those patches were made publicly
++and they do contain a Signed-off-by tag you are not expected to provide
++their own Signed-off-by tag on the second iteration of the patch so long
++as there is a public record somewhere that can be used to show the
++contributor had sent their changes with their own Signed-off-by tag.
++
++If you receive patches privately during development you may want to
++ask for these patches to be re-posted publicly or you can also decide
++to merge the patches as part of a separate historical git tree that
++will remain online for historical archiving.
++
+ Special note to back-porters: It seems to be a common and useful practise
+ to insert an indication of the origin of a patch at the top of the commit
+ message (just after the subject line) to facilitate tracking. For instance,
+-- 
+1.7.10.4
+
