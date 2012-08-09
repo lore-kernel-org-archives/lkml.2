@@ -1,126 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab2HIHvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 03:51:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57279 "EHLO
+	id S1756146Ab2HIH5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 03:57:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63496 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab2HIHvd (ORCPT
+	with ESMTP id S1755366Ab2HIH5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 03:51:33 -0400
-Date: Thu, 9 Aug 2012 09:51:28 +0200
+	Thu, 9 Aug 2012 03:57:21 -0400
+Date: Thu, 9 Aug 2012 09:57:16 +0200
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Takashi Iwai <tiwai@suse.de>
 Cc: Jaroslav Kysela <perex@perex.cz>,
         David Henningsson <david.henningsson@canonical.com>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: hda/realtek - Keep analog bypass muted on ALC892
-Message-ID: <20120809075128.GA24808@avionic-0098.mockup.avionic-design.de>
-References: <1344494839-6942-1-git-send-email-thierry.reding@avionic-design.de>
- <s5hfw7wfszx.wl%tiwai@suse.de>
- <20120809071848.GB6979@avionic-0098.mockup.avionic-design.de>
- <s5hboikfrjc.wl%tiwai@suse.de>
+Subject: Re: [PATCH] ALSA: hda - Defer probe when loading patch firmware
+Message-ID: <20120809075716.GB24808@avionic-0098.mockup.avionic-design.de>
+References: <1344494723-6827-1-git-send-email-thierry.reding@avionic-design.de>
+ <s5hhascft86.wl%tiwai@suse.de>
+ <20120809070813.GA6979@avionic-0098.mockup.avionic-design.de>
+ <s5hd330frn1.wl%tiwai@suse.de>
+ <20120809073642.GA24695@avionic-0098.mockup.avionic-design.de>
+ <s5h7gt8fr47.wl%tiwai@suse.de>
+ <s5h393wfqqm.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
 Content-Disposition: inline
-In-Reply-To: <s5hboikfrjc.wl%tiwai@suse.de>
+In-Reply-To: <s5h393wfqqm.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:srDzhFuQHq8UbbpgVaa8XnFVyxM95hj/XYu2LlGQgrY
- D7+CQP+eyNYkw/Y6/C9QczEHC8twlLUSoW9Uk5kXvLimND9bly
- UssL4AlwyVY02iPGkUR/yHM7KS+exjCYLgtCBa7eIAuf4xRRqk
- PE67zUYG8C8rKl+FtfSwo9uTS/5YbklwKF7z2olxvOG5I4AseL
- qS5TMtm1mg+L2HnCPBt0xmy5YzG9+y+vYWkmsRo1i5h0McvJ7J
- aU1EPKWJ14w7wnTUsCFx/qNxEjIgz+/LdcY8AH4Qwq49NGwNRw
- Jzova7XW7V2bxr932Ygm0+KG5eRr37ruH+HLyYCkp537ujr66t
- X+A5C/XXv3h90aUHJhFp9997eZrPl7ZZHAOPEsqmn/K7xXc2/1
- z2LQqg8Stx6CUDnxA3ARrEPi0L+k2gr1zQ=
+X-Provags-ID: V02:K0:YJblW8XlxK8y5xW8OIedQ9ojRJ72BIa3raMhZme5sd4
+ ETd+NeSbWsDaZFLiuHjQbucs/GpGDySMMeSndDqjo2WuvEb3/e
+ xhju15nQc9QnHtnC1WBFdVSnJlGwHIoonRHciin9gcOEFer3c5
+ 1TeY4aWJMaQh8JRE4gCiF3Uxbn9yc6oJSytqBhc3+V54tMU4j3
+ m4BFN7IV6tKTonQz9Zt5fJ1yzV1aEmo6Ju1LxJ6Z+gzd2AlQLb
+ 2LVRDxg3g8MTJmyoxQXCi8cvUC8WONPrhfloM328Z0B4SxeQrz
+ 3/kQB5IJul5iUq5HYj9MxOrg1JrihiaoG4C+TfUkWT4a0iThD3
+ sqN4ESBThseTVU3nezM9nMFv0fx4KCYP5A7RQBEw7EZnzrIyoQ
+ PYNzLahsvRbv4wHTnXG/p9/2X8bzVCnYCAmWXrUNlhqXSHAqFs
+ hzQvJ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---yrj/dFKFPuw6o+aM
+--oLBj+sq0vYjzfsbl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 09, 2012 at 09:33:43AM +0200, Takashi Iwai wrote:
-> At Thu, 9 Aug 2012 09:18:48 +0200,
-> Thierry Reding wrote:
+On Thu, Aug 09, 2012 at 09:50:57AM +0200, Takashi Iwai wrote:
+> At Thu, 09 Aug 2012 09:42:48 +0200,
+> Takashi Iwai wrote:
 > >=20
-> > On Thu, Aug 09, 2012 at 09:02:10AM +0200, Takashi Iwai wrote:
-> > > At Thu,  9 Aug 2012 08:47:19 +0200,
-> > > Thierry Reding wrote:
-> > > >=20
-> > > > Unmuting the analog bypass causes any input to be directly bypassed=
- to
-> > > > the outputs, which is usually not expected by the user.
-> > > >=20
-> > > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > > ---
-> > > > Note that this patch could be generalized to include all codec vari=
-ants
-> > > > that have this second channel. As I don't have access to all the da=
-ta
-> > > > sheets I'll leave that decision up to somebody with more hardware
-> > > > available.
+> > At Thu, 9 Aug 2012 09:36:42 +0200,
+> > Thierry Reding wrote:
 > > >=20
-> > > Hmm, are you really sure that this is exclusive switch between two?
-> > > All Realtek codecs with this mixer widget mixes two sources up.
-> > > Otherwise it must not be a "mixer" widget at all but it must be a
-> > > "selector" widget.
+> > > On Thu, Aug 09, 2012 at 09:31:30AM +0200, Takashi Iwai wrote:
+> > > > At Thu, 9 Aug 2012 09:08:13 +0200,
+> > > > Thierry Reding wrote:
+> > > > >=20
+> > > > > On Thu, Aug 09, 2012 at 08:57:13AM +0200, Takashi Iwai wrote:
+> > > > > > At Thu,  9 Aug 2012 08:45:23 +0200,
+> > > > > > Thierry Reding wrote:
+> > > > > > >=20
+> > > > > > > Recent changes to the firmware loading helpers cause drivers =
+to stall
+> > > > > > > when firmware is loaded during the module_init() call. The sn=
+d-hda-intel
+> > > > > > > module requests firmware if the patch=3D parameter is used to=
+ load a patch
+> > > > > > > file. This patch works around the problem by deferring the pr=
+obe in such
+> > > > > > > cases, which will cause the module to load successfully and t=
+he driver
+> > > > > > > binding to the device outside the module_init() call.
+> > > > > >=20
+> > > > > > Is the "recent" change meant 3.6 kernel, or in linux-next?
+> > > > > >=20
+> > > > > > In anyway, I don't understand why such a change was allowed.  M=
+ost
+> > > > > > drivers do call request_firmware() at the device probing time.
+> > > > > > If this really has to be resolved in the driver side, it must b=
+e a bug
+> > > > > > in the firmware loader core code.
+> > > > >=20
+> > > > > A good explanation of the problem and subsequent discussion can b=
+e found
+> > > > > here:
+> > > > >=20
+> > > > > 	http://article.gmane.org/gmane.linux.drivers.video-input-infrast=
+ructure/49975
+> > > >=20
+> > > > Yeah, but it doesn't justify this ugly module option.
+> > > > It's a simple bug.  Papering over it with this option doesn't fix
+> > > > anything.
+> > >=20
+> > > It's not an option, all it does is defer probing if and only if the
+> > > patch parameter was specified to make sure the firmware load won't
+> > > stall. I realize that this may not be an optimal solution, but at lea=
+st
+> > > it fixes the problem with no fallout.
 > >=20
-> > It's not an exclusive switch. But the second input is the analog bypass
-> > that basically takes the signal directly from the input path and routes
-> > it to the output.
+> > Ah sorry, I misread the patch.
+> >=20
+> > Then it shouldn't be checked at that point.  Since 3.5 kernel, the
+> > probing code was already split for vga_switcheroo support.  The point
+> > you added is the second stage.
 >=20
-> Ah so you mean it as the analog loopback path.
+> ... and the patch won't work properly if there are multiple HD-audio=20
+> controllers.  Hmm.
 
-Yes.
-
-> > > And I haven't received a bug report regarding this although ALC892 is
-> > > no new chip and the auto-parser has been enabled for so long time.
-> >=20
-> > I've seen this happen when feeding a signal into the CD-IN (NID 0x1c),
-> > which is then directly routed to the output, so I actually hear that
-> > signal at the output, even if there is no software loopback to capture
-> > the input and play it back via the DAC.
-> >=20
-> > This is probably not a very common use-case, so maybe nobody else has
-> > come across it. Looking at the block diagram in the ALC892 datasheet
-> > (page 5) clearly shows where the input of this second switch comes from.
-> > I don't think this is intended to be unmuted by default, but only in
-> > very special cases where you actually want to pass the analog input
-> > signal directly to the output without going through the ADC and back out
-> > the DAC.
->=20
-> Each input has the analog loopback mixer switch (and off as default).
-> Why it doesn't suffice?
-
-I hadn't thought about that. I'll need to recheck if that solves the
-issue that I was seeing.
+Right... the deferred probe would mess up the matching done by the
+static dev variable. So maybe a proper implementation that uses
+asynchronous firmware loading is inevitable.
 
 Thierry
 
---yrj/dFKFPuw6o+aM
+--oLBj+sq0vYjzfsbl
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQI2wAAAoJEN0jrNd/PrOhhVgQAJK+zqS2HvMHS0LLuuvSGwOn
-Pqjktc21vhDMZeufm7kJutnPiqtsWv8cD1b5sXqfZeCzUgXBvDAUnrMuI03jMcGh
-PbrYLvan9cJdjgYwy3t8keY78rpbYFhXpLioI4p4L7PJh/sFyjU/1amOzD6mmpXJ
-o6X9UcSDzci+e/3TX/cEwkBecFCNY3oMnzjcYXpz0xNNqPxCWuolq6e4ATyvGSDv
-7Cb8f5tMcOfqgFmbLtf9te0jg325Yy8g3X2dVq9LI6EUARXiZh03kMzwDfkFMN9E
-9FpC85QPJJTIEu/U18lWcn3NiIqREdUE0gA83q/4Tl/+4RTplIgI43VK4CC0zhN+
-S325lFp4JkfQHZUpHiSPwuBcal2od157kx7TdH40uY3mTKIbDpotSdAb+pd6jcn/
-tWBS2DwFAE94Ao44RR8VcRZ/U2KedKSn+cNXkoHKWnXdnvfFyAOLz2/0iZf8p7xA
-v5+YK1M6/ei/kO+5V/eZQG1ThYXtiFpHm8+FK/bnryNUfsDEJYSfzyHgFT8hNtlk
-nPOeULCn3bcHHqBO3kSAvuWVWi3yFdNAjU4UiZs+7wwFPatwActHKsUwyp9g18lV
-HmsEhoJwWSmXjrHvXVrQEZ8IvwDKqdVTvMqQXJRw0lA+o6Ca6eB/UXa/yNyrD8Kg
-RcvxveeOQsChbZb4AY1E
-=KIGW
+iQIcBAEBAgAGBQJQI21cAAoJEN0jrNd/PrOhAGYQAJIjDX5M4B/2cnixCCPv+tOi
+UOf5KCQjRPoMS1fKZJzD8t7UVP+TidIPh66ElNgUu3tz9GksAPO3Pmsfsw9kbigc
+eXugF3v1WGBUlQ1xRYYbPRoVIP5dd2/sCXQ31WdGy0XsKgemoh+Jzt0a1IJxnzkH
+0K/mzgDon0dmILF0M6wZ1A2W3k7aB7PHZ25bOvcUJ4Hb4Hmt2Qkl4/Wflv/WgbUM
+9+p24Jm1bU3U6nub0/EvCHqi7rUp+iTcBmzoNzDPQAgJAJ8XAth/d8tmX3UVz7eg
+hYAfWA+zX7GIZ61E63rIy+7QWXj/NOeexPqVpGtEW3puUSLIKogtgOhqZ0SrQUEU
+5YXqhuGaigNwYu6Im+0MigqazM9am5ZtF1Lgv0xADcWe9z7/UR8VE0vV5SpIlOBV
+yeCDlOJifsexoDYo024wnYUi0DdRanTeAGz13SADkC686uz2dRj2CPObQTYrexxA
+t4gdgd6eCvKW2ydZ0JxuPMzqlghjv5KqfmOpMeMLr69HH//WVCt4owE16xnh/YC+
+QfB1aG4athb88LjKC4mcg9vZ5oZD2G+BOd7kdCKZuWYWoL0ixInWAhZi9QUGviI9
+6H7+AM06Z3DCDD6mar7iaca4iJyQA475c9JHS7wZFS/ANCuSfj2oOX5DGnAaK/El
+eebILoVGhiSrgFukuOnh
+=SbLW
 -----END PGP SIGNATURE-----
 
---yrj/dFKFPuw6o+aM--
+--oLBj+sq0vYjzfsbl--
