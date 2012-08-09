@@ -1,320 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759693Ab2HIUgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:36:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51503 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759625Ab2HIUgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:36:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH][Alternative][RFC] PM / Runtime: Introduce driver runtime PM work routine
-Date: Thu, 9 Aug 2012 22:42:32 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201208072308.57950.rjw@sisk.pl> <201208091236.00816.rjw@sisk.pl>
-In-Reply-To: <201208091236.00816.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755454Ab2HIUk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:40:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22502 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2HIUk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 16:40:26 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Vw9dB8nyIlIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=UmJ6p_HmDfTlbPYajsEA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344544823.6935.82.camel@gandalf.stny.rr.com>
+Subject: [RFC][PATCH] tracepoints: Move the work out of line from hotpath
+ sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 09 Aug 2012 16:40:23 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208092242.32602.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+With the recent talk of performance regressions, I decided to take a
+look a tracepoints. For those that are not familiar with them, they are
+static locations scattered throughout the kernel that let developers
+trace their code when needed, with very little overhead when not needed
+but configured in the kernel. Most distributions have tracepoints
+configured into their kernels.
 
-On Thursday, August 09, 2012, Rafael J. Wysocki wrote:
-> 
-> Unfortunately, pm_runtime_get() is not a very useful interface,
-> because if the device is not in the "active" state already, it
-> only queues up a work item supposed to resume the device.  Then,
-> the caller doesn't really know when the device is going to be
-> resumed which makes it difficult to synchronize future device
-> accesses with the resume completion.
-> 
-> In that case, if the caller is the device's driver, the most
-> straightforward way for it to cope with the situation is to use its
-> .runtime_resume() callback for data processing unrelated to the
-> resume itself, but the correctness of this is questionable.  Namely,
-> the driver's .runtime_resume() callback need not be executed directly
-> by the core and it may be run from within a subsystem or PM domain
-> callback.  Then, the data processing carried out by the driver's
-> callback may disturb the subsystem's or PM domain's functionality
-> (for example, the subsystem may still be unready for the device to
-> process I/O when the driver's callback is about to return).  Besides,
-> the .runtime_resume() callback is not supposed to do anything beyond
-> what is needed to resume the device.
-> 
-> For this reason, it appears to be necessary to introduce a mechanism
-> by which device drivers may schedule the execution of certain code
-> (say a procedure) to occur when the device in question is known to be
-> in the "active" state (preferably, as soon as it has been resumed).
-> Thus introduce a new runtime PM helper function,
-> __pm_runtime_get_and_call(), and its simplified variant
-> pm_runtime_get_and_call(), allowing the caller to increment the
-> device's runtime PM usage counter and execute a function provided
-> as the second argument, either synchronously, if the device is
-> in the "active" state, or from the runtime PM workqueue, after
-> resuming the device (in that case the execution of the function is
-> queued up along with a request to resume the device).
-> 
-> The simplified helper, pm_runtime_get_and_call(), will only execute
-> the function if the runtime PM status of the device is "active".  The
-> more complicated one, __pm_runtime_get_and_call(), has one more
-> argument allowing the caller to specify whether or not the function
-> should be executed even if runtime PM is disabled for the device or
-> there has been a runtime PM error.  In those cases, the function will
-> always be executed synchronously.
-> 
-> This version of the patch doesn't include any documentation updates.
-> 
-> No sign-off yet.
+They look like this:
 
-There are some known concerns about this approach.
+	trace_sched_switch(prev, next);
 
-First of all, the patch at
+When tracing is configured, through macro magic, this simple line
+expands to something like this:
 
-https://patchwork.kernel.org/patch/1299781/
+static inline void trace_sched_switch(struct task_struct *prev, struct task_struct *next)
+{
+	if (static_key_false(&__tracepoint_sched_switch.key)) {
+		struct tracepoint_func *it_func_ptr;
+		void *it_func;
+		void *__data;
 
-increases the size of struct device by the size of a pointer, which may seem to
-be a bit excessive to somebody, although I personally don't think it's a big
-problem.  We don't use _that_ many struct device objects for it to matter much.
+		rcu_read_lock_sched_notrace();
+		it_func_ptr = rcu_dereference_sched((*__tracepoint_sched_switch)->funcs);
+		if (it_func_ptr) {
+			do {
+				it_func = (it_func_ptr)->func;
+				__data = (it_func_ptr)->data;
+				((it_func))(__data, prev, next);
+			} while ((++it_func_ptr)->func);
+		}
+		rcu_read_unlock_sched_notrace();
+	}
+}
 
-Second, which is more important to me, it seems that for a given device func()
-will always be the same pointer and it will be used by the device's driver
-only.  In that case, most likely, it will be possible to determine the
-address of func() at the time of driver initialization, so the setting and
-clearing of power.func and passing the address of func() as an argument every
-time __pm_runtime_get_and_call() is run may turn out to be an unnecessary
-overhead.  Thus it may be more efficient to use a function pointer in struct
-device_driver (it can't be located in struct dev_pm_ops, because some drivers
-don't use it at all, like USB drivers, and it wouldn't be useful for subsystems
-and PM domains) to store the address of func() permanently.
+There's some more magic involved here. The static_key_false() uses
+jump_labels to make the contents of the if block "unlikely" as well as
+uses a nop in the code when not enabled.
 
-For the above reasons, the appended patch implements an alternative approach,
-which is to modify the way pm_runtime_get() works so that, when the device is
-not active, it will queue a resume request for the device _along_ _with_ the
-execution of a driver routine provided through a new function pointer
-.pm_runtime_work().  There also is pm_runtime_get_nowork() that won't do that
-and works in the same way as the "old" pm_runtime_get().
+The call site looks like this:
 
-Of course, the disadvantage of the new patch is that it makes the change
-in struct device_driver, but perhaps it's not a big deal.
+       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
+       c7 46 28 01 00 00 00    movl   $0x1,0x28(%rsi)
+       66 66 66 66 90          nopl
+       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
+       48 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%rdi
 
-I wonder what you think.
+When tracing is enabled, the nopl is converted into a jump to the
+tracing code that sits at the end of the function (__schedule in this
+case). That code looks like this:
 
-Thanks,
-Rafael
+       65 48 8b 04 25 30 ba    mov    %gs:0xba30,%rax
+       00 00
+       83 80 44 e0 ff ff 01    addl   $0x1,-0x1fbc(%rax)
+       4c 8b 2d b9 d3 80 00    mov    0x80d3b9(%rip),%r13        # ffffffff8257dff0 <__tracepoint_sched_switch+0x30>
+       4d 85 ed                test   %r13,%r13
+       74 54                   je     ffffffff81d70c90 <__schedule+0x510>
+       4d 8d 75 10             lea    0x10(%r13),%r14
+       49 8b 45 00             mov    0x0(%r13),%rax
+       4d 89 ec                mov    %r13,%r12
+       48 89 9d f0 fe ff ff    mov    %rbx,-0x110(%rbp)
+       4c 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%r15
+       4c 89 f3                mov    %r14,%rbx
+       4d 89 ee                mov    %r13,%r14
+       4c 8b ad 10 ff ff ff    mov    -0xf0(%rbp),%r13
+       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
+       49 8b 7c 24 08          mov    0x8(%r12),%rdi
+       49 83 c4 10             add    $0x10,%r12
+       4c 89 ea                mov    %r13,%rdx
+       4c 89 fe                mov    %r15,%rsi
+       ff d0                   callq  *%rax
+       4c 89 e0                mov    %r12,%rax
+       4c 29 f0                sub    %r14,%rax
+       48 8b 44 03 f0          mov    -0x10(%rbx,%rax,1),%rax
+       48 85 c0                test   %rax,%rax
+       75 df                   jne    ffffffff81d70c68 <__schedule+0x4e8>
+       48 8b 9d f0 fe ff ff    mov    -0x110(%rbp),%rbx
+       65 48 8b 04 25 30 ba    mov    %gs:0xba30,%rax
+       00 00
+       83 a8 44 e0 ff ff 01    subl   $0x1,-0x1fbc(%rax)
+       48 8b 80 38 e0 ff ff    mov    -0x1fc8(%rax),%rax
+       a8 08                   test   $0x8,%al
+       0f 84 e3 fd ff ff       je     ffffffff81d70a92 <__schedule+0x312>
+       e8 7c 05 00 00          callq  ffffffff81d71230 <preempt_schedule>
+       e9 d9 fd ff ff          jmpq   ffffffff81d70a92 <__schedule+0x312>
+
+Now even though this code is moved to the end of the function, it still
+sits in the middle of lots of hot paths. All tracepoints act this way,
+and the kernel is growing rapidly with them. The latest count has
+something like 799 events existing currently in the kernel.
+
+Now I figured, instead of doing all this work in the hot paths, why not
+call a function that is out of line from the hot paths. Something like
+this:
+
+static inline void trace_sched_switch(struct task_struct *prev, struct task_struct *next)
+{
+	if (static_key_false(&__tracepoint_sched_switch.key)) {
+		extern void __tracepoint_hook_sched_switch(struct task_struct *prev, struct task_struct *next);
+
+		__tracepoint_hook_sched_switch(prev, next);
+	}
+}
 
 
----
- drivers/base/power/runtime.c |   71 +++++++++++++++++++++++++++++++++----------
- include/linux/device.h       |    2 +
- include/linux/pm.h           |    2 +
- include/linux/pm_runtime.h   |    6 +++
- 4 files changed, 66 insertions(+), 15 deletions(-)
+And out of line (in the .text.unlikely section) we would have:
 
-Index: linux/include/linux/device.h
+void __tracepoint_hook_sched_switch(struct task_struct *prev, struct task_struct *next)
+{
+	struct tracepoint_func *it_func_ptr;
+	void *it_func;
+	void *__data;
+
+	rcu_read_lock_sched_notrace();
+	it_func_ptr = rcu_dereference_sched((*__tracepoint_sched_switch)->funcs);
+	if (it_func_ptr) {
+		do {
+			it_func = (it_func_ptr)->func;
+			__data = (it_func_ptr)->data;
+			((it_func))(__data, prev, next);
+		} while ((++it_func_ptr)->func);
+	}
+	rcu_read_unlock_sched_notrace();
+}
+
+
+This makes what exists in the hot path files much smaller:
+
+       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
+       48 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%rdi
+       e8 dd f8 fc ff          callq  ffffffff81d40450 <__tracepoint_hook_sched_switch>
+       e9 5a fe ff ff          jmpq   ffffffff81d709d2 <__schedule+0x312>
+
+
+Now, by doing this, it adds a bit more code. Although, the code that is
+added exists in the .text.unlikely section and the normal paths should
+actually shrink, but kernel bloat is added never-the-less.
+
+   text	   data	    bss	    dec	    hex	filename
+20016471	2594648	1945600	24556719	176b4af	vmlinux-before
+20032535	2599960	1945600	24578095	177082f	vmlinux-after
+
+It adds 20K to the code. Well, it's not really this much, because I made
+this kernel pull in all modules (including ext3, xfs and kvm) which all
+add quite a number of tracepoints. But it was better to do this to get a
+picture of how this affects the tracepoints. There were 707 tracepoints
+compiled in, making it roughly 30 bytes per tracepoint added. Which
+makes sense, since the code use to be embedded at the site, but now
+there's a call to another function to do the work.
+
+I haven't ran any good tests to see how much of a performance
+improvement this does, but the patch is here and you can try it out and
+see for yourself.
+
+Pros:
+ Less code in the hot paths.
+ Hopefully, performance improves
+
+Cons:
+ Adds some bloat to the kernel (but in an out-of-the-way section)
+ Slows down actual tracing as it needs to call a function and will
+   have more cache misses during the trace.
+
+This patch just got the code working. I need to update the comments that
+go with tracepoints and fix the tracepoint samples file. But I wanted to
+get peoples reactions before putting any more effort into this.
+
+Should I go ahead with this or not?
+
+-- Steve
+
+Index: linux-trace.git/include/linux/tracepoint.h
 ===================================================================
---- linux.orig/include/linux/device.h
-+++ linux/include/linux/device.h
-@@ -203,6 +203,7 @@ extern struct klist *bus_get_device_klis
-  *		automatically.
-  * @pm:		Power management operations of the device which matched
-  *		this driver.
-+ * @pm_runtime_work: Called after asynchronous runtime resume of the device.
-  * @p:		Driver core's private data, no one other than the driver
-  *		core can touch this.
+--- linux-trace.git.orig/include/linux/tracepoint.h
++++ linux-trace.git/include/linux/tracepoint.h
+@@ -114,25 +114,35 @@ static inline void tracepoint_synchroniz
+  * as "(void *, void)". The DECLARE_TRACE_NOARGS() will pass in just
+  * "void *data", where as the DECLARE_TRACE() will pass in "void *data, proto".
+  */
+-#define __DO_TRACE(tp, proto, args, cond, prercu, postrcu)		\
+-	do {								\
++#define __DO_TRACE(name, proto, args, data_proto, data_args)		\
++	void __attribute__((section(".text.unlikely")))			\
++	__tracepoint_hook_##name(proto)					\
++	{								\
+ 		struct tracepoint_func *it_func_ptr;			\
++		struct tracepoint *tp = &__tracepoint_##name;		\
+ 		void *it_func;						\
+ 		void *__data;						\
+ 									\
+-		if (!(cond))						\
+-			return;						\
+-		prercu;							\
+ 		rcu_read_lock_sched_notrace();				\
+ 		it_func_ptr = rcu_dereference_sched((tp)->funcs);	\
+ 		if (it_func_ptr) {					\
+ 			do {						\
+ 				it_func = (it_func_ptr)->func;		\
+ 				__data = (it_func_ptr)->data;		\
+-				((void(*)(proto))(it_func))(args);	\
++				((void(*)(data_proto))(it_func))(data_args); \
+ 			} while ((++it_func_ptr)->func);		\
+ 		}							\
+ 		rcu_read_unlock_sched_notrace();			\
++	}
++
++#define __DO_TRACE_HOOK(name, proto, args, cond, prercu, postrcu)	\
++	do {								\
++		extern void __tracepoint_hook_##name(proto);		\
++									\
++		if (!(cond))						\
++			return;						\
++		prercu;							\
++		__tracepoint_hook_##name(args);				\
+ 		postrcu;						\
+ 	} while (0)
+ 
+@@ -141,22 +151,22 @@ static inline void tracepoint_synchroniz
+  * not add unwanted padding between the beginning of the section and the
+  * structure. Force alignment to the same alignment as the section start.
+  */
+-#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
++#define __DECLARE_TRACE(name, proto, args, cond, data_proto)		\
+ 	extern struct tracepoint __tracepoint_##name;			\
+ 	static inline void trace_##name(proto)				\
+ 	{								\
+ 		if (static_key_false(&__tracepoint_##name.key))		\
+-			__DO_TRACE(&__tracepoint_##name,		\
+-				TP_PROTO(data_proto),			\
+-				TP_ARGS(data_args),			\
++			__DO_TRACE_HOOK(name,				\
++				TP_PROTO(proto),			\
++				TP_ARGS(args),				\
+ 				TP_CONDITION(cond),,);			\
+ 	}								\
+ 	static inline void trace_##name##_rcuidle(proto)		\
+ 	{								\
+ 		if (static_key_false(&__tracepoint_##name.key))		\
+-			__DO_TRACE(&__tracepoint_##name,		\
+-				TP_PROTO(data_proto),			\
+-				TP_ARGS(data_args),			\
++			__DO_TRACE_HOOK(name,				\
++				TP_PROTO(proto),			\
++				TP_ARGS(args),				\
+ 				TP_CONDITION(cond),			\
+ 				rcu_idle_exit(),			\
+ 				rcu_idle_enter());			\
+@@ -183,18 +193,31 @@ static inline void tracepoint_synchroniz
+  * structures, so we create an array of pointers that will be used for iteration
+  * on the tracepoints.
+  */
+-#define DEFINE_TRACE_FN(name, reg, unreg)				 \
+-	static const char __tpstrtab_##name[]				 \
+-	__attribute__((section("__tracepoints_strings"))) = #name;	 \
+-	struct tracepoint __tracepoint_##name				 \
+-	__attribute__((section("__tracepoints"))) =			 \
++#define __DEFINE_TRACE_FN(name, proto, args, data_proto, data_args, reg, unreg) \
++	static const char __tpstrtab_##name[]				\
++	__attribute__((section("__tracepoints_strings"))) = #name;	\
++	struct tracepoint __tracepoint_##name				\
++	__attribute__((section("__tracepoints"))) =			\
+ 		{ __tpstrtab_##name, STATIC_KEY_INIT_FALSE, reg, unreg, NULL };\
+-	static struct tracepoint * const __tracepoint_ptr_##name __used	 \
+-	__attribute__((section("__tracepoints_ptrs"))) =		 \
+-		&__tracepoint_##name;
++	static struct tracepoint * const __tracepoint_ptr_##name __used	\
++	__attribute__((section("__tracepoints_ptrs"))) =		\
++		&__tracepoint_##name;					\
++	__DO_TRACE(name,						\
++		   TP_PROTO(proto),					\
++		   TP_ARGS(args),					\
++		   TP_PROTO(data_proto),				\
++		   TP_ARGS(data_args))
++
++#define DEFINE_TRACE_FN_NOARGS(name, proto, args)		\
++	__DEFINE_TRACE_FN(name, void, , void *__data, __data, , )
++
++#define DEFINE_TRACE_FN(name, proto, args, reg, unreg)		\
++	__DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args),	\
++			  PARAMS(void *__data, proto),		\
++			  PARAMS(__data, args), reg, unreg)
+ 
+-#define DEFINE_TRACE(name)						\
+-	DEFINE_TRACE_FN(name, NULL, NULL);
++#define DEFINE_TRACE(name, proto, args)					\
++	DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args), NULL, NULL);
+ 
+ #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)				\
+ 	EXPORT_SYMBOL_GPL(__tracepoint_##name)
+@@ -202,7 +225,7 @@ static inline void tracepoint_synchroniz
+ 	EXPORT_SYMBOL(__tracepoint_##name)
+ 
+ #else /* !CONFIG_TRACEPOINTS */
+-#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
++#define __DECLARE_TRACE(name, proto, args, cond, data_proto)		\
+ 	static inline void trace_##name(proto)				\
+ 	{ }								\
+ 	static inline void trace_##name##_rcuidle(proto)		\
+@@ -223,8 +246,8 @@ static inline void tracepoint_synchroniz
+ 	{								\
+ 	}
+ 
+-#define DEFINE_TRACE_FN(name, reg, unreg)
+-#define DEFINE_TRACE(name)
++#define DEFINE_TRACE_FN(name, proto, args, reg, unreg)
++#define DEFINE_TRACE(name, proto, args)
+ #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)
+ #define EXPORT_TRACEPOINT_SYMBOL(name)
+ 
+@@ -245,17 +268,15 @@ static inline void tracepoint_synchroniz
+  * "void *__data, proto" as the callback prototype.
+  */
+ #define DECLARE_TRACE_NOARGS(name)					\
+-		__DECLARE_TRACE(name, void, , 1, void *__data, __data)
++		__DECLARE_TRACE(name, void, , 1, void *__data)
+ 
+ #define DECLARE_TRACE(name, proto, args)				\
+ 		__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), 1,	\
+-				PARAMS(void *__data, proto),		\
+-				PARAMS(__data, args))
++				PARAMS(void *__data, proto))
+ 
+ #define DECLARE_TRACE_CONDITION(name, proto, args, cond)		\
+ 	__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), PARAMS(cond), \
+-			PARAMS(void *__data, proto),			\
+-			PARAMS(__data, args))
++			PARAMS(void *__data, proto))
+ 
+ #define TRACE_EVENT_FLAGS(event, flag)
+ 
+Index: linux-trace.git/include/trace/define_trace.h
+===================================================================
+--- linux-trace.git.orig/include/trace/define_trace.h
++++ linux-trace.git/include/trace/define_trace.h
+@@ -24,7 +24,7 @@
+ 
+ #undef TRACE_EVENT
+ #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
+-	DEFINE_TRACE(name)
++	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
+ 
+ #undef TRACE_EVENT_CONDITION
+ #define TRACE_EVENT_CONDITION(name, proto, args, cond, tstruct, assign, print) \
+@@ -38,15 +38,15 @@
+ #undef TRACE_EVENT_FN
+ #define TRACE_EVENT_FN(name, proto, args, tstruct,		\
+ 		assign, print, reg, unreg)			\
+-	DEFINE_TRACE_FN(name, reg, unreg)
++	DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args), reg, unreg)
+ 
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args) \
+-	DEFINE_TRACE(name)
++	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+-	DEFINE_TRACE(name)
++	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
+ 
+ #undef DEFINE_EVENT_CONDITION
+ #define DEFINE_EVENT_CONDITION(template, name, proto, args, cond) \
+@@ -54,7 +54,7 @@
+ 
+ #undef DECLARE_TRACE
+ #define DECLARE_TRACE(name, proto, args)	\
+-	DEFINE_TRACE(name)
++	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
+ 
+ #undef TRACE_INCLUDE
+ #undef __TRACE_INCLUDE
+Index: linux-trace.git/samples/tracepoints/tracepoint-sample.c
+===================================================================
+--- linux-trace.git.orig/samples/tracepoints/tracepoint-sample.c
++++ linux-trace.git/samples/tracepoints/tracepoint-sample.c
+@@ -1,4 +1,5 @@
+ /* tracepoint-sample.c
++ * FIX ME
   *
-@@ -232,6 +233,7 @@ struct device_driver {
- 	const struct attribute_group **groups;
- 
- 	const struct dev_pm_ops *pm;
-+	void (*pm_runtime_work)(struct device *dev);
- 
- 	struct driver_private *p;
- };
-Index: linux/include/linux/pm.h
-===================================================================
---- linux.orig/include/linux/pm.h
-+++ linux/include/linux/pm.h
-@@ -538,6 +538,8 @@ struct dev_pm_info {
- 	unsigned int		irq_safe:1;
- 	unsigned int		use_autosuspend:1;
- 	unsigned int		timer_autosuspends:1;
-+	bool			run_driver_work:1;
-+	bool			work_in_progress:1;
- 	enum rpm_request	request;
- 	enum rpm_status		runtime_status;
- 	int			runtime_error;
-Index: linux/include/linux/pm_runtime.h
-===================================================================
---- linux.orig/include/linux/pm_runtime.h
-+++ linux/include/linux/pm_runtime.h
-@@ -22,6 +22,7 @@
- #define RPM_GET_PUT		0x04	/* Increment/decrement the
- 					    usage_count */
- #define RPM_AUTO		0x08	/* Use autosuspend_delay */
-+#define RPM_RUN_WORK		0x10	/* Run asynchronous work routine */
- 
- #ifdef CONFIG_PM_RUNTIME
- 
-@@ -189,6 +190,11 @@ static inline int pm_request_autosuspend
- 
- static inline int pm_runtime_get(struct device *dev)
- {
-+	return __pm_runtime_resume(dev, RPM_GET_PUT | RPM_ASYNC | RPM_RUN_WORK);
-+}
-+
-+static inline int pm_runtime_get_nowork(struct device *dev)
-+{
- 	return __pm_runtime_resume(dev, RPM_GET_PUT | RPM_ASYNC);
- }
- 
-Index: linux/drivers/base/power/runtime.c
-===================================================================
---- linux.orig/drivers/base/power/runtime.c
-+++ linux/drivers/base/power/runtime.c
-@@ -484,6 +484,15 @@ static int rpm_suspend(struct device *de
- 	goto out;
- }
- 
-+void rpm_queue_up_resume(struct device *dev)
-+{
-+	dev->power.request = RPM_REQ_RESUME;
-+	if (!dev->power.request_pending) {
-+		dev->power.request_pending = true;
-+		queue_work(pm_wq, &dev->power.work);
-+	}
-+}
-+
- /**
-  * rpm_resume - Carry out runtime resume of given device.
-  * @dev: Device to resume.
-@@ -495,8 +504,10 @@ static int rpm_suspend(struct device *de
-  * RPM_NOWAIT and RPM_ASYNC flags.  Similarly, if there's a suspend running in
-  * parallel with this function, either tell the other process to resume after
-  * suspending (deferred_resume) or wait for it to finish.  If the RPM_ASYNC
-- * flag is set then queue a resume request; otherwise run the
-- * ->runtime_resume() callback directly.  Queue an idle notification for the
-+ * flag is set, then queue a resume request and if the RPM_RUN_WORK flag is set
-+ * too, schedule the executction of the device driver's .pm_runtime_work()
-+ * callback after the resume request has been completed.  Otherwise run the
-+ * .runtime_resume() callback directly and queue an idle notification for the
-  * device if the resume succeeded.
+  * Executes a tracepoint when /proc/tracepoint-sample is opened.
   *
-  * This function must be called under dev->power.lock with interrupts disabled.
-@@ -519,12 +530,18 @@ static int rpm_resume(struct device *dev
- 		goto out;
- 
- 	/*
--	 * Other scheduled or pending requests need to be canceled.  Small
--	 * optimization: If an autosuspend timer is running, leave it running
--	 * rather than cancelling it now only to restart it again in the near
--	 * future.
-+	 * Other scheduled or pending requests need to be canceled.  If the
-+	 * execution of driver work is queued up along with a resume request,
-+	 * do not cancel it.
-+	 */
-+	if (dev->power.request != RPM_REQ_RESUME || !dev->power.run_driver_work)
-+		dev->power.request = RPM_REQ_NONE;
-+
-+	/*
-+	 * Small optimization: If an autosuspend timer is running, leave it
-+	 * running rather than cancelling it now only to restart it again in the
-+	 * near future.
- 	 */
--	dev->power.request = RPM_REQ_NONE;
- 	if (!dev->power.timer_autosuspends)
- 		pm_runtime_deactivate_timer(dev);
- 
-@@ -533,6 +550,13 @@ static int rpm_resume(struct device *dev
- 		goto out;
- 	}
- 
-+	if ((rpmflags & RPM_ASYNC) && (rpmflags & RPM_RUN_WORK)) {
-+		dev->power.run_driver_work = true;
-+		rpm_queue_up_resume(dev);
-+		retval = 0;
-+		goto out;
-+	}
-+
- 	if (dev->power.runtime_status == RPM_RESUMING
- 	    || dev->power.runtime_status == RPM_SUSPENDING) {
- 		DEFINE_WAIT(wait);
-@@ -591,11 +615,7 @@ static int rpm_resume(struct device *dev
- 
- 	/* Carry out an asynchronous or a synchronous resume. */
- 	if (rpmflags & RPM_ASYNC) {
--		dev->power.request = RPM_REQ_RESUME;
--		if (!dev->power.request_pending) {
--			dev->power.request_pending = true;
--			queue_work(pm_wq, &dev->power.work);
--		}
-+		rpm_queue_up_resume(dev);
- 		retval = 0;
- 		goto out;
- 	}
-@@ -691,6 +711,7 @@ static int rpm_resume(struct device *dev
- static void pm_runtime_work(struct work_struct *work)
- {
- 	struct device *dev = container_of(work, struct device, power.work);
-+	void (*driver_work)(struct device *) = NULL;
- 	enum rpm_request req;
- 
- 	spin_lock_irq(&dev->power.lock);
-@@ -715,11 +736,29 @@ static void pm_runtime_work(struct work_
- 		rpm_suspend(dev, RPM_NOWAIT | RPM_AUTO);
- 		break;
- 	case RPM_REQ_RESUME:
--		rpm_resume(dev, RPM_NOWAIT);
-+		if (dev->power.run_driver_work && dev->driver->pm_runtime_work)
-+			driver_work = dev->driver->pm_runtime_work;
-+
-+		dev->power.run_driver_work = false;
-+		rpm_resume(dev, driver_work ? 0 : RPM_NOWAIT);
- 		break;
- 	}
- 
-  out:
-+	if (driver_work) {
-+		pm_runtime_get_noresume(dev);
-+		dev->power.work_in_progress = true;
-+		spin_unlock_irq(&dev->power.lock);
-+
-+		driver_work(dev);
-+
-+		spin_lock_irq(&dev->power.lock);
-+		dev->power.work_in_progress = false;
-+		wake_up_all(&dev->power.wait_queue);
-+		pm_runtime_put_noidle(dev);
-+		rpm_idle(dev, RPM_NOWAIT);
-+	}
-+
- 	spin_unlock_irq(&dev->power.lock);
- }
- 
-@@ -982,7 +1021,8 @@ static void __pm_runtime_barrier(struct
- 
- 	if (dev->power.runtime_status == RPM_SUSPENDING
- 	    || dev->power.runtime_status == RPM_RESUMING
--	    || dev->power.idle_notification) {
-+	    || dev->power.idle_notification
-+	    || dev->power.work_in_progress) {
- 		DEFINE_WAIT(wait);
- 
- 		/* Suspend, wake-up or idle notification in progress. */
-@@ -991,7 +1031,8 @@ static void __pm_runtime_barrier(struct
- 					TASK_UNINTERRUPTIBLE);
- 			if (dev->power.runtime_status != RPM_SUSPENDING
- 			    && dev->power.runtime_status != RPM_RESUMING
--			    && !dev->power.idle_notification)
-+			    && !dev->power.idle_notification
-+			    && !dev->power.work_in_progress)
- 				break;
- 			spin_unlock_irq(&dev->power.lock);
- 
+
+
