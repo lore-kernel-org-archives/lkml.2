@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab2HIIct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:32:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55098 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756322Ab2HIIcq (ORCPT
+	id S1756479Ab2HIIdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:33:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52669 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756319Ab2HIIdt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:32:46 -0400
-Date: Thu, 9 Aug 2012 09:31:28 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: "riel@redhat.com" <riel@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vrajesh@umich.edu" <vrajesh@umich.edu>,
-        "daniel.santos@pobox.com" <daniel.santos@pobox.com>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Thu, 9 Aug 2012 04:33:49 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/5] kmemleak: use rbtree instead of prio tree
-Message-ID: <20120809083127.GC14102@arm.com>
-References: <1344324343-3817-1-git-send-email-walken@google.com>
- <1344324343-3817-4-git-send-email-walken@google.com>
- <CANN689EOZ64V_AO8B6N0-_B0_HdQZVk3dH8Ce5c=m5Q=ySDKUg@mail.gmail.com>
+        "Girdwood, Liam" <lrg@ti.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
+Subject: RE: [PATCH 1/6] mfd: add lp8788 mfd driver
+Thread-Topic: [PATCH 1/6] mfd: add lp8788 mfd driver
+Thread-Index: Ac1k8i6xsVnWXGXAR2GxE5eW2yYAsf//fuIA/91SY+A=
+Date: Thu, 9 Aug 2012 08:32:59 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEBC6E@DBDE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD79B@DQHE02.ent.ti.com>
+ <20120718145032.GB4495@opensource.wolfsonmicro.com>
+In-Reply-To: <20120718145032.GB4495@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.52]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689EOZ64V_AO8B6N0-_B0_HdQZVk3dH8Ce5c=m5Q=ySDKUg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 06:07:39PM +0100, Michel Lespinasse wrote:
-> kmemleak uses a tree where each node represents an allocated memory object
-> in order to quickly find out what object a given address is part of.
-> However, the objects don't overlap, so rbtrees are a better choice than
-> prio tree for this use. They are both faster and have lower memory overhead.
+> > +static irqreturn_t lp8788_irq_handler(int irq, void *ptr)
+> > +{
+> > +	struct lp8788_irq_data *irqd = ptr;
+> > +	unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
+> > +
+> > +	queue_delayed_work(irqd->thread, &irqd->work, delay);
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
 > 
-> Tested by booting a kernel with kmemleak enabled, loading the kmemleak_test
-> module, and looking for the expected messages.
+> Why a delayed work?  That's *very* unusual.
 > 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+> > +	if (!lp->pdata) {
+> > +		dev_warn(lp->dev, "no platform data for irq\n");
+> > +		goto no_err;
+> > +	}
+> 
+> Given that you're using irq domains why does the device need platform
+> data?
+> 
+> > +	if (irq_base) {
+> > +		irq_base = irq_alloc_descs(irq_base, 0, LP8788_INT_MAX, 0);
+> > +		if (irq_base < 0) {
+> > +			dev_warn(lp->dev, "no allocated irq: %d\n", irq_base);
+> > +			goto no_err;
+> > +		}
+> > +	}
+> 
+> This shouldn't be needed with irq domains.
 
-The patch looks fine to me but I'll give it a test later today and let
-you know.
+In patch v2, generic irq chip is used for interrupt handling.
+At this moment, no need to support irq domain with lp8788 driver.
+Title: [PATCH v2 1/3] mfd: add lp8788 mfd driver
 
--- 
-Catalin
+> > +EXPORT_SYMBOL(lp8788_read_byte);
+> 
+> You're reexporting regmap functionality with looser licensing
+> requirements...
+> 
+
+All EXPORT_SYMBOLs were replaced with *_GPL() in the same patch v2.
+ 
+> > +unsigned int lp8788_get_adc(struct lp8788 *lp, enum lp8788_adc_id id,
+> > +			enum lp8788_adc_resolution res)
+> 
+> For new drivers the ADC should probably be integrated into IIO.
+
+New iio driver patch was submitted.
+Title : [PATCH 2/3] iio: adc: add new lp8788 adc driver
+
+Thanks a lot for your detailed review.
+
+Best Regards,
+Milo
+
+
+
