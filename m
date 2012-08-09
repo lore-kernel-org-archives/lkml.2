@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2HINJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:09:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55936 "EHLO mx2.suse.de"
+	id S1758216Ab2HINKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:10:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56151 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab2HINJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:09:23 -0400
-Date: Thu, 09 Aug 2012 15:09:23 +0200
-Message-ID: <s5hd3302ovw.wl%tiwai@suse.de>
+	id S1752310Ab2HINKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 09:10:38 -0400
+Date: Thu, 09 Aug 2012 15:10:37 +0200
+Message-ID: <s5hboik2otu.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Thierry Reding <thierry.reding@avionic-design.de>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         David Henningsson <david.henningsson@canonical.com>
-Subject: [PATCH 0/2] HD-audio firmware loading fixes
-In-Reply-To: <s5hobmk2ql5.wl%tiwai@suse.de>
+Subject: [PATCH 1/2] ALSA: hda - Load firmware in hda_intel.c
 References: <1344494723-6827-1-git-send-email-thierry.reding@avionic-design.de>
 	<s5hhascft86.wl%tiwai@suse.de>
 	<20120809070813.GA6979@avionic-0098.mockup.avionic-design.de>
@@ -24,6 +23,7 @@ References: <1344494723-6827-1-git-send-email-thierry.reding@avionic-design.de>
 	<s5hzk64earo.wl%tiwai@suse.de>
 	<20120809103430.GA1560@avionic-0098.mockup.avionic-design.de>
 	<s5hobmk2ql5.wl%tiwai@suse.de>
+	<s5hd3302ovw.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -33,14 +33,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a preliminary work for the deferred probing for
+request_firmware() errors at init.
 
-this is a series of patches to fix the firmware loading problem.
-I split the changes to two for making clean what the patches do.
+This patch moves the call of request_firmware() to hda_intel.c, and
+call it in the earlier stage of probing rather than
+azx_probe_continue().
 
-Basically it moves request_firmware() to hda_intel.c, then replaces it
-with request_firmware_nowait().  Through a short testing, it seems
-working fine here on my machines.
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ sound/pci/hda/hda_codec.h |  2 +-
+ sound/pci/hda/hda_hwdep.c | 39 +++++++++++++--------------------------
+ sound/pci/hda/hda_intel.c | 29 ++++++++++++++++++++++++-----
+ 3 files changed, 38 insertions(+), 32 deletions(-)
 
+diff --git a/sound/pci/hda/hda_codec.h b/sound/pci/hda/hda_codec.h
+index c422d33..39e43753 100644
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -1072,7 +1072,7 @@ static inline void snd_hda_power_down(struct hda_codec *codec) {}
+ /*
+  * patch firmware
+  */
+-int snd_hda_load_patch(struct hda_bus *bus, const char *patch);
++int snd_hda_load_patch(struct hda_bus *bus, size_t size, const void *buf);
+ #endif
+ 
+ /*
+diff --git a/sound/pci/hda/hda_hwdep.c b/sound/pci/hda/hda_hwdep.c
+index 6b2efb8..b9a644c 100644
+--- a/sound/pci/hda/hda_hwdep.c
++++ b/sound/pci/hda/hda_hwdep.c
+@@ -25,7 +25,6 @@
+ #include <linux/mutex.h>
+ #include <linux/ctype.h>
+ #include <linux/string.h>
+-#include <linux/firmware.h>
+ #include <linux/export.h>
+ #include <sound/core.h>
+ #include "hda_codec.h"
+@@ -747,18 +746,21 @@ static int parse_line_mode(char *buf, struct hda_bus *bus)
+  *
+  * the spaces at the beginning and the end of the line are stripped
+  */
+-static int get_line_from_fw(char *buf, int size, struct firmware *fw)
++static int get_line_from_fw(char *buf, int size, size_t *fw_size_p,
++			    const void **fw_data_p)
+ {
+ 	int len;
+-	const char *p = fw->data;
+-	while (isspace(*p) && fw->size) {
++	size_t fw_size = *fw_size_p;
++	const char *p = *fw_data_p;
++
++	while (isspace(*p) && fw_size) {
+ 		p++;
+-		fw->size--;
++		fw_size--;
+ 	}
+-	if (!fw->size)
++	if (!fw_size)
+ 		return 0;
+ 
+-	for (len = 0; len < fw->size; len++) {
++	for (len = 0; len < fw_size; len++) {
+ 		if (!*p)
+ 			break;
+ 		if (*p == '\n') {
+@@ -770,8 +772,8 @@ static int get_line_from_fw(char *buf, int size, struct firmware *fw)
+ 			*buf++ = *p++;
+ 	}
+ 	*buf = 0;
+-	fw->size -= len;
+-	fw->data = p;
++	*fw_size_p = fw_size - len;
++	*fw_data_p = p;
+ 	remove_trail_spaces(buf);
+ 	return 1;
+ }
+@@ -779,29 +781,15 @@ static int get_line_from_fw(char *buf, int size, struct firmware *fw)
+ /*
+  * load a "patch" firmware file and parse it
+  */
+-int snd_hda_load_patch(struct hda_bus *bus, const char *patch)
++int snd_hda_load_patch(struct hda_bus *bus, size_t fw_size, const void *fw_buf)
+ {
+-	int err;
+-	const struct firmware *fw;
+-	struct firmware tmp;
+ 	char buf[128];
+ 	struct hda_codec *codec;
+ 	int line_mode;
+-	struct device *dev = bus->card->dev;
+-
+-	if (snd_BUG_ON(!dev))
+-		return -ENODEV;
+-	err = request_firmware(&fw, patch, dev);
+-	if (err < 0) {
+-		printk(KERN_ERR "hda-codec: Cannot load the patch '%s'\n",
+-		       patch);
+-		return err;
+-	}
+ 
+-	tmp = *fw;
+ 	line_mode = LINE_MODE_NONE;
+ 	codec = NULL;
+-	while (get_line_from_fw(buf, sizeof(buf) - 1, &tmp)) {
++	while (get_line_from_fw(buf, sizeof(buf) - 1, &fw_size, &fw_buf)) {
+ 		if (!*buf || *buf == '#' || *buf == '\n')
+ 			continue;
+ 		if (*buf == '[')
+@@ -810,7 +798,6 @@ int snd_hda_load_patch(struct hda_bus *bus, const char *patch)
+ 			 (codec || !patch_items[line_mode].need_codec))
+ 			patch_items[line_mode].parser(buf, bus, &codec);
+ 	}
+-	release_firmware(fw);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_HDA(snd_hda_load_patch);
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index c8aced1..b25d539 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -55,6 +55,7 @@
+ #include <sound/initval.h>
+ #include <linux/vgaarb.h>
+ #include <linux/vga_switcheroo.h>
++#include <linux/firmware.h>
+ #include "hda_codec.h"
+ 
+ 
+@@ -470,6 +471,10 @@ struct azx {
+ 	struct snd_dma_buffer rb;
+ 	struct snd_dma_buffer posbuf;
+ 
++#ifdef CONFIG_SND_HDA_PATCH_LOADER
++	const struct firmware *fw;
++#endif
++
+ 	/* flags */
+ 	int position_fix[2]; /* for both playback/capture streams */
+ 	int poll_count;
+@@ -2639,6 +2644,10 @@ static int azx_free(struct azx *chip)
+ 		pci_release_regions(chip->pci);
+ 	pci_disable_device(chip->pci);
+ 	kfree(chip->azx_dev);
++#ifdef CONFIG_SND_HDA_PATCH_LOADER
++	if (chip->fw)
++		release_firmware(chip->fw);
++#endif
+ 	kfree(chip);
+ 
+ 	return 0;
+@@ -3167,7 +3176,6 @@ static int __devinit azx_probe(struct pci_dev *pci,
+ 		return err;
+ 	}
+ 
+-	/* set this here since it's referred in snd_hda_load_patch() */
+ 	snd_card_set_dev(card, &pci->dev);
+ 
+ 	err = azx_create(card, pci, dev, pci_id->driver_data, &chip);
+@@ -3175,6 +3183,16 @@ static int __devinit azx_probe(struct pci_dev *pci,
+ 		goto out_free;
+ 	card->private_data = chip;
+ 
++#ifdef CONFIG_SND_HDA_PATCH_LOADER
++	if (patch[dev] && *patch[dev]) {
++		snd_printk(KERN_ERR SFX "Applying patch firmware '%s'\n",
++			   patch[dev]);
++		err = request_firmware(&chip->fw, patch[dev], &pci->dev);
++		if (err < 0)
++			goto out_free;
++	}
++#endif /* CONFIG_SND_HDA_PATCH_LOADER */
++
+ 	if (!chip->disabled) {
+ 		err = azx_probe_continue(chip);
+ 		if (err < 0)
+@@ -3205,12 +3223,13 @@ static int DELAYED_INIT_MARK azx_probe_continue(struct azx *chip)
+ 	if (err < 0)
+ 		goto out_free;
+ #ifdef CONFIG_SND_HDA_PATCH_LOADER
+-	if (patch[dev] && *patch[dev]) {
+-		snd_printk(KERN_ERR SFX "Applying patch firmware '%s'\n",
+-			   patch[dev]);
+-		err = snd_hda_load_patch(chip->bus, patch[dev]);
++	if (chip->fw) {
++		err = snd_hda_load_patch(chip->bus, chip->fw->size,
++					 chip->fw->data);
+ 		if (err < 0)
+ 			goto out_free;
++		release_firmware(chip->fw); /* no longer needed */
++		chip->fw = NULL;
+ 	}
+ #endif
+ 	if ((probe_only[dev] & 1) == 0) {
+-- 
+1.7.11.4
 
-Takashi
