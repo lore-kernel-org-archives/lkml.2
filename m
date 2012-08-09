@@ -1,155 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759386Ab2HITTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:19:48 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:19985 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2HITTq (ORCPT
+	id S1759381Ab2HITVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:21:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42956 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab2HITVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:19:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6798"; a="220846965"
-Message-ID: <50240D4D.80006@codeaurora.org>
-Date: Thu, 09 Aug 2012 15:19:41 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 9 Aug 2012 15:21:34 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [09/36] AArch64: Exception handling
-References: <1341608777-12982-10-git-send-email-catalin.marinas@arm.com> <5023EDE0.3070506@codeaurora.org> <20120809172315.GA12325@arm.com>
-In-Reply-To: <20120809172315.GA12325@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344535707.20277.20.camel@twins>
+References: <CABPqkBRWLcP_9WOL_VvucnY7A2AcpzuvsUt4_ZUgYMREo-65dA@mail.gmail.com>
+	<50235ED0.5010107@intel.com>
+	<CABPqkBT-pvmhyOHfMXs7dXsJXpEVmaSST1xFFHzCu4CDBf7baw@mail.gmail.com>
+	<1344535707.20277.20.camel@twins>
+Date: Thu, 9 Aug 2012 21:21:32 +0200
+Message-ID: <CABPqkBRzyrmL_yiKnYWU4qaSZXbD=JJVnm5py4PUcgAYvT=hcA@mail.gmail.com>
+Subject: Re: [BUG] perf: sharing of cpuctx between core and ibs PMU causes problems
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
+On Thu, Aug 9, 2012 at 8:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-08-09 at 16:05 +0200, Stephane Eranian wrote:
+>> > uncore PMU does not have this issue because uncore_pmu->task_ctx_nr
+>> > is 'perf_invalid_context'. find_pmu_context() always return NULL in
+>> > that case.
+>> >
+>> Yes, I think IBS should do the same and that should fix the problem
+>> there too. Will try that.
+>
+> I'm afraid not, per-task profiling with uncore doesn't really make that
+> much sense. For IBS it does.
+>
+> We can't share a context with different PMUs, that'll totally mess up
+> the event scheduling.
+>
+> We'll have to grow perf_event_task_context with an extra context and
+> have IBS use that.
 
-Thanks for your response.
-
-On 08/09/2012 01:23 PM, Catalin Marinas wrote:
-> Hi Christopher,
-> 
-> On Thu, Aug 09, 2012 at 06:05:36PM +0100, Christopher Covington wrote:
->> On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
->>> +/*
->>> + * Exception vectors.
->>> + */
->>> +	.macro	ventry	label
->>> +	.align	7
->>> +	b	\label
->>> +	.endm
->>> +
->>> +	.align	11
->>> +ENTRY(vectors)
->>> +	ventry	el1_sync_invalid		// Synchronous EL1t
->>> +	ventry	el1_irq_invalid			// IRQ EL1t
->>> +	ventry	el1_fiq_invalid			// FIQ EL1t
->>> +	ventry	el1_error_invalid		// Error EL1t
->>> +
->>> +	ventry	el1_sync			// Synchronous EL1h
->>> +	ventry	el1_irq				// IRQ EL1h
->>> +	ventry	el1_fiq_invalid			// FIQ EL1h
->>> +	ventry	el1_error_invalid		// Error EL1h
->>> +
->>> +	ventry	el0_sync			// Synchronous 64-bit EL0
->>> +	ventry	el0_irq				// IRQ 64-bit EL0
->>> +	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
->>> +	ventry	el0_error_invalid		// Error 64-bit EL0
->>> +
->>> +#ifdef CONFIG_AARCH32_EMULATION
->>> +	ventry	el0_sync_compat			// Synchronous 32-bit EL0
->>> +	ventry	el0_irq_compat			// IRQ 32-bit EL0
->>> +	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
->>> +	ventry	el0_error_invalid_compat	// Error 32-bit EL0
->>> +#else
->>> +	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
->>> +	ventry	el0_irq_invalid			// IRQ 32-bit EL0
->>> +	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
->>> +	ventry	el0_error_invalid		// Error 32-bit EL0
->>> +#endif
->>> +END(vectors)
->>> +
->>> +/*
->>> + * Invalid mode handlers
->>> + */
->>> +	.macro	inv_entry, el, reason, regsize = 64
->>> +	kernel_entry el, \regsize
->>> +	mov	x0, sp
->>> +	mov	x1, #\reason
->>> +	mrs	x2, esr_el1
->>> +	b	bad_mode
->>> +	.endm
->>
->> The code seems to indicate that the invalid mode handlers have
->> different alignment requirements than the valid mode handlers, which
->> puzzles me.
-> 
-> I don't see any difference. The whole vector must be 2K aligned while
-> each individual entry is found every 128 bytes (to allow for more
-> instructions, though we only use a branch).
-> 
-> The inv_entry macro (as the kernel_entry one) is used in code being
-> branched to from the vector and not inside the vector.
-
-Sorry to not be clearer. I meant this in relation to the handlers that the vectors branch to, rather than the vectors themselves. For example, an .align 6 directive is used for el0_irq, but not for el0_irq_invalid.
-
->>> +el0_sync_invalid:
->>> +	inv_entry 0, BAD_SYNC
->>> +ENDPROC(el0_sync_invalid)
->>
->> Plain labels, the ENTRY macro, the END macro and the ENDPROC macro are
->> used variously throughout this file, and I wonder if a greater amount
->> of consistency might be attainable. The description of the ENDPROC
->> macro in include/linux/linkage.h makes me think its use might not be
->> completely warranted in blocks of assembly that don't end with a
->> return instruction.
-> 
-> We use ENTRY only when we want to export the symbol as it contains the
-> .globl directive. The ENDPROC is used to mark a function and it's in
-> general useful for debugging information it generates.
-
-Does code that has no returning path, such as el0_sync_invalid, fully qualify as a function? On the flip side, it appears to me that el1_preempt does qualify and should get an ENDPROC.
-
->>> +	.align	6
->>> +el0_irq:
->>> +	kernel_entry 0
->>> +el0_irq_naked:
->>> +	disable_step x1
->>> +	isb
->>> +	enable_dbg
->>> +#ifdef CONFIG_TRACE_IRQFLAGS
->>> +	bl	trace_hardirqs_off
->>> +#endif
->>> +	get_thread_info tsk
->>> +#ifdef CONFIG_PREEMPT
->>> +	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
->>> +	add	x23, x24, #1			// increment it
->>> +	str	x23, [tsk, #TI_PREEMPT]
->>> +#endif
->>> +	irq_handler
->>> +#ifdef CONFIG_PREEMPT
->>> +	ldr	x0, [tsk, #TI_PREEMPT]
->>> +	str	x24, [tsk, #TI_PREEMPT]
->>> +	cmp	x0, x23
->>> +	b.eq	1f
->>> +	mov	x1, #0
->>> +	str	x1, [x1]			// BUG
->>
->> It looks like the error handling here isn't quite complete.
-> 
-> We trigger a bug by storing to 0 and the kernel will panic, giving the
-> full trace. I don't think we can do more in terms of error handling
-> here.
-
-The approach is concise and clever. However, I think it sacrifices clarity to some extent. I worry that the top of the stack trace will be populated with extraneous data fault handling routines. Even if branching to do_mem_abort was ideal, I feel like getting there by way of the address translation hardware and yet another exception vector adds a number of unnecessary variables to that particular state transition. Perhaps branching to a wrapper around panic(...) would handle the error in a more obvious manner?
-
-Thanks,
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Ok, I am fine with that. Don't know about to call it though.
