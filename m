@@ -1,155 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917Ab2HIWfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 18:35:01 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:46645 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759892Ab2HIWe6 (ORCPT
+	id S1759905Ab2HIWiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 18:38:51 -0400
+Received: from sentry-two.sandia.gov ([132.175.109.14]:44134 "EHLO
+	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759803Ab2HIWit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 18:34:58 -0400
-Message-ID: <1344551691.10751.12.camel@ejdallLaptop>
-Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor
- ID first
-From: Betty Dall <betty.dall@hp.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 09 Aug 2012 16:34:51 -0600
-In-Reply-To: <1344464246-14618-1-git-send-email-andi@firstfloor.org>
-References: <1344464246-14618-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Thu, 9 Aug 2012 18:38:49 -0400
+X-WSS-ID: 0M8IEWN-0B-9VY-02
+X-M-MSG: 
+X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
+Message-ID: <50243BE0.9060007@sandia.gov>
+Date: Thu, 9 Aug 2012 16:38:24 -0600
+From: "Jim Schutt" <jaschut@sandia.gov>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607
+ Thunderbird/10.0.5
+MIME-Version: 1.0
+To: "Mel Gorman" <mgorman@suse.de>
+cc: Linux-MM <linux-mm@kvack.org>, "Rik van Riel" <riel@redhat.com>,
+        "Minchan Kim" <minchan@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates
+ under load V3
+References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
+ <5023FE83.4090200@sandia.gov> <20120809204630.GJ12690@suse.de>
+In-Reply-To: <20120809204630.GJ12690@suse.de>
+X-TMWD-Spam-Summary: TS=20120809223824; ID=1; SEV=2.3.1;
+ DFV=B2012080923; IFV=NA; AIF=B2012080923; RPD=5.03.0010; ENG=NA;
+ RPDID=7374723D303030312E30413031303230322E35303234334245312E303031313A534346535441543838363133332C73733D312C6667733D30;
+ CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
+X-MMS-Spam-Filter-ID: B2012080923_5.03.0010
+X-WSS-ID: 7C3AE46A4N0706587-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-RSA-Inspected: yes
+X-RSA-Classifications: Healthcare Dictionaries, public
+X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/09/2012 02:46 PM, Mel Gorman wrote:
+> On Thu, Aug 09, 2012 at 12:16:35PM -0600, Jim Schutt wrote:
+>> On 08/09/2012 07:49 AM, Mel Gorman wrote:
+>>> Changelog since V2
+>>> o Capture !MIGRATE_MOVABLE pages where possible
+>>> o Document the treatment of MIGRATE_MOVABLE pages while capturing
+>>> o Expand changelogs
+>>>
+>>> Changelog since V1
+>>> o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
+>>> o Expanded changelogs a little
+>>>
+>>> Allocation success rates have been far lower since 3.4 due to commit
+>>> [fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
+>>> commit was introduced for good reasons and it was known in advance that
+>>> the success rates would suffer but it was justified on the grounds that
+>>> the high allocation success rates were achieved by aggressive reclaim.
+>>> Success rates are expected to suffer even more in 3.6 due to commit
+>>> [7db8889a: mm: have order>   0 compaction start off where it left] which
+>>> testing has shown to severely reduce allocation success rates under load -
+>>> to 0% in one case.  There is a proposed change to that patch in this series
+>>> and it would be ideal if Jim Schutt could retest the workload that led to
+>>> commit [7db8889a: mm: have order>   0 compaction start off where it left].
+>>
+>> On my first test of this patch series on top of 3.5, I ran into an
+>> instance of what I think is the sort of thing that patch 4/5 was
+>> fixing.  Here's what vmstat had to say during that period:
+>>
+>> <SNIP>
+>
+> My conclusion looking at the vmstat data is that everything is looking ok
+> until system CPU usage goes through the roof. I'm assuming that's what we
+> are all still looking at.
 
-Hi Andi,
+I'm concerned about both the high CPU usage as well as the
+reduction in write-out rate, but I've been assuming the latter
+is caused by the former.
 
-On Wed, 2012-08-08 at 15:17 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> According to the Intel PCI experts it's not safe to check any
-> other field than vendor ID for 0xffff when doing PCI scans
-> to see if the device exists.
-> 
-> Several of the early PCI scans violated this. I changed
-> them all to always check the vendor ID first.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+<snip>
+
+>
+> Ok, this is an untested hack and I expect it would drop allocation success
+> rates again under load (but not as much). Can you test again and see what
+> effect, if any, it has please?
+>
+> ---8<---
+> mm: compaction: back out if contended
+>
 > ---
->  arch/x86/kernel/aperture_64.c        |    5 +++++
->  arch/x86/kernel/early-quirks.c       |    3 +++
->  arch/x86/kernel/pci-calgary_64.c     |    8 ++++++--
->  arch/x86/pci/early.c                 |    3 +++
->  drivers/firewire/init_ohci1394_dma.c |    3 +++
->  5 files changed, 20 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-> index d5fd66f..e1ca7cd 100644
-> --- a/arch/x86/kernel/aperture_64.c
-> +++ b/arch/x86/kernel/aperture_64.c
-> @@ -206,6 +206,11 @@ static u32 __init search_agp_bridge(u32 *order, int *valid_agp)
->  			for (func = 0; func < 8; func++) {
->  				u32 class, cap;
->  				u8 type;
-> +
-> +				if (read_pci_config_16(bus, slot, func, PCI_VENDOR_ID) 
-> +				    == 0xffff)
-> +					continue;
 
-I thought this should be a break instead of a continue since the code
-does a break if the class is 0xffffffff. If the function does not have a
-valid VENDOR_ID, then the remaining function numbers do not have to be
-scanned because functions are required to be implemented in order (no
-skipping a function number.)
+<snip>
 
-> +
->  				class = read_pci_config(bus, slot, func,
->  							PCI_CLASS_REVISION);
->  				if (class == 0xffffffff)
-> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-> index 3755ef4..f76b930 100644
-> --- a/arch/x86/kernel/early-quirks.c
-> +++ b/arch/x86/kernel/early-quirks.c
-> @@ -250,6 +250,9 @@ static int __init check_dev_quirk(int num, int slot, int func)
->  
->  	vendor = read_pci_config_16(num, slot, func, PCI_VENDOR_ID);
->  
-> +	if (vendor == 0xffff)
-> +		return -1;
-> +
->  	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
->  
->  	for (i = 0; early_qrk[i].f != NULL; i++) {
-> diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-> index 299d493..05798a0 100644
-> --- a/arch/x86/kernel/pci-calgary_64.c
-> +++ b/arch/x86/kernel/pci-calgary_64.c
-> @@ -1324,8 +1324,9 @@ static void __init get_tce_space_from_tar(void)
->  		unsigned short pci_device;
->  		u32 val;
->  
-> -		val = read_pci_config(bus, 0, 0, 0);
-> -		pci_device = (val & 0xFFFF0000) >> 16;
-> +		if (read_pci_config_16(bus, 0, 0, PCI_VENDOR_ID) == 0xffff)
-> +			continue;
-> +		pci_device = read_pci_config_16(bus, 0, 0, PCI_DEVICE_ID);
->  
->  		if (!is_cal_pci_dev(pci_device))
->  			continue;
-> @@ -1426,6 +1427,9 @@ int __init detect_calgary(void)
->  		unsigned short pci_device;
->  		u32 val;
->  
-> +		if (read_pci_config_16(bus, 0, 0, PCI_VENDOR_ID) == 0xffff)
-> +			continue;
-> +
->  		val = read_pci_config(bus, 0, 0, 0);
->  		pci_device = (val & 0xFFFF0000) >> 16;
+Initial testing with this patch looks very good from
+my perspective; CPU utilization stays reasonable,
+write-out rate stays high, no signs of stress.
+Here's an example after ~10 minutes under my test load:
 
-I liked how you replaced the read_pci_config(bus, 0, 0, 0) with
-read_pci_config_16(bus, 0, 0, PCI_DEVICE_ID) in the previous diff for
-the function get_tce_space_from_tar(). Could you do that in this
-detect_calgary() function too?
+2012-08-09 16:26:07.550-06:00
+vmstat -w 4 16
+procs -------------------memory------------------ ---swap-- -----io---- --system-- -----cpu-------
+  r  b       swpd       free       buff      cache   si   so    bi    bo   in   cs  us sy  id wa st
+21 19          0     351628        576   37835440    0    0    17 44394 1241  653   6 20  64  9  0
+11 11          0     365520        576   37893060    0    0   124 2121508 203450 170957  12 46  25 17  0
+13 16          0     359888        576   37954456    0    0    98 2185033 209473 171571  13 44  25 18  0
+17 15          0     353728        576   38010536    0    0    89 2170971 208052 167988  13 43  26 18  0
+17 16          0     349732        576   38048284    0    0   135 2217752 218754 174170  13 49  21 16  0
+43 13          0     343280        576   38046500    0    0   153 2207135 217872 179519  13 47  23 18  0
+26 13          0     350968        576   37937184    0    0   147 2189822 214276 176697  13 47  23 17  0
+  4 12          0     350080        576   37958364    0    0   226 2145212 207077 172163  12 44  24 20  0
+15 13          0     353124        576   37921040    0    0   145 2078422 197231 166381  12 41  30 17  0
+14 15          0     348964        576   37949588    0    0   107 2020853 188192 164064  12 39  30 20  0
+21  9          0     354784        576   37951228    0    0   117 2148090 204307 165609  13 48  22 18  0
+36 16          0     347368        576   37989824    0    0   166 2208681 216392 178114  13 47  24 16  0
+28 15          0     300656        576   38060912    0    0   164 2181681 214618 175132  13 45  24 18  0
+  9 16          0     295484        576   38092184    0    0   153 2156909 218993 180289  13 43  27 17  0
+17 16          0     346760        576   37979008    0    0   165 2124168 198730 173455  12 44  27 18  0
+14 17          0     360988        576   37957136    0    0   142 2092248 197430 168199  12 42  29 17  0
 
->  
-> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
-> index d1067d5..4fb6847 100644
-> --- a/arch/x86/pci/early.c
-> +++ b/arch/x86/pci/early.c
-> @@ -91,6 +91,9 @@ void early_dump_pci_devices(void)
->  				u32 class;
->  				u8 type;
->  
-> +				if (read_pci_config_16(bus, slot, func, PCI_VENDOR_ID) == 0xffff)
-> +					continue;
-> +
->  				class = read_pci_config(bus, slot, func,
->  							PCI_CLASS_REVISION);
->  				if (class == 0xffffffff)
-> diff --git a/drivers/firewire/init_ohci1394_dma.c b/drivers/firewire/init_ohci1394_dma.c
-> index a9a347a..dd3bd84 100644
-> --- a/drivers/firewire/init_ohci1394_dma.c
-> +++ b/drivers/firewire/init_ohci1394_dma.c
-> @@ -279,6 +279,9 @@ void __init init_ohci1394_dma_on_all_controllers(void)
->  	for (num = 0; num < 32; num++) {
->  		for (slot = 0; slot < 32; slot++) {
->  			for (func = 0; func < 8; func++) {
-> +				if (read_pci_config_16(num, slot, func, PCI_VENDOR_ID) == 0xffff)
-> +					continue;
-> +
->  				class = read_pci_config(num, slot, func,
->  							PCI_CLASS_REVISION);
->  				if (class == 0xffffffff)
+I'll continue testing tomorrow to be sure nothing
+shows up after continued testing.
 
-It is interesting that these last two functions are doing basically the
-same pci discovery as the code in search_agp_bridge(), except that they
-uses continue instead of break. It might be beyond the scope of what you
-are trying to fix, but those continues could be changed to breaks for
-the same reason it is a break in search_agp_bridge().
+If this passes your allocation success rate testing,
+I'm happy with this performance for 3.6 - if not, I'll
+be happy to test any further patches.
 
--Betty
+I really appreciate getting the chance to test out
+your patchset.
+
+Thanks -- Jim
 
