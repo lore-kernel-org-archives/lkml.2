@@ -1,110 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2HINur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:50:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58850 "EHLO mx2.suse.de"
+	id S1758347Ab2HINu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:50:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34612 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756096Ab2HINt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:49:28 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [RFC PATCH 0/5] Improve hugepage allocation success rates under load V3
-Date: Thu,  9 Aug 2012 14:49:20 +0100
-Message-Id: <1344520165-24419-1-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
+	id S1758326Ab2HINu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 09:50:56 -0400
+Date: Thu, 9 Aug 2012 14:50:53 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] compaction: fix deferring compaction mistake
+Message-ID: <20120809135053.GE10288@csn.ul.ie>
+References: <1344387464-10037-1-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1344387464-10037-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V2
-o Capture !MIGRATE_MOVABLE pages where possible
-o Document the treatment of MIGRATE_MOVABLE pages while capturing
-o Expand changelogs
+On Wed, Aug 08, 2012 at 09:57:44AM +0900, Minchan Kim wrote:
+> [1] fixed bad deferring policy but made mistake about checking
+> compact_order_failed in __compact_pgdat so it can't update
+> compact_order_failed with new order. It ends up preventing working
+> of deffering policy rightly. This patch fixes it.
+> 
+> [1] aff62249, vmscan: only defer compaction for failed order and higher
+> 
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-Changelog since V1
-o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
-o Expanded changelogs a little
-
-Allocation success rates have been far lower since 3.4 due to commit
-[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
-commit was introduced for good reasons and it was known in advance that
-the success rates would suffer but it was justified on the grounds that
-the high allocation success rates were achieved by aggressive reclaim.
-Success rates are expected to suffer even more in 3.6 due to commit
-[7db8889a: mm: have order > 0 compaction start off where it left] which
-testing has shown to severely reduce allocation success rates under load -
-to 0% in one case.  There is a proposed change to that patch in this series
-and it would be ideal if Jim Schutt could retest the workload that led to
-commit [7db8889a: mm: have order > 0 compaction start off where it left].
-
-This series aims to improve the allocation success rates without regressing
-the benefits of commit fe2c2a10. The series is based on 3.5 and includes
-the commit 7db8889a to illustrate what impact it has to success rates.
-
-Patch 1 updates a stale comment seeing as I was in the general area.
-
-Patch 2 updates reclaim/compaction to reclaim pages scaled on the number
-	of recent failures.
-
-Patch 3 captures suitable high-order pages freed by compaction to reduce
-	races with parallel allocation requests.
-
-Patch 4 is an upstream commit that has compaction restart free page scanning
-	from an old position instead of always starting from the end of the
-	zone
-
-Patch 5 adjusts patch 5 to restores allocation success rates.
-
-STRESS-HIGHALLOC
-		 3.5.0-vanilla	  patches:1-2	    patches:1-3       patches:1-5
-Pass 1          36.00 ( 0.00%)    56.00 (20.00%)    63.00 (27.00%)    58.00 (22.00%)
-Pass 2          46.00 ( 0.00%)    64.00 (18.00%)    63.00 (17.00%)    58.00 (12.00%)
-while Rested    84.00 ( 0.00%)    86.00 ( 2.00%)    85.00 ( 1.00%)    84.00 ( 0.00%)
-
-From
-http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
-I know that the allocation success rates in 3.3.6 was 78% in comparison
-to 36% in 3.5. With the full series applied, the success rates are up to
-around 60% with some variability in the results. This is not as high
-a success rate but it does not reclaim excessively which is a key point.
-
-Previous tests on V1 of this series showed that patch 4 on its own adversely
-affected high-order allocation success rates.
-
-MMTests Statistics: vmstat
-Page Ins                                     3037580     2979316     2988160     2957716
-Page Outs                                    8026888     8027300     8031232     8041696
-Swap Ins                                           0           0           0           0
-Swap Outs                                          0           0           0           0
-
-Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
-there were 71881 pages swapped out.
-
-Direct pages scanned                           97106      110003       80319      130947
-Kswapd pages scanned                         1231288     1372523     1498003     1392390
-Kswapd pages reclaimed                       1231221     1321591     1439185     1342106
-Direct pages reclaimed                         97100      102174       56267      125401
-Kswapd efficiency                                99%         96%         96%         96%
-Kswapd velocity                             1001.153    1060.896    1131.567    1103.189
-Direct efficiency                                99%         92%         70%         95%
-Direct velocity                               78.956      85.027      60.672     103.749
-
-The direct reclaim and kswapd velocities change very little. kswapd velocity
-is around the 1000 pages/sec mark where as in kernel 3.3.6 with the high
-allocation success rates it was 8140 pages/second.
-
- include/linux/compaction.h |    4 +-
- include/linux/mm.h         |    1 +
- include/linux/mmzone.h     |    4 ++
- mm/compaction.c            |  159 ++++++++++++++++++++++++++++++++++++++------
- mm/internal.h              |    7 ++
- mm/page_alloc.c            |   68 ++++++++++++++-----
- mm/vmscan.c                |   10 +++
- 7 files changed, 214 insertions(+), 39 deletions(-)
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
 -- 
-1.7.9.2
-
+Mel Gorman
+SUSE Labs
