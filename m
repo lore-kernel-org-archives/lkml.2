@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030976Ab2HIPD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:03:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52316 "EHLO mga14.intel.com"
+	id S1031020Ab2HIPDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:03:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21172 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030628Ab2HIPDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:03:25 -0400
+	id S1030991Ab2HIPDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:03:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,740,1336374000"; 
-   d="scan'208";a="131994079"
+   d="scan'208";a="195494524"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -26,9 +26,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v2 5/6] mm: make clear_huge_page cache clear only around the fault address
-Date: Thu,  9 Aug 2012 18:03:02 +0300
-Message-Id: <1344524583-1096-6-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v2 2/6] mm: make clear_huge_page tolerate non aligned address
+Date: Thu,  9 Aug 2012 18:02:59 +0300
+Message-Id: <1344524583-1096-3-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -38,81 +38,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Clearing a 2MB huge page will typically blow away several levels
-of CPU caches. To avoid this only cache clear the 4K area
-around the fault address and use a cache avoiding clears
-for the rest of the 2MB area.
+hugetlb does not necessarily pass in an aligned address, so the
+low level address computation is wrong.
+
+This will fix architectures that actually use the address for flushing
+the cleared address (very few, like xtensa/sparc/...?)
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/memory.c |   30 +++++++++++++++++++++++++++---
- 1 files changed, 27 insertions(+), 3 deletions(-)
+ mm/memory.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/mm/memory.c b/mm/memory.c
-index b47199a..e9a75c2 100644
+index 5736170..b47199a 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -3969,18 +3969,35 @@ EXPORT_SYMBOL(might_fault);
- #endif
- 
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
-+
-+#ifndef ARCH_HAS_USER_NOCACHE
-+#define ARCH_HAS_USER_NOCACHE 0
-+#endif
-+
-+#if ARCH_HAS_USER_NOCACHE == 0
-+#define clear_user_highpage_nocache clear_user_highpage
-+#endif
-+
- static void clear_gigantic_page(struct page *page,
- 				unsigned long addr,
- 				unsigned int pages_per_huge_page)
+@@ -3987,16 +3987,17 @@ void clear_huge_page(struct page *page,
+ 		     unsigned long addr, unsigned int pages_per_huge_page)
  {
  	int i;
- 	struct page *p = page;
-+	unsigned long vaddr;
 +	unsigned long haddr = addr & HPAGE_PMD_MASK;
-+	int target = (addr - haddr) >> PAGE_SHIFT;
- 
- 	might_sleep();
-+	vaddr = haddr;
- 	for (i = 0; i < pages_per_huge_page;
- 	     i++, p = mem_map_next(p, page, i)) {
- 		cond_resched();
--		clear_user_highpage(p, addr + i * PAGE_SIZE);
-+		vaddr = haddr + i*PAGE_SIZE;
-+		if (!ARCH_HAS_USER_NOCACHE  || i == target)
-+			clear_user_highpage(p, vaddr);
-+		else
-+			clear_user_highpage_nocache(p, vaddr);
- 	}
- }
- void clear_huge_page(struct page *page,
-@@ -3988,16 +4005,23 @@ void clear_huge_page(struct page *page,
- {
- 	int i;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
-+	unsigned long vaddr;
-+	int target = (addr - haddr) >> PAGE_SHIFT;
  
  	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
--		clear_gigantic_page(page, haddr, pages_per_huge_page);
-+		clear_gigantic_page(page, addr, pages_per_huge_page);
+-		clear_gigantic_page(page, addr, pages_per_huge_page);
++		clear_gigantic_page(page, haddr, pages_per_huge_page);
  		return;
  	}
  
  	might_sleep();
-+	vaddr = haddr;
  	for (i = 0; i < pages_per_huge_page; i++) {
  		cond_resched();
--		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
-+		vaddr = haddr + i*PAGE_SIZE;
-+		if (!ARCH_HAS_USER_NOCACHE || i == target)
-+			clear_user_highpage(page + i, vaddr);
-+		else
-+			clear_user_highpage_nocache(page + i, vaddr);
+-		clear_user_highpage(page + i, addr + i * PAGE_SIZE);
++		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
  	}
  }
  
