@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030446Ab2HIOUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:20:53 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34856 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030188Ab2HIOUu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:20:50 -0400
-Date: Thu, 9 Aug 2012 09:13:06 -0500 (CDT)
-From: "Christoph Lameter (Open Source)" <cl@linux.com>
-X-X-Sender: cl@greybox.home
-To: Shuah Khan <shuah.khan@hp.com>
-cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
-Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-In-Reply-To: <1344287631.2486.57.camel@lorien2>
-Message-ID: <alpine.DEB.2.02.1208090911100.15909@greybox.home>
-References: <1342221125.17464.8.camel@lorien2> <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com> <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2> <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
- <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1030462Ab2HIOVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:21:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030188Ab2HIOVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 10:21:16 -0400
+Date: Thu, 9 Aug 2012 16:17:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] uprobes: introduce MMF_HAS_UPROBES
+Message-ID: <20120809141740.GA8509@redhat.com>
+References: <20120808173659.GA13220@redhat.com> <20120808173747.GA13272@redhat.com> <20120809133251.GA26733@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120809133251.GA26733@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Aug 2012, Shuah Khan wrote:
-
-> +#ifdef CONFIG_DEBUG_VM
-> +static int kmem_cache_sanity_check(const char *name, size_t size)
-
-Why do we pass "size" in? AFAICT there is no need to.
-
-> @@ -53,48 +93,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
->  {
->  	struct kmem_cache *s = NULL;
+On 08/09, Srikar Dronamraju wrote:
 >
-> -#ifdef CONFIG_DEBUG_VM
->  	if (!name || in_interrupt() || size < sizeof(void *) ||
->  		size > KMALLOC_MAX_SIZE) {
-> -		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-> -			" failed\n", name);
-> +		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
->  		goto out;
->  	}
-> -#endif
+> * Oleg Nesterov <oleg@redhat.com> [2012-08-08 19:37:47]:
 >
+> > Add the new MMF_HAS_UPROBES flag. It is set by install_breakpoint()
+> > and it is copied by dup_mmap(), uprobe_pre_sstep_notifier() checks
+> > it to avoid the slow path if the task was never probed. Perhaps it
+> > makes sense to check it in valid_vma(is_register => false) as well.
+> >
+> > This needs the new dup_mmap()->uprobe_dup_mmap() hook. We can't use
+> > uprobe_reset_state() or put MMF_HAS_UPROBES into MMF_INIT_MASK, we
+> > need oldmm->mmap_sem to avoid the race with uprobe_register() or
+> > mmap() from another thread.
+> >
+> > Currently we never clear this bit, it can be false-positive after
+> > uprobe_unregister() or uprobe_munmap() or if dup_mmap() hits the
+> > probed VM_DONTCOPY vma. But this is fine correctness-wise and has
+> > no effect unless the task hits the non-uprobe breakpoint.
+> >
+>
+> In which case, cant we just delete uprobe_munmap() altogether.
 
-If you move the above code into the sanity check function then you will be
-using the size as well. These are also sanity checks after all.
+>From 0/7:
+
+	The next series will teach uprobes to
+	clear MMF_HAS_UPROBES, but perhaps we should simply remove
+	uprobe_munmap() instead.
+
+Yes, after this series uprobe_munmap() is nop, but see below.
+
+> > @@ -1034,6 +1045,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+> >  	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+> >  		return;
+> >
+> > +	if (!test_bit(MMF_HAS_UPROBES, &vma->vm_mm->flags))
+> > +		return;
+> > +
+>
+> I am not sure whats the purpose of the above test
+>
+>
+>
+> >  	/* TODO: unmapping uprobe(s) will need more work */
+>
+> and I am unable to think what more we would want to do here.
+
+The next series will add MMF_UPROBE_RECALC, this bits indicates that
+MMF_HAS_UPROBES can be false-positive. uprobe_munmap() will roughly do
+
+	if (find_node_in_range(start, end))
+		set_bit(MMF_UPROBE_RECALC);
+
+Once again, I am not sure we really need more complications, we will
+discuss this later and decide. If we do not want them, we can kill
+uprobe_munmap().
+
+Just in case... uprobe_dup_mmap() is very simple but "sub-optimal".
+We can improve this logic if we add uprobe_dup_vma() instead which
+does
+
+	if (test_bit(MMF_HAS_UPROBES))
+		return;
+	if (find_node_in_range(...))
+		set_bit(MMF_HAS_UPROBES);
+
+But again, it would be better to discuss this later.
+
+Oleg.
+
