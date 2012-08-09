@@ -1,416 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2HIUk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 16:40:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22502 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab2HIUk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 16:40:26 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Vw9dB8nyIlIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=UmJ6p_HmDfTlbPYajsEA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344544823.6935.82.camel@gandalf.stny.rr.com>
-Subject: [RFC][PATCH] tracepoints: Move the work out of line from hotpath
- sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 09 Aug 2012 16:40:23 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	id S1755585Ab2HIUl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 16:41:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19824 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754738Ab2HIUly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 16:41:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,742,1336374000"; 
+   d="scan'208";a="205679024"
+Subject: Re: [tip:x86:fpu 2/2] arch/x86/kernel/signal.c:626:4: error:
+ implicit declaration of function '__setup_frame'
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Aug 2012 13:38:56 -0700
+In-Reply-To: <5022E963.9020809@zytor.com>
+References: <20120725232716.GB5758@localhost>
+	 <1343324885.3696.527.camel@sbsiddha-desk.sc.intel.com>
+	 <5022E963.9020809@zytor.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1344544736.8326.17.camel@sbsiddha-desk.sc.intel.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent talk of performance regressions, I decided to take a
-look a tracepoints. For those that are not familiar with them, they are
-static locations scattered throughout the kernel that let developers
-trace their code when needed, with very little overhead when not needed
-but configured in the kernel. Most distributions have tracepoints
-configured into their kernels.
+On Wed, 2012-08-08 at 15:34 -0700, H. Peter Anvin wrote:
+> With this patch applied I get an error at:
+> 
+> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: error: 
+> static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
+> In file included from 
+> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:29:0:
+> /home/hpa/kernel/tip.x86-fpu/arch/x86/include/asm/fpu-internal.h:62:5: 
+> note: previous declaration of ‘x32_setup_rt_frame’ was here
+> /home/hpa/kernel/tip.x86-fpu/arch/x86/kernel/signal.c:792:12: warning: 
+> ‘x32_setup_rt_frame’ defined but not used [-Wunused-function]
+> make[4]: *** [arch/x86/kernel/signal.o] Error 1
+> make[3]: *** [arch/x86/kernel] Error 2
+> make[2]: *** [arch/x86] Error 2
+> make[1]: *** [sub-make] Error 2
+> make[1]: Leaving directory `/home/hpa/kernel/tip.x86-fpu'
+> 
+> ... for an x86-64 allyesconfig.
 
-They look like this:
+Sorry my binutils didn't have x32 support, so didn't catch this earlier.
+Here is the updated patch fixing all the compilation issues. Thanks.
 
-	trace_sched_switch(prev, next);
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, fpu: fix build issues with CONFIG_IA32_EMULATION, CONFIG_X86_X32_ABI
 
-When tracing is configured, through macro magic, this simple line
-expands to something like this:
+Fengguang's automated build reported some compilation failures:
+> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
+> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
+> ...
 
-static inline void trace_sched_switch(struct task_struct *prev, struct task_struct *next)
-{
-	if (static_key_false(&__tracepoint_sched_switch.key)) {
-		struct tracepoint_func *it_func_ptr;
-		void *it_func;
-		void *__data;
+Code saving fsave prefix is applicable only for CONFIG_X86_32 or
+CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
+code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
 
-		rcu_read_lock_sched_notrace();
-		it_func_ptr = rcu_dereference_sched((*__tracepoint_sched_switch)->funcs);
-		if (it_func_ptr) {
-			do {
-				it_func = (it_func_ptr)->func;
-				__data = (it_func_ptr)->data;
-				((it_func))(__data, prev, next);
-			} while ((++it_func_ptr)->func);
-		}
-		rcu_read_unlock_sched_notrace();
-	}
-}
+Peter reported some build failures with CONFIG_X86_X32_ABI:
+> arch/x86/kernel/signal.c:792:12: error: 
+> static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
+> ...
 
-There's some more magic involved here. The static_key_false() uses
-jump_labels to make the contents of the if block "unlikely" as well as
-uses a nop in the code when not enabled.
+Fix it by moving the x32_setup_rt_frame() code around and removing the
+non-static declaration.
 
-The call site looks like this:
+Also while we are at this, fix a spurious warning:
+> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value
+> of ‘__clear_user’, declared with attribute warn_unused_result
 
-       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
-       c7 46 28 01 00 00 00    movl   $0x1,0x28(%rsi)
-       66 66 66 66 90          nopl
-       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
-       48 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%rdi
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/fpu-internal.h |    7 +--
+ arch/x86/kernel/signal.c            |  134 ++++++++++++++++++-----------------
+ arch/x86/kernel/xsave.c             |   10 ++-
+ 3 files changed, 77 insertions(+), 74 deletions(-)
 
-When tracing is enabled, the nopl is converted into a jump to the
-tracing code that sits at the end of the function (__schedule in this
-case). That code looks like this:
-
-       65 48 8b 04 25 30 ba    mov    %gs:0xba30,%rax
-       00 00
-       83 80 44 e0 ff ff 01    addl   $0x1,-0x1fbc(%rax)
-       4c 8b 2d b9 d3 80 00    mov    0x80d3b9(%rip),%r13        # ffffffff8257dff0 <__tracepoint_sched_switch+0x30>
-       4d 85 ed                test   %r13,%r13
-       74 54                   je     ffffffff81d70c90 <__schedule+0x510>
-       4d 8d 75 10             lea    0x10(%r13),%r14
-       49 8b 45 00             mov    0x0(%r13),%rax
-       4d 89 ec                mov    %r13,%r12
-       48 89 9d f0 fe ff ff    mov    %rbx,-0x110(%rbp)
-       4c 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%r15
-       4c 89 f3                mov    %r14,%rbx
-       4d 89 ee                mov    %r13,%r14
-       4c 8b ad 10 ff ff ff    mov    -0xf0(%rbp),%r13
-       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
-       49 8b 7c 24 08          mov    0x8(%r12),%rdi
-       49 83 c4 10             add    $0x10,%r12
-       4c 89 ea                mov    %r13,%rdx
-       4c 89 fe                mov    %r15,%rsi
-       ff d0                   callq  *%rax
-       4c 89 e0                mov    %r12,%rax
-       4c 29 f0                sub    %r14,%rax
-       48 8b 44 03 f0          mov    -0x10(%rbx,%rax,1),%rax
-       48 85 c0                test   %rax,%rax
-       75 df                   jne    ffffffff81d70c68 <__schedule+0x4e8>
-       48 8b 9d f0 fe ff ff    mov    -0x110(%rbp),%rbx
-       65 48 8b 04 25 30 ba    mov    %gs:0xba30,%rax
-       00 00
-       83 a8 44 e0 ff ff 01    subl   $0x1,-0x1fbc(%rax)
-       48 8b 80 38 e0 ff ff    mov    -0x1fc8(%rax),%rax
-       a8 08                   test   $0x8,%al
-       0f 84 e3 fd ff ff       je     ffffffff81d70a92 <__schedule+0x312>
-       e8 7c 05 00 00          callq  ffffffff81d71230 <preempt_schedule>
-       e9 d9 fd ff ff          jmpq   ffffffff81d70a92 <__schedule+0x312>
-
-Now even though this code is moved to the end of the function, it still
-sits in the middle of lots of hot paths. All tracepoints act this way,
-and the kernel is growing rapidly with them. The latest count has
-something like 799 events existing currently in the kernel.
-
-Now I figured, instead of doing all this work in the hot paths, why not
-call a function that is out of line from the hot paths. Something like
-this:
-
-static inline void trace_sched_switch(struct task_struct *prev, struct task_struct *next)
-{
-	if (static_key_false(&__tracepoint_sched_switch.key)) {
-		extern void __tracepoint_hook_sched_switch(struct task_struct *prev, struct task_struct *next);
-
-		__tracepoint_hook_sched_switch(prev, next);
-	}
-}
-
-
-And out of line (in the .text.unlikely section) we would have:
-
-void __tracepoint_hook_sched_switch(struct task_struct *prev, struct task_struct *next)
-{
-	struct tracepoint_func *it_func_ptr;
-	void *it_func;
-	void *__data;
-
-	rcu_read_lock_sched_notrace();
-	it_func_ptr = rcu_dereference_sched((*__tracepoint_sched_switch)->funcs);
-	if (it_func_ptr) {
-		do {
-			it_func = (it_func_ptr)->func;
-			__data = (it_func_ptr)->data;
-			((it_func))(__data, prev, next);
-		} while ((++it_func_ptr)->func);
-	}
-	rcu_read_unlock_sched_notrace();
-}
-
-
-This makes what exists in the hot path files much smaller:
-
-       48 8b b5 10 ff ff ff    mov    -0xf0(%rbp),%rsi
-       48 8b bd 18 ff ff ff    mov    -0xe8(%rbp),%rdi
-       e8 dd f8 fc ff          callq  ffffffff81d40450 <__tracepoint_hook_sched_switch>
-       e9 5a fe ff ff          jmpq   ffffffff81d709d2 <__schedule+0x312>
-
-
-Now, by doing this, it adds a bit more code. Although, the code that is
-added exists in the .text.unlikely section and the normal paths should
-actually shrink, but kernel bloat is added never-the-less.
-
-   text	   data	    bss	    dec	    hex	filename
-20016471	2594648	1945600	24556719	176b4af	vmlinux-before
-20032535	2599960	1945600	24578095	177082f	vmlinux-after
-
-It adds 20K to the code. Well, it's not really this much, because I made
-this kernel pull in all modules (including ext3, xfs and kvm) which all
-add quite a number of tracepoints. But it was better to do this to get a
-picture of how this affects the tracepoints. There were 707 tracepoints
-compiled in, making it roughly 30 bytes per tracepoint added. Which
-makes sense, since the code use to be embedded at the site, but now
-there's a call to another function to do the work.
-
-I haven't ran any good tests to see how much of a performance
-improvement this does, but the patch is here and you can try it out and
-see for yourself.
-
-Pros:
- Less code in the hot paths.
- Hopefully, performance improves
-
-Cons:
- Adds some bloat to the kernel (but in an out-of-the-way section)
- Slows down actual tracing as it needs to call a function and will
-   have more cache misses during the trace.
-
-This patch just got the code working. I need to update the comments that
-go with tracepoints and fix the tracepoint samples file. But I wanted to
-get peoples reactions before putting any more effort into this.
-
-Should I go ahead with this or not?
-
--- Steve
-
-Index: linux-trace.git/include/linux/tracepoint.h
-===================================================================
---- linux-trace.git.orig/include/linux/tracepoint.h
-+++ linux-trace.git/include/linux/tracepoint.h
-@@ -114,25 +114,35 @@ static inline void tracepoint_synchroniz
-  * as "(void *, void)". The DECLARE_TRACE_NOARGS() will pass in just
-  * "void *data", where as the DECLARE_TRACE() will pass in "void *data, proto".
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 35ad161..ba83a08 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -22,7 +22,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/xsave.h>
+ 
+-#ifdef CONFIG_IA32_EMULATION
++#ifdef CONFIG_X86_64
+ # include <asm/sigcontext32.h>
+ # include <asm/user32.h>
+ int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+@@ -52,17 +52,12 @@ extern user_regset_get_fn fpregs_get, xfpregs_get, fpregs_soft_get,
+ extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
+ 				 xstateregs_set;
+ 
+-
+ /*
+  * xstateregs_active == fpregs_active. Please refer to the comment
+  * at the definition of fpregs_active.
   */
--#define __DO_TRACE(tp, proto, args, cond, prercu, postrcu)		\
--	do {								\
-+#define __DO_TRACE(name, proto, args, data_proto, data_args)		\
-+	void __attribute__((section(".text.unlikely")))			\
-+	__tracepoint_hook_##name(proto)					\
-+	{								\
- 		struct tracepoint_func *it_func_ptr;			\
-+		struct tracepoint *tp = &__tracepoint_##name;		\
- 		void *it_func;						\
- 		void *__data;						\
- 									\
--		if (!(cond))						\
--			return;						\
--		prercu;							\
- 		rcu_read_lock_sched_notrace();				\
- 		it_func_ptr = rcu_dereference_sched((tp)->funcs);	\
- 		if (it_func_ptr) {					\
- 			do {						\
- 				it_func = (it_func_ptr)->func;		\
- 				__data = (it_func_ptr)->data;		\
--				((void(*)(proto))(it_func))(args);	\
-+				((void(*)(data_proto))(it_func))(data_args); \
- 			} while ((++it_func_ptr)->func);		\
- 		}							\
- 		rcu_read_unlock_sched_notrace();			\
+ #define xstateregs_active	fpregs_active
+ 
+-int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-		       siginfo_t *info, compat_sigset_t *set,
+-		       struct pt_regs *regs);
+-
+ #ifdef CONFIG_MATH_EMULATION
+ # define HAVE_HWFP             (boot_cpu_data.hard_math)
+ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 356e442..e10f96a 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -472,6 +472,74 @@ static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ }
+ #endif /* CONFIG_X86_32 */
+ 
++static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
++			      siginfo_t *info, compat_sigset_t *set,
++			      struct pt_regs *regs)
++{
++#ifdef CONFIG_X86_X32_ABI
++	struct rt_sigframe_x32 __user *frame;
++	void __user *restorer;
++	int err = 0;
++	void __user *fpstate = NULL;
++
++	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
++
++	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
++		return -EFAULT;
++
++	if (ka->sa.sa_flags & SA_SIGINFO) {
++		if (copy_siginfo_to_user32(&frame->info, info))
++			return -EFAULT;
 +	}
 +
-+#define __DO_TRACE_HOOK(name, proto, args, cond, prercu, postrcu)	\
-+	do {								\
-+		extern void __tracepoint_hook_##name(proto);		\
-+									\
-+		if (!(cond))						\
-+			return;						\
-+		prercu;							\
-+		__tracepoint_hook_##name(args);				\
- 		postrcu;						\
- 	} while (0)
- 
-@@ -141,22 +151,22 @@ static inline void tracepoint_synchroniz
-  * not add unwanted padding between the beginning of the section and the
-  * structure. Force alignment to the same alignment as the section start.
-  */
--#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto)		\
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
- 		if (static_key_false(&__tracepoint_##name.key))		\
--			__DO_TRACE(&__tracepoint_##name,		\
--				TP_PROTO(data_proto),			\
--				TP_ARGS(data_args),			\
-+			__DO_TRACE_HOOK(name,				\
-+				TP_PROTO(proto),			\
-+				TP_ARGS(args),				\
- 				TP_CONDITION(cond),,);			\
- 	}								\
- 	static inline void trace_##name##_rcuidle(proto)		\
- 	{								\
- 		if (static_key_false(&__tracepoint_##name.key))		\
--			__DO_TRACE(&__tracepoint_##name,		\
--				TP_PROTO(data_proto),			\
--				TP_ARGS(data_args),			\
-+			__DO_TRACE_HOOK(name,				\
-+				TP_PROTO(proto),			\
-+				TP_ARGS(args),				\
- 				TP_CONDITION(cond),			\
- 				rcu_idle_exit(),			\
- 				rcu_idle_enter());			\
-@@ -183,18 +193,31 @@ static inline void tracepoint_synchroniz
-  * structures, so we create an array of pointers that will be used for iteration
-  * on the tracepoints.
-  */
--#define DEFINE_TRACE_FN(name, reg, unreg)				 \
--	static const char __tpstrtab_##name[]				 \
--	__attribute__((section("__tracepoints_strings"))) = #name;	 \
--	struct tracepoint __tracepoint_##name				 \
--	__attribute__((section("__tracepoints"))) =			 \
-+#define __DEFINE_TRACE_FN(name, proto, args, data_proto, data_args, reg, unreg) \
-+	static const char __tpstrtab_##name[]				\
-+	__attribute__((section("__tracepoints_strings"))) = #name;	\
-+	struct tracepoint __tracepoint_##name				\
-+	__attribute__((section("__tracepoints"))) =			\
- 		{ __tpstrtab_##name, STATIC_KEY_INIT_FALSE, reg, unreg, NULL };\
--	static struct tracepoint * const __tracepoint_ptr_##name __used	 \
--	__attribute__((section("__tracepoints_ptrs"))) =		 \
--		&__tracepoint_##name;
-+	static struct tracepoint * const __tracepoint_ptr_##name __used	\
-+	__attribute__((section("__tracepoints_ptrs"))) =		\
-+		&__tracepoint_##name;					\
-+	__DO_TRACE(name,						\
-+		   TP_PROTO(proto),					\
-+		   TP_ARGS(args),					\
-+		   TP_PROTO(data_proto),				\
-+		   TP_ARGS(data_args))
++	put_user_try {
++		/* Create the ucontext.  */
++		if (cpu_has_xsave)
++			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
++		else
++			put_user_ex(0, &frame->uc.uc_flags);
++		put_user_ex(0, &frame->uc.uc_link);
++		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
++		put_user_ex(sas_ss_flags(regs->sp),
++			    &frame->uc.uc_stack.ss_flags);
++		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
++		put_user_ex(0, &frame->uc.uc__pad0);
++		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
++					regs, set->sig[0]);
++		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
 +
-+#define DEFINE_TRACE_FN_NOARGS(name, proto, args)		\
-+	__DEFINE_TRACE_FN(name, void, , void *__data, __data, , )
++		if (ka->sa.sa_flags & SA_RESTORER) {
++			restorer = ka->sa.sa_restorer;
++		} else {
++			/* could use a vstub here */
++			restorer = NULL;
++			err |= -EFAULT;
++		}
++		put_user_ex(restorer, &frame->pretcode);
++	} put_user_catch(err);
 +
-+#define DEFINE_TRACE_FN(name, proto, args, reg, unreg)		\
-+	__DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args),	\
-+			  PARAMS(void *__data, proto),		\
-+			  PARAMS(__data, args), reg, unreg)
++	if (err)
++		return -EFAULT;
++
++	/* Set up registers for signal handler */
++	regs->sp = (unsigned long) frame;
++	regs->ip = (unsigned long) ka->sa.sa_handler;
++
++	/* We use the x32 calling convention here... */
++	regs->di = sig;
++	regs->si = (unsigned long) &frame->info;
++	regs->dx = (unsigned long) &frame->uc;
++
++	loadsegment(ds, __USER_DS);
++	loadsegment(es, __USER_DS);
++
++	regs->cs = __USER_CS;
++	regs->ss = __USER_DS;
++#endif	/* CONFIG_X86_X32_ABI */
++
++	return 0;
++}
++
+ #ifdef CONFIG_X86_32
+ /*
+  * Atomically swap in the new signal mask, and wait for a signal.
+@@ -789,72 +857,6 @@ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+ }
  
--#define DEFINE_TRACE(name)						\
--	DEFINE_TRACE_FN(name, NULL, NULL);
-+#define DEFINE_TRACE(name, proto, args)					\
-+	DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args), NULL, NULL);
+ #ifdef CONFIG_X86_X32_ABI
+-static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-			      siginfo_t *info, compat_sigset_t *set,
+-			      struct pt_regs *regs)
+-{
+-	struct rt_sigframe_x32 __user *frame;
+-	void __user *restorer;
+-	int err = 0;
+-	void __user *fpstate = NULL;
+-
+-	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
+-
+-	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		return -EFAULT;
+-
+-	if (ka->sa.sa_flags & SA_SIGINFO) {
+-		if (copy_siginfo_to_user32(&frame->info, info))
+-			return -EFAULT;
+-	}
+-
+-	put_user_try {
+-		/* Create the ucontext.  */
+-		if (cpu_has_xsave)
+-			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
+-		else
+-			put_user_ex(0, &frame->uc.uc_flags);
+-		put_user_ex(0, &frame->uc.uc_link);
+-		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
+-		put_user_ex(sas_ss_flags(regs->sp),
+-			    &frame->uc.uc_stack.ss_flags);
+-		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
+-		put_user_ex(0, &frame->uc.uc__pad0);
+-		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
+-					regs, set->sig[0]);
+-		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+-
+-		if (ka->sa.sa_flags & SA_RESTORER) {
+-			restorer = ka->sa.sa_restorer;
+-		} else {
+-			/* could use a vstub here */
+-			restorer = NULL;
+-			err |= -EFAULT;
+-		}
+-		put_user_ex(restorer, &frame->pretcode);
+-	} put_user_catch(err);
+-
+-	if (err)
+-		return -EFAULT;
+-
+-	/* Set up registers for signal handler */
+-	regs->sp = (unsigned long) frame;
+-	regs->ip = (unsigned long) ka->sa.sa_handler;
+-
+-	/* We use the x32 calling convention here... */
+-	regs->di = sig;
+-	regs->si = (unsigned long) &frame->info;
+-	regs->dx = (unsigned long) &frame->uc;
+-
+-	loadsegment(ds, __USER_DS);
+-	loadsegment(es, __USER_DS);
+-
+-	regs->cs = __USER_CS;
+-	regs->ss = __USER_DS;
+-
+-	return 0;
+-}
+-
+ asmlinkage long sys32_x32_rt_sigreturn(struct pt_regs *regs)
+ {
+ 	struct rt_sigframe_x32 __user *frame;
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 2917e34..a23d100 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -205,8 +205,8 @@ static inline int save_user_xstate(struct xsave_struct __user *buf)
+ 	else
+ 		err = fsave_user((struct i387_fsave_struct __user *) buf);
  
- #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)				\
- 	EXPORT_SYMBOL_GPL(__tracepoint_##name)
-@@ -202,7 +225,7 @@ static inline void tracepoint_synchroniz
- 	EXPORT_SYMBOL(__tracepoint_##name)
+-	if (unlikely(err))
+-		__clear_user(buf, xstate_size);
++	if (unlikely(err) && __clear_user(buf, xstate_size))
++		err = -EFAULT;
+ 	return err;
+ }
  
- #else /* !CONFIG_TRACEPOINTS */
--#define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
-+#define __DECLARE_TRACE(name, proto, args, cond, data_proto)		\
- 	static inline void trace_##name(proto)				\
- 	{ }								\
- 	static inline void trace_##name##_rcuidle(proto)		\
-@@ -223,8 +246,8 @@ static inline void tracepoint_synchroniz
- 	{								\
- 	}
+@@ -236,6 +236,9 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	struct task_struct *tsk = current;
+ 	int ia32_fxstate = (buf != buf_fx);
  
--#define DEFINE_TRACE_FN(name, reg, unreg)
--#define DEFINE_TRACE(name)
-+#define DEFINE_TRACE_FN(name, proto, args, reg, unreg)
-+#define DEFINE_TRACE(name, proto, args)
- #define EXPORT_TRACEPOINT_SYMBOL_GPL(name)
- #define EXPORT_TRACEPOINT_SYMBOL(name)
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!access_ok(VERIFY_WRITE, buf, size))
+ 		return -EACCES;
  
-@@ -245,17 +268,15 @@ static inline void tracepoint_synchroniz
-  * "void *__data, proto" as the callback prototype.
-  */
- #define DECLARE_TRACE_NOARGS(name)					\
--		__DECLARE_TRACE(name, void, , 1, void *__data, __data)
-+		__DECLARE_TRACE(name, void, , 1, void *__data)
+@@ -333,6 +336,9 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	u64 xstate_bv = 0;
+ 	int fx_only = 0;
  
- #define DECLARE_TRACE(name, proto, args)				\
- 		__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), 1,	\
--				PARAMS(void *__data, proto),		\
--				PARAMS(__data, args))
-+				PARAMS(void *__data, proto))
- 
- #define DECLARE_TRACE_CONDITION(name, proto, args, cond)		\
- 	__DECLARE_TRACE(name, PARAMS(proto), PARAMS(args), PARAMS(cond), \
--			PARAMS(void *__data, proto),			\
--			PARAMS(__data, args))
-+			PARAMS(void *__data, proto))
- 
- #define TRACE_EVENT_FLAGS(event, flag)
- 
-Index: linux-trace.git/include/trace/define_trace.h
-===================================================================
---- linux-trace.git.orig/include/trace/define_trace.h
-+++ linux-trace.git/include/trace/define_trace.h
-@@ -24,7 +24,7 @@
- 
- #undef TRACE_EVENT
- #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
--	DEFINE_TRACE(name)
-+	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
- 
- #undef TRACE_EVENT_CONDITION
- #define TRACE_EVENT_CONDITION(name, proto, args, cond, tstruct, assign, print) \
-@@ -38,15 +38,15 @@
- #undef TRACE_EVENT_FN
- #define TRACE_EVENT_FN(name, proto, args, tstruct,		\
- 		assign, print, reg, unreg)			\
--	DEFINE_TRACE_FN(name, reg, unreg)
-+	DEFINE_TRACE_FN(name, PARAMS(proto), PARAMS(args), reg, unreg)
- 
- #undef DEFINE_EVENT
- #define DEFINE_EVENT(template, name, proto, args) \
--	DEFINE_TRACE(name)
-+	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
- 
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
--	DEFINE_TRACE(name)
-+	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
- 
- #undef DEFINE_EVENT_CONDITION
- #define DEFINE_EVENT_CONDITION(template, name, proto, args, cond) \
-@@ -54,7 +54,7 @@
- 
- #undef DECLARE_TRACE
- #define DECLARE_TRACE(name, proto, args)	\
--	DEFINE_TRACE(name)
-+	DEFINE_TRACE(name, PARAMS(proto), PARAMS(args))
- 
- #undef TRACE_INCLUDE
- #undef __TRACE_INCLUDE
-Index: linux-trace.git/samples/tracepoints/tracepoint-sample.c
-===================================================================
---- linux-trace.git.orig/samples/tracepoints/tracepoint-sample.c
-+++ linux-trace.git/samples/tracepoints/tracepoint-sample.c
-@@ -1,4 +1,5 @@
- /* tracepoint-sample.c
-+ * FIX ME
-  *
-  * Executes a tracepoint when /proc/tracepoint-sample is opened.
-  *
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!buf) {
+ 		drop_fpu(tsk);
+ 		return 0;
 
 
