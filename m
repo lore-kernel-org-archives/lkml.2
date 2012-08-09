@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030691Ab2HIOmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:42:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49965 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964785Ab2HIOmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:42:40 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 9 Aug 2012 07:42:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NULL dereference BUG in sch56xx_init()
-Message-ID: <20120809144239.GA6604@roeck-us.net>
-References: <20120809125526.GA11926@localhost>
+	id S1030715Ab2HIOt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:49:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030473Ab2HIOt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 10:49:26 -0400
+Date: Thu, 9 Aug 2012 11:48:36 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v6 1/3] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120809144835.GA2719@t510.redhat.com>
+References: <cover.1344463786.git.aquini@redhat.com>
+ <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
+ <20120809090019.GB10288@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120809125526.GA11926@localhost>
+In-Reply-To: <20120809090019.GB10288@csn.ul.ie>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 08:55:26PM +0800, Fengguang Wu wrote:
-> Hi Guenter,
+On Thu, Aug 09, 2012 at 10:00:19AM +0100, Mel Gorman wrote:
+> On Wed, Aug 08, 2012 at 07:53:19PM -0300, Rafael Aquini wrote:
+> > Memory fragmentation introduced by ballooning might reduce significantly
+> > the number of 2MB contiguous memory blocks that can be used within a guest,
+> > thus imposing performance penalties associated with the reduced number of
+> > transparent huge pages that could be used by the guest workload.
+> > 
+> > This patch introduces the helper functions as well as the necessary changes
+> > to teach compaction and migration bits how to cope with pages which are
+> > part of a guest memory balloon, in order to make them movable by memory
+> > compaction procedures.
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
 > 
-> This commit triggered an oops which can be fixed by the attached diff.
-> Should it be folded into the original one (preferable for me), or be
-> resent as a standalone patch?
+> Mostly looks ok but I have one question;
 > 
-I folded it into the original commit.
+> > <SNIP>
+> >
+> > +/* putback_lru_page() counterpart for a ballooned page */
+> > +bool putback_balloon_page(struct page *page)
+> > +{
+> > +	if (WARN_ON(!movable_balloon_page(page)))
+> > +		return false;
+> > +
+> > +	if (likely(trylock_page(page))) {
+> > +		if (movable_balloon_page(page)) {
+> > +			__putback_balloon_page(page);
+> > +			put_page(page);
+> > +			unlock_page(page);
+> > +			return true;
+> > +		}
+> > +		unlock_page(page);
+> > +	}
+> 
+> You might have answered this already as I skipped over a few revisions
+> and if you have, sorry about that and please add a comment :)
+> 
+> This trylock_page looks risky as it looks like it can fail if another
+> process running compaction tries to isolate this page. It locks the page,
+> finds it cant and releases the lock but in the meantime this trylock can
+> fail. It triggers a WARN_ON so we'll get a bug report but it leaves the
+> reference count elevated and this page has now leaked.
+>
+Good catch!
+I had those bits changed to follow the same logics you had suggested for
+isolate_balloon_page(), but I ended up completely missing this potential page
+leak case you spotted. Thanks a lot!
+ 
+> Why not just lock_page(page)? As you have already isolated this page you
+> know that the lock is only going to be held by a parallel compacting
+> process checking the reference count and the delay will be short. As a
+> bonus you can drop the WARN_ON check in the caller and make this void as
+> the WARN_ON check in the caller becomes redundant.
+> 
+Sure! 
+what do you think of:
 
-Thanks a lot for the test and feedback!
-
-Guenter
-
-[ ... ]
-
-> diff --git a/drivers/hwmon/sch56xx-common.c b/drivers/hwmon/sch56xx-common.c
-> index 69abbf7..d00b30a 100644
-> --- a/drivers/hwmon/sch56xx-common.c
-> +++ b/drivers/hwmon/sch56xx-common.c
-> @@ -554,7 +554,7 @@ exit:
->  	return err;
->  }
->  
-> -static int __init sch56xx_device_add(unsigned short address, const char *name)
-> +static int __init sch56xx_device_add(int address, const char *name)
->  {
->  	struct resource res = {
->  		.start	= address,
-> @@ -594,7 +594,7 @@ exit_device_put:
->  
->  static int __init sch56xx_init(void)
->  {
-> -	unsigned short address;
-> +	int address;
->  	const char *name = NULL;
->  
->  	address = sch56xx_find(0x4e, &name);
++/* putback_lru_page() counterpart for a ballooned page */
++void putback_balloon_page(struct page *page)
++{
++   lock_page(page);
++   if (!WARN_ON(!movable_balloon_page(page))) {
++           __putback_balloon_page(page);
++           put_page(page);
++   }
++   unlock_page(page);
++}
 
