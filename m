@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab2HIOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:00:09 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:52417 "EHLO smtp.ispras.ru"
+	id S932886Ab2HIOAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:00:40 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:52415 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932751Ab2HIN7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:59:17 -0400
+	id S932262Ab2HIN7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 09:59:16 -0400
 From: Marina Makienko <makienko@ispras.ru>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Marina Makienko <makienko@ispras.ru>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH 10/13] ide: Potential null pointer dereference in ide_cd_queue_pc()
-Date: Thu,  9 Aug 2012 17:55:27 +0400
-Message-Id: <1344520529-19164-8-git-send-email-makienko@ispras.ru>
+Subject: [PATCH 09/13] ide: Potential null pointer dereference in set_multcount()
+Date: Thu,  9 Aug 2012 17:55:26 +0400
+Message-Id: <1344520529-19164-7-git-send-email-makienko@ispras.ru>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
 References: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
@@ -34,23 +34,24 @@ Found by Linux Driver Verification project (linuxtesting.org).
 
 Signed-off-by: Marina Makienko <makienko@ispras.ru>
 ---
- drivers/ide/ide-cd.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/ide/ide-disk.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ide/ide-cd.c b/drivers/ide/ide-cd.c
-index 8126824..9dd575d 100644
---- a/drivers/ide/ide-cd.c
-+++ b/drivers/ide/ide-cd.c
-@@ -443,6 +443,9 @@ int ide_cd_queue_pc(ide_drive_t *drive, const unsigned char *cmd,
+diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
+index 16f69be..538d206 100644
+--- a/drivers/ide/ide-disk.c
++++ b/drivers/ide/ide-disk.c
+@@ -479,6 +479,10 @@ static int set_multcount(ide_drive_t *drive, int arg)
+ 		return -EBUSY;
  
- 		rq = blk_get_request(drive->queue, write, __GFP_WAIT);
+ 	rq = blk_get_request(drive->queue, READ, __GFP_WAIT);
++	if (!rq) {
++		printk(KERN_ERR PFX"set_multcount: blk_get_request() failed. \n");
++		return 1;
++	}
+ 	rq->cmd_type = REQ_TYPE_ATA_TASKFILE;
  
-+		if (!rq)
-+			return -EIO;
-+
- 		memcpy(rq->cmd, cmd, BLK_MAX_CDB);
- 		rq->cmd_type = REQ_TYPE_ATA_PC;
- 		rq->sense = sense;
+ 	drive->mult_req = arg;
 -- 
 1.7.7
 
