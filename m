@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab2HITx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:53:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51076 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759473Ab2HITx1 (ORCPT
+	id S1759525Ab2HITzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:55:16 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48969 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759473Ab2HITzN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:53:27 -0400
-Message-ID: <50241533.3080709@gmail.com>
-Date: Thu, 09 Aug 2012 14:53:23 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 9 Aug 2012 15:55:13 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com,
-        Rob Herring <rob.herring@calxeda.com>,
-        STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 1/8] of/irq: Create stub for of_irq_find_parent when !CONFIG_OF
-References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org> <1344527635-6163-2-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1344527635-6163-2-git-send-email-lee.jones@linaro.org>
+X-Originating-IP: [46.116.151.238]
+In-Reply-To: <CAJK669adq29ipOCTOyXNoqW=gF4pOJZZgZ_0tnjm75JY22Gvag@mail.gmail.com>
+References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com> <CAJK669adq29ipOCTOyXNoqW=gF4pOJZZgZ_0tnjm75JY22Gvag@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 9 Aug 2012 22:54:53 +0300
+Message-ID: <CAK=WgbbK+p3BGcohzgoY9Y57xD1kYHyGDu-FXFXaLFoA9xz7ow@mail.gmail.com>
+Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 10:53 AM, Lee Jones wrote:
-> of_irq_find_parent is a handy function to use outside the confines of
-> the Open Firmware subsystem. One such use-case is when the IRQ Domain
-> wishes to find an IRQ domain for a given device node. Currently it can
-> not take any notice of the 'interrupt-parent' property. Instead it
-> just uses the first IRQ controller as it climbs the Device Tree. If
-> we were to use this as a precursor the resultant controller is more
-> likely to be correct.
-> 
-> CC: Rob Herring <rob.herring@calxeda.com>
-> CC: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Sjur,
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+On Wed, Aug 8, 2012 at 7:55 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+> I realize that we have the same issue with the virtio rings.
+> Are there any way we can assign the device address of the virtio rings
+> to the resource table in shared memory?
 
-Rob
+It's a gap we have today, but it should definitely be fixed.
 
-> ---
->  include/linux/of_irq.h |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-> index 1717cd9..b8e2411 100644
-> --- a/include/linux/of_irq.h
-> +++ b/include/linux/of_irq.h
-> @@ -83,6 +83,11 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
->  {
->  	return 0;
->  }
-> +
-> +static inline void *of_irq_find_parent(struct device_node *child)
-> +{
-> +	return NULL;
-> +}
->  #endif /* !CONFIG_OF */
->  
->  #endif /* __OF_IRQ_H */
-> 
+> Or do we have to calculate the
+> virtio ring addresses based on number rings and the number of elements
+> in the ring?
 
+No, that's not the long term intention. It can be used as an interim
+solution, but I expect we do fix this and start supporting dynamic
+assignments of the vrings locations at some point.
+
+Thanks,
+Ohad.
