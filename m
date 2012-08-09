@@ -1,180 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2HIGgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:36:44 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:33092 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2HIGgl (ORCPT
+	id S1754962Ab2HIGit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:38:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49457 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab2HIGir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:36:41 -0400
-MIME-Version: 1.0
-Date: Thu, 9 Aug 2012 08:36:40 +0200
-Message-ID: <CAJoZiVmcj-4gZMtXRZjSLp37JHi0VjMB4uLZtFmZ06ZiOrn20g@mail.gmail.com>
-Subject: Random Kernel Oops
-From: Johannes Matjeschk <johannes.matjeschk@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Aug 2012 02:38:47 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: Fix debug message in of_get_named_gpio_flags()
+Date: Thu,  9 Aug 2012 08:38:43 +0200
+Message-Id: <1344494323-4992-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.7.11.4
+X-Provags-ID: V02:K0:31UVKSl9T1BU1aNEg0DtreIriNVr3sZkSMFTGNxtmw+
+ q/5G9PbuZ/ZvcZbW7JlOS/oMRVXoSS3ga3cDvFcyxqFdLw/Zlj
+ k4ym3qyx1r8BqXZY431CQgTiiZ+aBj5DSaYKaotqr0YZ79+seY
+ OIKh3nrT7lzQzrV6IpB82d3IwWhKgRfalsm1+4/YF96ZWBfJmG
+ D3F1iVFl1fOdOG7eJPAGQDM8EUwz8lsD7l/9jKfmnMtNZedRzY
+ +MAWoWJ6eWNhb7d4hF6R0+Hfv06FSQ/YbFsgcBDjNGMCSSsihF
+ drndAU2zDtaKsSJagWN5TE1pUtYoT3kobpCzH10datlLOcsoLM
+ YE0xtLkz0uy5G5hKkrdvUXMRU3TDxtBIwIr0B6PKn9sK7qFJhF
+ z/SzCV9rU/9N0HrtQNKgXVM0+8vX1ooI6CuWdhkG6nC5X8Xz1X
+ TFxC+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linux-Kernel Team,
+This was probably missed in the conversion done in commit 3d0f7cf
+("gpio: Adjust of_xlate API to support multiple GPIO chips").
 
-I'm getting randomly kernel Oops Messages. It started first when I
-tried to copy a harddisk to an image with the program safecopy 1.7.
-Since then it randomly appears.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/gpio/gpiolib-of.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-== Info about the System ==
-* Linux PC-01-JM 2.6.32-5-amd64 #1 SMP Sun May 6 04:00:17 UTC 2012
-x86_64 GNU/Linux
-* Debian 6.0.5
-* /proc/cpuinfo
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 6
-model		: 23
-model name	: Intel(R) Core(TM)2 Quad  CPU   Q9300  @ 2.50GHz
-stepping	: 7
-cpu MHz		: 1998.000
-cache size	: 3072 KB
-physical id	: 0
-siblings	: 4
-core id		: 0
-cpu cores	: 4
-apicid		: 0
-initial apicid	: 0
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 10
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
-pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
-lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64
-monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm
-tpr_shadow vnmi flexpriority
-bogomips	: 4991.54
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 36 bits physical, 48 bits virtual
-power management:
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index a18c4aa..f1a4599 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -82,7 +82,7 @@ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+ 	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+ 
+ 	of_node_put(gg_data.gpiospec.np);
+-	pr_debug("%s exited with status %d\n", __func__, ret);
++	pr_debug("%s exited with status %d\n", __func__, gg_data.out_gpio);
+ 	return gg_data.out_gpio;
+ }
+ EXPORT_SYMBOL(of_get_named_gpio_flags);
+-- 
+1.7.11.4
 
-== What I've done already ==
-* Tested every Hardware. I'm PC Technican for a small IT Firm, so I've
-the possibility to test and change every Hardware. I've switched the
-mainboard, RAM, NICs and Harddisk (from SSD to SATA).
-* I've re-installed the system many times.
-
-== Kernel Failure Messages ==
-Kernel failure message 1:
-general protection fault: 0000 [#2] SMP
-last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-CPU 0
-Modules linked in: nls_utf8 cifs sco ppdev bridge stp lp bnep rfcomm
-l2cap crc16 bluetooth rfkill acpi_cpufreq cpufreq_stats
-cpufreq_userspace cpufreq_conservative cpufreq_powersave binfmt_misc
-fuse ext2 loop firewire_sbp2 firewire_core crc_itu_t
-snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
-snd_seq radeon snd_timer snd_seq_device ttm drm_kms_helper parport_pc
-psmouse asus_atk0110 pcspkr i2c_i801 parport evdev joydev serio_raw
-snd drm i2c_algo_bit soundcore i2c_core snd_page_alloc button
-processor ext3 jbd mbcache sha256_generic aes_x86_64 aes_generic cbc
-dm_crypt dm_mod sg sr_mod usb_storage cdrom sd_mod crc_t10dif
-hid_microsoft ata_generic usbhid hid pata_jmicron uhci_hcd r8169
-8139too 8139cp floppy ehci_hcd ahci mii libata scsi_mod usbcore
-nls_base thermal thermal_sys [last unloaded: scsi_wait_scan]
-Pid: 2749, comm: logrotate Tainted: G      D    2.6.32-5-amd64 #1
-System Product Name
-RIP: 0010:[<ffffffff810e7d0c>]  [<ffffffff810e7d0c>]
-__kmalloc_track_caller+0xcd/0x13c
-RSP: 0018:ffff88002c0d5d18  EFLAGS: 00010086
-RAX: 0000000000000000 RBX: f000eef3f000eef3 RCX: 0000000000000008
-RDX: ffff880001811d30 RSI: 00000000000000d0 RDI: 0000000000000003
-RBP: 0000000000000246 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000d2def0 R11: ffffffff8115379a R12: ffffffff8147bf10
-R13: 00000000000000d0 R14: 00000000000000d0 R15: 0000000000000008
-FS:  00007f167d3bf7a0(0000) GS:ffff880001800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007ffff8cd12f8 CR3: 0000000047c7a000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process logrotate (pid: 2749, threadinfo ffff88002c0d4000, task
-ffff880047c0bf90)
-Stack:
- ffff88007e5496e8 ffffffff810f83fd 0000000800000003 0000000000000008
-<0> ffff88007e4da460 ffff88007e4da3c0 ffff88007e5496e8 ffff88007e4da3c0
-<0> ffff88007e5496e8 ffffffff810c7572 0000000000000000 ffff88004a3f06c0
-Call Trace:
- [<ffffffff810f83fd>] ? vfs_rename+0xb8/0x3c5
- [<ffffffff810c7572>] ? kstrdup+0x2b/0x41
- [<ffffffff810f83fd>] ? vfs_rename+0xb8/0x3c5
- [<ffffffff810f99d7>] ? sys_renameat+0x191/0x20d
- [<ffffffff810cd290>] ? handle_mm_fault+0x7aa/0x80f
- [<ffffffff81069a98>] ? prepare_creds+0x20/0x9c
- [<ffffffff812ff2e6>] ? do_page_fault+0x2e0/0x2fc
- [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
-Code: fa 66 0f 1f 44 00 00 65 8b 04 25 a8 e3 00 00 48 98 49 8b 94 c4
-f0 02 00 00 8b 4a 18 89 4c 24 14 48 8b 1a 48 85 db 74 0c 8b 42 14 <48>
-8b 04 c3 48 89 02 eb 19 48 8b 4c 24 08 49 89 d0 44 89 ee 83
-RIP  [<ffffffff810e7d0c>] __kmalloc_track_caller+0xcd/0x13c
- RSP <ffff88002c0d5d18>
----[ end trace 442594a3a4e76717 ]---
-
-
-Kernel failure message 2:
-------------[ cut here ]------------
-kernel BUG at /build/buildd-linux-2.6_2.6.32-45-amd64-FcX7RM/linux-2.6-2.6.32/debian/build/source_amd64_none/mm/slub.c:2969!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-CPU 1
-Modules linked in: nls_utf8 cifs sco ppdev bridge stp lp bnep rfcomm
-l2cap crc16 bluetooth rfkill acpi_cpufreq cpufreq_stats
-cpufreq_userspace cpufreq_conservative cpufreq_powersave binfmt_misc
-fuse ext2 loop firewire_sbp2 firewire_core crc_itu_t
-snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
-snd_seq radeon snd_timer snd_seq_device ttm drm_kms_helper parport_pc
-psmouse asus_atk0110 pcspkr i2c_i801 parport evdev joydev serio_raw
-snd drm i2c_algo_bit soundcore i2c_core snd_page_alloc button
-processor ext3 jbd mbcache sha256_generic aes_x86_64 aes_generic cbc
-dm_crypt dm_mod sg sr_mod usb_storage cdrom sd_mod crc_t10dif
-hid_microsoft ata_generic usbhid hid pata_jmicron uhci_hcd r8169
-8139too 8139cp floppy ehci_hcd ahci mii libata scsi_mod usbcore
-nls_base thermal thermal_sys [last unloaded: scsi_wait_scan]
-Pid: 2085, comm: udisks-daemon Not tainted 2.6.32-5-amd64 #1 System Product Name
-RIP: 0010:[<ffffffff810e77ef>]  [<ffffffff810e77ef>] kfree+0x55/0xcb
-RSP: 0018:ffff88007d163ca8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: 00000000002a0021
-RDX: ffff880000000000 RSI: ffffea0001b9a2c0 RDI: ffffea0000000000
-RBP: ffff880000000000 R08: 0000000000000000 R09: ffffffff81479930
-R10: ffff8800018901b0 R11: ffffffff810b5def R12: ffffffffa015fa06
-R13: ffff880037ab6000 R14: 000000000000001d R15: ffff88007f6306a0
-FS:  00007f28d24c17a0(0000) GS:ffff880001880000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f408d2d7008 CR3: 000000007d089000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process udisks-daemon (pid: 2085, threadinfo ffff88007d162000, task
-ffff88007cf646a0)
-Stack:
- 0000000000000000 ffff880000000000 ffff880037760400 ffffffffa015fa06
-<0> ffff880037ab6000 ffff88007f630680 ffffffffa0162e60 ffff880037760400
-<0> ffff88007f630680 ffffffff81112026 ffff88007f630680 00000000fffffffa
-Call Trace:
- [<ffffffffa015fa06>] ? sd_media_changed+0x19a/0x1a4 [sd_mod]
- [<ffffffff81112026>] ? check_disk_change+0x22/0x53
- [<ffffffffa015fcfe>] ? sd_open+0xee/0x18a [sd_mod]
- [<ffffffff81112ec9>] ? __blkdev_get+0x258/0x342
- [<ffffffff81112fba>] ? blkdev_open+0x0/0x96
- [<ffffffff81113021>] ? blkdev_open+0x67/0x96
- [<ffffffff810ed942>] ? __dentry_open+0x19d/0x2bf
- [<ffffffff810f91a3>] ? do_filp_open+0x4e4/0x94b
- [<ffffffffa016efce>] ? cdrom_release+0x1ae/0x1fe [cdrom]
- [<ffffffff810168f3>] ? read_tsc+0xa/0x20
- [<ffffffff811021c5>] ? alloc_fd+0x67/0x10c
- [<ffffffff810ed6d3>] ? do_sys_open+0x55/0xfc
- [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
-Code: 83 c3 08 48 83 3b 00 eb ec 48 83 fd 10 0f 86 89 00 00 00 48 89
-ef e8 b9 e8 ff ff 48 89 c7 48 8b 00 84 c0 78 13 66 a9 00 c0 75 04 <0f>
-0b eb fe 5b 5d 41 5c e9 8c 54 fd ff 48 8b 4c 24 18 4c 8b 4f
-RIP  [<ffffffff810e77ef>] kfree+0x55/0xcb
- RSP <ffff88007d163ca8>
----[ end trace 442594a3a4e76716 ]---
