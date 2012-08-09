@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab2HILTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 07:19:32 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:37369 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757972Ab2HILT3 (ORCPT
+	id S1758052Ab2HILYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 07:24:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56602 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758023Ab2HILYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 07:19:29 -0400
-Date: Thu, 9 Aug 2012 14:15:51 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Infinite looping in omap2430.c USB driver
-Message-ID: <20120809111549.GT12174@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <20120707083949.2cf91eeb@notabene.brown>
+	Thu, 9 Aug 2012 07:24:35 -0400
+Message-ID: <50239DEB.5080209@linaro.org>
+Date: Thu, 09 Aug 2012 16:54:27 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GAoked8QSizNecZ5"
-Content-Disposition: inline
-In-Reply-To: <20120707083949.2cf91eeb@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, patches@linaro.org,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH] ARM: EXYNOS: Use generic pwm driver in Origen board
+References: <1344503035-18127-1-git-send-email-tushar.behera@linaro.org> <20120809091526.GA693@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120809091526.GA693@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
++ linux-kernel@vger.kernel.org
+- linux-kernel@lists.infradead.org
 
---GAoked8QSizNecZ5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/09/2012 02:45 PM, Thierry Reding wrote:
+> On Thu, Aug 09, 2012 at 02:33:55PM +0530, Tushar Behera wrote:
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> ---
+>>  arch/arm/mach-exynos/mach-origen.c |   11 +++++++++++
+>>  1 files changed, 11 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+>> index 5ca8030..4c4048d 100644
+>> --- a/arch/arm/mach-exynos/mach-origen.c
+>> +++ b/arch/arm/mach-exynos/mach-origen.c
+> [...]
+>> @@ -613,6 +614,10 @@ static struct platform_device origen_lcd_hv070wsa = {
+>>  	.dev.platform_data	= &origen_lcd_hv070wsa_data,
+>>  };
+>>  
+>> +static struct pwm_lookup origen_pwm_lookup[] = {
+>> +	PWM_LOOKUP("s3c24xx-pwm.0", 0, "pwm-backlight.0", NULL),
+>> +};
+>> +
+> 
+> This might conflict with some other patches that Jingoo (Cc'ed) is
+> working on. His patches were going to rework the Samsung PWM driver to
+> register multiple PWM devices per chip. In that case the s3c24xx-pwm
+> device should probably be modified to use .id = -1 and then the .0 can
+> be dropped from the provider name above.
+> 
+> Otherwise this patch looks good to me.
+> 
+> Thierry
+> 
+Thanks for your review.
 
-On Sat, Jul 07, 2012 at 08:39:49AM +1000, NeilBrown wrote:
->=20
-> Hello `./scripts/get_maintainer.pl -f drivers/usb/musb/omap2430.c`
->=20
-> omap2430_musb_set_vbus in omap2430.c contains:
->=20
-> 			while (musb_readb(musb->mregs, MUSB_DEVCTL) & 0x80) {
->=20
-> 				cpu_relax();
->=20
-> 				if (time_after(jiffies, timeout)) {
-> 					dev_err(musb->controller,
-> 					"configured as A device timeout");
-> 					ret =3D -EINVAL;
-> 					break;
-> 				}
-> 			}
->=20
-> having set
-> 	unsigned long timeout =3D jiffies + msecs_to_jiffies(1000);
+It was wrong for me to create s3c24xx-pwm platform device as it is
+already created in samsung_bl_set(). Hence I would be dropping that.
 
-hehe, that's nasty. Please send a patch converting to a try count and a
-udelay_range(), or something.
+However, dropping .0 from provider name results in following. (as the
+device name is s3c24xx-pwm.N).
 
---=20
-balbi
+[    0.240000] pwm-backlight pwm-backlight.0: unable to request PWM,
+trying legacy API
 
---GAoked8QSizNecZ5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I will resubmit the patch with these changes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQI5vlAAoJEIaOsuA1yqRE0OQQAJVpTeRaEXVUCW3l3963QpS7
-vVYt8rjIudRYVHwqFE5oZf6RnRY2tPuzsKMVJABK/7r2lXm0Dia3lG9oJxO7heT+
-9vFUahXJcxZenmv/XHmNJYUqcvmiVV/aD6VBrZRZCb+uqlkVzOLhnEvo8v11yU7b
-Y3zj5emoUePYUQH+sPQrXZK1Sdgk35IsBPD/4DxTioFjKYt43h2gzaUcqIb4Sf0T
-5eR+0hekPOQMMDP95NO5M210r+RearTX4EwPnRVxw4w6iBWeDszxJGim4Y7apmSz
-rmBF1tCD8crLicW0/CBrI3JgNkqWAyxJ2Yi3SpMidv1JN3Gb/xVfQurcXiY35VI0
-lW7soC/YpSZMh5lTcS3Fax5xqkMcEedZU9oHVZymWNQzrc/Dq5p5uKnUYsGTwBEL
-9376//lrG7d3Rt7odsKCERPVB2DeYW7D6f5Xil6WBHZrJN21zJnNau1XXMPf1dL4
-uhg/q23DRh8Qmadt/dDiUGt3q458AyrwgwZVgWIVNUA1ZN8U+kAt0nCkOilLJHHH
-iSSfukpfQtpMFKkecIgmDyxkjTlkhbo/xFb8wMPyDiLCk83J1paeZWwqKhnyEVqQ
-0cm+G5+nikSusDFraarTnRvk5DmE8BmoLBjjKKkt1RP4R7TxpkMytSVmRjT5iQ0B
-pe1dt0QXCojk4o8u5CNV
-=7GnU
------END PGP SIGNATURE-----
-
---GAoked8QSizNecZ5--
+-- 
+Tushar Behera
