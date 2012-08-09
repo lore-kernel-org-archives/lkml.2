@@ -1,275 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab2HIBy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:54:29 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46930 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2HIBy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:54:27 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-9a-50231851255d
-Date: Thu, 9 Aug 2012 10:55:58 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v6 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120809015558.GB18106@bbox>
-References: <cover.1344463786.git.aquini@redhat.com>
- <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <efb9756c5d6de8952a793bfc99a9db9cdd66b12f.1344463786.git.aquini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1753388Ab2HIBzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:55:23 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:61911 "EHLO mta02.xtra.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751766Ab2HIBzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 21:55:13 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: vt8500-wm8505-linux-kernel@googlegroups.com
+Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Alessandro Zummo <a.zummo@towertech.it>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
+        Neil Zhang <zhangwm@marvell.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Eric Andersson <eric.andersson@unixphere.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCHv2 3/8] serial: vt8500: Add devicetree support for vt8500-serial
+Date: Thu,  9 Aug 2012 13:54:55 +1200
+Message-Id: <1344477300-25251-4-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
+References: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ drivers/tty/serial/vt8500_serial.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-On Wed, Aug 08, 2012 at 07:53:19PM -0300, Rafael Aquini wrote:
-> Memory fragmentation introduced by ballooning might reduce significantly
-> the number of 2MB contiguous memory blocks that can be used within a guest,
-> thus imposing performance penalties associated with the reduced number of
-> transparent huge pages that could be used by the guest workload.
-> 
-> This patch introduces the helper functions as well as the necessary changes
-> to teach compaction and migration bits how to cope with pages which are
-> part of a guest memory balloon, in order to make them movable by memory
-> compaction procedures.
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> ---
->  include/linux/mm.h |  17 +++++++
->  mm/compaction.c    | 131 +++++++++++++++++++++++++++++++++++++++++++++--------
->  mm/migrate.c       |  30 +++++++++++-
->  3 files changed, 158 insertions(+), 20 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 311be90..18f978b 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1662,5 +1662,22 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
->  static inline bool page_is_guard(struct page *page) { return false; }
->  #endif /* CONFIG_DEBUG_PAGEALLOC */
->  
-> +#if (defined(CONFIG_VIRTIO_BALLOON) || \
-> +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
-> +extern bool isolate_balloon_page(struct page *);
-> +extern bool putback_balloon_page(struct page *);
-> +extern struct address_space *balloon_mapping;
-> +
-> +static inline bool movable_balloon_page(struct page *page)
-> +{
-> +	return (page->mapping && page->mapping == balloon_mapping);
-> +}
-> +
-> +#else
-> +static inline bool isolate_balloon_page(struct page *page) { return false; }
-> +static inline bool putback_balloon_page(struct page *page) { return false; }
-> +static inline bool movable_balloon_page(struct page *page) { return false; }
-> +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && CONFIG_COMPACTION */
-> +
->  #endif /* __KERNEL__ */
->  #endif /* _LINUX_MM_H */
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index e78cb96..7372592 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -14,6 +14,7 @@
->  #include <linux/backing-dev.h>
->  #include <linux/sysctl.h>
->  #include <linux/sysfs.h>
-> +#include <linux/export.h>
->  #include "internal.h"
->  
->  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> @@ -21,6 +22,90 @@
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/compaction.h>
->  
-> +#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
-> +/*
-> + * Balloon pages special page->mapping.
-> + * Users must properly allocate and initialize an instance of balloon_mapping,
-> + * and set it as the page->mapping for balloon enlisted page instances.
-> + * There is no need on utilizing struct address_space locking schemes for
-> + * balloon_mapping as, once it gets initialized at balloon driver, it will
-> + * remain just like a static reference that helps us on identifying a guest
-> + * ballooned page by its mapping, as well as it will keep the 'a_ops' callback
-> + * pointers to the functions that will execute the balloon page mobility tasks.
-> + *
-> + * address_space_operations necessary methods for ballooned pages:
-> + *   .migratepage    - used to perform balloon's page migration (as is)
-> + *   .invalidatepage - used to isolate a page from balloon's page list
-> + *   .freepage       - used to reinsert an isolated page to balloon's page list
-> + */
-> +struct address_space *balloon_mapping;
-> +EXPORT_SYMBOL_GPL(balloon_mapping);
-> +
-> +static inline void __isolate_balloon_page(struct page *page)
-> +{
-> +	page->mapping->a_ops->invalidatepage(page, 0);
-> +}
-> +
-> +static inline void __putback_balloon_page(struct page *page)
-> +{
-> +	page->mapping->a_ops->freepage(page);
-> +}
-> +
-> +/* __isolate_lru_page() counterpart for a ballooned page */
-> +bool isolate_balloon_page(struct page *page)
-> +{
-> +	if (WARN_ON(!movable_balloon_page(page)))
-> +		return false;
-> +
-> +	if (likely(get_page_unless_zero(page))) {
-> +		/*
-> +		 * As balloon pages are not isolated from LRU lists, concurrent
-> +		 * compaction threads can race against page migration functions
-> +		 * move_to_new_page() & __unmap_and_move().
-> +		 * In order to avoid having an already isolated balloon page
-> +		 * being (wrongly) re-isolated while it is under migration,
-> +		 * lets be sure we have the page lock before proceeding with
-> +		 * the balloon page isolation steps.
-> +		 */
-> +		if (likely(trylock_page(page))) {
-> +			/*
-> +			 * A ballooned page, by default, has just one refcount.
-> +			 * Prevent concurrent compaction threads from isolating
-> +			 * an already isolated balloon page.
-> +			 */
-> +			if (movable_balloon_page(page) &&
-> +			    (page_count(page) == 2)) {
-> +				__isolate_balloon_page(page);
-> +				unlock_page(page);
-> +				return true;
-> +			}
-> +			unlock_page(page);
-> +		}
-> +		/* Drop refcount taken for this already isolated page */
-> +		put_page(page);
-> +	}
-> +	return false;
-> +}
-> +
-> +/* putback_lru_page() counterpart for a ballooned page */
-> +bool putback_balloon_page(struct page *page)
-> +{
-> +	if (WARN_ON(!movable_balloon_page(page)))
-> +		return false;
-> +
-> +	if (likely(trylock_page(page))) {
-> +		if (movable_balloon_page(page)) {
-> +			__putback_balloon_page(page);
-> +			put_page(page);
-> +			unlock_page(page);
-> +			return true;
-> +		}
-> +		unlock_page(page);
-> +	}
-> +	return false;
-> +}
-> +#endif /* CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE */
-> +
->  static unsigned long release_freepages(struct list_head *freelist)
->  {
->  	struct page *page, *next;
-> @@ -312,32 +397,40 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			continue;
->  		}
->  
-> -		if (!PageLRU(page))
-> -			continue;
-> -
->  		/*
-> -		 * PageLRU is set, and lru_lock excludes isolation,
-> -		 * splitting and collapsing (collapsing has already
-> -		 * happened if PageLRU is set).
-> +		 * It is possible to migrate LRU pages and balloon pages.
-> +		 * Skip any other type of page.
->  		 */
-> -		if (PageTransHuge(page)) {
-> -			low_pfn += (1 << compound_order(page)) - 1;
-> -			continue;
-> -		}
-> +		if (PageLRU(page)) {
-> +			/*
-> +			 * PageLRU is set, and lru_lock excludes isolation,
-> +			 * splitting and collapsing (collapsing has already
-> +			 * happened if PageLRU is set).
-> +			 */
-> +			if (PageTransHuge(page)) {
-> +				low_pfn += (1 << compound_order(page)) - 1;
-> +				continue;
-> +			}
->  
-> -		if (!cc->sync)
-> -			mode |= ISOLATE_ASYNC_MIGRATE;
-> +			if (!cc->sync)
-> +				mode |= ISOLATE_ASYNC_MIGRATE;
->  
-> -		lruvec = mem_cgroup_page_lruvec(page, zone);
-> +			lruvec = mem_cgroup_page_lruvec(page, zone);
->  
-> -		/* Try isolate the page */
-> -		if (__isolate_lru_page(page, mode) != 0)
-> -			continue;
-> +			/* Try isolate the page */
-> +			if (__isolate_lru_page(page, mode) != 0)
-> +				continue;
-> +
-> +			VM_BUG_ON(PageTransCompound(page));
->  
-> -		VM_BUG_ON(PageTransCompound(page));
-> +			/* Successfully isolated */
-> +			del_page_from_lru_list(page, lruvec, page_lru(page));
-> +		} else if (unlikely(movable_balloon_page(page))) {
-> +			if (!isolate_balloon_page(page))
-> +				continue;
-> +		} else
-> +			continue;
->  
-> -		/* Successfully isolated */
-> -		del_page_from_lru_list(page, lruvec, page_lru(page));
->  		list_add(&page->lru, migratelist);
->  		cc->nr_migratepages++;
->  		nr_isolated++;
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 77ed2d7..871a304 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -79,7 +79,10 @@ void putback_lru_pages(struct list_head *l)
->  		list_del(&page->lru);
->  		dec_zone_page_state(page, NR_ISOLATED_ANON +
->  				page_is_file_cache(page));
-> -		putback_lru_page(page);
-> +		if (unlikely(movable_balloon_page(page)))
-> +			WARN_ON(!putback_balloon_page(page));
-> +		else
-> +			putback_lru_page(page);
->  	}
-
-Don't hack putback_lru_pages. It's a function for handling LRU pages
-and is used by several places.
-Plz, don't add complexity to unrelavant parts.
-
-You can define a new function putback_migratepages should be used as pair with
-isolate_migratepages_range so that both functions are aware of balloon page.
-IMHO, it's better abstraction rather than hook of generic function.
-
-Otherwise, Looks good to me.
-
-Thanks.
-
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 2be006f..dee6715 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -34,6 +34,7 @@
+ #include <linux/slab.h>
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
+ 
+ /*
+  * UART Register offsets
+@@ -603,12 +604,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id wmt_dt_ids[] = {
++	{ .compatible = "via,vt8500-uart", },
++	{}
++};
++
+ static struct platform_driver vt8500_platform_driver = {
+ 	.probe  = vt8500_serial_probe,
+ 	.remove = __devexit_p(vt8500_serial_remove),
+ 	.driver = {
+ 		.name = "vt8500_serial",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(wmt_dt_ids),
+ 	},
+ };
+ 
+@@ -642,4 +649,4 @@ module_exit(vt8500_serial_exit);
+ 
+ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
+ MODULE_DESCRIPTION("Driver for vt8500 serial device");
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL v2");
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
