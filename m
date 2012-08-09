@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab2HITKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:10:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759222Ab2HITJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:09:26 -0400
-Date: Thu, 9 Aug 2012 15:50:47 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 03/12] KVM: introduce gfn_to_pfn_memslot_atomic
-Message-ID: <20120809185047.GB20889@amt.cnet>
-References: <5020E423.9080004@linux.vnet.ibm.com>
- <5020E4B0.9090609@linux.vnet.ibm.com>
+	id S1759269Ab2HITNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:13:09 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:53498 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755071Ab2HITNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:13:07 -0400
+Message-ID: <50240B70.3000800@xenotime.net>
+Date: Thu, 09 Aug 2012 12:11:44 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5020E4B0.9090609@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Aug 9 (staging/csr)
+References: <20120809131317.3d289a0b98a13c72001154fb@canb.auug.org.au>
+In-Reply-To: <20120809131317.3d289a0b98a13c72001154fb@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:49:36PM +0800, Xiao Guangrong wrote:
-> It can instead of hva_to_pfn_atomic
+On 08/08/2012 08:13 PM, Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c       |    5 +----
->  include/linux/kvm_host.h |    3 ++-
->  virt/kvm/kvm_main.c      |   14 ++++++++------
->  3 files changed, 11 insertions(+), 11 deletions(-)
+> Changes since 20120807:
+> 
 
-What if someone needs gfn_to_hva_memslot in the future, which is not
-unlikely?
 
+
+(on i386)
+
+ERROR: "register_inetaddr_notifier" [drivers/staging/csr/csr_wifi.ko] undefined!
+ERROR: "unregister_inetaddr_notifier" [drivers/staging/csr/csr_wifi.ko] undefined!
+
+when CONFIG_INET is not enabled.
+
+CSR_WIFI probably should depend on INET.
+
+
+-- 
+~Randy
