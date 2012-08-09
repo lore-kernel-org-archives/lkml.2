@@ -1,101 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab2HITj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:39:29 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:53529 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759376Ab2HITj1 (ORCPT
+	id S1759492Ab2HITkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:40:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36306 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759376Ab2HITku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:39:27 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 4DD808210C
-Date: Thu, 9 Aug 2012 21:39:21 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Michel Lespinasse <walken@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/5] [RFC] Add volatile range management code
-Message-ID: <20120809193921.GA1999@thinkpad>
-References: <1343447832-7182-1-git-send-email-john.stultz@linaro.org>
- <1343447832-7182-2-git-send-email-john.stultz@linaro.org>
- <CANN689HWYO5DD_p7yY39ethcFu_JO9hudMcDHd=K8FUfhpHZOg@mail.gmail.com>
- <20120809133544.GA2086@thinkpad>
- <5024107D.8070109@linaro.org>
+	Thu, 9 Aug 2012 15:40:50 -0400
+Date: Thu, 9 Aug 2012 20:40:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 00/22] mop500 related Audio reorganisation and fixups
+Message-ID: <20120809194044.GA9966@gmail.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+ <20120809185029.GC24328@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5024107D.8070109@linaro.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120809185029.GC24328@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 12:33:17PM -0700, John Stultz wrote:
-> On 08/09/2012 06:35 AM, Andrea Righi wrote:
-> >On Thu, Aug 09, 2012 at 02:46:37AM -0700, Michel Lespinasse wrote:
-> >>On Fri, Jul 27, 2012 at 8:57 PM, John Stultz <john.stultz@linaro.org> wrote:
-> >>>v5:
-> >>>* Drop intervaltree for prio_tree usage per Michel &
-> >>>   Dmitry's suggestions.
-> >>Actually, I believe the ranges you need to track are non-overlapping, correct ?
-> >>
-> >>If that is the case, a simple rbtree, sorted by start-of-range
-> >>address, would work best.
-> >>(I am trying to remove prio_tree users... :)
-> >>
-> >John,
-> >
-> >JFYI, if you want to try a possible rbtree-based implementation, as
-> >suggested by Michel you could try this one:
-> >https://github.com/arighi/kinterval
-> >
-> >This implementation supports insertion, deletion and transparent merging
-> >of adjacent ranges, as well as splitting ranges when chunks removed or
-> >different chunk types are added in the middle of an existing range; so
-> >if I'm not wrong probably you should be able to use this code as is,
-> >without any modification.
-> I do appreciate the suggestion, and considered this earlier when you
-> posted this before.
+On Thu, Aug 09, 2012 at 07:50:29PM +0100, Mark Brown wrote:
+> On Thu, Aug 09, 2012 at 04:47:26PM +0100, Lee Jones wrote:
+> > Another fine instalment of Audio fixes and Device Tree enablement
+> > surrounding the mop500 sound driver. Hopefully containing all of 
+> > the recommendations suggested by Mark Brown.
 > 
-> Unfotunately the transparent merging/splitting/etc is actually not
-> useful for me, since I manage other data per-range. The earlier
-> generic rangetree/intervaltree implementations I tried limiting the
-> interface to basically add(), remove(), search(), and search_next(),
-> since when we coalesce intervals, we need to free the data in the
-> structure referencing the interval being deleted (and similarly
-> create new structures to reference new intervals created when we
-> remove an interval). So the coalescing/splitting logic can't be
-> pushed into the interval management code cleanly.
-> 
-> So while I might be able to make use of your kinterval in a fairly
-> simple manner (only using add/del/lookup), I'm not sure it wins
-> anything over just using an rbtree.  Especially since I'd have to do
-> my own coalesce/splitting logic anyway, it would actually be more
-> expensive as on add() it would still scan to check for overlapping
-> ranges to merge.
-> 
-> I ended up dropping my generic intervaltree implementation because
-> folks objected that it was so trivial (basically just wrapping an
-> rbtree) and didn't handle some of the more complex intervaltree use
-> cases (ie: allowing for overlapping intervals). The priotree seemed
-> to match fairly closely the interface I was using, but apparently
-> its on its way out as well, so unless anyone further objects, I
-> think I'll just fall back to a simple rbtree implementation.
+> Can we have some review of this from the ARM side please?  It's pretty
+> big...
 
-OK, everything makes sense now, thanks for the clarifications, and sorry
-for suggesting yet another range/interval tree implementation. :)
+I don't expect Linus will do anything until he returns back from vacation.
 
-I'll look at your patch set more in details and try to test/review it
-closely.
+I'll speak to Arnd tomorrow and offer him some kind of liquid refreshment. :)
 
--Andrea
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
