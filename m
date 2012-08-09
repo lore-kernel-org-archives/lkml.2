@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2HIVJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:09:45 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33509 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507Ab2HIVJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:09:43 -0400
-Message-ID: <502426FE.5030301@us.ibm.com>
-Date: Thu, 09 Aug 2012 14:09:18 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754184Ab2HIVND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:13:03 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:35441 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab2HIVNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:13:00 -0400
+Date: Thu, 9 Aug 2012 17:12:58 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dave Martin <dave.martin@linaro.org>
+Subject: Re: [PATCH 04/10] ARM: pass -marm to gcc by default
+In-Reply-To: <1344461278-28245-5-git-send-email-arnd@arndb.de>
+Message-ID: <alpine.LFD.2.02.1208091709010.5231@xanadu.home>
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-5-git-send-email-arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Todd Poynor <toddpoynor@google.com>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, arve@android.com
-Subject: Re: [PATCH] alarmtimer: implement minimum alarm interval for allowing
- suspend
-References: <1344497847-7161-1-git-send-email-toddpoynor@google.com> <50242670.4020302@linaro.org>
-In-Reply-To: <50242670.4020302@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080921-9360-0000-0000-00000946C322
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 02:06 PM, John Stultz wrote:
-> On 08/09/2012 12:37 AM, Todd Poynor wrote:
->> @@ -288,9 +293,11 @@ static int alarmtimer_suspend(struct device *dev)
->>       now = rtc_tm_to_ktime(tm);
->>       now = ktime_add(now, min);
->>
->> -    rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
->> -
->> -    return 0;
->> +    /* Set alarm, if in the past reject suspend briefly to handle */
->> +    ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
->> +    if (ret < 0)
->> +        __pm_wakeup_event(ws, 1 * MSEC_PER_SEC);
->> +    return ret;
->
-> What if something other then -ETIME  is returned from rtc_timer_start?
+On Wed, 8 Aug 2012, Arnd Bergmann wrote:
 
-Bah, sorry, too fast on the trigger there (enlightenment somehow only 
-comes with clicking the send button).
-I see the wakeup_source will expire after a second and the next suspend 
-can try again.
+> The Linaro cross toolchain and probably others nowadays default to
+> building in THUMB2 mode. When building a kernel for a CPU that does
+> not support THUMB2, the compiler complains about incorrect flags.
+> We can work around this by setting -marm for all non-T2 builds.
+> 
+> Without this patch, building assabet_defconfig results in:
+> 
+> usr/initramfs_data.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+> arch/arm/nwfpe/entry.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+> firmware/cis/PCMLM28.cis.gen.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+> (and many more)
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Dave Martin <dave.martin@linaro.org>
+> ---
+>  arch/arm/Makefile |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index 30eae87..b4c2296 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -111,6 +111,9 @@ AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
+>  ifeq ($(CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11),y)
+>  CFLAGS_MODULE	+=-fno-optimize-sibling-calls
+>  endif
+> +else
+> +CFLAGS_THUMB2  :=-marm
+> +AFLAGS_THUMB2	:=-marm
 
-thanks
--john
+CFLAGS_THUMB2 should probably be renamed to something more appropriate 
+in this case, e.g. CFLAGS_MODE.
 
+
+Nicolas
