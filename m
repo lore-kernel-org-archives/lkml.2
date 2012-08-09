@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab2HIQoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:44:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43333 "EHLO mga02.intel.com"
+	id S1758673Ab2HIQpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:45:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:43358 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757360Ab2HIQo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:44:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,741,1336374000"; 
-   d="scan'208";a="178057288"
-From: james.d.ralston@intel.com
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, Rob Landley <rob@landley.net>
-Cc: Seth Heasley <seth.heasley@intel.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Olof Johansson <olof@lixom.net>, linux-i2c@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: [PATCH 4/5] i2c-i801: Add Device IDs for Intel Lynx Point-LP PCH
-Date: Thu,  9 Aug 2012 09:43:52 -0700
-Message-Id: <1344530632-2645-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757360Ab2HIQpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:45:20 -0400
+Message-ID: <5023E859.9090407@parallels.com>
+Date: Thu, 9 Aug 2012 20:42:01 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Greg Thelen <gthelen@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, "Christoph Lameter" <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-8-git-send-email-glommer@parallels.com> <xr93boikgh4w.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93boikgh4w.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Ralston <james.d.ralston@intel.com>
-
-This patch adds the SMBus Device IDs for the Intel Lynx Point-LP PCH. The Device IDs are defined in drivers/i2c/busses/i2c-i801.c
-
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 615142d..53207df 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -21,6 +21,7 @@ Supported adapters:
-   * Intel DH89xxCC (PCH)
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-+  * Intel Lynx Point_LP (PCH)
-    Datasheets: Publicly available at the Intel website
- 
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 2e7530a..3500af7 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -104,6 +104,7 @@ config I2C_I801
- 	    DH89xxCC (PCH)
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
-+	    Lynx Point_LP (PCH)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 898dcf9..c467038 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -52,6 +52,7 @@
-   DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-+  Lynx Point_LP (PCH)   0x9c22     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -155,6 +156,7 @@
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS	0x9c22
- 
- struct i801_priv {
- 	struct i2c_adapter adapter;
-@@ -771,6 +773,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
- 	{ 0, }
- };
- 
--- 
-1.7.7.6
+On 08/09/2012 08:33 PM, Greg Thelen wrote:
+> On Thu, Aug 09 2012, Glauber Costa wrote:
+> 
+>> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
+>> page allocator will call the corresponding memcg functions to validate
+>> the allocation. Tasks in the root memcg can always proceed.
+>>
+>> To avoid adding markers to the page - and a kmem flag that would
+>> necessarily follow, as much as doing page_cgroup lookups for no reason,
+>> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+>> for telling the page allocator that this is such an allocation at
+>> free_pages() time. This is done by the invocation of
+>> __free_accounted_pages() and free_accounted_pages().
+>>
+>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: Michal Hocko <mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal <suleiman@google.com>
+>> ---
+>>  include/linux/gfp.h |  3 +++
+>>  mm/page_alloc.c     | 38 ++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 41 insertions(+)
+>>
+>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+>> index d8eae4d..029570f 100644
+>> --- a/include/linux/gfp.h
+>> +++ b/include/linux/gfp.h
+>> @@ -370,6 +370,9 @@ extern void free_pages(unsigned long addr, unsigned int order);
+>>  extern void free_hot_cold_page(struct page *page, int cold);
+>>  extern void free_hot_cold_page_list(struct list_head *list, int cold);
+>>  
+>> +extern void __free_accounted_pages(struct page *page, unsigned int order);
+>> +extern void free_accounted_pages(unsigned long addr, unsigned int order);
+>> +
+>>  #define __free_page(page) __free_pages((page), 0)
+>>  #define free_page(addr) free_pages((addr), 0)
+>>  
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index b956cec..da341dc 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -2532,6 +2532,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>>  	struct page *page = NULL;
+>>  	int migratetype = allocflags_to_migratetype(gfp_mask);
+>>  	unsigned int cpuset_mems_cookie;
+>> +	void *handle = NULL;
+>>  
+>>  	gfp_mask &= gfp_allowed_mask;
+>>  
+>> @@ -2543,6 +2544,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>>  		return NULL;
+>>  
+>>  	/*
+>> +	 * Will only have any effect when __GFP_KMEMCG is set.
+>> +	 * This is verified in the (always inline) callee
+>> +	 */
+>> +	if (!memcg_kmem_new_page(gfp_mask, &handle, order))
+>> +		return NULL;
+>> +
+>> +	/*
+>>  	 * Check the zones suitable for the gfp_mask contain at least one
+>>  	 * valid zone. It's possible to have an empty zonelist as a result
+>>  	 * of GFP_THISNODE and a memoryless node
+> 
+> If memcg_kmem_new_page() succeeds then it may have obtained a memcg
+> reference with mem_cgroup_get().  I think this reference is leaked when
+> returning below:
+> 
+> 	/*
+> 	 * Check the zones suitable for the gfp_mask contain at least one
+> 	 * valid zone. It's possible to have an empty zonelist as a result
+> 	 * of GFP_THISNODE and a memoryless node
+> 	 */
+> 	if (unlikely(!zonelist->_zonerefs->zone))
+> 		return NULL;
+> 
+> I suspect the easiest fix is to swap the call to memcg_kmem_new_page()
+> and the (!zonelist->_zonerefs->zone) check.
+> 
+You are right, indeed.
 
