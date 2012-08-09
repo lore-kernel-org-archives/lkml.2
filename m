@@ -1,37 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031448Ab2HIPyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:54:10 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38732 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031300Ab2HIPyD (ORCPT
+	id S1031421Ab2HIPyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:54:17 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55135 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031446Ab2HIPyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:54:03 -0400
+	Thu, 9 Aug 2012 11:54:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH 0/8] Changes surrounding IRQs and IRQ domains 
-Date: Thu,  9 Aug 2012 16:53:47 +0100
-Message-Id: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
+Date: Thu,  9 Aug 2012 16:53:52 +0100
+Message-Id: <1344527635-6163-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
+References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we apply some fixes to the way the AB8500 handles IRQs and
-provide the DB8500 with an IRQ domain. We also handle hwirq to
-virq conversion slightly differently when registering MFD devices.
-The other changes pertain to the way IRQs are requested and dealt
-with by AB8500 child devices.
+The PRCMU has its own USB, Thermal, GPIO, Modem, HSI and RTC drivers,
+amongst other things. This patch allows those subordinate devices to
+use it as an interrupt controller as and when they are DT enabled.
 
- arch/arm/boot/dts/dbx5x0.dtsi      |    3 ++
- drivers/input/misc/ab8500-ponkey.c |    4 +--
- drivers/mfd/ab8500-core.c          |    3 +-
- drivers/mfd/db8500-prcmu.c         |   54 +++++++++++++++++++++++++++---------
- drivers/mfd/mfd-core.c             |    2 +-
- include/linux/mfd/db8500-prcmu.h   |    2 ++
- include/linux/of_irq.h             |    5 ++++
- kernel/irq/irqdomain.c             |    7 +++++
- 8 files changed, 63 insertions(+), 17 deletions(-)
+CC: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/db8500-prcmu.c       |   54 +++++++++++++++++++++++++++++---------
+ include/linux/mfd/db8500-prcmu.h |    2 ++
+ 2 files changed, 43 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 7040a00..9899b3f 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -270,6 +270,8 @@ static struct {
+ 	struct prcmu_fw_version version;
+ } fw_info;
+ 
++static struct irq_domain *db8500_irq_domain;
++
+ /*
+  * This vector maps irq numbers to the bits in the bit field used in
+  * communication with the PRCMU firmware.
+@@ -2583,7 +2585,7 @@ static void prcmu_irq_mask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
+ 
+-	mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->irq - IRQ_PRCMU_BASE];
++	mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->hwirq];
+ 
+ 	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
+ 
+@@ -2597,7 +2599,7 @@ static void prcmu_irq_unmask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
+ 
+-	mb0_transfer.req.dbb_irqs |= prcmu_irq_bit[d->irq - IRQ_PRCMU_BASE];
++	mb0_transfer.req.dbb_irqs |= prcmu_irq_bit[d->hwirq];
+ 
+ 	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
+ 
+@@ -2637,9 +2639,43 @@ static char *fw_project_name(u8 project)
+ 	}
+ }
+ 
++int db8500_irq_get_virq(int irq)
++{
++	return irq_create_mapping(db8500_irq_domain, irq);
++}
++EXPORT_SYMBOL_GPL(db8500_irq_get_virq);
++
++static int db8500_irq_map(struct irq_domain *d, unsigned int virq,
++				irq_hw_number_t hwirq)
++{
++	irq_set_chip_and_handler(virq, &prcmu_irq_chip,
++				handle_simple_irq);
++	set_irq_flags(virq, IRQF_VALID);
++
++	return 0;
++}
++
++static struct irq_domain_ops db8500_irq_ops = {
++        .map    = db8500_irq_map,
++        .xlate  = irq_domain_xlate_twocell,
++};
++
++static int db8500_irq_init(struct device_node *np)
++{
++	db8500_irq_domain = irq_domain_add_legacy(
++		np, NUM_PRCMU_WAKEUPS, IRQ_PRCMU_BASE,
++		0, &db8500_irq_ops, NULL);
++
++	if (!db8500_irq_domain) {
++		pr_err("Failed to create irqdomain\n");
++		return -ENOSYS;
++	}
++
++	return 0;
++}
++
+ void __init db8500_prcmu_early_init(void)
+ {
+-	unsigned int i;
+ 	if (cpu_is_u8500v2()) {
+ 		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+ 
+@@ -2683,16 +2719,6 @@ void __init db8500_prcmu_early_init(void)
+ 	init_completion(&mb5_transfer.work);
+ 
+ 	INIT_WORK(&mb0_transfer.mask_work, prcmu_mask_work);
+-
+-	/* Initalize irqs. */
+-	for (i = 0; i < NUM_PRCMU_WAKEUPS; i++) {
+-		unsigned int irq;
+-
+-		irq = IRQ_PRCMU_BASE + i;
+-		irq_set_chip_and_handler(irq, &prcmu_irq_chip,
+-					 handle_simple_irq);
+-		set_irq_flags(irq, IRQF_VALID);
+-	}
+ }
+ 
+ static void __init init_prcm_registers(void)
+@@ -2999,6 +3025,8 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
+ 		goto no_irq_return;
+ 	}
+ 
++	db8500_irq_init(np);
++
+ 	for (i = 0; i < ARRAY_SIZE(db8500_prcmu_devs); i++) {
+ 		if (!strcmp(db8500_prcmu_devs[i].name, "ab8500-core")) {
+ 			db8500_prcmu_devs[i].platform_data = ab8500_platdata;
+diff --git a/include/linux/mfd/db8500-prcmu.h b/include/linux/mfd/db8500-prcmu.h
+index b82f6ee..38494d9 100644
+--- a/include/linux/mfd/db8500-prcmu.h
++++ b/include/linux/mfd/db8500-prcmu.h
+@@ -571,6 +571,8 @@ u32 db8500_prcmu_read(unsigned int reg);
+ void db8500_prcmu_write(unsigned int reg, u32 value);
+ void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value);
+ 
++int db8500_irq_get_virq(int irq);
++
+ #else /* !CONFIG_MFD_DB8500_PRCMU */
+ 
+ static inline void db8500_prcmu_early_init(void) {}
+-- 
+1.7.9.5
 
