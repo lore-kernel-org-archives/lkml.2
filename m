@@ -1,95 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030538Ab2HIOaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 10:30:06 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33870 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030204Ab2HIOaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 10:30:01 -0400
+	id S1030567Ab2HIOb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 10:31:59 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:55268 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030204Ab2HIOb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 10:31:57 -0400
+Message-ID: <5023C9D3.8030605@compulab.co.il>
+Date: Thu, 09 Aug 2012 17:31:47 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5DOEfV4wTSNW8ABaUhGwa_KG3Bkt0o-rs8k-cZk4P-=+A@mail.gmail.com>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
- <20120808151555.GE14718@S2101-09.ap.freescale.net> <CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
- <CAOMZO5DOEfV4wTSNW8ABaUhGwa_KG3Bkt0o-rs8k-cZk4P-=+A@mail.gmail.com>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Thu, 9 Aug 2012 09:29:39 -0500
-Message-ID: <CAKGA1bkOo=En2P18FaBpq_KAZ88kisikXhNTabvnDknQ-EwFjA@mail.gmail.com>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device tree
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-usb@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFT] xhci: Switch PPT ports to EHCI on shutdown.
+References: <20120807173922.GA12037@xanatos>
+In-Reply-To: <20120807173922.GA12037@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 12:19 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> Matt,
->
-> On Wed, Aug 8, 2012 at 1:55 PM, Matt Sealey <matt@genesi-usa.com> wrote:
->
-> ...
->> or any setup at all for this. What's stopping this right now is you
->> need a new U-Boot which we
->> didn't release or mainline because we are still testing it (old U-Boot
->> shipped on the boards
->> cannot boot device tree anyway). While the number of users of this is
->
-> Actually you can boot a device tree kernel even on old bootloaders
-> that do not support dt.
->
-> You need to select:
-> CONFIG_ARM_APPENDED_DTB=y
-> CONFIG_ARM_ATAG_DTB_COMPAT=y
->
-> Then,
->
-> make -j4 zImage
-> make imx51-babbage.dtb
-> cat arch/arm/boot/zImage arch/arm/boot/ imx51-babbage.dtb  >
-> arch/arm/boot/zImage_dtb
-> mkimage -A arm -O linux -T kernel -C none -a 0x90008000 -e 0x90008000
-> -n Linux -d arch/arm/boot/zImage_dtb arch/arm/boot/uImage
->
-> and boot this generated uImage the same way as you used to do in the
-> non-dt case.
+Hi Sarah,
 
-That's true, but we don't have our customers compile their own kernels
-if they can help it, and appending a dtb to the end of a kernel isn't
-part of distro packaging so it just doesn't get done yet... We'd need
-to update a bunch of scripts, test them, and then deal with the
-frightening scenario of appending a dtb to a kernel *and* passing the
-address of the filesystem version (usually the one appended!) - hoping
-either works. It's too much testing. We'd rather update everyone to a
-new U-Boot that works, and deal with a single point on that end, that
-can boot the legacy kernel (machine id matches, legacy boot works on
-old kernel) and the new kernel alike.
+Yes, it fixes unexpected wake-up on Intense-PC.
+Thanks!
 
-All of this is coming from development branches we have here, and
-we're pushing it to mainline as a convenience for everyone concerned.
+Denis.
 
-What we've got on the test plan is;
+On 08/07/2012 08:39 PM, Sarah Sharp wrote:
+> The Intel desktop boards DH77EB and DH77DF have a hardware issue that
+> can be worked around by BIOS.  If the USB ports are switched to xHCI on
+> shutdown, the xHCI host will send a spurious interrupt, which will wake
+> the system.  Some BIOS will work around this, but not all.
+> 
+> The bug can be avoided if the USB ports are switched back to EHCI on
+> shutdown.  The Intel Windows driver switches the ports back to EHCI, so
+> change the Linux xHCI driver to do the same.
+> 
+> Unfortunately, we can't tell the two effected boards apart from other
+> working motherboards, because the vendors will change the DMI strings
+> for the DH77EB and DH77DF boards to their own custom names.  One example
+> is Compulab's mini-desktop, the Intense-PC.  Instead, key off the
+> Panther Point xHCI host PCI vendor and device ID, and switch the ports
+> over for all PPT xHCI hosts.
+> 
+> The only impact this will have on non-effected boards is to add a couple
+> hundred milliseconds delay on boot when the BIOS has to switch the ports
+> over from EHCI to xHCI.
+> 
+> This patch should be backported to kernels as old as 3.0, that contain
+> the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+> EHCI/xHCI port switching."
+> 
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Reported-by: Denis Turischev <denis@compulab.co.il>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/usb/host/pci-quirks.c |    7 +++++++
+>  drivers/usb/host/pci-quirks.h |    1 +
+>  drivers/usb/host/xhci-pci.c   |    9 +++++++++
+>  drivers/usb/host/xhci.c       |    3 +++
+>  drivers/usb/host/xhci.h       |    1 +
+>  5 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+> index df0828c..c5e9e4a 100644
+> --- a/drivers/usb/host/pci-quirks.c
+> +++ b/drivers/usb/host/pci-quirks.c
+> @@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+>  }
+>  EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
+>  
+> +void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
+> +{
+> +	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
+> +	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
+> +}
+> +EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
+> +
+>  /**
+>   * PCI Quirks for xHCI.
+>   *
+> diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
+> index b1002a8..ef004a5 100644
+> --- a/drivers/usb/host/pci-quirks.h
+> +++ b/drivers/usb/host/pci-quirks.h
+> @@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
+>  void usb_amd_quirk_pll_enable(void);
+>  bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
+>  void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
+> +void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+>  #else
+>  static inline void usb_amd_quirk_pll_disable(void) {}
+>  static inline void usb_amd_quirk_pll_enable(void) {}
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index 92eaff6..9bfd4ca11 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -94,6 +94,15 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+>  		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+>  		xhci->limit_active_eps = 64;
+>  		xhci->quirks |= XHCI_SW_BW_CHECKING;
+> +		/*
+> +		 * PPT desktop boards DH77EB and DH77DF will power back on after
+> +		 * a few seconds of being shutdown.  The fix for this is to
+> +		 * switch the ports from xHCI to EHCI on shutdown.  We can't use
+> +		 * DMI information to find those particular boards (since each
+> +		 * vendor will change the board name), so we have to key off all
+> +		 * PPT chipsets.
+> +		 */
+> +		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+>  	}
+>  	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+>  			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 95394e5..81aa10c 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -659,6 +659,9 @@ void xhci_shutdown(struct usb_hcd *hcd)
+>  {
+>  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+>  
+> +	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
+> +		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
+> +
+>  	spin_lock_irq(&xhci->lock);
+>  	xhci_halt(xhci);
+>  	spin_unlock_irq(&xhci->lock);
+> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> index 96f49db..c713256 100644
+> --- a/drivers/usb/host/xhci.h
+> +++ b/drivers/usb/host/xhci.h
+> @@ -1494,6 +1494,7 @@ struct xhci_hcd {
+>  #define XHCI_TRUST_TX_LENGTH	(1 << 10)
+>  #define XHCI_LPM_SUPPORT	(1 << 11)
+>  #define XHCI_INTEL_HOST		(1 << 12)
+> +#define XHCI_SPURIOUS_REBOOT	(1 << 13)
+>  	unsigned int		num_active_eps;
+>  	unsigned int		limit_active_eps;
+>  	/* There are two roothubs to keep track of bus suspend info for */
+> 
 
-1) Old U-Boot, Old Kernel. This works already for years.
-2) New U-Boot, Old Kernel. This works, well tested.
-3) New U-Boot, New Kernel+DTB. This works or we wouldn't be sending patches.
-
-The Old U-Boot, New Kernel doesn't make sense for us if the New U-Boot
-is all that's required to retain functionality.
-
-The reason the new kernel depends on the new U-Boot is we're trying to
-do all pinmux configuration in U-Boot (and we do in-house, and it
-works). No pinctrl stuff in the kernel or device tree is required at
-this point. The Old Kernel will remux a few things redundantly or
-change drive strengths or whatever or add hysteresis to the UART port
-which is not board-burning but is not really necessary, but it will
-work. The new kernel will just be able to do what it does out of the
-box, which is how it should be (hence why I object to adding pinctrl
-setup...)
-
---
-Matt Sealey <matt@genesi-usa.com>
