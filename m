@@ -1,138 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2HIIju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:39:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55352 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab2HIIjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:39:39 -0400
-X-IronPort-AV: E=Sophos;i="4.77,739,1336320000"; 
-   d="scan'208";a="5588349"
-Message-ID: <502377C0.70401@cn.fujitsu.com>
-Date: Thu, 09 Aug 2012 16:41:36 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756454Ab2HIIpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:45:20 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58727 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab2HIIpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 04:45:16 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-81-5023789a7772
+Date: Thu, 9 Aug 2012 17:46:53 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] mm: have order > 0 compaction start near a pageblock
+ with free pages
+Message-ID: <20120809084653.GB21033@bbox>
+References: <1344452924-24438-1-git-send-email-mgorman@suse.de>
+ <1344452924-24438-6-git-send-email-mgorman@suse.de>
+ <20120809001212.GB17835@bbox>
+ <20120809082328.GC12690@suse.de>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@huawei.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [RFC PATCH v2 10/16] ACPIHP: system device hotplug driver skeleton
-References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344082443-4608-11-git-send-email-jiang.liu@huawei.com> <502362E3.8010901@cn.fujitsu.com> <50236978.70208@huawei.com>
-In-Reply-To: <50236978.70208@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/09 16:39:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/09 16:39:57,
-	Serialize complete at 2012/08/09 16:39:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120809082328.GC12690@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liu ~
-
-On 08/09/2012 03:40 PM, Jiang Liu wrote:
-> Hi Tang,
-> 	Thanks for testing.
-> 	Currently there's a limitation that you need to insert acpihp_enum driver first.
-
-Sorry, I didn't make it clear. I did load acpihp_enum module first, and then load acpihp_drv.
-
-And I just tried it some more times. It just hung up, but dmesg had no output.
-Like this:
-
-# modprobe acpihp_enum
-(OK, and sysfs interfaces have been created)
-# modprobe acpihp_drv
-(hang up)
-
-# dmesg
-(nothing)
-
-The "modprobe acpihp_drv" process's call trace shows that it hung at the following function:
-#0  0x00000032836aab80 in __nanosleep_nocancel () from /lib64/libc.so.6
-#1  0x00000032836deb64 in usleep () from /lib64/libc.so.6
-......
-
-I have tried several times and I cannot reproduce the situation I just said.
-Maybe my box has something different with yours. And I'll try to find out why.
-
-Thanks for your advice. :)
-
-> Will fix this issue in next version.
-> 	Regards!
-> 	Gerry
+On Thu, Aug 09, 2012 at 09:23:28AM +0100, Mel Gorman wrote:
+> On Thu, Aug 09, 2012 at 09:12:12AM +0900, Minchan Kim wrote:
+> > > <SNIP>
+> > > 
+> > > Second, it updates compact_cached_free_pfn in a more limited set of
+> > > circumstances.
+> > > 
+> > > If a scanner has wrapped, it updates compact_cached_free_pfn to the end
+> > > 	of the zone. When a wrapped scanner isolates a page, it updates
+> > > 	compact_cached_free_pfn to point to the highest pageblock it
+> > > 	can isolate pages from.
+> > 
+> > Okay until here.
+> > 
 > 
-> On 2012-8-9 15:12, Tang Chen wrote:
->> Hi Liu~
->>
->> I compiled this driver as a module, acpihp_drv. And when I loaded this module, it
->> gave the following error message:
->>
->> # modprobe acpihp_drv
->> (the command hangs up, no return after 10 min)
->>
->> #dmesg
->> ......
->> [  126.643350] BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
->> [  126.644007] IP: [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
->> [  126.644007] PGD 105277a067 PUD 104f823067 PMD 0 
->> [  126.644007] Oops: 0002 [#1] SMP 
->> [  126.644007] Modules linked in: acpihp_drv(+) ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat iptable_mangle bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode lpc_ich mfd_core pcspkr i2c_i801 i2c_core ioatdma e1000e acpi_memhotplug i7core_edac edac_core igb dca mptsas mptscsih mptbase scsi_transport_sas
->> [  126.644007] CPU 10 
->> [  126.644007] Pid: 2821, comm: modprobe Tainted: G       A     3.6.0-rc1+ #6 FUJITSU-SV PRIMEQUEST 1800E/SB
->> [  126.644007] RIP: 0010:[<ffffffff814c0cd3>]  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
->> [  126.644007] RSP: 0018:ffff8810589a9de8  EFLAGS: 00010246
->> [  126.644007] RAX: 0000000000000000 RBX: 0000000000000078 RCX: 0000000000000000
->> [  126.644007] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000078
->> [  126.644007] RBP: ffff8810589a9e08 R08: 0000000000000000 R09: ffff8810589a9d88
->> [  126.644007] R10: 00000000000013e5 R11: 00000000000013e5 R12: ffffffffa01460d0
->> [  126.644007] R13: 0000000000000000 R14: ffffffffa014732b R15: 00000000000000bf
->> [  126.644007] FS:  00007fecb1802700(0000) GS:ffff88105e640000(0000) knlGS:0000000000000000
->> [  126.644007] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  126.644007] CR2: 0000000000000078 CR3: 0000001052772000 CR4: 00000000000007e0
->> [  126.644007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [  126.644007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> [  126.644007] Process modprobe (pid: 2821, threadinfo ffff8810589a8000, task ffff8810592f8000)
->> [  126.644007] Stack:
->> [  126.644007]  ffff8810589a9e08 ffffffff810be37f ffffffffa0146220 ffffffff81a7b390
->> [  126.644007]  ffff8810589a9e58 ffffffff81317eb3 ffff8810589a9e48 0000000000000000
->> [  126.644007]  ffffffff81a342c0 ffffffff81a342e0 0000000000000000 ffffffffa0146220
->> [  126.644007] Call Trace:
->> [  126.644007]  [<ffffffff810be37f>] ? tracepoint_module_notify+0xd9/0x14a
->> [  126.644007]  [<ffffffff81317eb3>] class_interface_register+0x4a/0xbc
->> [  126.644007]  [<ffffffffa00b8000>] ? 0xffffffffa00b7fff
->> [  126.644007]  [<ffffffffa00b8010>] acpihp_drv_init+0x10/0x12 [acpihp_drv]
->> [  126.644007]  [<ffffffff8100207f>] do_one_initcall+0x7f/0x139
->> [  126.644007]  [<ffffffff81093414>] sys_init_module+0x12d3/0x14e3
->> [  126.644007]  [<ffffffff81264b0d>] ? ddebug_dyndbg_boot_param_cb+0x45/0x45
->> [  126.644007]  [<ffffffff814c9469>] system_call_fastpath+0x16/0x1b
->> [  126.644007] Code: 48 8b 04 25 80 c6 00 00 48 89 43 18 31 c0 5b 5b c9 c3 55 48 89 e5 53 48 83 ec 18 66 66 66 66 90 48 89 fb e8 5a 0c 00 00 48 89 df <f0> ff 0f 79 05 e8 06 ff ff ff 65 48 8b 04 25 80 c6 00 00 48 89 
->> [  126.644007] RIP  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
->> [  126.644007]  RSP <ffff8810589a9de8>
->> [  126.644007] CR2: 0000000000000078
->> [  129.981335] ---[ end trace da17e9c9de8dd560 ]---
->> [  139.085895] nr_pdflush_threads exported in /proc is scheduled for removal
->> [  139.167394] sysctl: The scan_unevictable_pages sysctl/node-interface has been disabled for lack of a legitimate use case.  If you have one, please send an email to linux-mm@kvack.org.
->>
->> Looks like it dereferenced a NULL pointer here.
->> May be it was my mistake that I didn't configure the environment correctly.
->> Would you please give me some advice ?
->>
->> Thanks. :)
->>
->>
+> Great.
+> 
+> > > 
+> > > If a scanner has not wrapped when it has finished isolated pages it
+> > > 	checks if compact_cached_free_pfn is pointing to the end of the
+> > > 	zone. If so, the value is updated to point to the highest
+> > > 	pageblock that pages were isolated from. This value will not
+> > > 	be updated again until a free page scanner wraps and resets
+> > > 	compact_cached_free_pfn.
+> > 
+> > I tried to understand your intention of this part but unfortunately failed.
+> > By this part, the problem you mentioned could happen again?
+> > 
+> 
+> Potentially yes, I did say it still races in the changelog.
+> 
+> >  				    			C
+> >  Process A		M     S     			F
+> >  		|---------------------------------------|
+> >  Process B		M 	FS
+> >  
+> >  C is zone->compact_cached_free_pfn
+> >  S is cc->start_pfree_pfn
+> >  M is cc->migrate_pfn
+> >  F is cc->free_pfn
+> > 
+> > In this diagram, Process A has just reached its migrate scanner, wrapped
+> > around and updated compact_cached_free_pfn to end of the zone accordingly.
+> > 
+> 
+> Yes. Now that it has wrapped it updates the compact_cached_free_pfn
+> every loop of isolate_freepages here.
+> 
+>                 if (isolated) {
+>                         high_pfn = max(high_pfn, pfn);
+> 
+>                         /*
+>                          * If the free scanner has wrapped, update
+>                          * compact_cached_free_pfn to point to the highest
+>                          * pageblock with free pages. This reduces excessive
+>                          * scanning of full pageblocks near the end of the
+>                          * zone
+>                          */
+>                         if (cc->order > 0 && cc->wrapped)
+>                                 zone->compact_cached_free_pfn = high_pfn;
+>                 }
+> 
+> 
+> 
+> > Simultaneously, Process B finishes isolating in a block and peek 
+> > compact_cached_free_pfn position and know it's end of the zone so
+> > update compact_cached_free_pfn to highest pageblock that pages were
+> > isolated from.
+> > 
+> 
+> Yes, they race at this point. One of two things happen here and I agree
+> that this is racy
+> 
+> 1. Process A does another iteration of its loop and sets it back
+> 2. Process A does not do another iteration of the loop, the cached_pfn
+>    is further along that it should. The next compacting process will
+>    wrap early and reset cached_pfn again but continue to scan the zone.
+> 
+> Either option is relatively harmless because in both cases the zone gets
+> scanned. In patch 4 it was possible that large portions of the zone were
+> frequently missed.
+> 
+> > Process A updates compact_cached_free_pfn to the highest pageblock which
+> > was set by process B because process A has wrapped. It ends up big jump
+> > without any scanning in process A.
+> > 
+> 
+> It recovers quickly and is nowhere near as severe as what patch 4
+> suffers from.
+
+Agreed.
+Thanks, Mel.
 
 -- 
-Best Regards,
-Tang chen
+Kind regards,
+Minchan Kim
