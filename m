@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2HIG7c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:59:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64951 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab2HIG7a (ORCPT
+	id S1755473Ab2HIHCC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 03:02:02 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58484 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab2HIHCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:59:30 -0400
-Date: Thu, 9 Aug 2012 02:59:31 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 11/12] block: Add bio_clone_bioset()
-Message-ID: <20120809065931.GB9128@dhcp-172-18-216-138.mtv.corp.google.com>
+	Thu, 9 Aug 2012 03:02:00 -0400
+Date: Thu, 9 Aug 2012 00:01:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Muthu Kumar <muthu.lkml@gmail.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, Kent Overstreet <koverstreet@google.com>,
+        vgoyal@redhat.com, yehuda@hq.newdream.net, sage@newdream.net,
+        agk@redhat.com, drbd-dev@lists.linbit.com
+Subject: Re: [dm-devel] [PATCH v5 12/12] block: Only clone bio vecs that
+ are in use
+Message-ID: <20120809070154.GG2845@dhcp-172-17-108-109.mtv.corp.google.com>
 References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-12-git-send-email-koverstreet@google.com>
- <20120808232120.GK6983@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809025610.GK7262@moria.home.lan>
- <20120809065251.GD2845@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1344290921-25154-13-git-send-email-koverstreet@google.com>
+ <Pine.LNX.4.64.1208061913500.21956@file.rdu.redhat.com>
+ <20120808232804.GL6983@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CAFR8uedZiG0NWgWQQa03r+kKh8rT0jzpj+hwPzq+i7K6zhpT_A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120809065251.GD2845@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFR8uedZiG0NWgWQQa03r+kKh8rT0jzpj+hwPzq+i7K6zhpT_A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 11:52:51PM -0700, Tejun Heo wrote:
-> On Wed, Aug 08, 2012 at 07:56:10PM -0700, Kent Overstreet wrote:
-> > > So, bio_clone() loses its function comment.  Also, does it even make
-> > > sense to call bio_clone() from fs_bio_set?
-> > 
-> > I'll re add the function comment if you want, just for a single line
-> > wrapper I don't know if it's worth the cost - comments get out of date,
-> > and they're more stuff to wade through.
-> 
-> People actually look at docbook generated docs.  I don't know why but
-> they do.  It's a utility function at block layer.  Please just add the
-> comment.
+Hello,
 
-Will do then.
+On Wed, Aug 08, 2012 at 04:47:46PM -0700, Muthu Kumar wrote:
+> You are changing the meaning of __bio_clone() here. In old code, the
+> number of io_vecs, bi_idx, bi_vcnt are preserved. But in this modified
+> code, you are mapping bio_src's bi_iovec[bi_idx] to bio_dests
+> bi_iovec[0] and also restricting the number of allocated io_vecs of
+> the clone. It may be useful for cases were we would like a identical
+> copy of the original bio (may not be in current code base, but this
+> implementation is definitely not what one would expect from the name
+> "clone").
 
-> > > Let's say it's so, then
-> > > what's the difference from using _kmalloc variant?
-> > 
-> > bio_kmalloc() fails if nr_iovecs > 1024, bio_alloc_bioset() fails if
-> > nr_iovecs > 256
-> > 
-> > and bio_alloc_bioset() is mempool backed, bio_kmalloc() is not.
-> > 
-> > AFAICT that's it.
-> 
-> So, the thing is being mempool backed doesn't mean anything if
-> multiple layers use the pool. 
+Implementation details changed somewhat but the high-level semantics
+didn't change at all.  Any driver not messing with bio internals - and
+they shouldn't - shouldn't notice the change.  No in-kernel drivers
+seem to be broken by the change.  If you ask me, this looks more like
+a bug fix to me where the bug is a silly behavior restricting
+usefulness of the interface.
 
-It's worse than just using kmalloc, because then you've introduced the
-possibility of deadlock.
+> May be, call this new implementation some thing else (and use it for bcache)?
 
-> I *suspect* fs_bio_set is supposed to
-> be used by fs layer - ie. where bios originate.  The reason why I
-> wondered about bio_clone() is that bio_clone() is almost always used
-> from stacking drivers and stacking driver tapping into fs reserve is
-> buggy.  So, I'm wondering whether cloning from fs_bio_set should be
-> supported at all.
+This doesn't only change __bio_clone() but all clone interface stacked
+on top of it, so, no way.  This ain't windows.
 
-That's actually a really good point.
+Thanks.
 
-I just grepped and there's actually only 3 callers - I thought there'd
-be more.  That should be easy to fix, at least.
+-- 
+tejun
