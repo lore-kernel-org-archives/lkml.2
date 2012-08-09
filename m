@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2HIGe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:34:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62452 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2HIGex (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:34:53 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: multitouch: Add support for eGalax 0x73f7
-Date: Thu,  9 Aug 2012 08:34:48 +0200
-Message-Id: <1344494088-3438-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.7.11.4
-X-Provags-ID: V02:K0:Ppq/B/JCOf2fmlQJGzMNdduj9Ow9DPu2+3CL3uwgJMA
- gjo0PVBCwTC6z/ktZSOStT1k1vprbUBo2IZ/rahlryMa7ChqH4
- xHZnaWFd0Y2wafsVmtNtdEwK8g1LGMLXso43z22azQP9JoshmD
- sed9WhnQKKXcBAVEyWVADrXxYVEzKLoIR3jZPiQT+yjLTWrNrL
- aIdiNQXllzAG7v9F/YBuHmWXAzMr7jjBx8BkOrfRx6XU67uFG5
- EKIFyREfrwqc1MjnsW5DNTxqhCXMUEoWPHCNnaoDJVbuYX3NxR
- Z9sPnKJjfziag+TImgJ+582PsL8VqB50+gQW7mm8Wim59V0KvC
- 4x4Pn9pQYCaefztvpPtLC/HotmQXVu9YphyBPRR1tngw9WdOmJ
- ofRNFgkvQgv76/J69MEobL3h3+b1i8SU2FsPNL8ttP1dFXoz2X
- +z9C9
+	id S1754878Ab2HIGf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:35:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab2HIGf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 02:35:28 -0400
+Message-ID: <50235A25.6010705@redhat.com>
+Date: Thu, 09 Aug 2012 08:35:17 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+MIME-Version: 1.0
+To: Wesley Miaw <wmiaw@netflix.com>
+CC: Mikulas Patocka <mpatocka@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Alasdair Kergon <agk@redhat.com>, "msb@google.com" <msb@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?windows-1252?Q?Will_Drewry=99?= <w@google.com>
+Subject: Re: [dm-devel] [PATCH v2 2/2] dm: verity support data device offset
+ (Linux 3.4.7)
+References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com> <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com> <5022CC99.30103@redhat.com> <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com> <5022D29B.9000402@redhat.com> <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
+In-Reply-To: <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- drivers/hid/hid-ids.h        | 1 +
- drivers/hid/hid-multitouch.c | 3 +++
- 2 files changed, 4 insertions(+)
+On 08/09/2012 02:40 AM, Wesley Miaw wrote:
+> On Aug 8, 2012, at 1:56 PM, Milan Broz wrote:
+> 
+>> On 08/08/2012 10:46 PM, Wesley Miaw wrote:
+>> 
+>>> I did modify veritysetup on my own so the format and verify
+>>> commands will work with regular files on disk instead of having
+>>> to mount through loop devices.
+>> 
+>> Which veritysetup? In upstream (cryptsetup repository) it allocates
+>> loop automatically. (And for userspace verification it doesn't need
+>> loop at all.)
+>> 
+>> Anyway, please send a patch for userspace as well then ;-)
+> 
+> This isn't as polished because I pretty much just added support to do
+> what I needed. I'm not sure if the LKML is the right place to post,
+> so let me know if I should send this somewhere else.
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 5a91bf6..9614a65 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -270,6 +270,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA	0x72fa
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302	0x7302
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349	0x7349
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7	0x73f7
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
- 
- #define USB_VENDOR_ID_ELECOM		0x056e
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 59c8b5c..115dca2 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -885,6 +885,9 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349) },
- 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
- 		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7) },
-+	{ .driver_data = MT_CLS_EGALAX_SERIAL,
-+		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
- 
- 	/* Elo TouchSystems IntelliTouch Plus panel */
--- 
-1.7.11.4
+This is libcryptsetup userspace so better list for this is dmcrypt
+mailing list (and/or cc me, I will handle these changes anyway).
 
+The allocated crypto "file" context cannot be later used for some kind
+of operations. I do not like this approach musch... 
+You cannot use file argument for dm-target directly, so your patch
+is useful only for your use case but not for anything else.
+
+Anyway, I am sure there is better way how to solve it I just need
+to understand what the problem is. What's wrong if code allocates
+loop devices (if argument is file)?
+Performance? Loop not available? Need root access?
+
+Please explain what's the problem first.
+(btw that patch is mangled by a mailer but not a problem now).
+
+> Your previous email implied that veritysetup would need a way to
+> determine if the data offset option is supported; I did not modify
+> veritysetup to support this idea as I didn't need it.
+
+Once kernel get this option (if you convince upstream:) then I will
+the option to userspace. We have to handle many dm-crypt extensions
+so not a big problem for dm-verity as well.
+
+Milan
