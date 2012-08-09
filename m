@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab2HIC4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 22:56:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57476 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2HIC4o (ORCPT
+	id S1753651Ab2HIC7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 22:59:05 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35096 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2HIC7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 22:56:44 -0400
-Date: Wed, 8 Aug 2012 19:56:10 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 11/12] block: Add bio_clone_bioset()
-Message-ID: <20120809025610.GK7262@moria.home.lan>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-12-git-send-email-koverstreet@google.com>
- <20120808232120.GK6983@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 8 Aug 2012 22:59:03 -0400
+X-AuditID: b753bd60-a3089ba000000655-6d-5023277364f2
+X-AuditID: b753bd60-a3089ba000000655-6d-5023277364f2
+Message-ID: <50232772.4070102@hitachi.com>
+Date: Thu, 09 Aug 2012 11:58:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808232120.GK6983@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
+ is used
+References: <20120807193845.146666357@goodmis.org>  <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com> <1344430148.6935.17.camel@gandalf.stny.rr.com>
+In-Reply-To: <1344430148.6935.17.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 04:21:20PM -0700, Tejun Heo wrote:
-> On Mon, Aug 06, 2012 at 03:08:40PM -0700, Kent Overstreet wrote:
-> > This consolidates some code, and will help in a later patch changing how
-> > bio cloning works.
+(2012/08/08 21:49), Steven Rostedt wrote:
+> On Wed, 2012-08-08 at 13:34 +0900, Masami Hiramatsu wrote:
+>>  
+>>> -#ifdef CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST
+>>> +#if defined(CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST) && !defined(CC_USING_FENTRY)
+>>
+>> I think CONFIG_HAVE_FENTRY would better unselect
+>> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST in arch/x86/Kconfig explicitly.
 > 
-> I think it would be better to introduce bio_clone*() functions in a
-> separate patch and convert the users in a different one.
+> No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
+> that it is being used. It only gets used if CC_USING_FENTRY is set,
+> which is set by the Makefile at time of compile.
 > 
-> >  /**
-> > - *	bio_clone	-	clone a bio
-> > + *	bio_clone_bioset -	clone a bio
-> >   *	@bio: bio to clone
-> >   *	@gfp_mask: allocation priority
-> > + *	@bs: bio_set to allocate from
-> >   *
-> >   * 	Like __bio_clone, only also allocates the returned bio
-> >   */
-> > -struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> > +struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
-> > +			     struct bio_set *bs)
-> >  {
-> > -	struct bio *b = bio_alloc(gfp_mask, bio->bi_max_vecs);
-> > +	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
-> >  
-> >  	if (!b)
-> >  		return NULL;
-> > @@ -485,7 +487,7 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> >  	if (bio_integrity(bio)) {
-> >  		int ret;
-> >  
-> > -		ret = bio_integrity_clone(b, bio, gfp_mask, fs_bio_set);
-> > +		ret = bio_integrity_clone(b, bio, gfp_mask, bs);
-> >  
-> >  		if (ret < 0) {
-> >  			bio_put(b);
-> > @@ -495,6 +497,12 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> >  
-> >  	return b;
-> >  }
-> > +EXPORT_SYMBOL(bio_clone_bioset);
-> > +
-> > +struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> > +{
-> > +	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
-> > +}
+> If CONFIG_HAVE_FENTRY is defined, a test is done to see if the gcc
+> compiling the kernel supports -mfentry. If it does, then it defines the
+> CC_USING_FENTRY macro, if not, the macro is not defined and the old way
+> is performed.
 > 
-> So, bio_clone() loses its function comment.  Also, does it even make
-> sense to call bio_clone() from fs_bio_set?
+> If the old way is performed, even if CONFIG_HAVE_FENTRY is defined, then
+> we still need the above test. We can not have CONFIG_HAVE_FENTRY
+> unselect CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST.
 
-I'll re add the function comment if you want, just for a single line
-wrapper I don't know if it's worth the cost - comments get out of date,
-and they're more stuff to wade through.
+Ah, I see. OK, I don't see any other issue.
 
-> Let's say it's so, then
-> what's the difference from using _kmalloc variant?
+Thank you,
 
-bio_kmalloc() fails if nr_iovecs > 1024, bio_alloc_bioset() fails if
-nr_iovecs > 256
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-and bio_alloc_bioset() is mempool backed, bio_kmalloc() is not.
 
-AFAICT that's it.
