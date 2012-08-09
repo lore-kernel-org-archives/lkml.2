@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab2HIQAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:00:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35833 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031167Ab2HIPsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:48:11 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 01/22] ARM: ux500: Fix merge error, no matching driver name for 'snd_soc_u8500'
-Date: Thu,  9 Aug 2012 16:47:27 +0100
-Message-Id: <1344527268-5964-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+	id S1758610Ab2HIQBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:01:31 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:42577 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758379Ab2HIQB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:01:28 -0400
+X-ASG-Debug-ID: 1344528087-03d6a5408e234830001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 9 Aug 2012 12:01:26 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux Btrfs List <linux-btrfs@vger.kernel.org>
+Subject: [GIT PULL 2/2] Btrfs merge fix
+Message-ID: <20120809160126.GA32103@shiny>
+X-ASG-Orig-Subj: [GIT PULL 2/2] Btrfs merge fix
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	lkml <linux-kernel@vger.kernel.org>,
+	Linux Btrfs List <linux-btrfs@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1344528087
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.105152
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform attempts to register platform device 'snd_soc_u8500'
-which doesn't actually exist. Here we change the reference to the
-correct one 'snd_soc_mop500'.
+Hi Linus,
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-msp.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Please pull my for-linus-3.6 branch:
 
-diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
-index 9960480..df15646 100644
---- a/arch/arm/mach-ux500/board-mop500-msp.c
-+++ b/arch/arm/mach-ux500/board-mop500-msp.c
-@@ -191,9 +191,9 @@ static struct platform_device *db8500_add_msp_i2s(struct device *parent,
- 	return pdev;
- }
- 
--/* Platform device for ASoC U8500 machine */
--static struct platform_device snd_soc_u8500 = {
--		.name = "snd-soc-u8500",
-+/* Platform device for ASoC MOP500 machine */
-+static struct platform_device snd_soc_mop500 = {
-+		.name = "snd-soc-mop500",
- 		.id = 0,
- 		.dev = {
- 			.platform_data = NULL,
-@@ -227,8 +227,8 @@ int mop500_msp_init(struct device *parent)
- {
- 	struct platform_device *msp1;
- 
--	pr_info("%s: Register platform-device 'snd-soc-u8500'.\n", __func__);
--	platform_device_register(&snd_soc_u8500);
-+	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
-+	platform_device_register(&snd_soc_mop500);
- 
- 	pr_info("Initialize MSP I2S-devices.\n");
- 	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
--- 
-1.7.9.5
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus-3.6
 
+It fixes a merging error in rc1.  The calls to mnt_want_write should
+have been removed.
+
+Alexander Block (1):
+      Btrfs: remove mnt_want_write call in btrfs_mksubvol
+
+ fs/btrfs/ioctl.c | 5 -----
+ 1 file changed, 5 deletions(-)
