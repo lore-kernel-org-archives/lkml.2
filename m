@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2HIJA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:00:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756881Ab2HIJAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:00:55 -0400
-Date: Thu, 9 Aug 2012 14:30:15 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [RFC PATCH 1/6] virtio/console: Add splice_write support
-Message-ID: <20120809090015.GG3280@amit.redhat.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
- <20120724023707.6600.69536.stgit@ltc189.sdl.hitachi.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120724023707.6600.69536.stgit@ltc189.sdl.hitachi.co.jp>
+	id S1757278Ab2HIJBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:01:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37095 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab2HIJBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:01:09 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.59+drm33.26
+Date: Thu,  9 Aug 2012 11:01:07 +0200
+Message-Id: <1344502867-10186-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 24 Jul 2012 [11:37:07], Yoshihiro YUNOMAE wrote:
-> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> Enable to use splice_write from pipe to virtio-console port.
-> This steals pages from pipe and directly send it to host.
-> 
-> Note that this may accelerate only the guest to host path.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Amit Shah <amit.shah@redhat.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
+I am announcing the release of the 2.6.32.59+drm33.26 longterm tree.
 
-> +/* Faster zero-copy write by splicing */
-> +static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
-> +				      struct file *filp, loff_t *ppos,
-> +				      size_t len, unsigned int flags)
-> +{
-> +	struct port *port = filp->private_data;
-> +	struct sg_list sgl;
-> +	ssize_t ret;
-> +	struct splice_desc sd = {
-> +		.total_len = len,
-> +		.flags = flags,
-> +		.pos = *ppos,
-> +		.u.data = &sgl,
-> +	};
-> +
-> +	sgl.n = 0;
-> +	sgl.len = 0;
-> +	sgl.sg = kmalloc(sizeof(struct scatterlist) * MAX_SPLICE_PAGES,
-> +			 GFP_ATOMIC);
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-Do you expect this function to be called from interrupt context?
+This release updates the DRM subsystem only.
 
-> +	if (unlikely(!sgl.sg))
-> +		return -ENOMEM;
-> +
-> +	sg_init_table(sgl.sg, MAX_SPLICE_PAGES);
-> +	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
-> +	if (likely(ret > 0))
-> +		ret = send_pages(port, sgl.sg, sgl.n, sgl.len, true);
-> +
-> +	return ret;
-> +}
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+or
+  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
 
-		Amit
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
+or
+  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
+
+-Stefan
+
+------
+
+* drm: integer overflow in drm_mode_dirtyfb_ioctl()
+* Linux 2.6.32.59+drm33.26
+
+ Makefile                   |    2 +-
+ drivers/gpu/drm/drm_crtc.c |    4 ++++
+ include/drm/drm_mode.h     |    2 ++
+ 3 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 7667dad..a9c82a4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .59+drm33.25
++EXTRAVERSION = .59+drm33.26
+ NAME = Man-Eating Seals of Antiquity
+
+ # *DOCUMENTATION*
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 81ba0e6..ec9e97e 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1832,6 +1832,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_device *dev,
+ 	}
+
+ 	if (num_clips && clips_ptr) {
++		if (num_clips < 0 || num_clips > DRM_MODE_FB_DIRTY_MAX_CLIPS) {
++			ret = -EINVAL;
++			goto out_err1;
++		}
+ 		clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
+ 		if (!clips) {
+ 			ret = -ENOMEM;
+diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
+index c5ba163..9cf639c 100644
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -232,6 +232,8 @@ struct drm_mode_fb_cmd {
+ #define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
+ #define DRM_MODE_FB_DIRTY_FLAGS         0x03
+
++#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
++
+ /*
+  * Mark a region of a framebuffer as dirty.
+  *
