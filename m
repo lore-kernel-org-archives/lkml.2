@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712Ab2HIQj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 12:39:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27702 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758678Ab2HIQjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 12:39:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,741,1336374000"; 
-   d="scan'208";a="178055552"
-From: james.d.ralston@intel.com
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>,
-        James Ralston <james.d.ralston@intel.com>
-Subject: [PATCH 3/5] hda_intel: Add Device IDs for Intel Lynx Point-LP PCH
-Date: Thu,  9 Aug 2012 09:38:59 -0700
-Message-Id: <1344530339-2559-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1758716Ab2HIQkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 12:40:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64835 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2HIQkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 12:40:22 -0400
+Message-ID: <5023E7F3.8090701@gmail.com>
+Date: Thu, 09 Aug 2012 10:40:19 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
+References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com> <1344522713-27951-2-git-send-email-fweisbec@gmail.com> <20120809163515.GA4084@infradead.org>
+In-Reply-To: <20120809163515.GA4084@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Ralston <james.d.ralston@intel.com>
+On 8/9/12 10:35 AM, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
+>> This implements bash completion for perf subcommands such
+>> as record, report, script, probe, etc...
+>
+> Humm, I get this when doing my usual workflow:
+>
+> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+> make: Entering directory `/home/git/linux/tools/perf'
+> PERF_VERSION = 3.6.rc1.152.g5758f7
+> <SNIP>
+> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
+> install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+> install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
+> install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
+> install -m 755 bash_completion /etc/bash_completion.d/perf
+> install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
+> make: *** [install] Error 1
+> make: Leaving directory `/home/git/linux/tools/perf'
+> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+>
+> 	Shouldn't it install on ~/etc/bash_completion.d/perf ?
+>
+> 	Is there a way to have per user bash completion files like that?
 
-This patch adds the Intel HD Audio Device IDs for the Intel Lynx Point-LP PCH
+3rd patch should fix this.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
- sound/pci/hda/hda_intel.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index c8aced1..60882c6 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -151,6 +151,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
- 			 "{Intel, CPT},"
- 			 "{Intel, PPT},"
- 			 "{Intel, LPT},"
-+			 "{Intel, LPT_LP},"
- 			 "{Intel, HPT},"
- 			 "{Intel, PBG},"
- 			 "{Intel, SCH},"
-@@ -3270,6 +3271,14 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
- 	{ PCI_DEVICE(0x8086, 0x8c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
- 	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	/* Lynx Point-LP */
-+	{ PCI_DEVICE(0x8086, 0x9c20),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	/* Lynx Point-LP */
-+	{ PCI_DEVICE(0x8086, 0x9c21),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
- 	/* Haswell */
- 	{ PCI_DEVICE(0x8086, 0x0c0c),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
--- 
-1.7.7.6
-
+David
