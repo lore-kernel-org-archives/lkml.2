@@ -1,118 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab2HIJgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:36:53 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:16984 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab2HIJgu (ORCPT
+	id S1757298Ab2HIJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:38:27 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40385 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab2HIJiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:36:50 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-f2-502384b02b82
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-To: linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org
-Cc: airlied@redhat.com, m.szyprowski@samsung.com, t.stanislaws@samsung.com,
-        kyungmin.park@samsung.com, laurent.pinchart@ideasonboard.com,
-        sumit.semwal@linaro.org, inki.dae@samsung.com, daniel.vetter@ffwll.ch,
-        rob@ti.com, pawel@osciak.com, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        jy0922.shim@samsung.com, sw0312.kim@samsung.com,
-        dan.j.williams@intel.com
-Subject: [PATCH v2 2/2] drm: set owner field to for all DMABUF exporters
-Date: Thu, 09 Aug 2012 11:36:22 +0200
-Message-id: <1344504982-30415-3-git-send-email-t.stanislaws@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1344504982-30415-1-git-send-email-t.stanislaws@samsung.com>
-References: <1344504982-30415-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jAd0NLcoBBjd3Wltc3jWHzaJnw1ZW
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDI6ts9jKXghWbFy4SmWBsYFYl2MnBwSAiYSa3/NZYGw
-	xSQu3FvP1sXIxSEksIhRYlfLZBYIp4tJYv2r98wgVWxAHceWfGYEsUUEHCRO350FFmcWmMMs
-	8XJLIIgtLOAhsXnyRbCpLAKqEh2HlzKB2LxA8RVnvrNBbJOXeHq/D8zmFPCUWLz6NdgcIaCa
-	W31XmCYw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEez9Z9I7GFc1WBxiFOBgVOLh
-	vbFFKUCINbGsuDL3EKMEB7OSCO+tcuUAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwm3l/9hQTS
-	E0tSs1NTC1KLYLJMHJxSDYzZAZ8P/34QbDbvh59vQkb2k7sHin5ZBy5I0Niz1UusV/Mz/yx3
-	9v9zOTcIJ2RKZsY5Hsix3rxayOFvq6m9j1rzqW3s83zyP0dxVRS9vcdxyysjZu9W9iecV1/W
-	7sj7e1hl4pU5pZxC9+cks12qkvDU6dDg+sG17NOPPdeagps2/1312n7J4XdKLMUZiYZazEXF
-	iQAb8Za1+gEAAA==
-X-TM-AS-MML: No
+	Thu, 9 Aug 2012 05:38:24 -0400
+Message-ID: <50238496.1000504@huawei.com>
+Date: Thu, 9 Aug 2012 17:36:22 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [RFC PATCH v2 10/16] ACPIHP: system device hotplug driver skeleton
+References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344082443-4608-11-git-send-email-jiang.liu@huawei.com> <502362E3.8010901@cn.fujitsu.com> <50236978.70208@huawei.com> <502377C0.70401@cn.fujitsu.com>
+In-Reply-To: <502377C0.70401@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets owner field in DMABUF operations for all DMABUF exporters in
-DRM subsystem.  This prevents an exporting module from being unloaded while
-exported DMABUF descriptor is in use.
+On 2012-8-9 16:41, Tang Chen wrote:
+> Hi Liu ~
+> 
+> On 08/09/2012 03:40 PM, Jiang Liu wrote:
+>> Hi Tang,
+>> 	Thanks for testing.
+>> 	Currently there's a limitation that you need to insert acpihp_enum driver first.
+> 
+> Sorry, I didn't make it clear. I did load acpihp_enum module first, and then load acpihp_drv.
+> 
+> And I just tried it some more times. It just hung up, but dmesg had no output.
+> Like this:
+> 
+> # modprobe acpihp_enum
+> (OK, and sysfs interfaces have been created)
+> # modprobe acpihp_drv
+> (hang up)
+> 
+> # dmesg
+> (nothing)
+> 
+> The "modprobe acpihp_drv" process's call trace shows that it hung at the following function:
+> #0  0x00000032836aab80 in __nanosleep_nocancel () from /lib64/libc.so.6
+> #1  0x00000032836deb64 in usleep () from /lib64/libc.so.6
+> ......
+> 
+> I have tried several times and I cannot reproduce the situation I just said.
+You can reproduce it by loading acpihp_drv without acpihp_enum driver, I guess.
+The acpihp_drv module_init() should call acpihp_register_class() to initialize the core.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Acked-by: Sumit Semwal <sumit.semwal@linaro.org>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/exynos/exynos_drm_dmabuf.c |    1 +
- drivers/gpu/drm/i915/i915_gem_dmabuf.c     |    1 +
- drivers/gpu/drm/nouveau/nouveau_prime.c    |    1 +
- drivers/gpu/drm/radeon/radeon_prime.c      |    1 +
- drivers/staging/omapdrm/omap_gem_dmabuf.c  |    1 +
- 5 files changed, 5 insertions(+)
+> Maybe my box has something different with yours. And I'll try to find out why.
+> 
+> Thanks for your advice. :)
+> 
+>> Will fix this issue in next version.
+>> 	Regards!
+>> 	Gerry
+>>
+>> On 2012-8-9 15:12, Tang Chen wrote:
+>>> Hi Liu~
+>>>
+>>> I compiled this driver as a module, acpihp_drv. And when I loaded this module, it
+>>> gave the following error message:
+>>>
+>>> # modprobe acpihp_drv
+>>> (the command hangs up, no return after 10 min)
+>>>
+>>> #dmesg
+>>> ......
+>>> [  126.643350] BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+>>> [  126.644007] IP: [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
+>>> [  126.644007] PGD 105277a067 PUD 104f823067 PMD 0 
+>>> [  126.644007] Oops: 0002 [#1] SMP 
+>>> [  126.644007] Modules linked in: acpihp_drv(+) ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat iptable_mangle bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode lpc_ich mfd_core pcspkr i2c_i801 i2c_core ioatdma e1000e acpi_memhotplug i7core_edac edac_core igb dca mptsas mptscsih mptbase scsi_transport_sas
+>>> [  126.644007] CPU 10 
+>>> [  126.644007] Pid: 2821, comm: modprobe Tainted: G       A     3.6.0-rc1+ #6 FUJITSU-SV PRIMEQUEST 1800E/SB
+>>> [  126.644007] RIP: 0010:[<ffffffff814c0cd3>]  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
+>>> [  126.644007] RSP: 0018:ffff8810589a9de8  EFLAGS: 00010246
+>>> [  126.644007] RAX: 0000000000000000 RBX: 0000000000000078 RCX: 0000000000000000
+>>> [  126.644007] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000078
+>>> [  126.644007] RBP: ffff8810589a9e08 R08: 0000000000000000 R09: ffff8810589a9d88
+>>> [  126.644007] R10: 00000000000013e5 R11: 00000000000013e5 R12: ffffffffa01460d0
+>>> [  126.644007] R13: 0000000000000000 R14: ffffffffa014732b R15: 00000000000000bf
+>>> [  126.644007] FS:  00007fecb1802700(0000) GS:ffff88105e640000(0000) knlGS:0000000000000000
+>>> [  126.644007] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> [  126.644007] CR2: 0000000000000078 CR3: 0000001052772000 CR4: 00000000000007e0
+>>> [  126.644007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>> [  126.644007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>> [  126.644007] Process modprobe (pid: 2821, threadinfo ffff8810589a8000, task ffff8810592f8000)
+>>> [  126.644007] Stack:
+>>> [  126.644007]  ffff8810589a9e08 ffffffff810be37f ffffffffa0146220 ffffffff81a7b390
+>>> [  126.644007]  ffff8810589a9e58 ffffffff81317eb3 ffff8810589a9e48 0000000000000000
+>>> [  126.644007]  ffffffff81a342c0 ffffffff81a342e0 0000000000000000 ffffffffa0146220
+>>> [  126.644007] Call Trace:
+>>> [  126.644007]  [<ffffffff810be37f>] ? tracepoint_module_notify+0xd9/0x14a
+>>> [  126.644007]  [<ffffffff81317eb3>] class_interface_register+0x4a/0xbc
+>>> [  126.644007]  [<ffffffffa00b8000>] ? 0xffffffffa00b7fff
+>>> [  126.644007]  [<ffffffffa00b8010>] acpihp_drv_init+0x10/0x12 [acpihp_drv]
+>>> [  126.644007]  [<ffffffff8100207f>] do_one_initcall+0x7f/0x139
+>>> [  126.644007]  [<ffffffff81093414>] sys_init_module+0x12d3/0x14e3
+>>> [  126.644007]  [<ffffffff81264b0d>] ? ddebug_dyndbg_boot_param_cb+0x45/0x45
+>>> [  126.644007]  [<ffffffff814c9469>] system_call_fastpath+0x16/0x1b
+>>> [  126.644007] Code: 48 8b 04 25 80 c6 00 00 48 89 43 18 31 c0 5b 5b c9 c3 55 48 89 e5 53 48 83 ec 18 66 66 66 66 90 48 89 fb e8 5a 0c 00 00 48 89 df <f0> ff 0f 79 05 e8 06 ff ff ff 65 48 8b 04 25 80 c6 00 00 48 89 
+>>> [  126.644007] RIP  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
+>>> [  126.644007]  RSP <ffff8810589a9de8>
+>>> [  126.644007] CR2: 0000000000000078
+>>> [  129.981335] ---[ end trace da17e9c9de8dd560 ]---
+>>> [  139.085895] nr_pdflush_threads exported in /proc is scheduled for removal
+>>> [  139.167394] sysctl: The scan_unevictable_pages sysctl/node-interface has been disabled for lack of a legitimate use case.  If you have one, please send an email to linux-mm@kvack.org.
+>>>
+>>> Looks like it dereferenced a NULL pointer here.
+>>> May be it was my mistake that I didn't configure the environment correctly.
+>>> Would you please give me some advice ?
+>>>
+>>> Thanks. :)
+>>>
+>>>
+> 
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-index 613bf8a..cf3bc6d 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
-@@ -164,6 +164,7 @@ static void exynos_gem_dmabuf_kunmap(struct dma_buf *dma_buf,
- }
- 
- static struct dma_buf_ops exynos_dmabuf_ops = {
-+	.owner			= THIS_MODULE,
- 	.map_dma_buf		= exynos_gem_map_dma_buf,
- 	.unmap_dma_buf		= exynos_gem_unmap_dma_buf,
- 	.kmap			= exynos_gem_dmabuf_kmap,
-diff --git a/drivers/gpu/drm/i915/i915_gem_dmabuf.c b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-index aa308e1..07ff03b 100644
---- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-+++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
-@@ -152,6 +152,7 @@ static int i915_gem_dmabuf_mmap(struct dma_buf *dma_buf, struct vm_area_struct *
- }
- 
- static const struct dma_buf_ops i915_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = i915_gem_map_dma_buf,
- 	.unmap_dma_buf = i915_gem_unmap_dma_buf,
- 	.release = i915_gem_dmabuf_release,
-diff --git a/drivers/gpu/drm/nouveau/nouveau_prime.c b/drivers/gpu/drm/nouveau/nouveau_prime.c
-index a25cf2c..8605033 100644
---- a/drivers/gpu/drm/nouveau/nouveau_prime.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_prime.c
-@@ -127,6 +127,7 @@ static void nouveau_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
- }
- 
- static const struct dma_buf_ops nouveau_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = nouveau_gem_map_dma_buf,
- 	.unmap_dma_buf = nouveau_gem_unmap_dma_buf,
- 	.release = nouveau_gem_dmabuf_release,
-diff --git a/drivers/gpu/drm/radeon/radeon_prime.c b/drivers/gpu/drm/radeon/radeon_prime.c
-index 6bef46a..4061fd3 100644
---- a/drivers/gpu/drm/radeon/radeon_prime.c
-+++ b/drivers/gpu/drm/radeon/radeon_prime.c
-@@ -127,6 +127,7 @@ static void radeon_gem_prime_vunmap(struct dma_buf *dma_buf, void *vaddr)
- 	mutex_unlock(&dev->struct_mutex);
- }
- const static struct dma_buf_ops radeon_dmabuf_ops =  {
-+	.owner = THIS_MODULE,
- 	.map_dma_buf = radeon_gem_map_dma_buf,
- 	.unmap_dma_buf = radeon_gem_unmap_dma_buf,
- 	.release = radeon_gem_dmabuf_release,
-diff --git a/drivers/staging/omapdrm/omap_gem_dmabuf.c b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-index 42728e0..6a4dd67 100644
---- a/drivers/staging/omapdrm/omap_gem_dmabuf.c
-+++ b/drivers/staging/omapdrm/omap_gem_dmabuf.c
-@@ -179,6 +179,7 @@ out_unlock:
- }
- 
- struct dma_buf_ops omap_dmabuf_ops = {
-+		.owner = THIS_MODULE,
- 		.map_dma_buf = omap_gem_map_dma_buf,
- 		.unmap_dma_buf = omap_gem_unmap_dma_buf,
- 		.release = omap_gem_dmabuf_release,
--- 
-1.7.9.5
 
