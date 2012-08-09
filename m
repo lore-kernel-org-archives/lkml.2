@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab2HIBk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:40:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16838 "EHLO mx1.redhat.com"
+	id S1751586Ab2HIBxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:53:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab2HIBkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:40:25 -0400
-Message-ID: <502314FD.7090701@redhat.com>
-Date: Wed, 08 Aug 2012 21:40:13 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751109Ab2HIBxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 21:53:32 -0400
+Date: Thu, 9 Aug 2012 02:53:21 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Wesley Miaw <wmiaw@netflix.com>
+Cc: Milan Broz <mbroz@redhat.com>, "msb@google.com" <msb@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will =?utf-8?B?RHJld3J54oSi?= <w@google.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [dm-devel] [PATCH v2 2/2] dm: verity support data device
+	offset (Linux 3.4.7)
+Message-ID: <20120809015321.GC23758@agk-dp.fab.redhat.com>
+Mail-Followup-To: Wesley Miaw <wmiaw@netflix.com>,
+	Milan Broz <mbroz@redhat.com>, "msb@google.com" <msb@google.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Will =?utf-8?B?RHJld3J54oSi?= <w@google.com>,
+	device-mapper development <dm-devel@redhat.com>,
+	Mikulas Patocka <mpatocka@redhat.com>
+References: <8893CF66-2E2C-4D8F-9239-E38BE55716AE@netflix.com> <Pine.LNX.4.64.1208081437550.16469@file.rdu.redhat.com> <5022CC99.30103@redhat.com> <AD722D70-2E9C-4B2D-BE48-B94E2268C3DD@netflix.com> <5022D29B.9000402@redhat.com> <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v6 3/3] mm: add vm event counters for balloon pages compaction
-References: <cover.1344463786.git.aquini@redhat.com> <768e09520a249fd78f706cd8ae53d511f9db0aaa.1344463786.git.aquini@redhat.com>
-In-Reply-To: <768e09520a249fd78f706cd8ae53d511f9db0aaa.1344463786.git.aquini@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C8AA8C7B-505E-49E8-AE47-C24843E74543@netflix.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 06:53 PM, Rafael Aquini wrote:
-> This patch is only for testing report purposes and shall be dropped in case of
-> the rest of this patchset getting accepted for merging.
+On Thu, Aug 09, 2012 at 12:40:23AM +0000, Wesley Miaw wrote:
+> This isn't as polished because I pretty much just added support to do what I
+> needed. I'm not sure if the LKML is the right place to post, so let me know if
+> I should send this somewhere else.
+ 
+cryptsetup patches are best sent to the mailing list mentioned at the bottom of
+the project page http://code.google.com/p/cryptsetup/ viz. dm-crypt@saout.de.
 
-I wonder if it would make sense to just keep these statistics, so
-if a change breaks balloon migration in the future, we'll be able
-to see it...
+Alasdair
 
-> Signed-off-by: Rafael Aquini<aquini@redhat.com>
-
-Acked-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
