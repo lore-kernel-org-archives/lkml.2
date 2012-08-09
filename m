@@ -1,111 +1,508 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2HIB5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 21:57:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51005 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab2HIB5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 21:57:40 -0400
-Date: Wed, 8 Aug 2012 18:57:04 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 10/12] block: Add bio_clone_kmalloc()
-Message-ID: <20120809015704.GI7262@moria.home.lan>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-11-git-send-email-koverstreet@google.com>
- <20120808231552.GJ6983@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120808231552.GJ6983@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754360Ab2HIB61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 21:58:27 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:62004 "EHLO mta02.xtra.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751787Ab2HIBzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Aug 2012 21:55:16 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: vt8500-wm8505-linux-kernel@googlegroups.com
+Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Alessandro Zummo <a.zummo@towertech.it>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
+        Neil Zhang <zhangwm@marvell.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Eric Andersson <eric.andersson@unixphere.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCHv2 1/8] arm: vt8500: Add device tree files for VIA/Wondermedia SoC's
+Date: Thu,  9 Aug 2012 13:54:53 +1200
+Message-Id: <1344477300-25251-2-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
+References: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 04:15:52PM -0700, Tejun Heo wrote:
-> On Mon, Aug 06, 2012 at 03:08:39PM -0700, Kent Overstreet wrote:
-> 
-> How about the following?
-> 
-> There was no API to kmalloc bio and clone and osdblk was using
-> explicit bio_kmalloc() + __bio_clone().  (my guess here) As this is
-> inconvenient and there will be more users of it in the future, add
-> bio_clone_kmalloc() and use it in osdblk.
+Add device tree files for VT8500, WM8505 and WM8650 SoC's and
+reference boards.
 
-Adding that.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ arch/arm/boot/dts/vt8500-bv07.dts |   31 +++++++++
+ arch/arm/boot/dts/vt8500.dtsi     |   99 +++++++++++++++++++++++++++++
+ arch/arm/boot/dts/wm8505-ref.dts  |   31 +++++++++
+ arch/arm/boot/dts/wm8505.dtsi     |  125 +++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/wm8650-mid.dts  |   31 +++++++++
+ arch/arm/boot/dts/wm8650.dtsi     |   95 ++++++++++++++++++++++++++++
+ 6 files changed, 412 insertions(+)
+ create mode 100644 arch/arm/boot/dts/vt8500-bv07.dts
+ create mode 100644 arch/arm/boot/dts/vt8500.dtsi
+ create mode 100644 arch/arm/boot/dts/wm8505-ref.dts
+ create mode 100644 arch/arm/boot/dts/wm8505.dtsi
+ create mode 100644 arch/arm/boot/dts/wm8650-mid.dts
+ create mode 100644 arch/arm/boot/dts/wm8650.dtsi
 
-> 
-> > Acked-by: Boaz Harrosh <bharrosh@panasas.com>
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > ---
-> >  drivers/block/osdblk.c |    3 +--
-> >  fs/bio.c               |   13 +++++++++++++
-> >  fs/exofs/ore.c         |    5 ++---
-> >  include/linux/bio.h    |    1 +
-> >  4 files changed, 17 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
-> > index 87311eb..1bbc681 100644
-> > --- a/drivers/block/osdblk.c
-> > +++ b/drivers/block/osdblk.c
-> > @@ -266,11 +266,10 @@ static struct bio *bio_chain_clone(struct bio *old_chain, gfp_t gfpmask)
-> >  	struct bio *tmp, *new_chain = NULL, *tail = NULL;
-> >  
-> >  	while (old_chain) {
-> > -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-> > +		tmp = bio_clone_kmalloc(old_chain, gfpmask);
-> >  		if (!tmp)
-> >  			goto err_out;
-> >  
-> > -		__bio_clone(tmp, old_chain);
-> >  		tmp->bi_bdev = NULL;
-> >  		gfpmask &= ~__GFP_WAIT;
-> >  		tmp->bi_next = NULL;
-> > diff --git a/fs/bio.c b/fs/bio.c
-> > index f0c865b..77b9313 100644
-> > --- a/fs/bio.c
-> > +++ b/fs/bio.c
-> > @@ -497,6 +497,19 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> >  }
-> >  EXPORT_SYMBOL(bio_clone);
-> >  
-> 
-> /**
-> 
-> PLEASE.
-> 
-> > +struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
-> > +{
-> > +	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
-> 
-> Can't we use %NULL bioset as an indication to allocate from kmalloc
-> instead of duping interfaces like this?
+diff --git a/arch/arm/boot/dts/vt8500-bv07.dts b/arch/arm/boot/dts/vt8500-bv07.dts
+new file mode 100644
+index 0000000..20dda12
+--- /dev/null
++++ b/arch/arm/boot/dts/vt8500-bv07.dts
+@@ -0,0 +1,31 @@
++/*
++ * vt8500-bv07.dts - Device tree file for Benign BV07 Netbook
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/dts-v1/;
++/include/ "vt8500.dtsi"
++
++/ {
++	model = "Benign BV07 Netbook";
++
++	/*
++	 * Display node is based on Sascha Hauer's patch on dri-devel.
++	 * Added a bpp property to calculate the size of the framebuffer
++	 * until the binding is formalized.
++	 */
++	display {
++		xres = <800>;
++		yres = <480>;
++		left-margin = <88>;
++		right-margin = <40>;
++		hsync-len = <0>;
++		upper-margin = <32>;
++		lower-margin = <11>;
++		vsync-len = <1>;
++		bpp = <16>;
++	};
++};
+diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
+new file mode 100644
+index 0000000..7a2fe0e
+--- /dev/null
++++ b/arch/arm/boot/dts/vt8500.dtsi
+@@ -0,0 +1,99 @@
++/*
++ * vt8500.dtsi - Device tree file for VIA VT8500 SoC
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	compatible = "via,vt8500";
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		ranges;
++		interrupt-parent = <&intc>;
++
++		intc: interrupt-controller@d8140000 {
++			compatible = "via,vt8500-intc";
++			interrupt-controller;
++			reg = <0xd8140000 0x10000>;
++			#interrupt-cells = <1>;
++		};
++
++		gpio: gpio-controller@d8110000 {
++			compatible = "via,vt8500-gpio";
++			gpio-controller;
++			reg = <0xd8110000 0x10000>;
++			#gpio-cells = <3>;
++		};
++
++		pmc@d8130000 {
++			compatible = "via,vt8500-pmc";
++			reg = <0xd8130000 0x1000>;
++		};
++
++		timer@d8130100 {
++			compatible = "via,vt8500-timer";
++			reg = <0xd8130100 0x28>;
++			interrupts = <36>;
++		};
++
++		ehci@d8007900 {
++			compatible = "via,vt8500-ehci";
++			reg = <0xd8007900 0x200>;
++			interrupts = <43>;
++		};
++
++		uhci@d8007b00 {
++			compatible = "platform-uhci";
++			reg = <0xd8007b00 0x200>;
++			interrupts = <43>;
++		};
++
++		fb@d800e400 {
++			compatible = "via,vt8500-fb";
++			reg = <0xd800e400 0x400>;
++			interrupts = <12>;
++		};
++
++		ge_rops@d8050400 {
++			compatible = "wm,prizm-ge-rops";
++			reg = <0xd8050400 0x100>;
++		};
++
++		uart@d8200000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8200000 0x1040>;
++			interrupts = <32>;
++		};
++
++		uart@d82b0000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd82b0000 0x1040>;
++			interrupts = <33>;
++		};
++
++		uart@d8210000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8210000 0x1040>;
++			interrupts = <47>;
++		};
++
++		uart@d82c0000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd82c0000 0x1040>;
++			interrupts = <50>;
++		};
++
++		rtc@d8100000 {
++			compatible = "via,vt8500-rtc";
++			reg = <0xd8100000 0x10000>;
++			interrupts = <48>;
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/wm8505-ref.dts b/arch/arm/boot/dts/wm8505-ref.dts
+new file mode 100644
+index 0000000..2b10282
+--- /dev/null
++++ b/arch/arm/boot/dts/wm8505-ref.dts
+@@ -0,0 +1,31 @@
++/*
++ * wm8505-ref.dts - Device tree file for Wondermedia WM8505 reference netbook
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/dts-v1/;
++/include/ "wm8505.dtsi"
++
++/ {
++	model = "Wondermedia WM8505 Netbook";
++
++	/*
++	 * Display node is based on Sascha Hauer's patch on dri-devel.
++	 * Added a bpp property to calculate the size of the framebuffer
++	 * until the binding is formalized.
++	 */
++	display {
++		xres = <800>;
++		yres = <480>;
++		left-margin = <88>;
++		right-margin = <40>;
++		hsync-len = <0>;
++		upper-margin = <32>;
++		lower-margin = <11>;
++		vsync-len = <1>;
++		bpp = <32>;
++	};
++};
+diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
+new file mode 100644
+index 0000000..76dbfdc
+--- /dev/null
++++ b/arch/arm/boot/dts/wm8505.dtsi
+@@ -0,0 +1,125 @@
++/*
++ * wm8505.dtsi - Device tree file for Wondermedia WM8505 SoC
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	compatible = "wm,wm8505";
++
++	cpus {
++		cpu@0 {
++			compatible = "arm,arm926ejs";
++		};
++	};
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		ranges;
++		interrupt-parent = <&intc0>;
++
++		intc0: interrupt-controller@d8140000 {
++			compatible = "via,vt8500-intc";
++			interrupt-controller;
++			reg = <0xd8140000 0x10000>;
++			#interrupt-cells = <1>;
++		};
++
++		/* Secondary IC cascaded to intc0 */
++		intc1: interrupt-controller@d8150000 {
++			compatible = "via,vt8500-intc";
++			interrupt-controller;
++			#interrupt-cells = <1>;
++			reg = <0xD8150000 0x10000>;
++			interrupts = <56 57 58 59 60 61 62 63>;
++		};
++
++		gpio: gpio-controller@d8110000 {
++			compatible = "wm,wm8505-gpio";
++			gpio-controller;
++			reg = <0xd8110000 0x10000>;
++			#gpio-cells = <3>;
++		};
++
++		pmc@d8130000 {
++			compatible = "via,vt8500-pmc";
++			reg = <0xd8130000 0x1000>;
++		};
++
++		timer@d8130100 {
++			compatible = "via,vt8500-timer";
++			reg = <0xd8130100 0x28>;
++			interrupts = <36>;
++		};
++
++		ehci@d8007100 {
++			compatible = "via,vt8500-ehci";
++			reg = <0xd8007100 0x200>;
++			interrupts = <43>;
++		};
++
++		uhci@d8007300 {
++			compatible = "platform-uhci";
++			reg = <0xd8007300 0x200>;
++			interrupts = <43>;
++		};
++
++		fb@d8050800 {
++			compatible = "wm,wm8505-fb";
++			reg = <0xd8050800 0x200>;
++		};
++
++		ge_rops@d8050400 {
++			compatible = "wm,prizm-ge-rops";
++			reg = <0xd8050400 0x100>;
++		};
++
++		uart@d8200000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8200000 0x1040>;
++			interrupts = <32>;
++		};
++
++		uart@d82b0000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd82b0000 0x1040>;
++			interrupts = <33>;
++		};
++
++		uart@d8210000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8210000 0x1040>;
++			interrupts = <47>;
++		};
++
++		uart@d82c0000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd82c0000 0x1040>;
++			interrupts = <50>;
++		};
++
++		uart@d8370000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8370000 0x1040>;
++			interrupts = <31>;
++		};
++
++		uart@d8380000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8380000 0x1040>;
++			interrupts = <30>;
++		};
++
++		rtc@d8100000 {
++			compatible = "via,vt8500-rtc";
++			reg = <0xd8100000 0x10000>;
++			interrupts = <48>;
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/wm8650-mid.dts b/arch/arm/boot/dts/wm8650-mid.dts
+new file mode 100644
+index 0000000..8e0119e
+--- /dev/null
++++ b/arch/arm/boot/dts/wm8650-mid.dts
+@@ -0,0 +1,31 @@
++/*
++ * wm8650-mid.dts - Device tree file for Wondermedia WM8650-MID Tablet
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/dts-v1/;
++/include/ "wm8650.dtsi"
++
++/ {
++	model = "Wondermedia WM8650-MID Tablet";
++
++	/*
++	 * Display node is based on Sascha Hauer's patch on dri-devel.
++	 * Added a bpp property to calculate the size of the framebuffer
++	 * until the binding is formalized.
++	 */
++	display {
++		xres = <800>;
++		yres = <480>;
++		left-margin = <88>;
++		right-margin = <40>;
++		hsync-len = <0>;
++		upper-margin = <32>;
++		lower-margin = <11>;
++		vsync-len = <1>;
++		bpp = <16>;
++	};
++};
+diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
+new file mode 100644
+index 0000000..fab4ead
+--- /dev/null
++++ b/arch/arm/boot/dts/wm8650.dtsi
+@@ -0,0 +1,95 @@
++/*
++ * wm8650.dtsi - Device tree file for Wondermedia WM8650 SoC
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * Licensed under GPLv2 or later
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	compatible = "wm,wm8650";
++
++	soc {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "simple-bus";
++		ranges;
++		interrupt-parent = <&intc0>;
++
++		intc0: interrupt-controller@d8140000 {
++			compatible = "via,vt8500-intc";
++			interrupt-controller;
++			reg = <0xd8140000 0x10000>;
++			#interrupt-cells = <1>;
++		};
++
++		/* Secondary IC cascaded to intc0 */
++		intc1: interrupt-controller@d8150000 {
++			compatible = "via,vt8500-intc";
++			interrupt-controller;
++			#interrupt-cells = <1>;
++			reg = <0xD8150000 0x10000>;
++			interrupts = <56 57 58 59 60 61 62 63>;
++		};
++
++		gpio: gpio-controller@d8110000 {
++			compatible = "wm,wm8650-gpio";
++			gpio-controller;
++			reg = <0xd8110000 0x10000>;
++			#gpio-cells = <3>;
++		};
++
++		pmc@d8130000 {
++			compatible = "via,vt8500-pmc";
++			reg = <0xd8130000 0x1000>;
++		};
++
++		timer@d8130100 {
++			compatible = "via,vt8500-timer";
++			reg = <0xd8130100 0x28>;
++			interrupts = <36>;
++		};
++
++		ehci@d8007900 {
++			compatible = "via,vt8500-ehci";
++			reg = <0xd8007900 0x200>;
++			interrupts = <43>;
++		};
++
++		uhci@d8007b00 {
++			compatible = "platform-uhci";
++			reg = <0xd8007b00 0x200>;
++			interrupts = <43>;
++		};
++
++		fb@d8050800 {
++			compatible = "wm,wm8505-fb";
++			reg = <0xd8050800 0x200>;
++		};
++
++		ge_rops@d8050400 {
++			compatible = "wm,prizm-ge-rops";
++			reg = <0xd8050400 0x100>;
++		};
++
++		uart@d8200000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd8200000 0x1040>;
++			interrupts = <32>;
++		};
++
++		uart@d82b0000 {
++			compatible = "via,vt8500-uart";
++			reg = <0xd82b0000 0x1040>;
++			interrupts = <33>;
++		};
++
++		rtc@d8100000 {
++			compatible = "via,vt8500-rtc";
++			reg = <0xd8100000 0x10000>;
++			interrupts = <48>;
++		};
++	};
++};
+-- 
+1.7.9.5
 
-The two aren't mutually exclusive - but using BIO_KMALLOC_POOL instead
-of separate interfaces is an excellent idea, I'll do that.
-
-That means bio_clone_kmalloc will just become:
-
-static inline struct bio *bio_clone_kmalloc(struct bio *bio,
-					    gfp_t gfp_mask)
-{
-	return bio_clone_bioset(bio, gfp_mask, BIO_KMALLOC_POOL)
-}
-
-(or maybe NULL there, I think using NULL for the interface makes sense,
-I just don't want to use it for bi_pool).
-
-Do you still want the /** for a one line wrapper like that?
-
-
-> 
-> Thanks.
-> 
-> -- 
-> tejun
