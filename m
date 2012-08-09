@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759199Ab2HITCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:02:25 -0400
-Received: from kvantum.9236230-130.bih.net.ba ([92.36.230.130]:55539 "HELO
-	mail.muphnk.ba" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759063Ab2HITCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:02:24 -0400
-Message-ID: <3D7C904F-EFA1-441D-A588-3BA7E4E91102@mail.muphnk.ba>
-Reply-To: <jamesfrancis197@ymail.com>
-From: "MR JAMES FRANCIS" <info@vger.kernel.org>
-Subject: INVESTMENT
-Date: Thu, 9 Aug 2012 04:31:01 -0500
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	id S1759231Ab2HITC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:02:28 -0400
+Received: from svenfoo.org ([82.94.215.22]:58147 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759203Ab2HITC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:02:26 -0400
+From: Daniel Mack <zonque@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, broonie@opensource.wolfsonmicro.com,
+        swarren@wwwdotorg.org, Daniel Mack <zonque@gmail.com>
+Subject: [PATCH] Documentation/pinctrl.txt: Fix some misspelled macros
+Date: Thu,  9 Aug 2012 21:02:19 +0200
+Message-Id: <1344538939-15903-1-git-send-email-zonque@gmail.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+---
+ Documentation/pinctrl.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Dear partner,
-
-Please can you assist me to receive and invest this US$20,000,000,00 Million, I will give you details as soon as I hear from you.
-
-Regard,
-
-Ms.Susan van der Merwe
-
-vandermerwe.susan@ymail.com
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index e40f4b4..1479aca 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -840,9 +840,9 @@ static unsigned long i2c_pin_configs[] = {
+ 
+ static struct pinctrl_map __initdata mapping[] = {
+ 	PIN_MAP_MUX_GROUP("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "i2c0"),
+-	PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", i2c_grp_configs),
+-	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0scl", i2c_pin_configs),
+-	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0sda", i2c_pin_configs),
++	PIN_MAP_CONFIGS_GROUP("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", i2c_grp_configs),
++	PIN_MAP_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0scl", i2c_pin_configs),
++	PIN_MAP_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0sda", i2c_pin_configs),
+ };
+ 
+ Finally, some devices expect the mapping table to contain certain specific
+-- 
+1.7.11.2
 
