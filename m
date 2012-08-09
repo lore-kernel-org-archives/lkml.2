@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2HIJKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 05:10:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9298 "EHLO mx1.redhat.com"
+	id S1753696Ab2HIJIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 05:08:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55218 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751328Ab2HIJIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 05:08:44 -0400
-From: Tomas Racek <tracek@redhat.com>
-To: linux-xfs@vger.kernel.org
-Cc: lczerner@redhat.com, Tomas Racek <tracek@redhat.com>,
-        Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM),
-        Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM),
-        xfs@oss.sgi.com (supporter:XFS FILESYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3] xfs: check for possible overflow in xfs_ioc_trim
-Date: Thu,  9 Aug 2012 11:07:09 +0200
-Message-Id: <1344503229-13022-1-git-send-email-tracek@redhat.com>
+	id S1751328Ab2HIJIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 05:08:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,739,1336374000"; 
+   d="scan'208";a="205376420"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 3/9] thp: copy_huge_pmd(): copy huge zero page
+Date: Thu,  9 Aug 2012 12:08:14 +0300
+Message-Id: <1344503300-9507-4-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If range.start or range.minlen is bigger than filesystem size, return
-invalid value error. This fixes possible overflow in BTOBB macro when
-passed value was nearly ULLONG_MAX.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Signed-off-by: Tomas Racek <tracek@redhat.com>
+It's easy to copy huge zero page. Just set destination pmd to huge zero
+page.
+
+It's safe to copy huge zero page since we have none yet :-p
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/xfs/xfs_discard.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/fs/xfs/xfs_discard.c b/fs/xfs/xfs_discard.c
-index f9c3fe3..4e07a56 100644
---- a/fs/xfs/xfs_discard.c
-+++ b/fs/xfs/xfs_discard.c
-@@ -179,12 +179,14 @@ xfs_ioc_trim(
- 	 * used by the fstrim application.  In the end it really doesn't
- 	 * matter as trimming blocks is an advisory interface.
- 	 */
-+	if (range.start >= XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks) ||
-+	    range.minlen > XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks))
-+		return -XFS_ERROR(EINVAL);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 9dcb9e6..a534f84 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -725,6 +725,18 @@ static inline struct page *alloc_hugepage(int defrag)
+ }
+ #endif
+ 
++static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
++		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
++{
++	pmd_t entry;
++	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
++	entry = pmd_wrprotect(entry);
++	entry = pmd_mkhuge(entry);
++	set_pmd_at(mm, haddr, pmd, entry);
++	prepare_pmd_huge_pte(pgtable, mm);
++	mm->nr_ptes++;
++}
 +
- 	start = BTOBB(range.start);
- 	end = start + BTOBBT(range.len) - 1;
- 	minlen = BTOBB(max_t(u64, granularity, range.minlen));
- 
--	if (XFS_BB_TO_FSB(mp, start) >= mp->m_sb.sb_dblocks)
--		return -XFS_ERROR(EINVAL);
- 	if (end > XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks) - 1)
- 		end = XFS_FSB_TO_BB(mp, mp->m_sb.sb_dblocks)- 1;
- 
+ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       unsigned int flags)
+@@ -802,6 +814,11 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		pte_free(dst_mm, pgtable);
+ 		goto out_unlock;
+ 	}
++	if (is_huge_zero_pmd(pmd)) {
++		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
++		ret = 0;
++		goto out_unlock;
++	}
+ 	if (unlikely(pmd_trans_splitting(pmd))) {
+ 		/* split huge page running from under us */
+ 		spin_unlock(&src_mm->page_table_lock);
 -- 
 1.7.7.6
 
