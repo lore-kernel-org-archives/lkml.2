@@ -1,54 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab2HIKTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 06:19:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39129 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757541Ab2HIKTu (ORCPT
+	id S1757790Ab2HIKYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 06:24:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41202 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757676Ab2HIKYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 06:19:50 -0400
-Date: Thu, 9 Aug 2012 11:19:47 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+	Thu, 9 Aug 2012 06:24:23 -0400
+Date: Thu, 9 Aug 2012 11:24:14 +0100
+From: Dave Martin <dave.martin@linaro.org>
 To: Matt Sealey <matt@genesi-usa.com>
-Cc: Linux ARM Kernel Mailing List 
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
         Steev Klimaszewski <steev@genesi-usa.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via
- device tree
-Message-ID: <20120809101947.GA8474@sirena.org.uk>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/2] ARM: build ssi-fiq.S in ARM mode to prevent
+ CONFIG_THUMB2_KERNEL build breakage
+Message-ID: <20120809102414.GA17588@linaro.org>
+References: <1344379514-30076-1-git-send-email-matt@genesi-usa.com>
+ <1344379514-30076-2-git-send-email-matt@genesi-usa.com>
+ <20120808065502.GI1451@pengutronix.de>
+ <CAKGA1bmUuSZuWDM4QPTxmNR0+=uQ1RbFhw4u-sb9KaSPYwQiVw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
-X-Cookie: This report is filled with omissions.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAKGA1bmUuSZuWDM4QPTxmNR0+=uQ1RbFhw4u-sb9KaSPYwQiVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 04:46:18PM -0500, Matt Sealey wrote:
+On Wed, Aug 08, 2012 at 12:32:39PM -0500, Matt Sealey wrote:
 
-Yay for indentation!  It'd be good to rewrite your DT so you could cut
-down on that, at the minute it's not good for legibility.
+[...]
+ 
+> I'm going to do a trapse through and find where Russell nacked Dave's
+> thumb-aware
+> rewrite.. would you mind if you have any of these boards seeing if it
+> really DOES
 
-> +							sw1_reg: sw1 {
-> +								regulator-min-microvolt = <600000>;
-> +								regulator-max-microvolt = <1375000>;
-> +								regulator-boot-on;
-> +								regulator-always-on;
-> +							};
+There was no NAK because I didn't get as far as posting the patch,
+mostly because of the doubt about whether this code is ever relevant
+on Thumb2-capable hardware.
 
-This and many of your other regulators have voltage ranges specified but
-no consumers which doesn't make sense.  It looks awfully like you've
-just typed in the maximum range supported by the regulator which is most
-likely broken.
+If somebody with some old imx hardware that definitely relies on this
+wants to pick it up and test it, it might still be useful.
 
-You're also specifying both boot_on and always_on which again doesn't
-seem to make a lot of sense - boot_on mainly exists to help autoprobe,
-using it quite this routinely isn't too clever.
+I don't know whether I still have the original patch, but I think the
+only think I did was to swap the roles of r13 and r12.  In the original
+code r12 is only used as a base register, which is permissible usage
+for r13 in Thumb-2.  Those two registers appear private to the fiq
+handler, so I don't think the change will break anything, but I'd be
+more confident is somebody is able to test it.
+
+Cheers
+---Dave
+
+diff --git a/arch/arm/plat-mxc/ssi-fiq.S b/arch/arm/plat-mxc/ssi-fiq.S
+index 8397a2d..3589afb 100644
+--- a/arch/arm/plat-mxc/ssi-fiq.S
++++ b/arch/arm/plat-mxc/ssi-fiq.S
+@@ -35,19 +35,19 @@
+ 		.global imx_ssi_fiq_tx_buffer
+ 
+ imx_ssi_fiq_start:
+-		ldr r12, imx_ssi_fiq_base
++		ldr r13, imx_ssi_fiq_base
+ 
+ 		/* TX */
+ 		ldr r11, imx_ssi_fiq_tx_buffer
+ 
+ 		/* shall we send? */
+-		ldr r13, [r12, #SSI_SIER]
+-		tst r13, #SSI_SIER_TFE0_EN
++		ldr r12, [r13, #SSI_SIER]
++		tst r12, #SSI_SIER_TFE0_EN
+ 		beq 1f
+ 
+ 		/* TX FIFO empty? */
+-		ldr r13, [r12, #SSI_SISR]
+-		tst r13, #SSI_SISR_TFE0
++		ldr r12, [r13, #SSI_SISR]
++		tst r12, #SSI_SISR_TFE0
+ 		beq 1f
+ 
+ 		mov r10, #0x10000
+@@ -56,34 +56,34 @@ imx_ssi_fiq_start:
+ 
+ 		add r11, r11, r10
+ 
+-		ldrh r13, [r11]
+-		strh r13, [r12, #SSI_STX0]
++		ldrh r12, [r11]
++		strh r12, [r13, #SSI_STX0]
+ 
+-		ldrh r13, [r11, #2]
+-		strh r13, [r12, #SSI_STX0]
++		ldrh r12, [r11, #2]
++		strh r12, [r13, #SSI_STX0]
+ 
+-		ldrh r13, [r11, #4]
+-		strh r13, [r12, #SSI_STX0]
++		ldrh r12, [r11, #4]
++		strh r12, [r13, #SSI_STX0]
+ 
+-		ldrh r13, [r11, #6]
+-		strh r13, [r12, #SSI_STX0]
++		ldrh r12, [r11, #6]
++		strh r12, [r13, #SSI_STX0]
+ 
+ 		add r10, #8
+-		lsr r13, r8, #16	/* r13: buffer size */
+-		cmp r10, r13
+-		lslgt r8, r13, #16
++		lsr r12, r8, #16	/* r12: buffer size */
++		cmp r10, r12
++		lslgt r8, r12, #16
+ 		addle r8, #8
+ 1:
+ 		/* RX */
+ 
+ 		/* shall we receive? */
+-		ldr r13, [r12, #SSI_SIER]
+-		tst r13, #SSI_SIER_RFF0_EN
++		ldr r12, [r13, #SSI_SIER]
++		tst r12, #SSI_SIER_RFF0_EN
+ 		beq 1f
+ 
+ 		/* RX FIFO full? */
+-		ldr r13, [r12, #SSI_SISR]
+-		tst r13, #SSI_SISR_RFF0
++		ldr r12, [r13, #SSI_SISR]
++		tst r12, #SSI_SISR_RFF0
+ 		beq 1f
+ 
+ 		ldr r11, imx_ssi_fiq_rx_buffer
+@@ -94,31 +94,31 @@ imx_ssi_fiq_start:
+ 
+ 		add r11, r11, r10
+ 
+-		ldr r13, [r12, #SSI_SACNT]
+-		tst r13, #SSI_SACNT_AC97EN
++		ldr r12, [r13, #SSI_SACNT]
++		tst r12, #SSI_SACNT_AC97EN
+ 
+-		ldr r13, [r12, #SSI_SRX0]
+-		strh r13, [r11]
++		ldr r12, [r13, #SSI_SRX0]
++		strh r12, [r11]
+ 
+-		ldr r13, [r12, #SSI_SRX0]
+-		strh r13, [r11, #2]
++		ldr r12, [r13, #SSI_SRX0]
++		strh r12, [r11, #2]
+ 
+ 		/* dummy read to skip slot 12 */
+-		ldrne r13, [r12, #SSI_SRX0]
++		ldrne r12, [r13, #SSI_SRX0]
+ 
+-		ldr r13, [r12, #SSI_SRX0]
+-		strh r13, [r11, #4]
++		ldr r12, [r13, #SSI_SRX0]
++		strh r12, [r11, #4]
+ 
+-		ldr r13, [r12, #SSI_SRX0]
+-		strh r13, [r11, #6]
++		ldr r12, [r13, #SSI_SRX0]
++		strh r12, [r11, #6]
+ 
+ 		/* dummy read to skip slot 12 */
+-		ldrne r13, [r12, #SSI_SRX0]
++		ldrne r12, [r13, #SSI_SRX0]
+ 
+ 		add r10, #8
+-		lsr r13, r9, #16	/* r13: buffer size */
+-		cmp r10, r13
+-		lslgt r9, r13, #16
++		lsr r12, r9, #16	/* r12: buffer size */
++		cmp r10, r12
++		lslgt r9, r12, #16
+ 		addle r9, #8
+ 
+ 1:
+
