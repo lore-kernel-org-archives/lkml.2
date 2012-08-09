@@ -1,35 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab2HISyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 14:54:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48207 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab2HISys (ORCPT
+	id S1759181Ab2HIS46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 14:56:58 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:6432 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759045Ab2HIS45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 14:54:48 -0400
-Message-ID: <50240770.6070207@gmail.com>
-Date: Thu, 09 Aug 2012 14:54:40 -0400
-From: Salar Ali Mumtaz <salaarali@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
-References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net> <50213D69.3060904@gmail.com> <5021486B.6020907@xenotime.net>
-In-Reply-To: <5021486B.6020907@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Aug 2012 14:56:57 -0400
+Message-ID: <1344538611.2593.4.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Date: Thu, 9 Aug 2012 19:56:51 +0100
+In-Reply-To: <1344526098.6935.44.camel@gandalf.stny.rr.com>
+References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+	 <1344485382.2024.9.camel@joe2Laptop>
+	 <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+	 <20120808.231804.12694947300243733.davem@davemloft.net>
+	 <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
+	 <20120809145454.GA21195@home.goodmis.org>
+	 <1344525758.3165.8.camel@joe2Laptop>
+	 <1344526098.6935.44.camel@gandalf.stny.rr.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-08-07 12:55 PM, Randy Dunlap wrote:
-
-> In Kconfig language, is "" the same as 'n' ?
-> If so, I'm OK with your proposal above.
+On Thu, 2012-08-09 at 11:28 -0400, Steven Rostedt wrote:
+> On Thu, 2012-08-09 at 08:22 -0700, Joe Perches wrote:
 > 
+> > Yes, I sent signed-off patches to their original RFC submission
+> > (back last year?).  To me, this single large patch is like a
+> > snapshot of a git tree and not all contributors to that git
+> > tree should be noted as signers of the entire thing.
+> 
+> Ouch, that looks like we are losing all history.
+> 
+> One large patch should not be submitted. If it was developed in steps,
+> then it is best to show those steps when they are incorporated into the
+> Linux repository.
+> 
+> Sure, the patches may be reworked and folded together where appropriate,
+> but when I read "this single large patch is like a snapshot of a git
+> tree", that right there is a red flag.
 
+I don't think this has ever been a requirement for new drivers.
 
-So a colleague of mine tested this and came up with a conclusion that expressions in Kconfig can only deal with boolean or tristate operands and no casting is made with strings. Using any string operand as part of a boolean expression is simply a type error and Kconfig probably marks such operand as 'n', regardless of its value.
+The alterations to the description of atl1c ought to be broken out as a
+separate patch, though.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
