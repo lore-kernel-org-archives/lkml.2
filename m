@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2HIHSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 03:18:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61590 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab2HIHSw (ORCPT
+	id S1755907Ab2HIHWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 03:22:25 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36483 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab2HIHWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 03:18:52 -0400
-Date: Thu, 9 Aug 2012 09:18:48 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>,
-        David Henningsson <david.henningsson@canonical.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: hda/realtek - Keep analog bypass muted on ALC892
-Message-ID: <20120809071848.GB6979@avionic-0098.mockup.avionic-design.de>
-References: <1344494839-6942-1-git-send-email-thierry.reding@avionic-design.de>
- <s5hfw7wfszx.wl%tiwai@suse.de>
+	Thu, 9 Aug 2012 03:22:23 -0400
+Date: Thu, 9 Aug 2012 00:22:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v5 08/12] block: Introduce new bio_split()
+Message-ID: <20120809072217.GH2845@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-9-git-send-email-koverstreet@google.com>
+ <20120808230532.GH6983@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120809013923.GH7262@moria.home.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hfw7wfszx.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:DG+p8Ilz/RVCm/3n68Bd/ufkc4i99evBujMX2Erv+CO
- V/9Z+eEOjWzaK3PtxJSDUpiBD38pFZzzFJV1/3Z8J24Gyc1DYa
- ajPM3zVNulaUNbg/YuKpMQhcd4LFuvVoJ3oogdnSvX2l/7zS7a
- XchYagOWbulgrdhCtq5v8rDjIVJ/DQPyiRHpNC+R7nMcCbHXFj
- 7UWfcy85L7Qr4InrxJkL0xciXi0keUn6dC6RP+fe6YXPLiGL5o
- /CvVX4j6eLj7IW4w51Z2PLJNph8FUQr7JKStDnEc+GbBbX5yk5
- UOPGBzmKO5MyeEww3cMBnfNVKFXg87tHAmilMtfw1zLJ6tCgnD
- gsHKBcUodH98JSaEzKSHYYWS0HxTR8wtF/XB4Sopg7TzwLP/a8
- JGNiLDerTeBLoAP+mlyprQ/QXBJ9aNOhpKlEp7Zvdseqf5o8sI
- KO2TZ
+In-Reply-To: <20120809013923.GH7262@moria.home.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 08, 2012 at 06:39:23PM -0700, Kent Overstreet wrote:
+> On Wed, Aug 08, 2012 at 04:05:32PM -0700, Tejun Heo wrote:
+> > One more thing.
+> > 
+> > On Mon, Aug 06, 2012 at 03:08:37PM -0700, Kent Overstreet wrote:
+> > > +	if (bio_integrity(bio)) {
+> > > +		bio_integrity_clone(ret, bio, gfp, bs);
+> > > +		bio_integrity_trim(ret, 0, bio_sectors(ret));
+> > > +		bio_integrity_trim(bio, bio_sectors(ret), bio_sectors(bio));
+> > 
+> > Is this equivalent to bio_integrity_split() performance-wise?
+> 
+> Strictly speaking, no. But it has the advantage of being drastically
+> simpler - and the only one only worked for single page bios so I
+> would've had to come up with something new from scratch, and as
+> confusing as the integrity stuff is I wouldn't trust the result.
 
---oLBj+sq0vYjzfsbl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's already bio_integrity_split() and you're actively dropping it.
 
-On Thu, Aug 09, 2012 at 09:02:10AM +0200, Takashi Iwai wrote:
-> At Thu,  9 Aug 2012 08:47:19 +0200,
-> Thierry Reding wrote:
-> >=20
-> > Unmuting the analog bypass causes any input to be directly bypassed to
-> > the outputs, which is usually not expected by the user.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > ---
-> > Note that this patch could be generalized to include all codec variants
-> > that have this second channel. As I don't have access to all the data
-> > sheets I'll leave that decision up to somebody with more hardware
-> > available.
->=20
-> Hmm, are you really sure that this is exclusive switch between two?
-> All Realtek codecs with this mixer widget mixes two sources up.
-> Otherwise it must not be a "mixer" widget at all but it must be a
-> "selector" widget.
+> I'm skeptical that it's going to matter in practice given how much
+> iteration is done elsewhere in the course of processing a bio and given
+> that this stuff isn't used with high end SSDs...
 
-It's not an exclusive switch. But the second input is the analog bypass
-that basically takes the signal directly from the input path and routes
-it to the output.
+If you think the active dropping is justified, please let the change
+and justification clearly stated.  You're burying the active change in
+two separate patches without even mentioning it or cc'ing people who
+care about bio-integrity (Martin K. Petersen).  Ummm.... this is
+simply unacceptable and makes me a lot more suspicious about the
+patchset.  Please be explicit about changes you make.  Peer-review
+breaks down unless such trust can be maintained.
 
-> And I haven't received a bug report regarding this although ALC892 is
-> no new chip and the auto-parser has been enabled for so long time.
+Thanks.
 
-I've seen this happen when feeding a signal into the CD-IN (NID 0x1c),
-which is then directly routed to the output, so I actually hear that
-signal at the output, even if there is no software loopback to capture
-the input and play it back via the DAC.
-
-This is probably not a very common use-case, so maybe nobody else has
-come across it. Looking at the block diagram in the ALC892 datasheet
-(page 5) clearly shows where the input of this second switch comes from.
-I don't think this is intended to be unmuted by default, but only in
-very special cases where you actually want to pass the analog input
-signal directly to the output without going through the ADC and back out
-the DAC.
-
-Thierry
-
---oLBj+sq0vYjzfsbl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQI2RYAAoJEN0jrNd/PrOhgvIQALJ/nzlAkLx5at9u0ZUXVqod
-gDw3eVArqBW5Vt3tuWOBcZWba7hGoii/Fbc97JRbf458utSzAWXOtwVVRZaCEnI1
-TurHALdXZBmfF0grl5tn580g2y43/KKyKkXtGhq+nkWJouMMGDlaJ85fIOKdKKd6
-xSxfwnWGl6mTrV/i1FAbM+t1h5PEsVQO/2FfLe1bO7IvQLHAzWUrV/B2XBA1oOeN
-MNt97moj6+4AWkv5oBhaufMzvQPGp6mxVBbotDyHypwA0PZeTAMzkmaz+cr/dDnQ
-TtP6rLa0JIQoCfRM5L1boE44x3Ip+xtwPsRQyVVQY7kDpcJ3dmROMzRElcuh3box
-6QSyxRH5nu8WY0NFZ2u/wLKQDzYkVOwnw5J00sKKEImY+ss9XSzecKs6wY4xaplY
-F0uGQpWnwyeXHyELI7hdrO3OvQfE9MzGz1tiIIu7CQWZwr7Fxu41wuw/K+eiZmWR
-6kiqMJryNV37zGamQGjMen6FNYlzXNyBU7YfYZxSlhgfV/LZ86loSJPgj2NmQzE8
-OqFzZ5ajpJB9eAVbRKISSTsHP0JBEFTbPTE8ppUGMt7Gjh8rAfPa/zULC0RLYLcn
-idvaGzBY7RL87ul5UYjFNoKho/QAAee6SODWNb9SUujAHQpanpOuyBDwCsPI42pw
-twa4zLamxXCzBFeg/i1Y
-=2pd9
------END PGP SIGNATURE-----
-
---oLBj+sq0vYjzfsbl--
+-- 
+tejun
