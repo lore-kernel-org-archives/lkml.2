@@ -1,84 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758404Ab2HIRSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:18:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37690 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab2HIRSE (ORCPT
+	id S1754824Ab2HIRXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:23:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41791 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752634Ab2HIRXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:18:04 -0400
-Date: Thu, 9 Aug 2012 19:18:02 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
-        gdb-patches@sourceware.org
-Subject: Re: [RFC 5/5] uprobes: add global breakpoints
-Message-ID: <20120809171802.GB27835@linutronix.de>
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de>
- <1344355952-2382-6-git-send-email-bigeasy@linutronix.de>
- <20120808131457.GA5309@redhat.com>
+	Thu, 9 Aug 2012 13:23:42 -0400
+Date: Thu, 9 Aug 2012 18:23:15 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [09/36] AArch64: Exception handling
+Message-ID: <20120809172315.GA12325@arm.com>
+References: <1341608777-12982-10-git-send-email-catalin.marinas@arm.com>
+ <5023EDE0.3070506@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120808131457.GA5309@redhat.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <5023EDE0.3070506@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov | 2012-08-08 15:14:57 [+0200]:
+Hi Christopher,
 
->> What I miss right now is an interface to tell the user/gdb that there is a
->> program that hit a global breakpoint and is waiting for further instructions.
->> A "tail -f trace" does not work and may contain also a lot of other
->> informations. I've been thinking about a poll()able file which returns pids of
->> tasks which are put on hold. Other suggestions?
->
->Honestly, I am not sure this is that useful...
+On Thu, Aug 09, 2012 at 06:05:36PM +0100, Christopher Covington wrote:
+> On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
+> > +/*
+> > + * Exception vectors.
+> > + */
+> > +	.macro	ventry	label
+> > +	.align	7
+> > +	b	\label
+> > +	.endm
+> > +
+> > +	.align	11
+> > +ENTRY(vectors)
+> > +	ventry	el1_sync_invalid		// Synchronous EL1t
+> > +	ventry	el1_irq_invalid			// IRQ EL1t
+> > +	ventry	el1_fiq_invalid			// FIQ EL1t
+> > +	ventry	el1_error_invalid		// Error EL1t
+> > +
+> > +	ventry	el1_sync			// Synchronous EL1h
+> > +	ventry	el1_irq				// IRQ EL1h
+> > +	ventry	el1_fiq_invalid			// FIQ EL1h
+> > +	ventry	el1_error_invalid		// Error EL1h
+> > +
+> > +	ventry	el0_sync			// Synchronous 64-bit EL0
+> > +	ventry	el0_irq				// IRQ 64-bit EL0
+> > +	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
+> > +	ventry	el0_error_invalid		// Error 64-bit EL0
+> > +
+> > +#ifdef CONFIG_AARCH32_EMULATION
+> > +	ventry	el0_sync_compat			// Synchronous 32-bit EL0
+> > +	ventry	el0_irq_compat			// IRQ 32-bit EL0
+> > +	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
+> > +	ventry	el0_error_invalid_compat	// Error 32-bit EL0
+> > +#else
+> > +	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
+> > +	ventry	el0_irq_invalid			// IRQ 32-bit EL0
+> > +	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
+> > +	ventry	el0_error_invalid		// Error 32-bit EL0
+> > +#endif
+> > +END(vectors)
+> > +
+> > +/*
+> > + * Invalid mode handlers
+> > + */
+> > +	.macro	inv_entry, el, reason, regsize = 64
+> > +	kernel_entry el, \regsize
+> > +	mov	x0, sp
+> > +	mov	x1, #\reason
+> > +	mrs	x2, esr_el1
+> > +	b	bad_mode
+> > +	.endm
+> 
+> The code seems to indicate that the invalid mode handlers have
+> different alignment requirements than the valid mode handlers, which
+> puzzles me.
 
-How would you notify gdb that there is a new task that hit a breakpoint?
-Or learn yourself?
+I don't see any difference. The whole vector must be 2K aligned while
+each individual entry is found every 128 bytes (to allow for more
+instructions, though we only use a branch).
 
->OK, I'll try to read this patch later. But, at first glance,
-Thank you.
+The inv_entry macro (as the kernel_entry one) is used in code being
+branched to from the vector and not inside the vector.
 
->> @@ -286,8 +286,10 @@ static int ptrace_attach(struct task_struct *task, long request,
->>  	__ptrace_link(task, current);
->>
->>  	/* SEIZE doesn't trap tracee on attach */
->> -	if (!seize)
->> +	if (!seize) {
->>  		send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
->> +		uprobe_wakeup_task(task, 1);
->> +	}
->
->Can't understand why uprobe_wakeup_task() depends on !PTRACE_SEIZE
+> > +el0_sync_invalid:
+> > +	inv_entry 0, BAD_SYNC
+> > +ENDPROC(el0_sync_invalid)
+> 
+> Plain labels, the ENTRY macro, the END macro and the ENDPROC macro are
+> used variously throughout this file, and I wonder if a greater amount
+> of consistency might be attainable. The description of the ENDPROC
+> macro in include/linux/linkage.h makes me think its use might not be
+> completely warranted in blocks of assembly that don't end with a
+> return instruction.
 
-because in the SEIZE case the task isn't halted, it continues to run. Or
-do you want to use PTRACE_SEIZE for tasks which hit the global
-breakpoint and you have no interrest in them and want them to continue
-like nothing happend?
+We use ENTRY only when we want to export the symbol as it contains the
+.globl directive. The ENDPROC is used to mark a function and it's in
+general useful for debugging information it generates.
 
->> +
->> +	set_current_state(TASK_TRACED);
->> +	schedule();
->> +}
->
->Suppose that uprobe_wakeup_task() is called in the WINDOW above.
->
->OTOH, uprobe_wakeup_task() can race with itself if it is called
->twice at the same time, say from uprobes_gp_wakeup_write() and
->ptrace_attach().
-Okay, I'm going to close the window.
+> > +	.align	6
+> > +el0_irq:
+> > +	kernel_entry 0
+> > +el0_irq_naked:
+> > +	disable_step x1
+> > +	isb
+> > +	enable_dbg
+> > +#ifdef CONFIG_TRACE_IRQFLAGS
+> > +	bl	trace_hardirqs_off
+> > +#endif
+> > +	get_thread_info tsk
+> > +#ifdef CONFIG_PREEMPT
+> > +	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
+> > +	add	x23, x24, #1			// increment it
+> > +	str	x23, [tsk, #TI_PREEMPT]
+> > +#endif
+> > +	irq_handler
+> > +#ifdef CONFIG_PREEMPT
+> > +	ldr	x0, [tsk, #TI_PREEMPT]
+> > +	str	x24, [tsk, #TI_PREEMPT]
+> > +	cmp	x0, x23
+> > +	b.eq	1f
+> > +	mov	x1, #0
+> > +	str	x1, [x1]			// BUG
+> 
+> It looks like the error handling here isn't quite complete.
 
->
->Oleg.
+We trigger a bug by storing to 0 and the kernel will panic, giving the
+full trace. I don't think we can do more in terms of error handling
+here.
 
-Sebastian
+Regards.
+
+-- 
+Catalin
