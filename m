@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab2HIABx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 20:01:53 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55155 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2HIABv (ORCPT
+	id S1759365Ab2HIADk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 20:03:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38827 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2HIADj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 20:01:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344469333-8739-1-git-send-email-charlie.mear@hp.com>
-References: <1344469333-8739-1-git-send-email-charlie.mear@hp.com>
-Date: Wed, 8 Aug 2012 17:01:50 -0700
-X-Google-Sender-Auth: OnjKDoCwjgO1bPrY2KvfZCKaeXo
-Message-ID: <CAE9FiQW2aFMxO54aD_GFSegjsfwexA2E+azFr3bqkh9248z3Uw@mail.gmail.com>
-Subject: Re: [PATCH] x86/pci: Allow x86 platforms to use translation offsets
-From: Yinghai Lu <yinghai@kernel.org>
-To: charlie.mear@hp.com
-Cc: ">" <"tglx@linutronix.de, mingo@redhat.com, hpa"@zytor.com>,
-        x86@kernel.org, bhelgaas@google.com, jbarnes@virtuousgeek.org,
-        davej@redhat.com, liuj97@gmail.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Aug 2012 20:03:39 -0400
+Date: Thu, 9 Aug 2012 10:03:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
+Subject: linux-next: manual merge of the osd tree with the nfs tree
+Message-Id: <20120809100328.b8d6af3b95e1537ffcb7b053@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 4:42 PM,  <charlie.mear@hp.com> wrote:
-> From: Charlie Mear <charlie.mear@hp.com>
->
-> The memory range descriptors in the _CRS control method contain an
-> address translation offset for host bridges.  This value is used to
-> translate addresses across the bridge.  The support to use _TRA values
-> is present for other architectures but not for X86 platforms.
->
-> For existing X86 platforms the _TRA value is zero.  Non zero _TRA values
-> are expected on future X86 platforms and this change will register that
-> value with the resource.
->
-> Signed-off-by: Charlie Mear <charlie.mear@hp.com>
-> ---
->  arch/x86/pci/acpi.c |   18 ++++++++++++++++--
->  1 files changed, 16 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index 505acdd..37acbae 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -12,6 +12,7 @@ struct pci_root_info {
->         char name[16];
->         unsigned int res_num;
->         struct resource *res;
-> +       u64 *res_offset;
+--Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-resource_size_t * ?
+Hi Boaz,
 
->         struct pci_sysdata sd;
->  #ifdef CONFIG_PCI_MMCONFIG
->         bool mcfg_added;
-> @@ -306,6 +307,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
->         res->start = start;
->         res->end = end;
->         res->child = NULL;
-> +       info->res_offset[info->res_num] = addr.translation_offset;
->
->         if (!pci_use_crs) {
->                 dev_printk(KERN_DEBUG, &info->bridge->dev,
-> @@ -375,7 +377,8 @@ static void add_resources(struct pci_root_info *info,
->                                  "ignoring host bridge window %pR (conflicts with %s %pR)\n",
->                                  res, conflict->name, conflict);
->                 else
-> -                       pci_add_resource(resources, res);
-> +                       pci_add_resource_offset(resources, res,
-> +                                       info->res_offset[i]);
->         }
->  }
->
-> @@ -383,6 +386,8 @@ static void free_pci_root_info_res(struct pci_root_info *info)
->  {
->         kfree(info->res);
->         info->res = NULL;
-> +       kfree(info->res_offset);
-> +       info->res_offset = NULL;
->         info->res_num = 0;
->  }
->
-> @@ -433,11 +438,20 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
->                 return;
->
->         size = sizeof(*info->res) * info->res_num;
-> -       info->res_num = 0;
->         info->res = kmalloc(size, GFP_KERNEL);
->         if (!info->res)
-                   you need to info->res_num = 0 here
->                 return;
->
-> +       size = sizeof(*info->res_offset) * info->res_num;
-> +       info->res_offset = kmalloc(size, GFP_KERNEL);
-> +       if (!info->res_offset) {
-> +               kfree(info->res);
-> +               info->res = NULL;
-> +               return;
-> +       }
-> +       info->res_num = 0;
+Today's linux-next merge of the osd tree got a conflict in
+fs/nfs/nfs4proc.c between commit 47fbf7976e0b ("NFSv4.1: Remove a bogus
+BUG_ON() in nfs4_layoutreturn_done") from the nfs tree and commit
+d8e8b68405db ("pnfs: Don't BUG on info received from Server") from the
+osd tree.
 
-need to move it before: if (!info->res_offset) {
+I just used the nfs tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks
+--Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v
+Content-Type: application/pgp-signature
 
-Yinghai
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQIv5QAAoJEECxmPOUX5FECQIP/1mtrc9xRsq+dE5TyB9rgMfv
+HlNgZ0FJqabLcqA6aQ2eQJRxrZqSseyFNKxe8Uasfs8Djs0CsJB1dRXxsfsGackI
+6NNgjcERgjus7d6r2bqWELLgPQixDBMihiV4lITCjWnjdVGZf/vzyAORDbk+N//8
+mtFCOdya2lm8cGWxYwEN20BQstsMwlpoFvfTxDrWQiL8C5dpbVBUediccz7xPKtH
+qY7RJOqkf5ZiLOlG9dUS6+UeVXowFCGVfKjKBhBimjcocjcSrX3GM8iFfNTEAa03
+WF1Iozd5OzXqJnjm/hWSvYlb2oTPJCZPD1/j52MTHPjEE6ZHM/E9RZ8HXulEFEiC
+RNOpRAHI4LlsnZjoYw8n9tCITjiaMJPk96yGOXQFP9eevcXtQu0QGw+4tIrD2Tv2
+uFve/JT3S9n/bEtJeYK0+RElFLbsESxQg3wusj55uXchw9bEevp9p0uJdrGRwwtf
+jr4kz4ir0yHs52/0Mt9p3TxOJCH+2tgCTW3OpicbIafQNAy6fkU11maxC42xR7LG
+4Lc9Yj8xaS/GIjxEb3VHzfRKYiXMU9VmUvtIEVUcBMh4un8PrhFgcOxKiOGuNfLN
+jNIsk5G2HSA7TcI3bfYYbokzVI8QEhra6I9VGvX3oU27xzQnNKZztsMnd/RyMfJR
+OoM8nCuLUgzgRyb1RXVD
+=kcfz
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Aug_2012_10_03_28_+1000_xLRv2IAxBR=6Pc+v--
