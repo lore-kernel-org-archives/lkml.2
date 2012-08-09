@@ -1,125 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759981Ab2HIXMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:12:08 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60240 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759767Ab2HIXMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:12:06 -0400
-Message-ID: <1344553954.28791.12.camel@footlong>
-Subject: [PATCH V2 2/3] PPC64: Add support for instantiating SML from Open
- Firmware
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
-        adlai@linux.vnet.ibm.com
-Date: Thu, 09 Aug 2012 18:12:34 -0500
-In-Reply-To: <1344553253.28791.7.camel@footlong>
-References: <1344553253.28791.7.camel@footlong>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1759984Ab2HIXQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:16:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51276 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754131Ab2HIXQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 19:16:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,742,1336374000"; 
+   d="scan'208";a="178971484"
+Message-ID: <502444CC.8030906@linux.intel.com>
+Date: Thu, 09 Aug 2012 16:16:28 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Avi Kivity <avi@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] tracepoints: Move the work out of line from hotpath
+ sections
+References: <1344544823.6935.82.camel@gandalf.stny.rr.com>  <20120809205053.GB15109@Krystal> <1344551131.6935.90.camel@gandalf.stny.rr.com>
+In-Reply-To: <1344551131.6935.90.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080923-5518-0000-0000-000006B8C263
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch instantiate Stored Measurement Log (SML) and put the
-log address and size in the device tree.
+On 08/09/2012 03:25 PM, Steven Rostedt wrote:
+>>
+>> It might be better to improve gcc to move really cold branches out of
+>> line (really, really far away), and use the compiler to do this, rather
+>> than to use an extra indirection that adds bloat and complexity to the
+>> kernel.
+> 
+> I think modifying gcc is something that can help more than tracing. But
+> that's been a pipe dream for such a long time that I've started dreaming
+> about winning a gold medal in the Olympics instead. Standing on the
+> podium listening to the crowd chanting your name along with your country
+> is more fun to dream about than seeing your unlikely code stop becoming
+> hurdles for the CPU sprinters.
+> 
 
-Signed-off-by: Ashley Lai <adlai@us.ibm.com>
----
- arch/powerpc/kernel/prom_init.c |   64 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 64 insertions(+), 0 deletions(-)
+At one point, maybe, but lately we have had a lot more traction from the
+gcc developers, giving us features like __fentry__ and asm goto.
 
-diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-index 1b488e5..3f54bd4 100644
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -1624,6 +1624,65 @@ static void __init prom_instantiate_rtas(void)
- 
- #ifdef CONFIG_PPC64
- /*
-+ * Allocate room for and instantiate Stored Measurement Log (SML)
-+ */
-+static void __init prom_instantiate_sml(void)
-+{
-+	phandle ibmvtpm_node;
-+	ihandle ibmvtpm_inst;
-+	u32 entry = 0, size = 0;
-+	u64 base;
-+
-+	prom_debug("prom_instantiate_sml: start...\n");
-+
-+	ibmvtpm_node = call_prom("finddevice", 1, 1, ADDR("/ibm,vtpm"));
-+	prom_debug("ibmvtpm_node: %x\n", ibmvtpm_node);
-+	if (!PHANDLE_VALID(ibmvtpm_node))
-+		return;
-+
-+	ibmvtpm_inst = call_prom("open", 1, 1, ADDR("/ibm,vtpm"));
-+	if (!IHANDLE_VALID(ibmvtpm_inst)) {
-+		prom_printf("opening vtpm package failed (%x)\n", ibmvtpm_inst);
-+		return;
-+	}
-+
-+	if (call_prom_ret("call-method", 2, 2, &size,
-+			  ADDR("sml-get-handover-size"),
-+			  ibmvtpm_inst) != 0) {
-+		prom_printf("SML get handover size failed\n");
-+		return;
-+	}
-+	if (size == 0)
-+		return;
-+
-+	base = alloc_down(size, PAGE_SIZE, 0);
-+	if (base == 0)
-+		prom_panic("Could not allocate memory for sml\n");
-+
-+	prom_printf("instantiating sml at 0x%x...", base);
-+
-+	if (call_prom_ret("call-method", 4, 2, &entry,
-+			  ADDR("sml-handover"),
-+			  ibmvtpm_inst, size, base) != 0 || entry == 0) {
-+		prom_printf("SML handover failed\n");
-+		return;
-+	}
-+	prom_printf(" done\n");
-+
-+	reserve_mem(base, size);
-+
-+	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-base",
-+		     &base, sizeof(base));
-+	prom_setprop(ibmvtpm_node, "/ibm,vtpm", "linux,sml-size",
-+		     &size, sizeof(size));
-+
-+	prom_debug("sml base     = 0x%x\n", base);
-+	prom_debug("sml size     = 0x%x\n", (long)size);
-+
-+	prom_debug("prom_instantiate_sml: end...\n");
-+}
-+
-+/*
-  * Allocate room for and initialize TCE tables
-  */
- static void __init prom_initialize_tce_table(void)
-@@ -2916,6 +2975,11 @@ unsigned long __init prom_init(unsigned long r3, unsigned long r4,
- 		prom_instantiate_opal();
- #endif
- 
-+#ifdef CONFIG_PPC64
-+	/* instantiate sml */
-+	prom_instantiate_sml();
-+#endif
-+
- 	/*
- 	 * On non-powermacs, put all CPUs in spin-loops.
- 	 *
--- 
-1.7.1
-
+	-hpa
 
