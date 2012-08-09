@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab2HINXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:23:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59556 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab2HINXu (ORCPT
+	id S1754875Ab2HIN0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:26:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38322 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab2HIN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:23:50 -0400
-Message-ID: <5023B9CD.2030004@kernel.dk>
-Date: Thu, 09 Aug 2012 15:23:25 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Thu, 9 Aug 2012 09:26:54 -0400
+Message-ID: <5023BAA0.1080304@canonical.com>
+Date: Thu, 09 Aug 2012 15:26:56 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-        Damien Wyart <damien.wyart@free.fr>, Li Shaohua <shli@fusionio.com>,
-        Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] [RESEND] Remove plugging at buffered write time
-References: <20120805082614.071671796@intel.com>
-In-Reply-To: <20120805082614.071671796@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Takashi Iwai <tiwai@suse.de>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ALSA: hda - Deferred probing with request_firmware_nowait()
+References: <1344494723-6827-1-git-send-email-thierry.reding@avionic-design.de> <s5hhascft86.wl%tiwai@suse.de> <20120809070813.GA6979@avionic-0098.mockup.avionic-design.de> <s5hd330frn1.wl%tiwai@suse.de> <20120809073642.GA24695@avionic-0098.mockup.avionic-design.de> <s5h7gt8fr47.wl%tiwai@suse.de> <20120809080713.GC24808@avionic-0098.mockup.avionic-design.de> <s5hzk64earo.wl%tiwai@suse.de> <20120809103430.GA1560@avionic-0098.mockup.avionic-design.de> <s5hobmk2ql5.wl%tiwai@suse.de> <s5hd3302ovw.wl%tiwai@suse.de> <s5ha9y42os2.wl%tiwai@suse.de>
+In-Reply-To: <s5ha9y42os2.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 10:26 AM, Fengguang Wu wrote:
-> Hi all,
-> 
-> It seems this patch was silently forgotten, but the review comments have all
-> been addressed: the patch has been split into two pieces and tests show no
-> performance regressions (nor noticeable gains..).
-> 
-> Thanks to Damien for reminding me of the patch!
+On 08/09/2012 03:11 PM, Takashi Iwai wrote:
 
-Thanks Wu, applied.
+> @@ -3187,13 +3217,16 @@ static int __devinit azx_probe(struct pci_dev *pci,
+>   	if (patch[dev] && *patch[dev]) {
+>   		snd_printk(KERN_ERR SFX "Applying patch firmware '%s'\n",
+>   			   patch[dev]);
+> -		err = request_firmware(&chip->fw, patch[dev], &pci->dev);
+> +		err = request_firmware_nowait(THIS_MODULE, true, patch[dev],
+> +					      &pci->dev, GFP_KERNEL, card,
+> +					      azx_firmware_cb);
+>   		if (err < 0)
+>   			goto out_free;
+> +		chip->probe_deferred = 1;
+
+I might be out on deep water here, but isn't this racy? Or is 
+azx_firmware_cb somehow guaranteed not to execute before this function 
+has exited?
+
+>   	}
+>   #endif /* CONFIG_SND_HDA_PATCH_LOADER */
+>
+> -	if (!chip->disabled) {
+> +	if (!chip->disabled && !chip->probe_deferred) {
+>   		err = azx_probe_continue(chip);
+>   		if (err < 0)
+>   			goto out_free;
+>
+
+
 
 -- 
-Jens Axboe
-
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
