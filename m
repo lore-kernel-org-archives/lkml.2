@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2HIGGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:06:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51600 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab2HIGGj (ORCPT
+	id S1754537Ab2HIGLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:11:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51716 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab2HIGLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:06:39 -0400
-Date: Thu, 9 Aug 2012 02:06:40 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v5 03/12] block: Add bio_reset()
-Message-ID: <20120809060640.GA9088@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-4-git-send-email-koverstreet@google.com>
- <20120808221129.GB6983@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809000711.GB7262@moria.home.lan>
- <20120809060019.GA2845@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809060019.GA2845@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 02:11:23 -0400
+Date: Wed, 08 Aug 2012 23:11:20 -0700 (PDT)
+Message-Id: <20120808.231120.1626915346739960080.davem@davemloft.net>
+To: cjren@qca.qualcomm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
+        xiong@qca.qualcomm.com, hao-ran.liu@canonical.com, joe@perches.com,
+        rodrigue@qca.qualcomm.com
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+References: <1344507270-2907-1-git-send-email-cjren@qca.qualcomm.com>
+	<6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 11:00:19PM -0700, Tejun Heo wrote:
-> Anyways, understood.  Can you *please* put some comment what bits are
-> being preserved across reset then?  Things like this aren't obvious at
-> all and need ample explanation.
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+Date: Thu, 9 Aug 2012 02:27:35 +0000
 
-I did, in the header:
+> The alx driver only supports two new nics(l1f/l2f) now.  It doesn't supersede atl1c driver.
+> Atl1c driver still supports old nics.
 
-#define BIO_RESET_BITS	12	/* Flags starting here get preserved by
-bio_reset() */
+There is no worse act than quoting a huge patch, only to provide two
+lines of text.
 
-Where the rest of the flags are defined, and near where BIO_RESET_BYTES
-are defined.
+Doing so is an enormous waste of resources, bandwith, and people's
+time.  Everyone single person on the CC: list and the various mailing
+lists had to consume this entire patch a second time, just to see
+these two small lines of text you wanted to add.
+
+Are you even aware of the ramifications of your actions at all?
+
+If this lack of consideration extends to your actual coding as well, I
+very much dread reviewing your work.
+
+Please be incredibly more considerate and thoughtful with your email
+etiquette, or I will just plain flat out ignore your patch submissions
+entirely.
