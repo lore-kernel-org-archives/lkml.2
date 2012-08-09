@@ -1,110 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab2HIKPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 06:15:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab2HIKPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 06:15:20 -0400
-Date: Thu, 9 Aug 2012 15:44:47 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC PATCH 2/6] virtio/console: Add a failback for unstealable
- pipe buffer
-Message-ID: <20120809101447.GM3280@amit.redhat.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
- <20120724023718.6600.68836.stgit@ltc189.sdl.hitachi.co.jp>
- <20120809090312.GH3280@amit.redhat.com>
- <502381EA.80805@hitachi.com>
- <20120809095514.GJ3280@amit.redhat.com>
- <502389B5.4020506@redhat.com>
+	id S1757701Ab2HIKPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 06:15:38 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42415 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab2HIKPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 06:15:35 -0400
+Message-ID: <50238DB9.6040709@kernel.org>
+Date: Thu, 09 Aug 2012 11:15:21 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502389B5.4020506@redhat.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH 2/3] iio: adc: add new lp8788 adc driver
+References: <A874F61F95741C4A9BA573A70FE3998F41EEBC4F@DBDE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EEBC4F@DBDE02.ent.ti.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) 09 Aug 2012 [12:58:13], Avi Kivity wrote:
-> On 08/09/2012 12:55 PM, Amit Shah wrote:
-> > On (Thu) 09 Aug 2012 [18:24:58], Masami Hiramatsu wrote:
-> >> (2012/08/09 18:03), Amit Shah wrote:
-> >> > On (Tue) 24 Jul 2012 [11:37:18], Yoshihiro YUNOMAE wrote:
-> >> >> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >> >>
-> >> >> Add a failback memcpy path for unstealable pipe buffer.
-> >> >> If buf->ops->steal() fails, virtio-serial tries to
-> >> >> copy the page contents to an allocated page, instead
-> >> >> of just failing splice().
-> >> >>
-> >> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >> >> Cc: Amit Shah <amit.shah@redhat.com>
-> >> >> Cc: Arnd Bergmann <arnd@arndb.de>
-> >> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> >> ---
-> >> >>
-> >> >>  drivers/char/virtio_console.c |   28 +++++++++++++++++++++++++---
-> >> >>  1 files changed, 25 insertions(+), 3 deletions(-)
-> >> >>
-> >> >> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> >> >> index fe31b2f..911cb3e 100644
-> >> >> --- a/drivers/char/virtio_console.c
-> >> >> +++ b/drivers/char/virtio_console.c
-> >> >> @@ -794,7 +794,7 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
-> >> >>  			struct splice_desc *sd)
-> >> >>  {
-> >> >>  	struct sg_list *sgl = sd->u.data;
-> >> >> -	unsigned int len = 0;
-> >> >> +	unsigned int offset, len;
-> >> >>  
-> >> >>  	if (sgl->n == MAX_SPLICE_PAGES)
-> >> >>  		return 0;
-> >> >> @@ -807,9 +807,31 @@ static int pipe_to_sg(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
-> >> >>  
-> >> >>  		len = min(buf->len, sd->len);
-> >> >>  		sg_set_page(&(sgl->sg[sgl->n]), buf->page, len, buf->offset);
-> >> >> -		sgl->n++;
-> >> >> -		sgl->len += len;
-> >> >> +	} else {
-> >> >> +		/* Failback to copying a page */
-> >> >> +		struct page *page = alloc_page(GFP_KERNEL);
-> >> > 
-> >> > I prefer zeroing out the page.  If there's not enough data to be
-> >> > filled in the page, the remaining data can be leaked to the host.
-> >> 
-> >> Yeah, it is really easy to fix that.
-> >> But out of curiosity, would that be really a problem?
-> >> I guess that host can access any guest page if need. If that
-> >> is right, is that really insecure to leak randomly allocated
-> >> unused page to the host?
-> > 
-> > I'm not sure if there is a way to really attack, but just something I
-> > had thought about: the host kernel can access any guest page, that's
-> > not something we can prevent.
-> > 
-> > However, if qemu is restricted from accessing guest pages, and the
-> > guest shares this page with qemu for r/w purposes via the virtio
-> > channel, a qemu exploit can expose guest data to host userspace.
-> > 
-> > I agree this is completely theoretical; can someone else with more
-> > insight confirm or deny my apprehensions?
+On 08/09/2012 09:22 AM, Kim, Milo wrote:
+> TI LP8788 has ADC function.
+> The result of LP878 ADC is used in the LP8788 power supply driver.
+> (such like getting the battery voltage, temperature and etc)
 > 
-> qemu can read and write any guest page (for the guest it controls).
+Hi,
 
-OK, thanks for confirming -- no need to change this patch, then.
+This is mostly fine though things have gotten a little confused
+wrt to the handling iio_priv in the probe and remove so that
+needs cleaning up.  A few other minor bits inline.
 
-		Amit
+Thanks,
+
+Jonathan
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/iio/adc/Kconfig      |    6 +
+>  drivers/iio/adc/Makefile     |    1 +
+>  drivers/iio/adc/lp8788_adc.c |  240 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 247 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/iio/adc/lp8788_adc.c
+> 
+> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+> index 8a78b4f..30c06ed 100644
+> --- a/drivers/iio/adc/Kconfig
+> +++ b/drivers/iio/adc/Kconfig
+> @@ -22,4 +22,10 @@ config AT91_ADC
+>  	help
+>  	  Say yes here to build support for Atmel AT91 ADC.
+>  
+> +config LP8788_ADC
+> +	bool "LP8788 ADC driver"
+> +	depends on MFD_LP8788
+> +	help
+> +	  Say yes here to build support for TI LP8788 ADC.
+> +
+>  endmenu
+> diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+> index 52eec25..72f9a76 100644
+> --- a/drivers/iio/adc/Makefile
+> +++ b/drivers/iio/adc/Makefile
+> @@ -4,3 +4,4 @@
+>  
+>  obj-$(CONFIG_AD7266) += ad7266.o
+>  obj-$(CONFIG_AT91_ADC) += at91_adc.o
+> +obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
+> diff --git a/drivers/iio/adc/lp8788_adc.c b/drivers/iio/adc/lp8788_adc.c
+> new file mode 100644
+> index 0000000..30767d5
+> --- /dev/null
+> +++ b/drivers/iio/adc/lp8788_adc.c
+> @@ -0,0 +1,240 @@
+> +/*
+> + * TI LP8788 MFD - ADC driver
+> + *
+> + * Copyright 2012 Texas Instruments
+> + *
+> + * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/delay.h>
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/driver.h>
+> +#include <linux/mfd/lp8788.h>
+> +
+> +/* register address */
+> +#define LP8788_ADC_CONF			0x60
+> +#define LP8788_ADC_RAW			0x61
+> +#define LP8788_ADC_DONE			0x63
+> +
+> +#define START_ADC_CHANNEL		LPADC_VBATT_5P5
+> +#define END_ADC_CHANNEL			LPADC_MAX
+> +#define ADC_CONV_START			1
+> +#define ADC_CONV_DELAY_US		100
+> +
+> +struct lp8788_adc {
+> +	struct lp8788 *lp;
+
+As explained below I would drop this pointer.
+The iio_priv with the suggested changes just stores a
+pointer to lp.
+> +	struct iio_dev *indio_dev;
+> +};
+> +
+> +static const int adc_const[LPADC_MAX] = {
+> +	[LPADC_VBATT_5P5] = 1343,
+> +	[LPADC_VIN_CHG]   = 3052,
+> +	[LPADC_IBATT]     = 610,
+> +	[LPADC_IC_TEMP]   = 610,
+> +	[LPADC_VBATT_6P0] = 1465,
+> +	[LPADC_VBATT_5P0] = 1221,
+> +	[LPADC_ADC1]      = 610,
+> +	[LPADC_ADC2]      = 610,
+> +	[LPADC_VDD]       = 1025,
+> +	[LPADC_VCOIN]     = 757,
+> +	[LPADC_VDD_LDO]   = 610,
+> +	[LPADC_ADC3]      = 610,
+> +	[LPADC_ADC4]      = 610,
+> +};
+> +
+> +static inline unsigned int _get_adc_micro_unit(enum lp8788_adc_id id,
+> +					unsigned int adc_result)
+> +{
+> +	return adc_const[id] * ((adc_result * 1000 + 500) / 1000);
+> +}
+You haven't marked the channels as processed (e.g. converted into correct units)
+so I would do these as chan_info elements (scale and offset)
+> +
+> +static int lp8788_adc_read_raw(struct iio_dev *indio_dev,
+> +			struct iio_chan_spec const *chan,
+> +			int *val, int *val2, long mask)
+> +{
+> +	struct lp8788_adc *adc = iio_priv(indio_dev);
+> +	int retry = 5;
+> +	unsigned int msb, lsb;
+> +	u8 data, rawdata[2], shift;
+> +	int size = ARRAY_SIZE(rawdata);
+only used in one place, so do it inline.
+
+> +
+> +	if (mask != IIO_CHAN_INFO_RAW)
+> +		return -EINVAL;
+> +
+> +	data = (chan->channel << 1) | ADC_CONV_START;
+> +	if (lp8788_write_byte(adc->lp, LP8788_ADC_CONF, data))
+> +		goto err;
+> +
+> +	/* retry until adc conversion is done */
+> +	data = 0;
+> +	while (retry--) {
+> +		udelay(ADC_CONV_DELAY_US);
+> +
+> +		if (lp8788_read_byte(adc->lp, LP8788_ADC_DONE, &data))
+> +			goto err;
+> +
+> +		/* conversion done */
+> +		if (data)
+> +			break;
+> +	}
+> +
+> +	if (lp8788_read_multi_bytes(adc->lp, LP8788_ADC_RAW, rawdata, size))
+> +		goto err;
+> +
+This is a little odd. You establish the shift from the channel type, but
+then have the masks hard coded. I'd just hard code the lot to
+make it slightly easier to read
+
+> +	shift = chan->scan_type.shift;
+> +	msb = (rawdata[0] << shift) & 0x00000ff0;
+> +	lsb = (rawdata[1] >> shift) & 0x0000000f;
+> +	*val = _get_adc_micro_unit(chan->channel, msb | lsb);
+> +
+> +	return IIO_VAL_INT;
+> +err:
+> +	return -EINVAL;
+> +}
+> +
+> +static const struct iio_info lp8788_adc_info = {
+> +	.read_raw = &lp8788_adc_read_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +#define LP8788_COMMON_CH(id)					\
+> +		.indexed = 1,					\
+> +		.output = 1,					\
+err. these aren't all outputs... Actually I'm not sure any of them are...
+> +		.channel = LPADC_##id,				\
+> +		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT,	\
+> +		.address = LP8788_ADC_RAW,			\
+> +		.scan_type = IIO_ST('u', 8, 12, 4),		\
+> +		.scan_index = 1,				\
+> +		.datasheet_name = #id,				\
+Given how you are using this macro I'd just make it take an additional
+parameter then you can effectively drop all the ones below.
+So have
+#define LP8788_CHAN(id, type)
+
+> +
+> +#define LP8788_V_CHAN(id)	{				\
+> +		.type = IIO_VOLTAGE,				\
+> +		LP8788_COMMON_CH(id)				\
+> +}
+> +
+> +#define LP8788_I_CHAN(id)	{				\
+> +		.type = IIO_CURRENT,				\
+> +		LP8788_COMMON_CH(id)				\
+> +}
+> +
+> +#define LP8788_T_CHAN(id)	{				\
+> +		.type = IIO_TEMP,				\
+> +		LP8788_COMMON_CH(id)				\
+> +}
+> +
+> +static struct iio_chan_spec lp8788_adc_channels[] = {
+> +	[LPADC_VBATT_5P5] = LP8788_V_CHAN(VBATT_5P5),
+> +	[LPADC_VIN_CHG]   = LP8788_V_CHAN(VIN_CHG),
+> +	[LPADC_IBATT]     = LP8788_I_CHAN(IBATT),
+> +	[LPADC_IC_TEMP]   = LP8788_T_CHAN(IC_TEMP),
+> +	[LPADC_VBATT_6P0] = LP8788_V_CHAN(VBATT_6P0),
+> +	[LPADC_VBATT_5P0] = LP8788_V_CHAN(VBATT_5P0),
+> +	[LPADC_ADC1]      = LP8788_V_CHAN(ADC1),
+> +	[LPADC_ADC2]      = LP8788_V_CHAN(ADC2),
+> +	[LPADC_VDD]       = LP8788_V_CHAN(VDD),
+> +	[LPADC_VCOIN]     = LP8788_V_CHAN(VCOIN),
+> +	[LPADC_VDD_LDO]   = LP8788_V_CHAN(VDD_LDO),
+> +	[LPADC_ADC3]      = LP8788_V_CHAN(ADC3),
+> +	[LPADC_ADC4]      = LP8788_V_CHAN(ADC4),
+> +};
+> +
+> +static int __devinit lp8788_adc_probe(struct platform_device *pdev)
+> +{
+> +	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
+> +	struct iio_map *map;
+> +	struct lp8788_adc *adc;
+> +	struct iio_dev *indio_dev;
+> +	int i, ret;
+> +
+> +	adc = devm_kzalloc(lp->dev, sizeof(struct lp8788_adc), GFP_KERNEL);
+> +	if (!adc)
+> +		return -ENOMEM;
+> +
+This has me confused. The parameter is for private data (e.g. lp8788_adc here).
+It already allocates enough space for a struct iio_dev.   If you want to do
+it as here, you'll need to have the parameter as 0.
+> +	indio_dev = iio_device_alloc(sizeof(struct iio_dev));
+> +	if (!indio_dev)
+> +		return -ENOMEM;
+> +
+> +	adc = iio_priv(indio_dev);
+That's just set it to point at a region sized for a struct iio_dev.
+
+What I think you meant to do was drop the adc = devm_kzalloc
+and do
+indio_dev = iio_device_alloc(sizeof(*adc));
+> +	adc->lp = lp;
+> +	adc->indio_dev = indio_dev;
+As a general rule we avoid this sort of reflection back. It's normally
+not necessary given the indio_dev should almost always be available...
+
+> +	platform_set_drvdata(pdev, adc);
+set that to be the indio_dev rather than adc and you won't need the
+adc->indio_dev pointer.
+> +
+> +	if (lp->pdata) {
+> +		for (i = START_ADC_CHANNEL; i < END_ADC_CHANNEL ; i++) {
+> +			map = lp->pdata->adc_pdata[i];
+> +			ret = iio_map_array_register(indio_dev, map);
+> +			if (ret) {
+> +				dev_err(lp->dev, "iio map err: %d\n", ret);
+> +				goto err_iio_map_array;
+> +			}
+> +		}
+> +	}
+> +
+> +	indio_dev->dev.parent = lp->dev;
+> +	indio_dev->name = pdev->name;
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +	indio_dev->info = &lp8788_adc_info;
+> +	indio_dev->channels = lp8788_adc_channels;
+> +	indio_dev->num_channels = ARRAY_SIZE(lp8788_adc_channels);
+> +
+> +	ret = iio_device_register(indio_dev);
+> +	if (ret) {
+> +		dev_err(lp->dev, "iio dev register err: %d\n", ret);
+> +		goto err_iio_register;
+> +	}
+> +
+> +	return 0;
+> +
+> +err_iio_map_array:
+> +	while (--i >= START_ADC_CHANNEL) {
+> +		map = lp->pdata->adc_pdata[i];
+> +		iio_map_array_unregister(indio_dev, map);
+> +	}
+> +err_iio_register:
+> +	iio_device_free(indio_dev);
+> +	return ret;
+> +}
+> +
+> +static int __devexit lp8788_adc_remove(struct platform_device *pdev)
+> +{
+> +	struct lp8788_adc *adc = platform_get_drvdata(pdev);
+> +	struct lp8788 *lp = adc->lp;
+if the platform data is set to the indio_dev this isn't needed and
+adc can retrieved via iio_priv.
+> +	struct iio_dev *indio_dev = adc->indio_dev;
+> +	struct iio_map *map;
+> +	int i;
+> +
+> +	if (lp->pdata) {
+> +		for (i = START_ADC_CHANNEL; i < END_ADC_CHANNEL ; i++) {
+> +			map = lp->pdata->adc_pdata[i];
+> +			iio_map_array_unregister(indio_dev, map);
+> +		}
+> +	}
+> +
+> +	iio_device_unregister(indio_dev);
+> +	iio_device_free(indio_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver lp8788_adc_driver = {
+> +	.probe = lp8788_adc_probe,
+> +	.remove = __devexit_p(lp8788_adc_remove),
+> +	.driver = {
+> +		.name = LP8788_DEV_ADC,
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +module_platform_driver(lp8788_adc_driver);
+> +
+> +MODULE_DESCRIPTION("Texas Instruments LP8788 ADC Driver");
+> +MODULE_AUTHOR("Milo Kim");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:lp8788-adc");
+> 
