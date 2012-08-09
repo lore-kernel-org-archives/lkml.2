@@ -1,96 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab2HIIdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 04:33:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52669 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756319Ab2HIIdt convert rfc822-to-8bit (ORCPT
+	id S1756514Ab2HIIei (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 04:34:38 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:41678 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab2HIIee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 04:33:49 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
-Subject: RE: [PATCH 1/6] mfd: add lp8788 mfd driver
-Thread-Topic: [PATCH 1/6] mfd: add lp8788 mfd driver
-Thread-Index: Ac1k8i6xsVnWXGXAR2GxE5eW2yYAsf//fuIA/91SY+A=
-Date: Thu, 9 Aug 2012 08:32:59 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEBC6E@DBDE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FD79B@DQHE02.ent.ti.com>
- <20120718145032.GB4495@opensource.wolfsonmicro.com>
-In-Reply-To: <20120718145032.GB4495@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.52]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Aug 2012 04:34:34 -0400
+X-AuditID: b753bd60-905f3ba000006b7e-cc-502376177acd
+X-AuditID: b753bd60-905f3ba000006b7e-cc-502376177acd
+Message-ID: <5023760E.7040207@hitachi.com>
+Date: Thu, 09 Aug 2012 17:34:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
+References: <20120807193845.146666357@goodmis.org> <20120807194100.130477900@goodmis.org>
+In-Reply-To: <20120807194100.130477900@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static irqreturn_t lp8788_irq_handler(int irq, void *ptr)
-> > +{
-> > +	struct lp8788_irq_data *irqd = ptr;
-> > +	unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
-> > +
-> > +	queue_delayed_work(irqd->thread, &irqd->work, delay);
-> > +
-> > +	return IRQ_HANDLED;
-> > +}
+(2012/08/08 4:38), Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> Why a delayed work?  That's *very* unusual.
+> If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
+> then use that instead of mcount.
 > 
-> > +	if (!lp->pdata) {
-> > +		dev_warn(lp->dev, "no platform data for irq\n");
-> > +		goto no_err;
-> > +	}
+> With mcount, frame pointers are forced with the -pg option and we
+> get something like:
 > 
-> Given that you're using irq domains why does the device need platform
-> data?
+> <can_vma_merge_before>:
+>        55                      push   %rbp
+>        48 89 e5                mov    %rsp,%rbp
+>        53                      push   %rbx
+>        41 51                   push   %r9
+>        e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
+>        31 c0                   xor    %eax,%eax
+>        48 89 fb                mov    %rdi,%rbx
+>        48 89 d7                mov    %rdx,%rdi
+>        48 33 73 30             xor    0x30(%rbx),%rsi
+>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
 > 
-> > +	if (irq_base) {
-> > +		irq_base = irq_alloc_descs(irq_base, 0, LP8788_INT_MAX, 0);
-> > +		if (irq_base < 0) {
-> > +			dev_warn(lp->dev, "no allocated irq: %d\n", irq_base);
-> > +			goto no_err;
-> > +		}
-> > +	}
+> With -mfentry, frame pointers are no longer forced and the call looks
+> like this:
 > 
-> This shouldn't be needed with irq domains.
+> <can_vma_merge_before>:
+>        e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
+>        53                      push   %rbx
+>        48 89 fb                mov    %rdi,%rbx
+>        31 c0                   xor    %eax,%eax
+>        48 89 d7                mov    %rdx,%rdi
+>        41 51                   push   %r9
+>        48 33 73 30             xor    0x30(%rbx),%rsi
+>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+> 
+> This adds the ftrace hook at the beginning of the function before a
+> frame is set up, and allows the function callbacks to be able to access
+> parameters. As kprobes now can use function tracing (at least on x86)
+> this speeds up the kprobe hooks that are at the beginning of the
+> function.
 
-In patch v2, generic irq chip is used for interrupt handling.
-At this moment, no need to support irq domain with lp8788 driver.
-Title: [PATCH v2 1/3] mfd: add lp8788 mfd driver
+This looks good for me:)
 
-> > +EXPORT_SYMBOL(lp8788_read_byte);
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks!
+
 > 
-> You're reexporting regmap functionality with looser licensing
-> requirements...
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/Kconfig                 |    1 +
+>  arch/x86/include/asm/ftrace.h    |    7 ++++++-
+>  arch/x86/kernel/entry_64.S       |   18 +++++++++++++++++-
+>  arch/x86/kernel/x8664_ksyms_64.c |    6 +++++-
+>  4 files changed, 29 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index c70684f..bbbf5d8 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -36,6 +36,7 @@ config X86
+>  	select HAVE_KRETPROBES
+>  	select HAVE_OPTPROBES
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+> +	select HAVE_FENTRY if X86_64
+>  	select HAVE_C_RECORDMCOUNT
+>  	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_FUNCTION_TRACER
+> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+> index a6cae0c..9a25b52 100644
+> --- a/arch/x86/include/asm/ftrace.h
+> +++ b/arch/x86/include/asm/ftrace.h
+> @@ -35,7 +35,11 @@
+>  #endif
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+> -#define MCOUNT_ADDR		((long)(mcount))
+> +#ifdef CC_USING_FENTRY
+> +# define MCOUNT_ADDR		((long)(__fentry__))
+> +#else
+> +# define MCOUNT_ADDR		((long)(mcount))
+> +#endif
+>  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+>  
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+> @@ -46,6 +50,7 @@
+>  #ifndef __ASSEMBLY__
+>  extern void mcount(void);
+>  extern atomic_t modifying_ftrace_code;
+> +extern void __fentry__(void);
+>  
+>  static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>  {
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 38308fa..2add3bb 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -69,9 +69,16 @@
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+> +
+> +#ifdef CC_USING_FENTRY
+> +ENTRY(__fentry__)
+> +	retq
+> +END(__fentry__)
+> +#else
+>  ENTRY(mcount)
+>  	retq
+>  END(mcount)
+> +#endif
+>  
+>  /* skip is set if stack has been adjusted */
+>  .macro ftrace_caller_setup skip=0
+> @@ -84,7 +91,11 @@ END(mcount)
+>  	movq RIP(%rsp), %rdi
+>  	subq $MCOUNT_INSN_SIZE, %rdi
+>  	/* Load the parent_ip into the second parameter */
+> +#ifdef CC_USING_FENTRY
+> +	movq SS+16(%rsp), %rsi
+> +#else
+>  	movq 8(%rbp), %rsi
+> +#endif
+>  .endm
+>  
+>  ENTRY(ftrace_caller)
+> @@ -215,9 +226,14 @@ END(mcount)
+>  ENTRY(ftrace_graph_caller)
+>  	MCOUNT_SAVE_FRAME
+>  
+> +#ifdef CC_USING_FENTRY
+> +	leaq SS+16(%rsp), %rdi
+> +	movq $0, %rdx	/* No framepointers needed */
+> +#else
+>  	leaq 8(%rbp), %rdi
+> -	movq RIP(%rsp), %rsi
+>  	movq (%rbp), %rdx
+> +#endif
+> +	movq RIP(%rsp), %rsi
+>  	subq $MCOUNT_INSN_SIZE, %rsi
+>  
+>  	call	prepare_ftrace_return
+> diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+> index 9796c2f..643b236 100644
+> --- a/arch/x86/kernel/x8664_ksyms_64.c
+> +++ b/arch/x86/kernel/x8664_ksyms_64.c
+> @@ -13,9 +13,13 @@
+>  #include <asm/ftrace.h>
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+> -/* mcount is defined in assembly */
+> +/* mcount and __fentry__ are defined in assembly */
+> +#ifdef CC_USING_FENTRY
+> +EXPORT_SYMBOL(__fentry__);
+> +#else
+>  EXPORT_SYMBOL(mcount);
+>  #endif
+> +#endif
+>  
+>  EXPORT_SYMBOL(__get_user_1);
+>  EXPORT_SYMBOL(__get_user_2);
 > 
 
-All EXPORT_SYMBOLs were replaced with *_GPL() in the same patch v2.
- 
-> > +unsigned int lp8788_get_adc(struct lp8788 *lp, enum lp8788_adc_id id,
-> > +			enum lp8788_adc_resolution res)
-> 
-> For new drivers the ADC should probably be integrated into IIO.
 
-New iio driver patch was submitted.
-Title : [PATCH 2/3] iio: adc: add new lp8788 adc driver
-
-Thanks a lot for your detailed review.
-
-Best Regards,
-Milo
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
