@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab2HIDqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Aug 2012 23:46:00 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63310 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893Ab2HIDp7 (ORCPT
+	id S1754639Ab2HID5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Aug 2012 23:57:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15431 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab2HID5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Aug 2012 23:45:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344430148.6935.17.camel@gandalf.stny.rr.com>
-References: <20120807193845.146666357@goodmis.org> <20120807194059.773895870@goodmis.org>
- <5021EC6B.7020605@hitachi.com> <1344430148.6935.17.camel@gandalf.stny.rr.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 9 Aug 2012 06:45:37 +0300
-X-Google-Sender-Auth: JGOU2vL6ttVmsUkAlXql-8Cdlps
-Message-ID: <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry is used
-To: Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	Wed, 8 Aug 2012 23:57:41 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=ZD8vtu1JDTEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=tyZD-QFBI2Q-OEOt7xcA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344484658.6935.29.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 3/4] ftrace: Do not test frame pointers if -mfentry
+ is used
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 08 Aug 2012 23:57:38 -0400
+In-Reply-To: <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
+References: <20120807193845.146666357@goodmis.org>
+	 <20120807194059.773895870@goodmis.org> <5021EC6B.7020605@hitachi.com>
+	 <1344430148.6935.17.camel@gandalf.stny.rr.com>
+	 <CA+55aFyVb5FE1t5zj7WJR3c=3PnCjwNd=UgC5eFdn5eV5PsEZw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 3:49 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
-> that it is being used. It only gets used if CC_USING_FENTRY is set,
-> which is set by the Makefile at time of compile.
+On Thu, 2012-08-09 at 06:45 +0300, Linus Torvalds wrote:
+> On Wed, Aug 8, 2012 at 3:49 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > No, CONFIG_HAVE_FENTRY just means fentry is supported, it does not mean
+> > that it is being used. It only gets used if CC_USING_FENTRY is set,
+> > which is set by the Makefile at time of compile.
+> 
+> Btw, it might be lovely to consider the concept of "Kconfig variables
+> set by shell-scripts".
+> 
+> We currently have a metric sh*t-ton of Makefile magic for testing
+> various things like this, and integrating it into Kconfig might be a
+> good idea. That way you would be able to use the Kconfig logic on
+> these things.
+> 
+> Kconfig already has the "option env=XYZ" syntax for importing values
+> from the environment variables. Extending it to some kind of "option
+> shell=xyz" would allow for more complex interactions like this
+> (imagine testing compiler options and version dependencies in the
+> Kconfig files instead of the Makefiles)?
 
-Btw, it might be lovely to consider the concept of "Kconfig variables
-set by shell-scripts".
+I understand your pain. I think this 'test the environment in the
+makefile' is a bit of a hack.
 
-We currently have a metric sh*t-ton of Makefile magic for testing
-various things like this, and integrating it into Kconfig might be a
-good idea. That way you would be able to use the Kconfig logic on
-these things.
+I've worked a little with the Kconfig infrastructure, but I wouldn't
+consider myself an expert. Would Kconfig be able to handle a change in
+environment? That is, if you change your compiler, would a normal make
+kick off Kconfig to update the configs for the new environment. Or would
+the user have to do some kind of 'make oldconfig' before that.
 
-Kconfig already has the "option env=XYZ" syntax for importing values
-from the environment variables. Extending it to some kind of "option
-shell=xyz" would allow for more complex interactions like this
-(imagine testing compiler options and version dependencies in the
-Kconfig files instead of the Makefiles)?
+Or is make 'oldconfig' performed at all compiles regardless now?
+
+One nice thing of having all these tests represented in the .config
+file, is that when a user produces a bug, when they send their config,
+we would be able to see much more information about their environment.
+
+-- Steve
+
+
