@@ -1,561 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2HIHKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 03:10:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6731 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab2HIHKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 03:10:40 -0400
-X-IronPort-AV: E=Sophos;i="4.77,738,1336320000"; 
-   d="scan'208";a="5587095"
-Message-ID: <502362E3.8010901@cn.fujitsu.com>
-Date: Thu, 09 Aug 2012 15:12:35 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@huawei.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [RFC PATCH v2 10/16] ACPIHP: system device hotplug driver skeleton
-References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344082443-4608-11-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1344082443-4608-11-git-send-email-jiang.liu@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/09 15:10:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/09 15:10:57,
-	Serialize complete at 2012/08/09 15:10:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755619Ab2HIHOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 03:14:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56257 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab2HIHOA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 03:14:00 -0400
+Subject: [PATCH net-next] time: jiffies_delta_to_clock_t() helper to the
+ rescue
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maciej =?UTF-8?Q?=C5=BBenczykowski?= <maze@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>, hank <pyu@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Aug 2012 09:13:53 +0200
+Message-ID: <1344496433.28967.443.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liu~
+From: Eric Dumazet <edumazet@google.com>
 
-I compiled this driver as a module, acpihp_drv. And when I loaded this module, it
-gave the following error message:
+Various /proc/net files sometimes report crazy timer values, expressed
+in clock_t units.
 
-# modprobe acpihp_drv
-(the command hangs up, no return after 10 min)
+This happens when an expired timer delta (expires - jiffies) is passed
+to jiffies_to_clock_t().
 
-#dmesg
-......
-[  126.643350] BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-[  126.644007] IP: [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
-[  126.644007] PGD 105277a067 PUD 104f823067 PMD 0 
-[  126.644007] Oops: 0002 [#1] SMP 
-[  126.644007] Modules linked in: acpihp_drv(+) ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat iptable_mangle bridge stp llc sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel microcode lpc_ich mfd_core pcspkr i2c_i801 i2c_core ioatdma e1000e acpi_memhotplug i7core_edac edac_core igb dca mptsas mptscsih mptbase scsi_transport_sas
-[  126.644007] CPU 10 
-[  126.644007] Pid: 2821, comm: modprobe Tainted: G       A     3.6.0-rc1+ #6 FUJITSU-SV PRIMEQUEST 1800E/SB
-[  126.644007] RIP: 0010:[<ffffffff814c0cd3>]  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
-[  126.644007] RSP: 0018:ffff8810589a9de8  EFLAGS: 00010246
-[  126.644007] RAX: 0000000000000000 RBX: 0000000000000078 RCX: 0000000000000000
-[  126.644007] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000078
-[  126.644007] RBP: ffff8810589a9e08 R08: 0000000000000000 R09: ffff8810589a9d88
-[  126.644007] R10: 00000000000013e5 R11: 00000000000013e5 R12: ffffffffa01460d0
-[  126.644007] R13: 0000000000000000 R14: ffffffffa014732b R15: 00000000000000bf
-[  126.644007] FS:  00007fecb1802700(0000) GS:ffff88105e640000(0000) knlGS:0000000000000000
-[  126.644007] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  126.644007] CR2: 0000000000000078 CR3: 0000001052772000 CR4: 00000000000007e0
-[  126.644007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  126.644007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  126.644007] Process modprobe (pid: 2821, threadinfo ffff8810589a8000, task ffff8810592f8000)
-[  126.644007] Stack:
-[  126.644007]  ffff8810589a9e08 ffffffff810be37f ffffffffa0146220 ffffffff81a7b390
-[  126.644007]  ffff8810589a9e58 ffffffff81317eb3 ffff8810589a9e48 0000000000000000
-[  126.644007]  ffffffff81a342c0 ffffffff81a342e0 0000000000000000 ffffffffa0146220
-[  126.644007] Call Trace:
-[  126.644007]  [<ffffffff810be37f>] ? tracepoint_module_notify+0xd9/0x14a
-[  126.644007]  [<ffffffff81317eb3>] class_interface_register+0x4a/0xbc
-[  126.644007]  [<ffffffffa00b8000>] ? 0xffffffffa00b7fff
-[  126.644007]  [<ffffffffa00b8010>] acpihp_drv_init+0x10/0x12 [acpihp_drv]
-[  126.644007]  [<ffffffff8100207f>] do_one_initcall+0x7f/0x139
-[  126.644007]  [<ffffffff81093414>] sys_init_module+0x12d3/0x14e3
-[  126.644007]  [<ffffffff81264b0d>] ? ddebug_dyndbg_boot_param_cb+0x45/0x45
-[  126.644007]  [<ffffffff814c9469>] system_call_fastpath+0x16/0x1b
-[  126.644007] Code: 48 8b 04 25 80 c6 00 00 48 89 43 18 31 c0 5b 5b c9 c3 55 48 89 e5 53 48 83 ec 18 66 66 66 66 90 48 89 fb e8 5a 0c 00 00 48 89 df <f0> ff 0f 79 05 e8 06 ff ff ff 65 48 8b 04 25 80 c6 00 00 48 89 
-[  126.644007] RIP  [<ffffffff814c0cd3>] mutex_lock+0x19/0x37
-[  126.644007]  RSP <ffff8810589a9de8>
-[  126.644007] CR2: 0000000000000078
-[  129.981335] ---[ end trace da17e9c9de8dd560 ]---
-[  139.085895] nr_pdflush_threads exported in /proc is scheduled for removal
-[  139.167394] sysctl: The scan_unevictable_pages sysctl/node-interface has been disabled for lack of a legitimate use case.  If you have one, please send an email to linux-mm@kvack.org.
+This function has an overflow in :
 
-Looks like it dereferenced a NULL pointer here.
-May be it was my mistake that I didn't configure the environment correctly.
-Would you please give me some advice ?
+return div_u64((u64)x * TICK_NSEC, NSEC_PER_SEC / USER_HZ);
 
-Thanks. :)
+commit cbbc719fccdb8cb (time: Change jiffies_to_clock_t() argument type
+to unsigned long) only got around the problem.
+
+As we cant output negative values in /proc/net/tcp without breaking
+various tools, I suggest adding a jiffies_delta_to_clock_t() wrapper
+that caps the negative delta to a 0 value.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Maciej Żenczykowski <maze@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: hank <pyu@redhat.com>
+---
+ include/linux/jiffies.h   |    6 ++++++
+ net/bridge/br_fdb.c       |    2 +-
+ net/bridge/br_stp_timer.c |    2 +-
+ net/core/rtnetlink.c      |    2 +-
+ net/ipv4/igmp.c           |    7 +++++--
+ net/ipv4/tcp_ipv4.c       |   13 +++++--------
+ net/ipv6/tcp_ipv6.c       |    9 +++------
+ 7 files changed, 22 insertions(+), 19 deletions(-)
+
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 265e2c3..aded9b1 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -303,7 +303,13 @@ extern void jiffies_to_timespec(const unsigned long jiffies,
+ extern unsigned long timeval_to_jiffies(const struct timeval *value);
+ extern void jiffies_to_timeval(const unsigned long jiffies,
+ 			       struct timeval *value);
++
+ extern clock_t jiffies_to_clock_t(unsigned long x);
++static inline clock_t jiffies_delta_to_clock_t(long delta)
++{
++	return jiffies_to_clock_t(max(0L, delta));
++}
++
+ extern unsigned long clock_t_to_jiffies(unsigned long x);
+ extern u64 jiffies_64_to_clock_t(u64 x);
+ extern u64 nsec_to_clock_t(u64 x);
+diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
+index d21f323..9ce430b 100644
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -312,7 +312,7 @@ int br_fdb_fillbuf(struct net_bridge *br, void *buf,
+ 
+ 			fe->is_local = f->is_local;
+ 			if (!f->is_static)
+-				fe->ageing_timer_value = jiffies_to_clock_t(jiffies - f->updated);
++				fe->ageing_timer_value = jiffies_delta_to_clock_t(jiffies - f->updated);
+ 			++fe;
+ 			++num;
+ 		}
+diff --git a/net/bridge/br_stp_timer.c b/net/bridge/br_stp_timer.c
+index a6747e6..c3530a8 100644
+--- a/net/bridge/br_stp_timer.c
++++ b/net/bridge/br_stp_timer.c
+@@ -170,5 +170,5 @@ void br_stp_port_timer_init(struct net_bridge_port *p)
+ unsigned long br_timer_value(const struct timer_list *timer)
+ {
+ 	return timer_pending(timer)
+-		? jiffies_to_clock_t(timer->expires - jiffies) : 0;
++		? jiffies_delta_to_clock_t(timer->expires - jiffies) : 0;
+ }
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 2c5a0a0..db037c9 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -618,7 +618,7 @@ int rtnl_put_cacheinfo(struct sk_buff *skb, struct dst_entry *dst, u32 id,
+ 		       long expires, u32 error)
+ {
+ 	struct rta_cacheinfo ci = {
+-		.rta_lastuse = jiffies_to_clock_t(jiffies - dst->lastuse),
++		.rta_lastuse = jiffies_delta_to_clock_t(jiffies - dst->lastuse),
+ 		.rta_used = dst->__use,
+ 		.rta_clntref = atomic_read(&(dst->__refcnt)),
+ 		.rta_error = error,
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 6699f23..0b5580c 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -2435,6 +2435,8 @@ static int igmp_mc_seq_show(struct seq_file *seq, void *v)
+ 		struct ip_mc_list *im = (struct ip_mc_list *)v;
+ 		struct igmp_mc_iter_state *state = igmp_mc_seq_private(seq);
+ 		char   *querier;
++		long delta;
++
+ #ifdef CONFIG_IP_MULTICAST
+ 		querier = IGMP_V1_SEEN(state->in_dev) ? "V1" :
+ 			  IGMP_V2_SEEN(state->in_dev) ? "V2" :
+@@ -2448,11 +2450,12 @@ static int igmp_mc_seq_show(struct seq_file *seq, void *v)
+ 				   state->dev->ifindex, state->dev->name, state->in_dev->mc_count, querier);
+ 		}
+ 
++		delta = im->timer.expires - jiffies;
+ 		seq_printf(seq,
+ 			   "\t\t\t\t%08X %5d %d:%08lX\t\t%d\n",
+ 			   im->multiaddr, im->users,
+-			   im->tm_running, im->tm_running ?
+-			   jiffies_to_clock_t(im->timer.expires-jiffies) : 0,
++			   im->tm_running,
++			   im->tm_running ? jiffies_delta_to_clock_t(delta) : 0,
+ 			   im->reporter);
+ 	}
+ 	return 0;
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 42b2a6a..c660d2c 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -2385,7 +2385,7 @@ static void get_openreq4(const struct sock *sk, const struct request_sock *req,
+ 			 struct seq_file *f, int i, int uid, int *len)
+ {
+ 	const struct inet_request_sock *ireq = inet_rsk(req);
+-	int ttd = req->expires - jiffies;
++	long delta = req->expires - jiffies;
+ 
+ 	seq_printf(f, "%4d: %08X:%04X %08X:%04X"
+ 		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %u %d %pK%n",
+@@ -2397,7 +2397,7 @@ static void get_openreq4(const struct sock *sk, const struct request_sock *req,
+ 		TCP_SYN_RECV,
+ 		0, 0, /* could print option size, but that is af dependent. */
+ 		1,    /* timers active (only the expire timer) */
+-		jiffies_to_clock_t(ttd),
++		jiffies_delta_to_clock_t(delta),
+ 		req->retrans,
+ 		uid,
+ 		0,  /* non standard timer */
+@@ -2448,7 +2448,7 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
+ 		tp->write_seq - tp->snd_una,
+ 		rx_queue,
+ 		timer_active,
+-		jiffies_to_clock_t(timer_expires - jiffies),
++		jiffies_delta_to_clock_t(timer_expires - jiffies),
+ 		icsk->icsk_retransmits,
+ 		sock_i_uid(sk),
+ 		icsk->icsk_probes_out,
+@@ -2467,10 +2467,7 @@ static void get_timewait4_sock(const struct inet_timewait_sock *tw,
+ {
+ 	__be32 dest, src;
+ 	__u16 destp, srcp;
+-	int ttd = tw->tw_ttd - jiffies;
+-
+-	if (ttd < 0)
+-		ttd = 0;
++	long delta = tw->tw_ttd - jiffies;
+ 
+ 	dest  = tw->tw_daddr;
+ 	src   = tw->tw_rcv_saddr;
+@@ -2480,7 +2477,7 @@ static void get_timewait4_sock(const struct inet_timewait_sock *tw,
+ 	seq_printf(f, "%4d: %08X:%04X %08X:%04X"
+ 		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %d %d %pK%n",
+ 		i, src, srcp, dest, destp, tw->tw_substate, 0, 0,
+-		3, jiffies_to_clock_t(ttd), 0, 0, 0, 0,
++		3, jiffies_delta_to_clock_t(delta), 0, 0, 0, 0,
+ 		atomic_read(&tw->tw_refcnt), tw, len);
+ }
+ 
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index c66b90f..aa41b0e 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1875,7 +1875,7 @@ static void get_tcp6_sock(struct seq_file *seq, struct sock *sp, int i)
+ 		   tp->write_seq-tp->snd_una,
+ 		   (sp->sk_state == TCP_LISTEN) ? sp->sk_ack_backlog : (tp->rcv_nxt - tp->copied_seq),
+ 		   timer_active,
+-		   jiffies_to_clock_t(timer_expires - jiffies),
++		   jiffies_delta_to_clock_t(timer_expires - jiffies),
+ 		   icsk->icsk_retransmits,
+ 		   sock_i_uid(sp),
+ 		   icsk->icsk_probes_out,
+@@ -1895,10 +1895,7 @@ static void get_timewait6_sock(struct seq_file *seq,
+ 	const struct in6_addr *dest, *src;
+ 	__u16 destp, srcp;
+ 	const struct inet6_timewait_sock *tw6 = inet6_twsk((struct sock *)tw);
+-	int ttd = tw->tw_ttd - jiffies;
+-
+-	if (ttd < 0)
+-		ttd = 0;
++	long delta = tw->tw_ttd - jiffies;
+ 
+ 	dest = &tw6->tw_v6_daddr;
+ 	src  = &tw6->tw_v6_rcv_saddr;
+@@ -1914,7 +1911,7 @@ static void get_timewait6_sock(struct seq_file *seq,
+ 		   dest->s6_addr32[0], dest->s6_addr32[1],
+ 		   dest->s6_addr32[2], dest->s6_addr32[3], destp,
+ 		   tw->tw_substate, 0, 0,
+-		   3, jiffies_to_clock_t(ttd), 0, 0, 0, 0,
++		   3, jiffies_delta_to_clock_t(delta), 0, 0, 0, 0,
+ 		   atomic_read(&tw->tw_refcnt), tw);
+ }
+ 
 
 
-On 08/04/2012 08:13 PM, Jiang Liu wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> This patch implements a skeleton for ACPI based system device hotplug driver.
-> This device class driver will be bound to and manage ACPI hotplug slots.
-> 
-> This is the default hotplug driver for ACPI based system device hotplug.
-> 
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
-> ---
->  drivers/acpi/Kconfig              |   12 ++
->  drivers/acpi/hotplug/Makefile     |    3 +
->  drivers/acpi/hotplug/acpihp_drv.h |   62 +++++++
->  drivers/acpi/hotplug/drv_main.c   |  331 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 408 insertions(+)
->  create mode 100644 drivers/acpi/hotplug/acpihp_drv.h
->  create mode 100644 drivers/acpi/hotplug/drv_main.c
-> 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index c9f7918..89047a3 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -354,6 +354,18 @@ config ACPI_HOTPLUG_ENUM_EJ0
->  
->  	  It's the default method to detect ACPI hotplug slots.
->  
-> +config ACPI_HOTPLUG_DRIVER
-> +	tristate "ACPI Based System Device Hotplug Driver"
-> +	depends on ACPI_HOTPLUG
-> +	default y
-> +	help
-> +	  This driver enables ACPI based system device hotplug, including
-> +	  physical processor, memory device, IO host bridge and computer
-> +	  node etc.
-> +
-> +	  To compile this driver as a module, choose M here:
-> +	  the module will be called acpihp_drv.
-> +
->  config ACPI_CONTAINER
->  	tristate "Container and Module Devices (EXPERIMENTAL)"
->  	depends on EXPERIMENTAL
-> diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-> index 25fac24..d69832f 100644
-> --- a/drivers/acpi/hotplug/Makefile
-> +++ b/drivers/acpi/hotplug/Makefile
-> @@ -8,3 +8,6 @@ acpihp-y					= core.o device.o
->  obj-$(CONFIG_ACPI_HOTPLUG_ENUM)			+= acpihp_enum.o
->  acpihp_enum-y					= slot_enum.o
->  acpihp_enum-y					+= slot_enum_ej0.o
-> +
-> +obj-$(CONFIG_ACPI_HOTPLUG_DRIVER)		+= acpihp_drv.o
-> +acpihp_drv-y					= drv_main.o
-> diff --git a/drivers/acpi/hotplug/acpihp_drv.h b/drivers/acpi/hotplug/acpihp_drv.h
-> new file mode 100644
-> index 0000000..18330f7
-> --- /dev/null
-> +++ b/drivers/acpi/hotplug/acpihp_drv.h
-> @@ -0,0 +1,62 @@
-> +/*
-> + * Copyright (C) 2011 Huawei Tech. Co., Ltd.
-> + * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
-> + * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + */
-> +
-> +#ifndef	__ACPIHP_DRV_H__
-> +#define	__ACPIHP_DRV_H__
-> +
-> +/* Commands to change state of a hotplug slot */
-> +enum acpihp_drv_cmd {
-> +	ACPIHP_DRV_CMD_NOOP = 0,
-> +	ACPIHP_DRV_CMD_POWERON = 0x1,
-> +	ACPIHP_DRV_CMD_CONNECT = 0x2,
-> +	ACPIHP_DRV_CMD_CONFIGURE = 0x4,
-> +	ACPIHP_DRV_CMD_UNCONFIGURE = 0x8,
-> +	ACPIHP_DRV_CMD_DISCONNECT = 0x10,
-> +	ACPIHP_DRV_CMD_POWEROFF = 0x20,
-> +	ACPIHP_DRV_CMD_CANCEL = 0x40,
-> +	ACPIHP_DRV_CMD_MAX
-> +};
-> +
-> +/* Hotplug operations may be triggered by firmware or OS */
-> +enum acpihp_dev_event {
-> +	ACPIHP_DRV_EVENT_FROM_FW,
-> +	ACPIHP_DRV_EVENT_FROM_OS
-> +};
-> +
-> +struct acpihp_slot_drv {
-> +	enum acpihp_dev_event	event_flag;
-> +	struct mutex		op_mutex; /* Prevent concurrent hotplugs. */
-> +	struct list_head	depend_list; /* Dependency relationship */
-> +	atomic_t		cancel_status;
-> +	atomic_t		cancel_flag;
-> +	struct acpihp_cancel_context	cancel_ctx;
-> +};
-> +
-> +void acpihp_drv_get_data(struct acpihp_slot *slot,
-> +			 struct acpihp_slot_drv **data);
-> +int acpihp_drv_enumerate_devices(struct acpihp_slot *slot);
-> +void acpihp_drv_update_slot_state(struct acpihp_slot *slot);
-> +int acpihp_drv_update_slot_status(struct acpihp_slot *slot);
-> +
-> +#endif	/* __ACPIHP_DRV_H__ */
-> diff --git a/drivers/acpi/hotplug/drv_main.c b/drivers/acpi/hotplug/drv_main.c
-> new file mode 100644
-> index 0000000..538772d
-> --- /dev/null
-> +++ b/drivers/acpi/hotplug/drv_main.c
-> @@ -0,0 +1,331 @@
-> +/*
-> + * Copyright (C) 2011 Huawei Tech. Co., Ltd.
-> + * Copyright (C) 2011 Jiang Liu <jiang.liu@huawei.com>
-> + * Copyright (C) 2011 Hanjun Guo <guohanjun@huawei.com>
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/types.h>
-> +#include <linux/list.h>
-> +#include <linux/mutex.h>
-> +#include <linux/kthread.h>
-> +#include <linux/delay.h>
-> +#include <linux/acpi.h>
-> +#include <acpi/acpi_hotplug.h>
-> +#include "acpihp_drv.h"
-> +
-> +static struct class_interface acpihp_drv_interface;
-> +
-> +void acpihp_drv_get_data(struct acpihp_slot *slot,
-> +			 struct acpihp_slot_drv **data)
-> +{
-> +	*data = NULL;
-> +	acpihp_slot_get_drv_data(slot, &acpihp_drv_interface, (void **)data);
-> +}
-> +
-> +/* Update slot state according to state of devices connecting to it. */
-> +void acpihp_drv_update_slot_state(struct acpihp_slot *slot)
-> +{
-> +	enum acpihp_dev_type type;
-> +	enum acpihp_slot_state state;
-> +	struct klist_iter iter;
-> +	struct klist_node *ip;
-> +	struct acpihp_dev_node *dp;
-> +	bool connected = false;
-> +	bool configured = false;
-> +
-> +	if (!acpihp_slot_present(slot)) {
-> +		state = ACPIHP_SLOT_STATE_ABSENT;
-> +		goto out;
-> +	} else if (!acpihp_slot_powered(slot)) {
-> +		state = ACPIHP_SLOT_STATE_PRESENT;
-> +		goto out;
-> +	}
-> +
-> +	for (type = ACPIHP_DEV_TYPE_UNKNOWN;
-> +	     type < ACPIHP_DEV_TYPE_MAX && !configured;
-> +	     type++) {
-> +		klist_iter_init(&slot->dev_lists[type], &iter);
-> +		while ((ip = klist_next(&iter)) != NULL) {
-> +			connected = true;
-> +			dp = container_of(ip, struct acpihp_dev_node, node);
-> +			if (dp->state == DEVICE_STATE_CONFIGURED) {
-> +				configured = true;
-> +				break;
-> +			}
-> +		}
-> +		klist_iter_exit(&iter);
-> +	}
-> +
-> +	if (configured)
-> +		state = ACPIHP_SLOT_STATE_CONFIGURED;
-> +	else if (connected)
-> +		state = ACPIHP_SLOT_STATE_CONNECTED;
-> +	else
-> +		state = ACPIHP_SLOT_STATE_POWERED;
-> +
-> +out:
-> +	acpihp_slot_change_state(slot, state);
-> +}
-> +
-> +/* Update slot state according to status of devices connecting to it. */
-> +int acpihp_drv_update_slot_status(struct acpihp_slot *slot)
-> +{
-> +	int ret = 0;
-> +	enum acpihp_dev_type type;
-> +	struct klist_iter iter;
-> +	struct klist_node *ip;
-> +	struct acpihp_dev_node *np;
-> +	struct acpi_device *dev;
-> +	struct acpihp_dev_info *info;
-> +
-> +	if (!slot)
-> +		return -EINVAL;
-> +
-> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
-> +	if (!info)
-> +		return -ENOMEM;
-> +
-> +	for (type = ACPIHP_DEV_TYPE_MEM; type <= ACPIHP_DEV_TYPE_HOST_BRIDGE;
-> +	     type++) {
-> +		klist_iter_init(&slot->dev_lists[type], &iter);
-> +		while ((ip = klist_next(&iter)) != NULL) {
-> +			np = container_of(ip, struct acpihp_dev_node, node);
-> +			dev = container_of(np->dev, struct acpi_device, dev);
-> +			ret = acpihp_dev_get_info(dev, info);
-> +			if (ret) {
-> +				ACPIHP_DEBUG("fails to get info about %s.\n",
-> +					     dev_name(&dev->dev));
-> +				goto out;
-> +			}
-> +
-> +			if (info->status & ACPIHP_DEV_STATUS_FAULT)
-> +				acpihp_slot_set_flag(slot,
-> +						ACPIHP_SLOT_FLAG_FAULT);
-> +			if (info->status & ACPIHP_DEV_STATUS_IRREMOVABLE)
-> +				acpihp_slot_set_flag(slot,
-> +						ACPIHP_SLOT_FLAG_IRREMOVABLE);
-> +		}
-> +	}
-> +
-> +out:
-> +	kfree(info);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(acpihp_drv_update_slot_status);
-> +
-> +/* Add ACPI device to hotplug slot's device list */
-> +static acpi_status acpihp_drv_enum_device(struct acpi_device *dev, void *argp)
-> +{
-> +	int ret = -ENOMEM;
-> +	acpi_status rv = AE_OK;
-> +	enum acpihp_dev_type type;
-> +	enum acpihp_dev_state state;
-> +	struct acpihp_dev_info *info;
-> +	struct acpihp_slot *slot = (struct acpihp_slot *)argp;
-> +
-> +	if (acpihp_dev_get_type(dev->handle, &type)) {
-> +		ACPIHP_DEBUG("fails to get device type of %s.\n",
-> +			     dev_name(&dev->dev));
-> +		return AE_ERROR;
-> +	} else if (type == ACPIHP_DEV_TYPE_MAX) {
-> +		/*
-> +		 * Some ACPI objects for IO devices, such as PCI/IDE etc, only
-> +		 * implement _ADR instead of _HID/_CID, skip them.
-> +		 */
-> +		return AE_CTRL_DEPTH;
-> +	}
-> +
-> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
-> +	if (info)
-> +		ret = acpihp_dev_get_info(dev, info);
-> +
-> +	if (!ret) {
-> +		if (info->status & ACPIHP_DEV_STATUS_STARTED)
-> +			state = DEVICE_STATE_CONFIGURED;
-> +		else
-> +			state = DEVICE_STATE_CONNECTED;
-> +
-> +		if (info->status & ACPIHP_DEV_STATUS_IRREMOVABLE)
-> +			acpihp_slot_set_flag(slot,
-> +					     ACPIHP_SLOT_FLAG_IRREMOVABLE);
-> +		if (info->status & ACPIHP_DEV_STATUS_FAULT)
-> +			acpihp_slot_set_flag(slot, ACPIHP_SLOT_FLAG_FAULT);
-> +
-> +		if (acpihp_slot_add_device(slot, type, state, &dev->dev)) {
-> +			ACPIHP_DEBUG("fails to add %s to slot %s.\n",
-> +				     dev_name(&dev->dev), slot->name);
-> +			rv = AE_ERROR;
-> +		}
-> +	} else {
-> +		ACPIHP_DEBUG("fails to query device info of %s.\n",
-> +			     dev_name(&dev->dev));
-> +	}
-> +
-> +	kfree(info);
-> +
-> +	return rv;
-> +}
-> +
-> +/*
-> + * Enumerator all devices connecting to a slot and add them onto slot's
-> + * device lists.
-> + */
-> +int acpihp_drv_enumerate_devices(struct acpihp_slot *slot)
-> +{
-> +	return acpihp_walk_devices(slot->handle, acpihp_drv_enum_device, slot);
-> +}
-> +
-> +static void acpihp_drv_remove_devices(struct acpihp_slot *slot)
-> +{
-> +	enum acpihp_dev_type type;
-> +
-> +	for (type = ACPIHP_DEV_TYPE_UNKNOWN; type < ACPIHP_DEV_TYPE_MAX; type++)
-> +		acpihp_remove_device_list(&slot->dev_lists[type]);
-> +}
-> +
-> +/* Callback function for ACPI system event notification. */
-> +static void acpihp_drv_event_handler(acpi_handle handle, u32 event,
-> +				     void *context)
-> +{
-> +	/* TODO: handle ACPI hotplug events */
-> +}
-> +
-> +static acpi_status acpihp_drv_install_handler(struct acpihp_slot *slot)
-> +{
-> +	acpi_status status;
-> +
-> +	status = acpi_install_notify_handler(slot->handle, ACPI_SYSTEM_NOTIFY,
-> +					     acpihp_drv_event_handler, slot);
-> +	ACPIHP_DEBUG("%s to install event handler for %s.\n",
-> +		     ACPI_SUCCESS(status) ? "succeeds" : "fails", slot->name);
-> +
-> +	return status;
-> +}
-> +
-> +static void acpihp_drv_uninstall_handler(struct acpihp_slot *slot)
-> +{
-> +	acpi_status status;
-> +
-> +	status = acpi_remove_notify_handler(slot->handle, ACPI_SYSTEM_NOTIFY,
-> +					    acpihp_drv_event_handler);
-> +	ACPIHP_DEBUG("%s to uninstall event handler for %s.\n",
-> +		ACPI_SUCCESS(status) ? "succeeds" : "fails", slot->name);
-> +}
-> +
-> +static int acpihp_drv_slot_add(struct device *dev, struct class_interface *intf)
-> +{
-> +	struct acpihp_slot_drv *drv_data;
-> +	struct acpihp_slot *slot = container_of(dev, struct acpihp_slot, dev);
-> +
-> +	/*
-> +	 * Try to hold a reference to the slot_ops structure to prevent
-> +	 * the platform specific enumerator driver from unloading.
-> +	 */
-> +	if (!slot->slot_ops || !try_module_get(slot->slot_ops->owner)) {
-> +		ACPIHP_DEBUG("fails to get reference to slot_ops for %s.\n",
-> +			     slot->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* install ACPI event notification handler for slot */
-> +	if (ACPI_FAILURE(acpihp_drv_install_handler(slot))) {
-> +		ACPIHP_DEBUG("fails to install event handler for %s.\n",
-> +			     slot->name);
-> +		module_put(slot->slot_ops->owner);
-> +		return -EBUSY;
-> +	}
-> +
-> +	/* Enumerate all devices if slot is already powered. */
-> +	if (!acpihp_slot_powered(slot))
-> +		ACPIHP_DEBUG("slot %s is powered off.\n", slot->name);
-> +	else if (acpihp_drv_enumerate_devices(slot))
-> +		acpihp_slot_set_flag(slot, ACPIHP_SLOT_FLAG_IRREMOVABLE);
-> +
-> +	acpihp_drv_update_slot_state(slot);
-> +
-> +	drv_data = kzalloc(sizeof(*drv_data), GFP_KERNEL);
-> +	if (drv_data) {
-> +		drv_data->event_flag = ACPIHP_DRV_EVENT_FROM_FW;
-> +		mutex_init(&drv_data->op_mutex);
-> +		INIT_LIST_HEAD(&drv_data->depend_list);
-> +	}
-> +	if (drv_data == NULL ||
-> +	    acpihp_slot_attach_drv_data(slot, intf, (void *)drv_data)) {
-> +		ACPIHP_DEBUG("fails to attach driver data for %s.\n",
-> +			     slot->name);
-> +		acpihp_drv_remove_devices(slot);
-> +		module_put(slot->slot_ops->owner);
-> +		kfree(drv_data);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	ACPIHP_INFO("found hotplug slot %s.\n", slot->full_path);
-> +
-> +	return 0;
-> +}
-> +
-> +static void acpihp_drv_intf_remove(struct device *dev,
-> +				  struct class_interface *intf)
-> +{
-> +	struct acpihp_slot_drv *drv_data = NULL;
-> +	struct acpihp_slot *slot =
-> +			container_of(dev, struct acpihp_slot, dev);
-> +
-> +	ACPIHP_INFO("remove hotplug slot %s.\n", slot->full_path);
-> +
-> +	acpihp_drv_uninstall_handler(slot);
-> +	acpihp_drv_remove_devices(slot);
-> +	acpihp_slot_detach_drv_data(slot, intf, (void **)&drv_data);
-> +	if (drv_data != NULL)
-> +		kfree(drv_data);
-> +
-> +	module_put(slot->slot_ops->owner);
-> +}
-> +
-> +/*
-> + * register a class driver onto the acpihp_slot_class to manage all system
-> + * device hotplug slots.
-> + */
-> +static struct class_interface acpihp_drv_interface = {
-> +	.class		= &acpihp_slot_class,
-> +	.add_dev	= acpihp_drv_slot_add,
-> +	.remove_dev	= acpihp_drv_intf_remove,
-> +};
-> +
-> +static int __init acpihp_drv_init(void)
-> +{
-> +	return class_interface_register(&acpihp_drv_interface);
-> +}
-> +
-> +static void __exit acpihp_drv_exit(void)
-> +{
-> +	class_interface_unregister(&acpihp_drv_interface);
-> +}
-> +
-> +module_init(acpihp_drv_init);
-> +module_exit(acpihp_drv_exit);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Jiang Liu <jiang.liu@huawei.com>");
-> +MODULE_AUTHOR("Hanjun Guo <guohanjun@huawei.com>");
-
--- 
-Best Regards,
-Tang chen
