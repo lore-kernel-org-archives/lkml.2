@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759438Ab2HITde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:33:34 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:13484 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759376Ab2HITdd (ORCPT
+	id S1759464Ab2HITf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:35:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50346 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759292Ab2HITfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:33:33 -0400
-Message-ID: <1344540801.2393.42.camel@lorien2>
-Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: "Christoph Lameter (Open Source)" <cl@linux.com>
-Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuah.khan@hp.com
-Date: Thu, 09 Aug 2012 13:33:21 -0600
-In-Reply-To: <alpine.DEB.2.02.1208091406590.20908@greybox.home>
-References: <1342221125.17464.8.camel@lorien2>
-	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
-	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
-	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
-	 <1344531695.2393.27.camel@lorien2>
-	 <alpine.DEB.2.02.1208091406590.20908@greybox.home>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 9 Aug 2012 15:35:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.02.1208031435550.25196@tundra.namei.org>
+References: <744e07394a02be3d3ef52c22ccedb24d9a478fe1.1343869850.git.luto@amacapital.net>
+ <alpine.LRH.2.02.1208031435550.25196@tundra.namei.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 9 Aug 2012 12:35:33 -0700
+Message-ID: <CALCETrWMwnJnJ96GF=LBEVcv9BYdLEQGrpqUJZH+Gnwi2isNuQ@mail.gmail.com>
+Subject: Re: [PATCH v2] seccomp: Make syscall skipping and nr changes more consistent
+To: James Morris <jmorris@namei.org>
+Cc: James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 14:08 -0500, Christoph Lameter (Open Source)
-wrote:
-> On Thu, 9 Aug 2012, Shuah Khan wrote:
-> 
-> > Moving these checks into kmem_cache_sanity_check() would mean return
-> > path handling will change. The first block of sanity checks for name,
-> > and size etc. are done before holding the slab_mutex and the second
-> > block that checks the slab lists is done after holding the mutex.
-> > Depending on which one fails, return handling is going to be different
-> > in that if second block fails, mutex needs to be unlocked and when the
-> > first block fails, there is no need to do that. Nothing that is too
-> > complex to solve, just something that needs to be handled.
-> 
-> Right. The taking of the mutex etc is not depending on the parameters at
-> all. So its possible. Its rather simple.
-> 
-> > Comments, thoughts on
-> >
-> > 1. just remove size from kmem_cache_sanity_check() parameters
-> > or
-> > 2. move first block sanity checks into kmem_cache_sanity_check()
-> >
-> > Personally I prefer the first option to avoid complexity in return path
-> > handling. Would like to hear what others think.
-> 
-> We already have to deal with the return path handling for other failure
-> cases.
+On Thu, Aug 2, 2012 at 9:36 PM, James Morris <jmorris@namei.org> wrote:
+> On Wed, 1 Aug 2012, Andy Lutomirski wrote:
+>
+>> This fixes two issues that could cause incompatibility between
+>> kernel versions:
+>>
+>>  - If a tracer uses SECCOMP_RET_TRACE to select a syscall number
+>>    higher than the largest known syscall, emulate the unknown
+>>    vsyscall by returning -ENOSYS.  (This is unlikely to make a
+>>    noticeable difference on x86-64 due to the way the system call
+>>    entry works.)
+>>
+>>  - On x86-64 with vsyscall=emulate, skipped vsyscalls were buggy.
+>>
+>> This updates the documentation accordingly.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> Acked-by: Will Drewry <wad@chromium.org>
+>
+> Please rebase this to
+> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
+>
+> or wait until the next -rc, where I'll sync with Linus.
+>
 
-Thanks for the feedback. I will send v3 patch with the changes we
-discussed.
+The conflict is because Linus has a partial fix for the same problem
+that went in very late for 3.5, which isn't in your tree.  My patch
+applies cleanly to 3.6.0-rc1 and to the result of merging your tree
+with 3.6.0-rc1.
 
--- Shuah
+The relevant upstream changes are
+5651721edec25bf73cee060150e684044eac42dc and
+09d314425f5bc69fcf793c7890d9e6a3cdcb44be.
 
+If it helps, I can stick the patch into git.
 
+--Andy
