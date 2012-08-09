@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2HIR3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:29:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab2HIR3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:29:09 -0400
-Message-ID: <5023F360.2050409@redhat.com>
-Date: Thu, 09 Aug 2012 14:29:04 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754000Ab2HIRbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:31:35 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53384 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2HIRbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 13:31:33 -0400
+Date: Thu, 9 Aug 2012 19:31:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
+Message-ID: <20120809173121.GE27624@somewhere.redhat.com>
+References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
+ <1344522713-27951-2-git-send-email-fweisbec@gmail.com>
+ <20120809163515.GA4084@infradead.org>
+ <5023E7F3.8090701@gmail.com>
+ <20120809171419.GC4084@infradead.org>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Dave Peterson <dsp@llnl.gov>, kernel-janitors@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re:
-References: <20120809135416.GA13100@localhost>
-In-Reply-To: <20120809135416.GA13100@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120809171419.GC4084@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
-
-Em 09-08-2012 10:54, Fengguang Wu escreveu:
-...
-> Date: Thu, 9 Aug 2012 21:54:16 +0800
-> From: Fengguang Wu <fengguang.wu@intel.com>
-> To: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Dave Peterson <dsp@llnl.gov>, kernel-janitors@vger.kernel.org,
->         Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
->         linux-kernel@vger.kernel.org
-> Message-ID: <20120809135416.GA13100@localhost>
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> User-Agent: Mutt/1.5.21 (2010-09-15)
-> X-RedHat-Spam-Score: -5.111  (BAYES_00,MISSING_SUBJECT,RCVD_IN_DNSWL_HI,T_RP_MATCHES_RCVD)
-> X-Scanned-By: MIMEDefang 2.68 on 10.5.11.24
-> X-Scanned-By: MIMEDefang 2.68 on 10.5.110.17
->
-> Subject: possible double free in edac_mc_alloc()
-> Reply-To:
-> User-Agent: Heirloom mailx 12.5 6/20/10
-
-There is an extra space between the email headers and the Subject...
-due to that I almost deleted this message, considering it as spam.
-
+On Thu, Aug 09, 2012 at 02:14:19PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 09, 2012 at 10:40:19AM -0600, David Ahern escreveu:
+> > On 8/9/12 10:35 AM, Arnaldo Carvalho de Melo wrote:
+> > >Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
+> > >>This implements bash completion for perf subcommands such
+> > >>as record, report, script, probe, etc...
+> > >
+> > >Humm, I get this when doing my usual workflow:
+> > >
+> > >[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+> > >make: Entering directory `/home/git/linux/tools/perf'
+> > >PERF_VERSION = 3.6.rc1.152.g5758f7
+> > ><SNIP>
+> > >install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+> > >install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
+> > >install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+> > >install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
+> > >install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
+> > >install -m 755 bash_completion /etc/bash_completion.d/perf
+> > >install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
+> > >make: *** [install] Error 1
+> > >make: Leaving directory `/home/git/linux/tools/perf'
+> > >[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
+> > >
+> > >	Shouldn't it install on ~/etc/bash_completion.d/perf ?
+> > >
+> > >	Is there a way to have per user bash completion files like that?
+> > 
+> > 3rd patch should fix this.
 > 
-> Hi,
-> 
-> coccinelle warns about:
-> 
-> + drivers/edac/edac_mc.c:429:9-23: ERROR: reference preceded by free on line 429
-> 
-> and that line does look strange: the 'i' seems like a temporary value
-> used in previous loops, and it won't change at all in the current
-> loop. Which means the same mci->csrows[i] get freed once and again.
-> It might also do double free for the previous kfree(csr) line.
-> 
-> vim +429 drivers/edac/edac_mc.c
-> 
->     416         if (mci->dimms) {
->     417                 for (i = 0; i < tot_dimms; i++)
->     418                         kfree(mci->dimms[i]);
->     419                 kfree(mci->dimms);
->     420         }
->     421         if (mci->csrows) {
->     422                 for (chn = 0; chn < tot_channels; chn++) {
->     423                         csr = mci->csrows[chn];
->     424                         if (csr) {
->     425                                 for (chn = 0; chn < tot_channels; chn++)
->     426						kfree(csr->channels[chn]);
->     427					kfree(csr);
->     428				}
->   > 429				kfree(mci->csrows[i]);
+> Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
+> its just that I'm not using sudo nor installing as root, this new bash
+> completion file is the only one that is being installed on the root
+> filesystem, all others are in ~acme/
 
-It should likely be:
-	kfree(mci->csrows[csr])
-instead. This is likely due to one of the countless rebases I had to do on it,
-in order to make everybody happy. I suspect that, in the past, this loop was also
-using 'i' as the index variable.
+No the third patch handles sysconfdir which should take care of that:
 
-Care to write us a patch fixing it? My HD crashed yesterday... I'm somewhat
-busy today recovering from it, and doing some backup/restore stuff.
-
-Thanks!
-Mauro
-
->     430			}
->     431			kfree(mci->csrows);
->     432		}
-> 
-> ---
-> 0-DAY kernel build testing backend         Open Source Technology Centre
-> Fengguang Wu <wfg@linux.intel.com>                     Intel Corporation
-> 
-
+$ make -C tools/perf O=/home/fweisbec/build install
+make: entrant dans le répertoire « /home/fweisbec/linux-2.6-tip/tools/perf »
+make[1]: entrant dans le répertoire « /home/fweisbec/linux-2.6-tip/tools/lib/traceevent »
+make[1]: quittant le répertoire « /home/fweisbec/linux-2.6-tip/tools/lib/traceevent »
+    LINK /home/fweisbec/build/perf
+    GEN perf-archive
+install -d -m 755 '/home/fweisbec/bin'
+install /home/fweisbec/build/perf '/home/fweisbec/bin'
+install -d -m 755 '/home/fweisbec/libexec/perf-core/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+install -d -m 755 '/home/fweisbec/libexec/perf-core/scripts/perl/bin'
+install /home/fweisbec/build/perf-archive -t '/home/fweisbec/libexec/perf-core'
+install scripts/perl/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/fweisbec/libexec/perf-core/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+install scripts/perl/*.pl -t '/home/fweisbec/libexec/perf-core/scripts/perl'
+install scripts/perl/bin/* -t '/home/fweisbec/libexec/perf-core/scripts/perl/bin'
+install -d -m 755 '/home/fweisbec/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+install -d -m 755 '/home/fweisbec/libexec/perf-core/scripts/python/bin'
+install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/fweisbec/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+install scripts/python/*.py -t '/home/fweisbec/libexec/perf-core/scripts/python'
+install scripts/python/bin/* -t '/home/fweisbec/libexec/perf-core/scripts/python/bin'
+install -d -m 755 '/home/fweisbec/etc/bash_completion.d'
+install bash_completion '/home/fweisbec/etc/bash_completion.d/perf'
+make: quittant le répertoire « /home/fweisbec/linux-2.6-tip/tools/perf »
