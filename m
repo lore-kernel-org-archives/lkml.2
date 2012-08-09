@@ -1,73 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab2HINk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 09:40:59 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:35687 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab2HINk5 (ORCPT
+	id S1756264Ab2HINqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:46:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13745 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755090Ab2HINqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 09:40:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120809101947.GA8474@sirena.org.uk>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com> <20120809101947.GA8474@sirena.org.uk>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Thu, 9 Aug 2012 08:40:36 -0500
-Message-ID: <CAKGA1bkT2GDXXXAgjG4ySfTxwO=4O7o30BLzLHCMZKDrR318xQ@mail.gmail.com>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device tree
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Aug 2012 09:46:13 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=6BT9eh2GF10A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=WfulkdPnAAAA:8 a=AECJP_EDw2Pmm2iyCfMA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344519970.6935.34.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Date: Thu, 09 Aug 2012 09:46:10 -0400
+In-Reply-To: <20120807194100.130477900@goodmis.org>
+References: <20120807193845.146666357@goodmis.org>
+	 <20120807194100.130477900@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 5:19 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Aug 07, 2012 at 04:46:18PM -0500, Matt Sealey wrote:
->
-> Yay for indentation!  It'd be good to rewrite your DT so you could cut
-> down on that, at the minute it's not good for legibility.
->
->> +                                                     sw1_reg: sw1 {
->> +                                                             regulator-min-microvolt = <600000>;
->> +                                                             regulator-max-microvolt = <1375000>;
->> +                                                             regulator-boot-on;
->> +                                                             regulator-always-on;
->> +                                                     };
->
-> This and many of your other regulators have voltage ranges specified but
-> no consumers which doesn't make sense.  It looks awfully like you've
-> just typed in the maximum range supported by the regulator which is most
-> likely broken.
->
-> You're also specifying both boot_on and always_on which again doesn't
-> seem to make a lot of sense - boot_on mainly exists to help autoprobe,
-> using it quite this routinely isn't too clever.
+Peter and Masami
 
-The reason they're set like that is legacy - that's how they're set up
-in a kernel
-(pre-DT) that we know works. Most of those ranges are directly from the Babbage
-reference and stay like that in the Babbage DT too - so there's another broken
-one nobody noticed. I know what those voltages should be, but we're
-leaving that for another patch that restricts the range of voltages
-(it works right
-now, since there are no consumers, nothing CHANGES the voltages as
-configured at U-Boot time, and anything not boot-on is just not listed
-in the DT anyway, but some of them really need to stay on)
+During my final tests, I found that this change breaks the
+!DYNAMIC_FTRACE config. That is, when we don't do the run-time updates
+of mcount calls to nops, the compiler will use fentry but the code still
+uses mcount.
 
-There are few consumers because the primary ones out there are the display
-controllers and USB hubs and some other things. MMC should be a consumer
-but since on one board we share two MMC slots with one regulator we don't
-want anyone to change the voltage (it breaks spec anyway, since we can't
-provide more than 3.15V with FSL's PMIC and it should be 3.3V by default)
-and since you can't coordinate between MMC hosts on what the lowest voltage
-both cards can support actually is.. having someone change it would be
-bad.
+I fixed this in the patch below. But as you two have acked and reviewed
+it, I can't add your tags if I have changed the code. Can you ack/review
+it again.
 
--- 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+Thanks!
+
+-- Steve
+
+
+On Tue, 2012-08-07 at 15:38 -0400, Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
+> then use that instead of mcount.
+> 
+> With mcount, frame pointers are forced with the -pg option and we
+> get something like:
+> 
+> <can_vma_merge_before>:
+>        55                      push   %rbp
+>        48 89 e5                mov    %rsp,%rbp
+>        53                      push   %rbx
+>        41 51                   push   %r9
+>        e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
+>        31 c0                   xor    %eax,%eax
+>        48 89 fb                mov    %rdi,%rbx
+>        48 89 d7                mov    %rdx,%rdi
+>        48 33 73 30             xor    0x30(%rbx),%rsi
+>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+> 
+> With -mfentry, frame pointers are no longer forced and the call looks
+> like this:
+> 
+> <can_vma_merge_before>:
+>        e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
+>        53                      push   %rbx
+>        48 89 fb                mov    %rdi,%rbx
+>        31 c0                   xor    %eax,%eax
+>        48 89 d7                mov    %rdx,%rdi
+>        41 51                   push   %r9
+>        48 33 73 30             xor    0x30(%rbx),%rsi
+>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+> 
+> This adds the ftrace hook at the beginning of the function before a
+> frame is set up, and allows the function callbacks to be able to access
+> parameters. As kprobes now can use function tracing (at least on x86)
+> this speeds up the kprobe hooks that are at the beginning of the
+> function.
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+(change log kept the same)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c70684f..bbbf5d8 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -36,6 +36,7 @@ config X86
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_FTRACE_MCOUNT_RECORD
++	select HAVE_FENTRY if X86_64
+ 	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FUNCTION_TRACER
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index a6cae0c..9a25b52 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -35,7 +35,11 @@
+ #endif
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+-#define MCOUNT_ADDR		((long)(mcount))
++#ifdef CC_USING_FENTRY
++# define MCOUNT_ADDR		((long)(__fentry__))
++#else
++# define MCOUNT_ADDR		((long)(mcount))
++#endif
+ #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+@@ -46,6 +50,7 @@
+ #ifndef __ASSEMBLY__
+ extern void mcount(void);
+ extern atomic_t modifying_ftrace_code;
++extern void __fentry__(void);
+ 
+ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ {
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 38308fa..a698521 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -68,10 +68,18 @@
+ 	.section .entry.text, "ax"
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
++
++#ifdef CC_USING_FENTRY
++# define function_hook	__fentry__
++#else
++# define function_hook	mcount
++#endif
++
+ #ifdef CONFIG_DYNAMIC_FTRACE
+-ENTRY(mcount)
++
++ENTRY(function_hook)
+ 	retq
+-END(mcount)
++END(function_hook)
+ 
+ /* skip is set if stack has been adjusted */
+ .macro ftrace_caller_setup skip=0
+@@ -84,7 +92,11 @@ END(mcount)
+ 	movq RIP(%rsp), %rdi
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+ 	/* Load the parent_ip into the second parameter */
++#ifdef CC_USING_FENTRY
++	movq SS+16(%rsp), %rsi
++#else
+ 	movq 8(%rbp), %rsi
++#endif
+ .endm
+ 
+ ENTRY(ftrace_caller)
+@@ -177,7 +189,8 @@ END(ftrace_regs_caller)
+ 
+ 
+ #else /* ! CONFIG_DYNAMIC_FTRACE */
+-ENTRY(mcount)
++
++ENTRY(function_hook)
+ 	cmpl $0, function_trace_stop
+ 	jne  ftrace_stub
+ 
+@@ -199,7 +212,11 @@ trace:
+ 	MCOUNT_SAVE_FRAME
+ 
+ 	movq RIP(%rsp), %rdi
++#ifdef CC_USING_FENTRY
++	movq SS+16(%rsp), %rsi
++#else
+ 	movq 8(%rbp), %rsi
++#endif
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+ 
+ 	call   *ftrace_trace_function
+@@ -207,7 +224,7 @@ trace:
+ 	MCOUNT_RESTORE_FRAME
+ 
+ 	jmp ftrace_stub
+-END(mcount)
++END(function_hook)
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ #endif /* CONFIG_FUNCTION_TRACER */
+ 
+@@ -215,9 +232,14 @@ END(mcount)
+ ENTRY(ftrace_graph_caller)
+ 	MCOUNT_SAVE_FRAME
+ 
++#ifdef CC_USING_FENTRY
++	leaq SS+16(%rsp), %rdi
++	movq $0, %rdx	/* No framepointers needed */
++#else
+ 	leaq 8(%rbp), %rdi
+-	movq RIP(%rsp), %rsi
+ 	movq (%rbp), %rdx
++#endif
++	movq RIP(%rsp), %rsi
+ 	subq $MCOUNT_INSN_SIZE, %rsi
+ 
+ 	call	prepare_ftrace_return
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 9796c2f..643b236 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -13,9 +13,13 @@
+ #include <asm/ftrace.h>
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+-/* mcount is defined in assembly */
++/* mcount and __fentry__ are defined in assembly */
++#ifdef CC_USING_FENTRY
++EXPORT_SYMBOL(__fentry__);
++#else
+ EXPORT_SYMBOL(mcount);
+ #endif
++#endif
+ 
+ EXPORT_SYMBOL(__get_user_1);
+ EXPORT_SYMBOL(__get_user_2);
+
+
