@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab2HIRAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 13:00:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47448 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2HIRAQ (ORCPT
+	id S1753272Ab2HIRBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 13:01:39 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:28329 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2HIRBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 13:00:16 -0400
-Date: Thu, 9 Aug 2012 19:00:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
-Message-ID: <20120809170006.GC27624@somewhere.redhat.com>
-References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
- <1344522713-27951-2-git-send-email-fweisbec@gmail.com>
- <20120809163515.GA4084@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809163515.GA4084@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 13:01:38 -0400
+Message-ID: <1344531695.2393.27.camel@lorien2>
+Subject: Re: [PATCH v2] mm: Restructure kmem_cache_create() to move debug
+ cache integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: "Christoph Lameter (Open Source)" <cl@linux.com>
+Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
+Date: Thu, 09 Aug 2012 11:01:35 -0600
+In-Reply-To: <alpine.DEB.2.02.1208090911100.15909@greybox.home>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
+	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
+	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 01:35:15PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Aug 09, 2012 at 04:31:51PM +0200, Frederic Weisbecker escreveu:
-> > This implements bash completion for perf subcommands such
-> > as record, report, script, probe, etc...
+On Thu, 2012-08-09 at 09:13 -0500, Christoph Lameter (Open Source)
+wrote:
+> On Mon, 6 Aug 2012, Shuah Khan wrote:
 > 
-> Humm, I get this when doing my usual workflow:
+> > +#ifdef CONFIG_DEBUG_VM
+> > +static int kmem_cache_sanity_check(const char *name, size_t size)
 > 
-> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-> make: Entering directory `/home/git/linux/tools/perf'
-> PERF_VERSION = 3.6.rc1.152.g5758f7
-> <SNIP>
-> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
-> install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-> install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
-> install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
-> install -m 755 bash_completion /etc/bash_completion.d/perf
-> install: cannot create regular file `/etc/bash_completion.d/perf': Permission denied
-> make: *** [install] Error 1
-> make: Leaving directory `/home/git/linux/tools/perf'
-> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-> 
-> 	Shouldn't it install on ~/etc/bash_completion.d/perf ?
+> Why do we pass "size" in? AFAICT there is no need to.
 
-Are you sure you have the third patch?
+It is an oversight on my part. Will re-work the patch as needed. Please
+see more on your second comment below.
 
 > 
-> 	Is there a way to have per user bash completion files like that?
-
-It seems that some manual tweaking is needed :(
-
-http://www.simplicidade.org/notes/archives/2008/02/bash_completion.html
-
-
+> > @@ -53,48 +93,17 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+> >  {
+> >  	struct kmem_cache *s = NULL;
+> >
+> > -#ifdef CONFIG_DEBUG_VM
+> >  	if (!name || in_interrupt() || size < sizeof(void *) ||
+> >  		size > KMALLOC_MAX_SIZE) {
+> > -		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+> > -			" failed\n", name);
+> > +		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+> >  		goto out;
+> >  	}
+> > -#endif
+> >
 > 
-> - Arnaldo
+> If you move the above code into the sanity check function then you will be
+> using the size as well. These are also sanity checks after all.
+
+Yes these are also sanity checks, however these checks are common to
+debug and non-debug paths, hence the reasoning to leave them in
+kmem_cache_create(). 
+
+You are right, if these checks get moved into the debug section in
+kmem_cache_sanity_check, size will be used.
+
+Moving these checks into kmem_cache_sanity_check() would mean return
+path handling will change. The first block of sanity checks for name,
+and size etc. are done before holding the slab_mutex and the second
+block that checks the slab lists is done after holding the mutex.
+Depending on which one fails, return handling is going to be different
+in that if second block fails, mutex needs to be unlocked and when the
+first block fails, there is no need to do that. Nothing that is too
+complex to solve, just something that needs to be handled.
+
+Comments, thoughts on
+
+1. just remove size from kmem_cache_sanity_check() parameters
+or
+2. move first block sanity checks into kmem_cache_sanity_check()
+
+Personally I prefer the first option to avoid complexity in return path
+handling. Would like to hear what others think.
+
+-- Shuah
+
+
+
