@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2HISR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 14:17:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43731 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752504Ab2HISRZ (ORCPT
+	id S1758847Ab2HISWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 14:22:49 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39529 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab2HISWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 14:17:25 -0400
-Date: Thu, 9 Aug 2012 19:17:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
-Message-ID: <20120809181705.GG18486@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
- <20120809144953.GC18486@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
- <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
- <20120809175019.GE18486@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208091405340.5231@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208091405340.5231@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Aug 2012 14:22:48 -0400
+Date: Thu, 9 Aug 2012 19:27:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
+Message-ID: <20120809192706.625671f0@pyramind.ukuu.org.uk>
+In-Reply-To: <20120809171419.GC4084@infradead.org>
+References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
+	<1344522713-27951-2-git-send-email-fweisbec@gmail.com>
+	<20120809163515.GA4084@infradead.org>
+	<5023E7F3.8090701@gmail.com>
+	<20120809171419.GC4084@infradead.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 07:09:02PM +0100, Nicolas Pitre wrote:
-> On Thu, 9 Aug 2012, Will Deacon wrote:
-> > On Thu, Aug 09, 2012 at 05:57:33PM +0100, Nicolas Pitre wrote:
-> > > On Thu, 9 Aug 2012, Nicolas Pitre wrote:
-> > > diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-> > > index 580a6d35c7..44a66c99c8 100644
-> > > --- a/include/asm-generic/mutex-xchg.h
-> > > +++ b/include/asm-generic/mutex-xchg.h
-> > > @@ -25,8 +25,11 @@
-> > >  static inline void
-> > >  __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-> > >  {
-> > > -	if (unlikely(atomic_xchg(count, 0) != 1))
-> > > -		fail_fn(count);
-> > > +	if (unlikely(atomic_xchg(count, 0) != 1)) {
-> > > +		/* Mark lock contention explicitly */
-> > > +		if (likely(atomic_xchg(count, -1) != 1))
-> > > +			fail_fn(count);
-> > > +	}
-> > >  }
-> > >  
-> > >  /**
-> > 
-> > Doesn't this mean that we're no longer just swapping 0 for a 0 if the lock
-> > was taken, therefore needlessly sending the current owner down the slowpath
-> > on unlock?
+> > 3rd patch should fix this.
 > 
-> If the lock was taken, this means the count was either 0 or -1.  If it 
-> was 1 then we just put a 0 there and we own it.  But if the cound was 0 
-> then we should store -1 instead, which is what the inner xchg does.  If 
-> the count was already -1 then we store -1 back.  That more closely mimic 
-> what the atomic dec does which is what we want.
+> Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
+> its just that I'm not using sudo nor installing as root, this new bash
+> completion file is the only one that is being installed on the root
+> filesystem, all others are in ~acme/
 
-Ok, I just wasn't sure that marking the lock contended was required when it
-was previously locked, given that we'll drop into spinning on the owner
-anyway.
+And even with permissions it might not have the right security labels on
+a well secured box.
 
-I'll add a commit message to the above and re-post if that's ok?
+It's a neat little script (or once its been properly security audited
+will be) but IMHO it belongs in the distro bash script packages.
 
-Will
+Alan
