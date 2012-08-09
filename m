@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab2HIVND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:13:03 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:35441 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab2HIVNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:13:00 -0400
-Date: Thu, 9 Aug 2012 17:12:58 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: Re: [PATCH 04/10] ARM: pass -marm to gcc by default
-In-Reply-To: <1344461278-28245-5-git-send-email-arnd@arndb.de>
-Message-ID: <alpine.LFD.2.02.1208091709010.5231@xanadu.home>
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-5-git-send-email-arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754320Ab2HIVOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:14:31 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51563 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254Ab2HIVOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 17:14:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [Regression, post-3.5] System suspend broken on the Mackerel board
+Date: Thu, 9 Aug 2012 23:20:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: kuninori.morimoto.gx@renesas.com, Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+References: <20120801073004.GE15380@linux-sh.org> <201208081123.04850.rjw@sisk.pl> <20120809044057.GH1614@linux-sh.org>
+In-Reply-To: <20120809044057.GH1614@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208092320.23075.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Aug 2012, Arnd Bergmann wrote:
+On Thursday, August 09, 2012, Paul Mundt wrote:
+> On Wed, Aug 08, 2012 at 11:23:04AM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, August 07, 2012, Paul Mundt wrote:
+> > > On Sun, Aug 05, 2012 at 12:02:43AM +0200, Rafael J. Wysocki wrote:
+> > > > On Wednesday, August 01, 2012, Paul Mundt wrote:
+> > > > > Turns out we can just collapse the probe/init stuff anyways, so this
+> > > > > ought to fix it. I've verified that it fixes Morimoto-san's issue, my
+> > > > > expectation is that the mackerel case is likewise getting tripped up but
+> > > > > no one bothered implementing any error detecting logic for gpio_request()
+> > > > > failing, so it doesn't fail gracefully.
+> > > > > 
+> > > > > I'll be pushing this out to Linus shortly:
+> > > > 
+> > > > Thanks, this helped.  Resume works correctly on Mackerel with 3.6-rc1.
+> > > > 
+> > > > However, I'm now seeing a different problem related to system suspend on that,
+> > > > board which is that sh7372_enter_a3sm_common() returns immediately, as though
+> > > > at least one of the wakeup signals was permanently asserted.  This hadn't
+> > > > happened before your last pull request was merged, so I suspect that one
+> > > > of the irqdomain patches might introduce this behavior.
+> > > > 
+> > > Ok, I'll back off the irqdomain selection until we have a chance to test
+> > > it more on the other platforms.
+> > 
+> > If you mean removing the select from drivers/sh/intc/Kconfig, that alone doesn't
+> > help.  Reverting commit 1d6a21b0a672fb29b01ccf397d478e0541e17716
+> > (sh: intc: initial irqdomain support.) helps, though.
+> > 
+> Yeah, I see what happened now. I inadvertently trampled the -EEXIST
+> behaviour. I've taken care of it now, so hopefully you'll have better
+> luck with -rc2!
 
-> The Linaro cross toolchain and probably others nowadays default to
-> building in THUMB2 mode. When building a kernel for a CPU that does
-> not support THUMB2, the compiler complains about incorrect flags.
-> We can work around this by setting -marm for all non-T2 builds.
-> 
-> Without this patch, building assabet_defconfig results in:
-> 
-> usr/initramfs_data.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-> arch/arm/nwfpe/entry.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-> firmware/cis/PCMLM28.cis.gen.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-> (and many more)
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Dave Martin <dave.martin@linaro.org>
-> ---
->  arch/arm/Makefile |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index 30eae87..b4c2296 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -111,6 +111,9 @@ AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
->  ifeq ($(CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11),y)
->  CFLAGS_MODULE	+=-fno-optimize-sibling-calls
->  endif
-> +else
-> +CFLAGS_THUMB2  :=-marm
-> +AFLAGS_THUMB2	:=-marm
+I tested your "sh: intc: Handle domain association for sparseirq pre-allocated
+vectors" patch in the meantime and it does fix the issue.
 
-CFLAGS_THUMB2 should probably be renamed to something more appropriate 
-in this case, e.g. CFLAGS_MODE.
-
-
-Nicolas
+Thanks,
+Rafael
