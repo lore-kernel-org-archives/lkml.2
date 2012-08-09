@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab2HIM47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 08:56:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38540 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2HIM45 (ORCPT
+	id S1757900Ab2HINA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 09:00:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39731 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751185Ab2HINA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 08:56:57 -0400
+	Thu, 9 Aug 2012 09:00:28 -0400
+Date: Thu, 9 Aug 2012 14:00:25 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 3/3] regulator: add MAX8907 driver
+Message-ID: <20120809130025.GQ24328@opensource.wolfsonmicro.com>
+References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
+ <1344460727-6243-3-git-send-email-swarren@wwwdotorg.org>
+ <5023AAE5.90603@nvidia.com>
+ <20120809123838.GP24328@opensource.wolfsonmicro.com>
+ <5023AC97.60409@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <87zk64yk63.fsf@sejong.aot.lge.com>
-References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
-	<87mx26z0it.fsf@sejong.aot.lge.com>
-	<CANaxB-xAWtj8nU0WiE0aV_WHde_iX=rseU9NwwN=VTHOZYW=JQ@mail.gmail.com>
-	<878vdqympe.fsf@sejong.aot.lge.com>
-	<CANaxB-zZp0How3+WUC2BMsRMWBgf1CVkaVQSYWcvCXTgyymSvg@mail.gmail.com>
-	<87zk64yk63.fsf@sejong.aot.lge.com>
-Date: Thu, 9 Aug 2012 16:56:56 +0400
-Message-ID: <CANaxB-zWt97Vq7nfeDXeU-A84jUki+cuOLhrv2aRfah6QBuTFg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
-From: Andrey Wagin <avagin@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5023AC97.60409@nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/9 Namhyung Kim <namhyung@kernel.org>:
->>>>> The usage like this is too specific and hard to use IMHO. How about
->>>>> putting it somehow into perf sched or new command?
->>>>>
->>>>> /me don't have an idea though. :-)
->>>>>
->>>>
->>>> I'm going to add a script, so the usage will look like this:
->>>> $ perf script record sched-stat -e sched:sched_stat_sleep <command>
->>>> This command will collect sched_stat_* and proper sched_switch events
->>>
->>> ???  That means '-e sched:sched_stat_sleep' part can be removed from
->>> command line, no?
->>
->> No. My method works for all kind of sched_stat_* events, so you need
->> to specify an event type which should be traced.
->
-> Ok, so can it be like 'perf script record sched-stat -t sleep <command>'?
+On Thu, Aug 09, 2012 at 05:57:03PM +0530, Laxman Dewangan wrote:
+> On Thursday 09 August 2012 06:08 PM, Mark Brown wrote:
 
-Yes, it can. Thanks for your feedback. I'm going to write the script,
-when this series will be committed.
+> >The driver should just register all the regulators the chip has, it's
+> >useful for diagnostic purposes if nothing else.
+
+> Then probably we need to update our dts file becasue we left some of
+> regualtor entry as it is not used on design.
+
+Why would this impact the device tree?
