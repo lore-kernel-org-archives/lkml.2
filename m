@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab2HITI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 15:08:27 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58732 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2HITI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 15:08:26 -0400
-Date: Thu, 9 Aug 2012 16:08:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
-Message-ID: <20120809190819.GD4084@infradead.org>
-References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
- <1344522713-27951-2-git-send-email-fweisbec@gmail.com>
- <20120809163515.GA4084@infradead.org>
- <5023E7F3.8090701@gmail.com>
- <20120809171419.GC4084@infradead.org>
- <20120809192706.625671f0@pyramind.ukuu.org.uk>
+	id S1759263Ab2HITJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 15:09:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185Ab2HITJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 15:09:25 -0400
+Date: Thu, 9 Aug 2012 15:48:44 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 02/12] KVM: hide KVM_MEMSLOT_INVALID from userspace
+Message-ID: <20120809184844.GA20889@amt.cnet>
+References: <5020E423.9080004@linux.vnet.ibm.com>
+ <5020E481.1050203@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120809192706.625671f0@pyramind.ukuu.org.uk>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <5020E481.1050203@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Aug 09, 2012 at 07:27:06PM +0100, Alan Cox escreveu:
-> > > 3rd patch should fix this.
-> > 
-> > Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
-> > its just that I'm not using sudo nor installing as root, this new bash
-> > completion file is the only one that is being installed on the root
-> > filesystem, all others are in ~acme/
+On Tue, Aug 07, 2012 at 05:48:49PM +0800, Xiao Guangrong wrote:
+> Quote Avi's comment:
+> | KVM_MEMSLOT_INVALID is actually an internal symbol, not used by
+> | userspace.  Please move it to kvm_host.h.
 > 
-> And even with permissions it might not have the right security labels on
-> a well secured box.
+> Also, move KVM_MEMSLOT_INVALID to the highest bit
 > 
-> It's a neat little script (or once its been properly security audited
-> will be) but IMHO it belongs in the distro bash script packages.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  include/linux/kvm.h      |    1 -
+>  include/linux/kvm_host.h |    2 ++
+>  2 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> index 2ce09aa..dc3aa2a 100644
+> --- a/include/linux/kvm.h
+> +++ b/include/linux/kvm.h
+> @@ -103,7 +103,6 @@ struct kvm_userspace_memory_region {
+> 
+>  /* for kvm_memory_region::flags */
+>  #define KVM_MEM_LOG_DIRTY_PAGES  1UL
+> -#define KVM_MEMSLOT_INVALID      (1UL << 1)
+> 
+>  /* for KVM_IRQ_LINE */
+>  struct kvm_irq_level {
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index d2b897e..4c2da5a 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -35,6 +35,8 @@
+>  #define KVM_MMIO_SIZE 8
+>  #endif
+> 
+> +#define KVM_MEMSLOT_INVALID	(1UL << 31)
+> +
+>  /*
+>   * If we support unaligned MMIO, at most one fragment will be split into two:
+>   */
 
-Yeah, I think we can keep it in the kernel sources and then send new
-versions to the bash-completion-devel@lists.alioth.debian.org guys.
+Please document which range is for userspace visible flags, which range
+is reserved. Mention that in both headers, point to each other
+("userspace definitions are there" / "internal definitions are there").
 
-To test I just did:
+16/16 bits for each should be fine.
 
-  ln -s ~/etc/bash_completion.d/perf ~/.bash_completion
 
-Frédéric, I merged your patches as-is and pushed them to my perf/core
-branch, thanks!
-
-- Arnaldo
