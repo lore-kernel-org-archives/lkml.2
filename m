@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab2HISYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 14:24:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53828 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755206Ab2HISYs (ORCPT
+	id S1758957Ab2HISeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 14:34:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60871 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab2HISes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 14:24:48 -0400
-Message-ID: <5024001E.3080803@ti.com>
-Date: Thu, 9 Aug 2012 23:53:26 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 9 Aug 2012 14:34:48 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <arm@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Andrey Porodko <panda@chelcom.ru>
-Subject: Re: [PATCH v2 06/10] ARM: davinci: don't use broken ntosd2_init_i2c
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-7-git-send-email-arnd@arndb.de> <201208090800.18321.arnd@arndb.de>
-In-Reply-To: <201208090800.18321.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+h=+L-W0-iBFouqqSFeU9iGU0rsHpV7e853i_mgo=RV9h=MDA@mail.gmail.com>
+References: <CA+h=+L8geO5kM8VV-+VFkSrvBRJEs31V9OaQ6g98hirRKJWq1g@mail.gmail.com>
+ <alpine.LNX.2.00.1208082243271.10061@swampdragon.chaosbits.net>
+ <alpine.LNX.2.00.1208082252550.10061@swampdragon.chaosbits.net> <CA+h=+L-W0-iBFouqqSFeU9iGU0rsHpV7e853i_mgo=RV9h=MDA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 9 Aug 2012 11:34:26 -0700
+Message-ID: <CAErSpo7sHD=vLGmkS9Cd0cFxiGnBoY3Khcq9Fr33i6xKhhq43g@mail.gmail.com>
+Subject: Re: PROBLEM: snd_hda_intel bug during boot
+To: Alexei Kornienko <alexei.kornienko@gmail.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+If you can collect complete dmesg logs from the working kernel and the
+broken kernel and post them, the differences might have a clue.  You
+might also collect /proc/iomem and "lspci -vv" for both cases while
+you're at it.
 
-On 8/9/2012 1:30 PM, Arnd Bergmann wrote:
-> On second thought, there is probably no use in keeping the broken function
-> around, and we can just kill it off. If someone wants to add an i2c
-> device to the bus, they can always add the init code back as well.
-> 
-> 8<-----
-> Subject: ARM: davinci: don't use broken ntosd2_init_i2c
-> 
-> ntosd2_init_i2c walks the ntosd2_i2c_info array, which it expects to
-> be populated with at least one member. gcc correctly warns about
-> the out-of-bounds access here.
-> 
-> Since this can not possibly work, it's better to disable i2c
-> support entirely on this board.
-> 
-> Without this patch, building davinci_all_defconfig results in:
-> 
-> arch/arm/mach-davinci/board-neuros-osd2.c: In function 'davinci_ntosd2_init':
-> arch/arm/mach-davinci/board-neuros-osd2.c:187:20: warning: array subscript is above array bounds [-Warray-bounds]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Andrey Porodko <panda@chelcom.ru>
-
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-Thanks,
-Sekhar
+On Wed, Aug 8, 2012 at 10:38 PM, Alexei Kornienko
+<alexei.kornienko@gmail.com> wrote:
+> Hi,
+>
+> Yes it used to work with 2.6 kernel.
+> Ok I will do a bisect and try to find the source of the problem.
+> I'll notify you if I'll find something but don't expect it to be fast
+> cause the problem happens on my home laptop (pretty old and rusty :) )
+> and I also have a lot of other stuff to do.
+>
+> Regards,
+> Alexei
+>
+> 2012/8/8 Jesper Juhl <jj@chaosbits.net>:
+>> On Wed, 8 Aug 2012, Jesper Juhl wrote:
+>>
+>>> On Wed, 8 Aug 2012, Alexei Kornienko wrote:
+>>>
+>>> > Seems like I have a bug in audio driver on my laptop. Cause of this I
+>>> > don't have any sound card detected.
+>>> > Please find more details below:
+>>> >
+>>> > ** Version:
+>>> > Linux version 3.2.0-29-generic-pae (buildd@roseapple) (gcc version
+>>> > 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #46-Ubuntu SMP Fri Jul 27
+>>> > 17:25:43 UTC 2012
+>>> >
+>>> Ok, so I openly admit that I have no clue as to what your problem might
+>>> be. But, one thing I do know is that, a *lot* has changed since the 3.2
+>>> kernel you are running and the most recent stable (3.5) kernel. So,
+>>> perhaps you could test the 3.5 kernel and tell us if you still see the
+>>> problem with that one or not?
+>>> If you are feeling adventurous you could also try a snapshot of the latest
+>>> Linus (to become 3.6) kernel and tell us your experiences with that...?
+>>>
+>> Also, if this used to work with an older kernel, then it would probably
+>> be helpful if you could do a "git bisect" between the older (working)
+>> kernel version and your current (broken) kernel version in order to zoom
+>> in on the commit that broke things for you.
+>>
+>> --
+>> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+>> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+>> Plain text mails only, please.
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
