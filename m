@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360Ab2HIPYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:24:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40412 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab2HIPYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:24:35 -0400
-Message-ID: <5023D60F.7010009@zytor.com>
-Date: Thu, 09 Aug 2012 08:23:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1031078Ab2HIPZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:25:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51795 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758235Ab2HIPZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 11:25:00 -0400
+Message-ID: <5023D63F.1080502@gmail.com>
+Date: Thu, 09 Aug 2012 23:24:47 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v2 4/6] x86: Add clear_page_nocache
-References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com> <1344524583-1096-5-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1344524583-1096-5-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH v2 00/16] ACPI based system device hotplug framework
+References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344382695.3010.770.camel@misato.fc.hp.com> <50228968.3070904@gmail.com> <CAErSpo7S0zuU=tSJVzxk8cPjop0B+JKJjkM46sFCirJCX9KQ2g@mail.gmail.com>
+In-Reply-To: <CAErSpo7S0zuU=tSJVzxk8cPjop0B+JKJjkM46sFCirJCX9KQ2g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 08:03 AM, Kirill A. Shutemov wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add a cache avoiding version of clear_page. Straight forward integer variant
-> of the existing 64bit clear_page, for both 32bit and 64bit.
->
-> Also add the necessary glue for highmem including a layer that non cache
-> coherent architectures that use the virtual address for flushing can
-> hook in. This is not needed on x86 of course.
->
-> If an architecture wants to provide cache avoiding version of clear_page
-> it should to define ARCH_HAS_USER_NOCACHE to 1 and implement
-> clear_page_nocache() and clear_user_highpage_nocache().
->
-
-Compile failure:
-
-/home/hpa/kernel/tip.x86-mm/arch/x86/mm/fault.c: In function 
-‘clear_user_highpage_nocache’:
-/home/hpa/kernel/tip.x86-mm/arch/x86/mm/fault.c:1215:30: error: 
-‘KM_USER0’ undeclared (first use in this function)
-/home/hpa/kernel/tip.x86-mm/arch/x86/mm/fault.c:1215:30: note: each 
-undeclared identifier is reported only once for each function it appears in
-/home/hpa/kernel/tip.x86-mm/arch/x86/mm/fault.c:1215:2: error: too many 
-arguments to function ‘kmap_atomic’
-In file included from 
-/home/hpa/kernel/tip.x86-mm/include/linux/pagemap.h:10:0,
-                  from 
-/home/hpa/kernel/tip.x86-mm/include/linux/mempolicy.h:70,
-                  from 
-/home/hpa/kernel/tip.x86-mm/include/linux/hugetlb.h:15,
-                  from /home/hpa/kernel/tip.x86-mm/arch/x86/mm/fault.c:14:
-/home/hpa/kernel/tip.x86-mm/include/linux/highmem.h:66:21: note: 
-declared here
-make[4]: *** [arch/x86/mm/fault.o] Error 1
-make[3]: *** [arch/x86/mm] Error 2
-make[2]: *** [arch/x86] Error 2
-make[1]: *** [sub-make] Error 2
-make[1]: Leaving directory `/home/hpa/kernel/tip.x86-mm'
-
-This happens on *all* my test configurations, including both x86-64 and 
-i386 allyesconfig.  I suspect your patchset base is stale.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+On 08/09/2012 12:27 AM, Bjorn Helgaas wrote:
+> On Wed, Aug 8, 2012 at 8:44 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> On 08/08/2012 07:38 AM, Toshi Kani wrote:
+> 
+>>> It is nice to see redundant ACPI namespace walks removed from the ACPI
+>>> drivers.  But why do you need to add a new enumerator to create the
+>>> acpihp_slot tree, in addition to the current acpi_device tree?  I'd
+>>> prefer hotplug features to be generally integrated into the current ACPI
+>>> core code and data structures, instead of adding a new layer on top of
+>>> it.
+>> The idea comes from PCI hotplug framework, which has an concepts of PCI
+>> hotplug slot and PCI device. For system device hotplug, we could follow
+>> the same model as PCI by abstracting control points as slots. By introducing
+>> of hotplug slot, we could:
+>>
+>> 1) Report all hotplug slots and slot's capabilities to user, no matter whether
+>> there are devices connecting to a slot. If we integrate hotplug functionality
+>> into current ACPI device tree, the slot (or device) is only visible when the
+>> connected devices are enabled.
+> 
+> In PCI, the idea of a slot is a pretty explicit -- you can look at the
+> capabilities of a bridge device and see whether it supports hot-add of
+> a device below it.  Is it the same way in ACPI?  My impression is that
+> it is not: there will be a parent ACPI device under which a new device
+> can be added, but you might not be able to tell by looking at the
+> parent device that hot-add is possible.  I thought the platform could
+> just give us a Notify event on the parent, asking us to rescan the
+> namespace below it and potentially discover new devices.
+> 
+Hi Bjorn,
+	You are right. With current ACPI V5 specification, we can't get the slot
+information from the ACPI namespace, and could only guess that a device with _EJ0
+supports hot-add/hot-remove.
+	Realized that limitation, there's ongoing effort to provide ACPI hotplug
+slot (or platform RAS capabilities) information to OS through static ACPI tables,
+so OS could enable hotplug and reserve enough resources for system device hotplug.
+If that static ACPI table is available, we could construct ACPI hotplug slots from
+it.
+	Regards!
+	Gerry
