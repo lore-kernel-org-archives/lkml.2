@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab2HIGVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 02:21:03 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51805 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab2HIGU7 (ORCPT
+	id S1754800Ab2HIGVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 02:21:39 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44894 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659Ab2HIGVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 02:20:59 -0400
-Date: Wed, 08 Aug 2012 23:20:58 -0700 (PDT)
-Message-Id: <20120808.232058.1128673474849407813.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: vyasevich@gmail.com, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.ariyasu@hp.com,
-        jan.ariyasu@gmail.com, nhorman@tuxdriver.com, tgraf@infradead.org,
-        xi.wang@gmail.com
-Subject: Re: [PATCH net-next 0/7] sctp: network namespace support Part 2:
- per net tunables
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87ipcud3ld.fsf_-_@xmission.com>
-References: <87mx27rig7.fsf@xmission.com>
-	<87zk67q31q.fsf_-_@xmission.com>
-	<87ipcud3ld.fsf_-_@xmission.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Aug 2012 02:21:38 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-54-502356f08803
+From: Namhyung Kim <namhyung@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH v2] perf script python: Correct handler check and spelling errors
+References: <1344446028-21381-1-git-send-email-acme@infradead.org>
+	<1344446028-21381-12-git-send-email-acme@infradead.org>
+	<878vdoydj2.fsf@sejong.aot.lge.com> <20120809132401.64a18d27@feng-i7>
+	<87zk64wru6.fsf@sejong.aot.lge.com> <20120809134613.067104c4@feng-i7>
+Date: Thu, 09 Aug 2012 15:15:44 +0900
+In-Reply-To: <20120809134613.067104c4@feng-i7> (Feng Tang's message of "Thu, 9
+	Aug 2012 13:46:13 +0800")
+Message-ID: <87r4rgwpyn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 07 Aug 2012 10:17:02 -0700
+On Thu, 9 Aug 2012 13:46:13 +0800, Feng Tang wrote:
+> From efbf00591514aa1d6134a3b940dc627d1a7cc8f8 Mon Sep 17 00:00:00 2001
+> From: Feng Tang <feng.tang@intel.com>
+> Date: Thu, 9 Aug 2012 12:50:56 +0800
+> Subject: [PATCH] perf script python: Correct handler check and spelling errors
+>
+> Correct the checking for handler returned by PyDict_GetItemString(), also
+> fix some spelling error and remove some data code in event_analyzing_sample.py,
+> as suggested by Namhyung Kim.
+>
+> v2: restore back the wrongly removed trace_unhandled() func
+>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
 
-> Since I am motivated to get things done, and since there has been much
-> grumbling about my patches not implementing tunables, I have added
-> tunable support on top of my last patchset.
-> 
-> I have performed basic testing on the these patches and nothing
-> appears amis.
-> 
-> The sm statemachine is a major tease as it has all of these association
-> and endpoint pointers in the common set of function parameters that turn
-> out to be NULL at the most inconvinient times.  So I added to the common
-> parameter list a struct net pointer, that is never NULL. 
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-I like Eric's patch set and I'd like to apply it to net-next.
-
-Vlad?
+Thanks!
