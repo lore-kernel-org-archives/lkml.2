@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab2HIS46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 14:56:58 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:6432 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759045Ab2HIS45 (ORCPT
+	id S1759210Ab2HIS5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 14:57:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43453 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759193Ab2HIS5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 14:56:57 -0400
-Message-ID: <1344538611.2593.4.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] net: add new QCA alx ethernet driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>,
-        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-Date: Thu, 9 Aug 2012 19:56:51 +0100
-In-Reply-To: <1344526098.6935.44.camel@gandalf.stny.rr.com>
-References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
-	 <1344485382.2024.9.camel@joe2Laptop>
-	 <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
-	 <20120808.231804.12694947300243733.davem@davemloft.net>
-	 <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
-	 <20120809145454.GA21195@home.goodmis.org>
-	 <1344525758.3165.8.camel@joe2Laptop>
-	 <1344526098.6935.44.camel@gandalf.stny.rr.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Aug 2012 14:57:05 -0400
+Date: Thu, 9 Aug 2012 19:57:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] regulator: core: request only valid gpio pins for
+ regulator enable
+Message-ID: <20120809185701.GD24328@opensource.wolfsonmicro.com>
+References: <1344522780-32079-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344522780-32079-1-git-send-email-m.szyprowski@samsung.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 11:28 -0400, Steven Rostedt wrote:
-> On Thu, 2012-08-09 at 08:22 -0700, Joe Perches wrote:
-> 
-> > Yes, I sent signed-off patches to their original RFC submission
-> > (back last year?).  To me, this single large patch is like a
-> > snapshot of a git tree and not all contributors to that git
-> > tree should be noted as signers of the entire thing.
-> 
-> Ouch, that looks like we are losing all history.
-> 
-> One large patch should not be submitted. If it was developed in steps,
-> then it is best to show those steps when they are incorporated into the
-> Linux repository.
-> 
-> Sure, the patches may be reworked and folded together where appropriate,
-> but when I read "this single large patch is like a snapshot of a git
-> tree", that right there is a red flag.
+On Thu, Aug 09, 2012 at 04:33:00PM +0200, Marek Szyprowski wrote:
+> Commit 65f735082de3 ("regulator: core: Add core support for GPIO controlled
+> enable lines") introduced enable gpio entry in regulator configuration
+> structure. Some drivers use '-1' as a placeholder for marking that such
+> gpio line is not available, because '0' is considered as a valid gpio
+> number. This patch fixes initialization of such drivers (like MAX8952
+> on UniversalC210 board), when '-1' is provided as enable gpio pin in the
+> regulator's platform data.
 
-I don't think this has ever been a requirement for new drivers.
-
-The alterations to the description of atl1c ought to be broken out as a
-separate patch, though.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Applied, thanks.
