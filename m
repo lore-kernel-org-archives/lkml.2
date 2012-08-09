@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031173Ab2HIPpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 11:45:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49277 "EHLO
+	id S1031194Ab2HIPpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 11:45:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49282 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030969Ab2HIPo7 (ORCPT
+	by vger.kernel.org with ESMTP id S1030969Ab2HIPpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 11:44:59 -0400
-Date: Thu, 9 Aug 2012 16:44:57 +0100
+	Thu, 9 Aug 2012 11:45:15 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 2/3] regulator: add regulator_get_voltage_fixed helper
- op
-Message-ID: <20120809154456.GX24328@opensource.wolfsonmicro.com>
-References: <1344460727-6243-1-git-send-email-swarren@wwwdotorg.org>
- <1344460727-6243-2-git-send-email-swarren@wwwdotorg.org>
- <20120809105910.GN24328@opensource.wolfsonmicro.com>
- <5023D5CF.1070402@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5023D5CF.1070402@wwwdotorg.org>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liam Girdwood <lrg@ti.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Use list_voltage() to read single voltage regulators
+Date: Thu,  9 Aug 2012 16:45:11 +0100
+Message-Id: <1344527111-29611-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 09:22:55AM -0600, Stephen Warren wrote:
+If the regulator doesn't supply a way of reading back the voltage but does
+provide a list_voltage() operation then use that with a selector of zero
+to read the voltage.
 
-> I don't think there's a *get*_voltage_linear. All the existing
-> get_voltage "standard" ops require reading a register, hence why I added
-> this new standard op. I guess I'll look at converting all the existing
-> users.
+Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Hrm, right - the fact that you've not implemented get_voltage_sel() is
-what I noticed here really.  I think the core should really cope with
-this, if the driver has a list voltage operation but no way of reading
-the voltage operation then we should just use the list voltage operation
-to get the voltage back.  We want to be able to list since things that
-check the range of available voltages might want to know.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 157def1..ff8f544 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2395,6 +2395,8 @@ static int _regulator_get_voltage(struct regulator_dev *rdev)
+ 		ret = rdev->desc->ops->list_voltage(rdev, sel);
+ 	} else if (rdev->desc->ops->get_voltage) {
+ 		ret = rdev->desc->ops->get_voltage(rdev);
++	} else if (rdev->desc->ops->list_voltage) {
++		ret = rdev->desc->ops->list_voltage(rdev, 0);
+ 	} else {
+ 		return -EINVAL;
+ 	}
+-- 
+1.7.10.4
+
