@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012Ab2HIXQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 19:16:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33345 "EHLO
+	id S1760008Ab2HIXRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 19:17:25 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33361 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2HIXQk (ORCPT
+	with ESMTP id S1754131Ab2HIXRY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 19:16:40 -0400
-Date: Thu, 09 Aug 2012 16:16:39 -0700 (PDT)
-Message-Id: <20120809.161639.1789560369123168415.davem@davemloft.net>
-To: skinsbursky@parallels.com
-Cc: dhowells@redhat.com, netdev@vger.kernel.org, rick.jones2@hp.com,
-        ycheng@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tun: don't zeroize sock->file on detach
+	Thu, 9 Aug 2012 19:17:24 -0400
+Date: Thu, 09 Aug 2012 16:17:22 -0700 (PDT)
+Message-Id: <20120809.161722.978110433246227213.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        maze@google.com, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, pyu@redhat.com
+Subject: Re: [PATCH net-next] time: jiffies_delta_to_clock_t() helper to
+ the rescue
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120809124436.5156.26944.stgit@localhost.localdomain>
-References: <20120809124436.5156.26944.stgit@localhost.localdomain>
+In-Reply-To: <1344496433.28967.443.camel@edumazet-glaptop>
+References: <1344496433.28967.443.camel@edumazet-glaptop>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Date: Thu, 09 Aug 2012 16:50:40 +0400
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 09 Aug 2012 09:13:53 +0200
 
-> This is a fix for bug, introduced in 3.4 kernel by commit
-> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things, replaced
-> simple sock_put() by sk_release_kernel(). Below is sequence, which leads to
-> oops for non-persistent devices:
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> tun_chr_close()
-> tun_detach()				<== tun->socket.file = NULL
-> tun_free_netdev()
-> sk_release_sock()
-> sock_release(sock->file == NULL)
-> iput(SOCK_INODE(sock))			<== dereference on NULL pointer
+> Various /proc/net files sometimes report crazy timer values, expressed
+> in clock_t units.
 > 
-> This patch just removes zeroing of socket's file from __tun_detach().
-> sock_release() will do this.
+> This happens when an expired timer delta (expires - jiffies) is passed
+> to jiffies_to_clock_t().
 > 
-> Cc: stable@vger.kernel.org
-> Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
-> Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
-> Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> Acked-by: Yuchung Cheng <ycheng@google.com>
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> This function has an overflow in :
+> 
+> return div_u64((u64)x * TICK_NSEC, NSEC_PER_SEC / USER_HZ);
+> 
+> commit cbbc719fccdb8cb (time: Change jiffies_to_clock_t() argument type
+> to unsigned long) only got around the problem.
+> 
+> As we cant output negative values in /proc/net/tcp without breaking
+> various tools, I suggest adding a jiffies_delta_to_clock_t() wrapper
+> that caps the negative delta to a 0 value.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Reported-by: Maciej ¯enczykowski <maze@google.com>
 
-Applied, thanks.
+Applied, thanks Eric.
