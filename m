@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759939Ab2HIWWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 18:22:40 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42422 "EHLO e7.ny.us.ibm.com"
+	id S932309Ab2HIWWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 18:22:45 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34670 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759926Ab2HIWWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 18:22:37 -0400
+	id S1759926Ab2HIWWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 18:22:41 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
@@ -14,84 +14,157 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Matt Hellsley <matthltc@us.ibm.com>,
         David Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 10/16] perf symbol: track symtab_type of vmlinux
-Date: Thu,  9 Aug 2012 15:18:35 -0700
-Message-Id: <1344550721-21024-11-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 15/16] perf symbol: convert dso__load_syms to take 2 symsrc's
+Date: Thu,  9 Aug 2012 15:18:40 -0700
+Message-Id: <1344550721-21024-16-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12080922-5806-0000-0000-00001837C016
+x-cbid: 12080922-1976-0000-0000-00001009453E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, symtab_type would have been left at 0, or KALLSYMS, which is not
-quite accurate.
+To properly handle platforms with an opd section, both a runtime image
+(which contains the opd section but possibly lacks symbols) and a symbol
+image (which probably lacks an opd section but has symbols).
 
-Introduce DSO_SYMTAB_TYPE__VMLINUX[_GUEST].
+The next patch ("perf symbol: use both runtime and debug images")
+adjusts the callsite in dso__load() to take advantage of being able to
+pass both runtime & debug images.
+
+Assumptions made here:
+
+ - The opd section, if it exists in the runtime image, has headers in
+   both the runtime image and the debug/syms image.
+ - The index of the opd section (again, only if it exists in the
+   runtime image) is the same in both the runtime and debug/symbols
+   image.
+
+Both of these are true on RHEL, but it is unclear how accurate they are
+in general (on platforms with function descriptors in opd sections).
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- tools/perf/util/symbol.c | 9 +++++++++
- tools/perf/util/symbol.h | 2 ++
- 2 files changed, 11 insertions(+)
+ tools/perf/util/symbol.c | 45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 6afc92d..662d1a2 100644
+index 83d2276..e740dc1 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -1708,6 +1708,7 @@ char dso__symtab_origin(const struct dso *dso)
+@@ -1319,7 +1319,8 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
+-static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
++static int dso__load_sym(struct dso *dso, struct map *map,
++			struct symsrc *syms_ss, struct symsrc *runtime_ss,
+ 		         symbol_filter_t filter, int kmodule)
  {
- 	static const char origin[] = {
- 		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
-+		[DSO_BINARY_TYPE__VMLINUX]		= 'v',
- 		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
- 		[DSO_BINARY_TYPE__DEBUGLINK]		= 'l',
- 		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
-@@ -1718,6 +1719,7 @@ char dso__symtab_origin(const struct dso *dso)
- 		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
- 		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
- 		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
-+		[DSO_BINARY_TYPE__GUEST_VMLINUX]	= 'V',
- 	};
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+@@ -1330,26 +1331,22 @@ static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	int err = -1;
+ 	uint32_t idx;
+ 	GElf_Ehdr ehdr;
+-	GElf_Shdr shdr, opdshdr;
++	GElf_Shdr shdr;
+ 	Elf_Data *syms, *opddata = NULL;
+ 	GElf_Sym sym;
+-	Elf_Scn *sec, *sec_strndx, *opdsec;
++	Elf_Scn *sec, *sec_strndx;
+ 	Elf *elf;
+ 	int nr = 0;
+-	size_t opdidx = 0;
  
- 	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
-@@ -1793,7 +1795,9 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+-	dso->symtab_type = ss->type;
++	dso->symtab_type = syms_ss->type;
  
- 	default:
- 	case DSO_BINARY_TYPE__KALLSYMS:
-+	case DSO_BINARY_TYPE__VMLINUX:
- 	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
-+	case DSO_BINARY_TYPE__GUEST_VMLINUX:
- 	case DSO_BINARY_TYPE__JAVA_JIT:
- 	case DSO_BINARY_TYPE__NOT_FOUND:
- 		ret = -1;
-@@ -2168,6 +2172,11 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	if (fd < 0)
+-	elf = ss->elf;
+-	ehdr = ss->ehdr;
+-	sec = ss->symtab;
+-	shdr = ss->symshdr;
++	elf = syms_ss->elf;
++	ehdr = syms_ss->ehdr;
++	sec = syms_ss->symtab;
++	shdr = syms_ss->symshdr;
+ 
+-	opdsec = ss->opdsec;
+-	opdshdr = ss->opdshdr;
+-	opdidx  = ss->opdidx;
+-	if (opdsec)
+-		opddata = elf_rawdata(opdsec, NULL);
++	if (runtime_ss->opdsec)
++		opddata = elf_rawdata(runtime_ss->opdsec, NULL);
+ 
+ 	syms = elf_getdata(sec, NULL);
+ 	if (syms == NULL)
+@@ -1374,13 +1371,14 @@ static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	nr_syms = shdr.sh_size / shdr.sh_entsize;
+ 
+ 	memset(&sym, 0, sizeof(sym));
+-	dso->adjust_symbols = ss->adjust_symbols;
++	dso->adjust_symbols = runtime_ss->adjust_symbols;
+ 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
+ 		struct symbol *f;
+ 		const char *elf_name = elf_sym__name(&sym, symstrs);
+ 		char *demangled = NULL;
+ 		int is_label = elf_sym__is_label(&sym);
+ 		const char *section_name;
++		bool used_opd = false;
+ 
+ 		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
+ 		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
+@@ -1399,14 +1397,16 @@ static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 				continue;
+ 		}
+ 
+-		if (opdsec && sym.st_shndx == opdidx) {
+-			u32 offset = sym.st_value - opdshdr.sh_addr;
++		if (runtime_ss->opdsec && sym.st_shndx == runtime_ss->opdidx) {
++			u32 offset = sym.st_value - syms_ss->opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+ 			sym.st_value = DSO__SWAP(dso, u64, *opd);
+-			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
++			sym.st_shndx = elf_addr_to_index(runtime_ss->elf,
++					sym.st_value);
++			used_opd = true;
+ 		}
+ 
+-		sec = elf_getscn(elf, sym.st_shndx);
++		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
+ 
+@@ -1472,7 +1472,8 @@ static int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 			goto new_symbol;
+ 		}
+ 
+-		if (curr_dso->adjust_symbols && sym.st_value) {
++		if ((used_opd && runtime_ss->adjust_symbols)
++				|| (!used_opd && syms_ss->adjust_symbols)) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+@@ -1944,7 +1945,7 @@ restart:
+ 			ss.symshdr = ss.dynshdr;
+ 		}
+ 
+-		ret = dso__load_sym(dso, map, &ss, filter, 0);
++		ret = dso__load_sym(dso, map, &ss, &ss, filter, 0);
+ 
+ 		/*
+ 		 * Some people seem to have debuginfo files _WITHOUT_ debug
+@@ -2249,7 +2250,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
  		return -1;
  
-+	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+	else
-+		dso->symtab_type = DSO_BINARY_TYPE__VMLINUX;
-+
- 	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
- 	close(fd);
+-	err = dso__load_sym(dso, map, &ss, filter, 0);
++	err = dso__load_sym(dso, map, &ss, &ss, filter, 0);
+ 	symsrc__destroy(&ss);
  
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index c8ec1d7..e92bd07 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -158,6 +158,8 @@ struct addr_location {
- enum dso_binary_type {
- 	DSO_BINARY_TYPE__KALLSYMS = 0,
- 	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__VMLINUX,
-+	DSO_BINARY_TYPE__GUEST_VMLINUX,
- 	DSO_BINARY_TYPE__JAVA_JIT,
- 	DSO_BINARY_TYPE__DEBUGLINK,
- 	DSO_BINARY_TYPE__BUILD_ID_CACHE,
+ 	if (err > 0) {
 -- 
 1.7.11.3
 
