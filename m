@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759685Ab2HIVtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 17:49:11 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60844 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab2HIVtF (ORCPT
+	id S1757319Ab2HIVuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 17:50:21 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:65122 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab2HIVuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 17:49:05 -0400
-Date: Thu, 09 Aug 2012 14:49:04 -0700 (PDT)
-Message-Id: <20120809.144904.985433220461322851.davem@davemloft.net>
-To: alan@lxorguk.ukuu.org.uk
-Cc: makienko@ispras.ru, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH 03/13] ide: Potential null pointer dereference in
- ide_queue_pc_tail()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120809151342.2941f851@pyramind.ukuu.org.uk>
-References: <1344520529-19164-1-git-send-email-makienko@ispras.ru>
-	<20120809151342.2941f851@pyramind.ukuu.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 9 Aug 2012 17:50:18 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-209.messagelabs.com!1344549002!6957596!19
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] staging: comedi: update the adl_pci6208 driver
+Date: Thu, 9 Aug 2012 14:50:05 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208091450.05873.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Thu, 9 Aug 2012 15:13:42 +0100
+Update the comedi adl_pci6208 pci driver.
 
-> On Thu,  9 Aug 2012 17:55:20 +0400
-> Marina Makienko <makienko@ispras.ru> wrote:
-> 
->> The function blk_get_request() can return NULL in some cases. There are
->> checks on it if function is called with argumetns one of which is
->> GFP_ATOMIC/GFP_NOIO/etc. If system couldn't find request
->> blk_get_request() return NULL.
-> 
-> drivers/ide is obsolete and scheduled for removal. I'm not sure messing
-> with it is remotely useful at this point ?
+H Hartley Sweeten (4):
+  staging: comedi: adl_pci6208: use attach_pci callback
+  staging: comedi: adl_pci6208: add support for the PCI-6216 card
+  staging: comedi: adl_pci6208: split the digital i/o subdevice
+  staging: comedi: adl_pci6208: use the 'board_name' for the resource name
 
-Agreed, I'm not applying this stuff.
+ drivers/staging/comedi/drivers/adl_pci6208.c | 187 ++++++++++++++-------------
+ 1 file changed, 94 insertions(+), 93 deletions(-)
+
+-- 
+1.7.11
+
