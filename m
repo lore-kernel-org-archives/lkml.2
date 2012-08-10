@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab2HJCS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:18:28 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36213 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab2HJCS0 (ORCPT
+	id S1759435Ab2HJCV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 22:21:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34124 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759229Ab2HJCV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:18:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344564512.2996.12.camel@phoenix>
-References: <1344564512.2996.12.camel@phoenix>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 10 Aug 2012 10:18:04 +0800
-X-Google-Sender-Auth: qaXrE8lfZPRrYi4_0MdFE-yvlWM
-Message-ID: <CAK5ve-Lrkng-8jfZ5oggqKyu9Dd3GGJQWr3xQ28qm-A8kjjqBg@mail.gmail.com>
-Subject: Re: [PATCH] leds: wm8350: Convert to devm_regulator_get()
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Aug 2012 22:21:26 -0400
+Message-ID: <1344565271.13142.217.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 055/109] tg3: Fix Read DMA workaround for 5719 A0.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Michael Chan <mchan@broadcom.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Fri, 10 Aug 2012 03:21:11 +0100
+In-Reply-To: <20120807222047.913258424@linuxfoundation.org>
+References: <20120807222043.089735600@linuxfoundation.org>
+	 <20120807222047.913258424@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-a8OnLcnVvtDCyPWMZ8wF"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, it's a good change. I've applied it to my for-next branch.
 
--Bryan
+--=-a8OnLcnVvtDCyPWMZ8wF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 10, 2012 at 10:08 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/leds/leds-wm8350.c |   29 +++++++----------------------
->  1 file changed, 7 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/leds/leds-wm8350.c b/drivers/leds/leds-wm8350.c
-> index 918d4ba..f5d9ac3 100644
-> --- a/drivers/leds/leds-wm8350.c
-> +++ b/drivers/leds/leds-wm8350.c
-> @@ -201,7 +201,7 @@ static int wm8350_led_probe(struct platform_device *pdev)
->         struct regulator *isink, *dcdc;
->         struct wm8350_led *led;
->         struct wm8350_led_platform_data *pdata = pdev->dev.platform_data;
-> -       int ret, i;
-> +       int i;
->
->         if (pdata == NULL) {
->                 dev_err(&pdev->dev, "no platform data\n");
-> @@ -214,24 +214,21 @@ static int wm8350_led_probe(struct platform_device *pdev)
->                 return -EINVAL;
->         }
->
-> -       isink = regulator_get(&pdev->dev, "led_isink");
-> +       isink = devm_regulator_get(&pdev->dev, "led_isink");
->         if (IS_ERR(isink)) {
->                 printk(KERN_ERR "%s: can't get ISINK\n", __func__);
->                 return PTR_ERR(isink);
->         }
->
-> -       dcdc = regulator_get(&pdev->dev, "led_vcc");
-> +       dcdc = devm_regulator_get(&pdev->dev, "led_vcc");
->         if (IS_ERR(dcdc)) {
->                 printk(KERN_ERR "%s: can't get DCDC\n", __func__);
-> -               ret = PTR_ERR(dcdc);
-> -               goto err_isink;
-> +               return PTR_ERR(dcdc);
->         }
->
->         led = devm_kzalloc(&pdev->dev, sizeof(*led), GFP_KERNEL);
-> -       if (led == NULL) {
-> -               ret = -ENOMEM;
-> -               goto err_dcdc;
-> -       }
-> +       if (led == NULL)
-> +               return -ENOMEM;
->
->         led->cdev.brightness_set = wm8350_led_set;
->         led->cdev.default_trigger = pdata->default_trigger;
-> @@ -257,17 +254,7 @@ static int wm8350_led_probe(struct platform_device *pdev)
->         led->value = LED_OFF;
->         platform_set_drvdata(pdev, led);
->
-> -       ret = led_classdev_register(&pdev->dev, &led->cdev);
-> -       if (ret < 0)
-> -               goto err_dcdc;
-> -
-> -       return 0;
-> -
-> - err_dcdc:
-> -       regulator_put(dcdc);
-> - err_isink:
-> -       regulator_put(isink);
-> -       return ret;
-> +       return led_classdev_register(&pdev->dev, &led->cdev);
->  }
->
->  static int wm8350_led_remove(struct platform_device *pdev)
-> @@ -277,8 +264,6 @@ static int wm8350_led_remove(struct platform_device *pdev)
->         led_classdev_unregister(&led->cdev);
->         flush_work_sync(&led->work);
->         wm8350_led_disable(led);
-> -       regulator_put(led->dcdc);
-> -       regulator_put(led->isink);
->         return 0;
->  }
->
-> --
-> 1.7.9.5
->
->
->
+On Tue, 2012-08-07 at 15:35 -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+>=20
+> 3.4-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Michael Chan <mchan@broadcom.com>
+>=20
+> commit 10ce95d6ef36c65df7dcd3b8fcf86913f8b298bd upstream.
+>=20
+> The workaround was mis-applied to all 5719 and 5720 chips.
+[...]
 
+Isn't this needed for 3.0.y and 3.2.y as well?
 
+Ben.
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+--=20
+Ben Hutchings
+Unix is many things to many people,
+but it's never been everything to anybody.
+
+--=-a8OnLcnVvtDCyPWMZ8wF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUCRwF+e/yOyVhhEJAQr1yA//bnoCG6WsE8bvEB8mBMxhqbo5Vz+Sf74z
+m8W2nTDx8jwgiek8Ct50ihUPitEB8BHMJPCPxyHpsdr8QmSJLyo/X3KNIDetSxId
+mzWzYo1Wm44NzM4snH6Hb8beFocCvqNvmNSu9LNn2rIus+N/vk1NIuBA4vEzfzoZ
+6uzJa6lcTzv68QunXrlq6xBHL2s+lhBVkem0eYcWcSP7GnWKSjdjwCIVZnHOmxJt
+f73QGfRgcCmGuR5b9RapCsd+zLJlr48xR2p6+skqQ0Rri6AxvfaXmBobmHlJ1wsO
+5JVJ1nQo6WrcHJ2M+ed8e64EB7F9e1XhnERulcDlXj+dbHaPCXBM+vdB+sOcldQy
+Y2pQqFI5oOzOA40Xqi1cjXCYpf/fwtZmuFmLQLQA8LpNMe8fuTbGTskGmbZPYGW4
+0UN6a5Mom8uuEWhgwEapDrIVhpUy7KrLVVbRhNGJ+cwkdR99aCKgfV29gy7+fhpR
+Fb/wZwmhL7O3kVJcLfone2bm+11K18OwK1JfW2uhKRla1lnrzbgyeFvo3DTAm8Uv
+RSvTqmWgcrJyCayDIqgH8fhu+lIobuK8MCKXP5ZMeCpytXxNr3+lad6WIHTBmYvt
+/+OpQcsDcJiZEu82iMmF8iTY5aZfZ1fpNIoEg6pexKmzmmKt6WOzly3OYglGyC9N
+AL+l9XnfnAM=
+=8Qsh
+-----END PGP SIGNATURE-----
+
+--=-a8OnLcnVvtDCyPWMZ8wF--
