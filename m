@@ -1,147 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2HJQJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 12:09:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53391 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2HJQJU (ORCPT
+	id S1756072Ab2HJQKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 12:10:53 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:48924 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab2HJQKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 12:09:20 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] overlayfs: copy up i_uid/i_gid from the underlying inode
-References: <1344527241-2480-1-git-send-email-apw@canonical.com>
-Date: Fri, 10 Aug 2012 18:09:10 +0200
-In-Reply-To: <1344527241-2480-1-git-send-email-apw@canonical.com> (Andy
-	Whitcroft's message of "Thu, 9 Aug 2012 16:47:21 +0100")
-Message-ID: <87y5lmwwyh.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 10 Aug 2012 12:10:50 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 10 Aug 2012 12:10:42 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>, Ingo Molnar <mingo@elte.hu>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] mutex: place lock in contended state after fastpath_lock
+ failure
+In-reply-to: <1344608529-2377-1-git-send-email-will.deacon@arm.com>
+Message-id: <alpine.LFD.2.02.1208101208270.5231@xanadu.home>
+References: <1344608529-2377-1-git-send-email-will.deacon@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Whitcroft <apw@canonical.com> writes:
-> 	After a long hiatus I have had time to look into the issues
-> 	highlighted by the i_uid/i_gid requirements from the VFS.
-> 	I have identified a number of places which definatly did need
-> 	the ids copying up and those are reflected in the patch below.
-> 	I am not 100% convinced I have hit all of the places this might
-> 	be needed but it cirtainly helps with the issues I was seeing
-> 	with link and YAMA (which given YAMA is now gaining the link
-> 	constraints in mainline in v3.6 we will see more issues here).
-> 	were seeing and identify the places where
->
-> 	Please consider for overlayfs.
+On Fri, 10 Aug 2012, Will Deacon wrote:
 
-ovl_setattr() also needs this, I think.
+> ARM recently moved to asm-generic/mutex-xchg.h for its mutex
+> implementation after the previous implementation was found to be missing
+> some crucial memory barriers. However, this has revealed some problems
+> running hackbench on SMP platforms due to the way in which the
+> MUTEX_SPIN_ON_OWNER code operates.
+> 
+> The symptoms are that a bunch of hackbench tasks are left waiting on an
+> unlocked mutex and therefore never get woken up to claim it. This boils
+> down to the following sequence of events:
+> 
+>         Task A        Task B        Task C        Lock value
+> 0                                                     1
+> 1       lock()                                        0
+> 2                     lock()                          0
+> 3                     spin(A)                         0
+> 4       unlock()                                      1
+> 5                                   lock()            0
+> 6                     cmpxchg(1,0)                    0
+> 7                     contended()                    -1
+> 8       lock()                                        0
+> 9       spin(C)                                       0
+> 10                                  unlock()          1
+> 11      cmpxchg(1,0)                                  0
+> 12      unlock()                                      1
+> 
+> At this point, the lock is unlocked, but Task B is in an uninterruptible
+> sleep with nobody to wake it up.
+> 
+> This patch fixes the problem by ensuring we put the lock into the
+> contended state if we fail to acquire it on the fastpath, ensuring that
+> any blocked waiters are woken up when the mutex is released.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Chris Mason <chris.mason@fusionio.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Updated patch below.  Also pushed overlayfs.v14 with this patch to:
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v14
+> ---
+> 
+> Nico: Can I add your S-o-B to this please? Also, preliminary benchmarks
+>       are now showing a slight performance improvement on A15 if I use
+>       the -dec variant rather than -xchg. I'll follow up with a patch
+>       once I've got more numbers.
+
+Good.
 
 
-Thanks,
-Miklos
-----
-
-
->From 1182ebc7718994c66f3a966a90ed861aea2a5d01 Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Thu, 9 Aug 2012 16:47:21 +0100
-Subject: [PATCH] overlayfs: copy up i_uid/i_gid from the underlying inode
-
-YAMA et al rely on on i_uid/i_gid to be populated in order to perform
-their checks.  While these really cannot be guarenteed as the underlying
-filesystem may not even have the concept, they are expected to be filled
-when possible.  To quote Al Viro:
-
-    "Ideally, yes, we'd want to have ->i_uid used only by fs-specific
-     code and helpers used by that fs (including those that are
-     implicit defaults). [...]   In practice we have enough places
-     where uid/gid is used directly to make setting them practically
-     a requirement - places like /proc/<pid>/ can get away with
-     not doing that, but only because shitloads of syscalls are
-     not allowed on those anyway, permissions or no permissions.
-     In anything general-purpose you really need to set it."
-
-Copy up the underlying filesystem information into the overlayfs inode
-when we create it.
-
-BugLink: http://bugs.launchpad.net/bugs/944386
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/overlayfs/dir.c       |    2 ++
- fs/overlayfs/inode.c     |    2 ++
- fs/overlayfs/overlayfs.h |    6 ++++++
- fs/overlayfs/super.c     |    1 +
- 4 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
-index 40650c4..c4446c4 100644
---- a/fs/overlayfs/dir.c
-+++ b/fs/overlayfs/dir.c
-@@ -304,6 +304,7 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
- 		}
- 	}
- 	ovl_dentry_update(dentry, newdentry);
-+	ovl_copyattr(newdentry->d_inode, inode);
- 	d_instantiate(dentry, inode);
- 	inode = NULL;
- 	newdentry = NULL;
-@@ -446,6 +447,7 @@ static int ovl_link(struct dentry *old, struct inode *newdir,
- 				new->d_fsdata);
- 		if (!newinode)
- 			goto link_fail;
-+		ovl_copyattr(upperdir->d_inode, newinode);
- 
- 		ovl_dentry_version_inc(new->d_parent);
- 		ovl_dentry_update(new, newdentry);
-diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-index f3a534f..e7ab09b 100644
---- a/fs/overlayfs/inode.c
-+++ b/fs/overlayfs/inode.c
-@@ -31,6 +31,8 @@ int ovl_setattr(struct dentry *dentry, struct iattr *attr)
- 
- 	mutex_lock(&upperdentry->d_inode->i_mutex);
- 	err = notify_change(upperdentry, attr);
-+	if (!err)
-+		ovl_copyattr(upperdentry->d_inode, dentry->d_inode);
- 	mutex_unlock(&upperdentry->d_inode->i_mutex);
- 
- 	return err;
-diff --git a/fs/overlayfs/overlayfs.h b/fs/overlayfs/overlayfs.h
-index fe1241d..1cba38f 100644
---- a/fs/overlayfs/overlayfs.h
-+++ b/fs/overlayfs/overlayfs.h
-@@ -56,6 +56,12 @@ int ovl_removexattr(struct dentry *dentry, const char *name);
- 
- struct inode *ovl_new_inode(struct super_block *sb, umode_t mode,
- 			    struct ovl_entry *oe);
-+static inline void ovl_copyattr(struct inode *from, struct inode *to)
-+{
-+	to->i_uid = from->i_uid;
-+	to->i_gid = from->i_gid;
-+}
-+
- /* dir.c */
- extern const struct inode_operations ovl_dir_inode_operations;
- 
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 64d2695..9808408 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -343,6 +343,7 @@ static int ovl_do_lookup(struct dentry *dentry)
- 				      oe);
- 		if (!inode)
- 			goto out_dput;
-+		ovl_copyattr(realdentry->d_inode, inode);
- 	}
- 
- 	if (upperdentry)
--- 
-1.7.7
-
+> 
+>  include/asm-generic/mutex-xchg.h |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
+> index 580a6d3..c04e0db 100644
+> --- a/include/asm-generic/mutex-xchg.h
+> +++ b/include/asm-generic/mutex-xchg.h
+> @@ -26,7 +26,13 @@ static inline void
+>  __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+>  {
+>  	if (unlikely(atomic_xchg(count, 0) != 1))
+> -		fail_fn(count);
+> +		/*
+> +		 * We failed to acquire the lock, so mark it contended
+> +		 * to ensure that any waiting tasks are woken up by the
+> +		 * unlock slow path.
+> +		 */
+> +		if (likely(atomic_xchg(count, -1) != 1))
+> +			fail_fn(count);
+>  }
+>  
+>  /**
+> @@ -43,7 +49,8 @@ static inline int
+>  __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+>  {
+>  	if (unlikely(atomic_xchg(count, 0) != 1))
+> -		return fail_fn(count);
+> +		if (likely(atomic_xchg(count, -1) != 1))
+> +			return fail_fn(count);
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.4.1
+> 
