@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759020Ab2HJDgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:36:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45777 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752120Ab2HJDf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:35:59 -0400
-Message-ID: <50248195.9080401@zytor.com>
-Date: Thu, 09 Aug 2012 20:35:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: yanmin_zhang@linux.intel.com
-CC: mingo@redhat.com, tglx@linutronix.de, linx.z.chen@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Fwd: [PATCH] x86/smp: Fix cpuN startup panic]
-References: <1344558907.19233.3.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1344558907.19233.3.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760163Ab2HJDrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:47:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14202 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2HJDrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 23:47:09 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=KowBXteM5tIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=IKcmcdY0M_uWaMAZ-3AA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120810034302.758092203@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 09 Aug 2012 23:43:02 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [RFC][PATCH 0/4] tracing/perf: Use helper functions to help shrink kernel size
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 05:35 PM, Yanmin Zhang wrote:
-> Peter,
->
-> What's your opinion about the patch? We hit it when enabling Medfield Android mobile.
-> This patch would put AP to a loop.
->
-> Another method to fix it is just to enlarge the wait time, for example, from 2HZ to 10HZ.
->
+This patch set is another effort to bring down the size of trace events.
 
-Hmm... and I presume running with preemption disabled doesn't work for 
-hotplug (not that this is a hotplug situation)...
-
-2 seconds is a *long* time, but I guess there isn't really nay harm in 
-making it 10 seconds in the sense that the system is basically dead at 
-that point...
-
-tglx - you have been looking at the CPU startup lately, any opinions?
-
-	-hpa
+Helper functions are used to remove duplicate code that is created
+for each event by the TRACE_EVENT() macros. With a config that enables
+707 events in the core kernel, the size is brought down 91,774 bytes!
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Steven Rostedt (4):
+      tracing: Move print code from macro to standalone function
+      tracing: Move event storage for array from macro to standalone function
+      tracing: Use helper functions in event assignment to shrink macro size
+      perf/events: Use helper functions in event assignment to shrink macro size
 
+----
+ include/linux/ftrace_event.h    |   40 +++++++++++++++--
+ include/trace/ftrace.h          |   85 +++++++++---------------------------
+ kernel/trace/trace_event_perf.c |   26 +++++++++++
+ kernel/trace/trace_events.c     |    6 ---
+ kernel/trace/trace_export.c     |   12 ++----
+ kernel/trace/trace_output.c     |   90 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 176 insertions(+), 83 deletions(-)
