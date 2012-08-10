@@ -1,53 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760049Ab2HJC5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:57:37 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60054 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2HJC5f (ORCPT
+	id S1760117Ab2HJC6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 22:58:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49761 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760109Ab2HJC6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:57:35 -0400
-From: Ying Xue <ying.xue@windriver.com>
-To: <teigland@redhat.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] dlm: remove redundant variable assignments
-Date: Fri, 10 Aug 2012 10:58:37 +0800
-Message-ID: <1344567517-19279-1-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 9 Aug 2012 22:58:37 -0400
+Content-Type: text/plain; charset=gbk; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org
+Date: Fri, 10 Aug 2012 10:57:08 +0800
+Subject: compile a kernel for kgdb with less "optimized out"
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+From: gaoqiang <gaoqiangscut@gmail.com>
+Organization: qihoo
+Message-ID: <op.wisztfmkn27o5l@gaoqiang-d1.corp.qihoo.net>
+User-Agent: Opera Mail/12.01 (Win32)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xue Ying <ying.xue@windriver.com>
+I think those who use kgdb must hate this sentence  "optimized out". I  
+have tried many times to build a kernel with less optimization but failed.  
+today,I found a trick method ,just get rid of the -O2 and -Os on the top  
+level of the kernel source and add -O2  for the  arch/x86 directory,it  
+works !.I saw much "optimized out" now.
 
-Once the tcp_create_listen_sock() is returned successfully, we
-will invoke add_sock() immediately. In add_sock(), the 'con'
-variable is assigned to 'sk_user_data', meanwhile, the 'sock' is
-also set to 'con->sock'. So it's unnecessary to do the same thing
-in tcp_create_listen_sock().
-
-Signed-off-by: Xue Ying <ying.xue@windriver.com>
----
- fs/dlm/lowcomms.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 5c1b0e3..e7b0ac0 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -1044,10 +1044,8 @@ static struct socket *tcp_create_listen_sock(struct connection *con,
- 	if (result < 0) {
- 		log_print("Failed to set SO_REUSEADDR on socket: %d", result);
- 	}
--	sock->sk->sk_user_data = con;
- 	con->rx_action = tcp_accept_from_sock;
- 	con->connect_action = tcp_connect_to_sock;
--	con->sock = sock;
- 
- 	/* Bind to our port */
- 	make_sockaddr(saddr, dlm_config.ci_tcp_port, &addr_len);
--- 
-1.7.11
-
+I build the kernel of centos6, with kernel 2.6.32. I don't know whether it  
+works with kernel of other versions ,but it worth a try.
