@@ -1,59 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab2HJHfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 03:35:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65361 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756991Ab2HJHfG (ORCPT
+	id S1756317Ab2HJHqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 03:46:07 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35548 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab2HJHqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 03:35:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 10/11] spi/s3c64xx: improve error handling
-Date: Fri, 10 Aug 2012 07:34:46 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Jaswinder Singh'" <jaswinder.singh@linaro.org>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>
-References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-11-git-send-email-arnd@arndb.de> <0de501cd76c2$ea07dfd0$be179f70$%kim@samsung.com>
-In-Reply-To: <0de501cd76c2$ea07dfd0$be179f70$%kim@samsung.com>
+	Fri, 10 Aug 2012 03:46:01 -0400
+X-AuditID: b753bd60-914c2ba0000047ca-50-5024bc358f22
+X-AuditID: b753bd60-914c2ba0000047ca-50-5024bc358f22
+Message-ID: <5024BC35.1040202@hitachi.com>
+Date: Fri, 10 Aug 2012 16:45:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [RFC PATCH 4/4] ftrace/x86: Add support for -mfentry to
+ x86_64
+References: <20120807193845.146666357@goodmis.org>  <20120807194100.130477900@goodmis.org> <1344519970.6935.34.camel@gandalf.stny.rr.com>
+In-Reply-To: <1344519970.6935.34.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208100734.47339.arnd@arndb.de>
-X-Provags-ID: V02:K0:axpDMkdr5JhOSwYocHKbt18DX+nK383FyivP5DC4kHI
- 94l2nglgkdFlSW2I5j+fcr7zJOvXC7s03J8Vk8fUBWJbrdwJqK
- 3O25nN0TNSmBXVLhKKj9ouBe8VuGn6Eqazod6UW/5sr8F+snd1
- T8+qQhxP9vJQ5t4sGSnm6mEMfpNEU+J00nTxUqh4c/S6Zif3q0
- 0iLk9waMAQ3RsobYz/jop5Bb3efI6ymHJ5fDAC6LZk0gu0TLLB
- YLKfx+84IhEpy6zlfZLJuEwJPN5/sssWfAaksTFg0r5fqzd+dg
- 25A/N9t7pV6G3lsw+ANzaTlh3jWTXL/aLIGcnbQh7foumlHUW4
- wB+jyS0P7I1cdJZMs9IE=
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 August 2012, Kukjin Kim wrote:
-
-> BTW for same reason, probably, we need following fix?
+(2012/08/09 22:46), Steven Rostedt wrote:
+> Peter and Masami
 > 
->  arch/arm/mach-tegra/tegra2_emc.c             |    4 ++--
->  arch/c6x/kernel/setup.c                      |    2 +-
->  arch/powerpc/kernel/ibmebus.c                |    2 +-
->  arch/powerpc/kernel/pci_of_scan.c            |    2 +-
->  arch/powerpc/kernel/prom.c                   |    2 +-
->  arch/powerpc/kernel/rtas_pci.c               |    2 +-
->  arch/powerpc/kernel/vio.c                    |    2 +-
->  arch/powerpc/platforms/44x/warp.c            |    2 +-
-> ...
+> During my final tests, I found that this change breaks the
+> !DYNAMIC_FTRACE config. That is, when we don't do the run-time updates
+> of mcount calls to nops, the compiler will use fentry but the code still
+> uses mcount.
 
-Actually not. The difference is that only s3c64xx_get_slave_ctrldata
-accesses the node pointer outside of the look (after break).
-This fails when there are no child nodes at all. In the other
-cases, the only use of the node pointer is inside the loop,
-where it is guaranteed to be valid.
+Ah, right. we have to take care about it.
 
-	Arnd
+> 
+> I fixed this in the patch below. But as you two have acked and reviewed
+> it, I can't add your tags if I have changed the code. Can you ack/review
+> it again.
+
+This looks good for me.
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> 
+> Thanks!
+> 
+> -- Steve
+> 
+> 
+> On Tue, 2012-08-07 at 15:38 -0400, Steven Rostedt wrote:
+>> From: Steven Rostedt <srostedt@redhat.com>
+>>
+>> If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
+>> then use that instead of mcount.
+>>
+>> With mcount, frame pointers are forced with the -pg option and we
+>> get something like:
+>>
+>> <can_vma_merge_before>:
+>>        55                      push   %rbp
+>>        48 89 e5                mov    %rsp,%rbp
+>>        53                      push   %rbx
+>>        41 51                   push   %r9
+>>        e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
+>>        31 c0                   xor    %eax,%eax
+>>        48 89 fb                mov    %rdi,%rbx
+>>        48 89 d7                mov    %rdx,%rdi
+>>        48 33 73 30             xor    0x30(%rbx),%rsi
+>>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+>>
+>> With -mfentry, frame pointers are no longer forced and the call looks
+>> like this:
+>>
+>> <can_vma_merge_before>:
+>>        e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
+>>        53                      push   %rbx
+>>        48 89 fb                mov    %rdi,%rbx
+>>        31 c0                   xor    %eax,%eax
+>>        48 89 d7                mov    %rdx,%rdi
+>>        41 51                   push   %r9
+>>        48 33 73 30             xor    0x30(%rbx),%rsi
+>>        48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+>>
+>> This adds the ftrace hook at the beginning of the function before a
+>> frame is set up, and allows the function callbacks to be able to access
+>> parameters. As kprobes now can use function tracing (at least on x86)
+>> this speeds up the kprobe hooks that are at the beginning of the
+>> function.
+>>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Andi Kleen <andi@firstfloor.org>
+>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> (change log kept the same)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index c70684f..bbbf5d8 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -36,6 +36,7 @@ config X86
+>  	select HAVE_KRETPROBES
+>  	select HAVE_OPTPROBES
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+> +	select HAVE_FENTRY if X86_64
+>  	select HAVE_C_RECORDMCOUNT
+>  	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_FUNCTION_TRACER
+> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+> index a6cae0c..9a25b52 100644
+> --- a/arch/x86/include/asm/ftrace.h
+> +++ b/arch/x86/include/asm/ftrace.h
+> @@ -35,7 +35,11 @@
+>  #endif
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+> -#define MCOUNT_ADDR		((long)(mcount))
+> +#ifdef CC_USING_FENTRY
+> +# define MCOUNT_ADDR		((long)(__fentry__))
+> +#else
+> +# define MCOUNT_ADDR		((long)(mcount))
+> +#endif
+>  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+>  
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+> @@ -46,6 +50,7 @@
+>  #ifndef __ASSEMBLY__
+>  extern void mcount(void);
+>  extern atomic_t modifying_ftrace_code;
+> +extern void __fentry__(void);
+>  
+>  static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>  {
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 38308fa..a698521 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -68,10 +68,18 @@
+>  	.section .entry.text, "ax"
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+> +
+> +#ifdef CC_USING_FENTRY
+> +# define function_hook	__fentry__
+> +#else
+> +# define function_hook	mcount
+> +#endif
+> +
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+> -ENTRY(mcount)
+> +
+> +ENTRY(function_hook)
+>  	retq
+> -END(mcount)
+> +END(function_hook)
+>  
+>  /* skip is set if stack has been adjusted */
+>  .macro ftrace_caller_setup skip=0
+> @@ -84,7 +92,11 @@ END(mcount)
+>  	movq RIP(%rsp), %rdi
+>  	subq $MCOUNT_INSN_SIZE, %rdi
+>  	/* Load the parent_ip into the second parameter */
+> +#ifdef CC_USING_FENTRY
+> +	movq SS+16(%rsp), %rsi
+> +#else
+>  	movq 8(%rbp), %rsi
+> +#endif
+>  .endm
+>  
+>  ENTRY(ftrace_caller)
+> @@ -177,7 +189,8 @@ END(ftrace_regs_caller)
+>  
+>  
+>  #else /* ! CONFIG_DYNAMIC_FTRACE */
+> -ENTRY(mcount)
+> +
+> +ENTRY(function_hook)
+>  	cmpl $0, function_trace_stop
+>  	jne  ftrace_stub
+>  
+> @@ -199,7 +212,11 @@ trace:
+>  	MCOUNT_SAVE_FRAME
+>  
+>  	movq RIP(%rsp), %rdi
+> +#ifdef CC_USING_FENTRY
+> +	movq SS+16(%rsp), %rsi
+> +#else
+>  	movq 8(%rbp), %rsi
+> +#endif
+>  	subq $MCOUNT_INSN_SIZE, %rdi
+>  
+>  	call   *ftrace_trace_function
+> @@ -207,7 +224,7 @@ trace:
+>  	MCOUNT_RESTORE_FRAME
+>  
+>  	jmp ftrace_stub
+> -END(mcount)
+> +END(function_hook)
+>  #endif /* CONFIG_DYNAMIC_FTRACE */
+>  #endif /* CONFIG_FUNCTION_TRACER */
+>  
+> @@ -215,9 +232,14 @@ END(mcount)
+>  ENTRY(ftrace_graph_caller)
+>  	MCOUNT_SAVE_FRAME
+>  
+> +#ifdef CC_USING_FENTRY
+> +	leaq SS+16(%rsp), %rdi
+> +	movq $0, %rdx	/* No framepointers needed */
+> +#else
+>  	leaq 8(%rbp), %rdi
+> -	movq RIP(%rsp), %rsi
+>  	movq (%rbp), %rdx
+> +#endif
+> +	movq RIP(%rsp), %rsi
+>  	subq $MCOUNT_INSN_SIZE, %rsi
+>  
+>  	call	prepare_ftrace_return
+> diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+> index 9796c2f..643b236 100644
+> --- a/arch/x86/kernel/x8664_ksyms_64.c
+> +++ b/arch/x86/kernel/x8664_ksyms_64.c
+> @@ -13,9 +13,13 @@
+>  #include <asm/ftrace.h>
+>  
+>  #ifdef CONFIG_FUNCTION_TRACER
+> -/* mcount is defined in assembly */
+> +/* mcount and __fentry__ are defined in assembly */
+> +#ifdef CC_USING_FENTRY
+> +EXPORT_SYMBOL(__fentry__);
+> +#else
+>  EXPORT_SYMBOL(mcount);
+>  #endif
+> +#endif
+>  
+>  EXPORT_SYMBOL(__get_user_1);
+>  EXPORT_SYMBOL(__get_user_2);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
