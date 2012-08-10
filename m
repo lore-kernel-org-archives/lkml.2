@@ -1,76 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab2HJCdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:33:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:40526 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab2HJCds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:33:48 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-99-5024730a67bb
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, cw00.choi@samsung.com,
-        kyungmin.park@samsung.com, lars@metafoo.de,
-        anish kumar <anish198519851985@gmail.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: [PATCH resend] Extcon: renamed files to comply with the standard
- naming.
-Date: Fri, 10 Aug 2012 11:33:46 +0900
-Message-id: <1344566026-20813-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1344564495-20346-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1344564495-20346-1-git-send-email-myungjoo.ham@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t9jAV2uYpUAg8trzS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGvwUzWQoec1d8e1jVwNjA1cXIySEhYCLx5eYjJghbTOLCvfVs
-	XYxcHEICixgl1j7oZodwljJJvF84mxmkik1AV2LrhrssILaIgILE5t5nrCBFzAJbGCWmbTvP
-	CpIQFgiW+L9jBlA3BweLgKrE9OWZICavgIfEjHlKEMsUJBbce8sGYnMKeEoc7ZsFdoQQUMnj
-	Bf1MExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQI9vczqR2MKxssDjEKcDAq8fAm
-	8qoECLEmlhVX5h5ilOBgVhLhTXmhHCDEm5JYWZValB9fVJqTWnyIUZqDRUmc19j7q7+QQHpi
-	SWp2ampBahFMlomDU6qB0fDVhsId0uYlS1TOHWR6JlN1Z0+w1fPJxT5cql37Nro5vT8zddkH
-	zsoLax7Z3OKfmLK2b0KNxrl4WRurROZAQce/rcHX/1fl3sl4fvCGxJmr6+f+3XPQetP06R4M
-	n1mzTob/yTkj/eC68LawH1fyRc+aVv49rjGB4Zn7ytpb3xun/vUKYT58YZISS3FGoqEWc1Fx
-	IgB2Ggru8wEAAA==
-X-TM-AS-MML: No
+	id S1754215Ab2HJCgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 22:36:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12650 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab2HJCgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 22:36:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,743,1336374000"; 
+   d="scan'208";a="195956070"
+Message-ID: <1344566197.19962.95.camel@yhuang-dev>
+Subject: Re: [BUGFIX -v3 3/4] PCI/PM: Fix config reg access for D3cold and
+ bridge suspending
+From: Huang Ying <ying.huang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 10 Aug 2012 10:36:37 +0800
+In-Reply-To: <1344388061-18981-4-git-send-email-ying.huang@intel.com>
+References: <1344388061-18981-1-git-send-email-ying.huang@intel.com>
+	 <1344388061-18981-4-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced '_' with '-' in the extcon file names, which has been bogging
-since new drivers have been using the standard naming.
+On Wed, 2012-08-08 at 09:07 +0800, Huang Ying wrote:
+> This patch fixes the following bug:
+> 
+> http://marc.info/?l=linux-pci&m=134338059022620&w=2
+> 
+> Where lspci does not work properly if a device and the corresponding
+> parent bridge (such as PCIe port) is suspended.  This is because the
+> device configuration space registers will be not accessible if the
+> corresponding parent bridge is suspended or the device is put into
+> D3cold state.
+> 
+> To solve the issue, the bridge/PCIe port connected to the device is
+> put into active state before read/write configuration space registers.
+> If the device is in D3cold state, it will be put into active state
+> too.
+> 
+> To avoid resume/suspend PCIe port for each configuration register
+> read/write, a small delay is added before the PCIe port to go
+> suspended.
+> 
+> Reported-by: Bjorn Mork <bjorn@mork.no>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/pci/pci-sysfs.c        |   43 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
+>  2 files changed, 52 insertions(+)
+> 
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -458,6 +458,41 @@ boot_vga_show(struct device *dev, struct
+>  }
+>  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+>  
+> +static void
+> +pci_config_pm_runtime_get(struct pci_dev *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device *parent = dev->parent;
+> +
+> +	if (parent)
+> +		pm_runtime_get_sync(parent);
+> +	pm_runtime_get_noresume(dev);
+> +	/*
+> +	 * pdev->current_state is set to PCI_D3cold during suspending,
+> +	 * so wait until suspending completes
+> +	 */
+> +	pm_runtime_barrier(dev);
+> +	if (pdev->current_state == PCI_D3cold) {
+> +		/*
+> +		 * Already called pm_runtime_get_noresume above, so
+> +		 * just calling pm_runtime_resume is sufficient, need
+> +		 * not to call pm_runtime_get_sync.
+> +		 */
+> +		pm_runtime_resume(dev);
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- drivers/extcon/Makefile                           |    4 ++--
- drivers/extcon/{extcon_class.c => extcon-class.c} |    0
- drivers/extcon/{extcon_gpio.c => extcon-gpio.c}   |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename drivers/extcon/{extcon_class.c => extcon-class.c} (100%)
- rename drivers/extcon/{extcon_gpio.c => extcon-gpio.c} (100%)
+Hi, Rafael,
 
-diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-index bc7111e..68d6944 100644
---- a/drivers/extcon/Makefile
-+++ b/drivers/extcon/Makefile
-@@ -2,8 +2,8 @@
- # Makefile for external connector class (extcon) devices
- #
- 
--obj-$(CONFIG_EXTCON)		+= extcon_class.o
--obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
-+obj-$(CONFIG_EXTCON)		+= extcon-class.o
-+obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
- obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
- obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
- obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon-class.c
-similarity index 100%
-rename from drivers/extcon/extcon_class.c
-rename to drivers/extcon/extcon-class.c
-diff --git a/drivers/extcon/extcon_gpio.c b/drivers/extcon/extcon-gpio.c
-similarity index 100%
-rename from drivers/extcon/extcon_gpio.c
-rename to drivers/extcon/extcon-gpio.c
--- 
-1.7.4.1
+Do you OK with this new version and the comments added above?
+
+Best Regards,
+Huang Ying
+
+> +	}
+> +}
+> +
+> +static void
+> +pci_config_pm_runtime_put(struct pci_dev *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device *parent = dev->parent;
+> +
+> +	pm_runtime_put(dev);
+> +	if (parent)
+> +		pm_runtime_put_sync(parent);
+> +}
+> +
+>  static ssize_t
+>  pci_read_config(struct file *filp, struct kobject *kobj,
+>  		struct bin_attribute *bin_attr,
+> @@ -484,6 +519,8 @@ pci_read_config(struct file *filp, struc
+>  		size = count;
+>  	}
+>  
+> +	pci_config_pm_runtime_get(dev);
+> +
+>  	if ((off & 1) && size) {
+>  		u8 val;
+>  		pci_user_read_config_byte(dev, off, &val);
+> @@ -529,6 +566,8 @@ pci_read_config(struct file *filp, struc
+>  		--size;
+>  	}
+>  
+> +	pci_config_pm_runtime_put(dev);
+> +
+>  	return count;
+>  }
+>  
+> @@ -549,6 +588,8 @@ pci_write_config(struct file* filp, stru
+>  		count = size;
+>  	}
+>  	
+> +	pci_config_pm_runtime_get(dev);
+> +
+>  	if ((off & 1) && size) {
+>  		pci_user_write_config_byte(dev, off, data[off - init_off]);
+>  		off++;
+> @@ -587,6 +628,8 @@ pci_write_config(struct file* filp, stru
+>  		--size;
+>  	}
+>  
+> +	pci_config_pm_runtime_put(dev);
+> +
+>  	return count;
+>  }
+>  
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
+>  {
+>  	return 0;
+>  }
+> +
+> +static int pcie_port_runtime_idle(struct device *dev)
+> +{
+> +	/* Delay for a short while to prevent too frequent suspend/resume */
+> +	pm_schedule_suspend(dev, 10);
+> +	return -EBUSY;
+> +}
+>  #else
+>  #define pcie_port_runtime_suspend	NULL
+>  #define pcie_port_runtime_resume	NULL
+> +#define pcie_port_runtime_idle		NULL
+>  #endif
+>  
+>  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+> @@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
+>  	.resume_noirq	= pcie_port_resume_noirq,
+>  	.runtime_suspend = pcie_port_runtime_suspend,
+>  	.runtime_resume = pcie_port_runtime_resume,
+> +	.runtime_idle	= pcie_port_runtime_idle,
+>  };
+>  
+>  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
+
 
