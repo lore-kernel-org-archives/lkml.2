@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759978Ab2HJShM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:37:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40979 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab2HJShH (ORCPT
+	id S1759990Ab2HJSn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:43:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52136 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758710Ab2HJSnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:37:07 -0400
-Date: Fri, 10 Aug 2012 19:40:28 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond.Myklebust@netapp.com, davem@davemloft.net,
-        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        tim.c.chen@linux.intel.com, devel@openvz.org
-Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified
- root
-Message-ID: <20120810194028.792f29f1@pyramind.ukuu.org.uk>
-In-Reply-To: <5025537D.9060300@zytor.com>
-References: <20120810125701.7115.71612.stgit@localhost.localdomain>
-	<50254FA6.3060806@zytor.com>
-	<20120810192628.79a34d28@pyramind.ukuu.org.uk>
-	<5025537D.9060300@zytor.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Aug 2012 14:43:25 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 10 Aug 2012 11:43:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Bitan Biswas <bbiswas@nvidia.com>
+Cc: khali@linux-fr.org, guenter.roeck@ericsson.com,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [lm-sensors] hwmon : raw reading -> temperature conversion
+Message-ID: <20120810184326.GA4625@roeck-us.net>
+References: <50251826.9020303@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50251826.9020303@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > AF_UNIX between roots raises some interesting semantic questions when
-> > you begin passing file descriptors down them as well.
+On Fri, Aug 10, 2012 at 07:48:14PM +0530, Bitan Biswas wrote:
+> Hi,
 > 
-> Why is that?  A file descriptor carries all that information with it...
+> I have a question related to hwmon driver and need suggestions.
+> 
+> I am working on a temperature sensor driver that is hwmon driver.
+> - The temperature is calculated from raw sensor reading and
+> certain initialization parameters.
+> - Raw reading obtained from 2 different sensor instances under
+> same conditions can differ. Further, initialization parameters
+> are specific to each hardware instance.
+> - Expressions with floating point operands are used to compute
+> the temperature value.
+> 
+> In our platform there are multiple kernel level clients to the
+> temperature sensor driver.
+> Hence I am planning to present temperature to these clients
+> from kernel driver itself.
+> 
+> But looking at the hwmon linux documentation, seems the sensor
+> kernel drivers should report only raw readings.
+> The raw readings can be converted into required output,
+> e.g. temperature in this case, by respective user space implementation.
+> 
+"raw" means the value as reported to the sensor. For example, for an ADC, the
+raw value means the voltage in mV as seen on the sensor's input pins. This
+voltage is the voltage to be reported. Converting it to a "real" voltage as,
+typically, determined by a set of voltage divider resistors should be done in
+user space.
 
-Things like fchdir(). It's not a machine breaking problem but for
-containers as opposed to chroot we need to be clear what the expected
-isolation sematics are.
+For temperature sensors this is a bit more tricky. Presumably you get readings
+from a thermistor or similar. The hwmon subsystem includes a driver for NTC
+thermistors; maybe you can get some ideas from it. Maybe you can even use
+it and/or extend it to support your hardware.
 
-Agreed on open() for sockets.. the lack of open is a Berklix derived
-pecularity of the interface. It would equally be useful to be able to
-open "/dev/socket/ipv4/1.2.3.4/1135" and the like for scripts and stuff
+> However because of my driver clients being in kernel space, I am
+> thinking of doing fixed point calculations in the sensor driver
+> and get the temperature corresponding to raw sensor readings.
+> 
+> Please let me know if this a correct approach?
+> 
+Question is really what chip you are using, and how exactly your hardware looks
+like. Do you use a generic ADC ? If so, is it already supported in the kernel ?
+How are the thermistor readings converted and reported to SW ?
 
-That needs VFS changes however so you can pass the remainder of a path to
-a device node. It also lets you do a lot of other sane stuff like
-
-	open /dev/ttyS0/9600/8n1
-
-
+Thanks,
+Guenter
