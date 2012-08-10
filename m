@@ -1,120 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab2HJSgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759750Ab2HJSgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:36:08 -0400
-Date: Fri, 10 Aug 2012 15:03:48 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 11/12] KVM: x86: introduce set_mmio_exit_info
-Message-ID: <20120810180348.GB12477@amt.cnet>
-References: <5020E423.9080004@linux.vnet.ibm.com>
- <5020E5E2.4080603@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5020E5E2.4080603@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759978Ab2HJShM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:37:12 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40979 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786Ab2HJShH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:37:07 -0400
+Date: Fri, 10 Aug 2012 19:40:28 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond.Myklebust@netapp.com, davem@davemloft.net,
+        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified
+ root
+Message-ID: <20120810194028.792f29f1@pyramind.ukuu.org.uk>
+In-Reply-To: <5025537D.9060300@zytor.com>
+References: <20120810125701.7115.71612.stgit@localhost.localdomain>
+	<50254FA6.3060806@zytor.com>
+	<20120810192628.79a34d28@pyramind.ukuu.org.uk>
+	<5025537D.9060300@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:54:42PM +0800, Xiao Guangrong wrote:
-> Introduce set_mmio_exit_info to cleanup the common code
+> > AF_UNIX between roots raises some interesting semantic questions when
+> > you begin passing file descriptors down them as well.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/x86.c |   33 +++++++++++++++++----------------
->  1 files changed, 17 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4c86239..8cde327 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3761,9 +3761,6 @@ static int read_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
->  static int write_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
->  			   void *val, int bytes)
->  {
-> -	struct kvm_mmio_fragment *frag = &vcpu->mmio_fragments[0];
-> -
-> -	memcpy(vcpu->run->mmio.data, frag->data, frag->len);
->  	return X86EMUL_CONTINUE;
->  }
-> 
-> @@ -3831,6 +3828,20 @@ mmio:
->  	return X86EMUL_CONTINUE;
->  }
-> 
-> +static void set_mmio_exit_info(struct kvm_vcpu *vcpu,
-> +			       struct kvm_mmio_fragment *frag, bool write)
-> +{
-> +	struct kvm_run *run = vcpu->run;
-> +
-> +	run->exit_reason = KVM_EXIT_MMIO;
-> +	run->mmio.phys_addr = frag->gpa;
-> +	run->mmio.len = frag->len;
-> +	run->mmio.is_write = vcpu->mmio_is_write = write;
-> +
-> +	if (write)
-> +		memcpy(run->mmio.data, frag->data, frag->len);
-> +}
-> +
->  int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
->  			void *val, unsigned int bytes,
->  			struct x86_exception *exception,
-> @@ -3870,14 +3881,10 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
->  		return rc;
-> 
->  	gpa = vcpu->mmio_fragments[0].gpa;
-> -
->  	vcpu->mmio_needed = 1;
->  	vcpu->mmio_cur_fragment = 0;
-> 
-> -	vcpu->run->mmio.len = vcpu->mmio_fragments[0].len;
-> -	vcpu->run->mmio.is_write = vcpu->mmio_is_write = ops->write;
-> -	vcpu->run->exit_reason = KVM_EXIT_MMIO;
-> -	vcpu->run->mmio.phys_addr = gpa;
-> +	set_mmio_exit_info(vcpu, &vcpu->mmio_fragments[0], ops->write);
-> 
->  	return ops->read_write_exit_mmio(vcpu, gpa, val, bytes);
->  }
-> @@ -5486,7 +5493,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
->   */
->  static int complete_mmio(struct kvm_vcpu *vcpu)
->  {
-> -	struct kvm_run *run = vcpu->run;
->  	struct kvm_mmio_fragment *frag;
->  	int r;
-> 
-> @@ -5497,7 +5503,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
->  		/* Complete previous fragment */
->  		frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
->  		if (!vcpu->mmio_is_write)
-> -			memcpy(frag->data, run->mmio.data, frag->len);
-> +			memcpy(frag->data, vcpu->run->mmio.data, frag->len);
->  		if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
->  			vcpu->mmio_needed = 0;
->  			if (vcpu->mmio_is_write)
-> @@ -5507,12 +5513,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
->  		}
->  		/* Initiate next fragment */
->  		++frag;
-> -		run->exit_reason = KVM_EXIT_MMIO;
-> -		run->mmio.phys_addr = frag->gpa;
-> -		if (vcpu->mmio_is_write)
-> -			memcpy(run->mmio.data, frag->data, frag->len);
-> -		run->mmio.len = frag->len;
-> -		run->mmio.is_write = vcpu->mmio_is_write;
-> +		set_mmio_exit_info(vcpu, frag, vcpu->mmio_is_write);
->  		return 0;
-> 
->  	}
-> -- 
-> 1.7.7.6
+> Why is that?  A file descriptor carries all that information with it...
 
-IMO having a function is unnecessary (it makes it harder the code).
+Things like fchdir(). It's not a machine breaking problem but for
+containers as opposed to chroot we need to be clear what the expected
+isolation sematics are.
+
+Agreed on open() for sockets.. the lack of open is a Berklix derived
+pecularity of the interface. It would equally be useful to be able to
+open "/dev/socket/ipv4/1.2.3.4/1135" and the like for scripts and stuff
+
+That needs VFS changes however so you can pass the remainder of a path to
+a device node. It also lets you do a lot of other sane stuff like
+
+	open /dev/ttyS0/9600/8n1
+
+
