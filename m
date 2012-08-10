@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab2HJDGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:06:39 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47328 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2HJDGi (ORCPT
+	id S1760084Ab2HJDJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:09:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3781 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2HJDJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:06:38 -0400
-Message-ID: <50247A97.4000905@linux.vnet.ibm.com>
-Date: Fri, 10 Aug 2012 11:05:59 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] sched: remove useless code in yield_to
-References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins> <4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop> <20120126100429.GA3853@elte.hu> <4F21FC69.6040402@linux.vnet.ibm.com> <4F222B2B.6010602@gmail.com> <4F24E804.5090808@linux.vnet.ibm.com> <20120129163328.GC23408@elte.hu> <4F260BFE.2070503@linux.vnet.ibm.com> <4F260DAE.4000008@gmail.com> <4F262ED9.7040003@linux.vnet.ibm.com> <4FF2925A.9060005@linux.vnet.ibm.com>
-In-Reply-To: <4FF2925A.9060005@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Aug 2012 23:09:07 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=3rytjJLIguwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lZymThCyQD2SXi_tcfEA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344568144.6935.97.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracepoints: Move the work out of line from
+ hotpath sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: David Daney <ddaney.cavm@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Avi Kivity <avi@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 09 Aug 2012 23:09:04 -0400
+In-Reply-To: <20120810020523.GA18832@Krystal>
+References: <1344544823.6935.82.camel@gandalf.stny.rr.com>
+	 <20120809205053.GB15109@Krystal>
+	 <1344551131.6935.90.camel@gandalf.stny.rr.com>
+	 <502444CC.8030906@linux.intel.com> <50244D9A.2070000@gmail.com>
+	 <1344562886.6935.93.camel@gandalf.stny.rr.com>
+	 <20120810020523.GA18832@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081003-5490-0000-0000-000001EED67D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 02:34 PM, Michael Wang wrote:
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> 
-> it's impossible to enter else branch if we have set skip_clock_update
-> in task_yield_fair(), as yield_to_task_fair() will directly return
-> true after invoke task_yield_fair().
+On Thu, 2012-08-09 at 22:05 -0400, Mathieu Desnoyers wrote:
 
-Could I get some conclusion on this patch? Should we clean up that peace
-of code or leave it there?
+> In your example, is the attribute attached to the if() or the following
+> basic block ? Attaching it to the basic block allows a nice level of
+> genericity:
 
-Regards,
-Michael Wang
+Yes, I meant the block, not the if().
 
-> 
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
->  kernel/sched/core.c |    7 -------
->  1 files changed, 0 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9bb7d28..77c14aa 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4737,13 +4737,6 @@ again:
->  		 */
->  		if (preempt && rq != p_rq)
->  			resched_task(p_rq->curr);
-> -	} else {
-> -		/*
-> -		 * We might have set it in task_yield_fair(), but are
-> -		 * not going to schedule(), so don't want to skip
-> -		 * the next update.
-> -		 */
-> -		rq->skip_clock_update = 0;
->  	}
-> 
->  out:
-> 
+Heck, any block could be done this way, even just a block insertion...
+
+void foo(int bar) {
+	[...]
+
+	__attribute__((section("mysection")) {
+		/* code here is in 'mysection' */
+	}
+	[...]
+}
+
+All gcc would have to do is place a hard jump to the code in the
+section, and have the section jump back.
+
+-- Steve
+
 
