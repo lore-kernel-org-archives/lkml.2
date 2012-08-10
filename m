@@ -1,53 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab2HJPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:02:09 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41474 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758269Ab2HJPCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:02:06 -0400
-X-Originating-IP: 217.70.178.142
-X-Originating-IP: 50.43.46.74
-Date: Fri, 10 Aug 2012 08:01:57 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	id S1759611Ab2HJPMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:12:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48787 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754572Ab2HJPMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 11:12:43 -0400
+Date: Fri, 10 Aug 2012 17:12:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] fs: Make core dump functionality optional
-Message-ID: <20120810150157.GA23457@leaf>
-References: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
- <1344587169-18682-2-git-send-email-alex.page.kelly@gmail.com>
- <20120810132323.GA21048@sergelap>
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 01/11] memcg: Make it possible to use the stock for
+ more than one page.
+Message-ID: <20120810151239.GF1425@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-2-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120810132323.GA21048@sergelap>
+In-Reply-To: <1344517279-30646-2-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 08:23:23AM -0500, Serge Hallyn wrote:
-> Quoting Alex Kelly (alex.page.kelly@gmail.com):
-> > Adds an expert Kconfig option, CONFIG_COREDUMP, which allows disabling of core dump.
-> > This saves approximately 2.6k in the compiled kernel, and complements CONFIG_ELF_CORE,
-> > which now depends on it.
+On Thu 09-08-12 17:01:09, Glauber Costa wrote:
+> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 > 
-> Is there another reason than the 2.6k to do this?  My kernels range
-> between 4.8 and 5M, so that's .05% size savings?
+> We currently have a percpu stock cache scheme that charges one page at a
+> time from memcg->res, the user counter. When the kernel memory
+> controller comes into play, we'll need to charge more than that.
+> 
+> This is because kernel memory allocations will also draw from the user
+> counter, and can be bigger than a single page, as it is the case with
+> the stack (usually 2 pages) or some higher order slabs.
+> 
+> [ glommer@parallels.com: added a changelog ]
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-A kitchen-sink kernel might take up that much space, but you can build a
-minimal embedded kernel that only takes up ~200k, at which point 2.6k
-represents a >1% decrease.  Add a few more changes like this, and those
-decreases start to add up.  At this point, no one thing you can chop out
-of the kernel will give you a 100k decrease by itself; you need a pile
-of changes like this one to do that.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-- Josh Triplett
+> ---
+>  mm/memcontrol.c | 28 ++++++++++++++++++----------
+>  1 file changed, 18 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 95162c9..bc7bfa7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2096,20 +2096,28 @@ struct memcg_stock_pcp {
+>  static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
+>  static DEFINE_MUTEX(percpu_charge_mutex);
+>  
+> -/*
+> - * Try to consume stocked charge on this cpu. If success, one page is consumed
+> - * from local stock and true is returned. If the stock is 0 or charges from a
+> - * cgroup which is not current target, returns false. This stock will be
+> - * refilled.
+> +/**
+> + * consume_stock: Try to consume stocked charge on this cpu.
+> + * @memcg: memcg to consume from.
+> + * @nr_pages: how many pages to charge.
+> + *
+> + * The charges will only happen if @memcg matches the current cpu's memcg
+> + * stock, and at least @nr_pages are available in that stock.  Failure to
+> + * service an allocation will refill the stock.
+> + *
+> + * returns true if succesfull, false otherwise.
+>   */
+> -static bool consume_stock(struct mem_cgroup *memcg)
+> +static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
+>  {
+>  	struct memcg_stock_pcp *stock;
+>  	bool ret = true;
+>  
+> +	if (nr_pages > CHARGE_BATCH)
+> +		return false;
+> +
+>  	stock = &get_cpu_var(memcg_stock);
+> -	if (memcg == stock->cached && stock->nr_pages)
+> -		stock->nr_pages--;
+> +	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
+> +		stock->nr_pages -= nr_pages;
+>  	else /* need to call res_counter_charge */
+>  		ret = false;
+>  	put_cpu_var(memcg_stock);
+> @@ -2408,7 +2416,7 @@ again:
+>  		VM_BUG_ON(css_is_removed(&memcg->css));
+>  		if (mem_cgroup_is_root(memcg))
+>  			goto done;
+> -		if (nr_pages == 1 && consume_stock(memcg))
+> +		if (consume_stock(memcg, nr_pages))
+>  			goto done;
+>  		css_get(&memcg->css);
+>  	} else {
+> @@ -2433,7 +2441,7 @@ again:
+>  			rcu_read_unlock();
+>  			goto done;
+>  		}
+> -		if (nr_pages == 1 && consume_stock(memcg)) {
+> +		if (consume_stock(memcg, nr_pages)) {
+>  			/*
+>  			 * It seems dagerous to access memcg without css_get().
+>  			 * But considering how consume_stok works, it's not
+> -- 
+> 1.7.11.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
