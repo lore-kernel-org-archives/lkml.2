@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab2HJKLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:11:06 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55610 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2HJKLB (ORCPT
+	id S1759606Ab2HJKYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:24:36 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:35071 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab2HJKYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:11:01 -0400
+	Fri, 10 Aug 2012 06:24:32 -0400
+X-Originating-IP: 217.70.178.135
+X-Originating-IP: 93.1.143.174
+Message-ID: <5024E15D.4090102@gnu-log.net>
+Date: Fri, 10 Aug 2012 12:24:29 +0200
+From: Benoit Gschwind <gschwind@gnu-log.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120808 Thunderbird/10.0.6
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5021F00B.7000503@ionic.de>
-References: <5021F00B.7000503@ionic.de>
-Date: Fri, 10 Aug 2012 12:10:59 +0200
-Message-ID: <CAKMK7uFutq0Hn3FL==53Vvt-M00ReWaeXKq3uo8C_kzUfX+1ew@mail.gmail.com>
-Subject: Re: null pointer dereference while loading i915
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Mihai Moldovan <ionic@ionic.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Francois Rigaut <frigaut@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: ingore eDP bpc settings
+References: <1344589820-9753-1-git-send-email-daniel.vetter@ffwll.ch>
+In-Reply-To: <1344589820-9753-1-git-send-email-daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 6:50 AM, Mihai Moldovan <ionic@ionic.de> wrote:
-> Hi Daniel, hi list
->
-> ever since version 3.2.0 (maybe even earlier, but 3.0.2 is still working fine),
-> my box is crashing when loading the i915 driver (mode-setting enabled.)
->
-> The current version I'm testing with is 3.5.0.
->
-> I was able to get the BUG output (please forgive any errors/flips in the output,
-> I have had to transcribe the messages from the screen/images), however, I'm not
-> able to find out what's wrong.
->
-> If I see it correctly, there's a null pointer dereference in a printk called
-> from inside gmbus_xfer. The only printk calls I can see in
-> drivers/gpu/drm/i915/intel_i2c.c gmbus_xfer() however are issued by the
-> DRM_DEBUG_KMS() and DRM_INFO() macros.
-> Neither call looks wrong to me, I even tried to swap adapter->name with
-> bus->adapter.name and make *sure* i < num is true, but haven't had any success.
->
-> I'd really like to see this bug fixed, as it's preventing me from updating the
-> kernel for over a year now.
->
-> Also, while 3.0.2 works, it *does* spew error/warning messages related to gmbus
-> and I've had corrupted VTs in the past (albeit after a long uptime with multiple
-> X restarting and DVI cable unplugging/reattaching events), so maybe there's a
-> lot more broken than "expected".
 
-Hm, this is rather strange. gmbus should not be enable on 3.2 nor 3.0,
-since exactly this issue might happen. We've re-enabled gmbus again on
-3.5 after having fixed this bug. Are you sure that this is plain 3.2
-you're running?
+Hello,
 
-Yours, Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I confirm this patch work apply to kernel 3.6-rc1
+
+Best regards
+
+On 10/08/2012 11:10, Daniel Vetter wrote:
+> This has originally been introduced to not oversubscribe the dp links
+> in
+> 
+> commit 885a5fb5b120a5c7e0b3baad7b0feb5a89f76c18
+> Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+> Date:   Tue Jan 12 05:38:31 2010 +0800
+> 
+>     drm/i915: fix pixel color depth setting on eDP
+> 
+> Since then we've fixed up the dp link bandwidth calculation code for
+> code and should now automatically fall back to 6bpc dithering. So this
+> is unnecessary.
+> 
+> Furthermore it seems to break the new MacbookPro with retina display,
+> hence let's just rip this out.
+> 
+> Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
+> Cc: Benoit Gschwind <gschwind@gnu-log.net>
+> Cc: Francois Rigaut <frigaut@gmail.com>
+> Cc: Greg KH <gregkh@linuxfoundation.org>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> 
+> --
+> 
+> Testing feedback highgly welcome, and thanks for Benoit for finding
+> out that the bpc computations are busted.
+> -Daniel
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |   11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index bddb290..ddd4db3 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -3755,17 +3755,6 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+>  			continue;
+>  		}
+>  
+> -		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
+> -			/* Use VBT settings if we have an eDP panel */
+> -			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+> -
+> -			if (edp_bpc < display_bpc) {
+> -				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+> -				display_bpc = edp_bpc;
+> -			}
+> -			continue;
+> -		}
+> -
+>  		/* Not one of the known troublemakers, check the EDID */
+>  		list_for_each_entry(connector, &dev->mode_config.connector_list,
+>  				    head) {
+
