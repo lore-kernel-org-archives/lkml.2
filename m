@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab2HJLn7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 07:43:59 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37496 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2HJLn4 (ORCPT
+	id S1753441Ab2HJLoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 07:44:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63828 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2HJLoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 07:43:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <003901cd7073$d49cacc0$7dd60640$@se>
-References: <1343741493-17671-1-git-send-email-lee.jones@linaro.org>
-	<1343741493-17671-3-git-send-email-lee.jones@linaro.org>
-	<20120731134214.GK4468@opensource.wolfsonmicro.com>
-	<5017EAC3.3080504@linaro.org>
-	<20120731142820.GW4468@opensource.wolfsonmicro.com>
-	<5017EDCA.4020601@linaro.org>
-	<20120731145443.GY4468@opensource.wolfsonmicro.com>
-	<5017F68B.3060400@linaro.org>
-	<20120731151819.GC4468@opensource.wolfsonmicro.com>
-	<5018D880.5090306@linaro.org>
-	<20120801132022.GS11892@opensource.wolfsonmicro.com>
-	<003901cd7073$d49cacc0$7dd60640$@se>
-Date: Fri, 10 Aug 2012 13:43:56 +0200
-Message-ID: <CACRpkdZeYAnqg7HLi_bH51_=s60OZB7ySn1W+YQ=H9fz8xZUCg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] ASoC: dapm: If one widget fails, do not force all
- subsequent widgets to fail too
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ola Lilja <olalilja@yahoo.se>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>, ola.o.lilja@stericsson.com,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Philippe BEGNIC <philippe.begnic@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 10 Aug 2012 07:44:22 -0400
+Date: Fri, 10 Aug 2012 19:44:40 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: "Shaohua Li" <shli@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] Fix problems about handling bio to plug when bio merged failed.
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201208101944375001710@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7ABiTHm032405
 
-(As for the thread, which got flamy, let's put it to rest, and Ola:
- we are all impressed with your work on the ux500 ALSA SoC
- driver, no doubt about that, this was all ever about the DT
- patch set.)
+There are some problems about handling bio which merge to plug failed.
+Patch1 will avoid unnecessary plug should_sort test,although it's not a bug.
+Patch2 correct a bug when handle more devices,it leak some devices to trace plug-operation.
 
-On Thu, Aug 2, 2012 at 7:58 AM, Ola Lilja <olalilja@yahoo.se> wrote:
+Because the patch2,so it's not necessary to sort when flush plug.Although patch2 has 
+O(n*n) complexity,it's more than list_sort which has O(nlog(n)) complexity.But the plug 
+list is unlikely too long,so i think patch3 can accept.
 
-> Linus W. could probably shed some light of when the missing clocks are to
-> be submitted.
 
-Ulf Hansson is working on this but he's on vacation FTM.
-However he has shown good progress and can probably present
-a prototype clock driver when he arrives back. IIRC there was
-some clock reparenting business left to sort out.
+Jianpeng Ma (3):
+  block: avoid unnecessary plug should_sort test.
+  block: Fix not tracing all device plug-operation.
+  block: Remove unnecessary requests sort.
 
-Yours,
-Linus Walleij
+ block/blk-core.c |   35 ++++++++++++++++++-----------------
+ 1 file changed, 18 insertions(+), 17 deletions(-)
+
+-- 
+1.7.9.5
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
