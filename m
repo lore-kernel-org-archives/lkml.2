@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab2HJHbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 03:31:16 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46581 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756915Ab2HJHbN (ORCPT
+	id S1757557Ab2HJHfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 03:35:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65361 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756991Ab2HJHfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 03:31:13 -0400
-X-AuditID: 9c93016f-b7c98ae0000013b4-a3-5024b8bfb7a5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [RFC/PATCH] sched: Honor sync wake up in select_idle_sibling
-Date: Fri, 10 Aug 2012 16:25:12 +0900
-Message-Id: <1344583512-25352-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.2
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 10 Aug 2012 03:35:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 10/11] spi/s3c64xx: improve error handling
+Date: Fri, 10 Aug 2012 07:34:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Jaswinder Singh'" <jaswinder.singh@linaro.org>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-11-git-send-email-arnd@arndb.de> <0de501cd76c2$ea07dfd0$be179f70$%kim@samsung.com>
+In-Reply-To: <0de501cd76c2$ea07dfd0$be179f70$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208100734.47339.arnd@arndb.de>
+X-Provags-ID: V02:K0:axpDMkdr5JhOSwYocHKbt18DX+nK383FyivP5DC4kHI
+ 94l2nglgkdFlSW2I5j+fcr7zJOvXC7s03J8Vk8fUBWJbrdwJqK
+ 3O25nN0TNSmBXVLhKKj9ouBe8VuGn6Eqazod6UW/5sr8F+snd1
+ T8+qQhxP9vJQ5t4sGSnm6mEMfpNEU+J00nTxUqh4c/S6Zif3q0
+ 0iLk9waMAQ3RsobYz/jop5Bb3efI6ymHJ5fDAC6LZk0gu0TLLB
+ YLKfx+84IhEpy6zlfZLJuEwJPN5/sssWfAaksTFg0r5fqzd+dg
+ 25A/N9t7pV6G3lsw+ANzaTlh3jWTXL/aLIGcnbQh7foumlHUW4
+ wB+jyS0P7I1cdJZMs9IE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Friday 10 August 2012, Kukjin Kim wrote:
 
-When sync wakeup happens and there's the waker task running alone,
-select the target cpu as if it's already idle.
+> BTW for same reason, probably, we need following fix?
+> 
+>  arch/arm/mach-tegra/tegra2_emc.c             |    4 ++--
+>  arch/c6x/kernel/setup.c                      |    2 +-
+>  arch/powerpc/kernel/ibmebus.c                |    2 +-
+>  arch/powerpc/kernel/pci_of_scan.c            |    2 +-
+>  arch/powerpc/kernel/prom.c                   |    2 +-
+>  arch/powerpc/kernel/rtas_pci.c               |    2 +-
+>  arch/powerpc/kernel/vio.c                    |    2 +-
+>  arch/powerpc/platforms/44x/warp.c            |    2 +-
+> ...
 
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/sched/fair.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Actually not. The difference is that only s3c64xx_get_slave_ctrldata
+accesses the node pointer outside of the look (after break).
+This fails when there are no child nodes at all. In the other
+cases, the only use of the node pointer is inside the loop,
+where it is guaranteed to be valid.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d0cc03b3e70b..64b68bc82b52 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2632,7 +2632,7 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
--static int select_idle_sibling(struct task_struct *p, int target)
-+static int select_idle_sibling(struct task_struct *p, int target, int sync)
- {
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
-@@ -2646,6 +2646,13 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 		return cpu;
- 
- 	/*
-+	 * If the task is going to be woken-up on this cpu and there's only
-+	 * the sync-waker running, then it is the right target.
-+	 */
-+	if (target == cpu && sync && this_rq()->nr_running == 1)
-+		return cpu;
-+
-+	/*
- 	 * If the task is going to be woken-up on the cpu where it previously
- 	 * ran and if it is currently idle, then it the right target.
- 	 */
-@@ -2748,7 +2755,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
- 
--		new_cpu = select_idle_sibling(p, prev_cpu);
-+		new_cpu = select_idle_sibling(p, prev_cpu, sync);
- 		goto unlock;
- 	}
- 
--- 
-1.7.11.2
-
+	Arnd
