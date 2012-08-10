@@ -1,43 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab2HJSYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:24:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45539 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759787Ab2HJSYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:24:07 -0400
-Date: Fri, 10 Aug 2012 19:24:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        Liam Girdwood <lrg@ti.com>,
-        Vishwas A Deshpande <vishwas.a.deshpande@ti.com>,
-        M R Swami Reddy <mr.swami.reddy@ti.com>, trivial@kernel.org
-Subject: Re: [PATCH][trivial] ASoC: isabelle: Remove unneeded include of
- version.h
-Message-ID: <20120810182405.GO24328@opensource.wolfsonmicro.com>
-References: <alpine.LNX.2.00.1208102010480.17673@swampdragon.chaosbits.net>
- <20120810181631.GN24328@opensource.wolfsonmicro.com>
- <alpine.LNX.2.00.1208102019510.17673@swampdragon.chaosbits.net>
+	id S1759908Ab2HJSYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:24:24 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:44027 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759877Ab2HJSYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:24:17 -0400
+Date: Fri, 10 Aug 2012 14:24:09 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+Subject: Re: 3.5.1 ext4_ sleeping while atomic bug.
+Message-ID: <20120810182409.GA10333@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+References: <20120810031701.GA17765@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1208102019510.17673@swampdragon.chaosbits.net>
-X-Cookie: Be different: conform.
+In-Reply-To: <20120810031701.GA17765@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 08:21:51PM +0200, Jesper Juhl wrote:
-> On Fri, 10 Aug 2012, Mark Brown wrote:
+Hi Dave,
 
-> > Not sure what this patch is against, there appears to be no include of
-> > version.h in current code...
+Thanks for the bug report!  The following should address the bug which
+you found.
 
-> It's against Linus's tree. I created a branch off of master at 
-> f4ba394c1b02e7fc2179fda8d3941a5b3b65efb6 and did the patch.
+						- Ted
 
-Ah, the fix is only in -next.
+>From 05ca87aa00121756b5d41f3d71eb8b51bed3bc92 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Fri, 10 Aug 2012 13:57:52 -0400
+Subject: [PATCH] ext4: don't call ext4_error while block group is locked
+
+While in ext4_validate_block_bitmap(), if an block allocation bitmap
+is found to be invalid, we call ext4_error() while the block group is
+still locked.  This causes ext4_commit_super() to call a function
+which might sleep while in an atomic context.
+
+There's no need to keep the block group locked at this point, so hoist
+the ext4_error() call up to ext4_validate_block_bitmap() and release
+the block group spinlock before calling ext4_error().
+
+The reported stack trace can be found at:
+
+	http://article.gmane.org/gmane.comp.file-systems.ext4/33731
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: stable@vger.kernel.org
+---
+ fs/ext4/balloc.c | 62 +++++++++++++++++++++++++++++++++-----------------------
+ fs/ext4/bitmap.c |  1 -
+ 2 files changed, 37 insertions(+), 26 deletions(-)
+
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index d23b31c..1b50890 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -280,14 +280,18 @@ struct ext4_group_desc * ext4_get_group_desc(struct super_block *sb,
+ 	return desc;
+ }
+ 
+-static int ext4_valid_block_bitmap(struct super_block *sb,
+-				   struct ext4_group_desc *desc,
+-				   unsigned int block_group,
+-				   struct buffer_head *bh)
++/*
++ * Return the block number which was discovered to be invalid, or 0 if
++ * the block bitmap is valid.
++ */
++static ext4_fsblk_t ext4_valid_block_bitmap(struct super_block *sb,
++					    struct ext4_group_desc *desc,
++					    unsigned int block_group,
++					    struct buffer_head *bh)
+ {
+ 	ext4_grpblk_t offset;
+ 	ext4_grpblk_t next_zero_bit;
+-	ext4_fsblk_t bitmap_blk;
++	ext4_fsblk_t blk;
+ 	ext4_fsblk_t group_first_block;
+ 
+ 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
+@@ -297,37 +301,33 @@ static int ext4_valid_block_bitmap(struct super_block *sb,
+ 		 * or it has to also read the block group where the bitmaps
+ 		 * are located to verify they are set.
+ 		 */
+-		return 1;
++		return 0;
+ 	}
+ 	group_first_block = ext4_group_first_block_no(sb, block_group);
+ 
+ 	/* check whether block bitmap block number is set */
+-	bitmap_blk = ext4_block_bitmap(sb, desc);
+-	offset = bitmap_blk - group_first_block;
++	blk = ext4_block_bitmap(sb, desc);
++	offset = blk - group_first_block;
+ 	if (!ext4_test_bit(offset, bh->b_data))
+ 		/* bad block bitmap */
+-		goto err_out;
++		return blk;
+ 
+ 	/* check whether the inode bitmap block number is set */
+-	bitmap_blk = ext4_inode_bitmap(sb, desc);
+-	offset = bitmap_blk - group_first_block;
++	blk = ext4_inode_bitmap(sb, desc);
++	offset = blk - group_first_block;
+ 	if (!ext4_test_bit(offset, bh->b_data))
+ 		/* bad block bitmap */
+-		goto err_out;
++		return blk;
+ 
+ 	/* check whether the inode table block number is set */
+-	bitmap_blk = ext4_inode_table(sb, desc);
+-	offset = bitmap_blk - group_first_block;
++	blk = ext4_inode_table(sb, desc);
++	offset = blk - group_first_block;
+ 	next_zero_bit = ext4_find_next_zero_bit(bh->b_data,
+ 				offset + EXT4_SB(sb)->s_itb_per_group,
+ 				offset);
+-	if (next_zero_bit >= offset + EXT4_SB(sb)->s_itb_per_group)
+-		/* good bitmap for inode tables */
+-		return 1;
+-
+-err_out:
+-	ext4_error(sb, "Invalid block bitmap - block_group = %d, block = %llu",
+-			block_group, bitmap_blk);
++	if (next_zero_bit < offset + EXT4_SB(sb)->s_itb_per_group)
++		/* bad bitmap for inode tables */
++		return blk;
+ 	return 0;
+ }
+ 
+@@ -336,14 +336,26 @@ void ext4_validate_block_bitmap(struct super_block *sb,
+ 			       unsigned int block_group,
+ 			       struct buffer_head *bh)
+ {
++	ext4_fsblk_t	blk;
++
+ 	if (buffer_verified(bh))
+ 		return;
+ 
+ 	ext4_lock_group(sb, block_group);
+-	if (ext4_valid_block_bitmap(sb, desc, block_group, bh) &&
+-	    ext4_block_bitmap_csum_verify(sb, block_group, desc, bh,
+-					  EXT4_BLOCKS_PER_GROUP(sb) / 8))
+-		set_buffer_verified(bh);
++	blk = ext4_valid_block_bitmap(sb, desc, block_group, bh);
++	if (unlikely(blk != 0)) {
++		ext4_unlock_group(sb, block_group);
++		ext4_error(sb, "bg %u: block %llu: invalid block bitmap",
++			   block_group, blk);
++		return;
++	}
++	if (unlikely(!ext4_block_bitmap_csum_verify(sb, block_group,
++			desc, bh, EXT4_BLOCKS_PER_GROUP(sb) / 8))) {
++		ext4_unlock_group(sb, block_group);
++		ext4_error(sb, "bg %u: bad block bitmap checksum", block_group);
++		return;
++	}
++	set_buffer_verified(bh);
+ 	ext4_unlock_group(sb, block_group);
+ }
+ 
+diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
+index f8716ea..5c2d181 100644
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -79,7 +79,6 @@ int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
+ 	if (provided == calculated)
+ 		return 1;
+ 
+-	ext4_error(sb, "Bad block bitmap checksum: block_group = %u", group);
+ 	return 0;
+ }
+ 
+-- 
+1.7.12.rc0.22.gcdd159b
+
