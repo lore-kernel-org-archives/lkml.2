@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760114Ab2HJC66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:58:58 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:48092 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2HJC6z (ORCPT
+	id S1760068Ab2HJDGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:06:39 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47328 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2HJDGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:58:55 -0400
-Date: Thu, 9 Aug 2012 22:58:51 -0400
-From: Palmer Cox <p@lmercox.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] cpupower tools: Fix warning and a bug with the cpu
- package count
-Message-ID: <20120810025851.GA4609@gmail.com>
-References: <1344306288-12369-1-git-send-email-p@lmercox.com>
- <1344306288-12369-7-git-send-email-p@lmercox.com>
- <201208091207.36846.trenn@suse.de>
+	Thu, 9 Aug 2012 23:06:38 -0400
+Message-ID: <50247A97.4000905@linux.vnet.ibm.com>
+Date: Fri, 10 Aug 2012 11:05:59 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208091207.36846.trenn@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] sched: remove useless code in yield_to
+References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins> <4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop> <20120126100429.GA3853@elte.hu> <4F21FC69.6040402@linux.vnet.ibm.com> <4F222B2B.6010602@gmail.com> <4F24E804.5090808@linux.vnet.ibm.com> <20120129163328.GC23408@elte.hu> <4F260BFE.2070503@linux.vnet.ibm.com> <4F260DAE.4000008@gmail.com> <4F262ED9.7040003@linux.vnet.ibm.com> <4FF2925A.9060005@linux.vnet.ibm.com>
+In-Reply-To: <4FF2925A.9060005@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12081003-5490-0000-0000-000001EED67D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 12:07:36PM +0200, Thomas Renninger wrote:
-> On Tuesday 07 August 2012 04:24:48 Palmer Cox wrote:
-> > The pkgs member of cpupower_topology is being used as the number of
-> > cpu packages. As the comment in get_cpu_topology notes, the package ids
-> > are not guaranteed to be contiguous. So, simply setting pkgs to the value
-> > of the highest physical_package_id doesn't actually provide a count of
-> > the number of cpu packages. Instead, calculate pkgs by setting it to
-> > the number of distinct physical_packge_id values which is pretty easy
-> > to do after the core_info structs are sorted. Calculating pkgs this
-> > way also has the nice benefit of getting rid of a sign comparison warning
-> > that GCC 4.6 was reporting.
-> > ---
-> >  tools/power/cpupower/utils/helpers/topology.c |   18 +++++++++++++-----
-> >  1 file changed, 13 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/tools/power/cpupower/utils/helpers/topology.c b/tools/power/cpupower/utils/helpers/topology.c
-> > index 4e2b583..fd3cc4d 100644
-> > --- a/tools/power/cpupower/utils/helpers/topology.c
-> > +++ b/tools/power/cpupower/utils/helpers/topology.c
-> > @@ -64,7 +64,7 @@ static int __compare(const void *t1, const void *t2)
-> >   */
-> >  int get_cpu_topology(struct cpupower_topology *cpu_top)
-> >  {
-> > -	int cpu, cpus = sysconf(_SC_NPROCESSORS_CONF);
-> > +	int cpu, last_pkg, cpus = sysconf(_SC_NPROCESSORS_CONF);
-> >  
-> >  	cpu_top->core_info = malloc(sizeof(struct cpuid_core_info) * cpus);
-> >  	if (cpu_top->core_info == NULL)
-> > @@ -78,20 +78,28 @@ int get_cpu_topology(struct cpupower_topology *cpu_top)
-> >  			"physical_package_id",
-> >  			&(cpu_top->core_info[cpu].pkg)) < 0)
-> >  			return -1;
-> > -		if ((int)cpu_top->core_info[cpu].pkg != -1 &&
-> > -		    cpu_top->core_info[cpu].pkg > cpu_top->pkgs)
-> > -			cpu_top->pkgs = cpu_top->core_info[cpu].pkg;
-> >  		if(sysfs_topology_read_file(
-> >  			cpu,
-> >  			"core_id",
-> >  			&(cpu_top->core_info[cpu].core)) < 0)
-> >  			return -1;
-> >  	}
-> > -	cpu_top->pkgs++;
-> >  
-> >  	qsort(cpu_top->core_info, cpus, sizeof(struct cpuid_core_info),
-> >  	      __compare);
-> >  
-> > +	/* Count the number of distinct pkgs values. This works
-> > +	   becuase the primary sort of of the core_info structs was just
-> becuase ... of of ... struct instead of structs
-
-Oof. I'm not winning any grammar medals for this. Thanks for
-noticing.
+On 07/03/2012 02:34 PM, Michael Wang wrote:
+> From: Michael Wang <wangyun@linux.vnet.ibm.com>
 > 
-> Otherwise the first 4 patches look like rather nice and straight forward
-> cleanups/fixes.
-> Feel free to add a Reviewed-by: Thomas Renninger <trenn@suse.de>
+> it's impossible to enter else branch if we have set skip_clock_update
+> in task_yield_fair(), as yield_to_task_fair() will directly return
+> true after invoke task_yield_fair().
 
-Will do. Thanks!
-> 
-> Let me have a closer look at patch 5 and 6. I had problems getting rid of
-> the compiler warning, looks like you found an easy way to clean this up.
-> I will be back and have time for this in the beginning of next week.
+Could I get some conclusion on this patch? Should we clean up that peace
+of code or leave it there?
 
-Thanks for the review! Let me know if there is anything in patches 5
-and 6 that needs cleaning up and I'll be happy to do it. I only have
-access to a laptop with a single package 2 core Centrino2 processor.
-I tested each patch in the series on my laptop running a 64-bit 3.5
-kernel to make sure that everything functioned. I'm no expert in the
-exact expected output of the tool, but the only impact that I
-believe these patches should have is the output of the number of cpu
-packages. I tested this on my system which resulted in reporting
-just a single cpu package as I expected, but I don't have access to
-a system with multiple cpu packages to test on.
+Regards,
+Michael Wang
 
 > 
-> On which platforms (topology) did you test this?
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/core.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
 > 
->    Thomas
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9bb7d28..77c14aa 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4737,13 +4737,6 @@ again:
+>  		 */
+>  		if (preempt && rq != p_rq)
+>  			resched_task(p_rq->curr);
+> -	} else {
+> -		/*
+> -		 * We might have set it in task_yield_fair(), but are
+> -		 * not going to schedule(), so don't want to skip
+> -		 * the next update.
+> -		 */
+> -		rq->skip_clock_update = 0;
+>  	}
+> 
+>  out:
+> 
 
--Palmer
