@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab2HJNsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:48:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43646 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756267Ab2HJNsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:48:13 -0400
-Date: Fri, 10 Aug 2012 15:48:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120810134811.GD1425@dhcp22.suse.cz>
-References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
- <20120803133235.GA8434@dhcp22.suse.cz>
- <20120810094825.GA1440@dhcp22.suse.cz>
- <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
- <20120810122730.GA1425@dhcp22.suse.cz>
- <CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
- <20120810125102.GB1425@dhcp22.suse.cz>
- <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
- <20120810131643.GC1425@dhcp22.suse.cz>
- <CAJd=RBDtnF6eoTmDu4HOBGfHnWnxNsXEzArR51+-XhzFCwOmOQ@mail.gmail.com>
+	id S1756855Ab2HJNvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 09:51:46 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:40777 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756664Ab2HJNvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 09:51:44 -0400
+Date: Fri, 10 Aug 2012 09:51:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+cc: gregkh@linuxfoundation.org, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb: host: tegra: fix warning messages in ehci_remove
+In-Reply-To: <1344579163-10190-1-git-send-email-vbyravarasu@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1208100951220.15352-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBDtnF6eoTmDu4HOBGfHnWnxNsXEzArR51+-XhzFCwOmOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-08-12 21:21:15, Hillf Danton wrote:
-> On Fri, Aug 10, 2012 at 9:16 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
-> >  vma_prio_tree_foreach
-> >
-> > 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
-> > from vma) fixed pgoff calculation but it has replaced it by
-> > vma_hugecache_offset which is not approapriate for offsets used for
-> > vma_prio_tree_foreach because that one expects index in page units
-> > rather than in huge_page_shift.
-> > Using vma_hugecache_offset is not incorrect because the pgoff will fit
-> > into the same vmas but it is confusing.
-> >
+On Fri, 10 Aug 2012, Venu Byravarasu wrote:
+
+> Existing implementation of tegra_ehci_remove() calls
+> usb_put_hcd(hcd) first and then iounmap(hcd->regs).
 > 
-> Well, how is the patch tested?
+> usb_put_hcd() implementation calls hcd_release()
+> which frees up memory allocated for hcd.
+> 
+> As iounmap is trying to unmap hcd->regs, after hcd
+> getting freed up, warning messages were observed during
+> unload of USB.
+> 
+> Hence fixing it.
+> 
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> ---
+>  drivers/usb/host/ehci-tegra.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index 950e95e..26dedb3 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -799,11 +799,12 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+>  #endif
+>  
+>  	usb_remove_hcd(hcd);
+> -	usb_put_hcd(hcd);
+>  
+>  	tegra_usb_phy_close(tegra->phy);
+>  	iounmap(hcd->regs);
+>  
+> +	usb_put_hcd(hcd);
+> +
+>  	clk_disable_unprepare(tegra->clk);
+>  	clk_put(tegra->clk);
 
-It's been compile tested because it only restores the previous code with
-a simple and obvious bug fix.
-Do you see any issue in the patch?
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-> > Cc: Hillf Danton <dhillf@gmail.com>
-> > Cc: Mel Gorman <mel@csn.ul.ie>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  mm/hugetlb.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index c39e4be..a74ea31 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
-> >          * from page cache lookup which is in HPAGE_SIZE units.
-> >          */
-> >         address = address & huge_page_mask(h);
-> > -       pgoff = vma_hugecache_offset(h, vma, address);
-> > +       pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-> > +                       vma->vm_pgoff;
-> >         mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
-> >
-> >         /*
-> > --
-> > 1.7.10.4
-> >
-> >
-> > --
-> > Michal Hocko
-> > SUSE Labs
-
--- 
-Michal Hocko
-SUSE Labs
