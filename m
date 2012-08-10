@@ -1,124 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107Ab2HJC6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:58:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57889 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab2HJC5g (ORCPT
+	id S1760114Ab2HJC66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 22:58:58 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:48092 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab2HJC6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:57:36 -0400
-Message-ID: <50247899.7040906@gmail.com>
-Date: Fri, 10 Aug 2012 12:57:29 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: torvalds@linux-foundation.org, rdunlap@xenotime.net, tytso@mit.edu,
-        alan@lxorguk.ukuu.org.uk, davem@davemloft.net, netdev@vger.kernel.org,
+	Thu, 9 Aug 2012 22:58:55 -0400
+Date: Thu, 9 Aug 2012 22:58:51 -0400
+From: Palmer Cox <p@lmercox.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SubmittingPatches: clarify SOB tag usage when evolving
- submissions
-References: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1344545493-6820-1-git-send-email-mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 6/6] cpupower tools: Fix warning and a bug with the cpu
+ package count
+Message-ID: <20120810025851.GA4609@gmail.com>
+References: <1344306288-12369-1-git-send-email-p@lmercox.com>
+ <1344306288-12369-7-git-send-email-p@lmercox.com>
+ <201208091207.36846.trenn@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208091207.36846.trenn@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/12 06:51, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On Thu, Aug 09, 2012 at 12:07:36PM +0200, Thomas Renninger wrote:
+> On Tuesday 07 August 2012 04:24:48 Palmer Cox wrote:
+> > The pkgs member of cpupower_topology is being used as the number of
+> > cpu packages. As the comment in get_cpu_topology notes, the package ids
+> > are not guaranteed to be contiguous. So, simply setting pkgs to the value
+> > of the highest physical_package_id doesn't actually provide a count of
+> > the number of cpu packages. Instead, calculate pkgs by setting it to
+> > the number of distinct physical_packge_id values which is pretty easy
+> > to do after the core_info structs are sorted. Calculating pkgs this
+> > way also has the nice benefit of getting rid of a sign comparison warning
+> > that GCC 4.6 was reporting.
+> > ---
+> >  tools/power/cpupower/utils/helpers/topology.c |   18 +++++++++++++-----
+> >  1 file changed, 13 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/tools/power/cpupower/utils/helpers/topology.c b/tools/power/cpupower/utils/helpers/topology.c
+> > index 4e2b583..fd3cc4d 100644
+> > --- a/tools/power/cpupower/utils/helpers/topology.c
+> > +++ b/tools/power/cpupower/utils/helpers/topology.c
+> > @@ -64,7 +64,7 @@ static int __compare(const void *t1, const void *t2)
+> >   */
+> >  int get_cpu_topology(struct cpupower_topology *cpu_top)
+> >  {
+> > -	int cpu, cpus = sysconf(_SC_NPROCESSORS_CONF);
+> > +	int cpu, last_pkg, cpus = sysconf(_SC_NPROCESSORS_CONF);
+> >  
+> >  	cpu_top->core_info = malloc(sizeof(struct cpuid_core_info) * cpus);
+> >  	if (cpu_top->core_info == NULL)
+> > @@ -78,20 +78,28 @@ int get_cpu_topology(struct cpupower_topology *cpu_top)
+> >  			"physical_package_id",
+> >  			&(cpu_top->core_info[cpu].pkg)) < 0)
+> >  			return -1;
+> > -		if ((int)cpu_top->core_info[cpu].pkg != -1 &&
+> > -		    cpu_top->core_info[cpu].pkg > cpu_top->pkgs)
+> > -			cpu_top->pkgs = cpu_top->core_info[cpu].pkg;
+> >  		if(sysfs_topology_read_file(
+> >  			cpu,
+> >  			"core_id",
+> >  			&(cpu_top->core_info[cpu].core)) < 0)
+> >  			return -1;
+> >  	}
+> > -	cpu_top->pkgs++;
+> >  
+> >  	qsort(cpu_top->core_info, cpus, sizeof(struct cpuid_core_info),
+> >  	      __compare);
+> >  
+> > +	/* Count the number of distinct pkgs values. This works
+> > +	   becuase the primary sort of of the core_info structs was just
+> becuase ... of of ... struct instead of structs
+
+Oof. I'm not winning any grammar medals for this. Thanks for
+noticing.
 > 
-> Initial large code submissions typically are not accepted
-> on their first patch submission. The developers are
-> typically given feedback and at times some developers may
-> even submit changes to the original authors for integration
-> into their second submission attempt.
+> Otherwise the first 4 patches look like rather nice and straight forward
+> cleanups/fixes.
+> Feel free to add a Reviewed-by: Thomas Renninger <trenn@suse.de>
+
+Will do. Thanks!
 > 
-> Developers wishing to contribute changes to the evolution
-> of a second patch submission must supply their own Siged-off-by
-> tag to the original authors and must submit their changes
-> on a public mailing list or ensure that these submission
-> are recorded somewhere publicly.
+> Let me have a closer look at patch 5 and 6. I had problems getting rid of
+> the compiler warning, looks like you found an easy way to clean this up.
+> I will be back and have time for this in the beginning of next week.
+
+Thanks for the review! Let me know if there is anything in patches 5
+and 6 that needs cleaning up and I'll be happy to do it. I only have
+access to a laptop with a single package 2 core Centrino2 processor.
+I tested each patch in the series on my laptop running a 64-bit 3.5
+kernel to make sure that everything functioned. I'm no expert in the
+exact expected output of the tool, but the only impact that I
+believe these patches should have is the output of the number of cpu
+packages. I tested this on my system which resulted in reporting
+just a single cpu package as I expected, but I don't have access to
+a system with multiple cpu packages to test on.
+
 > 
-> To date a few of these type of contributors have expressed
-> different preferences for whether or not their own SOB tag
-> should be used for a second code submission. Lets keep things
-> simple and only require the contributor's SOB tag if so desired
-> explicitly. It is not technically required if there already
-> is a public record of their contribution somewhere.
+> On which platforms (topology) did you test this?
 > 
-> Document this on Documentation/SubmittingPatches
-> 
-> Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
-> ---
->  Documentation/SubmittingPatches |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index c379a2a..e018043 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -366,6 +366,21 @@ and protect the submitter from complaints. Note that under no circumstances
->  can you change the author's identity (the From header), as it is the one
->  which appears in the changelog.
->  
-> +If you are submitting a large change (for example a new driver) at times
-> +you may be asked to make quite a lot of modifications prior to getting
-> +your change accepted. 
+>    Thomas
 
-This applies to any patch, not just large ones and/or drivers.
-
-> At times you may even receive patches from developers
-> +who not only wish to tell you what you should change to get your changes
-> +upstream but actually send you patches. 
-
-This sentence is long and confusing. Perhaps something like: "Other
-developers may send patches to show what changes should be made, rather
-than just making comments".
-
-> If those patches were made publicly
-> +and they do contain a Singed-off-by tag you are not expected to provide
-> +their own Singed-off-by tag on the second iteration of the patch so long
-> +as there is a public record somewhere that can be used to show the
-> +contributor had sent their changes with their own Singed-off-by tag.
-
-If another developer sends a patch with a Signed-off-by, regardless of
-whether it is a patch against mainline, or a patch on top of a patch,
-why would you not be required to keep the Signed-off-by tag? Does this
-mean that I can review somebodies else's patch, send them a patch on top
-of it with my Signed-off-by, and they can simply drop it and take my
-work uncredited?
-
-If a developer wants to provided patches on top of someone else's work,
-but does not want to be credited with a Signed-off-by, then surely they
-should just not sign-off their patch?
-
-You also misspelled "Signed-of-by" several times.
-
-> +
-> +If you receive patches privately during development you may want to
-> +ask for these patches to be re-posted publicly or you can also decide
-> +to merge the patches as part of a separate historical git tree that
-> +will remain online for historical archiving.
-
-I don't think this necessarily needs to be stated. Lots of patches,
-especially drivers, have probably had several authors, but only require
-the sign-off of the person doing the actual submission. So the rules
-should be (IMHO):
-
- 1) The person submitting the code must sign the patch off.
- 2) If another person contributes to the code, whether during
-    development, or as part of a review, then they should have
-    a Signed-off-by tag applied only if they provide one.
- 3) Signed-off-by tags (all tags really) should never be added
-    without the express permission of the person themselves.
-
-If additional credit needs to be given, but the creditor doesn't want to
-provide a Signed-off-by then one of the other tags could be used (such
-as Reviewed-by), or the person could be mentioned in the changelog
-perhaps? e.g:
-
-  "Parts of the foo function provided by Joe Bloggs <joe@bloggs.com>"
-
-~Ryan
+-Palmer
