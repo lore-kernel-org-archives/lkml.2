@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab2HJKYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:24:36 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:35071 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab2HJKYc (ORCPT
+	id S1760076Ab2HJK3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:29:12 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35163 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2HJK3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:24:32 -0400
-X-Originating-IP: 217.70.178.135
-X-Originating-IP: 93.1.143.174
-Message-ID: <5024E15D.4090102@gnu-log.net>
-Date: Fri, 10 Aug 2012 12:24:29 +0200
-From: Benoit Gschwind <gschwind@gnu-log.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120808 Thunderbird/10.0.6
+	Fri, 10 Aug 2012 06:29:08 -0400
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Francois Rigaut <frigaut@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: ingore eDP bpc settings
-References: <1344589820-9753-1-git-send-email-daniel.vetter@ffwll.ch>
-In-Reply-To: <1344589820-9753-1-git-send-email-daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Fri, 10 Aug 2012 15:59:07 +0530
+Message-ID: <CAM3X=jOq+1uNZtwPh0am00jq0nsHu+bdVUPvpsyb+qr=5opTjA@mail.gmail.com>
+Subject: Issues with ioremap
+From: kps mailme <kps.mailme@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 Hello,
+I have a ARM926 based development board. I am trying to remap 23 MB of
+IO memory using ioremap and access with the code snippet below, mm
+throws an exception most of the times -
+#define MRAM_SIZE 23068672
 
-I confirm this patch work apply to kernel 3.6-rc1
+    while(1)
+    {
+        offset = test_random() % MRAM_SIZE;
+        virt_addr = mmem + offset;
+        page = virt_to_page (virt_addr);
+        get_page(page);
+        /* do something */
+        put_page(page);
+    }
+Exception in linux-kernel ver - 3.1-
+[  116.390625] [<bf0120a4>] (test_init+0xa4/0x114 [test]) from
+[<c0008770>] (do_one_initcall+0x94/0x16c)
+[  116.390625] [<c0008770>] (do_one_initcall+0x94/0x16c) from
+[<c0043f50>] (sys_init_module+0xd8c/0xfdc)
+[  116.390625] [<c0043f50>] (sys_init_module+0xd8c/0xfdc) from
+[<c0009280>] (ret_fast_syscall+0x0/0x2c)
+[  116.390625] Code: e7933280 e3130902 0a000008 e594301c (e5932010)
 
-Best regards
+0xa4 is in test_init (include/linux/mm.h:386).
+381            /*
+382             * This is safe only because
+383             * __split_huge_page_refcount can't run under
+384             * get_page().
+385             */
+386            VM_BUG_ON(atomic_read(&page->first_page->_count) < 0);
+387            atomic_inc(&page->first_page->_count);
+388        }
+389    }
 
-On 10/08/2012 11:10, Daniel Vetter wrote:
-> This has originally been introduced to not oversubscribe the dp links
-> in
-> 
-> commit 885a5fb5b120a5c7e0b3baad7b0feb5a89f76c18
-> Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-> Date:   Tue Jan 12 05:38:31 2010 +0800
-> 
->     drm/i915: fix pixel color depth setting on eDP
-> 
-> Since then we've fixed up the dp link bandwidth calculation code for
-> code and should now automatically fall back to 6bpc dithering. So this
-> is unnecessary.
-> 
-> Furthermore it seems to break the new MacbookPro with retina display,
-> hence let's just rip this out.
-> 
-> Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
-> Cc: Benoit Gschwind <gschwind@gnu-log.net>
-> Cc: Francois Rigaut <frigaut@gmail.com>
-> Cc: Greg KH <gregkh@linuxfoundation.org>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> --
-> 
-> Testing feedback highgly welcome, and thanks for Benoit for finding
-> out that the bpc computations are busted.
-> -Daniel
-> ---
->  drivers/gpu/drm/i915/intel_display.c |   11 -----------
->  1 file changed, 11 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index bddb290..ddd4db3 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -3755,17 +3755,6 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
->  			continue;
->  		}
->  
-> -		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
-> -			/* Use VBT settings if we have an eDP panel */
-> -			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
-> -
-> -			if (edp_bpc < display_bpc) {
-> -				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
-> -				display_bpc = edp_bpc;
-> -			}
-> -			continue;
-> -		}
-> -
->  		/* Not one of the known troublemakers, check the EDID */
->  		list_for_each_entry(connector, &dev->mode_config.connector_list,
->  				    head) {
 
+Exception in linux-kernel ver - 3.4.3 -
+[  108.640625] [<c0063ce4>] (__get_page_tail+0x20/0xb0) from
+[<bf012084>] (test_init+0x84/0x100 [test])
+[  108.640625] [<bf012084>] (test_init+0x84/0x100 [test]) from
+[<c0008770>] (do_one_initcall+0x94/0x16c)
+[  108.640625] [<c0008770>] (do_one_initcall+0x94/0x16c) from
+[<c0045330>] (sys_init_module+0x70/0x18c)
+[  108.640625] [<c0045330>] (sys_init_module+0x70/0x18c) from
+[<c0009320>] (ret_fast_syscall+0x0/0x2c)
+[  108.640625] Code: 0a000023 e590001c e1530000 0a000020 (e5902010)
+
+Is there a limitation on the size of memory that can be mapped using
+ioremap? Looks like, first_page is not configured correctly for memory
+mapped using ioremap.
+This is a shared memory used by a network device to read and write ip
+packets. Can someone please confirm? Any pointers on how to debug and
+fix this issue are much appreciated.
+
+Thank you!
+Regards, Pratik
+
+[Note: I tried using iotable but situation does not improve.]
