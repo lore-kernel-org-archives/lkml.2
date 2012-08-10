@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760159Ab2HJTHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 15:07:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51574 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759947Ab2HJTGk (ORCPT
+	id S1760075Ab2HJTLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 15:11:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31753 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2HJTL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 15:06:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL 0/3] arm-soc updates
-Date: Fri, 10 Aug 2012 21:06:12 +0200
-Message-Id: <1344625575-27560-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-X-Provags-ID: V02:K0:tmuTJxFE18PLzeVpfk4Lc5Zyhif+WSkXR7EbJ7kR6Gf
- vBOCj6Pq3gt1EkJh4TL2edRnUzN6RNLWdZyXScTee0bddemPu7
- jhUiEDxl9Pu4Ikj51PXXCNQehbKm1nzGNrBeCS8gHY3O7y2h0T
- VD33M6kWpPD/h2v8oBfmoquQqivfz9yTq5sRoESEHfa4zMW8CN
- 4pjsZwpriPP00SAqVkMkuzMZminz3SdPqt9Apz91sx2cZ17RnE
- BL0iMRaIjvQKqoRpCy/w4dEP6Rv0TS5oo7zPoy3oIr4bYOmdJg
- q/Q8XF3D76mgotEbyUCujcNRSZByEIVRDOG2Xe+5/5bxl7dBQq
- 5aYlrQ2PmTq3mFfDLqZq8NtJoMM7u87VhBMr5yTXS
+	Fri, 10 Aug 2012 15:11:26 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=AkM0CkaJG2RumsF6DccA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344625884.6935.103.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.40-rt60
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Fri, 10 Aug 2012 15:11:24 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Here are three pull requests for you to consider for the next -rc.
+Dear RT Folks,
 
-The first one is our regular bug fix series, this time with a lot
-of patches fixing build regressions. Please pull at least this one.
+I'm pleased to announce the 3.0.40-rt60 stable release.
 
-The other two are things that fell through the cracks in the v3.6
-merge window because of communication problems between the arm-soc
-team and our downstream maintainers. Neither of them is important,
-but applying them should also be harmless. If you feel like making
-an exception, please have a look and consider merging them as well,
-but don't worry about them otherwise.
 
-	Arnd
+This release is just an update to the new stable 3.0.40 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 810bfb094d8b827b9748a0e237b83675467d94e1
+
+
+Or to build 3.0.40-rt60 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.40.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.40-rt60.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
