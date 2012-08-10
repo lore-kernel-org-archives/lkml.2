@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758374Ab2HJReU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:34:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14767 "EHLO mx1.redhat.com"
+	id S1758473Ab2HJRfq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:35:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37110 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757228Ab2HJReS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:34:18 -0400
-Date: Fri, 10 Aug 2012 13:34:02 -0400
+	id S1758191Ab2HJRfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:35:43 -0400
+Date: Fri, 10 Aug 2012 13:35:27 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 4/6] floppy: properly handle failure on add_disk loop
-Message-ID: <20120810173402.GI5416@redhat.com>
+Subject: Re: [PATCH 6/6] floppy: use disk_registered for checking if a drive
+ is present
+Message-ID: <20120810173527.GJ5416@redhat.com>
 References: <1344542391-16474-1-git-send-email-herton.krzesinski@canonical.com>
- <1344542391-16474-5-git-send-email-herton.krzesinski@canonical.com>
+ <1344542391-16474-7-git-send-email-herton.krzesinski@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344542391-16474-5-git-send-email-herton.krzesinski@canonical.com>
+In-Reply-To: <1344542391-16474-7-git-send-email-herton.krzesinski@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 04:59:49PM -0300, Herton Ronaldo Krzesinski wrote:
-> On do_floppy_init, if something failed inside the loop we call add_disk,
-> there was no cleanup of previous iterations in the error handling.
+On Thu, Aug 09, 2012 at 04:59:51PM -0300, Herton Ronaldo Krzesinski wrote:
+> Simplify/cleanup code, replacing remaining checks for drives present
+> using disk_registered array.
 > 
 > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> Cc: stable@vger.kernel.org
 > ---
 
 Looks good to me.
@@ -39,36 +39,43 @@ Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
 Vivek
 
->  drivers/block/floppy.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
+>  drivers/block/floppy.c |   10 +++-------
+>  1 file changed, 3 insertions(+), 7 deletions(-)
 > 
 > diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index 9272203..3eafe93 100644
+> index 438ffc9..5fcc2a1 100644
 > --- a/drivers/block/floppy.c
 > +++ b/drivers/block/floppy.c
-> @@ -4294,7 +4294,7 @@ static int __init do_floppy_init(void)
+> @@ -4114,9 +4114,7 @@ static struct platform_device floppy_device[N_DRIVE];
+>  static struct kobject *floppy_find(dev_t dev, int *part, void *data)
+>  {
+>  	int drive = (*part & 3) | ((*part & 0x80) >> 5);
+> -	if (drive >= N_DRIVE ||
+> -	    !(allowed_drive_mask & (1 << drive)) ||
+> -	    fdc_state[FDC(drive)].version == FDC_NONE)
+> +	if (drive >= N_DRIVE || !disk_registered[drive])
+>  		return NULL;
+>  	if (((*part >> 2) & 0x1f) >= ARRAY_SIZE(floppy_type))
+>  		return NULL;
+> @@ -4559,8 +4557,7 @@ static void __exit floppy_module_exit(void)
+>  	for (drive = 0; drive < N_DRIVE; drive++) {
+>  		del_timer_sync(&motor_off_timer[drive]);
 >  
->  		err = platform_device_register(&floppy_device[drive]);
->  		if (err)
-> -			goto out_release_dma;
-> +			goto out_remove_drives;
->  
->  		err = device_create_file(&floppy_device[drive].dev,
->  					 &dev_attr_cmos);
-> @@ -4313,6 +4313,14 @@ static int __init do_floppy_init(void)
->  
->  out_unreg_platform_dev:
->  	platform_device_unregister(&floppy_device[drive]);
-> +out_remove_drives:
-> +	while (drive--) {
+> -		if ((allowed_drive_mask & (1 << drive)) &&
+> -		    fdc_state[FDC(drive)].version != FDC_NONE) {
 > +		if (disk_registered[drive]) {
-> +			del_gendisk(disks[drive]);
-> +			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
-> +			platform_device_unregister(&floppy_device[drive]);
-> +		}
-> +	}
->  out_release_dma:
->  	if (atomic_read(&usage_count))
->  		floppy_release_irq_and_dma();
+>  			del_gendisk(disks[drive]);
+>  			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
+>  			platform_device_unregister(&floppy_device[drive]);
+> @@ -4571,8 +4568,7 @@ static void __exit floppy_module_exit(void)
+>  		 * These disks have not called add_disk().  Don't put down
+>  		 * queue reference in put_disk().
+>  		 */
+> -		if (!(allowed_drive_mask & (1 << drive)) ||
+> -		    fdc_state[FDC(drive)].version == FDC_NONE)
+> +		if (!disk_registered[drive])
+>  			disks[drive]->queue = NULL;
+>  
+>  		put_disk(disks[drive]);
 > -- 
 > 1.7.9.5
