@@ -1,38 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab2HJG2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 02:28:46 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34811 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab2HJG2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 02:28:43 -0400
-Date: Fri, 10 Aug 2012 09:28:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Ben Chan <benchan@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in
- gdm_wimax_event_init
-Message-ID: <20120810062829.GA4546@mwanda>
-References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
- <CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com>
- <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
- <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com>
+	id S1754634Ab2HJGdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 02:33:32 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:58823 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396Ab2HJGd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 02:33:29 -0400
+Date: Fri, 10 Aug 2012 08:33:25 +0200 (CEST)
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: anish kumar <anish198519851985@gmail.com>
+cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish.singh@samsung.com>
+Subject: Re: [PATCH] [PATCH V5]Extcon: adc_jack: adc-jack driver to support
+ 3.5 pi or simliar devices
+In-Reply-To: <1344575868-27661-1-git-send-email-anish198519851985@gmail.com>
+Message-ID: <alpine.DEB.2.01.1208100825500.30170@pmeerw.net>
+References: <1344575868-27661-1-git-send-email-anish198519851985@gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben, I'm confused.  Do you have a way to test this, or are you just
-doing manual review?
+Hello,
 
-regards,
-dan carpenter
+some nitpicking below; sorry for my late reaction to the patch
 
+regards, p.
+
+> From: anish kumar <anish198519851985@gmail.com>
+> 
+> External connector devices that decides connection information based on
+> ADC values may use adc-jack device driver. The user simply needs to
+> provide a table of adc range and connection states. Then, extcon
+> framework will automatically notify others.
+> 
+> Changes in V1:
+> added Lars-Peter Clausen suggested changes:
+> Using macros to get rid of boiler plate code such as devm_kzalloc
+> and module_platform_driver.Other changes suggested are related to
+> coding guidelines.
+> 
+> Changes in V2:
+> Removed some unnecessary checks and changed the way we are un-regitering
+> extcon and freeing the irq while removing.
+> 
+> Changes in V3:
+> Renamed the files to comply with extcon naming.
+> 
+> Changes in V4:
+> Added the cancel_work_sync during removing of driver.
+> 
+> Changes in this version:
+> Added the dependency of IIO in Kconfig.
+> 
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: anish kumar <anish.singh@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/extcon/Kconfig                 |    6 +
+>  drivers/extcon/Makefile                |    1 +
+>  drivers/extcon/extcon-adc-jack.c       |  195 ++++++++++++++++++++++++++++++++
+>  include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
+>  4 files changed, 275 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/extcon/extcon-adc-jack.c
+>  create mode 100644 include/linux/extcon/extcon-adc-jack.h
+> 
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> index e175c8e..dd5b01b 100644
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -21,6 +21,12 @@ config EXTCON_GPIO
+>  	  Say Y here to enable GPIO based extcon support. Note that GPIO
+>  	  extcon supports single state per extcon instance.
+>  
+> +config EXTCON_ADC_JACK
+> +	tristate "ADC Jack extcon support"
+> +	depends on IIO
+> +	help
+> +	  Say Y here to enable extcon device driver based on ADC values.
+> +
+>  config EXTCON_MAX77693
+>  	tristate "MAX77693 EXTCON Support"
+>  	depends on MFD_MAX77693
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 88961b3..bc7111e 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -4,6 +4,7 @@
+>  
+>  obj-$(CONFIG_EXTCON)		+= extcon_class.o
+>  obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
+> +obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
+>  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+>  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+> diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+> new file mode 100644
+> index 0000000..5a97a35
+> --- /dev/null
+> +++ b/drivers/extcon/extcon-adc-jack.c
+> @@ -0,0 +1,195 @@
+> +/*
+> + * drivers/extcon/extcon-adc-jack.c
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/err.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/iio/consumer.h>
+> +#include <linux/extcon/extcon-adc-jack.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_data - internal data for adc_jack device driver
+> + * @edev        - extcon device.
+> + * @cable_names - list of supported cables.
+> + * @num_cables  - size of cable_names.
+> + * @adc_condition       - list of adc value conditions.
+> + * @num_condition       - size of adc_condition.
+
+it is num_conditions (not num_condition) in the code below
+
+I suggest t use adc_conditions instead of adc_condition to be in line with 
+cable_names (vs. cable_name)
+
+> + * @irq         - irq number of attach/detach event (0 if not exist).
+> + * @handling_delay      - interrupt handler will schedule extcon event
+> + *                      handling at handling_delay jiffies.
+> + * @handler     - extcon event handler called by interrupt handler.
+> + * @chan	- iio channel being queried.
+> + */
+> +struct adc_jack_data {
+> +	struct extcon_dev edev;
+> +
+> +	const char **cable_names;
+> +	int num_cables;
+> +	struct adc_jack_cond *adc_condition;
+> +	int num_conditions;
+> +
+> +	int irq;
+> +	unsigned long handling_delay; /* in jiffies */
+> +	struct delayed_work handler;
+> +
+> +	struct iio_channel *chan;
+> +};
+> +
+> +static void adc_jack_handler(struct work_struct *work)
+> +{
+> +	struct adc_jack_data *data = container_of(to_delayed_work(work),
+> +						  struct adc_jack_data,
+> +						  handler);
+> +	u32 state = 0;
+> +	int ret, adc_val;
+> +	int i;
+> +
+> +	ret = iio_read_channel_raw(data->chan, &adc_val);
+> +	if (ret < 0) {
+> +		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
+> +		return;
+> +	}
+> +
+> +	/* Get state from adc value with adc_condition */
+> +	for (i = 0; i < data->num_conditions; i++) {
+> +		struct adc_jack_cond *def = &data->adc_condition[i];
+> +		if (!def->state)
+> +			break;
+> +		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
+> +			state = def->state;
+> +			break;
+> +		}
+> +	}
+> +	/* if no def has met, it means state = 0 (no cables attached) */
+> +
+> +	extcon_set_state(&data->edev, state);
+> +}
+> +
+> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
+> +{
+> +	struct adc_jack_data *data = _data;
+> +
+> +	schedule_delayed_work(&data->handler, data->handling_delay);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit adc_jack_probe(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data;
+> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
+> +	int i, err = 0;
+> +
+> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->edev.name = pdata->name;
+> +
+> +	if (pdata->cable_names)
+> +		data->edev.supported_cable = pdata->cable_names;
+> +	else
+> +		data->edev.supported_cable = extcon_cable_name;
+> +
+> +	/* Check the length of array and set num_cables */
+> +	for (i = 0; data->edev.supported_cable[i]; i++)
+> +		;
+> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
+> +			i - 1);
+> +		goto out;
+> +	}
+> +	data->num_cables = i;
+> +
+> +	if (!pdata->adc_condition ||
+> +	    !pdata->adc_condition[0].state) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
+> +		goto out;
+> +	}
+> +	data->adc_condition = pdata->adc_condition;
+> +
+> +	/* Check the length of array and set num_conditions */
+> +	for (i = 0; data->adc_condition[i].state; i++)
+> +		;
+> +	data->num_conditions = i;
+> +
+> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
+> +						pdata->consumer_channel);
+> +	if (IS_ERR(data->chan)) {
+> +		err = PTR_ERR(data->chan);
+> +		goto out;
+> +	}
+> +
+> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
+> +
+> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
+> +
+> +	platform_set_drvdata(pdev, data);
+> +
+> +	err = extcon_dev_register(&data->edev, &pdev->dev);
+> +	if (err)
+> +		goto out;
+> +
+> +	data->irq = platform_get_irq(pdev, 0);
+> +	if (!data->irq) {
+> +		dev_err(&pdev->dev, "platform_get_irq failed\n");
+> +		err = -ENODEV;
+> +		goto err_irq;
+> +	}
+> +
+> +	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
+> +				pdata->irq_flags, pdata->name, data);
+> +
+> +	if (err) {
+> +		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
+> +		err = -EINVAL;
+> +		goto err_irq;
+> +	}
+> +
+> +	goto out;
+> +
+> +err_irq:
+> +	extcon_dev_unregister(&data->edev);
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __devexit adc_jack_remove(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
+> +
+> +	free_irq(data->irq, data);
+> +	cancel_work_sync(&data->handler.work);
+> +	extcon_dev_unregister(&data->edev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver adc_jack_driver = {
+> +	.probe		= adc_jack_probe,
+> +	.remove		= __devexit_p(adc_jack_remove),
+> +	.driver		= {
+> +		.name	= "adc-jack",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +module_platform_driver(adc_jack_driver);
+> diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
+> new file mode 100644
+> index 0000000..c350615
+> --- /dev/null
+> +++ b/include/linux/extcon/extcon-adc-jack.h
+> @@ -0,0 +1,73 @@
+> +/*
+> + * include/linux/extcon/extcon-adc-jack.h
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#ifndef _EXTCON_ADC_JACK_H_
+> +#define _EXTCON_ADC_JACK_H_ __FILE__
+> +
+> +#include <linux/module.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_cond - condition to use an extcon state
+> + * @state	- the corresponding extcon state (if 0, this struct denotes
+> + *		the last adc_jack_cond element among the array)
+> + * @min_adc	- min adc value for this condition
+> + * @max_adc	- max adc value for this condition
+> + *
+> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
+> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
+> + * 1 are attached (1<<0 | 1<<1 == 0x3)
+> + *
+> + * Note that you don't need to describe condition for "no cable attached"
+> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
+> + */
+> +struct adc_jack_cond {
+> +	u32 state; /* extcon state value. 0 if invalid */
+> +	u32 min_adc;
+> +	u32 max_adc;
+> +};
+> +
+> +/**
+> + * struct adc_jack_pdata - platform data for adc jack device.
+> + * @name	- name of the extcon device. If null, "adc-jack" is used.
+> + * @consumer_channel - Unique name to identify the channel on the consumer
+> + *                   side. This typically describes the channels use within
+
+channels use_d_ within
+
+> + *                   the consumer. E.g. 'battery_voltage'
+> + * @cable_names	- array of cable names ending with null. If the array itself
+> + *		if null, extcon standard cable names are chosen.
+> + * @adc_contition	- array of struct adc_jack_cond conditions ending
+
+adc_con_d_ition
+should maybe be adc_conditions
+
+> + *			with .state = 0 entry. This describes how to decode
+> + *			adc values into extcon state.
+> + * @irq_flags	- irq flags used for the @irq
+> + * @handling_delay_ms	- in some devices, we need to read ADC value some
+> + *			milli-seconds after the interrupt occurs. You may
+> + *			describe such delays with @handling_delay_ms, which
+> + *			is rounded-off by jiffies.
+> + */
+> +struct adc_jack_pdata {
+> +	const char *name;
+> +	const char *consumer_channel;
+> +	/*
+> +	 * NULL if standard extcon names are used.
+> +	 * The last entry should be NULL
+> +	 */
+> +	const char **cable_names;
+> +	/* The last entry's state should be 0 */
+> +	struct adc_jack_cond *adc_condition;
+> +
+> +	unsigned long irq_flags;
+> +	unsigned long handling_delay_ms; /* in ms */
+> +};
+> +
+> +#endif /* _EXTCON_ADC_JACK_H */
+> 
+
+-- 
+
+Peter Meerwald
++43-664-2444418 (mobile)
