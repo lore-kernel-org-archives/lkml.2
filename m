@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759639Ab2HJP0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:26:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44201 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758926Ab2HJP0S (ORCPT
+	id S1759799Ab2HJP3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:29:51 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:45128 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759203Ab2HJP3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:26:18 -0400
-Date: Fri, 10 Aug 2012 10:26:04 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] fs: Make core dump functionality optional
-Message-ID: <20120810152604.GA27585@sergelap>
-References: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
- <1344587169-18682-2-git-send-email-alex.page.kelly@gmail.com>
- <20120810132323.GA21048@sergelap>
- <20120810150157.GA23457@leaf>
+	Fri, 10 Aug 2012 11:29:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120810150157.GA23457@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120731011457.GO2877@dastard>
+References: <201207301514247032532@gmail.com>
+	<20120730214213.GF2877@dastard>
+	<201207310855556258267@gmail.com>
+	<20120731011457.GO2877@dastard>
+Date: Fri, 10 Aug 2012 08:29:45 -0700
+Message-ID: <CAFR8uedP7pGm+KbW4q0fR3L1GS6GwG0yAGUDBsJbrTfKNHnWag@mail.gmail.com>
+Subject: Re: Re: [PATCH 0/8] Set bi_rw when alloc bio before call bio_add_page.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: majianpeng <majianpeng@gmail.com>, Neil Brown <neilb@suse.de>,
+        axboe <axboe@kernel.dk>, "konrad.wilk" <konrad.wilk@oracle.com>,
+        "chris.mason" <chris.mason@fusionio.com>,
+        viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
+        "adilger.kernel" <adilger.kernel@dilger.ca>,
+        shaggy <shaggy@kernel.org>, mfasheh <mfasheh@suse.com>,
+        jlbec <jlbec@evilplan.org>, bpm <bpm@sgi.com>,
+        elder <elder@kernel.org>,
+        jfs-discussion <jfs-discussion@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Josh Triplett (josh@joshtriplett.org):
-> On Fri, Aug 10, 2012 at 08:23:23AM -0500, Serge Hallyn wrote:
-> > Quoting Alex Kelly (alex.page.kelly@gmail.com):
-> > > Adds an expert Kconfig option, CONFIG_COREDUMP, which allows disabling of core dump.
-> > > This saves approximately 2.6k in the compiled kernel, and complements CONFIG_ELF_CORE,
-> > > which now depends on it.
-> > 
-> > Is there another reason than the 2.6k to do this?  My kernels range
-> > between 4.8 and 5M, so that's .05% size savings?
-> 
-> A kitchen-sink kernel might take up that much space, but you can build a
-> minimal embedded kernel that only takes up ~200k, at which point 2.6k
-> represents a >1% decrease.  Add a few more changes like this, and those
-> decreases start to add up.  At this point, no one thing you can chop out
-> of the kernel will give you a 100k decrease by itself; you need a pile
-> of changes like this one to do that.
-> 
-> - Josh Triplett
+[ Resending in plain text... sorry for the duplicate ]
 
-I see.  That's an order of magnitude smaller than what i figured you'd
-get with a reasonable kernel  :)
+Hi,
+
+On Mon, Jul 30, 2012 at 6:14 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> On Tue, Jul 31, 2012 at 08:55:59AM +0800, majianpeng wrote:
+> > On 2012-07-31 05:42 Dave Chinner <david@fromorbit.com> Wrote:
+> > >On Mon, Jul 30, 2012 at 03:14:28PM +0800, majianpeng wrote:
+> > >> When exec bio_alloc, the bi_rw is zero.But after calling
+> > >> bio_add_page,
+> > >> it will use bi_rw.
+> > >> Fox example, in functiion __bio_add_page,it will call
+> > >> merge_bvec_fn().
+> > >> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
+> > >> >> if ((bvm->bi_rw & 1) == WRITE)
+> > >> >> return biovec->bv_len; /* always allow writes to be mergeable */
+> > >
+> > >So if bio_add_page() requires bi_rw to be set, then shouldn't it be
+> > >set up for every caller? I noticed there are about 50 call sites for
+> > >bio_add_page(), and you've only touched about 10 of them. Indeed, I
+> > >notice that the RAID0/1 code uses bio_add_page, and as that can be
+> > >stacked on top of RAID456, it also needs to set bi_rw correctly.
+> > >As a result, your patch set is nowhere near complete, not does it
+> > >document that bio_add_page requires that bi_rw be set before calling
+> > >(which is the new API requirement, AFAICT).
+> > There are many place call bio_add_page and I send some of those. Because
+> > my abilty, so I only send
+> > some patchs which i understand clearly.
+>
+> Sure, but my point is that there is no point changing only a few and
+> ignoring the great majority of callers. Either fix them all, fix it
+> some other way (e.g. API change), or remove the code from the RAID5
+> function that requires it.
+
+A while back, we tried to address this by changing the alloc functions to
+take rw argument and set it (as per Jens suggestion). I guess the patch did
+not make it in. Please check:
+
+https://lkml.org/lkml/2011/7/11/275
+
+and the follow ups. If needed, I can dust up that patch and resend it.
+
+>
+
+<snip>
+
+>
+> It's entirely possible that when bi_rw was added to struct
+> bvec_merge_data, the person who added it was mistaken that bi_rw was
+> set at this point in time when in fact it never has been. Hence it's
+> presence and reliance on it would be a bug.
+>
+> That's what I'm asking - is this actually beneificial, or should it
+> simply be removed from struct bvec_merge_data? Data is needed to
+> answer that question....
+
+There are cases where we found it really beneficial to know the rw
+field to decide if the can be really merged or not.
+
+
+Regards,
+Muthu
+
+
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
