@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab2HJJQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 05:16:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59468 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2HJJQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 05:16:08 -0400
-Date: Fri, 10 Aug 2012 10:15:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-Message-ID: <20120810091555.GX18957@n2100.arm.linux.org.uk>
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de> <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com> <20120809202054.GA24503@avionic-0098.mockup.avionic-design.de> <CACRpkdaSk9xBaiSAKCj4Pa2kyyfP178XN53i2Q2+CBFx=RoE0g@mail.gmail.com> <20120810083508.GA16251@avionic-0098.mockup.avionic-design.de> <CACRpkdaGWhTR3Zr40dtigQqPPkxQZ=zYqYVBfpwbnkf3P2Qhhg@mail.gmail.com>
+	id S1758262Ab2HJJW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 05:22:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58472 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757948Ab2HJJW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 05:22:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,744,1336374000"; 
+   d="scan'208";a="196487130"
+Date: Fri, 10 Aug 2012 17:22:23 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Dave Peterson <dsp@llnl.gov>, kernel-janitors@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] edac_mc: fix kfree calls in the error path
+Message-ID: <20120810092223.GA27375@localhost>
+References: <20120809135416.GA13100@localhost>
+ <5023F360.2050409@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdaGWhTR3Zr40dtigQqPPkxQZ=zYqYVBfpwbnkf3P2Qhhg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <5023F360.2050409@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 10:41:58AM +0200, Linus Walleij wrote:
-> On Fri, Aug 10, 2012 at 10:35 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> >> Consult the following article on LWN:
-> >> http://lwn.net/Articles/470820/
-> >>
-> >> Then grep your gitlog and you'll see we got rid of it from ARM.
-> >
-> > Then why is there still the following in arch/arm/include/asm/irq.h?
-> >
-> >         /*
-> >          * Use this value to indicate lack of interrupt
-> >          * capability
-> >          */
-> >         #ifndef NO_IRQ
-> >         #define NO_IRQ  ((unsigned int)(-1))
-> >         #endif
-> 
-> That's a question for Russell but I think it's basically there for
-> old platforms, on a "don't use it"-basis. (Maybe a comment could
-> be good.)
+We need to free up memory in this order: 
 
-Just don't use it.  It's there for old stuff which still needs fixing.
+  free csrows[i]->channels[j]
+  free csrows[i]->channels
+  free csrows[i]
+  free csrows
 
-New code should not use it, and should test for one of:
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ drivers/edac/edac_mc.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-	irq <= 0
-	irq == 0
-
-And new code should set irq = 0 to indicate a lack of interrupt.
+--- linux.orig/drivers/edac/edac_mc.c	2012-08-10 17:16:14.444794060 +0800
++++ linux/drivers/edac/edac_mc.c	2012-08-10 17:16:19.048794169 +0800
+@@ -419,14 +419,16 @@ error:
+ 		kfree(mci->dimms);
+ 	}
+ 	if (mci->csrows) {
+-		for (chn = 0; chn < tot_channels; chn++) {
+-			csr = mci->csrows[chn];
++		for (row = 0; row < tot_csrows; row++) {
++			csr = mci->csrows[row];
+ 			if (csr) {
+-				for (chn = 0; chn < tot_channels; chn++)
+-					kfree(csr->channels[chn]);
++				if (csr->channels) {
++					for (chn = 0; chn < tot_channels; chn++)
++						kfree(csr->channels[chn]);
++					kfree(csr->channels);
++				}
+ 				kfree(csr);
+ 			}
+-			kfree(mci->csrows[i]);
+ 		}
+ 		kfree(mci->csrows);
+ 	}
