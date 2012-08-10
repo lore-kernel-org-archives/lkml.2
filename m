@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab2HJDK7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:10:59 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:55509 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab2HJDK6 (ORCPT
+	id S1760101Ab2HJDOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:14:06 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64942 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858Ab2HJDOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:10:58 -0400
-Message-ID: <50247BA4.7060504@linux.vnet.ibm.com>
-Date: Fri, 10 Aug 2012 11:10:28 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 9 Aug 2012 23:14:04 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-52-50247c799bda
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 1/7] perf hists: Separate out hist print functions
+References: <1344243462-28403-1-git-send-email-namhyung@kernel.org>
+	<1344243462-28403-2-git-send-email-namhyung@kernel.org>
+	<20120809191827.GE4084@infradead.org>
+Date: Fri, 10 Aug 2012 12:08:13 +0900
+In-Reply-To: <20120809191827.GE4084@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Thu, 9 Aug 2012 16:18:27 -0300")
+Message-ID: <87fw7vwijm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: remove useless code in yield_to
-References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins> <4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop> <20120126100429.GA3853@elte.hu> <4F21FC69.6040402@linux.vnet.ibm.com> <4F222B2B.6010602@gmail.com> <4F24E804.5090808@linux.vnet.ibm.com> <20120129163328.GC23408@elte.hu> <4F260BFE.2070503@linux.vnet.ibm.com> <4F260DAE.4000008@gmail.com> <4F262ED9.7040003@linux.vnet.ibm.com> <4FF2925A.9060005@linux.vnet.ibm.com> <50247A97.4000905@linux.vnet.ibm.com>
-In-Reply-To: <50247A97.4000905@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12081003-0260-0000-0000-000001A7BA4B
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 11:05 AM, Michael Wang wrote:
-> On 07/03/2012 02:34 PM, Michael Wang wrote:
->> From: Michael Wang <wangyun@linux.vnet.ibm.com>
->>
->> it's impossible to enter else branch if we have set skip_clock_update
->> in task_yield_fair(), as yield_to_task_fair() will directly return
->> true after invoke task_yield_fair().
-> 
-> Could I get some conclusion on this patch? Should we clean up that peace
-> of code or leave it there?
-s /peace/piece and cc mike...
-> 
-> Regards,
-> Michael Wang
-> 
->>
->> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
->> ---
->>  kernel/sched/core.c |    7 -------
->>  1 files changed, 0 insertions(+), 7 deletions(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 9bb7d28..77c14aa 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -4737,13 +4737,6 @@ again:
->>  		 */
->>  		if (preempt && rq != p_rq)
->>  			resched_task(p_rq->curr);
->> -	} else {
->> -		/*
->> -		 * We might have set it in task_yield_fair(), but are
->> -		 * not going to schedule(), so don't want to skip
->> -		 * the next update.
->> -		 */
->> -		rq->skip_clock_update = 0;
->>  	}
->>
->>  out:
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Hi, Arnaldo
+
+On Thu, 9 Aug 2012 16:18:27 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 06, 2012 at 05:57:36PM +0900, Namhyung Kim escreveu:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Separate out those functions into ui/hist.c. This is required for
+>> upcoming changes.
+>
+> Isn't it better to further separate it by introducing the ui/stdio/
+> directory since these functions use fprintf?
+>
+Maybe. I agree that general ui code reside on ui/ and front-end
+specifics should go to their subdirectories. But not sure for the stdio
+case since they'll have very simple code only.
+
+For this case, most of functions would be converted to manipulate a
+string buffer like scnprintf and shared by all front-end's as long as
+possible - callchain print code needs some more working. But if you
+want, I'll separate out actual fprintf's to ui/stdio/.
+
+Thanks,
+Namhyung
 
