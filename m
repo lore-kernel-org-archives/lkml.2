@@ -1,398 +1,759 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab2HJGdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 02:33:32 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:58823 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab2HJGd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 02:33:29 -0400
-Date: Fri, 10 Aug 2012 08:33:25 +0200 (CEST)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: anish kumar <anish198519851985@gmail.com>
-cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        anish kumar <anish.singh@samsung.com>
-Subject: Re: [PATCH] [PATCH V5]Extcon: adc_jack: adc-jack driver to support
- 3.5 pi or simliar devices
-In-Reply-To: <1344575868-27661-1-git-send-email-anish198519851985@gmail.com>
-Message-ID: <alpine.DEB.2.01.1208100825500.30170@pmeerw.net>
-References: <1344575868-27661-1-git-send-email-anish198519851985@gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754218Ab2HJGjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 02:39:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30938 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab2HJGjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 02:39:40 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-be-5024acaa4e52
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Jaswinder Singh'" <jaswinder.singh@linaro.org>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
+ <1344437248-20560-11-git-send-email-arnd@arndb.de>
+In-reply-to: <1344437248-20560-11-git-send-email-arnd@arndb.de>
+Subject: RE: [PATCH 10/11] spi/s3c64xx: improve error handling
+Date: Fri, 10 Aug 2012 15:39:38 +0900
+Message-id: <0de501cd76c2$ea07dfd0$be179f70$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac11dMXf/9/x5FmWS9iJZPhNvIUiPgBTbTvg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAd1Va1QCDLY2WFlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6My793MRVMPMRY0fvzKXsD47b5jF2MnBwSAiYSh06vZoKwxSQu
+	3FvP1sXIxSEksIhRonvSCkYIZx6TxK6Hi5lBqtgENCQOv3/GDmKLCHhKnDm5gAWkiFngAKPE
+	rzsrwRJCAkUSk/png9mcAvYSG551gtnCAnYS82cvB2rg4GARUJWYvkoNJMwrYCux5coxZghb
+	UOLH5HssIDazgJbE+p3HmSBseYnNa94yg7RKCKhLPPqrC3GCkcSaBRDPMAuISOx78Y5xAqPQ
+	LCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA7mZ1I7GFc2WBxi
+	FOBgVOLhTeRVCRBiTSwrrsw9xCjBwawkwpvyQjlAiDclsbIqtSg/vqg0J7X4EKM0B4uSOK+x
+	91d/IYH0xJLU7NTUgtQimCwTB6dUA2PxpSlH8nNubQ7tkH5xbpdYqfZkizPRb3a+2mRnmh39
+	Ny/4i5yYkcp74xt2u1Pf++7yW/wyjuvdTMUNK+TCZnxJkp2lMj8+cNFEa6/G+8zsSqb3czna
+	GZ9xC/R7Lsk3/redcXLzA5vlMo4vGC49/zlZ0jOu6mPo9FevZffYHb9W7Vuqa/SL+YESS3FG
+	oqEWc1FxIgBtDsNBYgIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-some nitpicking below; sorry for my late reaction to the patch
-
-regards, p.
-
-> From: anish kumar <anish198519851985@gmail.com>
+Arnd Bergmann wrote:
 > 
-> External connector devices that decides connection information based on
-> ADC values may use adc-jack device driver. The user simply needs to
-> provide a table of adc range and connection states. Then, extcon
-> framework will automatically notify others.
+> When a device tree definition os an s3c64xx SPI master is missing
+> a "controller-data" subnode, the newly added s3c64xx_get_slave_ctrldata
+> function might use uninitialized memory in place of that node,
+> which was correctly reported by gcc.
 > 
-> Changes in V1:
-> added Lars-Peter Clausen suggested changes:
-> Using macros to get rid of boiler plate code such as devm_kzalloc
-> and module_platform_driver.Other changes suggested are related to
-> coding guidelines.
+> Without this patch, building s3c6400_defconfig results in:
 > 
-> Changes in V2:
-> Removed some unnecessary checks and changed the way we are un-regitering
-> extcon and freeing the irq while removing.
+> drivers/spi/spi-s3c64xx.c: In function
+> 's3c64xx_get_slave_ctrldata.isra.25':
+> drivers/spi/spi-s3c64xx.c:841:5: warning: 'data_np' may be used
+> uninitialized in this function [-Wuninitialized]
 > 
-> Changes in V3:
-> Renamed the files to comply with extcon naming.
-> 
-> Changes in V4:
-> Added the cancel_work_sync during removing of driver.
-> 
-> Changes in this version:
-> Added the dependency of IIO in Kconfig.
-> 
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> Signed-off-by: anish kumar <anish.singh@samsung.com>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> Cc: Jaswinder Singh <jaswinder.singh@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
 > ---
->  drivers/extcon/Kconfig                 |    6 +
->  drivers/extcon/Makefile                |    1 +
->  drivers/extcon/extcon-adc-jack.c       |  195 ++++++++++++++++++++++++++++++++
->  include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
->  4 files changed, 275 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/extcon/extcon-adc-jack.c
->  create mode 100644 include/linux/extcon/extcon-adc-jack.h
+>  drivers/spi/spi-s3c64xx.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-> index e175c8e..dd5b01b 100644
-> --- a/drivers/extcon/Kconfig
-> +++ b/drivers/extcon/Kconfig
-> @@ -21,6 +21,12 @@ config EXTCON_GPIO
->  	  Say Y here to enable GPIO based extcon support. Note that GPIO
->  	  extcon supports single state per extcon instance.
->  
-> +config EXTCON_ADC_JACK
-> +	tristate "ADC Jack extcon support"
-> +	depends on IIO
-> +	help
-> +	  Say Y here to enable extcon device driver based on ADC values.
-> +
->  config EXTCON_MAX77693
->  	tristate "MAX77693 EXTCON Support"
->  	depends on MFD_MAX77693
-> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> index 88961b3..bc7111e 100644
-> --- a/drivers/extcon/Makefile
-> +++ b/drivers/extcon/Makefile
-> @@ -4,6 +4,7 @@
->  
->  obj-$(CONFIG_EXTCON)		+= extcon_class.o
->  obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
-> +obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
->  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
->  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
->  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
-> diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
-> new file mode 100644
-> index 0000000..5a97a35
-> --- /dev/null
-> +++ b/drivers/extcon/extcon-adc-jack.c
-> @@ -0,0 +1,195 @@
-> +/*
-> + * drivers/extcon/extcon-adc-jack.c
-> + *
-> + * Analog Jack extcon driver with ADC-based detection capability.
-> + *
-> + * Copyright (C) 2012 Samsung Electronics
-> + * MyungJoo Ham <myungjoo.ham@samsung.com>
-> + *
-> + * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/err.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/iio/consumer.h>
-> +#include <linux/extcon/extcon-adc-jack.h>
-> +#include <linux/extcon.h>
-> +
-> +/**
-> + * struct adc_jack_data - internal data for adc_jack device driver
-> + * @edev        - extcon device.
-> + * @cable_names - list of supported cables.
-> + * @num_cables  - size of cable_names.
-> + * @adc_condition       - list of adc value conditions.
-> + * @num_condition       - size of adc_condition.
-
-it is num_conditions (not num_condition) in the code below
-
-I suggest t use adc_conditions instead of adc_condition to be in line with 
-cable_names (vs. cable_name)
-
-> + * @irq         - irq number of attach/detach event (0 if not exist).
-> + * @handling_delay      - interrupt handler will schedule extcon event
-> + *                      handling at handling_delay jiffies.
-> + * @handler     - extcon event handler called by interrupt handler.
-> + * @chan	- iio channel being queried.
-> + */
-> +struct adc_jack_data {
-> +	struct extcon_dev edev;
-> +
-> +	const char **cable_names;
-> +	int num_cables;
-> +	struct adc_jack_cond *adc_condition;
-> +	int num_conditions;
-> +
-> +	int irq;
-> +	unsigned long handling_delay; /* in jiffies */
-> +	struct delayed_work handler;
-> +
-> +	struct iio_channel *chan;
-> +};
-> +
-> +static void adc_jack_handler(struct work_struct *work)
-> +{
-> +	struct adc_jack_data *data = container_of(to_delayed_work(work),
-> +						  struct adc_jack_data,
-> +						  handler);
-> +	u32 state = 0;
-> +	int ret, adc_val;
-> +	int i;
-> +
-> +	ret = iio_read_channel_raw(data->chan, &adc_val);
-> +	if (ret < 0) {
-> +		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
-> +		return;
-> +	}
-> +
-> +	/* Get state from adc value with adc_condition */
-> +	for (i = 0; i < data->num_conditions; i++) {
-> +		struct adc_jack_cond *def = &data->adc_condition[i];
-> +		if (!def->state)
-> +			break;
-> +		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
-> +			state = def->state;
-> +			break;
-> +		}
-> +	}
-> +	/* if no def has met, it means state = 0 (no cables attached) */
-> +
-> +	extcon_set_state(&data->edev, state);
-> +}
-> +
-> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
-> +{
-> +	struct adc_jack_data *data = _data;
-> +
-> +	schedule_delayed_work(&data->handler, data->handling_delay);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit adc_jack_probe(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data;
-> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
-> +	int i, err = 0;
-> +
-> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	data->edev.name = pdata->name;
-> +
-> +	if (pdata->cable_names)
-> +		data->edev.supported_cable = pdata->cable_names;
-> +	else
-> +		data->edev.supported_cable = extcon_cable_name;
-> +
-> +	/* Check the length of array and set num_cables */
-> +	for (i = 0; data->edev.supported_cable[i]; i++)
-> +		;
-> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
-> +			i - 1);
-> +		goto out;
-> +	}
-> +	data->num_cables = i;
-> +
-> +	if (!pdata->adc_condition ||
-> +	    !pdata->adc_condition[0].state) {
-> +		err = -EINVAL;
-> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
-> +		goto out;
-> +	}
-> +	data->adc_condition = pdata->adc_condition;
-> +
-> +	/* Check the length of array and set num_conditions */
-> +	for (i = 0; data->adc_condition[i].state; i++)
-> +		;
-> +	data->num_conditions = i;
-> +
-> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
-> +						pdata->consumer_channel);
-> +	if (IS_ERR(data->chan)) {
-> +		err = PTR_ERR(data->chan);
-> +		goto out;
-> +	}
-> +
-> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
-> +
-> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
-> +
-> +	platform_set_drvdata(pdev, data);
-> +
-> +	err = extcon_dev_register(&data->edev, &pdev->dev);
-> +	if (err)
-> +		goto out;
-> +
-> +	data->irq = platform_get_irq(pdev, 0);
-> +	if (!data->irq) {
-> +		dev_err(&pdev->dev, "platform_get_irq failed\n");
-> +		err = -ENODEV;
-> +		goto err_irq;
-> +	}
-> +
-> +	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
-> +				pdata->irq_flags, pdata->name, data);
-> +
-> +	if (err) {
-> +		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
-> +		err = -EINVAL;
-> +		goto err_irq;
-> +	}
-> +
-> +	goto out;
-> +
-> +err_irq:
-> +	extcon_dev_unregister(&data->edev);
-> +out:
-> +	return err;
-> +}
-> +
-> +static int __devexit adc_jack_remove(struct platform_device *pdev)
-> +{
-> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
-> +
-> +	free_irq(data->irq, data);
-> +	cancel_work_sync(&data->handler.work);
-> +	extcon_dev_unregister(&data->edev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver adc_jack_driver = {
-> +	.probe		= adc_jack_probe,
-> +	.remove		= __devexit_p(adc_jack_remove),
-> +	.driver		= {
-> +		.name	= "adc-jack",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(adc_jack_driver);
-> diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
-> new file mode 100644
-> index 0000000..c350615
-> --- /dev/null
-> +++ b/include/linux/extcon/extcon-adc-jack.h
-> @@ -0,0 +1,73 @@
-> +/*
-> + * include/linux/extcon/extcon-adc-jack.h
-> + *
-> + * Analog Jack extcon driver with ADC-based detection capability.
-> + *
-> + * Copyright (C) 2012 Samsung Electronics
-> + * MyungJoo Ham <myungjoo.ham@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#ifndef _EXTCON_ADC_JACK_H_
-> +#define _EXTCON_ADC_JACK_H_ __FILE__
-> +
-> +#include <linux/module.h>
-> +#include <linux/extcon.h>
-> +
-> +/**
-> + * struct adc_jack_cond - condition to use an extcon state
-> + * @state	- the corresponding extcon state (if 0, this struct denotes
-> + *		the last adc_jack_cond element among the array)
-> + * @min_adc	- min adc value for this condition
-> + * @max_adc	- max adc value for this condition
-> + *
-> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
-> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
-> + * 1 are attached (1<<0 | 1<<1 == 0x3)
-> + *
-> + * Note that you don't need to describe condition for "no cable attached"
-> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
-> + */
-> +struct adc_jack_cond {
-> +	u32 state; /* extcon state value. 0 if invalid */
-> +	u32 min_adc;
-> +	u32 max_adc;
-> +};
-> +
-> +/**
-> + * struct adc_jack_pdata - platform data for adc jack device.
-> + * @name	- name of the extcon device. If null, "adc-jack" is used.
-> + * @consumer_channel - Unique name to identify the channel on the consumer
-> + *                   side. This typically describes the channels use within
-
-channels use_d_ within
-
-> + *                   the consumer. E.g. 'battery_voltage'
-> + * @cable_names	- array of cable names ending with null. If the array itself
-> + *		if null, extcon standard cable names are chosen.
-> + * @adc_contition	- array of struct adc_jack_cond conditions ending
-
-adc_con_d_ition
-should maybe be adc_conditions
-
-> + *			with .state = 0 entry. This describes how to decode
-> + *			adc values into extcon state.
-> + * @irq_flags	- irq flags used for the @irq
-> + * @handling_delay_ms	- in some devices, we need to read ADC value some
-> + *			milli-seconds after the interrupt occurs. You may
-> + *			describe such delays with @handling_delay_ms, which
-> + *			is rounded-off by jiffies.
-> + */
-> +struct adc_jack_pdata {
-> +	const char *name;
-> +	const char *consumer_channel;
-> +	/*
-> +	 * NULL if standard extcon names are used.
-> +	 * The last entry should be NULL
-> +	 */
-> +	const char **cable_names;
-> +	/* The last entry's state should be 0 */
-> +	struct adc_jack_cond *adc_condition;
-> +
-> +	unsigned long irq_flags;
-> +	unsigned long handling_delay_ms; /* in ms */
-> +};
-> +
-> +#endif /* _EXTCON_ADC_JACK_H */
+> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+> index 646a765..cfa2c35 100644
+> --- a/drivers/spi/spi-s3c64xx.c
+> +++ b/drivers/spi/spi-s3c64xx.c
+> @@ -826,7 +826,7 @@ static struct s3c64xx_spi_csinfo
+> *s3c64xx_get_slave_ctrldata(
+>  				struct spi_device *spi)
+>  {
+>  	struct s3c64xx_spi_csinfo *cs;
+> -	struct device_node *slave_np, *data_np;
+> +	struct device_node *slave_np, *data_np = NULL;
+>  	u32 fb_delay = 0;
 > 
+>  	slave_np = spi->dev.of_node;
+> --
+> 1.7.10
 
+Looks ok to me,
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+
+BTW for same reason, probably, we need following fix?
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+----
+From: Kukjin Kim <kgene.kim@samsung.com>
+
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ arch/arm/mach-tegra/tegra2_emc.c             |    4 ++--
+ arch/c6x/kernel/setup.c                      |    2 +-
+ arch/powerpc/kernel/ibmebus.c                |    2 +-
+ arch/powerpc/kernel/pci_of_scan.c            |    2 +-
+ arch/powerpc/kernel/prom.c                   |    2 +-
+ arch/powerpc/kernel/rtas_pci.c               |    2 +-
+ arch/powerpc/kernel/vio.c                    |    2 +-
+ arch/powerpc/platforms/44x/warp.c            |    2 +-
+ arch/powerpc/platforms/cell/setup.c          |    2 +-
+ arch/powerpc/platforms/powernv/opal.c        |    2 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c    |    2 +-
+ arch/powerpc/platforms/powernv/pci-p5ioc2.c  |    2 +-
+ arch/powerpc/platforms/pseries/eeh.c         |   12 ++++++------
+ arch/powerpc/sysdev/mv64x60_dev.c            |    2 +-
+ drivers/dma/fsldma.c                         |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_connector.c  |    2 +-
+ drivers/hwmon/ads1015.c                      |    2 +-
+ drivers/i2c/busses/i2c-powermac.c            |    2 +-
+ drivers/i2c/busses/i2c-pxa-pci.c             |    2 +-
+ drivers/i2c/i2c-mux.c                        |    2 +-
+ drivers/iio/adc/at91_adc.c                   |    2 +-
+ drivers/input/keyboard/samsung-keypad.c      |    2 +-
+ drivers/leds/leds-gpio.c                     |    2 +-
+ drivers/net/ethernet/freescale/fsl_pq_mdio.c |    2 +-
+ drivers/net/phy/mdio-mux.c                   |    2 +-
+ drivers/of/of_i2c.c                          |    2 +-
+ drivers/of/of_mdio.c                         |    2 +-
+ drivers/of/of_pci.c                          |    2 +-
+ drivers/of/platform.c                        |    6 +++---
+ drivers/pinctrl/pinctrl-imx.c                |    4 ++--
+ drivers/pinctrl/pinctrl-tegra.c              |    2 +-
+ drivers/pinctrl/spear/pinctrl-spear.c        |    2 +-
+ drivers/regulator/da9052-regulator.c         |    2 +-
+ drivers/regulator/mc13xxx-regulator-core.c   |    2 +-
+ drivers/regulator/of_regulator.c             |    2 +-
+ drivers/spi/spi.c                            |    2 +-
+ drivers/tty/hvc/hvc_opal.c                   |    2 +-
+ 37 files changed, 46 insertions(+), 46 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/tegra2_emc.c
+b/arch/arm/mach-tegra/tegra2_emc.c
+index 5070d83..d045a9e 100644
+--- a/arch/arm/mach-tegra/tegra2_emc.c
++++ b/arch/arm/mach-tegra/tegra2_emc.c
+@@ -181,7 +181,7 @@ int tegra_emc_set_rate(unsigned long rate)
+ #ifdef CONFIG_OF
+ static struct device_node *tegra_emc_ramcode_devnode(struct device_node
+*np)
+ {
+-	struct device_node *iter;
++	struct device_node *iter = NULL;
+ 	u32 reg;
+ 
+ 	for_each_child_of_node(np, iter) {
+@@ -198,7 +198,7 @@ static struct tegra_emc_pdata *tegra_emc_dt_parse_pdata(
+ 		struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+-	struct device_node *tnp, *iter;
++	struct device_node *tnp, *iter = NULL;
+ 	struct tegra_emc_pdata *pdata;
+ 	int ret, i, num_tables;
+ 
+diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
+index f4e72bd..0f4cd29 100644
+--- a/arch/c6x/kernel/setup.c
++++ b/arch/c6x/kernel/setup.c
+@@ -99,7 +99,7 @@ static void __init get_cpuinfo(void)
+ 	unsigned long core_khz;
+ 	u64 tmp;
+ 	struct cpuinfo_c6x *p;
+-	struct device_node *node, *np;
++	struct device_node *node, *np = NULL;
+ 
+ 	p = &per_cpu(cpu_data, smp_processor_id());
+ 
+diff --git a/arch/powerpc/kernel/ibmebus.c b/arch/powerpc/kernel/ibmebus.c
+index b01d14e..1147931 100644
+--- a/arch/powerpc/kernel/ibmebus.c
++++ b/arch/powerpc/kernel/ibmebus.c
+@@ -180,7 +180,7 @@ static int ibmebus_create_device(struct device_node *dn)
+ 
+ static int ibmebus_create_devices(const struct of_device_id *matches)
+ {
+-	struct device_node *root, *child;
++	struct device_node *root, *child = NULL;
+ 	int ret = 0;
+ 
+ 	root = of_find_node_by_path("/");
+diff --git a/arch/powerpc/kernel/pci_of_scan.c
+b/arch/powerpc/kernel/pci_of_scan.c
+index 30378a1..8344f9a 100644
+--- a/arch/powerpc/kernel/pci_of_scan.c
++++ b/arch/powerpc/kernel/pci_of_scan.c
+@@ -302,7 +302,7 @@ EXPORT_SYMBOL(of_scan_pci_bridge);
+ static void __devinit __of_scan_bus(struct device_node *node,
+ 				    struct pci_bus *bus, int
+rescan_existing)
+ {
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	const u32 *reg;
+ 	int reglen, devfn;
+ 	struct pci_dev *dev;
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index f191bf0..b4a021e 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -735,7 +735,7 @@ void __init early_init_devtree(void *params)
+  */
+ struct device_node *of_find_next_cache_node(struct device_node *np)
+ {
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	const phandle *handle;
+ 
+ 	handle = of_get_property(np, "l2-cache", NULL);
+diff --git a/arch/powerpc/kernel/rtas_pci.c b/arch/powerpc/kernel/rtas_pci.c
+index 179af90..b75d76b 100644
+--- a/arch/powerpc/kernel/rtas_pci.c
++++ b/arch/powerpc/kernel/rtas_pci.c
+@@ -255,7 +255,7 @@ int __devinit rtas_setup_phb(struct pci_controller *phb)
+ 
+ void __init find_and_init_phbs(void)
+ {
+-	struct device_node *node;
++	struct device_node *node = NULL;
+ 	struct pci_controller *phb;
+ 	struct device_node *root = of_find_node_by_path("/");
+ 
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 02b3221..37b2a76 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -116,7 +116,7 @@ static int vio_cmo_num_OF_devs(void)
+ 	 */
+ 	node_vroot = of_find_node_by_name(NULL, "vdevice");
+ 	if (node_vroot) {
+-		struct device_node *of_node;
++		struct device_node *of_node = NULL;
+ 		struct property *prop;
+ 
+ 		for_each_child_of_node(node_vroot, of_node) {
+diff --git a/arch/powerpc/platforms/44x/warp.c
+b/arch/powerpc/platforms/44x/warp.c
+index 4cfa499..b505ca7 100644
+--- a/arch/powerpc/platforms/44x/warp.c
++++ b/arch/powerpc/platforms/44x/warp.c
+@@ -172,7 +172,7 @@ static irqreturn_t temp_isr(int irq, void *context)
+ 
+ static int pika_setup_leds(void)
+ {
+-	struct device_node *np, *child;
++	struct device_node *np, *child = NULL;
+ 
+ 	np = of_find_compatible_node(NULL, NULL, "gpio-leds");
+ 	if (!np) {
+diff --git a/arch/powerpc/platforms/cell/setup.c
+b/arch/powerpc/platforms/cell/setup.c
+index 4ab0876..356fb9c 100644
+--- a/arch/powerpc/platforms/cell/setup.c
++++ b/arch/powerpc/platforms/cell/setup.c
+@@ -155,7 +155,7 @@ static const struct of_device_id cell_bus_ids[]
+__initconst = {
+ static int __init cell_publish_devices(void)
+ {
+ 	struct device_node *root = of_find_node_by_path("/");
+-	struct device_node *np;
++	struct device_node *np = NULL;
+ 	int node;
+ 
+ 	/* Publish OF platform devices for southbridge IOs */
+diff --git a/arch/powerpc/platforms/powernv/opal.c
+b/arch/powerpc/platforms/powernv/opal.c
+index aaa0dba..4df5f2d 100644
+--- a/arch/powerpc/platforms/powernv/opal.c
++++ b/arch/powerpc/platforms/powernv/opal.c
+@@ -279,7 +279,7 @@ static irqreturn_t opal_interrupt(int irq, void *data)
+ 
+ static int __init opal_init(void)
+ {
+-	struct device_node *np, *consoles;
++	struct device_node *np = NULL, *consoles;
+ 	const u32 *irqs;
+ 	int rc, i, irqlen;
+ 
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c
+b/arch/powerpc/platforms/powernv/pci-ioda.c
+index 9cda6a1..e08c238 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -1317,7 +1317,7 @@ void __init pnv_pci_init_ioda1_phb(struct device_node
+*np)
+ 
+ void __init pnv_pci_init_ioda_hub(struct device_node *np)
+ {
+-	struct device_node *phbn;
++	struct device_node *phbn = NULL;
+ 	const u64 *prop64;
+ 	u64 hub_id;
+ 
+diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+index 2649677..d2565d0 100644
+--- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
++++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+@@ -175,7 +175,7 @@ static void __init pnv_pci_init_p5ioc2_phb(struct
+device_node *np,
+ 
+ void __init pnv_pci_init_p5ioc2_hub(struct device_node *np)
+ {
+-	struct device_node *phbn;
++	struct device_node *phbn = NULL;
+ 	const u64 *prop64;
+ 	u64 hub_id;
+ 	void *tce_mem;
+diff --git a/arch/powerpc/platforms/pseries/eeh.c
+b/arch/powerpc/platforms/pseries/eeh.c
+index ecd394c..4b5913e 100644
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -206,7 +206,7 @@ static size_t eeh_gather_pci_data(struct eeh_dev *edev,
+char * buf, size_t len)
+ 
+ 	/* Gather status on devices under the bridge */
+ 	if (dev->class >> 16 == PCI_BASE_CLASS_BRIDGE) {
+-		struct device_node *child;
++		struct device_node *child = NULL;
+ 
+ 		for_each_child_of_node(dn, child) {
+ 			if (of_node_to_eeh_dev(child))
+@@ -289,7 +289,7 @@ struct device_node *eeh_find_device_pe(struct
+device_node *dn)
+  */
+ static void __eeh_mark_slot(struct device_node *parent, int mode_flag)
+ {
+-	struct device_node *dn;
++	struct device_node *dn = NULL;
+ 
+ 	for_each_child_of_node(parent, dn) {
+ 		if (of_node_to_eeh_dev(dn)) {
+@@ -342,7 +342,7 @@ void eeh_mark_slot(struct device_node *dn, int
+mode_flag)
+  */
+ static void __eeh_clear_slot(struct device_node *parent, int mode_flag)
+ {
+-	struct device_node *dn;
++	struct device_node *dn = NULL;
+ 
+ 	for_each_child_of_node(parent, dn) {
+ 		if (of_node_to_eeh_dev(dn)) {
+@@ -601,7 +601,7 @@ int pcibios_set_pcie_reset_state(struct pci_dev *dev,
+enum pcie_reset_state stat
+  */
+ void __eeh_set_pe_freset(struct device_node *parent, unsigned int *freset)
+ {
+-	struct device_node *dn;
++	struct device_node *dn = NULL;
+ 
+ 	for_each_child_of_node(parent, dn) {
+ 		if (of_node_to_eeh_dev(dn)) {
+@@ -788,7 +788,7 @@ static inline void eeh_restore_one_device_bars(struct
+eeh_dev *edev)
+  */
+ void eeh_restore_bars(struct eeh_dev *edev)
+ {
+-	struct device_node *dn;
++	struct device_node *dn = NULL;
+ 	if (!edev)
+ 		return;
+ 	
+@@ -1050,7 +1050,7 @@ static void eeh_add_device_early(struct device_node
+*dn)
+  */
+ void eeh_add_device_tree_early(struct device_node *dn)
+ {
+-	struct device_node *sib;
++	struct device_node *sib = NULL;
+ 
+ 	for_each_child_of_node(dn, sib)
+ 		eeh_add_device_tree_early(sib);
+diff --git a/arch/powerpc/sysdev/mv64x60_dev.c
+b/arch/powerpc/sysdev/mv64x60_dev.c
+index 0f6af41..7d4ffd2 100644
+--- a/arch/powerpc/sysdev/mv64x60_dev.c
++++ b/arch/powerpc/sysdev/mv64x60_dev.c
+@@ -430,7 +430,7 @@ error:
+ 
+ static int __init mv64x60_device_setup(void)
+ {
+-	struct device_node *np, *np2;
++	struct device_node *np, *np2 = NULL;
+ 	struct platform_device *pdev;
+ 	int id, id2;
+ 	int err;
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 8f84761..3786bfc 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1327,7 +1327,7 @@ static void fsl_dma_chan_remove(struct fsldma_chan
+*chan)
+ static int __devinit fsldma_of_probe(struct platform_device *op)
+ {
+ 	struct fsldma_device *fdev;
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	int err;
+ 
+ 	fdev = kzalloc(sizeof(*fdev), GFP_KERNEL);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c
+b/drivers/gpu/drm/nouveau/nouveau_connector.c
+index 7b11edb..33edf87 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -145,7 +145,7 @@ nouveau_connector_of_detect(struct drm_connector
+*connector)
+ 	struct drm_device *dev = connector->dev;
+ 	struct nouveau_connector *nv_connector =
+nouveau_connector(connector);
+ 	struct nouveau_encoder *nv_encoder;
+-	struct device_node *cn, *dn = pci_device_to_OF_node(dev->pdev);
++	struct device_node *cn = NULL, *dn =
+pci_device_to_OF_node(dev->pdev);
+ 
+ 	if (!dn ||
+ 	    !((nv_encoder = find_encoder(connector, OUTPUT_TMDS)) ||
+diff --git a/drivers/hwmon/ads1015.c b/drivers/hwmon/ads1015.c
+index 1958f03..d1ced0d 100644
+--- a/drivers/hwmon/ads1015.c
++++ b/drivers/hwmon/ads1015.c
+@@ -164,7 +164,7 @@ static int ads1015_remove(struct i2c_client *client)
+ static int ads1015_get_channels_config_of(struct i2c_client *client)
+ {
+ 	struct ads1015_data *data = i2c_get_clientdata(client);
+-	struct device_node *node;
++	struct device_node *node = NULL;
+ 
+ 	if (!client->dev.of_node
+ 	    || !of_get_next_child(client->dev.of_node, NULL))
+diff --git a/drivers/i2c/busses/i2c-powermac.c
+b/drivers/i2c/busses/i2c-powermac.c
+index 5285f85..60b041b 100644
+--- a/drivers/i2c/busses/i2c-powermac.c
++++ b/drivers/i2c/busses/i2c-powermac.c
+@@ -340,7 +340,7 @@ static void __devinit
+i2c_powermac_register_devices(struct i2c_adapter *adap,
+ 						    struct pmac_i2c_bus
+*bus)
+ {
+ 	struct i2c_client *newdev;
+-	struct device_node *node;
++	struct device_node *node = NULL;
+ 	bool found_onyx = 0;
+ 
+ 	/*
+diff --git a/drivers/i2c/busses/i2c-pxa-pci.c
+b/drivers/i2c/busses/i2c-pxa-pci.c
+index 4dc9bef..ca407d5 100644
+--- a/drivers/i2c/busses/i2c-pxa-pci.c
++++ b/drivers/i2c/busses/i2c-pxa-pci.c
+@@ -22,7 +22,7 @@ static struct platform_device *add_i2c_device(struct
+pci_dev *dev, int bar)
+ 	struct platform_device *pdev;
+ 	struct i2c_pxa_platform_data pdata;
+ 	struct resource res[2];
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	static int devnum;
+ 	int ret;
+ 
+diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
+index 1038c38..cb632a9 100644
+--- a/drivers/i2c/i2c-mux.c
++++ b/drivers/i2c/i2c-mux.c
+@@ -132,7 +132,7 @@ struct i2c_adapter *i2c_add_mux_adapter(struct
+i2c_adapter *parent,
+ 	 * nothing if !CONFIG_OF.
+ 	 */
+ 	if (mux_dev->of_node) {
+-		struct device_node *child;
++		struct device_node *child = NULL;
+ 		u32 reg;
+ 
+ 		for_each_child_of_node(mux_dev->of_node, child) {
+diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+index f61780a..52203d4 100644
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -381,7 +381,7 @@ static int at91_adc_probe_dt(struct at91_adc_state *st,
+ {
+ 	struct iio_dev *idev = iio_priv_to_dev(st);
+ 	struct device_node *node = pdev->dev.of_node;
+-	struct device_node *trig_node;
++	struct device_node *trig_node = NULL;
+ 	int i = 0, ret;
+ 	u32 prop;
+ 
+diff --git a/drivers/input/keyboard/samsung-keypad.c
+b/drivers/input/keyboard/samsung-keypad.c
+index a061ba6..6b3334f 100644
+--- a/drivers/input/keyboard/samsung-keypad.c
++++ b/drivers/input/keyboard/samsung-keypad.c
+@@ -255,7 +255,7 @@ static struct samsung_keypad_platdata
+*samsung_keypad_parse_dt(
+ 	struct samsung_keypad_platdata *pdata;
+ 	struct matrix_keymap_data *keymap_data;
+ 	uint32_t *keymap, num_rows = 0, num_cols = 0;
+-	struct device_node *np = dev->of_node, *key_np;
++	struct device_node *np = dev->of_node, *key_np = NULL;
+ 	unsigned int key_count = 0;
+ 
+ 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+index c032b21..7458663 100644
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@ -168,7 +168,7 @@ static inline int sizeof_gpio_leds_priv(int num_leds)
+ #ifdef CONFIG_OF_GPIO
+ static struct gpio_leds_priv * __devinit gpio_leds_create_of(struct
+platform_device *pdev)
+ {
+-	struct device_node *np = pdev->dev.of_node, *child;
++	struct device_node *np = pdev->dev.of_node, *child = NULL;
+ 	struct gpio_leds_priv *priv;
+ 	int count = 0, ret;
+ 
+diff --git a/drivers/net/ethernet/freescale/fsl_pq_mdio.c
+b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
+index 9527b28..ea34f84 100644
+--- a/drivers/net/ethernet/freescale/fsl_pq_mdio.c
++++ b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
+@@ -260,7 +260,7 @@ static int get_ucc_id_for_range(u64 start, u64 end, u32
+*ucc_id)
+ static int fsl_pq_mdio_probe(struct platform_device *ofdev)
+ {
+ 	struct device_node *np = ofdev->dev.of_node;
+-	struct device_node *tbi;
++	struct device_node *tbi = NULL;
+ 	struct fsl_pq_mdio_priv *priv;
+ 	struct fsl_pq_mdio __iomem *regs = NULL;
+ 	void __iomem *map;
+diff --git a/drivers/net/phy/mdio-mux.c b/drivers/net/phy/mdio-mux.c
+index 5c12018..cb4ceb6 100644
+--- a/drivers/net/phy/mdio-mux.c
++++ b/drivers/net/phy/mdio-mux.c
+@@ -99,7 +99,7 @@ int mdio_mux_init(struct device *dev,
+ 		  void *data)
+ {
+ 	struct device_node *parent_bus_node;
+-	struct device_node *child_bus_node;
++	struct device_node *child_bus_node = NULL;
+ 	int r, ret_val;
+ 	struct mii_bus *parent_bus;
+ 	struct mdio_mux_parent_bus *pb;
+diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+index 1e173f3..6a080c7 100644
+--- a/drivers/of/of_i2c.c
++++ b/drivers/of/of_i2c.c
+@@ -21,7 +21,7 @@
+ void of_i2c_register_devices(struct i2c_adapter *adap)
+ {
+ 	void *result;
+-	struct device_node *node;
++	struct device_node *node = NULL;
+ 
+ 	/* Only register child devices if the adapter has a node pointer set
+*/
+ 	if (!adap->dev.of_node)
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 8e6c25f..a52b354 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -33,7 +33,7 @@ MODULE_LICENSE("GPL");
+ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ {
+ 	struct phy_device *phy;
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	int rc, i;
+ 
+ 	/* Mask out all PHYs from auto probing.  Instead the PHYs listed in
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 13e37e2..dfede93 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -18,7 +18,7 @@ static inline int __of_pci_pci_compare(struct device_node
+*node,
+ struct device_node *of_pci_find_child_device(struct device_node *parent,
+ 					     unsigned int devfn)
+ {
+-	struct device_node *node, *node2;
++	struct device_node *node = NULL, *node2 = NULL;
+ 
+ 	for_each_child_of_node(parent, node) {
+ 		if (__of_pci_pci_compare(node, devfn))
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index e44f8c2..58e8374 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -344,7 +344,7 @@ static int of_platform_bus_create(struct device_node
+*bus,
+ 				  struct device *parent, bool strict)
+ {
+ 	const struct of_dev_auxdata *auxdata;
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	struct platform_device *dev;
+ 	const char *bus_id = NULL;
+ 	void *platform_data = NULL;
+@@ -396,7 +396,7 @@ int of_platform_bus_probe(struct device_node *root,
+ 			  const struct of_device_id *matches,
+ 			  struct device *parent)
+ {
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	int rc = 0;
+ 
+ 	root = root ? of_node_get(root) : of_find_node_by_path("/");
+@@ -445,7 +445,7 @@ int of_platform_populate(struct device_node *root,
+ 			const struct of_dev_auxdata *lookup,
+ 			struct device *parent)
+ {
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	int rc = 0;
+ 
+ 	root = root ? of_node_get(root) : of_find_node_by_path("/");
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index 44e9726..0f1d0ba 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -485,7 +485,7 @@ static int __devinit imx_pinctrl_parse_groups(struct
+device_node *np,
+ static int __devinit imx_pinctrl_parse_functions(struct device_node *np,
+ 			struct imx_pinctrl_soc_info *info, u32 index)
+ {
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	struct imx_pmx_func *func;
+ 	struct imx_pin_group *grp;
+ 	int ret;
+@@ -521,7 +521,7 @@ static int __devinit imx_pinctrl_probe_dt(struct
+platform_device *pdev,
+ 				struct imx_pinctrl_soc_info *info)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 	int ret;
+ 	u32 nfuncs = 0;
+ 	u32 i = 0;
+diff --git a/drivers/pinctrl/pinctrl-tegra.c
+b/drivers/pinctrl/pinctrl-tegra.c
+index ae52e4e..253d338 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -295,7 +295,7 @@ int tegra_pinctrl_dt_node_to_map(struct pinctrl_dev
+*pctldev,
+ 				 struct pinctrl_map **map, unsigned
+*num_maps)
+ {
+ 	unsigned reserved_maps;
+-	struct device_node *np;
++	struct device_node *np = NULL;
+ 	int ret;
+ 
+ 	reserved_maps = 0;
+diff --git a/drivers/pinctrl/spear/pinctrl-spear.c
+b/drivers/pinctrl/spear/pinctrl-spear.c
+index 5d4f44f..ca7a6df 100644
+--- a/drivers/pinctrl/spear/pinctrl-spear.c
++++ b/drivers/pinctrl/spear/pinctrl-spear.c
+@@ -126,7 +126,7 @@ int spear_pinctrl_dt_node_to_map(struct pinctrl_dev
+*pctldev,
+ 				 struct pinctrl_map **map, unsigned
+*num_maps)
+ {
+ 	struct spear_pmx *pmx = pinctrl_dev_get_drvdata(pctldev);
+-	struct device_node *np;
++	struct device_node *np = NULL;
+ 	struct property *prop;
+ 	const char *function, *group;
+ 	int ret, index = 0, count = 0;
+diff --git a/drivers/regulator/da9052-regulator.c
+b/drivers/regulator/da9052-regulator.c
+index 903299c..ce3aa94 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -396,7 +396,7 @@ static int __devinit da9052_regulator_probe(struct
+platform_device *pdev)
+ 	} else {
+ #ifdef CONFIG_OF
+ 		struct device_node *nproot = da9052->dev->of_node;
+-		struct device_node *np;
++		struct device_node *np = NULL;
+ 
+ 		if (!nproot)
+ 			return -ENODEV;
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c
+b/drivers/regulator/mc13xxx-regulator-core.c
+index d6eda28..d179f54 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -173,7 +173,7 @@ EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_ops);
+ #ifdef CONFIG_OF
+ int __devinit mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
+ {
+-	struct device_node *parent, *child;
++	struct device_node *parent, *child = NULL;
+ 	int num = 0;
+ 
+ 	of_node_get(pdev->dev.parent->of_node);
+diff --git a/drivers/regulator/of_regulator.c
+b/drivers/regulator/of_regulator.c
+index 3e4106f..62f59814 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -113,7 +113,7 @@ int of_regulator_match(struct device *dev, struct
+device_node *node,
+ 	unsigned int count = 0;
+ 	unsigned int i;
+ 	const char *regulator_comp;
+-	struct device_node *child;
++	struct device_node *child = NULL;
+ 
+ 	if (!dev || !node)
+ 		return -EINVAL;
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 84c2861..81f20cf 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -811,7 +811,7 @@ err_init_queue:
+ static void of_register_spi_devices(struct spi_master *master)
+ {
+ 	struct spi_device *spi;
+-	struct device_node *nc;
++	struct device_node *nc = NULL;
+ 	const __be32 *prop;
+ 	int rc;
+ 	int len;
+diff --git a/drivers/tty/hvc/hvc_opal.c b/drivers/tty/hvc/hvc_opal.c
+index 0d2ea0c..07f308e 100644
+--- a/drivers/tty/hvc/hvc_opal.c
++++ b/drivers/tty/hvc/hvc_opal.c
+@@ -344,7 +344,7 @@ void __init hvc_opal_init_early(void)
+ 			return;
+ 		}
+ 	} else {
+-		struct device_node *opal, *np;
++		struct device_node *opal, *np = NULL;
+ 
+ 		/* Current OPAL takeover doesn't provide the stdout
+ 		 * path, so we hard wire it
 -- 
+1.7.4.1
 
-Peter Meerwald
-+43-664-2444418 (mobile)
+
