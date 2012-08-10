@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab2HJRME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:12:04 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:60794 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab2HJRMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:12:00 -0400
-Message-ID: <502540D1.9020908@linux.vnet.ibm.com>
-Date: Fri, 10 Aug 2012 10:11:45 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756592Ab2HJRQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:16:42 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:36444 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2HJRQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:16:38 -0400
+From: Nix <nix@esperi.org.uk>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jerome Glisse <j.glisse@gmail.com>
+Subject: Re: [3.5 regression] DRM: Massive (EDID-probing?) X startup delay on ATI Radeon RV770 (HD4870)
+References: <878vdumy99.fsf@spindle.srvr.nix>
+	<CADnq5_O3agchGGGGX0Ozei9F4SMsM+mMRfw=F03Ux8QzZd4CQA@mail.gmail.com>
+Emacs: if it payed rent for disk space, you'd be rich.
+Date: Fri, 10 Aug 2012 18:16:35 +0100
+In-Reply-To: <CADnq5_O3agchGGGGX0Ozei9F4SMsM+mMRfw=F03Ux8QzZd4CQA@mail.gmail.com>
+	(Alex Deucher's message of "Mon, 6 Aug 2012 09:42:03 -0400")
+Message-ID: <87r4re7jm4.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Matt Hellsley <matthltc@us.ibm.com>,
-        David Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 02/16] perf symbol: remove unused 'end' arg in kallsyms
- parse cb
-References: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com> <1344550721-21024-3-git-send-email-cody@linux.vnet.ibm.com> <87k3x7wjvk.fsf@sejong.aot.lge.com>
-In-Reply-To: <87k3x7wjvk.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081017-5930-0000-0000-00000ABB8680
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I guess that length of 1 effectively same as zero length in this case
-> since we end up calling symbols__fixup_end. The 'end - start + 1' part
-> looks like a leftover from previous change and not needed anymore -
-> KSYM_NAME_LEN check too, IMHO - so I suggest using 0 length to make it
-> clear.
+On 6 Aug 2012, Alex Deucher verbalised:
 
-Got it.
+> On Sat, Aug 4, 2012 at 12:13 PM, Nix <nix@esperi.org.uk> wrote:
+>> Possibly-relevant info:
+>>
+>>  - Two DVI monitors, identical specs, one dual-head graphics card
+>>    (so no VGA switcheroo or awesome-yet-terrifying PRIME madness needed)
+>>
+>>  - KMS, Xserver 1.12.3, driver 6.14.6-28 (trunk current as of today),
+>>    Mesa 8.0.4, libdrm 2.4.37
+>>
+>> As of kernel 3.5 EDID probing of the older of my two monitors appears to
+>> have subtly broken. The log shows that it appears to work -- KMS comes
+>> up OK and I get a working console -- but then X stops during startup for
+>> nearly a minute (with both monitors black) before coming back to life
+>> again and EDID-probing the monitor a further six times for no obvious
+>> reason. (Full log attached, and xorg.conf, for what little use it is.)
 
-> And it seems you need to rebase the series onto Arnaldo's current
-> perf/core branch which separates out ELF bits to symbol-elf.c.
+False alarm. Well, the massive number of EDID probes is consistent, but
+that was present in earlier kernels too. The minute-long X start process
+was what was unusual, and intermittent: even in 3.5, it starts in a
+relatively 'normal' eight seconds normally. I suspect system load, or
+i2c bus timeouts or something (it is a really crap bus, after all).
+Anyway, it hasn't recurred, which makes it hard to track down further,
+let alone bisect :(
 
-Will do. It apparently wasn't pushed out when I sent these patches, look 
-for v2 shortly.
+I think we have to let this one rest. Dammit. I hate to let a bug slip
+away.
 
+-- 
+NULL && (void)
