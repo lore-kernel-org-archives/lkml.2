@@ -1,176 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2HJCgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 22:36:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12650 "EHLO mga11.intel.com"
+	id S1758538Ab2HJCnm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 22:43:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15751 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab2HJCgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 22:36:39 -0400
+	id S1751060Ab2HJCnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 22:43:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,743,1336374000"; 
-   d="scan'208";a="195956070"
-Message-ID: <1344566197.19962.95.camel@yhuang-dev>
-Subject: Re: [BUGFIX -v3 3/4] PCI/PM: Fix config reg access for D3cold and
- bridge suspending
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 10 Aug 2012 10:36:37 +0800
-In-Reply-To: <1344388061-18981-4-git-send-email-ying.huang@intel.com>
-References: <1344388061-18981-1-git-send-email-ying.huang@intel.com>
-	 <1344388061-18981-4-git-send-email-ying.huang@intel.com>
+   d="scan'208";a="132208466"
+Message-ID: <1344566688.1682.711.camel@rui.sh.intel.com>
+Subject: Re: thermal patches in linux-next
+From: Zhang Rui <rui.zhang@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Amit Kachhap <amit.kachhap@linaro.org>, Guenter Roeck <linux@roeck-us.net>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Date: Fri, 10 Aug 2012 10:44:48 +0800
+In-Reply-To: <20120810122355.8d6429ac84aa26d296a89e7b@canb.auug.org.au>
+References: <1344308038.1682.637.camel@rui.sh.intel.com>
+	 <1344494746.1682.669.camel@rui.sh.intel.com>
+	 <20120810090859.7ec67594f794c38c52096544@canb.auug.org.au>
+	 <1344562866.1682.698.camel@rui.sh.intel.com>
+	 <20120810122355.8d6429ac84aa26d296a89e7b@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 09:07 +0800, Huang Ying wrote:
-> This patch fixes the following bug:
+On 五, 2012-08-10 at 12:23 +1000, Stephen Rothwell wrote:
+> Hi Rui,
 > 
-> http://marc.info/?l=linux-pci&m=134338059022620&w=2
+> On Fri, 10 Aug 2012 09:41:06 +0800 Zhang Rui <rui.zhang@intel.com> wrote:
+> >
+> > > > And could you please drop these commits
+> > > > ef25a0fe0087963c1611c1c8903886fbea053f76
+> > > > 09ec52fca274ba88d68df3198de92abdaaff417b
+> > > > ab6d2f029358c917508bf88bbd6a9193a8e39fc8
+> > > > 66447fa993cbce56b4076f169a56f62350f6c7b8
+> > > > ec62abb8b46021ca9ee6b8692b26974ace9007f0
+> > > > 5ecbaf57d7885eedd924e391d91847d3df9fe0f8
+> > > > 851414b2249afd8c128d29912dfd7060eaea8932
+> > > > and pull my next branch instead?
+> > > 
+> > > That is not how linux-next normally works.  Those commits are in Adnrew's
+> > > quilt series, so you need to ask him to drop them.  However, because of
+> > > the way the akpm tree works, any duplicate patches will disappear from my
+> > > copy of Andrew's series.
+> > 
+> > could you please drop these patches?
+> > these commits either will be or has been re-based on top of my tree.
 > 
-> Where lspci does not work properly if a device and the corresponding
-> parent bridge (such as PCIe port) is suspended.  This is because the
-> device configuration space registers will be not accessible if the
-> corresponding parent bridge is suspended or the device is put into
-> D3cold state.
+> You should always quote the summary line of commits.  Andrew is using
+> quilt to manage his patches and so those commit ids mean nothing to him
+> (and they have changed in today's linux-next anyway).
 > 
-> To solve the issue, the bridge/PCIe port connected to the device is
-> put into active state before read/write configuration space registers.
-> If the device is in D3cold state, it will be put into active state
-> too.
-> 
-> To avoid resume/suspend PCIe port for each configuration register
-> read/write, a small delay is added before the PCIe port to go
-> suspended.
-> 
-> Reported-by: Bjorn Mork <bjorn@mork.no>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  drivers/pci/pci-sysfs.c        |   43 +++++++++++++++++++++++++++++++++++++++++
->  drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
->  2 files changed, 52 insertions(+)
-> 
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -458,6 +458,41 @@ boot_vga_show(struct device *dev, struct
->  }
->  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
->  
-> +static void
-> +pci_config_pm_runtime_get(struct pci_dev *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device *parent = dev->parent;
-> +
-> +	if (parent)
-> +		pm_runtime_get_sync(parent);
-> +	pm_runtime_get_noresume(dev);
-> +	/*
-> +	 * pdev->current_state is set to PCI_D3cold during suspending,
-> +	 * so wait until suspending completes
-> +	 */
-> +	pm_runtime_barrier(dev);
-> +	if (pdev->current_state == PCI_D3cold) {
-> +		/*
-> +		 * Already called pm_runtime_get_noresume above, so
-> +		 * just calling pm_runtime_resume is sufficient, need
-> +		 * not to call pm_runtime_get_sync.
-> +		 */
-> +		pm_runtime_resume(dev);
+got it.
 
-Hi, Rafael,
+Andrew,
+could you please drop these patches from Amit for now?
 
-Do you OK with this new version and the comments added above?
+ARM: exynos: add thermal sensor driver platform data support
+thermal: exynos: register the tmu sensor with the kernel thermal layer
+thermal: exynos5: add exynos5 thermal sensor driver support
+hwmon: exynos4: move thermal sensor driver to driver/thermal directory
+thermal: add generic cpufreq cooling implementation
 
-Best Regards,
-Huang Ying
+these patches can not build because of the recent thermal changes, and
+Amit agreed with me to re-base them on top of my tree.
 
-> +	}
-> +}
-> +
-> +static void
-> +pci_config_pm_runtime_put(struct pci_dev *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device *parent = dev->parent;
-> +
-> +	pm_runtime_put(dev);
-> +	if (parent)
-> +		pm_runtime_put_sync(parent);
-> +}
-> +
->  static ssize_t
->  pci_read_config(struct file *filp, struct kobject *kobj,
->  		struct bin_attribute *bin_attr,
-> @@ -484,6 +519,8 @@ pci_read_config(struct file *filp, struc
->  		size = count;
->  	}
->  
-> +	pci_config_pm_runtime_get(dev);
-> +
->  	if ((off & 1) && size) {
->  		u8 val;
->  		pci_user_read_config_byte(dev, off, &val);
-> @@ -529,6 +566,8 @@ pci_read_config(struct file *filp, struc
->  		--size;
->  	}
->  
-> +	pci_config_pm_runtime_put(dev);
-> +
->  	return count;
->  }
->  
-> @@ -549,6 +588,8 @@ pci_write_config(struct file* filp, stru
->  		count = size;
->  	}
->  	
-> +	pci_config_pm_runtime_get(dev);
-> +
->  	if ((off & 1) && size) {
->  		pci_user_write_config_byte(dev, off, data[off - init_off]);
->  		off++;
-> @@ -587,6 +628,8 @@ pci_write_config(struct file* filp, stru
->  		--size;
->  	}
->  
-> +	pci_config_pm_runtime_put(dev);
-> +
->  	return count;
->  }
->  
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
->  {
->  	return 0;
->  }
-> +
-> +static int pcie_port_runtime_idle(struct device *dev)
-> +{
-> +	/* Delay for a short while to prevent too frequent suspend/resume */
-> +	pm_schedule_suspend(dev, 10);
-> +	return -EBUSY;
-> +}
->  #else
->  #define pcie_port_runtime_suspend	NULL
->  #define pcie_port_runtime_resume	NULL
-> +#define pcie_port_runtime_idle		NULL
->  #endif
->  
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
-> @@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
->  	.resume_noirq	= pcie_port_resume_noirq,
->  	.runtime_suspend = pcie_port_runtime_suspend,
->  	.runtime_resume = pcie_port_runtime_resume,
-> +	.runtime_idle	= pcie_port_runtime_idle,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-
+thanks,
+rui
 
