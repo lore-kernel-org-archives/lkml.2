@@ -1,159 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab2HJNXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:23:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43482 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab2HJNXi (ORCPT
+	id S1756291Ab2HJNaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 09:30:12 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61072 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab2HJNaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:23:38 -0400
-Date: Fri, 10 Aug 2012 08:23:23 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Alex Kelly <alex.page.kelly@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 2/3] fs: Make core dump functionality optional
-Message-ID: <20120810132323.GA21048@sergelap>
-References: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
- <1344587169-18682-2-git-send-email-alex.page.kelly@gmail.com>
+	Fri, 10 Aug 2012 09:30:07 -0400
+Date: Fri, 10 Aug 2012 15:30:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf tools: Initial bash completion support
+Message-ID: <20120810132958.GG27624@somewhere.redhat.com>
+References: <1344522713-27951-1-git-send-email-fweisbec@gmail.com>
+ <1344522713-27951-2-git-send-email-fweisbec@gmail.com>
+ <20120809163515.GA4084@infradead.org>
+ <5023E7F3.8090701@gmail.com>
+ <20120809171419.GC4084@infradead.org>
+ <20120809192706.625671f0@pyramind.ukuu.org.uk>
+ <20120809190819.GD4084@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1344587169-18682-2-git-send-email-alex.page.kelly@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120809190819.GD4084@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alex Kelly (alex.page.kelly@gmail.com):
-> Adds an expert Kconfig option, CONFIG_COREDUMP, which allows disabling of core dump.
-> This saves approximately 2.6k in the compiled kernel, and complements CONFIG_ELF_CORE,
-> which now depends on it.
-
-Is there another reason than the 2.6k to do this?  My kernels range
-between 4.8 and 5M, so that's .05% size savings?
-
-I'm not saying nack (it's not my area anyway), just seem to be missing
-the point.
-
-> CONFIG_COREDUMP also disables coredump-related sysctls, except for suid_dumpable and
-> related functions, which are necessary for ptrace.
+On Thu, Aug 09, 2012 at 04:08:19PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 09, 2012 at 07:27:06PM +0100, Alan Cox escreveu:
+> > > > 3rd patch should fix this.
+> > > 
+> > > Huh? The problem is not /etc/bash_completion.d/ not existing, it exists,
+> > > its just that I'm not using sudo nor installing as root, this new bash
+> > > completion file is the only one that is being installed on the root
+> > > filesystem, all others are in ~acme/
+> > 
+> > And even with permissions it might not have the right security labels on
+> > a well secured box.
+> > 
+> > It's a neat little script (or once its been properly security audited
+> > will be) but IMHO it belongs in the distro bash script packages.
 > 
-> Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  fs/Kconfig.binfmt       | 8 ++++++++
->  fs/Makefile             | 3 ++-
->  include/linux/binfmts.h | 4 ++++
->  init/Kconfig            | 1 +
->  kernel/sysctl.c         | 6 +++++-
->  5 files changed, 20 insertions(+), 2 deletions(-)
+> Yeah, I think we can keep it in the kernel sources and then send new
+> versions to the bash-completion-devel@lists.alioth.debian.org guys.
 > 
-> diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-> index 0225742..0efd152 100644
-> --- a/fs/Kconfig.binfmt
-> +++ b/fs/Kconfig.binfmt
-> @@ -164,3 +164,11 @@ config BINFMT_MISC
->  	  You may say M here for module support and later load the module when
->  	  you have use for it; the module is called binfmt_misc. If you
->  	  don't know what to answer at this point, say Y.
-> +
-> +config COREDUMP
-> +	bool "Enable core dump support" if EXPERT
-> +	default y
-> +	help
-> +	  This option enables support for performing core dumps. You almost
-> +	  certainly want to say Y here. Not necessary on systems that never
-> +	  need debugging or only ever run flawless code.
-> diff --git a/fs/Makefile b/fs/Makefile
-> index 8938f82..1d7af79 100644
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
->  		attr.o bad_inode.o file.o filesystems.o namespace.o \
->  		seq_file.o xattr.o libfs.o fs-writeback.o \
->  		pnode.o drop_caches.o splice.o sync.o utimes.o \
-> -		stack.o fs_struct.o statfs.o coredump.o
-> +		stack.o fs_struct.o statfs.o
->  
->  ifeq ($(CONFIG_BLOCK),y)
->  obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
-> @@ -48,6 +48,7 @@ obj-$(CONFIG_FS_MBCACHE)	+= mbcache.o
->  obj-$(CONFIG_FS_POSIX_ACL)	+= posix_acl.o xattr_acl.o
->  obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
->  obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
-> +obj-$(CONFIG_COREDUMP)		+= coredump.o
->  
->  obj-$(CONFIG_FHANDLE)		+= fhandle.o
->  
-> diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-> index 366422b..00e2e89 100644
-> --- a/include/linux/binfmts.h
-> +++ b/include/linux/binfmts.h
-> @@ -132,7 +132,11 @@ extern int copy_strings_kernel(int argc, const char *const *argv,
->  			       struct linux_binprm *bprm);
->  extern int prepare_bprm_creds(struct linux_binprm *bprm);
->  extern void install_exec_creds(struct linux_binprm *bprm);
-> +#ifdef CONFIG_COREDUMP
->  extern void do_coredump(long signr, int exit_code, struct pt_regs *regs);
-> +#else
-> +static inline void do_coredump(long signr, int exit_code, struct pt_regs *regs) {}
-> +#endif
->  extern void set_binfmt(struct linux_binfmt *new);
->  extern void free_bprm(struct linux_binprm *);
->  
-> diff --git a/init/Kconfig b/init/Kconfig
-> index af6c7f8..0e75056 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1230,6 +1230,7 @@ config BUG
->            Just say Y.
->  
->  config ELF_CORE
-> +	depends on COREDUMP
->  	default y
->  	bool "Enable ELF core dumps" if EXPERT
->  	help
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 87174ef..af57e84 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -97,10 +97,12 @@
->  extern int sysctl_overcommit_memory;
->  extern int sysctl_overcommit_ratio;
->  extern int max_threads;
-> -extern int core_uses_pid;
->  extern int suid_dumpable;
-> +#ifdef CONFIG_COREDUMP
-> +extern int core_uses_pid;
->  extern char core_pattern[];
->  extern unsigned int core_pipe_limit;
-> +#endif
->  extern int pid_max;
->  extern int min_free_kbytes;
->  extern int pid_max_min, pid_max_max;
-> @@ -404,6 +406,7 @@ static struct ctl_table kern_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= proc_dointvec,
->  	},
-> +#ifdef CONFIG_COREDUMP
->  	{
->  		.procname	= "core_uses_pid",
->  		.data		= &core_uses_pid,
-> @@ -425,6 +428,7 @@ static struct ctl_table kern_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= proc_dointvec,
->  	},
-> +#endif
->  #ifdef CONFIG_PROC_SYSCTL
->  	{
->  		.procname	= "tainted",
-> -- 
-> 1.7.11.2
+> To test I just did:
 > 
+>   ln -s ~/etc/bash_completion.d/perf ~/.bash_completion
+> 
+> Frédéric, I merged your patches as-is and pushed them to my perf/core
+> branch, thanks!
+
+Thanks!
