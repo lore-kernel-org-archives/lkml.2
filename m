@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab2HJBdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 21:33:52 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43599 "EHLO
+	id S1758257Ab2HJBfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 21:35:00 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55058 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756335Ab2HJBdu (ORCPT
+	with ESMTP id S1755973Ab2HJBe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 21:33:50 -0400
-Message-ID: <1344562424.2996.2.camel@phoenix>
-Subject: [PATCH 2/6] regulator: ab3100: Remove get_voltage implementation
- for regulator_ops_fixed
+	Thu, 9 Aug 2012 21:34:59 -0400
+Message-ID: <1344562493.2996.3.camel@phoenix>
+Subject: [PATCH 3/6] regulator: ab8500: Remove get_voltage implementation
+ for ab8500_regulator_fixed_ops
 From: Axel Lin <axel.lin@gmail.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
         Lee Jones <lee.jones@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>
-Date: Fri, 10 Aug 2012 09:33:44 +0800
+Date: Fri, 10 Aug 2012 09:34:53 +0800
 In-Reply-To: <1344562353.2996.1.camel@phoenix>
 References: <1344562353.2996.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -31,31 +31,30 @@ This is not required after commit f7df20ec
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/ab3100.c |    6 ------
+ drivers/regulator/ab8500.c |    6 ------
  1 file changed, 6 deletions(-)
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index c151fd5..65ad2b3 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -347,17 +347,11 @@ static int ab3100_get_voltage_regulator_external(struct regulator_dev *reg)
- 	return abreg->plfdata->external_voltage;
- }
- 
--static int ab3100_get_fixed_voltage_regulator(struct regulator_dev *reg)
--{
--	return reg->desc->min_uV;
--}
--
- static struct regulator_ops regulator_ops_fixed = {
- 	.list_voltage = regulator_list_voltage_linear,
- 	.enable      = ab3100_enable_regulator,
- 	.disable     = ab3100_disable_regulator,
- 	.is_enabled  = ab3100_is_enabled_regulator,
--	.get_voltage = ab3100_get_fixed_voltage_regulator,
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 8807166..c884a5c 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -257,16 +257,10 @@ static struct regulator_ops ab8500_regulator_ops = {
+ 	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
  };
  
- static struct regulator_ops regulator_ops_variable = {
+-static int ab8500_fixed_get_voltage(struct regulator_dev *rdev)
+-{
+-	return rdev->desc->min_uV;
+-}
+-
+ static struct regulator_ops ab8500_regulator_fixed_ops = {
+ 	.enable		= ab8500_regulator_enable,
+ 	.disable	= ab8500_regulator_disable,
+ 	.is_enabled	= ab8500_regulator_is_enabled,
+-	.get_voltage	= ab8500_fixed_get_voltage,
+ 	.list_voltage	= regulator_list_voltage_linear,
+ };
+ 
 -- 
 1.7.9.5
 
