@@ -1,120 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2HJIer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 04:34:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab2HJIen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 04:34:43 -0400
-Date: Fri, 10 Aug 2012 09:34:38 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jim Schutt <jaschut@sandia.gov>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: vmscan: Scale number of pages reclaimed by
- reclaim/compaction based on failures
-Message-ID: <20120810083438.GM12690@suse.de>
-References: <1344342677-5845-3-git-send-email-mgorman@suse.de>
- <20120808014824.GB4247@bbox>
- <20120808075526.GI29814@suse.de>
- <20120808082738.GF4247@bbox>
- <20120808085112.GJ29814@suse.de>
- <20120808235127.GA17835@bbox>
- <20120809074949.GA12690@suse.de>
- <20120809082715.GA19802@bbox>
- <20120809092035.GD12690@suse.de>
- <20120809232733.GD21033@bbox>
+	id S1755370Ab2HJIf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 04:35:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55143 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2HJIfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 04:35:23 -0400
+Date: Fri, 10 Aug 2012 10:35:08 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+Message-ID: <20120810083508.GA16251@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+ <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+ <20120809202054.GA24503@avionic-0098.mockup.avionic-design.de>
+ <CACRpkdaSk9xBaiSAKCj4Pa2kyyfP178XN53i2Q2+CBFx=RoE0g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
 Content-Disposition: inline
-In-Reply-To: <20120809232733.GD21033@bbox>
+In-Reply-To: <CACRpkdaSk9xBaiSAKCj4Pa2kyyfP178XN53i2Q2+CBFx=RoE0g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:lkV/5CUP8LoBygmOeSESI9WGrXRmpizjda4JjGvBt+L
+ OWlmXbLfunVIdnDBxQydSw8DxOECU9dgux3j4cyUovXa84lqQa
+ 02btlaBMnYYaLU0HpSUIW5c2eQcTZimg2Y6JQEt0BIM338CI55
+ LsbIoUZMT5WlJ11uNWLh1aAoXUZD/Ab4CUXwSgpBbfjG+GFCKn
+ 9kRa/1uzU9IPy84at0oLDdDVG5a8Lf+HkZuRr09HlD66jSc3ki
+ i6TvNHn/Du3v9GrTYgcDV6BaMQsJptSb7BjjEhgj4ipQ55hG48
+ 3eFv6eL3rBk2B7XoG1kgfkVrjQ0PPPVLzs8p28EygMrZGoTEYF
+ Axi9EG4oXdM4Jj1xgc3OwjimsjQDN9cfv2eii38rHE9p/RWMuC
+ oDcpWE937yEXi30mVE+nGL972+p5lba5Ow=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 08:27:33AM +0900, Minchan Kim wrote:
-> > <SNIP>
+
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Aug 10, 2012 at 10:19:02AM +0200, Linus Walleij wrote:
+> On Thu, Aug 9, 2012 at 10:20 PM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+> >> > +       client->irq =3D irq_of_parse_and_map(client->dev.of_node, 0);
+> >> > +       if (client->irq =3D=3D NO_IRQ)
+> >>
+> >> Just if (!client->irq) since NO_IRQ is 0 nowadays.
 > >
-> > The intention is that an allocation can fail but each subsequent attempt will
-> > try harder until there is success. Each allocation request does a portion
-> > of the necessary work to spread the cost between multiple requests. Take
-> > THP for example where there is a constant request for THP allocations
-> > for whatever reason (heavy fork workload, large buffer allocation being
-> > populated etc.). Some of those allocations fail but if they do, future
-> > THP requests will reclaim more pages. When compaction resumes again, it
-> > will be more likely to succeed and compact_defer_shift gets reset. In the
-> > specific case of THP there will be allocations that fail but khugepaged
-> > will promote them later if the process is long-lived.
-> 
-> You assume high-order allocation are *constant* and I guess your test enviroment
-> is optimal for it.
+> > At the risk of seeming pedantic, NO_IRQ is in fact quite often not 0.
+>=20
+> No. A year back, yes, but not anymore. We went to great lengths in the
+> ARM architecture to ensure NO_IRQ is *always 0. Russell spent
+> a lot of time on this.
+>=20
+> Consult the following article on LWN:
+> http://lwn.net/Articles/470820/
+>=20
+> Then grep your gitlog and you'll see we got rid of it from ARM.
 
-Ok, my example stated they were constant because it was the easiest to
-illustrate but it does not necessarily have to be the case. The high-order
-allocation requests can be separated by any length of time with a read or
-write stream running in the background applying a small amount of memory
-pressure and the same scenario applies.
+Then why is there still the following in arch/arm/include/asm/irq.h?
 
-> I agree your patch if we can make sure such high-order
-> allocation are always constant. But, is it true? Otherwise, your patch could reclaim
-> too many pages unnecessary and it could reduce system performance by eviction
+	/*
+	 * Use this value to indicate lack of interrupt
+	 * capability
+	 */
+	#ifndef NO_IRQ
+	#define NO_IRQ	((unsigned int)(-1))
+	#endif
 
-The "too many pages unnecessarily" is unlikely. For compact_defer_shift to be
-elevated there has to have been recent failures by try_to_compact_pages(). If
-compact_defer_shift is elevated and a large process exited then
-try_to_compact_pages() may succeed and reset compact_defer_shift without
-calling direct reclaim and entering this path at all.
+> If this driver is for some other arch like openrisc I might accept
+> it but please reconsider.
 
-> of page cache and swap out of workingset part. That's a concern to me.
-> In summary, I think your patch is rather agressive so how about this?
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 66e4310..0cb2593 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1708,6 +1708,7 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
->  {
->         unsigned long pages_for_compaction;
->         unsigned long inactive_lru_pages;
-> +       struct zone *zone;
-> 
->         /* If not in reclaim/compaction mode, stop */
->         if (!in_reclaim_compaction(sc))
-> @@ -1741,6 +1742,15 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
->          * inactive lists are large enough, continue reclaiming
->          */
->         pages_for_compaction = (2UL << sc->order);
-> +
-> +       /*
-> +        * If compaction is deferred for this order then scale the number of
-> +        * pages reclaimed based on the number of consecutive allocation
-> +        * failures
-> +        */
-> +       zone = lruvec_zone(lruvec);
-> +       if (zone->compact_order_failed <= sc->order) {
-> +               if (zone->compact_defer_shift)
-> +                       /*
-> +                        * We can't make sure deferred requests will come again
-> +                        * The probability is 50:50.
-> +                        */
-> +                       pages_for_compaction <<= (zone->compact_defer_shift - 1);
+There's nothing in the driver that makes it ARM specific, so it could be
+used on other platforms just as well. But as I also said in my previous
+mail, in this particular case the value for the interrupt comes from the
+call to irq_of_parse_and_map(), which will return 0 on failure,
+regardless of the architecture, so there is actually no problem.
 
-This patch is not doing anything radically different to my own patch.
-compact_defer_shift == 0 if allocations succeeded recently using
-reclaim/compaction at its normal level. Functionally the only difference
-is that you delay when more pages get reclaim by one failure.
+Thierry
 
-Was that what you intended? If so, it's not clear why you think this patch
-is better or how you concluded that the probability of another failure was
-"50:50".
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
 
->         }
->         inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
->         if (nr_swap_pages > 0)
->                 inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
--- 
-Mel Gorman
-SUSE Labs
+iQIcBAEBAgAGBQJQJMe8AAoJEN0jrNd/PrOh3U4P/1b0dVJvswKWXZTT5eLfC70W
+dU6WnEF8cQ0IFeQ0aHbnXOc2f1e7aYVO+YWMmmbvle3Mf1KIpkgCD2zDLss7TvDJ
+1Rt5Csuw1yZQx6U3vgGg3/Za0DUXtem3rEmyAd3gXGHT8ujzf4UttnhaZWCx7LVV
+00b7OP14MkccTZJ+cZQIatPnlXR3eHIHp0Aediwp0B9HmuQj7GSbibHRfJJPJ7PS
+Uqpp+KKIdvXgal1E79w2+Judkw4Pv+EblQy1L8fvxTYpgAYQzCu05JKN3a+jXxsu
+SI9ORm/9HcC50zr7upiY3bWRFpvk7z5Aoe87xWYnKE4YtwqP/TWQ1t7ewXs9H/Ho
+Biece1PN6XwOtcoBZCCzfpV5RWsOuRuYa+yn/xUiDOk8V45nNAYPu2K1ScQi5He5
+ROzbusYMu7IWCNpOMREfdeRyY7CMLdU9W3zwEeFfKAuMUwlpLBGJ9HR4SyxmFX7n
+vLQgFuGl0mNj4ty9xmv4d5PIDTfCaTHHunESvOJ/jEcR4wsPxg5fyqjQImrc2etS
+4OX/lWXAz2dcyD561Jloa1+ejMxUSiachtl64CaCHe/hYCFrWTk235q8nRrDk0o3
+9M4x6DlfYqpX4qyXTbiKt9KT5+8Ji5hj3PbpBpSNk76GTsIufPLmrv9vIO6Rd/W7
+TRzCrCVgotVaBLcZLP+V
+=33ZC
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
