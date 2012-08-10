@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab2HJJ75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 05:59:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57295 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab2HJJ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 05:59:56 -0400
-Date: Fri, 10 Aug 2012 11:59:53 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: "Inconsistent kallsyms data" error
-Message-ID: <20120810095953.GA18851@sepie.suse.cz>
-References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
- <20120707214033.GA5303@pobox.suse.cz>
- <alpine.LNX.2.01.1208100202070.4234@frira.zrqbmnf.qr>
+	id S1759541Ab2HJKCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:02:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62934 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758660Ab2HJKCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 06:02:38 -0400
+Date: Fri, 10 Aug 2012 12:02:33 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
+Message-ID: <20120810100233.GA1503@avionic-0098.mockup.avionic-design.de>
+References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
+ <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
+ <20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
+ <CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1208100202070.4234@frira.zrqbmnf.qr>
+In-Reply-To: <CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:zMo0YdtZRkdWNcPuUbrqZb0zYIdTsbY0OIgaeUx0GtA
+ 7V21EzHKge8OVqg8DnCYdzdBpF5ubStkc740fl+vkO6TQ/6Wqw
+ 4EvecnVAb96NZORVH9qw1wbKf7atKuykN0kK6g244NHUlJV81q
+ MtibTw76QByVx3fR7xRYMgXAR8jE6qUj3RLF6v3GNuAdxBnjaK
+ TIYEK/jkPb29lOk9M2r1lUT4ENWyjDbjxHi2V41HjOOaggDHs8
+ r+ybYyAUmNgYZcj62CBv3O8IEsBfjILzpJ2xRjFWk3n+61I1L2
+ 1aB0Auoo0+0eDgnR9L6zQUF2rsVMmcf7eHA4Kuhu31GntmiHnA
+ ALpSsHCb2Kwl2JGkYFp88zJ0HiwdyzsjlbuC6EnjBED4JJVfub
+ 7ldmCSbq7S6WQORgC9UMmN63W+dnDFUBHLiexARVFDX49gQB/u
+ ayYLb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 02:02:33AM +0200, Jan Engelhardt wrote:
-> 
-> On Saturday 2012-07-07 23:40, Michal Marek wrote:
-> >index cd9c6c6..4629038 100644
-> >--- a/scripts/link-vmlinux.sh
-> >+++ b/scripts/link-vmlinux.sh
-> >@@ -210,8 +210,8 @@ if [ -n "${CONFIG_KALLSYMS}" ]; then
-> > 	mksysmap ${kallsyms_vmlinux} .tmp_System.map
-> > 
-> > 	if ! cmp -s System.map .tmp_System.map; then
-> >-		echo Inconsistent kallsyms data
-> >-		echo echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
-> >+		echo >&2 Inconsistent kallsyms data
-> >+		echo >&2 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
-> 
-> Hm why is there echo twice in that one line? Seems like an oversight..
 
-Good catch.
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->From 367e43c50d7f7c3b0cec17f4d855a96f47f5e17b Mon Sep 17 00:00:00 2001
-From: Michal Marek <mmarek@suse.cz>
-Date: Fri, 10 Aug 2012 11:55:11 +0200
-Subject: [PATCH] link-vmlinux.sh: Fix stray "echo" in error message
+On Fri, Aug 10, 2012 at 03:29:08PM +0530, Sachin Kamat wrote:
+> On 10 August 2012 15:25, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
+> >> Fixes the following:
+> >> WARNING: line over 80 characters
+> >> ERROR: spaces required around that ':' (ctx:VxW)
+> >> WARNING: Prefer pr_warn(... to pr_warning(...
+> >>
+> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> >> ---
+> >>  drivers/pwm/core.c |    6 +++---
+> >>  1 files changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> >> index efc20f8..929be13 100644
+> >> --- a/drivers/pwm/core.c
+> >> +++ b/drivers/pwm/core.c
+> >> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_device *p=
+wm, const char *label)
+> >>  }
+> >>
+> >>  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
+> >> -                                           const struct of_phandle_ar=
+gs *args)
+> >> +                                          const struct of_phandle_arg=
+s *args)
+> >>  {
+> >>       struct pwm_device *pwm;
+> >>
+> >
+> > Can this hunk be removed, please? I think aligning the arguments is more
+> > useful than respecting the 80-columns limit.
+>=20
+> Sure, if you think so. Anyway it was just one space deleted. Do you
+> want me to re-send the patch?
 
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- scripts/link-vmlinux.sh |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No, with your permission, I'll just leave that hunk out and remove the
+"WARNING: line over 80 characters" line from the commit message.
 
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 4629038..4235a63 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -211,7 +211,7 @@ if [ -n "${CONFIG_KALLSYMS}" ]; then
- 
- 	if ! cmp -s System.map .tmp_System.map; then
- 		echo >&2 Inconsistent kallsyms data
--		echo >&2 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
-+		echo >&2 Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
- 		cleanup
- 		exit 1
- 	fi
+Thierry
+
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQJNw5AAoJEN0jrNd/PrOhH+oQAIS1X0KZVda6k88SVEAJPoxv
+2iXF1+cW81YYG24myVmAq6eYLPH73ThdsbMQEnKPhUMFx6Xno8/7s0WrvofsXPVK
+dwXYxes9yeYNkLguRJFTN+4hT404tiaK2G3OJg2ucpaB22oJAIhIso+hnFy0MdGV
+vCHZg+9Mt+nZZLdKVbOYnec+AbOIbGaRAkj1dv50eaNfsgomzF2IpuzGoQbco1xg
+HwTC5GgCZPdNU1DW6BmoEPP9kMw3ZMX6LgGbI/R8x+eyWo1QKkSYvigUTQ2ypQWH
+NnyjtG5/RzBWXijyFO8jSrEdjAzUYV4aCwPKgzeYnKjAiCpQ+YXXzNQr032yJMQM
+K/D4Yodxq6s7LiOQL3wj0/SR2JG1Civ7LVwUaVkyQOKdqUKl/uANc/WV2fjaYyOR
+dyK6RoXyS3kdO4gi33iu0lmfxL5irnpuRwtsKJi0TNIuQP2mLKSOBV8jmXcU+0iD
+t5JQ47q/TgBxZTdIPz9BfhAIYswUhsgJEU7I1uMqGvVod1KQ+mTIz1H03kzPgekS
+l5Jy9Uen9yAg9oCyKVyn67L6a4WFrF6LTMoB6uaj2/pmSFnNrlANl8tCTnVF8Vie
+BCtXqSCgVZrDCxvPyNpkB8/qzt4XgaDphPkbbeJwKlHRQF22dnMKoYFHOTws5Zew
+GF3rSZfniBusVCg++4KQ
+=CIhC
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
