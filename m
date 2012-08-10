@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab2HJBv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 21:51:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:19199 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758411Ab2HJBvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 21:51:22 -0400
-X-AuditID: cbfee60f-b7f6a6d000000f81-d8-50246918bb8b
-Date: Fri, 10 Aug 2012 01:51:20 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] extcon: fixing typos
-To: Peter Meerwald <pmeerw@pmeerw.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120810014856300@myungjoo.ham
-Msgkey: 20120810014856300@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120810014856300@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <15050255.7801344563479472.JavaMail.weblogic@epml26>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t/t6boSmSoBBh1d2haXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj0O5/rAVdLBXrHvxkbmD8wdzFyMkhJKAusWjJSTYQW0LARGLf
-	z7fMELaYxIV769kgauYzSpxYpQ1iswioSqz4+IWxi5GDg03AXOL+jCAQU1hAU6K5swSkQkQg
-	U6JrQwM7iM0sYCtx7NpSdogpShJr9r1iAbF5BQQlTs58wgKxSVVi9cw5zBBxNYn7LV9YIeIS
-	ErOmX4CyeSVmtD+FqpeTmPZ1DdSV0hLnZ21ghLl48ffHUHF+iWO3dzCBnAbS++R+MMyY3Zu/
-	QD0rIDH1zEGoVi2JE/2/mSBsPok1C9+ywIzZdWo5M0zv/S1zmSDeUpSY0v0Q6kUtiS8/9rGh
-	eosDyHaQmLsidQKj3CwkmVlIumch6UZWs4CRZRWjaGpBckFxUnqqqV5xYm5xaV66XnJ+7iZG
-	cHw/49/BuKjB4hCjAAejEg+vhalKgBBrYllxZe4hRgkOZiUR3pQXygFCvCmJlVWpRfnxRaU5
-	qcWHGKU5WJTEeWe/+OIvJJCeWJKanZpakFoEk2Xi4JRqYFyz3MYjdL/ds8w9tYaW8eXMb764
-	riq0fawjt8fFpZh5Vm3hx/1SU9dOny5e6ulx+0me/0N34YzW7CL++RIi25UXf5ulxHHwKNf6
-	dVNqJs4SSxb+OGPTrKT14f9V8h+EKL9aFXdFQuVCwA2uH7faeB5s28fw4IkAW6jPv6zvlk0+
-	Bans0R4sHEosxRmJhlrMRcWJAPg9dc/rAgAA
-X-TM-AS-MML: No
+	id S932456Ab2HJBw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 21:52:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8637 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932264Ab2HJBwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 21:52:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,743,1336374000"; 
+   d="scan'208";a="195926862"
+Date: Fri, 10 Aug 2012 09:52:22 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+Message-ID: <20120810015222.GA19286@localhost>
+References: <20120726134748.GA20605@localhost>
+ <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7A1q2YV030700
 
-> Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+On Thu, Aug 09, 2012 at 06:39:34PM -0700, Kees Cook wrote:
+> Hi,
+> 
+> So, after taking a closer look at this, I cannot understand how it's
+> possible. Yama's task_lock call is against "current", not "child",
+> which is what ptrace_may_access() is locking. And the same code makes
+> sure that current != child. Yama would never get called if current ==
+> child.
+> 
+> How did you reproduce this situation?
 
-The three "typo" patches:
+This warning can be triggered with Dave Jones' trinity tool:
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+git://git.codemonkey.org.uk/trinity
 
+That's a very dangerous tool, please only run it as normal user in a
+backed up and chrooted test box. I personally run it inside an initrd.
+If you are interested in reproducing this, I can send you the ready
+made initrd in private email.
 
-I will apply the patches as soon as the branch is cleared up (will be using 
-http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-until I get a decent repository somewhere)
-
-
-Cheers!
-MyungJoo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Fengguang
+ 
+> On Thu, Jul 26, 2012 at 6:47 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > Hi Kees,
+> >
+> > Here is a recursive lock possibility:
+> >
+> >         ptrace_may_access()
+> > =>        task_lock(task);
+> >             yama_ptrace_access_check()
+> >               get_task_comm()
+> > =>              task_lock(task);
+> >
+> > [   60.230444] =============================================
+> > [   60.232078] [ INFO: possible recursive locking detected ]
+> > [   60.232078] 3.5.0+ #281 Not tainted
+> > [   60.232078] ---------------------------------------------
+> > [   60.232078] trinity-child0/17019 is trying to acquire lock:
+> > [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c1176ffa>] get_task_comm+0x4a/0xf0
+> > [   60.232078]
+> > [   60.232078] but task is already holding lock:
+> > [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
+> > [   60.232078]
+> > [   60.232078] other info that might help us debug this:
+> > [   60.232078]  Possible unsafe locking scenario:
+> > [   60.232078]
+> > [   60.232078]        CPU0
+> > [   60.232078]        ----
+> > [   60.232078]   lock(&(&p->alloc_lock)->rlock);
+> > [   60.232078]   lock(&(&p->alloc_lock)->rlock);
+> > [   60.232078]
+> > [   60.232078]  *** DEADLOCK ***
+> > [   60.232078]
+> > [   60.232078]  May be due to missing lock nesting notation
+> > [   60.232078]
+> > [   60.232078] 3 locks held by trinity-child0/17019:
+> > [   60.232078]  #0:  (&p->lock){+.+.+.}, at: [<c11a9683>] seq_read+0x33/0x6b0
+> > [   60.232078]  #1:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c11ff8ae>] lock_trace+0x2e/0xb0
+> > [   60.232078]  #2:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
+> > [   60.232078]
+> > [   60.232078] stack backtrace:
+> > [   60.232078] Pid: 17019, comm: trinity-child0 Not tainted 3.5.0+ #281
+> > [   60.232078] Call Trace:
+> > [   60.232078]  [<c10c6238>] __lock_acquire+0x1498/0x14f0
+> > [   60.232078]  [<c10be7e7>] ? trace_hardirqs_off+0x27/0x40
+> > [   60.232078]  [<c10c6360>] lock_acquire+0xd0/0x110
+> > [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
+> > [   60.232078]  [<c1422290>] _raw_spin_lock+0x60/0x110
+> > [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
+> > [   60.232078]  [<c1176ffa>] get_task_comm+0x4a/0xf0
+> > [   60.232078]  [<c1246798>] yama_ptrace_access_check+0x468/0x4a0
+> > [   60.232078]  [<c124648f>] ? yama_ptrace_access_check+0x15f/0x4a0
+> > [   60.232078]  [<c124209a>] security_ptrace_access_check+0x1a/0x30
+> > [   60.232078]  [<c1065229>] __ptrace_may_access+0x189/0x310
+> > [   60.232078]  [<c10650cc>] ? __ptrace_may_access+0x2c/0x310
+> > [   60.232078]  [<c106542d>] ptrace_may_access+0x7d/0xf0
+> > [   60.232078]  [<c11ff8ea>] lock_trace+0x6a/0xb0
+> > [   60.232078]  [<c11ffa46>] proc_pid_stack+0x76/0x170
+> > [   60.232078]  [<c1201064>] proc_single_show+0x74/0x100
+> > [   60.232078]  [<c11a97b3>] seq_read+0x163/0x6b0
+> > [   60.232078]  [<c105bf70>] ? do_setitimer+0x220/0x330
+> > [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
+> > [   60.232078]  [<c116b55a>] vfs_read+0xca/0x280
+> > [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
+> > [   60.232078]  [<c116b776>] sys_read+0x66/0xe0
+> > [   60.232078]  [<c1423d9d>] syscall_call+0x7/0xb
+> > [   60.232078]  [<c1420000>] ? __schedule+0x2a0/0xc80
+> >
+> > Thanks,
+> > Fengguang
+> 
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
