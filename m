@@ -1,148 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab2HJSgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:36:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27050 "EHLO mx1.redhat.com"
+	id S1760000Ab2HJSgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:36:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61337 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759753Ab2HJSgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:36:08 -0400
-Date: Fri, 10 Aug 2012 14:51:16 -0300
+	id S1759877Ab2HJSgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:36:09 -0400
+Date: Fri, 10 Aug 2012 15:14:22 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 05/12] KVM: reorganize hva_to_pfn
-Message-ID: <20120810175115.GA12477@amt.cnet>
+Subject: Re: [PATCH v5 00/12] KVM: introduce readonly memslot
+Message-ID: <20120810181422.GA14892@amt.cnet>
 References: <5020E423.9080004@linux.vnet.ibm.com>
- <5020E509.8070901@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5020E509.8070901@linux.vnet.ibm.com>
+In-Reply-To: <5020E423.9080004@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 07, 2012 at 05:51:05PM +0800, Xiao Guangrong wrote:
-> We do too many things in hva_to_pfn, this patch reorganize the code,
-> let it be better readable
+On Tue, Aug 07, 2012 at 05:47:15PM +0800, Xiao Guangrong wrote:
+> Changelog:
+> - introduce KVM_PFN_ERR_RO_FAULT instead of dummy page
+> - introduce KVM_HVA_ERR_BAD and optimize error hva indicators
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  virt/kvm/kvm_main.c |  159 +++++++++++++++++++++++++++++++--------------------
->  1 files changed, 97 insertions(+), 62 deletions(-)
+> The test case can be found at:
+> http://lkml.indiana.edu/hypermail/linux/kernel/1207.2/00819/migrate-perf.tar.bz2
 > 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 26ffc87..dd01bcb 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1043,83 +1043,118 @@ static inline int check_user_page_hwpoison(unsigned long addr)
->  	return rc == -EHWPOISON;
->  }
+> In current code, if we map a readonly memory space from host to guest
+> and the page is not currently mapped in the host, we will get a fault-pfn
+> and async is not allowed, then the vm will crash.
 > 
-> -static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
-> -			bool write_fault, bool *writable)
-> +/*
-> + * The atomic path to get the writable pfn which will be stored in @pfn,
-> + * true indicates success, otherwise false is returned.
-> + */
-> +static bool hva_to_pfn_fast(unsigned long addr, bool atomic, bool *async,
-> +			    bool write_fault, bool *writable, pfn_t *pfn)
->  {
->  	struct page *page[1];
-> -	int npages = 0;
-> -	pfn_t pfn;
-> +	int npages;
-> 
-> -	/* we can do it either atomically or asynchronously, not both */
-> -	BUG_ON(atomic && async);
-> +	if (!(async || atomic))
-> +		return false;
-> 
-> -	BUG_ON(!write_fault && !writable);
-> +	npages = __get_user_pages_fast(addr, 1, 1, page);
-> +	if (npages == 1) {
-> +		*pfn = page_to_pfn(page[0]);
-> 
-> -	if (writable)
-> -		*writable = true;
-> +		if (writable)
-> +			*writable = true;
-> +		return true;
-> +	}
-> +
-> +	return false;
-> +}
-> 
-> -	if (atomic || async)
-> -		npages = __get_user_pages_fast(addr, 1, 1, page);
-> +/*
-> + * The slow path to get the pfn of the specified host virtual address,
-> + * 1 indicates success, -errno is returned if error is detected.
-> + */
-> +static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
-> +			   bool *writable, pfn_t *pfn)
-> +{
-> +	struct page *page[1];
-> +	int npages = 0;
-> 
-> -	if (unlikely(npages != 1) && !atomic) {
-> -		might_sleep();
-> +	might_sleep();
-> 
-> -		if (writable)
-> -			*writable = write_fault;
-> -
-> -		if (async) {
-> -			down_read(&current->mm->mmap_sem);
-> -			npages = get_user_page_nowait(current, current->mm,
-> -						     addr, write_fault, page);
-> -			up_read(&current->mm->mmap_sem);
-> -		} else
-> -			npages = get_user_pages_fast(addr, 1, write_fault,
-> -						     page);
-> -
-> -		/* map read fault as writable if possible */
-> -		if (unlikely(!write_fault) && npages == 1) {
-> -			struct page *wpage[1];
-> -
-> -			npages = __get_user_pages_fast(addr, 1, 1, wpage);
-> -			if (npages == 1) {
-> -				*writable = true;
-> -				put_page(page[0]);
-> -				page[0] = wpage[0];
-> -			}
-> -			npages = 1;
-> +	if (writable)
-> +		*writable = write_fault;
-> +
-> +	if (async) {
-> +		down_read(&current->mm->mmap_sem);
-> +		npages = get_user_page_nowait(current, current->mm,
-> +					      addr, write_fault, page);
-> +		up_read(&current->mm->mmap_sem);
-> +	} else
-> +		npages = get_user_pages_fast(addr, 1, write_fault,
-> +					     page);
-> +	if (npages != 1)
-> +		return npages;
+> As Avi's suggestion, We introduce readonly memory region to map ROM/ROMD
+> to the guest, read access is happy for readonly memslot, write access on
+> readonly memslot will cause KVM_EXIT_MMIO exit.
 
- * Returns number of pages pinned. This may be fewer than the number
- * requested. If nr_pages is 0 or negative, returns 0. If no pages
- * were pinned, returns -errno.
- */
-int get_user_pages_fast(unsigned long start, int nr_pages, int write,
-                        struct page **pages)
+Memory slots whose QEMU mapping is write protected is supported
+today, as long as there are no write faults.
 
+What prevents the use of mmap(!MAP_WRITE) to handle read-only memslots
+again?
 
-Current behaviour is
-
-        if (atomic || async)
-                npages = __get_user_pages_fast(addr, 1, 1, page);
-
-	if (npages != 1) 
-		slow path retry;
-
-The changes above change this, don't they?
+The initial objective was to fix a vm crash, can you explain that
+initial problem?
 
