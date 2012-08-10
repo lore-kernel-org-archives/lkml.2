@@ -1,151 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760102Ab2HJKdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:33:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44595 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab2HJKdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:33:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,744,1336374000"; 
-   d="asc'?scan'208";a="184163341"
-Date: Fri, 10 Aug 2012 13:33:04 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH, RFC 0/9] Introduce huge zero page
-Message-ID: <20120810103304.GA3915@otc-wbsnb-06>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120810034912.GA31071@hacker.(null)>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IJpNTDwzlM2Ie8A6"
-Content-Disposition: inline
-In-Reply-To: <20120810034912.GA31071@hacker.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760149Ab2HJKef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:34:35 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41655 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab2HJKee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 06:34:34 -0400
+From: Florian Westphal <fw@strlen.de>
+To: kvm@vger.kernel.org
+Cc: avi@redhat.com, linux-kernel@vger.kernel.org,
+        Florian Westphal <fw@strlen.de>
+Subject: [PATCH] kvm: disable stealtime via reboot notifier to avoid mem corruption
+Date: Fri, 10 Aug 2012 12:36:22 +0200
+Message-Id: <1344594982-8516-1-git-send-email-fw@strlen.de>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+else, we get memory corruption on reboot; found when tracking down
+initramfs unpack error on initial reboot (with qemu-kvm -smp 2,
+no problem with single-core).
 
---IJpNTDwzlM2Ie8A6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+problem with doing it via kvm_shutdown() is that this file
+depends on CONFIG_KVM_CLOCK, also its not enough to call it for one
+cpu only.
 
-On Fri, Aug 10, 2012 at 11:49:12AM +0800, Wanpeng Li wrote:
-> On Thu, Aug 09, 2012 at 12:08:11PM +0300, Kirill A. Shutemov wrote:
-> >From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >
-> >During testing I noticed big (up to 2.5 times) memory consumption overhe=
-ad
-> >on some workloads (e.g. ft.A from NPB) if THP is enabled.
-> >
-> >The main reason for that big difference is lacking zero page in THP case.
-> >We have to allocate a real page on read page fault.
-> >
-> >A program to demonstrate the issue:
-> >#include <assert.h>
-> >#include <stdlib.h>
-> >#include <unistd.h>
-> >
-> >#define MB 1024*1024
-> >
-> >int main(int argc, char **argv)
-> >{
-> >        char *p;
-> >        int i;
-> >
-> >        posix_memalign((void **)&p, 2 * MB, 200 * MB);
-> >        for (i =3D 0; i < 200 * MB; i+=3D 4096)
-> >                assert(p[i] =3D=3D 0);
-> >        pause();
-> >        return 0;
-> >}
-> >
-> >With thp-never RSS is about 400k, but with thp-always it's 200M.
-> >After the patcheset thp-always RSS is 400k too.
-> >
-> Hi Kirill,=20
->=20
-> Thank you for your patchset, I have some questions to ask.
->=20
-> 1. In your patchset, if read page fault, the pmd will be populated by huge
-> zero page, IIUC, assert(p[i] =3D=3D 0) is a read operation, so why thp-al=
-ways
-> RSS is 400K ? You allocate 100 pages, why each cost 4K? I think the
-> right overhead should be 2MB for the huge zero page instead of 400K, where
-> I missing ?
+Signed-off-by: Florian Westphal <fw@strlen.de>
+---
+ not subscribed, please CC on replies.
+ Also, I don't know much about kvm or kexec, so its possible
+ that i missed something.
 
-400k comes not from the allocation, but from libc runtime. The test
-program consumes about the same without any allocation at all.
+ In any case, this seems to fix the initramfs corruption for me.
+ patch is against virt/kvm/kvm.git.
 
-Zero page is a global resource. System owns it. It's not accounted to any
-process.
+ arch/x86/kernel/kvm.c      |    1 +
+ arch/x86/kernel/kvmclock.c |    1 -
+ 2 files changed, 1 insertions(+), 1 deletions(-)
 
->=20
-> 2. If the user hope to allocate 200MB, total 100 pages needed. The codes=
-=20
-> will allocate one 2MB huge zero page and populate to all associated pmd
-> in your patchset logic. When the user attempt to write pages, wp will be=
-=20
-> triggered, and if allocate huge page failed will fallback to
-> do_huge_pmd_wp_zero_page_fallback in your patch logic, but you just
-> create a new table and set pte around fault address to the newly
-> allocated page, all other ptes set to normal zero page. In this scene=20
-> user only get one 4K page and all other zero pages, how the codes can
-> cotinue to work? Why not fallback to allocate normal page even if not=20
-> physical continuous.
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index c1d61ee..1596cc8 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -354,6 +354,7 @@ static void kvm_pv_guest_cpu_reboot(void *unused)
+ 	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI))
+ 		wrmsrl(MSR_KVM_PV_EOI_EN, 0);
+ 	kvm_pv_disable_apf();
++	kvm_disable_steal_time();
+ }
+ 
+ static int kvm_pv_reboot_notify(struct notifier_block *nb,
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index f1b42b3..5a2fa7d 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -191,7 +191,6 @@ static void kvm_crash_shutdown(struct pt_regs *regs)
+ static void kvm_shutdown(void)
+ {
+ 	native_write_msr(msr_kvm_system_time, 0, 0);
+-	kvm_disable_steal_time();
+ 	native_machine_shutdown();
+ }
+ 
+-- 
+1.7.8.6
 
-Since we allocate 4k page around the fault address the fault is handled.
-Userspace can use it.
-
-If the process will try to write to any other 4k page of this area a new
-fault will be triggered and do_wp_page() will allocate a real page.
-
-It's not reasonable to allocate all 4k pages in the fallback path. We can
-postpone it until userspace will really want to use them. This way we reduce
-memory pressure in fallback path.
-
-> 3. In your patchset logic:
-> "In fallback path we create a new table and set pte around fault address
-> to the newly allocated page. All other ptes set to normal zero page."
-> When these zero pages will be replaced by real pages and add memcg charge?
-
-I guess I've answered the question above.
-
-> Look forward to your detail response, thank you! :)
-
-Thanks for your questions.
-
---=20
- Kirill A. Shutemov
-
---IJpNTDwzlM2Ie8A6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQJONfAAoJEAd+omnVudOMGVYP/0q8qLqr/z7zHB3UWp+HNUUU
-VMyZfofyrWzdIvyv1w9cM66Frel5nwWfVIU3TZtLFEAQPslmkAJijQcoaQ1MnMd+
-dDD+ExeL8PcA8TFBzqR+BwL9zgQyXXUgAZiRkHqeKsaxMkrcnP6fYnQyCDczfUqC
-F7MwOdXEP1EPUuAgBHf5dYncMdIqeA+uI+vsaMHZSme8qE+n3qR4x86GdPJRIGY0
-ZJTSL0f6a1vDcCI0RyCLpTALVtZa7AFFrp0jH20sPaeTnLjqPFbjv8JUX4mMGAnq
-P+BlTzRkdDGM6CKNCagIEUecbabXC04QQz59i1J86dhaupyWSxSKN7d0R/S43kJN
-kDWGHdrqDIcVUxzlqvLQd7SKJPLMMv6ke9VXj/DIgoSbpaIDgoD/3f7haSFcA8rL
-r9EiaVaGjtietOwsHSS8qnvn6VlEndvZqVsArIbAT9vIclgJZzZ8sM9AN8nB1mXx
-veZ0kqU2Ik84VLWhlEY/MvRLZqg2pABQC3RhJ2ZdCqG4c5eFitsp+T9GPvs51j9n
-a2rlhehPqADaM6D1MpJYobOlWzNYYFyouk0/drmTY8IqhSfvO+y/oJmFpeBk5ev9
-DDk1lK4ZSxN3HxymZ+CvdptbPECOh5DYC6JNjEEtazM1IbGZbgX46/YOFqE2hKeS
-zwjK7kipnPUrmebVatV9
-=I99G
------END PGP SIGNATURE-----
-
---IJpNTDwzlM2Ie8A6--
