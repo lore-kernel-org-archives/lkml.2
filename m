@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab2HKABc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 20:01:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55036 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2HKAB2 (ORCPT
+	id S1755909Ab2HKAMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 20:12:32 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33680 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab2HKAM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 20:01:28 -0400
-Date: Fri, 10 Aug 2012 17:01:14 -0700
-From: tip-bot for Andrew Boie <andrew.p.boie@intel.com>
-Message-ID: <tip-484d90eec884d814b005c9736bcf3fd018acba65@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andrew.p.boie@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andrew.p.boie@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1344624546-29691-1-git-send-email-andrew.p.boie@intel.com>
-References: <1344624546-29691-1-git-send-email-andrew.p.boie@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, build: Globally set -fno-pic
-Git-Commit-ID: 484d90eec884d814b005c9736bcf3fd018acba65
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 10 Aug 2012 17:01:19 -0700 (PDT)
+	Fri, 10 Aug 2012 20:12:29 -0400
+From: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+To: romieu@fr.zoreil.com, nic_swsd@realtek.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
+Subject: [PATCH 1/1] 	r8169: Removed unused macros from r8169.c
+Date: Fri, 10 Aug 2012 07:33:11 -0700
+Message-Id: <1344609191-5229-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <r8169-Removed-unused-macros-from-r8169.c>
+References: <r8169-Removed-unused-macros-from-r8169.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  484d90eec884d814b005c9736bcf3fd018acba65
-Gitweb:     http://git.kernel.org/tip/484d90eec884d814b005c9736bcf3fd018acba65
-Author:     Andrew Boie <andrew.p.boie@intel.com>
-AuthorDate: Fri, 10 Aug 2012 11:49:06 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 10 Aug 2012 16:12:30 -0700
 
-x86, build: Globally set -fno-pic
-
-GCC built with nonstandard options can enable -fpic by default.
-We never want this for 32-bit kernels and it will break the build.
-
-[ hpa: Notably the Android toolchain apparently does this. ]
-
-Change-Id: Iaab7d66e598b1c65ac4a4f0229eca2cd3d0d2898
-Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
-Link: http://lkml.kernel.org/r/1344624546-29691-1-git-send-email-andrew.p.boie@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
 ---
- arch/x86/Makefile             |    4 ++++
- arch/x86/boot/Makefile        |    2 +-
- arch/x86/realmode/rm/Makefile |    2 +-
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index b0c5276..682e9c2 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -27,6 +27,10 @@ ifeq ($(CONFIG_X86_32),y)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index b47d5b3..60b45ca 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -78,23 +78,18 @@ static const int multicast_filter_limit = 32;
  
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ #define MAX_READ_REQUEST_SHIFT	12
+ #define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
+-#define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
  
-+        # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-+        # with nonstandard options
-+        KBUILD_CFLAGS += -fno-pic
-+
-         # prevent gcc from keeping the stack 16 byte aligned
-         KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=2)
+ #define R8169_REGS_SIZE		256
+ #define R8169_NAPI_WEIGHT	64
+ #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
+ #define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
+-#define RX_BUF_SIZE	1536	/* Rx Buffer size */
+ #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
+ #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
  
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 5a747dd..f7535be 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -57,7 +57,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
- 		   -Wall -Wstrict-prototypes \
- 		   -march=i386 -mregparm=3 \
- 		   -include $(srctree)/$(src)/code16gcc.h \
--		   -fno-strict-aliasing -fomit-frame-pointer \
-+		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
- 		   $(call cc-option, -ffreestanding) \
- 		   $(call cc-option, -fno-toplevel-reorder,\
- 			$(call cc-option, -fno-unit-at-a-time)) \
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index b2d534c..8869287 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -72,7 +72,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
- 		   -Wall -Wstrict-prototypes \
- 		   -march=i386 -mregparm=3 \
- 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
--		   -fno-strict-aliasing -fomit-frame-pointer \
-+		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
- 		   $(call cc-option, -ffreestanding) \
- 		   $(call cc-option, -fno-toplevel-reorder,\
- 			$(call cc-option, -fno-unit-at-a-time)) \
+ #define RTL8169_TX_TIMEOUT	(6*HZ)
+ #define RTL8169_PHY_TIMEOUT	(10*HZ)
+ 
+-#define RTL_EEPROM_SIG		cpu_to_le32(0x8129)
+-#define RTL_EEPROM_SIG_MASK	cpu_to_le32(0xffff)
+-#define RTL_EEPROM_SIG_ADDR	0x0000
+ 
+ /* write/read MMIO register */
+ #define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
+-- 
+1.7.5.4
+
