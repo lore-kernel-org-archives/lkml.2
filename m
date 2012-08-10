@@ -1,108 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab2HJItU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 04:49:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60795 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2HJItR (ORCPT
+	id S1757601Ab2HJIud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 04:50:33 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:58295 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2HJIu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 04:49:17 -0400
-Date: Fri, 10 Aug 2012 10:48:59 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
-Message-ID: <20120810084859.GA16550@avionic-0098.mockup.avionic-design.de>
-References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
- <CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
- <20120809202054.GA24503@avionic-0098.mockup.avionic-design.de>
- <CACRpkdaSk9xBaiSAKCj4Pa2kyyfP178XN53i2Q2+CBFx=RoE0g@mail.gmail.com>
- <20120810083508.GA16251@avionic-0098.mockup.avionic-design.de>
- <CACRpkdaGWhTR3Zr40dtigQqPPkxQZ=zYqYVBfpwbnkf3P2Qhhg@mail.gmail.com>
+	Fri, 10 Aug 2012 04:50:28 -0400
+Message-ID: <5024CADC.1010202@huawei.com>
+Date: Fri, 10 Aug 2012 16:48:28 +0800
+From: Hanjun Guo <guohanjun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaGWhTR3Zr40dtigQqPPkxQZ=zYqYVBfpwbnkf3P2Qhhg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:7T/a+4te38fN/0M5DeAWDrn4UYIPXGkgmYOSps3qqsS
- B/hASiKhiQO3ztgzyqtRtllHURxDxW1bfy05v5bF3pskfcDVFw
- 8pZ5wllv522D2ZMJGGy5ztJ2deblrtmUWoMHWOGxbG+3TX2/Fw
- HQ3CTZXJIuK3BOppf4RAXdxd7G7n2UoVP5E7a8023jozusyz0J
- meVM4p4XGNjQPMyLWTRmCbbOs9uq6zFJvkxoEy7+XWXJNFPBUR
- NMmBYggAXh8ybq1/d3qGRtfYm23domusQP3WRT7Tttw60WlP4g
- peE+hAmHRPIvayEvLb41dV2AnDoX8qStCwcQHsMaXlU7Xy7RRo
- WjZQm2hKC00ltuYo+zavkD87myA8M2UtdQX2VJqTVt84I3E7p7
- BgRa6mD71tA5y+an5VygJi/mgU3RQEQ0vM=
+To: "Christoph Lameter (Open Source)" <cl@linux.com>
+CC: Wu Jianguo <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>
+Subject: Re: [RFC PATCH] mm: introduce N_LRU_MEMORY to distinguish between
+ normal and movable memory
+References: <1344482788-4984-1-git-send-email-guohanjun@huawei.com> <50233EF5.3050605@huawei.com> <alpine.DEB.2.02.1208090900450.15909@greybox.home>
+In-Reply-To: <alpine.DEB.2.02.1208090900450.15909@greybox.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.69.25]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012/8/9 22:06, Christoph Lameter (Open Source) wrote:
+> On Thu, 9 Aug 2012, Hanjun Guo wrote:
+> 
+>> Now, We have node masks for both N_NORMAL_MEMORY and
+>> N_HIGH_MEMORY to distinguish between normal and highmem on platforms such as x86.
+>> But we still don't have such a mechanism to distinguish between "normal" and "movable"
+>> memory.
+> 
+> What is the exact difference that you want to establish?
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Christoph,
+    Thanks for your comments very much!
 
-On Fri, Aug 10, 2012 at 10:41:58AM +0200, Linus Walleij wrote:
-> On Fri, Aug 10, 2012 at 10:35 AM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> >> Consult the following article on LWN:
-> >> http://lwn.net/Articles/470820/
-> >>
-> >> Then grep your gitlog and you'll see we got rid of it from ARM.
-> >
-> > Then why is there still the following in arch/arm/include/asm/irq.h?
-> >
-> >         /*
-> >          * Use this value to indicate lack of interrupt
-> >          * capability
-> >          */
-> >         #ifndef NO_IRQ
-> >         #define NO_IRQ  ((unsigned int)(-1))
-> >         #endif
->=20
-> That's a question for Russell but I think it's basically there for
-> old platforms, on a "don't use it"-basis. (Maybe a comment could
-> be good.)
->=20
-> As you see non-sparse platforms can redefine NO_IRQS in their
-> <mach/irqs.h> file, but in practice things like the VIC and GIC
-> drivers have been switched over to using irqdomain which
-> in turn does *not* allow IRQ 0 to be used, so most platforms
-> are indirectly disallowed to use IRQ 0 anyway. In fact I think
-> some of them are just broken now.
+We want to identify the node only has ZONE_MOVABLE memory.
+for example:
+	node 0: ZONE_DMA, ZONE_DMA32, ZONE_NORMAL--> N_LRU_MEMORY, N_NORMAL_MEMORY
+	node 1: ZONE_MOVABLE			 --> N_LRU_MEMORY
+thus, in SLUB allocator, will not allocate memory control structures for node1.
 
-In that case it might be better to just drop it altogether and wait
-until people with the broken platforms start complaining.
+static int init_kmem_cache_nodes(struct kmem_cache *s)
+{
+	int node;
 
-Thierry
+	for_each_node_state(node, N_NORMAL_MEMORY) { /* <-- skip nodes only has ZONE_MOVABLE memory */
+		struct kmem_cache_node *n;
 
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature
+		if (slab_state == DOWN) {
+			early_kmem_cache_node_alloc(node);
+			continue;
+		}
+		n = kmem_cache_alloc_node(kmem_cache_node,
+						GFP_KERNEL, node);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+		...
+	}
+	...
+}
 
-iQIcBAEBAgAGBQJQJMr7AAoJEN0jrNd/PrOhlZ8QAIZ8855/Wm9g5454USc2T8zv
-PyM8+aOF9dSCiQBcZb8BG6A+figj60DhcEZtoVCzni9IrQHJY0NKZhOpCro9qinz
-A61QQ7GjvEvNOpp/wbtG+BUNmFCRSGn5gGhszMlsngMVIrOerGNmwlT+A1F95Sqz
-kaIUS636qOJaPucTYD9rgin3UIesoZmrzxwE8fdflx93lV4xYXzdYWkZXZey8Nx1
-D1oLLU6MLjQwQvKix5XBu0CNCP0Xe2og0GTKJtuqI8sbQNunxzYIGzEeUDUvH6Qa
-0duXUhxbc3vsVgtn1BmBWMT5Cy7ppi3UIYzdujIRmBChBl1Sj8O+KG1tBBv4pvVD
-Tyj0pt1q8M22KRsS5pT5O29OwP8Wnb7Q8UqTona5f88T7KTjD59GC/0/cFilYELO
-Z4+I38+HNUuUBfoQo1r2ZKtvQhuTYkXOULAY+sARFycaiAx6n+F0WmNRnpiNRjgY
-EPjTIFp+MqBTRhEWFZln+Xcv7FSXAleSDyVJfGQhTjFoUTO1RaAAUecdpXkAKCLs
-1K5NHadOSyVcoVoo5MdalludVpjTHnpyhGzI+RUfFb1USzIhZH+m+SsNAG7nKYpi
-YsHSufdRohdA+DsSKaGu/oEMxsVLdHMNw7bLv01Plrk+4j4yx7iswxFSOs2+TQg0
-qQDY4iEL6wFTzxYkyukn
-=TiLA
------END PGP SIGNATURE-----
+> 
+>> As suggested by Christoph Lameter in threads
+>> http://marc.info/?l=linux-mm&m=134323057602484&w=2, we introduce N_LRU_MEMORY to
+>> distinguish between "normal" and "movable" memory.
+> 
+> Well seems that I am having second thoughts about this. While is it true
+> that current page migration can only move pages on the LRU there are
+> already various mechanisms proposed and implemented that can move pages
+> not on the LRU (like page table pages). Not sure if this is still a useful
+> distinction to make. There is also the issue that segments from
+> "N_LRU_MEMORY" may be allocated and then become not movable anymore.
 
---2oS5YaxWCcQjTEyO--
+Some kernel pages，like memmap pages，usemap pages are still can not be
+migrated.
+
+> 
+> For the slab case that you want to solve here you will need to know if the
+> node has *only* movable memory and will never have any ZONE_NORMAL memory.
+> If so then memory control structures for allocators that do not allow
+> movable memory will not need to be allocated for these node. The node can
+> be excluded from handling.
+
+I think this is what we are trying to do in this patch.
+did I miss something?
+
+> 
+> .
+> 
+
+
