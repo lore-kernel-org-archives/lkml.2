@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab2HJGUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 02:20:21 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3186 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab2HJGUS (ORCPT
+	id S1754703Ab2HJG2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 02:28:12 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51259 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab2HJG2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 02:20:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 09 Aug 2012 23:15:02 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] usb: host: tegra: fix warning messages in ehci_remove
-Date: Fri, 10 Aug 2012 11:42:43 +0530
-Message-ID: <1344579163-10190-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	Fri, 10 Aug 2012 02:28:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/xmePJko9d43x55ETcwkG3
+Date: Thu, 9 Aug 2012 23:28:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [PATCH 07/11] ARM: OMAP/ASoC: Zoom2: Let the codec to handle
+ the hs_extmute GPIO
+Message-ID: <20120810062800.GO11011@atomide.com>
+References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
+ <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Existing implementation of tegra_ehci_remove() calls
-usb_put_hcd(hcd) first and then iounmap(hcd->regs).
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [120808 02:42]:
+> Remove the use of set_hs_extmute callback and let the codec driver to
+> handle the extmute GPIO.
 
-usb_put_hcd() implementation calls hcd_release()
-which frees up memory allocated for hcd.
-
-As iounmap is trying to unmap hcd->regs, after hcd
-getting freed up, warning messages were observed during
-unload of USB.
-
-Hence fixing it.
-
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
- drivers/usb/host/ehci-tegra.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 950e95e..26dedb3 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -799,11 +799,12 @@ static int tegra_ehci_remove(struct platform_device *pdev)
- #endif
- 
- 	usb_remove_hcd(hcd);
--	usb_put_hcd(hcd);
- 
- 	tegra_usb_phy_close(tegra->phy);
- 	iounmap(hcd->regs);
- 
-+	usb_put_hcd(hcd);
-+
- 	clk_disable_unprepare(tegra->clk);
- 	clk_put(tegra->clk);
- 
--- 
-1.7.1.1
-
+Acked-by: Tony Lindgren <tony@atomide.com>
