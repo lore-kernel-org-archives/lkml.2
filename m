@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759189Ab2HJJsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 05:48:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56990 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758194Ab2HJJs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 05:48:28 -0400
-Date: Fri, 10 Aug 2012 11:48:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120810094825.GA1440@dhcp22.suse.cz>
-References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
- <20120803133235.GA8434@dhcp22.suse.cz>
+	id S1759288Ab2HJJzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 05:55:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51925 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223Ab2HJJzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 05:55:40 -0400
+Date: Fri, 10 Aug 2012 11:55:36 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
+Message-ID: <20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
+References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
+ <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
 Content-Disposition: inline
-In-Reply-To: <20120803133235.GA8434@dhcp22.suse.cz>
+In-Reply-To: <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:Zo9MMwazSMTdIvibIgT/ZtM4eF36ws+UQHC+36p53ju
+ kCryZuChRMJw/8sXepaOSbJOyfwFytbr5KOAsdDAtwf9lYjoio
+ hEzP+A3nWs0G+8+hUesIeHL5rCEACiwbCMgBLtJ5ANxwf7Cij3
+ Q5ClMJ0laEp/VSljjIv2pVm1bp2rxhOcZY0j05UCIxQD9Ahq0/
+ 6WEiodrs8AdOAmt/5DapNViExQP/sxv0cGU+OUy0kya/v42QnG
+ Vn7opYYUjeziAHHUFDVfbELMTFd4C8ktlDiYjfDbOJua6ET5vR
+ LbBjKMBNSsu23/MVaTsgOzJX1K9QsBaK+0/b9yhQSLEfppwIk0
+ CzXF9ZvUaaliZLzEQUJ6u1eCOzxzCoDaKm0aXDqZBxzrBRfpt/
+ HblJZt+wBKgPPn/f2m6iXW4wqyxHNM7IdTEp4YwbSQHTu2d1Ol
+ XJOva
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-08-12 15:32:35, Michal Hocko wrote:
-> On Fri 03-08-12 20:56:45, Hillf Danton wrote:
-> > The computation of page offset index is open coded, and incorrect, to
-> > be used in scanning prio tree, as huge page offset is required, and is
-> > fixed with the well defined routine.
-> 
-> I guess that nobody reported this because if someone really wants to
-> share he will use aligned address for mmap/shmat and so the index is 0.
-> Anyway it is worth fixing. Thanks for pointing out!
 
-I have looked at the code again and I don't think there is any problem
-at all. vma_prio_tree_foreach understands page units so it will find
-appropriate svmas.
-Or am I missing something?
+--9amGYk9869ThD9tj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > 
-> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> > ---
-> > 
-> > --- a/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:34:58 2012
-> > +++ b/arch/x86/mm/hugetlbpage.c	Fri Aug  3 20:40:16 2012
-> > @@ -72,12 +72,15 @@ static void huge_pmd_share(struct mm_str
-> >  	if (!vma_shareable(vma, addr))
-> >  		return;
-> > 
-> > +	idx = linear_page_index(vma, addr);
-> > +
-> 
-> You can use linear_hugepage_index directly and remove the idx
-> initialization as well.
-> 
-> >  	mutex_lock(&mapping->i_mmap_mutex);
-> >  	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
-> >  		if (svma == vma)
-> >  			continue;
-> > 
-> > -		saddr = page_table_shareable(svma, vma, addr, idx);
-> > +		saddr = page_table_shareable(svma, vma, addr,
-> > +						idx * (PMD_SIZE/PAGE_SIZE));
-> 
-> Why not just fixing page_table_shareable as well rather than playing
-> tricks like this?
-> 
-> >  		if (saddr) {
-> >  			spte = huge_pte_offset(svma->vm_mm, saddr);
-> >  			if (spte) {
-> > --
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
+On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
+> Fixes the following:
+> WARNING: line over 80 characters
+> ERROR: spaces required around that ':' (ctx:VxW)
+> WARNING: Prefer pr_warn(... to pr_warning(...
+>=20
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/pwm/core.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index efc20f8..929be13 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_device *pwm,=
+ const char *label)
+>  }
+> =20
+>  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
+> -					      const struct of_phandle_args *args)
+> +					     const struct of_phandle_args *args)
+>  {
+>  	struct pwm_device *pwm;
+> =20
 
--- 
-Michal Hocko
-SUSE Labs
+Can this hunk be removed, please? I think aligning the arguments is more
+useful than respecting the 80-columns limit.
+
+Thierry
+
+--9amGYk9869ThD9tj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQJNqYAAoJEN0jrNd/PrOhIBAP/2mAJgQ42M1GAOSJIdHMnq0t
+sN2l1+M4g6aQqOpkALxfpNBFn5GBJ9E3/fHPS4+SlKi4cqqbB62VuXTkwmYuUrBd
+KDnpCnj0CFBay221OGH3DvUcqwYCzrnjZXvV6ev59Npb0Y8zMKda1msGv2ELXnM0
+dZBD2ZmdQSkxuGo+25q/v36e3L3FT5VBY+vLClZbHng9MGpCkpkNuhrpjBL7Lk4v
+0s9lab+zb+H97nocAIWacdKNPUW4aqveiEdmDMUn2pG5v6seD+4G0L3ZMs1LAPae
+rhEeWYeNWBmmHeIy0eGPgYwhtLyGsDs+LSerLB5K3vGj5kp0rMc39yHLFE4CFL8C
+08m1R3AP7LXg+FKesl1GPECBU1367grG5mx7ALmyo7Yet7HwSRR5ov2Lvaxzo8VF
+RzZPSoWF+gu9+kmk0cbuTtFzPp9QEeJvCqivmDYqzWDwGMX6ZgoMVu3zLVaxc/6s
+yxJ21xXhaRcc7iP0FM942TkD84EASzYDmefrk1eak9XxF4rmI4HKT43tlebbB68/
+ErSbLOKIwrcbjuAFAvPgpuCwOAk4h6v7hljEUH4cOVWXPjAD7cdBldkeQphQVMAV
+A936eCuXLEnXD/w+taziqc/rCnf4SUQ+/U7+JO5bSCKPQCiRpziJWhszrwUipM99
+YiHNK6aVGRSlio7yxL1G
+=REgP
+-----END PGP SIGNATURE-----
+
+--9amGYk9869ThD9tj--
