@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760111Ab2HJDWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:22:15 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46638 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab2HJDWN (ORCPT
+	id S1760153Ab2HJDWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:22:45 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34845 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2HJDWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:22:13 -0400
-Message-ID: <50247E5A.5040503@linux.vnet.ibm.com>
-Date: Fri, 10 Aug 2012 11:22:02 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 9 Aug 2012 23:22:43 -0400
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 03/12] KVM: introduce gfn_to_pfn_memslot_atomic
-References: <5020E423.9080004@linux.vnet.ibm.com> <5020E4B0.9090609@linux.vnet.ibm.com> <20120809185047.GB20889@amt.cnet>
-In-Reply-To: <20120809185047.GB20889@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12081003-8256-0000-0000-000003A7BDB8
+Date: Fri, 10 Aug 2012 12:22:41 +0900
+Message-ID: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
+Subject: [PATCH][SCSI] remove the queue unlock in scsi_requset_fn
+From: Chanho Min <chanho0207@gmail.com>
+To: James Bottomley <JBottomley@parallels.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 02:50 AM, Marcelo Tosatti wrote:
-> On Tue, Aug 07, 2012 at 05:49:36PM +0800, Xiao Guangrong wrote:
->> It can instead of hva_to_pfn_atomic
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c       |    5 +----
->>  include/linux/kvm_host.h |    3 ++-
->>  virt/kvm/kvm_main.c      |   14 ++++++++------
->>  3 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> What if someone needs gfn_to_hva_memslot in the future, which is not
-> unlikely?
+We don't need to unlock the queue before put_device in scsi_request_fn()
+If we trigger the ->remove() function, It occur a oops from the caller.
+So sdev reference count should not be dropped to zero here.
+Also It was added before scsi_device_dev_release() was moved
+to user context, so it is outdated.
 
-Marcelo,
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+Reviewed-by: Bart Van Assche <bvanassche@acm.org>
+---
+ drivers/scsi/scsi_lib.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-We have already had the function gfn_to_hva_memslot in kvm_host.h which
-is not directly used on x86. In this patchset, gfn_to_hva_memslot does
-not check the slot->flags.
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index ffd7773..cb2185a 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1626,11 +1626,7 @@ out_delay:
+ 	if (sdev->device_busy == 0)
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ out:
+-	/* must be careful here...if we trigger the ->remove() function
+-	 * we cannot be holding the q lock */
+-	spin_unlock_irq(q->queue_lock);
+ 	put_device(&sdev->sdev_gendev);
+-	spin_lock_irq(q->queue_lock);
+ }
 
-I think we can let it be based on gfn_to_hva_many:
-static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
-                                               gfn_t gfn)
-{
-	return gfn_to_hva_many(slot, gfn, true);
-}
-
-Then all gfn_to_*() functions are based on gfn_to_hva_many in which we
-will check slot->flags properly.
-
+ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
+-- 
+1.7.0.4
