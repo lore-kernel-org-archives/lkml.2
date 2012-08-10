@@ -1,103 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab2HJRLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:11:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60682 "EHLO mx1.redhat.com"
+	id S1757499Ab2HJRME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:12:04 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60794 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753310Ab2HJRLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:11:32 -0400
-Date: Fri, 10 Aug 2012 13:11:12 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 1/6] floppy: don't call alloc_ordered_workqueue inside
- the alloc_disk loop
-Message-ID: <20120810171112.GF5416@redhat.com>
-References: <1344542391-16474-1-git-send-email-herton.krzesinski@canonical.com>
- <1344542391-16474-2-git-send-email-herton.krzesinski@canonical.com>
+	id S1753344Ab2HJRMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:12:00 -0400
+Message-ID: <502540D1.9020908@linux.vnet.ibm.com>
+Date: Fri, 10 Aug 2012 10:11:45 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344542391-16474-2-git-send-email-herton.krzesinski@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Matt Hellsley <matthltc@us.ibm.com>,
+        David Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 02/16] perf symbol: remove unused 'end' arg in kallsyms
+ parse cb
+References: <1344550721-21024-1-git-send-email-cody@linux.vnet.ibm.com> <1344550721-21024-3-git-send-email-cody@linux.vnet.ibm.com> <87k3x7wjvk.fsf@sejong.aot.lge.com>
+In-Reply-To: <87k3x7wjvk.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081017-5930-0000-0000-00000ABB8680
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 04:59:46PM -0300, Herton Ronaldo Krzesinski wrote:
-> Since commit 070ad7e ("floppy: convert to delayed work and single-thread
-> wq"), we end up calling alloc_ordered_workqueue multiple times inside
-> the loop, which shouldn't be intended. Besides the leak, other side
-> effect in the current code is if blk_init_queue fails, we would end up
-> calling unregister_blkdev even if we didn't call yet register_blkdev.
-> 
-> Just moved the allocation of floppy_wq before the loop, and adjusted the
-> code accordingly.
-> 
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> Cc: stable@vger.kernel.org # 3.5+
+> I guess that length of 1 effectively same as zero length in this case
+> since we end up calling symbols__fixup_end. The 'end - start + 1' part
+> looks like a leftover from previous change and not needed anymore -
+> KSYM_NAME_LEN check too, IMHO - so I suggest using 0 length to make it
+> clear.
 
-Looks good to me.
+Got it.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> And it seems you need to rebase the series onto Arnaldo's current
+> perf/core branch which separates out ELF bits to symbol-elf.c.
 
-Vivek
+Will do. It apparently wasn't pushed out when I sent these patches, look 
+for v2 shortly.
 
-> ---
->  drivers/block/floppy.c |   15 ++++++---------
->  1 file changed, 6 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index a7d6347..c8d9e68 100644
-> --- a/drivers/block/floppy.c
-> +++ b/drivers/block/floppy.c
-> @@ -4138,6 +4138,10 @@ static int __init do_floppy_init(void)
->  
->  	raw_cmd = NULL;
->  
-> +	floppy_wq = alloc_ordered_workqueue("floppy", 0);
-> +	if (!floppy_wq)
-> +		return -ENOMEM;
-> +
->  	for (dr = 0; dr < N_DRIVE; dr++) {
->  		disks[dr] = alloc_disk(1);
->  		if (!disks[dr]) {
-> @@ -4145,16 +4149,10 @@ static int __init do_floppy_init(void)
->  			goto out_put_disk;
->  		}
->  
-> -		floppy_wq = alloc_ordered_workqueue("floppy", 0);
-> -		if (!floppy_wq) {
-> -			err = -ENOMEM;
-> -			goto out_put_disk;
-> -		}
-> -
->  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
->  		if (!disks[dr]->queue) {
->  			err = -ENOMEM;
-> -			goto out_destroy_workq;
-> +			goto out_put_disk;
->  		}
->  
->  		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
-> @@ -4318,8 +4316,6 @@ out_release_dma:
->  out_unreg_region:
->  	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
->  	platform_driver_unregister(&floppy_driver);
-> -out_destroy_workq:
-> -	destroy_workqueue(floppy_wq);
->  out_unreg_blkdev:
->  	unregister_blkdev(FLOPPY_MAJOR, "fd");
->  out_put_disk:
-> @@ -4335,6 +4331,7 @@ out_put_disk:
->  		}
->  		put_disk(disks[dr]);
->  	}
-> +	destroy_workqueue(floppy_wq);
->  	return err;
->  }
->  
-> -- 
-> 1.7.9.5
