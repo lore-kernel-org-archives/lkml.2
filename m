@@ -1,428 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab2HJOOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 10:14:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51733 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757528Ab2HJOOh (ORCPT
+	id S1758447Ab2HJOSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 10:18:24 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3591 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756229Ab2HJOSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 10:14:37 -0400
-Date: Fri, 10 Aug 2012 11:14:24 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Dong Hao <haodong@linux.vnet.ibm.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, mingo@elte.hu, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: Re: [PATCH v6 3/3] KVM: perf kvm events analysis tool
-Message-ID: <20120810141424.GB31149@infradead.org>
-References: <1344568750-5147-1-git-send-email-haodong@linux.vnet.ibm.com>
- <1344568750-5147-4-git-send-email-haodong@linux.vnet.ibm.com>
+	Fri, 10 Aug 2012 10:18:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 10 Aug 2012 07:18:21 -0700
+Message-ID: <50251826.9020303@nvidia.com>
+Date: Fri, 10 Aug 2012 19:48:14 +0530
+From: Bitan Biswas <bbiswas@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344568750-5147-4-git-send-email-haodong@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: <khali@linux-fr.org>, <guenter.roeck@ericsson.com>,
+        <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: hwmon : raw reading -> temperature conversion
+Content-Type: text/plain; charset="iso-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 10, 2012 at 11:19:10AM +0800, Dong Hao escreveu:
-> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> 
-> Add 'perf kvm stat' support to analyze kvm vmexit/mmio/ioport smartly.
+Hi,
 
-Some comments below about recent changes in my perf/core branch.
-> +static void process_raw_event(struct thread *thread, void *data, u64 timestamp)
-> +{
-> +	struct event_format *event;
-> +	int type;
-> +
-> +	type = trace_parse_common_type(kvm_session->pevent, data);
+I have a question related to hwmon driver and need suggestions.
 
-type can be found in evsel->attr.config
+I am working on a temperature sensor driver that is hwmon driver.
+- The temperature is calculated from raw sensor reading and
+certain initialization parameters.
+- Raw reading obtained from 2 different sensor instances under
+same conditions can differ. Further, initialization parameters
+are specific to each hardware instance.
+- Expressions with floating point operands are used to compute
+the temperature value.
 
-> +	event = pevent_find_event(kvm_session->pevent, type);
+In our platform there are multiple kernel level clients to the
+temperature sensor driver.
+Hence I am planning to present temperature to these clients
+from kernel driver itself.
 
-event in evsel->tp_format, i.e. no need to relookup via
-pevent_find_event.
+But looking at the hwmon linux documentation, seems the sensor
+kernel drivers should report only raw readings.
+The raw readings can be converted into required output,
+e.g. temperature in this case, by respective user space implementation.
 
-> +	return handle_kvm_event(thread, event, data, timestamp);
-> +}
-> +
-> +static int process_sample_event(struct perf_tool *tool __used,
-> +				union perf_event *event,
-> +				struct perf_sample *sample,
-> +				struct perf_evsel *evsel __used,
-> +				struct machine *machine)
-> +{
-> +	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-> +
-> +	if (thread == NULL) {
-> +		pr_debug("problem processing %d event, skipping it.\n",
-> +			event->header.type);
-> +		return -1;
-> +	}
-> +
-> +	process_raw_event(thread, sample->raw_data, sample->time);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct perf_tool eops = {
-> +	.sample			= process_sample_event,
-> +	.comm			= perf_event__process_comm,
-> +	.ordered_samples	= true,
-> +};
-> +
-> +static int get_cpu_isa(struct perf_session *session)
-> +{
-> +	char *cpuid;
-> +	int isa;
-> +
-> +	cpuid = perf_header__read_feature(session, HEADER_CPUID);
-> +
-> +	if (!cpuid)
-> +		die("read HEADER_CPUID failed.\n");
+However because of my driver clients being in kernel space, I am
+thinking of doing fixed point calculations in the sensor driver
+and get the temperature corresponding to raw sensor readings.
 
-Please don't use die, use pr_err and return -1, so that whatever cleanup
-code the main perf tool needs to do gets done.
+Please let me know if this a correct approach?
 
-> +	if (strstr(cpuid, "Intel"))
-> +		isa = 1;
-> +	else if (strstr(cpuid, "AMD"))
-> +		isa = 0;
-> +	else
-> +		die("CPU %s is not supported.\n", cpuid);
+If there is a better way, please suggest.
 
-Ditto
+-regards,
+Bitan
 
-> +	free(cpuid);
-> +	return isa;
-> +}
-> +
-> +static const char *file_name;
-> +
-> +static int read_events(void)
-> +{
-> +	kvm_session = perf_session__new(file_name, O_RDONLY, 0, false, &eops);
-> +	if (!kvm_session)
-> +		die("Initializing perf session failed\n");
 
-Ditto
-
-> +	if (!perf_session__has_traces(kvm_session, "kvm record"))
-> +		return -1;
-> +
-> +	/*
-> +	 * Do not use 'isa' recorded in kvm_exit tracepoint since it is not
-> +	 * traced in the old kernel.
-> +	 */
-> +	cpu_isa = get_cpu_isa(kvm_session);
-> +
-> +	return perf_session__process_events(kvm_session, &eops);
-> +}
-> +
-> +static void verify_vcpu(int vcpu)
-> +{
-> +	if (vcpu != -1 && vcpu < 0)
-> +		die("Invalid vcpu:%d.\n", vcpu);
-
-Ditto
-
-> +}
-> +
-> +static int kvm_events_report_vcpu(int vcpu)
-> +{
-> +	init_kvm_event_record();
-> +	verify_vcpu(vcpu);
-> +	select_key();
-> +	register_kvm_events_ops();
-> +	setup_pager();
-> +
-> +	read_events();
-> +
-> +	sort_result(vcpu);
-> +	print_result(vcpu);
-> +	return 0;
-> +}
-> +
-> +static const char * const record_args[] = {
-> +	"record",
-> +	"-R",
-> +	"-f",
-> +	"-m", "1024",
-> +	"-c", "1",
-> +	"-e", "kvm:kvm_entry",
-> +	"-e", "kvm:kvm_exit",
-> +	"-e", "kvm:kvm_mmio",
-> +	"-e", "kvm:kvm_pio",
-> +};
-> +
-> +static const char * const new_event[] = {
-> +	"kvm_mmio_begin",
-> +	"kvm_mmio_done"
-> +};
-> +
-> +static bool kvm_events_exist(const char *event)
-> +{
-> +	char evt_path[MAXPATHLEN];
-> +	int fd;
-> +
-> +	snprintf(evt_path, MAXPATHLEN, "%s/kvm/%s/id", tracing_events_path,
-> +		 event);
-> +
-> +	fd = open(evt_path, O_RDONLY);
-> +
-> +	if (fd < 0)
-> +		return false;
-> +
-> +	close(fd);
-> +
-> +	return true;
-> +}
-> +
-> +static bool kvm_record_specified_guest(int argc, const char **argv)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < argc; i++)
-> +		if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "--pid"))
-> +			return true;
-> +
-> +	return false;
-> +}
-> +
-> +static int kvm_events_record(int argc, const char **argv)
-> +{
-> +	unsigned int rec_argc, i, j;
-> +	const char **rec_argv;
-> +
-> +	rec_argc = ARRAY_SIZE(record_args) + argc + 2;
-> +	rec_argc += ARRAY_SIZE(new_event) * 2;
-> +	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-> +
-> +	if (rec_argv == NULL)
-> +		return -ENOMEM;
-
-Just like you do here :-)
-
-> +	for (i = 0; i < ARRAY_SIZE(record_args); i++)
-> +		rec_argv[i] = strdup(record_args[i]);
-> +
-> +	/*
-> +	 * Append "-a" only if "-p"/"--pid" is not specified since they
-> +	 * are mutually exclusive.
-> +	 */
-> +	if (!kvm_record_specified_guest(argc, argv))
-> +		rec_argv[i++] = strdup("-a");
-> +
-> +	rec_argv[i++] = strdup("-o");
-> +	rec_argv[i++] = strdup(file_name);
-> +
-> +	for (j = 0; j < ARRAY_SIZE(new_event); j++)
-> +		if (kvm_events_exist(new_event[j])) {
-> +			char event[256];
-> +
-> +			sprintf(event, "kvm:%s", new_event[j]);
-> +
-> +			rec_argv[i++] = strdup("-e");
-> +			rec_argv[i++] = strdup(event);
-
-these can fail
-
-> +		}
-> +
-> +	for (j = 1; j < (unsigned int)argc; j++, i++)
-> +		rec_argv[i] = argv[j];
-> +
-> +	return cmd_record(i, rec_argv, NULL);
-> +}
-> +
-> +static const char * const kvm_events_report_usage[] = {
-> +	"perf kvm stat report [<options>]",
-> +	NULL
-> +};
-> +
-> +static const struct option kvm_events_report_options[] = {
-> +	OPT_STRING(0, "event", &report_event, "report event",
-> +		    "event for reporting: vmexit, mmio, ioport"),
-> +	OPT_INTEGER(0, "vcpu", &trace_vcpu,
-> +		    "vcpu id to report"),
-> +	OPT_STRING('k', "key", &sort_key, "sort-key",
-> +		    "key for sorting: sample(sort by samples number)"
-> +		    " time (sort by avg time)"),
-> +	OPT_END()
-> +};
-> +
-> +static int kvm_events_report(int argc, const char **argv)
-> +{
-> +	symbol__init();
-> +
-> +	if (argc) {
-> +		argc = parse_options(argc, argv,
-> +				     kvm_events_report_options,
-> +				     kvm_events_report_usage, 0);
-> +		if (argc)
-> +			usage_with_options(kvm_events_report_usage,
-> +					   kvm_events_report_options);
-> +	}
-> +
-> +	return kvm_events_report_vcpu(trace_vcpu);
-> +}
-> +
-> +static int kvm_cmd_stat(int argc, const char **argv)
-> +{
-> +	if (argc > 1) {
-> +		if (!strncmp(argv[1], "rec", 3))
-> +			return kvm_events_record(argc - 1, argv + 1);
-> +
-> +		if (!strncmp(argv[1], "rep", 3))
-> +			return kvm_events_report(argc - 1 , argv + 1);
-> +	}
-> +
-> +	return cmd_stat(argc, argv, NULL);
-> +}
-> +
->  static char			name_buffer[256];
->  
->  static const char * const kvm_usage[] = {
-> -	"perf kvm [<options>] {top|record|report|diff|buildid-list}",
-> +	"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
->  	NULL
->  };
->  
-> @@ -135,6 +985,8 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __used)
->  		return cmd_top(argc, argv, NULL);
->  	else if (!strncmp(argv[0], "buildid-list", 12))
->  		return __cmd_buildid_list(argc, argv);
-> +	else if (!strncmp(argv[0], "stat", 4))
-> +		return kvm_cmd_stat(argc, argv);
->  	else
->  		usage_with_options(kvm_usage, kvm_options);
->  
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 3a6d204..b4bef64 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -1495,9 +1495,15 @@ static int process_build_id(struct perf_file_section *section,
->  	return 0;
->  }
->  
-> +static char *read_cpuid(struct perf_header *ph, int fd)
-> +{
-> +	return do_read_string(fd, ph);
-> +}
-> +
->  struct feature_ops {
->  	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
->  	void (*print)(struct perf_header *h, int fd, FILE *fp);
-> +	char *(*read)(struct perf_header *h, int fd);
->  	int (*process)(struct perf_file_section *section,
->  		       struct perf_header *h, int feat, int fd, void *data);
->  	const char *name;
-> @@ -1512,6 +1518,9 @@ struct feature_ops {
->  #define FEAT_OPF(n, func) \
->  	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
->  		.full_only = true }
-> +#define FEAT_OPA_R(n, func) \
-> +	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-> +		.read  = read_##func }
->  
->  /* feature_ops not implemented: */
->  #define print_tracing_data	NULL
-> @@ -1526,7 +1535,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
->  	FEAT_OPA(HEADER_ARCH,		arch),
->  	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
->  	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
-> -	FEAT_OPA(HEADER_CPUID,		cpuid),
-> +	FEAT_OPA_R(HEADER_CPUID,	cpuid),
->  	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
->  	FEAT_OPA(HEADER_EVENT_DESC,	event_desc),
->  	FEAT_OPA(HEADER_CMDLINE,	cmdline),
-> @@ -1580,6 +1589,50 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
->  	return 0;
->  }
->  
-> +struct header_read_data {
-> +	int feat;
-> +	char *result;
-> +};
-> +
-> +static int perf_file_section__read_feature(struct perf_file_section *section,
-> +					   struct perf_header *ph,
-> +					   int feat, int fd, void *data)
-> +{
-> +	struct header_read_data *hd = data;
-> +
-> +	if (feat != hd->feat)
-> +		return 0;
-> +
-> +	if (lseek(fd, section->offset, SEEK_SET) == (off_t)-1) {
-> +		pr_debug("Failed to lseek to %" PRIu64 " offset for feature "
-> +				"%d, continuing...\n", section->offset, feat);
-> +		return 0;
-> +	}
-> +
-> +	if (feat >= HEADER_LAST_FEATURE) {
-> +		pr_warning("unknown feature %d\n", feat);
-> +		return 0;
-> +	}
-> +
-> +	hd->result = feat_ops[feat].read(ph, fd);
-> +	return 0;
-> +}
-> +
-> +char *perf_header__read_feature(struct perf_session *session, int feat)
-> +{
-> +	struct perf_header *header = &session->header;
-> +	struct header_read_data hd;
-> +	int fd = session->fd;
-> +
-> +	hd.feat = feat;
-> +	hd.result = NULL;
-> +
-> +
-
-Extra new line
-
-> +	perf_header__process_sections(header, fd, &hd,
-> +				  perf_file_section__read_feature);
-> +	return hd.result;
-> +}
-> +
->  static int do_write_feat(int fd, struct perf_header *h, int type,
->  			 struct perf_file_section **p,
->  			 struct perf_evlist *evlist)
-> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-> index 2d42b3e..a8830fa 100644
-> --- a/tools/perf/util/header.h
-> +++ b/tools/perf/util/header.h
-> @@ -93,6 +93,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
->  				  int feat, int fd, void *data));
->  
->  int perf_header__fprintf_info(struct perf_session *s, FILE *fp, bool full);
-> +char *perf_header__read_feature(struct perf_session *session, int feat);
->  
->  int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
->  			  const char *name, bool is_kallsyms);
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index 70c2c13..c48ebf3 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -16,6 +16,8 @@ struct thread {
->  	bool			comm_set;
->  	char			*comm;
->  	int			comm_len;
-> +
-> +	void			*private;
-
-Please use the shorter 'priv', like {evsel,map}->priv
-
->  };
->  
->  struct machine;
-> -- 
-> 1.7.2.5
