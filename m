@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760208Ab2HJLNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 07:13:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38931 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab2HJLMv (ORCPT
+	id S1754463Ab2HJLd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 07:33:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64022 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2HJLd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 07:12:51 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@avionic-design.de, sachin.kamat@linaro.org,
-        patches@linaro.org
-Subject: [PATCH][Re-send] pwm: core: Fix coding style issues
-Date: Fri, 10 Aug 2012 16:41:13 +0530
-Message-Id: <1344597073-14261-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 10 Aug 2012 07:33:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 06/11] gpio: em: do not discard em_gio_irq_domain_cleanup
+Date: Fri, 10 Aug 2012 11:33:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de> <1344437248-20560-7-git-send-email-arnd@arndb.de> <CACRpkdZnaH3RXHqif7wiA5bor4vOcBndnabG-7QNLnmUc3Oj3Q@mail.gmail.com>
+In-Reply-To: <CACRpkdZnaH3RXHqif7wiA5bor4vOcBndnabG-7QNLnmUc3Oj3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208101133.08945.arnd@arndb.de>
+X-Provags-ID: V02:K0:qNRqkVsyFx2rRhw23chxkLHC23e9gLaQeuXk9Ksu3d1
+ j+MXedz+JfbbbT69kcfIOE2Kjug+j2hb1sXybR//FUXtsizyEL
+ czVkU3wPn/q4htfkEVQ+dkFfPWzPOUldJNbyy/OYhnk8EedwF4
+ Ytp/Hd/OnefD14K9dBBSyZsZmqhjCNmZB14/cF6ul94zHoNy3b
+ rAfjQh+7OxZ5E++t32iZSC9K4RrcMH90sOn0PVo8x7lT1c+jVQ
+ UzMsMk9XfZeYluk0HvgAq1PlhkVpLD4U7o/3gTbBVeoNrpVs2C
+ 8m6aBSUZJvgy/WT1iJTNZRwsseBXPo1ZTyS+6fDHVT0eWEnOJs
+ 643VsIqQHc4M47AI6l9o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following:
-WARNING: line over 80 characters
-ERROR: spaces required around that ':' (ctx:VxW)
-WARNING: Prefer pr_warn(... to pr_warning(...
+On Friday 10 August 2012, Linus Walleij wrote:
+> On Wed, Aug 8, 2012 at 4:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > The newly added gpio-em driver marks its em_gio_irq_domain_cleanup
+> > function as __devexit, which would lead to that function being
+> > discarded in case CONFIG_HOTPLUG is disabled. However, the function
+> > is also called by the error handling logic em_gio_probe, which
+> > would cause a jump into a NULL pointer if it was removed from the
+> > kernel or module.
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Will you push this through the ARM SoC tree or do you want me
+> to apply it to my GPIO tree?
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/pwm/core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I'm about to send out the whole series to Torvalds, so I'll just
+keep it in now.
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index ecb7690..1659537 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -129,8 +129,8 @@ static int pwm_device_request(struct pwm_device *pwm, const char *label)
- 	return 0;
- }
- 
--static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
--					      const struct of_phandle_args *args)
-+static struct pwm_device *
-+of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
- {
- 	struct pwm_device *pwm;
- 
-@@ -527,7 +527,7 @@ void __init pwm_add_table(struct pwm_lookup *table, size_t num)
- struct pwm_device *pwm_get(struct device *dev, const char *con_id)
- {
- 	struct pwm_device *pwm = ERR_PTR(-EPROBE_DEFER);
--	const char *dev_id = dev ? dev_name(dev): NULL;
-+	const char *dev_id = dev ? dev_name(dev) : NULL;
- 	struct pwm_chip *chip = NULL;
- 	unsigned int index = 0;
- 	unsigned int best = 0;
-@@ -609,7 +609,7 @@ void pwm_put(struct pwm_device *pwm)
- 	mutex_lock(&pwm_lock);
- 
- 	if (!test_and_clear_bit(PWMF_REQUESTED, &pwm->flags)) {
--		pr_warning("PWM device already freed\n");
-+		pr_warn("PWM device already freed\n");
- 		goto out;
- 	}
- 
--- 
-1.7.4.1
-
+	Arnd
