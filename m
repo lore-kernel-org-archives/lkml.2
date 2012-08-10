@@ -1,185 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2HJMfS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 08:35:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38215 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab2HJMfO (ORCPT
+	id S1755451Ab2HJMg6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 08:36:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53250 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2HJMg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 08:35:14 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <s5h1ujfyn39.wl%tiwai@suse.de>
-References: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils>
-	<s5h3941ke2p.wl%tiwai@suse.de>
-	<alpine.LSU.2.00.1208052113530.1300@eggly.anvils>
-	<CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com>
-	<alpine.LSU.2.00.1208061122060.1425@eggly.anvils>
-	<s5h1ujfyn39.wl%tiwai@suse.de>
-Date: Fri, 10 Aug 2012 14:35:13 +0200
-Message-ID: <CAKMK7uF_5K6d=xw7SsRJqw7dg5ca6HMdf3jvsQcQqhmSNLkaww@mail.gmail.com>
-Subject: Re: i915 regression on 3.6-rc1: lid blanks screen
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Giacomo Comes <comes@naic.edu>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 10 Aug 2012 08:36:56 -0400
+Date: Fri, 10 Aug 2012 20:37:14 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] fs/direct-io.c: Add REQ_NOIDLE for last bio .
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201208102037120467864@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7ACb5Rw032544
 
-On Fri, Aug 10, 2012 at 1:59 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Mon, 6 Aug 2012 11:25:30 -0700 (PDT),
-> Hugh Dickins wrote:
->>
->> On Mon, 6 Aug 2012, Daniel Vetter wrote:
->> > On Mon, Aug 6, 2012 at 6:21 AM, Hugh Dickins <hughd@google.com> wrote:
->> > > On Sun, 5 Aug 2012, Takashi Iwai wrote:
->> > >> At Sat, 4 Aug 2012 10:01:13 -0700 (PDT),
->> > >> Hugh Dickins wrote:
->> > >> >
->> > >> > Sorry to report that with 3.6-rc1, closing and opening the lid on
->> > >> > this ThinkPad T420s leaves the screen blank, and I have to reboot.
->> > >> >
->> > >> > Bisection led to this commit, and reverting indeed gets my screen back:
->> > >> >
->> > >> > commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b
->> > >> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->> > >> > Date:   Wed Jul 11 16:27:52 2012 +0200
->> > >> >
->> > >> >     drm/i915/lvds: ditch ->prepare special case
->> > > ...
->> > >>
->> > >> Hm, it's surprising.
->> > >>
->> > >> Could you check whether the counter-part intel_lvds_enable() is
->> > >> called?  If the prepare callback affects, it must be from the mode
->> > >> setting (drm_crtc_helper_set_mode()).
->> > >
->> > > Yes, I put a dump_stack() in both, and intel_lvds_enable() gets called
->> > > about 0.28 seconds after the intel_lvds_disable() when I lift the lid;
->> > > but with no video display until I revert that commit.
->> >
->> > Can you please boot with drm.debug=0xe added to your kernel cmdline,
->> > reproduce the issue (with the two dump_stack calls added) and then
->> > attach the full dmesg?
->>
->> Collected, I'll send it to you both privately in a moment.
->>
->> >
->> > Also a few other things to try: What happens if you do a modeset on
->> > the LVDS while it's still working, e.g.
->>
->> In the dmesg, I've only gone to runlevel 3, simply working on the
->> console without startx.  For these xrandrs to work, I did startx
->> and used the graphics screen.
->
-> OK, now I can see the problem here, too.  The key is that it happens
-> only on Linux console, not on X.  That's why no one else reported.
-> I guess the problem can be seen on many laptops with LVDS on PCH.
->
-> Looking at intel_reg_dumper output, BLC_PWM_CPU_CTL is 0 while other
-> registers are set correctly.  This seems coming from the rewrite of
-> backlight control code by commit
->   24ded204: drm/i915: properly enable the blc controller on the right pipe
-> and
->   a4f32fc3: drm/i915: don't forget the PCH backlight registers
->
-> While the latter fixes the regression by the former commit, it still
-> doesn't cover this regression.
->
-> I don't know the exact hardware behavior, but it looks like that
-> resetting BLC_PWM_PCH_CTL2 and BLC_PWM_PCH_CTL1 clears the
-> BLC_PWM_CPU_CTL (oh what confusing reg names).
->
-> FWIW, the commit 520c41cf you mentioned is no direct cause.  This
-> patch works fine on the top of 3.5 kernel.  But it's like a bad drug,
-> the combination of this and other two commits break things.
->
-> The patch below is my quick fix.  It worked on an HP laptop.
-> Hugh, could you give it a try?
+For last bio of dio, there are no bio will come.So set REQ_NOIDLE.
 
-Hm, this sounds eerily familiar to the backlight bug you've recently fixed in
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ fs/direct-io.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-commit 6db65cbb941f9d433659bdad02b307f6d94465df
-Author: Takashi Iwai <tiwai@suse.de>
-Date:   Thu Jun 21 15:30:41 2012 +0200
-
-    drm/i915: Fix eDP blank screen after S3 resume on HP desktops
-
-Have you checked other code-paths for such issues? The resume code
-seems to follow this order already ... also, when you submit this
-patch, can you please add a small comment to explain the ordering
-constraint, like in the resume register restore function?
-
-Thanks, Daniel
-
->
->
-> thanks,
->
-> Takashi
->
-> ===
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] drm/i915: Fix blank panel at reopening lid on Linux console
->
-> When you reopen the lid on Linux console on a laptop with PCH, the
-> panel suddenly goes blank.  It seems because BLC_PWM_CPU_CTL register
-> is cleared when BLC_PWM_PCH_CTL1 and BLC_PWM_PCH_CTL2 registers are
-> played.
->
-> This patch fixes the problem by setting BLC_PWM_CPU_CTL after enabling
-> BLC_PWM_PCH_CTL_1 and _2 registers.
->
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/gpu/drm/i915/intel_panel.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 10c7d39..d640425 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -311,9 +311,6 @@ void intel_panel_enable_backlight(struct drm_device *dev,
->         if (dev_priv->backlight_level == 0)
->                 dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
->
-> -       dev_priv->backlight_enabled = true;
-> -       intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-> -
->         if (INTEL_INFO(dev)->gen >= 4) {
->                 uint32_t reg, tmp;
->
-> @@ -326,7 +323,7 @@ void intel_panel_enable_backlight(struct drm_device *dev,
->                  * we don't track the backlight dpms state, hence check whether
->                  * we have to do anything first. */
->                 if (tmp & BLM_PWM_ENABLE)
-> -                       return;
-> +                       goto set_level;
->
->                 if (dev_priv->num_pipe == 3)
->                         tmp &= ~BLM_PIPE_SELECT_IVB;
-> @@ -347,6 +344,10 @@ void intel_panel_enable_backlight(struct drm_device *dev,
->                         I915_WRITE(BLC_PWM_PCH_CTL1, tmp);
->                 }
->         }
-> +
-> +set_level:
-> +       dev_priv->backlight_enabled = true;
-> +       intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
->  }
->
->  static void intel_panel_init_backlight(struct drm_device *dev)
-> --
-> 1.7.11.4
->
-
-
-
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 1faf4cb..7c6958f 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -127,6 +127,7 @@ struct dio {
+ 	int page_errors;		/* errno from get_user_pages() */
+ 	int is_async;			/* is IO async ? */
+ 	int io_error;			/* IO error in completion path */
++	sector_t end_sector;		/* the last sector for this dio */
+ 	unsigned long refcount;		/* direct_io_worker() and bios */
+ 	struct bio *bio_list;		/* singly linked via bi_private */
+ 	struct task_struct *waiter;	/* waiting task (NULL if none) */
+@@ -369,21 +370,28 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
+ {
+ 	struct bio *bio = sdio->bio;
+ 	unsigned long flags;
+-
++	int rw = dio->rw;
+ 	bio->bi_private = dio;
+ 
+ 	spin_lock_irqsave(&dio->bio_lock, flags);
+ 	dio->refcount++;
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+ 
++	/*
++	 * If bio is the last for dio,so no bio can arrive for low-level
++	 * unless this dio completed.
++	 */
++	if (bio->bi_sector + bio_sectors(bio) >= dio->end_sector)
++		rw |= REQ_NOIDLE;
++
+ 	if (dio->is_async && dio->rw == READ)
+ 		bio_set_pages_dirty(bio);
+ 
+ 	if (sdio->submit_io)
+-		sdio->submit_io(dio->rw, bio, dio->inode,
++		sdio->submit_io(rw, bio, dio->inode,
+ 			       sdio->logical_offset_in_bio);
+ 	else
+-		submit_bio(dio->rw, bio);
++		submit_bio(rw, bio);
+ 
+ 	sdio->bio = NULL;
+ 	sdio->boundary = 0;
+@@ -1147,6 +1155,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 
+ 	dio->inode = inode;
+ 	dio->rw = rw;
++	dio->end_sector = end >> 9;
+ 	sdio.blkbits = blkbits;
+ 	sdio.blkfactor = inode->i_blkbits - blkbits;
+ 	sdio.block_in_file = offset >> blkbits;
 -- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.9.5
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
