@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759071Ab2HJOq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 10:46:56 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40668 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758259Ab2HJOqv (ORCPT
+	id S1759145Ab2HJOxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 10:53:33 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33577 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab2HJOxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 10:46:51 -0400
-Date: Fri, 10 Aug 2012 15:51:27 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/15] Proc entry showing inodes on sockfs and types
-Message-ID: <20120810155127.3173b904@pyramind.ukuu.org.uk>
-In-Reply-To: <20120810.230532.947107481182263685.yamato@redhat.com>
-References: <20120810.230532.947107481182263685.yamato@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Aug 2012 10:53:32 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] Pinctrl header: trivial: declare struct device
+Date: Fri, 10 Aug 2012 16:52:58 +0200
+Message-Id: <1344610378-12117-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +#ifdef CONFIG_PROC_FS
-> +	/* Set non-zero value if this protocol manages its
-> +	   own /proc/net/PROTOCOL entry and the entry has inode column. */
-> +        int has_own_proc_entry;
-> +#endif
+As struct device is used as a function argument, it should at least be
+declared (device.h is not included).
 
-Is it really worth ifdefs in every file for what is (or should be) a bool
-value in the protocol structs of which there are not many
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ include/linux/pinctrl/consumer.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
->  };
->  
->  /*
-> diff --git a/net/socket.c b/net/socket.c
-> index dfe5b66..4044b58 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -105,6 +105,10 @@
->  #include <linux/sockios.h>
->  #include <linux/atalk.h>
->  
-> +#ifdef CONFIG_PROC_FS
-> +#include <linux/rwlock_types.h>
-> +#endif
-
-You can include it anyway and that makes it easier to avoid bugs
+diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
+index 6dd96fb..e9b7f43 100644
+--- a/include/linux/pinctrl/consumer.h
++++ b/include/linux/pinctrl/consumer.h
+@@ -20,6 +20,7 @@
+ /* This struct is private to the core and should be regarded as a cookie */
+ struct pinctrl;
+ struct pinctrl_state;
++struct device;
+ 
+ #ifdef CONFIG_PINCTRL
+ 
+-- 
+1.7.2.5
 
