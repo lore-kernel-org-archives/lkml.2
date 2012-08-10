@@ -1,144 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab2HJPn7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:43:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945Ab2HJPn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:43:57 -0400
-Date: Fri, 10 Aug 2012 17:43:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 03/11] memcg: change defines to an enum
-Message-ID: <20120810154353.GH1425@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-4-git-send-email-glommer@parallels.com>
+	id S1754022Ab2HJPsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:48:21 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57828 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab2HJPsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 11:48:18 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 10 Aug 2012 08:48:15 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [lm-sensors] NULL dereference BUG in sch56xx_init()
+Message-ID: <20120810154815.GA29281@roeck-us.net>
+References: <20120809125526.GA11926@localhost>
+ <20120809144239.GA6604@roeck-us.net>
+ <5024C7EF.7090408@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344517279-30646-4-git-send-email-glommer@parallels.com>
+In-Reply-To: <5024C7EF.7090408@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-08-12 17:01:11, Glauber Costa wrote:
-> This is just a cleanup patch for clarity of expression.  In earlier
-> submissions, people asked it to be in a separate patch, so here it is.
+On Fri, Aug 10, 2012 at 10:35:59AM +0200, Hans de Goede wrote:
+> Hi,
 > 
-> [ v2: use named enum as type throughout the file as well ]
+> On 08/09/2012 04:42 PM, Guenter Roeck wrote:
+> >On Thu, Aug 09, 2012 at 08:55:26PM +0800, Fengguang Wu wrote:
+> >>Hi Guenter,
+> >>
+> >>This commit triggered an oops which can be fixed by the attached diff.
+> >>Should it be folded into the original one (preferable for me), or be
+> >>resent as a standalone patch?
+> >>
+> >I folded it into the original commit.
+> >
+> >Thanks a lot for the test and feedback!
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Fengguang, good catch, thanks!
+> 
+> Guenter, 2 remarks:
+> 
+> 1) The changing of the type of the address parameter of sch56xx_device_add is
+>    not necessary
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Yes, I know. I took it in anyway because it reduces code size by another 8
+bytes.
 
-> ---
->  mm/memcontrol.c | 26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
+> 2) A similar change is needed for the f71882fg, there the type of the address
+>    variable in f71882fg_init() needs to be changed to int too.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2cef99a..b0e29f4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -393,9 +393,12 @@ enum charge_type {
->  };
->  
->  /* for encoding cft->private value on file */
-> -#define _MEM			(0)
-> -#define _MEMSWAP		(1)
-> -#define _OOM_TYPE		(2)
-> +enum res_type {
-> +	_MEM,
-> +	_MEMSWAP,
-> +	_OOM_TYPE,
-> +};
-> +
->  #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
->  #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
->  #define MEMFILE_ATTR(val)	((val) & 0xffff)
-> @@ -3983,7 +3986,8 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  	char str[64];
->  	u64 val;
-> -	int type, name, len;
-> +	int name, len;
-> +	enum res_type type;
->  
->  	type = MEMFILE_TYPE(cft->private);
->  	name = MEMFILE_ATTR(cft->private);
-> @@ -4019,7 +4023,8 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
->  			    const char *buffer)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> -	int type, name;
-> +	enum res_type type;
-> +	int name;
->  	unsigned long long val;
->  	int ret;
->  
-> @@ -4095,7 +4100,8 @@ out:
->  static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> -	int type, name;
-> +	int name;
-> +	enum res_type type;
->  
->  	type = MEMFILE_TYPE(event);
->  	name = MEMFILE_ATTR(event);
-> @@ -4423,7 +4429,7 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->  	struct mem_cgroup_thresholds *thresholds;
->  	struct mem_cgroup_threshold_ary *new;
-> -	int type = MEMFILE_TYPE(cft->private);
-> +	enum res_type type = MEMFILE_TYPE(cft->private);
->  	u64 threshold, usage;
->  	int i, size, ret;
->  
-> @@ -4506,7 +4512,7 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->  	struct mem_cgroup_thresholds *thresholds;
->  	struct mem_cgroup_threshold_ary *new;
-> -	int type = MEMFILE_TYPE(cft->private);
-> +	enum res_type type = MEMFILE_TYPE(cft->private);
->  	u64 usage;
->  	int i, j, size;
->  
-> @@ -4584,7 +4590,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->  	struct mem_cgroup_eventfd_list *event;
-> -	int type = MEMFILE_TYPE(cft->private);
-> +	enum res_type type = MEMFILE_TYPE(cft->private);
->  
->  	BUG_ON(type != _OOM_TYPE);
->  	event = kmalloc(sizeof(*event),	GFP_KERNEL);
-> @@ -4609,7 +4615,7 @@ static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->  	struct mem_cgroup_eventfd_list *ev, *tmp;
-> -	int type = MEMFILE_TYPE(cft->private);
-> +	enum res_type type = MEMFILE_TYPE(cft->private);
->  
->  	BUG_ON(type != _OOM_TYPE);
->  
-> -- 
-> 1.7.11.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Noticed, and fixed. I merged the fix for both into the original patched for
+simplicity.
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Guenter
