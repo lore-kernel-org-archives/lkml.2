@@ -1,94 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab2HJDtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:49:15 -0400
-Received: from zougloub.eu ([188.165.233.99]:51254 "EHLO zougloub.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760333Ab2HJDsl convert rfc822-to-8bit (ORCPT
+	id S1756344Ab2HJDsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:48:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27311 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757986Ab2HJDrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:48:41 -0400
-Date: Thu, 9 Aug 2012 23:49:37 -0400
-From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
-To: "Matt Fleming" <matt.fleming@linux.intel.com>
-Cc: "Jan Beulich" <JBeulich@suse.com>, "Ingo Molnar" <mingo@kernel.org>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>, <linux-efi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, "H. PeterAnvin" <hpa@zytor.com>
-Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
- clock" prevents my machine from booting
-Message-ID: <20120809234937.53f72c32@zougloub.eu>
-In-Reply-To: <5020DC5F02000078000931C2@nat28.tlf.novell.com>
-References: <20120805172903.5f8bb24c@zougloub.eu>
- <501EF3A2.20200@zytor.com>
- <501F83F20200007800092C1C@nat28.tlf.novell.com>
- <20120806125216.GA11863@srcf.ucam.org>
- <501FDDD30200007800092DDE@nat28.tlf.novell.com>
- <20120806091627.2ad5ed2e@zougloub.eu>
- <20120806223208.5301be0d@zougloub.eu>
- <20120806230629.153d33bd@zougloub.eu>
- <5020DC5F02000078000931C2@nat28.tlf.novell.com>
-Organization: none
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Aug 2012 23:47:10 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=mjixex2a8-4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=jGCNUNN5igRJAktnj2cA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120810034708.589220175@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 09 Aug 2012 23:43:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 4/4] perf/events: Use helper functions in event assignment to shrink
+ macro size
+References: <20120810034302.758092203@goodmis.org>
+Content-Disposition: inline; filename=0004-perf-events-Use-helper-functions-in-event-assignment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI I tried to contact support, here's their answer:
+From: Steven Rostedt <srostedt@redhat.com>
 
-Dear Valued Customer,
+The functions that assign the contents for the perf software events are
+defined by the TRACE_EVENT() macros. Each event has its own unique
+way to assign data to its buffer. When you have over 700 events,
+that means there's 700 functions assigning data uniquely for each
+event.
 
-Thank you for contacting ASUS Customer Service.
+By making helper functions in the core kernel to do the work
+instead, we can shrink the size of the kernel down a bit.
 
-My name is Carter and it's my pleasure to help you with your problem.
+With a kernel configured with 707 events, the change in size was:
 
-I am afraid to say this board doesn't support linux,so we can't asure the compability.
-It is depengding on the actual situation.
+   text    data     bss     dec     hex filename
+19966937        2594648 1945600 24507185        175f331 vmlinux-before
+19924761        2594584 1945600 24464945        1754e31 vmlinux-after
 
-If you continue to experience issues in the future, please do not hesitate
-to contact us.
+That's a total of 42240 bytes, which comes down to 59 bytes per event.
 
-Best Regard 
-Carter
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace_event.h    |   13 +++++++++++++
+ include/trace/ftrace.h          |   31 ++++++++-----------------------
+ kernel/trace/trace_event_perf.c |   26 ++++++++++++++++++++++++++
+ 3 files changed, 47 insertions(+), 23 deletions(-)
 
-
----------- Original Message ----------
->From : cj-as@zougloub.eu
-Sent : 2012/8/7 ?? 01:18:04
-To : "tsd@asus.com.tw"
-Subject : <TSD> Motherboard SABERTOOTH 990FX 
-
-[CASEID=WTM201208072118475482]
-
-Apply date : 8/7/2012 1:18:47 PM(UTC Time)
-
-[Contact Information]
-*Name : Jérôme Carretero
-*Email Address : cJ-as@zougloub.eu
-
-[Product Information]
-*Product Type : Motherboard
-*Product Model : SABERTOOTH 990FX
-*Product S/N : MB-1234567890
-
-[Motherboard Specification]
-*Motherboard Revision : 1.xx
-*Motherboard BIOS Revision : 813
-
-*Operating System : Linux 
-
-[Problem Description]
-Hi,
-
-A proposed patch to Linux uses EFI GetTime service to get the wall clock time.
-It seems this function does not work properly.
-See http://www.gossamer-threads.com/lists/linux/kernel/1576468
-I know I don't have the latest bios but the change logs don't mention any EFI change,
-and upgrades make the settings lost, so I didn't try them.
-
-Thanks,
-
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index b9f39d3..06c6d04 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -313,6 +313,19 @@ struct perf_event;
+ 
+ DECLARE_PER_CPU(struct pt_regs, perf_trace_regs);
+ 
++struct perf_trace_event {
++	struct pt_regs		regs;
++	u64			addr;
++	u64			count;
++	int			entry_size;
++	int			rctx;
++};
++
++extern void *perf_trace_event_setup(struct ftrace_event_call *event_call, 
++				    struct perf_trace_event *pe);
++extern void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
++				    struct perf_trace_event *pe);
++
+ extern int  perf_trace_init(struct perf_event *event);
+ extern void perf_trace_destroy(struct perf_event *event);
+ extern int  perf_trace_add(struct perf_event *event, int flags);
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 8118451..a02d48d 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -677,10 +677,10 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+ 
+ #undef __perf_addr
+-#define __perf_addr(a) __addr = (a)
++#define __perf_addr(a) __pe.addr = (a)
+ 
+ #undef __perf_count
+-#define __perf_count(c) __count = (c)
++#define __perf_count(c) __pe.count = (c)
+ 
+ #undef TP_perf_assign
+ #define TP_perf_assign(args...) args
+@@ -693,36 +693,21 @@ perf_trace_##call(void *__data, proto)					\
+ 	struct ftrace_event_call *event_call = __data;			\
+ 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
+ 	struct ftrace_raw_##call *entry;				\
+-	struct pt_regs __regs;						\
+-	u64 __addr = 0, __count = 1;					\
+-	struct hlist_head *head;					\
+-	int __entry_size;						\
++	struct perf_trace_event __pe;					\
+ 	int __data_size;						\
+-	int rctx;							\
+-									\
+-	perf_fetch_caller_regs(&__regs);				\
+ 									\
+ 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
+-	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
+-			     sizeof(u64));				\
+-	__entry_size -= sizeof(u32);					\
+-									\
+-	if (WARN_ONCE(__entry_size > PERF_MAX_TRACE_SIZE,		\
+-		      "profile buffer not large enough"))		\
+-		return;							\
++	__pe.entry_size = __data_size + sizeof(*entry);			\
++	__pe.addr = 0;							\
++	__pe.count = 1;							\
+ 									\
+-	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
+-		__entry_size, event_call->event.type, &__regs, &rctx);	\
+-	if (!entry)							\
+-		return;							\
++	entry = perf_trace_event_setup(event_call, &__pe);		\
+ 									\
+ 	tstruct								\
+ 									\
+ 	{ assign; }							\
+ 									\
+-	head = this_cpu_ptr(event_call->perf_events);			\
+-	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
+-		__count, &__regs, head);				\
++	perf_trace_event_submit(entry, event_call, &__pe);		\
+ }
+ 
+ /*
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 9824419..75484aa 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -21,6 +21,32 @@ typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
+ /* Count the events in use (per event id, not per instance) */
+ static int	total_ref_count;
+ 
++void *perf_trace_event_setup(struct ftrace_event_call *event_call, 
++			     struct perf_trace_event *pe)
++{
++	perf_fetch_caller_regs(&pe->regs);
++
++	pe->entry_size = ALIGN(pe->entry_size + sizeof(u32), sizeof(u64));
++	pe->entry_size -= sizeof(u32);
++
++	if (WARN_ONCE(pe->entry_size > PERF_MAX_TRACE_SIZE,
++		      "profile buffer not large enough"))
++		return NULL;
++
++	return perf_trace_buf_prepare(pe->entry_size,
++			event_call->event.type, &pe->regs, &pe->rctx);
++}
++
++void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
++			     struct perf_trace_event *pe)
++{
++	struct hlist_head *head;
++
++	head = this_cpu_ptr(event_call->perf_events);
++	perf_trace_buf_submit(raw_data, pe->entry_size, pe->rctx, pe->addr,
++			      pe->count, &pe->regs, head);
++}
++
+ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
+ {
 -- 
-cJ
+1.7.10.4
+
 
