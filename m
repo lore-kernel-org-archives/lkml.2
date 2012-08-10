@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab2HJPPD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:15:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59331 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab2HJPO6 (ORCPT
+	id S1759621Ab2HJPRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:17:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53495 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758616Ab2HJPRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:14:58 -0400
+	Fri, 10 Aug 2012 11:17:53 -0400
+Message-ID: <5025261C.4070509@wwwdotorg.org>
+Date: Fri, 10 Aug 2012 09:17:48 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <50222370.1030807@profihost.ag>
-References: <5018FC9B.8040808@redhat.com>
-	<501E4615.7060801@profihost.ag>
-	<501E4AFD.3020806@redhat.com>
-	<501E96BB.5060702@profihost.ag>
-	<501EC2E2.8010802@profihost.ag>
-	<501F8226.9090500@redhat.com>
-	<501F846C.50903@profihost.ag>
-	<501FB4A8.6080609@redhat.com>
-	<501FBAA2.6050205@redhat.com>
-	<5021FE4B.5070701@profihost.ag>
-	<20120808080657.GA16887@stefanha-thinkpad.localdomain>
-	<50222370.1030807@profihost.ag>
-Date: Fri, 10 Aug 2012 16:14:56 +0100
-Message-ID: <CAJSP0QX2Cn_Q0QCjDfiAqgpH2axiDdaLeFg8Aies-kJtCRJ9MQ@mail.gmail.com>
-Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Michael Roth <mdroth@linux.vnet.ibm.com>
-Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
-        mtosatti@redhat.com, kvm@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Wolf <kwolf@redhat.com>, Stefan Priebe <s.priebe@profihost.ag>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+CC: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: Q: pinctrl: freeing out the allocated map in tegra_pinctrl_dt_node_to_map
+References: <CAHdPZaOHNW3gBHFdfkg==mQVOTdoCKiURqt=J+bWPJn=_no4LQ@mail.gmail.com>
+In-Reply-To: <CAHdPZaOHNW3gBHFdfkg==mQVOTdoCKiURqt=J+bWPJn=_no4LQ@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 9:29 AM, Stefan Priebe <s.priebe@profihost.ag> wrote:
-> ah OK - thanks. Will there be a fixed 1.1.2 as well?
+On 08/09/2012 11:35 PM, devendra.aaru wrote:
+> On Fri, Aug 10, 2012 at 11:02 AM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+>> Hi,
+>>
+>> In function tegra_pinctrl_dt_node_to_map the num_maps the num_maps
+>> counter must be incremented for each child node?
 
-mdroth: Kevin has the fix in his block branch, which means qemu.git
-will get it soon.  Here's the commit:
+This I commented on below.
 
-http://repo.or.cz/w/qemu/kevin.git/commit/730a9c53b4e52681fcfe31cf38854cbf91e132c7
+>> Actually we are doing free until num_maps if tegra_pinctrl_dt_subnode_to_map,
+>>
+>> not only that if num_maps == 0, we wont free up the maps, and also i
+>> think the for_each_of_node checks whether we have a next child node,
+>> so its safe to do num_maps++ as it wont get incremented endlessly,
+>>
+>> Please correct me if i am wrong.
 
->
-> Am 08.08.2012 10:06, schrieb Stefan Hajnoczi:
->
->> On Wed, Aug 08, 2012 at 07:51:07AM +0200, Stefan Priebe wrote:
->>>
->>> Any news? Was this applied upstream?
+I don't quite understand this part, sorry.
+
+>> Thanks,
+
+>> @@ -303,6 +303,7 @@ int tegra_pinctrl_dt_node_to_map(struct
+>> pinctrl_dev *pctldev,
+>>         *num_maps = 0;
 >>
->>
->> Kevin is ill.  He has asked me to review and test patches in his
->> absence.  When he gets back later this week this will get picked up (and
->> included in QEMU 1.2).
->>
->> Here is the tree, it includes this patch:
->>
->> https://github.com/stefanha/qemu/commits/for-kevin
->>
->> Stefan
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>         for_each_child_of_node(np_config, np) {
+>> +               num_maps++;
+>>                 ret = tegra_pinctrl_dt_subnode_to_map(pctldev->dev, np, map,
+>>                                                       &reserved_maps, num_maps);
+
+That's wrong; tegra_pinctrl_dt_subnode_to_map() calls add_map_mux()
+and/or add_map_configs() which increments *num_maps.
+
+Besides, num_maps is a pointer to an integer, so if this was right, it
+should be (*num_maps)++.
+
