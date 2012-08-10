@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab2HJRYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:24:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44360 "EHLO mx1.redhat.com"
+	id S1757806Ab2HJRZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:25:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9247 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab2HJRYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:24:39 -0400
-Date: Fri, 10 Aug 2012 13:24:28 -0400
+	id S1754658Ab2HJRZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:25:35 -0400
+Date: Fri, 10 Aug 2012 13:25:24 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 2/6] floppy: do put_disk on current dr if blk_init_queue
- fails
-Message-ID: <20120810172428.GG5416@redhat.com>
+Subject: Re: [PATCH 3/6] floppy: avoid leaking extra reference to queue on
+ do_floppy_init error handling
+Message-ID: <20120810172524.GH5416@redhat.com>
 References: <1344542391-16474-1-git-send-email-herton.krzesinski@canonical.com>
- <1344542391-16474-3-git-send-email-herton.krzesinski@canonical.com>
+ <1344542391-16474-4-git-send-email-herton.krzesinski@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344542391-16474-3-git-send-email-herton.krzesinski@canonical.com>
+In-Reply-To: <1344542391-16474-4-git-send-email-herton.krzesinski@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 04:59:47PM -0300, Herton Ronaldo Krzesinski wrote:
-> If blk_init_queue fails, we do not call put_disk on the current dr
-> (dr is decremented first in the error handling loop).
+On Thu, Aug 09, 2012 at 04:59:48PM -0300, Herton Ronaldo Krzesinski wrote:
+> After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
+> put_disk() if add_disk() was never called"), if something fails in the
+> add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
+> that's wrong, since we may have succesfully done an add_disk on some of
+> the drives previously in the loop, and in this case we would end up with
+> an extra reference to the disks[dr]->queue.
+> 
+> Add a new global array to mark "registered" disks, and use that to check
+> if we did an add_disk on one of the disks already. Using an array to
+> track added disks also will help to simplify/cleanup code later, as
+> suggested by Vivek Goyal.
 > 
 > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 > Cc: stable@vger.kernel.org
 
-Hi,
+Looks good to me.
 
-So for the current drive we do put_disk() here and for rest of the drives
-we do it in out_put_disk:.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-How about if we go through all the N_DRIVE always and do put disk as need be.
-
-	for(i = 0, i < N_DRIVE, i++) {
-		if (!disks[i])
-			continue;
-
-		if (disks[i]->queue)
-			blk_cleanup_queue();
-
-		if (!disk_registered[i])
-			disks[i]->queue = NULL;
-
-		put_disk();
-	}
-
-It is little more lines of code but personally I find it easier to understand 
-and less error prone as future modifications take place.
-
-Thanks
 Vivek
 
 > ---
->  drivers/block/floppy.c |    1 +
->  1 file changed, 1 insertion(+)
+>  drivers/block/floppy.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
 > diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index c8d9e68..1e09e99 100644
+> index 1e09e99..9272203 100644
 > --- a/drivers/block/floppy.c
 > +++ b/drivers/block/floppy.c
-> @@ -4151,6 +4151,7 @@ static int __init do_floppy_init(void)
+> @@ -409,6 +409,7 @@ static struct floppy_drive_struct drive_state[N_DRIVE];
+>  static struct floppy_write_errors write_errors[N_DRIVE];
+>  static struct timer_list motor_off_timer[N_DRIVE];
+>  static struct gendisk *disks[N_DRIVE];
+> +static bool disk_registered[N_DRIVE];
+>  static struct block_device *opened_bdev[N_DRIVE];
+>  static DEFINE_MUTEX(open_lock);
+>  static struct floppy_raw_cmd *raw_cmd, default_raw_cmd;
+> @@ -4305,6 +4306,7 @@ static int __init do_floppy_init(void)
+>  		disks[drive]->flags |= GENHD_FL_REMOVABLE;
+>  		disks[drive]->driverfs_dev = &floppy_device[drive].dev;
+>  		add_disk(disks[drive]);
+> +		disk_registered[drive] = true;
+>  	}
 >  
->  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
->  		if (!disks[dr]->queue) {
-> +			put_disk(disks[dr]);
->  			err = -ENOMEM;
->  			goto out_put_disk;
+>  	return 0;
+> @@ -4328,7 +4330,8 @@ out_put_disk:
+>  			 * put_disk() is not paired with add_disk() and
+>  			 * will put queue reference one extra time. fix it.
+>  			 */
+> -			disks[dr]->queue = NULL;
+> +			if (!disk_registered[dr])
+> +				disks[dr]->queue = NULL;
 >  		}
+>  		put_disk(disks[dr]);
+>  	}
 > -- 
 > 1.7.9.5
