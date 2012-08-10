@@ -1,122 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2HJGHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 02:07:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15651 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab2HJGHj (ORCPT
+	id S1754381Ab2HJGJC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 02:09:02 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:33430 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754190Ab2HJGI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 02:07:39 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-4f-5024a52910e8
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-References: <1344461278-28245-1-git-send-email-arnd@arndb.de>
- <1344461278-28245-9-git-send-email-arnd@arndb.de>
-In-reply-to: <1344461278-28245-9-git-send-email-arnd@arndb.de>
-Subject: RE: [PATCH 08/10] ARM: s3c24xx: enable CONFIG_BUG for tct_hammer
-Date: Fri, 10 Aug 2012 15:07:37 +0900
-Message-id: <0dd301cd76be$7101a750$5304f5f0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac11rLtABXA3eLUrTm+Uu/O9fvWgRwBEUcKQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAV3NpSoBBlenaFpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M5jNHWQuui1Xcmv+IvYHxgVAXIyeHhICJxN4jP9ggbDGJC/fW
-	A9lcHEICixglzkycwwjhzGOSuL//OFgVm4CGxOH3z9hBbBEBT4kzJxewgNjMAqESR0+8AasR
-	EiiUaJ/RCBbnFLCT2HHyJSOILQxU3zrvAGsXIwcHi4CqxJQvGiBhXgFbie8nHrFC2IISPybf
-	gxqpJbF+53EmCFteYvOat8wgrRIC6hKP/upCXGAk0bb6HyNEiYjEvhfvGCcwCs1CMmkWkkmz
-	kEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgMH4mtYNxZYPFIUYBDkYlHt5E
-	XpUAIdbEsuLK3EOMEhzMSiK8KS+UA4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzGnt/9RcSSE8s
-	Sc1OTS1ILYLJMnFwSjUwLiuo2/t+gqxw48Til4b9gvw3Wf9vPntJwPxi3tPjJueNjsjvOX55
-	27Mf5/+sWcN5c+H+4OyfWYceRm7Y59G4lEckM1rikXXQ8ZMrbibNnfKRT/7OtsZwqdMlHEer
-	N/fXK00wWMSar32xbYkHe9dfk32X6jmny1SvTFdLOzmFebHxO5e5Fe7VFkosxRmJhlrMRcWJ
-	AOTd6xxfAgAA
-X-TM-AS-MML: No
+	Fri, 10 Aug 2012 02:08:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <87hascgli3.fsf@ti.com>
+References: <1344434316-21141-1-git-send-email-tarun.kanti@ti.com>
+	<87k3x9wbrk.fsf@ti.com>
+	<CAC83ZvLKk71O=+9U16FoTUU_-ffg+iJsHPgnJx+bzbHhBDXzhQ@mail.gmail.com>
+	<87hascgli3.fsf@ti.com>
+Date: Fri, 10 Aug 2012 11:38:56 +0530
+Message-ID: <CAC83Zv++4CO_0xsNbwMYX_5uEv56csprqrrCjshxfb+ay2gBQg@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio/omap: add *remove* callback in platform_driver
+From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> 
-> Disabling CONFIG_BUG creates an insane amount of build warnings, which
-> makes it useless to check for building defconfigs to see if new
-> warnings show up.
-> 
-> Without this patch, building tct_hammer_defconfig results in:
-> 
-> net/packet/af_packet.c: In function 'tpacket_rcv':
-> net/packet/af_packet.c:1889:30: warning: 'hdrlen' may be used
-> uninitialized in this function [-Wuninitialized]
-> net/core/ethtool.c: In function 'ethtool_get_feature_mask':
-> net/core/ethtool.c:213:1: warning: control reaches end of non-void
-> function [-Wreturn-type]
-> block/cfq-iosched.c: In function 'cfq_async_queue_prio':
-> block/cfq-iosched.c:2914:1: warning: control reaches end of non-void
-> function [-Wreturn-type]
-> mm/bootmem.c: In function 'mark_bootmem':
-> mm/bootmem.c:352:1: warning: control reaches end of non-void function [-
-> Wreturn-type]
-> net/core/dev.c: In function 'skb_warn_bad_offload':
-> net/core/dev.c:1904:33: warning: unused variable 'null_features' [-
-> Wunused-variable]
-> drivers/mtd/chips/cfi_probe.c: In function 'cfi_chip_setup':
-> include/linux/mtd/cfi.h:489:3: warning: 'r.x[0]' may be used uninitialized
-> in this function [-Wuninitialized]
-> include/linux/mtd/map.h:394:11: note: 'r.x[0]' was declared here
-> include/linux/mtd/cfi.h:489:3: warning: 'r.x[0]' may be used uninitialized
-> in this function [-Wuninitialized]
-> (and many more)
-> 
-> The size of vmlinux increases by 1.78% because of this:
-> 
-> size obj-arm/vmlinux.nobug
->    text    data     bss     dec     hex filename
->    2108474  116916   55352 2280742  22cd26 obj-arm/vmlinux
-> size obj-arm/vmlinux.bug
->    text    data     bss     dec     hex filename
->    2150804  116916   53696 2321416  236c08 obj-arm/vmlinux
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
+On Thu, Aug 9, 2012 at 8:28 PM, Kevin Hilman <khilman@ti.com> wrote:
+> "DebBarma, Tarun Kanti" <tarun.kanti@ti.com> writes:
+>
+>> On Wed, Aug 8, 2012 at 10:40 PM, Kevin Hilman <khilman@ti.com> wrote:
+>>> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+>>>
+>>>> Add *remove* callback so that necessary cleanup operations are
+>>>> performed when device is unregistered. The device is deleted
+>>>> from the list and associated clock handle is released by
+>>>> calling clk_put() and irq descriptor is released using the
+>>>> irq_free_desc() api.
+>>>>
+>>>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>>> Reported-by: Paul Walmsley <paul@pwsan.com>
+>>>> Reviewed-by: Jon Hunter <jon-hunter@ti.com>
+>>>> Cc: Kevin Hilman <khilman@ti.com>
+>>>> Cc: Rajendra Nayak <rnayak@ti.com>
+>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> Cc: Cousson, Benoit <b-cousson@ti.com>
+>>>> Cc: Paul Walmsley <paul@pwsan.com>
+>>>> ---
+>>>> v2:
+>>>> Baseline: git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+>>>> Commit: 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee (Linux 3.6-rc1)
+>>>>
+>>>> (1) Use irq_free_descs() instead of irq_free_desc().
+>>>>     Besides, irq_free_desc() was using wrong parameter,
+>>>>     irq_base, instead of bank->irq.
+>>>> (2) irq_free_descs() moved outside spin_lock/unlock_*()
+>>>>     in order to avoid exception warnings.
+>>>>
+>>>> (3) pm_runtime_disable() added so that bind can happen successfully
+>>>>
+>>>> Test Detail:
+>>>> Step 1: Unbind gpio.5 device in order to invoke the *remove* callback.
+>>>> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/unbind
+>>>>
+>>>> Step 2: Bind gpio.5 device and confirm probe() for the device succeeds.
+>>>> #echo "omap_gpio.5" > sys/bus/platform/drivers/omap_gpio/bind
+>>>>
+>>>> Step 3: Execute read/write GPIO test case.
+>>>
+>>> What happens when GPIOs are in use (requested)?
+>> If I try to unbind a currently active GPIO bank then I see an exception
+>> after the irq descriptor is freed by the remove. I believe this is expected
+>> because interrupt raised by the system would not be handled.
+>
+> ... and the GPIO is still configured to trigger interrupts.
+Right!
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-BTW, I'm not sure we should still keep the tct_hammer_defconfig because
-s3c2410_defconfig is including MACH_TCT_HAMMER, its selection are different
-though.
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> ---
->  arch/arm/configs/tct_hammer_defconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/configs/tct_hammer_defconfig
-> b/arch/arm/configs/tct_hammer_defconfig
-> index 1d24f84..71277a1 100644
-> --- a/arch/arm/configs/tct_hammer_defconfig
-> +++ b/arch/arm/configs/tct_hammer_defconfig
-> @@ -7,7 +7,7 @@ CONFIG_SYSFS_DEPRECATED_V2=y
->  CONFIG_BLK_DEV_INITRD=y
->  CONFIG_EXPERT=y
->  # CONFIG_KALLSYMS is not set
-> -# CONFIG_BUG is not set
-> +# CONFIG_BUGVERBOSE is not set
->  # CONFIG_ELF_CORE is not set
->  # CONFIG_SHMEM is not set
->  CONFIG_SLOB=y
-> --
-> 1.7.10
-
+>
+> The point is that there is lots to cleanup/unconfigure properly for this
+> to work properly.
+As far as I can think of, all active gpio requests done either in
+board files or through DT
+have to be freed. But if this is done then when we bind() the device
+again initialization
+done in omap_gpio_probe() would not restore the board/DT related configuration.
+So the point is are we supposed to do all these cleanup in *remove* callback?
+If yes, how do we manage board level gpio usage?
+---
+Tarun
+>
+> Kevin
+>
+>> [   18.859405] irq_free_descs: calling free_desc(192)...
+>> [   18.866180] irq_free_descs: calling free_desc(192)...
+>> [   18.872680] irq_free_descs: calling free_desc(192)...
+>> [   18.877990] irq_free_descs: calling free_desc(192)...
+>> [   18.883270] irq_free_descs: calling free_desc(192)...
+>> [   18.888549] irq_free_descs: calling free_desc(192)...
+>> [   18.893859] irq_free_descs: calling free_desc(192)...
+>> [   18.899139] irq_free_descs: calling free_desc(192)...
+>> [   18.904418] irq_free_descs: calling free_desc(192)...
+>> [   18.909729] irq_free_descs: calling free_desc(192)...
+>> [   18.915008] irq_free_descs: calling free_desc(192)...
+>> [   18.920288] irq_free_descs: calling free_desc(192)...
+>> [   18.925598] irq_free_descs: calling free_desc(192)...
+>> [   18.930877] irq_free_descs: calling free_desc(192)...
+>> [   18.936157] irq_free_descs: calling free_desc(192)...
+>> [   18.941467] irq_free_descs: calling free_desc(192)...
+>> [   18.946746] irq_free_descs: calling free_desc(192)...
+>> [   18.952026] irq_free_descs: calling free_desc(192)...
+>> [   18.957336] irq_free_descs: calling free_desc(192)...
+>> [   18.962615] irq_free_descs: calling free_desc(192)...
+>> [   18.967895] irq_free_descs: calling free_desc(192)...
+>> [   18.973205] irq_free_descs: calling free_desc(192)...
+>> [   18.978485] irq_free_descs: calling free_desc(192)...
+>> [   18.983764] irq_free_descs: calling free_desc(192)...
+>> [   18.989074] irq_free_descs: calling free_desc(192)...
+>> [   18.994354] irq_free_descs: calling free_desc(192)...
+>> [   18.999633] irq_free_descs: calling free_desc(192)...
+>> [   19.004913] irq_free_descs: calling free_desc(192)...
+>> [   19.010223] irq_free_descs: calling free_desc(192)...
+>> [   19.015502] irq_free_descs: calling free_desc(192)...
+>> [   19.020782] irq_free_descs: calling free_desc(192)...
+>> [   19.026092] irq_free_descs: calling free_desc(192)...
+>> [   19.032440] irq 194, desc: c072f340, depth: 1, count: 0, unhandled: 0
+>> [   19.039154] ->handle_irq():  c00a3e08, handle_bad_irq+0x0/0x260
+>> [   19.045379] ->irq_data.chip(): c078ff7c, no_irq_chip+0x0/0x5c
+>> [   19.051391] ->action(): ef0d42c0
+>> [   19.054748] ->action->handler(): c0399ee0, ks8851_irq+0x0/0x1c
+>> [   19.060852]    IRQ_NOPROBE set
+>> [   19.064056]  IRQ_NOREQUEST set
+>> [   19.067230] Unable to handle kernel paging request at virtual address 203a6c9
+>> [   19.074768] pgd = c0004000
+>> [   19.077606] [203a6c99] *pgd=00000000
+>> [   19.081329] Internal error: Oops: 5 [#1] SMP ARM
+>> [   19.086151] Modules linked in:
+>> [   19.089355] CPU: 0    Not tainted  (3.6.0-rc1-00003-g43a916d-dirty #885)
+>> [   19.096374] PC is at gpio_irq_handler+0x7c/0x26c
+>> [   19.101165] LR is at handle_bad_irq+0x1cc/0x260
+>> [   19.105895] pc : [<c02e13b0>]    lr : [<c00a3fd4>]    psr: 60000093
+>> [   19.105895] sp : c0725df8  ip : 00006fc6  fp : 00000001
+>> [   19.117889] r10: 00000000  r9 : fa05502c  r8 : 00000020
+>> [   19.123352] r7 : 00000000  r6 : 00000000  r5 : 00000000  r4 : ef0bbe10
+>> [   19.130157] r3 : ef0c1980  r2 : 203a6c65  r1 : 00000034  r0 : 00000000
+>> [   19.136993] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kel
+>> [   19.144714] Control: 10c53c7d  Table: ae89804a  DAC: 00000017
+>> [   19.150695] Process swapper/0 (pid: 0, stack limit = 0xc07242f8)
+>> [   19.156982] Stack: (0xc0725df8 to 0xc0726000)
+>> [   19.161529] 5de0:                                                       c0740
+>> [   19.170074] 5e00: c0724000 c0724000 c07440d8 c07224a4 0000003e 00000000 c0740
+>> [   19.178619] 5e20: c0725edc c00a3670 000001da c0015380 fa24010c c0742d30 c0720
+>> [   19.187164] 5e40: 00000001 c000846c c0746980 c04f8c74 20000013 ffffffff c0724
+>> [   19.195709] 5e60: 0005ebb2 00000001 00000000 c0746980 c1530ac0 ee8cfe00 c1530
+>> [   19.204223] 5e80: 00000001 c07440d8 ee8cfe00 c0725edc 00000001 c0725ea8 00054
+>> [   19.212768] 5ea0: 20000013 ffffffff c0724000 c007425c 00000002 00000000 c0077
+>> [   19.221313] 5ec0: ef320b00 c0746980 00000000 c1530ac0 ef320b00 c0722ac0 c0720
+>> [   19.229858] 5ee0: c152ec20 c00696cc 00000000 00000000 c0724000 c0724000 c1524
+>> [   19.238403] 5f00: c152ec20 c0015e14 c0722ac0 c0722ac0 c0722ac0 c0722ac0 c0720
+>> [   19.246948] 5f20: c0722ac0 c0722ac0 6e6b0f0d 00000004 00000000 00000000 c0080
+>> [   19.255493] 5f40: 00000001 00000000 00000000 501539bc 00000004 c0091654 c1528
+>> [   19.264038] 5f60: c07d55b8 5006c071 00000000 c008cab8 00000000 00000002 50064
+>> [   19.272552] 5f80: c0748078 c0724000 c07c0548 c0504510 c0747e60 00000000 411f8
+>> [   19.281097] 5fa0: 00000000 c0015e14 00000000 c0743e1c c07c0480 c07057dc bfffa
+>> [   19.289642] 5fc0: 00000000 c06d48d8 ffffffff ffffffff c06d4450 00000000 0000c
+>> [   19.298187] 5fe0: 00000000 10c53c7d c0742d08 c07057ac c0747e54 80008044 00000
+>> [   19.306732] [<c02e13b0>] (gpio_irq_handler+0x7c/0x26c) from [<c00a3670>] (ge)
+>> [   19.316558] [<c00a3670>] (generic_handle_irq+0x34/0x44) from [<c0015380>] (h)
+>> [   19.325744] [<c0015380>] (handle_IRQ+0x4c/0xac) from [<c000846c>] (gic_handl)
+>> [   19.334564] [<c000846c>] (gic_handle_irq+0x2c/0x60) from [<c04f8ee4>] (__irq)
+>> [   19.343292] Exception stack(0xc0725e60 to 0xc0725ea8)
+>> [   19.348571] 5e60: 0005ebb2 00000001 00000000 c0746980 c1530ac0 ee8cfe00 c1530
+>> [   19.357116] 5e80: 00000001 c07440d8 ee8cfe00 c0725edc 00000001 c0725ea8 00054
+>> [   19.365631] 5ea0: 20000013 ffffffff
+>> [   19.369293] [<c04f8ee4>] (__irq_svc+0x44/0x5c) from [<c04f8c74>] (_raw_spin_)
+>> [   19.378570] [<c04f8c74>] (_raw_spin_unlock_irq+0x28/0x2c) from [<c007425c>] )
+>> [   19.388732] [<c007425c>] (finish_task_switch+0x84/0x198) from [<c04f7760>] ()
+>> [   19.398193] [<c04f7760>] (__schedule+0x404/0x870) from [<c0015e14>] (cpu_idl)
+>> [   19.406768] [<c0015e14>] (cpu_idle+0xe8/0x114) from [<c06d48d8>] (start_kern)
+>> [   19.415466] Code: e59480e4 e1d311b4 e5d36034 e1a0a81b (e7920001)
+>> [   19.421844] ---[ end trace 3eb9bf4b81babe15 ]---
+>> [   19.426666] Kernel panic - not syncing: Fatal exception in interrupt
+>> [   19.433288] CPU1: stopping
+>> [   19.436157] [<c001beac>] (unwind_backtrace+0x0/0xf4) from [<c0019db4>] (hand)
+>> [   19.445220] [<c0019db4>] (handle_IPI+0x130/0x15c) from [<c0008498>] (gic_han)
+>> [   19.454223] [<c0008498>] (gic_handle_irq+0x58/0x60) from [<c04f8ee4>] (__irq)
+>> [   19.462951] Exception stack(0xef06ff88 to 0xef06ffd0)
+>> [   19.468231] ff80:                   c079f960 c079f960 00000000 00000000 ef068
+>> [   19.476745] ffa0: c0504510 c0747e60 00000000 411fc092 c0748078 00000000 00000
+>> [   19.485290] ffc0: c0015570 c0015574 60000113 ffffffff
+>> [   19.490570] [<c04f8ee4>] (__irq_svc+0x44/0x5c) from [<c0015574>] (default_id)
+>> [   19.499114] [<c0015574>] (default_idle+0x20/0x44) from [<c0015dc8>] (cpu_idl)
+>> [   19.507659] [<c0015dc8>] (cpu_idle+0x9c/0x114) from [<804f1d94>] (0x804f1d94)
+>> ---
+>> Tarun
+>>>
+>>> Kevin
+>>>
+>>>>  drivers/gpio/gpio-omap.c |   35 +++++++++++++++++++++++++++++++++++
+>>>>  1 files changed, 35 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>>>> index e6efd77..50de875 100644
+>>>> --- a/drivers/gpio/gpio-omap.c
+>>>> +++ b/drivers/gpio/gpio-omap.c
+>>>> @@ -1152,6 +1152,40 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
+>>>>       return ret;
+>>>>  }
+>>>>
+>>>> +/**
+>>>> + * omap_gpio_remove - cleanup a registered gpio device
+>>>> + * @pdev:       pointer to current gpio platform device
+>>>> + *
+>>>> + * Called by driver framework whenever a gpio device is unregistered.
+>>>> + * GPIO is deleted from the list and associated clock handle freed.
+>>>> + */
+>>>> +static int __devexit omap_gpio_remove(struct platform_device *pdev)
+>>>> +{
+>>>> +     struct device *dev = &pdev->dev;
+>>>> +     struct gpio_bank *bank;
+>>>> +     unsigned long flags;
+>>>> +     int ret = -EINVAL;
+>>>> +
+>>>> +     list_for_each_entry(bank, &omap_gpio_list, node) {
+>>>> +             spin_lock_irqsave(&bank->lock, flags);
+>>>> +             if (bank->dev == dev) {
+>>>> +                     clk_put(bank->dbck);
+>>>> +                     list_del(&bank->node);
+>>>> +                     ret = 0;
+>>>> +                     spin_unlock_irqrestore(&bank->lock, flags);
+>>>> +                     break;
+>>>> +             }
+>>>> +             spin_unlock_irqrestore(&bank->lock, flags);
+>>>> +     }
+>>>> +
+>>>> +     if (!ret) {
+>>>> +             pm_runtime_disable(bank->dev);
+>>>> +             irq_free_descs(bank->irq_base, bank->width);
+>>>> +     }
+>>>> +
+>>>> +     return ret;
+>>>> +}
+>>>> +
+>>>>  #ifdef CONFIG_ARCH_OMAP2PLUS
+>>>>
+>>>>  #if defined(CONFIG_PM_RUNTIME)
+>>>> @@ -1478,6 +1512,7 @@ MODULE_DEVICE_TABLE(of, omap_gpio_match);
+>>>>
+>>>>  static struct platform_driver omap_gpio_driver = {
+>>>>       .probe          = omap_gpio_probe,
+>>>> +     .remove = __devexit_p(omap_gpio_remove),
+>>>>       .driver         = {
+>>>>               .name   = "omap_gpio",
+>>>>               .pm     = &gpio_pm_ops,
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
