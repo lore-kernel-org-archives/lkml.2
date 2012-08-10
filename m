@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab2HJTHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 15:07:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab2HJTHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 15:07:19 -0400
-Message-ID: <50255BDD.2070508@suse.com>
-Date: Fri, 10 Aug 2012 15:07:09 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>
-Cc: stable@kernel.org, Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] printk: Fix calculation of length used to discard records
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760159Ab2HJTHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 15:07:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51574 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759947Ab2HJTGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 15:06:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL 0/3] arm-soc updates
+Date: Fri, 10 Aug 2012 21:06:12 +0200
+Message-Id: <1344625575-27560-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+X-Provags-ID: V02:K0:tmuTJxFE18PLzeVpfk4Lc5Zyhif+WSkXR7EbJ7kR6Gf
+ vBOCj6Pq3gt1EkJh4TL2edRnUzN6RNLWdZyXScTee0bddemPu7
+ jhUiEDxl9Pu4Ikj51PXXCNQehbKm1nzGNrBeCS8gHY3O7y2h0T
+ VD33M6kWpPD/h2v8oBfmoquQqivfz9yTq5sRoESEHfa4zMW8CN
+ 4pjsZwpriPP00SAqVkMkuzMZminz3SdPqt9Apz91sx2cZ17RnE
+ BL0iMRaIjvQKqoRpCy/w4dEP6Rv0TS5oo7zPoy3oIr4bYOmdJg
+ q/Q8XF3D76mgotEbyUCujcNRSZByEIVRDOG2Xe+5/5bxl7dBQq
+ 5aYlrQ2PmTq3mFfDLqZq8NtJoMM7u87VhBMr5yTXS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While tracking down a weird buffer overflow issue in a program that
-looked to be sane, I started double checking the length returned
-by syslog(SYSLOG_ACTION_READ_ALL, ...) to make sure it wasn't overflowing
-the buffer. Sure enough, it was.  I saw this in strace:
+Hi Linus,
 
-11339 syslog(SYSLOG_ACTION_READ_ALL, "<5>[244017.708129] REISERFS (dev"..., 8192) = 8279
+Here are three pull requests for you to consider for the next -rc.
 
-It turns out that the loops that calculate how much space the entries
-will take when they're copied don't include the newlines and
-prefixes that will be included in the final output since prev flags
-is passed as 0. 
+The first one is our regular bug fix series, this time with a lot
+of patches fixing build regressions. Please pull at least this one.
 
-This patch properly accounts for it and fixes the overflow.
+The other two are things that fell through the cracks in the v3.6
+merge window because of communication problems between the arm-soc
+team and our downstream maintainers. Neither of them is important,
+but applying them should also be harmless. If you feel like making
+an exception, please have a look and consider merging them as well,
+but don't worry about them otherwise.
 
-CC: stable@kernel.org
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- kernel/printk.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1034,6 +1034,7 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
- 
- 			len += msg_print_text(msg, prev, true, NULL, 0);
-+			prev = msg->flags;
- 			idx = log_next(idx);
- 			seq++;
- 		}
-@@ -1046,6 +1047,7 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
- 
- 			len -= msg_print_text(msg, prev, true, NULL, 0);
-+			prev = msg->flags;
- 			idx = log_next(idx);
- 			seq++;
- 		}
-
--- 
-Jeff Mahoney
-SUSE Labs
+	Arnd
