@@ -1,118 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab2HJK62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:58:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59516 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2HJK6X (ORCPT
+	id S1760180Ab2HJK7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:59:35 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52372 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757957Ab2HJK7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:58:23 -0400
-Date: Fri, 10 Aug 2012 12:58:18 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Joe Perches <joe@perches.com>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
-Message-ID: <20120810105818.GA19457@avionic-0098.mockup.avionic-design.de>
-References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
- <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
- <20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
- <CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
- <20120810100233.GA1503@avionic-0098.mockup.avionic-design.de>
- <CAK9yfHxXEBecVbiMyBKA_sHfzA1evCYeV9W66McUqZ67f2q3hA@mail.gmail.com>
- <1344595893.2338.6.camel@joe2Laptop>
+	Fri, 10 Aug 2012 06:59:33 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <1344595893.2338.6.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:feUKCGQhy/vAqe/lY1ylhhJORnL280qEIfA7AcH8yHH
- HUPpcfaoAJ0IS3salLkHp6VgOkr0CUMF2hIVAG6XcGXzn7m9zO
- b8Fgetdc4NP2/rRTZvmRTU6R3lwNVsqqGAhBORcvgIRyATyA7+
- OIg6f6qqJVgMcBJ2FgS29kTpThT3pHIs6eIEKNofEINbikz+RX
- IEpFjU2F1s3uHBCo8XkBzdGAYrqZOtTbKUQpPeIdBW2vEEK6z5
- fNHvYJRWglUocZnmCfdmOISQiaU2zI1/PM4muTNzL/7lZaTd3R
- DblT3W9JIPix3OI9X1+aB/l6zDTBxZnpZDf/aWPm8+K6opJAtt
- xCn+jLBPHxbPO50DHeWt0ivp3aZGA01mMbQbs4/ZsTm9ipYets
- uzbiZTyuSq1w94T4sUOPszFnIBNkm+KRkA=
+In-Reply-To: <1344437248-20560-7-git-send-email-arnd@arndb.de>
+References: <1344437248-20560-1-git-send-email-arnd@arndb.de>
+	<1344437248-20560-7-git-send-email-arnd@arndb.de>
+Date: Fri, 10 Aug 2012 12:59:32 +0200
+Message-ID: <CACRpkdZnaH3RXHqif7wiA5bor4vOcBndnabG-7QNLnmUc3Oj3Q@mail.gmail.com>
+Subject: Re: [PATCH 06/11] gpio: em: do not discard em_gio_irq_domain_cleanup
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 8, 2012 at 4:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> The newly added gpio-em driver marks its em_gio_irq_domain_cleanup
+> function as __devexit, which would lead to that function being
+> discarded in case CONFIG_HOTPLUG is disabled. However, the function
+> is also called by the error handling logic em_gio_probe, which
+> would cause a jump into a NULL pointer if it was removed from the
+> kernel or module.
 
-On Fri, Aug 10, 2012 at 03:51:33AM -0700, Joe Perches wrote:
-> On Fri, 2012-08-10 at 15:34 +0530, Sachin Kamat wrote:
-> > On 10 August 2012 15:32, Thierry Reding
-> > <thierry.reding@avionic-design.de> wrote:
-> > > On Fri, Aug 10, 2012 at 03:29:08PM +0530, Sachin Kamat wrote:
-> > >> On 10 August 2012 15:25, Thierry Reding
-> > >> <thierry.reding@avionic-design.de> wrote:
-> > >> > On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
-> > >> >> Fixes the following:
-> > >> >> WARNING: line over 80 characters
-> > >> >> ERROR: spaces required around that ':' (ctx:VxW)
-> > >> >> WARNING: Prefer pr_warn(... to pr_warning(...
-> []
-> > >> >> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> []
-> > >> >> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_devi=
-ce *pwm, const char *label)
-> > >> >>  }
-> > >> >>
-> > >> >>  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *p=
-c,
-> > >> >> -                                           const struct of_phand=
-le_args *args)
-> > >> >> +                                          const struct of_phandl=
-e_args *args)
-> > >> >>  {
->=20
-> Another way to write this is to put the return type on a
-> separate line like:
->=20
-> type
-> func(args to 80,
->      more args aligned to open paren...)
->=20
-> for this case:
->=20
-> static struct pwm_device *
-> of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *ar=
-gs)
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-I was under the impression that the CodingStyle explicitly said not to
-do this, but I've just checked and I couldn't find any mention of the
-return type placement.
+Will you push this through the ARM SoC tree or do you want me
+to apply it to my GPIO tree?
 
-Sachin: Can you fix the warning as Joe suggested and resend the patch?
-
-Thierry
-
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQJOlKAAoJEN0jrNd/PrOhFWIP/1arvoKMV8SswAsAv4NhxFpH
-QQ9rTFBm4tA5HelWP50kTfPcDS9N7LJA1rn0JLyf40W1/kW5Atd7rIIcpuWjzpSQ
-nZxJ2+M1TN/M9QVt1QCHnk/ifEwWNScQFpZPzMWeMUdM6Twn7wF3A/CPABWrk8Zq
-It9lg0YWdZcGcDgvxcWtWdp8wXp7y8hbmvkBrmcl4XRCuWciEXoV+Zi/fDPCeWeB
-/45QBT40uywcqYJZ3ykkNbHZrPwqELBEa+mNJlTCTxgtwodEEtYXiTD1WFbElzXG
-55vHMIAVo+C8Q/XIuO37RZRHc/Uz9l6dO8iiCMdaZJY6wh0vbJsD6bmXSE3k3kVX
-/cN93/VPH8Pvle285ibi4eNFXLBCLhPex/1Cl9h3Kw/m6vyDjr6YhvaUTafQSz9D
-z6b9mGgAY8bn9hTv6DG5QzIGR+1BlcYWkJj6Z+dbEa2xnhMsgjiyyGrI7yrlcWC0
-g1L4n6mKdgOJ5ekDbvjFrU3LPOhIj9eZ0PqUZK1WNUwJyUmx7HNfcNDIcOqRmTf9
-5wxeYTRxFJAoiRbSkQAiF4iOU1yK2KLlOgQqxt33EukrUrC220GZL1Qm5BpYZmeP
-PJ2CNli0UhTEHpo3aj5icetIpO1eRhhV3ZWR7cByS5gTIB7KCnEbogNhmN4dqzND
-CXlGiafZfJKFtsubiqnw
-=AAVj
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
+Yours,
+Linus Walleij
