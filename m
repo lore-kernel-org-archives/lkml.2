@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759726Ab2HJSPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:15:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37696 "EHLO e7.ny.us.ibm.com"
+	id S1759763Ab2HJSQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:16:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52815 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758857Ab2HJSPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:15:11 -0400
-Message-ID: <50254F69.2000409@linux.vnet.ibm.com>
-Date: Fri, 10 Aug 2012 13:14:01 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1759187Ab2HJSQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:16:16 -0400
+Message-ID: <50254FA6.3060806@zytor.com>
+Date: Fri, 10 Aug 2012 11:15:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Kurt Hackel <kurt.hackel@oracle.com>
-Subject: Re: [PATCH 0/4] promote zcache from staging
-References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com> <5021795A.5000509@linux.vnet.ibm.com> <5024067F.3010602@linux.vnet.ibm.com> <2e9ccb4f-1339-4c26-88dd-ea294b022127@default>
-In-Reply-To: <2e9ccb4f-1339-4c26-88dd-ea294b022127@default>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Trond.Myklebust@netapp.com, davem@davemloft.net, linux-nfs@vger.kernel.org,
+        eric.dumazet@gmail.com, xemul@parallels.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bfields@fieldses.org,
+        viro@zeniv.linux.org.uk, tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
+References: <20120810125701.7115.71612.stgit@localhost.localdomain>
+In-Reply-To: <20120810125701.7115.71612.stgit@localhost.localdomain>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081018-5806-0000-0000-0000183EFF3F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 03:20 PM, Dan Magenheimer wrote
-> I also wonder if you have anything else unusual in your
-> test setup, such as a fast swap disk (mine is a partition
-> on the same rotating disk as source and target of the kernel build,
-> the default install for a RHEL6 system)?
+On 08/10/2012 05:57 AM, Stanislav Kinsbursky wrote:
+> Today, there is a problem in connecting of local SUNRPC thansports. These
+> transports uses UNIX sockets and connection itself is done by rpciod
+> workqueue.
+> But UNIX sockets lookup is done in context of process file system root. I.e.
+> all local thunsports are connecting in rpciod context.
+> This works nice until we will try to mount NFS from process with other root -
+> for example in container. This container can have it's own (nested) root and
+> rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
+> this container will register new service (Lockd for example) in global rpcbind
+> - not containers's one.
+> 
+> This patch set introduces kernel connect helper for UNIX stream sockets and
+> modifies unix_find_other() to be able to search from specified root.
+> It also replaces generic socket connect call for local transports by new
+> helper in SUNRPC layer.
+> 
+> The following series implements...
 
-I'm using a normal SATA HDD with two partitions, one for
-swap and the other an ext3 filesystem with the kernel source.
+On that whole subject...
 
-> Or have you disabled cleancache?
+Do we need a Unix domain socket equivalent to openat()?
 
-Yes, I _did_ disable cleancache.  I could see where having
-cleancache enabled could explain the difference in results.
-
-> Or have you changed any sysfs parameters or
-> other kernel files?
-
-No.
-
-> And are you using 512M of physical memory or relying on
-> kernel boot parameters to reduce visible memory
-
-Limited with mem=512M boot parameter.
-
-> ... and
-> if the latter have you confirmed with /proc/meminfo?
-
-Yes, confirmed.
-
-Seth
+	-hpa
 
