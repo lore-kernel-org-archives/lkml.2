@@ -1,103 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760347Ab2HJWqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 18:46:47 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:11661 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab2HJWqq (ORCPT
+	id S1755779Ab2HJXIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 19:08:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42567 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab2HJXH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 18:46:46 -0400
-Message-ID: <1344638802.8018.18.camel@lorien2>
-Subject: dma mapping error check analysis
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Fri, 10 Aug 2012 16:46:42 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 10 Aug 2012 19:07:58 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: "'Jesper Juhl'" <jj@chaosbits.net>
+Cc: <linux-kernel@vger.kernel.org>, <ap@solarrain.com>
+References: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com> <alpine.LNX.2.00.1208101948590.17673@swampdragon.chaosbits.net> <CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
+In-Reply-To: <CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
+Subject: RE: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
+Date: Fri, 10 Aug 2012 19:07:56 -0400
+Message-ID: <0de101cd774c$fb2afa10$f180ee30$@lucidpixels.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIftz6uMAriW63B7/XW/GnSvLFMLQJlqoDvAn+gxOmWh/9L8A==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I analyzed current calls to dma_map_single() and dma_map_page() in the kernel
-to see if dma mapping errors are checked after mapping routines return.
 
-Reference linux-next August 6 2012.
 
-This analysis stemmed from the discussion on my patch that disables swiotlb
-overflow as a first step towards removing the support all together. Please
-refer to thread below:
+-----Original Message-----
+From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
+Sent: Friday, August 10, 2012 5:46 PM
+To: Jesper Juhl
+Cc: linux-kernel@vger.kernel.org; ap@solarrain.com
+Subject: Re: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
 
-https://lkml.org/lkml/2012/7/24/391
+On Fri, Aug 10, 2012 at 1:53 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Fri, 10 Aug 2012, Justin Piszcz wrote:
+>
+>> Hello,
+>>
+>> Motherboard: Supermicro X8DTH-6F
+>> Distro: Debian Testing x86_64
+>>
+>> >From 3.4 -> 3.5.1 on x86_64 make oldconfig and a few minor changes and
+the
+>> machine attempts to boot but hangs at the filesystem mounting part of the
+>> boot process.
 
-The goal of this analysis is to find drivers that don't currently check dma
-mapping errors and fix them. I did a grep for dma_map_single() and
-dma_map_page() and looked at the code that calls these routines. I classified
-the results of dma mapping error check status as follows:
+Hi,
 
-Broken:
-1. No error checks
-2. Partial checks - In that source file, not all calls are followed by checks.
-3. Checks dma mapping errors, doesn't unmap already mapped pages when mapping
-   error occurs in the middle of a multiple mapping attempt.
+Found the root cause, the 3.5.1 kernel cannot mount my ext4 filesystem
+(60TB).
 
-The first two categories are classified as broken and need fixing.
+The 3.4 kernel works fine.
 
-The third one needs fixing, since it leaves dangling mapped pages, and holds
-on to them which is equivalent to memory leak. Some drivers release all mapped
-pages when the device closes, but others don't. Not doing unmap might be
-harmless on some architectures going by the comments I found in some source
-files.
+This is proven by commenting out the filesystem in /etc/fstab with
+3.5.1, and all is OK.
 
-Good:
-1. Checks dma mapping errors and unmaps already mapped pages when mapping
-   error occurs in the middle of a multiple mapping attempt.
-2. Checks dma mapping errors without unlikely()
-3. Checks dma mapping errors with unlikely()
+--
 
-I lumped the above three cases as good cases. Using unlikely() is icing on the
-cake, and something we need to be concerned about compared to other problems in
-this area.
+Hi again,
 
-- dmap_map_single() - results
-No error checks - 195 (46%)
-Partial checks - 46 (11%)
-Doesn't unmap: 26 (6%)
-Good: 147 (35%)
+I tested with linux-3.6-rc1:
 
-- dma_map_page() - results
-No error checks: 61 (59%)
-Partial checks: 7 (.06%)
-Doesn't unmap: 15 (14.5%)
-Good: 20 (19%)
+The same problem, here is what I get from the strace:
 
-In summary a large % of the cases (> 50%) go unchecked. That raises the
-following questions:
+irectory)
+4434  readlink("/dev", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
+4434  readlink("/dev/sda1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid
+argument)
+4434  readlink("/r1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
+4434  getuid()                          = 0
+4434  geteuid()                         = 0
+4434  getgid()                          = 0
+4434  getegid()                         = 0
+4434  prctl(PR_GET_DUMPABLE)            = 1
+4434  lstat("/etc/mtab", {st_mode=S_IFLNK|0777, st_size=12, ...}) = 0
+4434  getuid()                          = 0
+4434  geteuid()                         = 0
+4434  getgid()                          = 0
+4434  getegid()                         = 0
+4434  prctl(PR_GET_DUMPABLE)            = 1
+4434  stat("/run", {st_mode=S_IFDIR|0755, st_size=820, ...}) = 0
+4434  lstat("/run/mount/utab", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+4434  open("/run/mount/utab", O_RDWR|O_CREAT, 0644) = 3
+4434  close(3)                          = 0
+4434  mount("/dev/sda1", "/r1", "ext4", MS_MGC_VAL|MS_NOATIME, NULL
 
-When do mapping errors get detected?
-How often do these errors occur?
-Why don't we see failures related to missing dma mapping error checks?
-Are they silent failures?
+--
 
-Based on what I found, I am not too eager to remove swiotlb overflow support
-which would increase the probability of returning dma mapping errors.
+(w/ 3.6-rc1) 
 
-However I propose the following to gather more information:
+[   89.868843] mount           R  running task        0  4434   4433
+0x00000009
+[   89.868847]  ffff880c246b7b68 ffffffff816c9279 ffff880c246b7aa8
+ffff880c246b7fd8
+[   89.868851]  ffff880c246b7fd8 0000000000004000 ffff88062720cdb0
+ffff880c246862d0
+[   89.868855]  00000000000116c0 ffff880623a863c0 ffff880623a863c0
+00000000ffffffff
+[   89.868855] Call Trace:
+[   89.868858]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
+[   89.868860]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
+[   89.868864]  [<ffffffff8114a729>] ? ext4_get_group_desc+0x49/0xb0
+[   89.868868]  [<ffffffff81161d41>] ? ext4_calculate_overhead+0x131/0x3e0
+[   89.868871]  [<ffffffff81163a3b>] ? ext4_fill_super+0x1a4b/0x28d0
+[   89.868875]  [<ffffffff810cc301>] ? mount_bdev+0x1a1/0x1e0
+[   89.868877]  [<ffffffff81161ff0>] ? ext4_calculate_overhead+0x3e0/0x3e0
+[   89.868880]  [<ffffffff8115dd00>] ? ext4_mount+0x10/0x20
+[   89.868882]  [<ffffffff810cc55b>] ? mount_fs+0x1b/0xd0
+[   89.868885]  [<ffffffff810e57af>] ? vfs_kern_mount+0x6f/0x110
+[   89.868888]  [<ffffffff810e58cf>] ? do_kern_mount+0x4f/0x100
+[   89.868890]  [<ffffffff810e6dae>] ? do_mount+0x2fe/0x8a0
+[   89.868894]  [<ffffffff8109c0a3>] ? strndup_user+0x53/0x70
+[   89.868896]  [<ffffffff810e73e0>] ? sys_mount+0x90/0xe0
+[   89.868899]  [<ffffffff816cafa1>] ? tracesys+0xd4/0xd9
 
-- Change swiotlb to log (pr_info or pr_debug) cases where overflow buffer is
-  triggered. (This is a delta on the disable swiotlb patch I sent a few weeks
-  ago - References in this posting).
-- Change dma_map_single() and dma_map_page() to track how many times they
-  return before attempting to fix all the places that don't do dma mapping
-  error checks. (Maybe a counter that keeps track, pr_* is not an option).
+Justin.
 
-Comments, thoughts on the analysis and proposal are welcome.
 
--- Shuah
 
