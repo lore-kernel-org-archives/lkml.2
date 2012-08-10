@@ -1,123 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2HJXIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 19:08:00 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42567 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab2HJXH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 19:07:58 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Jesper Juhl'" <jj@chaosbits.net>
-Cc: <linux-kernel@vger.kernel.org>, <ap@solarrain.com>
-References: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com> <alpine.LNX.2.00.1208101948590.17673@swampdragon.chaosbits.net> <CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
-In-Reply-To: <CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
-Subject: RE: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
-Date: Fri, 10 Aug 2012 19:07:56 -0400
-Message-ID: <0de101cd774c$fb2afa10$f180ee30$@lucidpixels.com>
+	id S1759801Ab2HJXIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 19:08:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13690 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756193Ab2HJXIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 19:08:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,748,1336374000"; 
+   d="scan'208";a="197229877"
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] HWPOISON: fix action_result() to print out dirty/clean
+References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1344634913-13681-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Fri, 10 Aug 2012 16:08:10 -0700
+In-Reply-To: <1344634913-13681-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	(Naoya Horiguchi's message of "Fri, 10 Aug 2012 17:41:51 -0400")
+Message-ID: <m2ehnecplx.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIftz6uMAriW63B7/XW/GnSvLFMLQJlqoDvAn+gxOmWh/9L8A==
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-
------Original Message-----
-From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
-Sent: Friday, August 10, 2012 5:46 PM
-To: Jesper Juhl
-Cc: linux-kernel@vger.kernel.org; ap@solarrain.com
-Subject: Re: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
-
-On Fri, Aug 10, 2012 at 1:53 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Fri, 10 Aug 2012, Justin Piszcz wrote:
+> action_result() fails to print out "dirty" even if an error occurred on a
+> dirty pagecache, because when we check PageDirty in action_result() it was
+> cleared after page isolation even if it's dirty before error handling. This
+> can break some applications that monitor this message, so should be fixed.
 >
->> Hello,
->>
->> Motherboard: Supermicro X8DTH-6F
->> Distro: Debian Testing x86_64
->>
->> >From 3.4 -> 3.5.1 on x86_64 make oldconfig and a few minor changes and
-the
->> machine attempts to boot but hangs at the filesystem mounting part of the
->> boot process.
+> There are several callers of action_result() except page_action(), but
+> either of them are not for LRU pages but for free pages or kernel pages,
+> so we don't have to consider dirty or not for them.
 
-Hi,
+Looks good
 
-Found the root cause, the 3.5.1 kernel cannot mount my ext4 filesystem
-(60TB).
-
-The 3.4 kernel works fine.
-
-This is proven by commenting out the filesystem in /etc/fstab with
-3.5.1, and all is OK.
-
---
-
-Hi again,
-
-I tested with linux-3.6-rc1:
-
-The same problem, here is what I get from the strace:
-
-irectory)
-4434  readlink("/dev", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
-4434  readlink("/dev/sda1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid
-argument)
-4434  readlink("/r1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
-4434  getuid()                          = 0
-4434  geteuid()                         = 0
-4434  getgid()                          = 0
-4434  getegid()                         = 0
-4434  prctl(PR_GET_DUMPABLE)            = 1
-4434  lstat("/etc/mtab", {st_mode=S_IFLNK|0777, st_size=12, ...}) = 0
-4434  getuid()                          = 0
-4434  geteuid()                         = 0
-4434  getgid()                          = 0
-4434  getegid()                         = 0
-4434  prctl(PR_GET_DUMPABLE)            = 1
-4434  stat("/run", {st_mode=S_IFDIR|0755, st_size=820, ...}) = 0
-4434  lstat("/run/mount/utab", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-4434  open("/run/mount/utab", O_RDWR|O_CREAT, 0644) = 3
-4434  close(3)                          = 0
-4434  mount("/dev/sda1", "/r1", "ext4", MS_MGC_VAL|MS_NOATIME, NULL
-
---
-
-(w/ 3.6-rc1) 
-
-[   89.868843] mount           R  running task        0  4434   4433
-0x00000009
-[   89.868847]  ffff880c246b7b68 ffffffff816c9279 ffff880c246b7aa8
-ffff880c246b7fd8
-[   89.868851]  ffff880c246b7fd8 0000000000004000 ffff88062720cdb0
-ffff880c246862d0
-[   89.868855]  00000000000116c0 ffff880623a863c0 ffff880623a863c0
-00000000ffffffff
-[   89.868855] Call Trace:
-[   89.868858]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
-[   89.868860]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
-[   89.868864]  [<ffffffff8114a729>] ? ext4_get_group_desc+0x49/0xb0
-[   89.868868]  [<ffffffff81161d41>] ? ext4_calculate_overhead+0x131/0x3e0
-[   89.868871]  [<ffffffff81163a3b>] ? ext4_fill_super+0x1a4b/0x28d0
-[   89.868875]  [<ffffffff810cc301>] ? mount_bdev+0x1a1/0x1e0
-[   89.868877]  [<ffffffff81161ff0>] ? ext4_calculate_overhead+0x3e0/0x3e0
-[   89.868880]  [<ffffffff8115dd00>] ? ext4_mount+0x10/0x20
-[   89.868882]  [<ffffffff810cc55b>] ? mount_fs+0x1b/0xd0
-[   89.868885]  [<ffffffff810e57af>] ? vfs_kern_mount+0x6f/0x110
-[   89.868888]  [<ffffffff810e58cf>] ? do_kern_mount+0x4f/0x100
-[   89.868890]  [<ffffffff810e6dae>] ? do_mount+0x2fe/0x8a0
-[   89.868894]  [<ffffffff8109c0a3>] ? strndup_user+0x53/0x70
-[   89.868896]  [<ffffffff810e73e0>] ? sys_mount+0x90/0xe0
-[   89.868899]  [<ffffffff816cafa1>] ? tracesys+0xd4/0xd9
-
-Justin.
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 
 
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
