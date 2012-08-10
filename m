@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab2HJVuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 17:50:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58014 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370Ab2HJVuK (ORCPT
+	id S1759880Ab2HJV5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 17:57:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21470 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758879Ab2HJV5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 17:50:10 -0400
-MIME-Version: 1.0
-Date: Fri, 10 Aug 2012 23:50:07 +0200
-Message-ID: <CAPNxggbrC7cKXYTKk=ivDL2ZT2w+5G4PACH1YT7iK-ZNk7twRQ@mail.gmail.com>
-Subject: Failure while make modules_install if kmod was compiled with
- --with-rootprefix set
-From: "Arokux B." <arokux@gmail.com>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 10 Aug 2012 17:57:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6799"; a="224141452"
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: marc.zyngier@arm.com, Russell King <linux@arm.linux.org.uk>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 1/2] ARM: local timers: Unmask interrupt before new TVAL is set
+Date: Fri, 10 Aug 2012 14:57:34 -0700
+Message-Id: <1344635854-5033-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Marek, dear all,
+Level triggered interrupt is deasserted when a new TVAL is written
+only when the interrupt is unmasked. Make sure that the interrupt
+is unmasked in CTL register before TVAL is written.
+If this order is not followed, there are chances that on some
+hardware you would not receive any timer interrupts.
 
-I have detected a hidden failure while building the kernel. If
---with-rootprefix is set for kmod, then depmod will look for modules
-installed at the location $ROOTPREFIX/lib/modules/<version>. The
-kernel build system does not know anything about $ROOTPREFIX, and so
-the wrong directory is created for the test if the hack is needed for
-an older versin of depmod at scripts/depmod.sh:19 mkdir -p
-"$tmp_dir/lib/modules/$KERNELRELEASE". That is why "$DEPMOD" -b
-"$tmp_dir" $KERNELRELEASE will always fail and kernel build system
-will think that the hack is always needed and depmod_hack_needed will
-always be true. After that the created symlink is wrong since it also
-does not contain $ROOTPREFIX, which depmod will preprend. That is why
-depmod will fail.
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/kernel/arch_timer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-To cure the problem an additional variable $MOD_ROOT_PREFIX can be
-introduced. With the help of this variable the paths in the
-scripts/depmod.sh are parametrized. This variable should be set to the
-same value which was passed to --with-rootprefix while compilation of
-kmod. Example: if  --with-rootprefix is set to /usr and the modules
-should be installed at the location /home/john, then the the following
-make call should be issued: make INSTALL_MOD_PATH=/home/john
-$MOD_ROOT_PREFIX=/usr. After that the modules will be installed at
-/home/john/usr. However should be also added to other places where the
-actuall installing takes place, and so I do not this this solution is
-optimal, nevertheless, please find the patch for depmod.sh at the end
-of this e-mail.
+diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+index dd58035..1d0d9df 100644
+--- a/arch/arm/kernel/arch_timer.c
++++ b/arch/arm/kernel/arch_timer.c
+@@ -126,8 +126,8 @@ static int arch_timer_set_next_event(unsigned long evt,
+ 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
+ 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
+ 
+-	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
+ 	arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
++	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
+ 
+ 	return 0;
+ }
+-- 
+Sent by an employee of the Qualcomm Innovation Center,Inc
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-A more superior solution could be probably a new option for depmod
-which would allow an overwriting of the $ROOTPREFIX. This option can
-be used in depmod.sh then to overwrite $ROOTPREFIX with an empty
-string.
-
-I was unsure as of which solution is better if any at all and so such
-a lengthy e-mail...
-
-With kind regards,
-
-Arokux
-
-
-diff --git a/scripts/depmod.sh b/scripts/depmod.sh
-index 2ae4817..87a6e42 100755
---- a/scripts/depmod.sh
-+++ b/scripts/depmod.sh
-@@ -16,16 +16,18 @@ fi
- # numbers, so we cheat with a symlink here
- depmod_hack_needed=true
- tmp_dir=$(mktemp -d ${TMPDIR:-/tmp}/depmod.XXXXXX)
--mkdir -p "$tmp_dir/lib/modules/$KERNELRELEASE"
-+mkdir -p "$tmp_dir/$MOD_ROOT_PREFIX/lib/modules/$KERNELRELEASE"
-+"$DEPMOD" -b "$tmp_dir" $KERNELRELEASE
-+echo hello
- if "$DEPMOD" -b "$tmp_dir" $KERNELRELEASE 2>/dev/null; then
--       if test -e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep" -o \
--               -e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep.bin"; then
-+       if test -e
-"$tmp_dir/$MOD_ROOT_PREFIX/lib/modules/$KERNELRELEASE/modules.dep" -o
-\
-+               -e
-"$tmp_dir/$MOD_ROOT_PREFIX/lib/modules/$KERNELRELEASE/modules.dep.bin";
-then
-                depmod_hack_needed=false
-        fi
- fi
- rm -rf "$tmp_dir"
- if $depmod_hack_needed; then
--       symlink="$INSTALL_MOD_PATH/lib/modules/99.98.$KERNELRELEASE"
-+       symlink="$INSTALL_MOD_PATH/$MOD_ROOT_PREFIX/lib/modules/99.98.$KERNELRELEASE"
-        ln -s "$KERNELRELEASE" "$symlink"
-        KERNELRELEASE=99.98.$KERNELRELEASE
- fi
