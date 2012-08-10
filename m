@@ -1,36 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab2HJUKk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 16:10:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41086 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2HJUKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 16:10:36 -0400
-Date: Fri, 10 Aug 2012 21:15:09 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Stas Sergeev <stsp@list.ru>
-Cc: Linux kernel <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-Subject: Re: Q: how to control the TTY output queue in real time?
-Message-ID: <20120810211509.34cc723e@pyramind.ukuu.org.uk>
-In-Reply-To: <502566EB.3070304@list.ru>
-References: <50255E31.8060904@list.ru>
-	<20120810203355.224622cc@pyramind.ukuu.org.uk>
-	<502566EB.3070304@list.ru>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758306Ab2HJUPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 16:15:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18994 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753621Ab2HJUPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 16:15:53 -0400
+Message-ID: <50256BF5.7090704@redhat.com>
+Date: Fri, 10 Aug 2012 17:15:49 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Hans de Goede <hdegoede@redhat.com>
+CC: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] radio-shark: Only compile led support when CONFIG_LED_CLASS
+ is set
+References: <1344628686-10482-1-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1344628686-10482-1-git-send-email-hdegoede@redhat.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 10-08-2012 16:58, Hans de Goede escreveu:
+> Reported-by: Dadiv Rientjes <rientjes@google.com>
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> ---
+>  drivers/media/radio/radio-shark.c | 26 ++++++++++++++++++++++++--
+>  1 file changed, 24 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/radio/radio-shark.c b/drivers/media/radio/radio-shark.c
+> index c2ead23..f746ed0 100644
+> --- a/drivers/media/radio/radio-shark.c
+> +++ b/drivers/media/radio/radio-shark.c
+> @@ -27,7 +27,6 @@
+>  
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+> -#include <linux/leds.h>
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/usb.h>
+> @@ -35,6 +34,12 @@
+>  #include <media/v4l2-device.h>
+>  #include <sound/tea575x-tuner.h>
+>  
+> +#if defined(CONFIG_LEDS_CLASS) || \
+> +    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_RADIO_SHARK_MODULE))
+> +#include <linux/leds.h>
 
-> If they do quite fine with the fifo, then maybe the new
-> function will do too? Its basically a tcdrain(), just with
-> the controllable watermark I guess.
+Conditionally including headers is not a good thing.
 
-I guess providing you account the fifo, and any hardware flow control it
-would work.
+...
+>  static void usb_shark_disconnect(struct usb_interface *intf)
+>  {
+>  	struct v4l2_device *v4l2_dev = usb_get_intfdata(intf);
+>  	struct shark_device *shark = v4l2_dev_to_shark(v4l2_dev);
+> +#ifdef SHARK_USE_LEDS
+>  	int i;
+> +#endif
+>  
+>  	mutex_lock(&shark->tea.mutex);
+>  	v4l2_device_disconnect(&shark->v4l2_dev);
+>  	snd_tea575x_exit(&shark->tea);
+>  	mutex_unlock(&shark->tea.mutex);
+>  
+> +#ifdef SHARK_USE_LEDS
+>  	for (i = 0; i < NO_LEDS; i++)
+>  		led_classdev_unregister(&shark->leds[i]);
+> +#endif
+>  
+>  	v4l2_device_put(&shark->v4l2_dev);
+>  }
 
+That looks ugly. Maybe you could code it on a different way.
+
+You could be move all shark_use_leds together into the same place at
+the code, like:
+
+#if defined(CONFIG_LEDS_CLASS) || \
+    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_RADIO_SHARK_MODULE))
+
+ static void shark_led_set_blue(struct led_classdev *led_cdev,
+...
+ 		.brightness_set = shark_led_set_red,
+ 	},
+ };
+
+static void shark_led_disconnect(...)
+{
+...
+}
+
+static void shark_led_release(...)
+{
+...
+}
+
+static void shark_led_register(...)
+{
+...
+}
+#else
+static inline void shark_led_disconnect(...) { };
+static inline void shark_led_release(...) { };
+static inline void shark_led_register(...)
+{
+	printk(KERN_WARN "radio-shark: CONFIG_LED_CLASS not enabled. LEDs won't work\n");
+}
+#endif
+
+And let the rest of the code to call the shark_led functions, as if LEDS aren't enabled,
+the function stubs won't produce any code (well, except for the above error notice).
+
+The same comment also applies to patch 2.
+
+Regards,
+Mauro
