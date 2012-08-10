@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab2HJEbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 00:31:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58466 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab2HJEa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 00:30:56 -0400
+	id S1752614Ab2HJEiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 00:38:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16871 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab2HJEhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 00:37:51 -0400
+X-IronPort-AV: E=Sophos;i="4.77,744,1336320000"; 
+   d="scan'208";a="5595414"
+Message-ID: <50249098.1030704@cn.fujitsu.com>
+Date: Fri, 10 Aug 2012 12:39:52 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
-References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
-	<CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com>
-	<CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
-Date: Fri, 10 Aug 2012 10:00:55 +0530
-Message-ID: <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in gdm_wimax_event_init
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Ben Chan <benchan@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
+To: Jiang Liu <jiang.liu@huawei.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [RFC PATCH v2 10/16] ACPIHP: system device hotplug driver skeleton
+References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344082443-4608-11-git-send-email-jiang.liu@huawei.com> <502362E3.8010901@cn.fujitsu.com> <50236978.70208@huawei.com> <502377C0.70401@cn.fujitsu.com> <50238496.1000504@huawei.com>
+In-Reply-To: <50238496.1000504@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/10 12:38:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/10 12:38:08,
+	Serialize complete at 2012/08/10 12:38:08
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 25, 2012 at 7:23 PM, Ben Chan <benchan@chromium.org> wrote:
-> Hi Devendra,
->
-> Thanks for cleaning up the driver.  If I understand the code
-> correctly, the original author wanted to initialize wm_event once and
-> reuse it for multiple devices, and thus reference counted it with
-> ref_cnt.
->
-> For instance, each time gdm_usb_probe() is called, it may call
-> register_wimax_device() / gdm_wimax_event_init(). wm_event is
-> initialized the first time when wm_event.ref_cnt == 0 (alternatively,
-> the code could check !wm_event.sock). Subsequent calls to
-> gdm_wimax_event_init() will simply increase the ref count. Similarly,
-> gdm_usb_disconnect() calls unregister_wimax_device() /
-> gdm_wimax_event_exit(), which decreases the ref count and disposes
-> wm_event when ref_cnt becomes zero.
->
-> The code change in commit 8df858ea76b76dde9a39d4edd9aaded983582cfe
-> only prevents ref_cnt from increasing beyond one. So the code no
-> longer work when there are multiple devices (i.e. wm_event could be
-> disposed even when there is an active device).
->
-> Thanks,
-> Ben
->
->
-Sorry Ben, I didn't saw the mail for a long time,
 
-Thanks a lot for the long explanation, i will keep in mind of these
-problems, and also i think your patch is ok.
 
-Thanks,
-Devendra.
+On 08/09/2012 05:36 PM, Jiang Liu wrote:
+>> And I just tried it some more times. It just hung up, but dmesg had no output.
+>> Like this:
+>>
+>> # modprobe acpihp_enum
+>> (OK, and sysfs interfaces have been created)
+>> # modprobe acpihp_drv
+>> (hang up)
+>>
+>> # dmesg
+>> (nothing)
+>>
+>> The "modprobe acpihp_drv" process's call trace shows that it hung at the following function:
+>> #0  0x00000032836aab80 in __nanosleep_nocancel () from /lib64/libc.so.6
+>> #1  0x00000032836deb64 in usleep () from /lib64/libc.so.6
+>> ......
+>>
+>> I have tried several times and I cannot reproduce the situation I just said.
+> You can reproduce it by loading acpihp_drv without acpihp_enum driver, I guess.
+> The acpihp_drv module_init() should call acpihp_register_class() to initialize the core.
+> 
+Hi~
+
+True. Thanks for your comments. :)
+Since I'm new in PCI related area, if you don't mind, would you please give me some more advice about the following problem ?
+Thanks. :)
+
+"modprobe acpihp_drv" command failed, but acpihp_drv was loaded successfully, and always in use.
+It cannot be removed. Is it a problem ?
+
+[root@DP tangchen]# lsmod | grep acpi
+acpi_cpufreq            9542  0 
+freq_table              5030  2 cpufreq_ondemand,acpi_cpufreq
+mperf                   1391  1 acpi_cpufreq
+acpi_memhotplug         4414  0 
+
+[root@DP tangchen]# modprobe acpihp_drv
+Killed								(NOTE: The NULL pointer problem happened here.)
+
+[root@DP tangchen]# echo $?
+137
+
+[root@DP tangchen]# lsmod | grep acpi
+acpihp_drv             24925  1 				(NOTE: Here, the module is loaded.)
+acpi_cpufreq            9542  0 
+freq_table              5030  2 cpufreq_ondemand,acpi_cpufreq
+mperf                   1391  1 acpi_cpufreq
+acpi_memhotplug         4414  0 
+
+[root@DP tangchen]# rmmod acpihp_drv
+ERROR: Module acpihp_drv is in use
+
+
+The core.c file has been compiled into kernel because of my configuration "CONFIG_ACPI_HOTPLUG=y".
+As my colleague said, in this case, there is no dependency between acpihp_enum and acpihp_drv.
+So I think, do we need to compile core.c into acpihp_enum module, or simply check if acpihp_enum 
+has been loaded in acpihp_drv_init() ?
+I am not sure if it is a good idea to move acpihp_slot_class definition and all related API to 
+acpihp_enum module.
+
+Thanks again for your comments and patient. :)
+
+
+-- 
+Best Regards,
+Tang chen
