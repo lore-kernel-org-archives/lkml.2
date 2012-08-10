@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759055Ab2HJBkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 21:40:49 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:58597
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757957Ab2HJBkr (ORCPT
+	id S1759138Ab2HJBlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 21:41:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15509 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab2HJBl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 21:40:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1202hzzz2dh87h2a8h668h839h944hd25he96hf0ah107ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 10 Aug 2012 09:41:22 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Matt Sealey <matt@genesi-usa.com>
-CC: Fabio Estevam <festevam@gmail.com>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device
- tree
-Message-ID: <20120810014119.GD19617@S2101-09.ap.freescale.net>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
- <20120808151555.GE14718@S2101-09.ap.freescale.net>
- <CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
- <CAOMZO5DOEfV4wTSNW8ABaUhGwa_KG3Bkt0o-rs8k-cZk4P-=+A@mail.gmail.com>
- <CAKGA1bkOo=En2P18FaBpq_KAZ88kisikXhNTabvnDknQ-EwFjA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAKGA1bkOo=En2P18FaBpq_KAZ88kisikXhNTabvnDknQ-EwFjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Thu, 9 Aug 2012 21:41:29 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=3rytjJLIguwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=2Mck7MtwRj-EGOkNCYAA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344562886.6935.93.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracepoints: Move the work out of line from
+ hotpath sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Avi Kivity <avi@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 09 Aug 2012 21:41:26 -0400
+In-Reply-To: <50244D9A.2070000@gmail.com>
+References: <1344544823.6935.82.camel@gandalf.stny.rr.com>
+	  <20120809205053.GB15109@Krystal>
+	 <1344551131.6935.90.camel@gandalf.stny.rr.com>
+	 <502444CC.8030906@linux.intel.com> <50244D9A.2070000@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 09:29:39AM -0500, Matt Sealey wrote:
-> The reason the new kernel depends on the new U-Boot is we're trying to
-> do all pinmux configuration in U-Boot (and we do in-house, and it
-> works). No pinctrl stuff in the kernel or device tree is required at
-> this point. The Old Kernel will remux a few things redundantly or
-> change drive strengths or whatever or add hysteresis to the UART port
-> which is not board-burning but is not really necessary, but it will
-> work. The new kernel will just be able to do what it does out of the
-> box, which is how it should be (hence why I object to adding pinctrl
-> setup...)
+On Thu, 2012-08-09 at 16:54 -0700, David Daney wrote:
+> On 08/09/2012 04:16 PM, H. Peter Anvin wrote:
+> > On 08/09/2012 03:25 PM, Steven Rostedt wrote:
+> >>>
+> >>> It might be better to improve gcc to move really cold branches out of
+> >>> line (really, really far away), and use the compiler to do this, rather
+> >>> than to use an extra indirection that adds bloat and complexity to the
+> >>> kernel.
 > 
-Then I will have to refuse to accept your patch, because I'm working on
-a series to remove pinctrl_provide_dummies() from imx51_dt_init().
+> Oh, you mean like: -freorder-blocks-and-partition
 
--- 
-Regards,
-Shawn
+Actually, what would be really nice is to place a block in a section of
+your choice. Something like:
+
+
+	if (unlikely(x)) __attribute__((section(".unlikely"))) {
+		/* code here will be in the ".unlikely" section */
+	}
+
+-- Steve
+
 
