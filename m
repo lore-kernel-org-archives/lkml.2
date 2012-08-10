@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760283Ab2HJW1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 18:27:10 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46369 "EHLO e1.ny.us.ibm.com"
+	id S1760243Ab2HJWep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 18:34:45 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:59358 "EHLO minas.ics.muni.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760185Ab2HJWXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 18:23:31 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Matt Hellsley <matthltc@us.ibm.com>,
-        David Hansen <dave@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 04/16] perf utils: remove unused function map__objdump_2ip
-Date: Fri, 10 Aug 2012 15:22:50 -0700
-Message-Id: <1344637382-22789-5-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081022-6078-0000-0000-00000E20A669
+	id S1751620Ab2HJWen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 18:34:43 -0400
+Date: Sat, 11 Aug 2012 00:34:26 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Roland Dreier <roland@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: mellanox mlx4_core and SR-IOV
+Message-ID: <20120810223426.GV11089@ics.muni.cz>
+References: <20120801133835.GH5470@ics.muni.cz>
+ <CAG4TOxONLJnBaY7N5x7Kfi+dwCb507QPqX9s_Wuef10+RzM=AQ@mail.gmail.com>
+ <CAE9FiQUSFeBpGaFByOfENUa8qg7t89WTiUann8=4ezT7s2qmzw@mail.gmail.com>
+ <20120801205640.GN5470@ics.muni.cz>
+ <CAE9FiQWmgyirjjCwn54PkAsfvWxZSY5RhRVDkhhbK7E0NPzqaw@mail.gmail.com>
+ <20120801220802.GP5470@ics.muni.cz>
+ <CAE9FiQW84gjtX=_4guCBgcAJmkAGQ5ooFoj7C_29K7QK0s9qwA@mail.gmail.com>
+ <20120803083344.GF25979@ics.muni.cz>
+ <50255849.6070307@genband.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50255849.6070307@genband.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Muni-Spam-TestIP: 94.112.253.31
+X-Muni-Envelope-From: xhejtman@ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Sat, 11 Aug 2012 00:34:33 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-map__objdump_2ip was introduced in:
-ee11b90b12 perf top: Fix annotate for userspace
+On Fri, Aug 10, 2012 at 12:51:53PM -0600, Chris Friesen wrote:
+> On 08/03/2012 02:33 AM, Lukas Hejtmanek wrote:
+> >I also tried OFED package from Mellanox which seems to have better SR-IOV
+> >support (at least mlx4_ib does not complain that SR-IOV is not supported).
+> >However, it does not work when SR-IOV enabled:
+> 
+> Last I heard they were not officially providing support for SR-IOV.
+> Has anyone heard otherwise from the Mellanox folks?
 
-And it's last user removed in:
-36532461a0 perf top: Ditch private annotation code, share perf annotate's
+they speak about it for 2 years:
+http://www.openfabrics.org/archives/spring2010sonoma/Monday/1.30%20Liran%20Liss%20I%3FO%20Virtualization/sriov_liss.ppt
 
-Remove it.
+these are modified OFED drivers which seem to contain SR-IOV code also for IB
+layer.
+http://www.mellanox.com/content/pages.php?pg=products_dyn&product_family=26&menu_section=34#tab-three
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- tools/perf/util/map.c | 8 --------
- tools/perf/util/map.h | 1 -
- 2 files changed, 9 deletions(-)
-
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 287cb34..7d37159 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -262,14 +262,6 @@ u64 map__rip_2objdump(struct map *map, u64 rip)
- 	return addr;
- }
- 
--u64 map__objdump_2ip(struct map *map, u64 addr)
--{
--	u64 ip = map->dso->adjust_symbols ?
--			addr :
--			map->unmap_ip(map, addr);	/* RIP -> IP */
--	return ip;
--}
--
- void map_groups__init(struct map_groups *mg)
- {
- 	int i;
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 1e183d1..6c38d9e 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -104,7 +104,6 @@ static inline u64 identity__map_ip(struct map *map __used, u64 ip)
- 
- /* rip/ip <-> addr suitable for passing to `objdump --start-address=` */
- u64 map__rip_2objdump(struct map *map, u64 rip);
--u64 map__objdump_2ip(struct map *map, u64 addr);
- 
- struct symbol;
- 
 -- 
-1.7.11.3
-
+Luká¹ Hejtmánek
