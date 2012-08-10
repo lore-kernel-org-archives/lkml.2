@@ -1,109 +1,422 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2HJEiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 00:38:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16871 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab2HJEhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 00:37:51 -0400
-X-IronPort-AV: E=Sophos;i="4.77,744,1336320000"; 
-   d="scan'208";a="5595414"
-Message-ID: <50249098.1030704@cn.fujitsu.com>
-Date: Fri, 10 Aug 2012 12:39:52 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@huawei.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [RFC PATCH v2 10/16] ACPIHP: system device hotplug driver skeleton
-References: <1344082443-4608-1-git-send-email-jiang.liu@huawei.com> <1344082443-4608-11-git-send-email-jiang.liu@huawei.com> <502362E3.8010901@cn.fujitsu.com> <50236978.70208@huawei.com> <502377C0.70401@cn.fujitsu.com> <50238496.1000504@huawei.com>
-In-Reply-To: <50238496.1000504@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/10 12:38:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/10 12:38:08,
-	Serialize complete at 2012/08/10 12:38:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752688Ab2HJEkD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 00:40:03 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35461 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab2HJEj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 00:39:59 -0400
+X-AuditID: cbfee60d-b7f526d000004e6b-e1-5024909c86e7
+Date: Fri, 10 Aug 2012 04:39:56 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] [PATCH V4]Extcon: adc_jack: adc-jack driver to support 3.5
+ pi or simliar devices
+To: anish kumar <anish198519851985@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        ANISH KUMAR <anish.singh@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120810043657810@myungjoo.ham
+Msgkey: 20120810043657810@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120810043657810@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <26154270.13971344573594322.JavaMail.weblogic@epml26>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t/t6bpzJqgEGMy+rmFxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyLn+ZzVrQU1tx5vhDxgbGN5VdjJwcQgLqEouWnGQDsSUETCQu
+	b9jEDGGLSVy4tx4ozgVUM59R4tvhFWBFLAKqEof3rwayOTjYBPQkZn5OBjGFBVIlVt0LAqkQ
+	EciReHV9LwtIK7PAJiaJ1avXsULsUpJYs+8VC4jNKyAocXLmExaIXaoS50+fZ4KIq0m8mHmc
+	ESIuITFr+gVWCJtXYkb7U6h6OYlpX9dA3SktcX7WBkaYmxd/fwwV55c4dnsHE8htIL1P7gfD
+	jNm9+QvUuwISU88cZIQo0ZL4+YQTIswnsWbhWxaYKbtOLWeGab2/ZS7YlcwCihJTuh+yQ9ha
+	El9+7GND9xWvgKPE7sNfmSYwys1CkpqFpH0WknZkNQsYWVYxiqYWJBcUJ6WnGusVJ+YWl+al
+	6yXn525iBMf4M94djHMbLA4xCnAwKvHwPjBSCRBiTSwrrsw9xCjBwawkwpvyQjlAiDclsbIq
+	tSg/vqg0J7X4EKM0B4uSOO8Xr6/+QgLpiSWp2ampBalFMFkmDk6pBkahKcFfa/fu89yib7K5
+	Wijh2IuYRIc0ydqF7x8J6mwJbX7y1fJgvuK6UG6r440LWwK/rayrCzr6bzrrzRMCdsWGHdpf
+	LxSun73uv89Rk+Waqbe3PT6hdeGlUtTx1yefnppd0aPEX3Yht3qrd4WsgGJUT/gB8de/b8qy
+	bBWc1GY2k4v5f91nU3clluKMREMt5qLiRABCP1ZW7QIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7A4e998031293
 
-
-
-On 08/09/2012 05:36 PM, Jiang Liu wrote:
->> And I just tried it some more times. It just hung up, but dmesg had no output.
->> Like this:
->>
->> # modprobe acpihp_enum
->> (OK, and sysfs interfaces have been created)
->> # modprobe acpihp_drv
->> (hang up)
->>
->> # dmesg
->> (nothing)
->>
->> The "modprobe acpihp_drv" process's call trace shows that it hung at the following function:
->> #0  0x00000032836aab80 in __nanosleep_nocancel () from /lib64/libc.so.6
->> #1  0x00000032836deb64 in usleep () from /lib64/libc.so.6
->> ......
->>
->> I have tried several times and I cannot reproduce the situation I just said.
-> You can reproduce it by loading acpihp_drv without acpihp_enum driver, I guess.
-> The acpihp_drv module_init() should call acpihp_register_class() to initialize the core.
+> From: anish kumar <anish198519851985@gmail.com>
 > 
-Hi~
+> External connector devices that decides connection information based on
+> ADC values may use adc-jack device driver. The user simply needs to
+> provide a table of adc range and connection states. Then, extcon
+> framework will automatically notify others.
 
-True. Thanks for your comments. :)
-Since I'm new in PCI related area, if you don't mind, would you please give me some more advice about the following problem ?
-Thanks. :)
-
-"modprobe acpihp_drv" command failed, but acpihp_drv was loaded successfully, and always in use.
-It cannot be removed. Is it a problem ?
-
-[root@DP tangchen]# lsmod | grep acpi
-acpi_cpufreq            9542  0 
-freq_table              5030  2 cpufreq_ondemand,acpi_cpufreq
-mperf                   1391  1 acpi_cpufreq
-acpi_memhotplug         4414  0 
-
-[root@DP tangchen]# modprobe acpihp_drv
-Killed								(NOTE: The NULL pointer problem happened here.)
-
-[root@DP tangchen]# echo $?
-137
-
-[root@DP tangchen]# lsmod | grep acpi
-acpihp_drv             24925  1 				(NOTE: Here, the module is loaded.)
-acpi_cpufreq            9542  0 
-freq_table              5030  2 cpufreq_ondemand,acpi_cpufreq
-mperf                   1391  1 acpi_cpufreq
-acpi_memhotplug         4414  0 
-
-[root@DP tangchen]# rmmod acpihp_drv
-ERROR: Module acpihp_drv is in use
+1. Missing header: #include<linux/err.h>
+2. Missing dependency to IIO. (please add IIO dependency at Kconfig)
 
 
-The core.c file has been compiled into kernel because of my configuration "CONFIG_ACPI_HOTPLUG=y".
-As my colleague said, in this case, there is no dependency between acpihp_enum and acpihp_drv.
-So I think, do we need to compile core.c into acpihp_enum module, or simply check if acpihp_enum 
-has been loaded in acpihp_drv_init() ?
-I am not sure if it is a good idea to move acpihp_slot_class definition and all related API to 
-acpihp_enum module.
+Cheers!
+MyungJoo
 
-Thanks again for your comments and patient. :)
-
-
--- 
-Best Regards,
-Tang chen
+> 
+> Changes in V1:
+> added Lars-Peter Clausen suggested changes:
+> Using macros to get rid of boiler plate code such as devm_kzalloc
+> and module_platform_driver.Other changes suggested are related to
+> coding guidelines.
+> 
+> Changes in V2:
+> Removed some unnecessary checks and changed the way we are un-regitering
+> extcon and freeing the irq while removing.
+> 
+> Changes in V3:
+> Renamed the files to comply with extcon naming.
+> 
+> Changes in this version:
+> Added the cancel_work_sync during removing of driver.
+> 
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> Signed-off-by: anish kumar <anish.singh@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/extcon/Kconfig                 |    5 +
+>  drivers/extcon/Makefile                |    1 +
+>  drivers/extcon/extcon-adc-jack.c       |  194 ++++++++++++++++++++++++++++++++
+>  include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
+>  4 files changed, 273 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/extcon/extcon-adc-jack.c
+>  create mode 100644 include/linux/extcon/extcon-adc-jack.h
+> 
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> index e175c8e..596e277 100644
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -21,6 +21,11 @@ config EXTCON_GPIO
+>  	  Say Y here to enable GPIO based extcon support. Note that GPIO
+>  	  extcon supports single state per extcon instance.
+>  
+> +config EXTCON_ADC_JACK
+> +        tristate "ADC Jack extcon support"
+> +        help
+> +          Say Y here to enable extcon device driver based on ADC values.
+> +
+>  config EXTCON_MAX77693
+>  	tristate "MAX77693 EXTCON Support"
+>  	depends on MFD_MAX77693
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 88961b3..bc7111e 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -4,6 +4,7 @@
+>  
+>  obj-$(CONFIG_EXTCON)		+= extcon_class.o
+>  obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
+> +obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
+>  obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+>  obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>  obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+> diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+> new file mode 100644
+> index 0000000..cfc8c59
+> --- /dev/null
+> +++ b/drivers/extcon/extcon-adc-jack.c
+> @@ -0,0 +1,194 @@
+> +/*
+> + * drivers/extcon/extcon-adc-jack.c
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/iio/consumer.h>
+> +#include <linux/extcon/extcon-adc-jack.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_data - internal data for adc_jack device driver
+> + * @edev        - extcon device.
+> + * @cable_names - list of supported cables.
+> + * @num_cables  - size of cable_names.
+> + * @adc_condition       - list of adc value conditions.
+> + * @num_condition       - size of adc_condition.
+> + * @irq         - irq number of attach/detach event (0 if not exist).
+> + * @handling_delay      - interrupt handler will schedule extcon event
+> + *                      handling at handling_delay jiffies.
+> + * @handler     - extcon event handler called by interrupt handler.
+> + * @chan	- iio channel being queried.
+> + */
+> +struct adc_jack_data {
+> +	struct extcon_dev edev;
+> +
+> +	const char **cable_names;
+> +	int num_cables;
+> +	struct adc_jack_cond *adc_condition;
+> +	int num_conditions;
+> +
+> +	int irq;
+> +	unsigned long handling_delay; /* in jiffies */
+> +	struct delayed_work handler;
+> +
+> +	struct iio_channel *chan;
+> +};
+> +
+> +static void adc_jack_handler(struct work_struct *work)
+> +{
+> +	struct adc_jack_data *data = container_of(to_delayed_work(work),
+> +						  struct adc_jack_data,
+> +						  handler);
+> +	u32 state = 0;
+> +	int ret, adc_val;
+> +	int i;
+> +
+> +	ret = iio_read_channel_raw(data->chan, &adc_val);
+> +	if (ret < 0) {
+> +		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
+> +		return;
+> +	}
+> +
+> +	/* Get state from adc value with adc_condition */
+> +	for (i = 0; i < data->num_conditions; i++) {
+> +		struct adc_jack_cond *def = &data->adc_condition[i];
+> +		if (!def->state)
+> +			break;
+> +		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
+> +			state = def->state;
+> +			break;
+> +		}
+> +	}
+> +	/* if no def has met, it means state = 0 (no cables attached) */
+> +
+> +	extcon_set_state(&data->edev, state);
+> +}
+> +
+> +static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
+> +{
+> +	struct adc_jack_data *data = _data;
+> +
+> +	schedule_delayed_work(&data->handler, data->handling_delay);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit adc_jack_probe(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data;
+> +	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
+> +	int i, err = 0;
+> +
+> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	data->edev.name = pdata->name;
+> +
+> +	if (pdata->cable_names)
+> +		data->edev.supported_cable = pdata->cable_names;
+> +	else
+> +		data->edev.supported_cable = extcon_cable_name;
+> +
+> +	/* Check the length of array and set num_cables */
+> +	for (i = 0; data->edev.supported_cable[i]; i++)
+> +		;
+> +	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
+> +			i - 1);
+> +		goto out;
+> +	}
+> +	data->num_cables = i;
+> +
+> +	if (!pdata->adc_condition ||
+> +	    !pdata->adc_condition[0].state) {
+> +		err = -EINVAL;
+> +		dev_err(&pdev->dev, "error: adc_condition not defined.\n");
+> +		goto out;
+> +	}
+> +	data->adc_condition = pdata->adc_condition;
+> +
+> +	/* Check the length of array and set num_conditions */
+> +	for (i = 0; data->adc_condition[i].state; i++)
+> +		;
+> +	data->num_conditions = i;
+> +
+> +	data->chan = iio_channel_get(dev_name(&pdev->dev),
+> +						pdata->consumer_channel);
+> +	if (IS_ERR(data->chan)) {
+> +		err = PTR_ERR(data->chan);
+> +		goto out;
+> +	}
+> +
+> +	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
+> +
+> +	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
+> +
+> +	platform_set_drvdata(pdev, data);
+> +
+> +	err = extcon_dev_register(&data->edev, &pdev->dev);
+> +	if (err)
+> +		goto out;
+> +
+> +	data->irq = platform_get_irq(pdev, 0);
+> +	if (!data->irq) {
+> +		dev_err(&pdev->dev, "platform_get_irq failed\n");
+> +		err = -ENODEV;
+> +		goto err_irq;
+> +	}
+> +
+> +	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
+> +				pdata->irq_flags, pdata->name, data);
+> +
+> +	if (err) {
+> +		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
+> +		err = -EINVAL;
+> +		goto err_irq;
+> +	}
+> +
+> +	goto out;
+> +
+> +err_irq:
+> +	extcon_dev_unregister(&data->edev);
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __devexit adc_jack_remove(struct platform_device *pdev)
+> +{
+> +	struct adc_jack_data *data = platform_get_drvdata(pdev);
+> +
+> +	free_irq(data->irq, data);
+> +	cancel_work_sync(&data->handler.work);
+> +	extcon_dev_unregister(&data->edev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver adc_jack_driver = {
+> +	.probe		= adc_jack_probe,
+> +	.remove		= __devexit_p(adc_jack_remove),
+> +	.driver		= {
+> +		.name	= "adc-jack",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +module_platform_driver(adc_jack_driver);
+> diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
+> new file mode 100644
+> index 0000000..c350615
+> --- /dev/null
+> +++ b/include/linux/extcon/extcon-adc-jack.h
+> @@ -0,0 +1,73 @@
+> +/*
+> + * include/linux/extcon/extcon-adc-jack.h
+> + *
+> + * Analog Jack extcon driver with ADC-based detection capability.
+> + *
+> + * Copyright (C) 2012 Samsung Electronics
+> + * MyungJoo Ham <myungjoo.ham@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#ifndef _EXTCON_ADC_JACK_H_
+> +#define _EXTCON_ADC_JACK_H_ __FILE__
+> +
+> +#include <linux/module.h>
+> +#include <linux/extcon.h>
+> +
+> +/**
+> + * struct adc_jack_cond - condition to use an extcon state
+> + * @state	- the corresponding extcon state (if 0, this struct denotes
+> + *		the last adc_jack_cond element among the array)
+> + * @min_adc	- min adc value for this condition
+> + * @max_adc	- max adc value for this condition
+> + *
+> + * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
+> + * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
+> + * 1 are attached (1<<0 | 1<<1 == 0x3)
+> + *
+> + * Note that you don't need to describe condition for "no cable attached"
+> + * because when no adc_jack_cond is met, state = 0 is automatically chosen.
+> + */
+> +struct adc_jack_cond {
+> +	u32 state; /* extcon state value. 0 if invalid */
+> +	u32 min_adc;
+> +	u32 max_adc;
+> +};
+> +
+> +/**
+> + * struct adc_jack_pdata - platform data for adc jack device.
+> + * @name	- name of the extcon device. If null, "adc-jack" is used.
+> + * @consumer_channel - Unique name to identify the channel on the consumer
+> + *                   side. This typically describes the channels use within
+> + *                   the consumer. E.g. 'battery_voltage'
+> + * @cable_names	- array of cable names ending with null. If the array itself
+> + *		if null, extcon standard cable names are chosen.
+> + * @adc_contition	- array of struct adc_jack_cond conditions ending
+> + *			with .state = 0 entry. This describes how to decode
+> + *			adc values into extcon state.
+> + * @irq_flags	- irq flags used for the @irq
+> + * @handling_delay_ms	- in some devices, we need to read ADC value some
+> + *			milli-seconds after the interrupt occurs. You may
+> + *			describe such delays with @handling_delay_ms, which
+> + *			is rounded-off by jiffies.
+> + */
+> +struct adc_jack_pdata {
+> +	const char *name;
+> +	const char *consumer_channel;
+> +	/*
+> +	 * NULL if standard extcon names are used.
+> +	 * The last entry should be NULL
+> +	 */
+> +	const char **cable_names;
+> +	/* The last entry's state should be 0 */
+> +	struct adc_jack_cond *adc_condition;
+> +
+> +	unsigned long irq_flags;
+> +	unsigned long handling_delay_ms; /* in ms */
+> +};
+> +
+> +#endif /* _EXTCON_ADC_JACK_H */
+> -- 
+> 1.7.1
+> 
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
