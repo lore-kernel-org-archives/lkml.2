@@ -1,163 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab2HJN7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:59:16 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:39616
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754871Ab2HJN7P (ORCPT
+	id S1757256Ab2HJODf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 10:03:35 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:8166
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756320Ab2HJODe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:59:15 -0400
-X-IronPort-AV: E=Sophos;i="4.77,745,1336341600"; 
-   d="scan'208";a="152838601"
-Date: Fri, 10 Aug 2012 15:59:11 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Lars-Peter Clausen <lars@metafoo.de>
-cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
- devm_clk_get
-In-Reply-To: <501FD69D.7070702@metafoo.de>
-Message-ID: <alpine.DEB.2.02.1208101558100.2011@hadrien>
-References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 10 Aug 2012 10:03:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dIzz1202hzzz2dh87h2a8h668h839h944hd25he96hf0ah107ah)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 10 Aug 2012 22:04:08 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Matt Sealey <matt@genesi-usa.com>
+CC: Fabio Estevam <festevam@gmail.com>,
+        Steev Klimaszewski <steev@genesi-usa.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device
+ tree
+Message-ID: <20120810140406.GB3409@S2101-09.ap.freescale.net>
+References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
+ <20120808151555.GE14718@S2101-09.ap.freescale.net>
+ <CAKGA1bkbp8_z+HSr97cp_jeCrdTHkQxuZPFu0QPWwnXphWVdZA@mail.gmail.com>
+ <CAOMZO5DOEfV4wTSNW8ABaUhGwa_KG3Bkt0o-rs8k-cZk4P-=+A@mail.gmail.com>
+ <CAKGA1bkOo=En2P18FaBpq_KAZ88kisikXhNTabvnDknQ-EwFjA@mail.gmail.com>
+ <20120810014119.GD19617@S2101-09.ap.freescale.net>
+ <CAKGA1bmd-53G=59F7Nsd3Sx2eEQgvcahnt3g5zxJAGawtc-gWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAKGA1bmd-53G=59F7Nsd3Sx2eEQgvcahnt3g5zxJAGawtc-gWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Fri, Aug 10, 2012 at 08:36:02AM -0500, Matt Sealey wrote:
+> Requiring it breaks the entire concept of the device tree to describe running
+> hardware. It is not a configuration script. pinctrl should be optional
+> - built in
+> always, but not necessary to turn a board on if it's already configured.
+> 
+How would kernel know if it's already configured, correctly?
 
-Using devm_kzalloc and devm_clk_get simplifies the code and ensures that
-the use of devm_request_irq is safe.  When kzalloc and kfree were used, the
-interrupt could be triggered after the handler's data argument had been
-freed.
+> What would happen if a board were designed that only used the default ALT
+> settings on i.MX53 or so? You'd have to redefine every default IOMUX pad
+> just to get it to boot. That's intolerable.
+> 
+Come on, even the pad configuration are all the default?  Even if that's
+the case, yes, we still need to do it.  How do we know if firmware has
+changed the settings or not.
 
-Add missing return code initializations in the error handling code for
-devm_request_and_ioremap and devm_request_irq.
-
-The problem of a free after a devm_request_irq was found using the
-following semantic match (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r exists@
-expression e1,e2,x,a,b,c,d;
-identifier free;
-position p1,p2;
-@@
-
-  devm_request_irq@p1(e1,e2,...,x)
-  ... when any
-      when != e2 = a
-      when != x = b
-  if (...) {
-    ... when != e2 = c
-        when != x = d
-    free@p2(...,x,...);
-    ...
-    return ...;
-  }
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-v2: patch updated to add nearby ret initializations.  Please let me know
-if some other constants should be returned on the failure of
-devm_request_and_ioremap and devm_request_irq.
-
- drivers/media/video/mx2_emmaprp.c |   33 ++++++++++++---------------------
- 1 file changed, 12 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
-index 5f8a6f5..9fe9ec6 100644
---- a/drivers/media/video/mx2_emmaprp.c
-+++ b/drivers/media/video/mx2_emmaprp.c
-@@ -874,29 +874,27 @@ static int emmaprp_probe(struct platform_device *pdev)
- 	int irq_emma;
- 	int ret;
-
--	pcdev = kzalloc(sizeof *pcdev, GFP_KERNEL);
-+	pcdev = devm_kzalloc(&pdev->dev, sizeof(*pcdev), GFP_KERNEL);
- 	if (!pcdev)
- 		return -ENOMEM;
-
- 	spin_lock_init(&pcdev->irqlock);
-
--	pcdev->clk_emma = clk_get(&pdev->dev, NULL);
-+	pcdev->clk_emma = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(pcdev->clk_emma)) {
--		ret = PTR_ERR(pcdev->clk_emma);
--		goto free_dev;
-+		return PTR_ERR(pcdev->clk_emma);
- 	}
-
- 	irq_emma = platform_get_irq(pdev, 0);
- 	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (irq_emma < 0 || res_emma == NULL) {
- 		dev_err(&pdev->dev, "Missing platform resources data\n");
--		ret = -ENODEV;
--		goto free_clk;
-+		return -ENODEV;
- 	}
-
- 	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
- 	if (ret)
--		goto free_clk;
-+		return ret;
-
- 	mutex_init(&pcdev->dev_mutex);
-
-@@ -922,21 +920,20 @@ static int emmaprp_probe(struct platform_device *pdev)
-
- 	platform_set_drvdata(pdev, pcdev);
-
--	if (devm_request_mem_region(&pdev->dev, res_emma->start,
--	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
--		goto rel_vdev;
--
--	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
--					resource_size(res_emma));
--	if (!pcdev->base_emma)
-+	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
-+	if (!pcdev->base_emma) {
-+		ret = -ENXIO;
- 		goto rel_vdev;
-+	}
-
- 	pcdev->irq_emma = irq_emma;
- 	pcdev->res_emma = res_emma;
-
- 	if (devm_request_irq(&pdev->dev, pcdev->irq_emma, emmaprp_irq,
--			     0, MEM2MEM_NAME, pcdev) < 0)
-+			     0, MEM2MEM_NAME, pcdev) < 0) {
-+		ret = -ENODEV;
- 		goto rel_vdev;
-+	}
-
- 	pcdev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
- 	if (IS_ERR(pcdev->alloc_ctx)) {
-@@ -969,10 +966,6 @@ rel_vdev:
- 	video_device_release(vfd);
- unreg_dev:
- 	v4l2_device_unregister(&pcdev->v4l2_dev);
--free_clk:
--	clk_put(pcdev->clk_emma);
--free_dev:
--	kfree(pcdev);
-
- 	return ret;
- }
-@@ -987,8 +980,6 @@ static int emmaprp_remove(struct platform_device *pdev)
- 	v4l2_m2m_release(pcdev->m2m_dev);
- 	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
- 	v4l2_device_unregister(&pcdev->v4l2_dev);
--	clk_put(pcdev->clk_emma);
--	kfree(pcdev);
-
- 	return 0;
- }
+-- 
+Regards,
+Shawn
 
