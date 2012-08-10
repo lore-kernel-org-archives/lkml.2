@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759799Ab2HJP3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:29:51 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45128 "EHLO
+	id S1752410Ab2HJPbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:31:01 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42705 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759203Ab2HJP3q (ORCPT
+	with ESMTP id S1751246Ab2HJPa7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:29:46 -0400
+	Fri, 10 Aug 2012 11:30:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120731011457.GO2877@dastard>
-References: <201207301514247032532@gmail.com>
-	<20120730214213.GF2877@dastard>
-	<201207310855556258267@gmail.com>
-	<20120731011457.GO2877@dastard>
-Date: Fri, 10 Aug 2012 08:29:45 -0700
-Message-ID: <CAFR8uedP7pGm+KbW4q0fR3L1GS6GwG0yAGUDBsJbrTfKNHnWag@mail.gmail.com>
-Subject: Re: Re: [PATCH 0/8] Set bi_rw when alloc bio before call bio_add_page.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: majianpeng <majianpeng@gmail.com>, Neil Brown <neilb@suse.de>,
-        axboe <axboe@kernel.dk>, "konrad.wilk" <konrad.wilk@oracle.com>,
-        "chris.mason" <chris.mason@fusionio.com>,
-        viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
-        "adilger.kernel" <adilger.kernel@dilger.ca>,
-        shaggy <shaggy@kernel.org>, mfasheh <mfasheh@suse.com>,
-        jlbec <jlbec@evilplan.org>, bpm <bpm@sgi.com>,
-        elder <elder@kernel.org>,
-        jfs-discussion <jfs-discussion@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>, xfs <xfs@oss.sgi.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+X-Originating-IP: [46.116.151.238]
+In-Reply-To: <CAJK669bpog-nNCZ5F5dGWqrS8p5ibob_5eq51r8+6NNimYgpGQ@mail.gmail.com>
+References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
+ <CAJK669adq29ipOCTOyXNoqW=gF4pOJZZgZ_0tnjm75JY22Gvag@mail.gmail.com>
+ <CAK=WgbbK+p3BGcohzgoY9Y57xD1kYHyGDu-FXFXaLFoA9xz7ow@mail.gmail.com> <CAJK669bpog-nNCZ5F5dGWqrS8p5ibob_5eq51r8+6NNimYgpGQ@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 10 Aug 2012 18:30:38 +0300
+Message-ID: <CAK=WgbYxr66xUA0SsGO5b5PowRpH+mHeOSOuW+6V_S90tu=Ntg@mail.gmail.com>
+Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Bhavin Shah <bshah@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending in plain text... sorry for the duplicate ]
+Hi Sjur,
 
-Hi,
+On Thu, Aug 9, 2012 at 11:35 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+> Any thoughts on how to go about to fix this?
 
-On Mon, Jul 30, 2012 at 6:14 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> On Tue, Jul 31, 2012 at 08:55:59AM +0800, majianpeng wrote:
-> > On 2012-07-31 05:42 Dave Chinner <david@fromorbit.com> Wrote:
-> > >On Mon, Jul 30, 2012 at 03:14:28PM +0800, majianpeng wrote:
-> > >> When exec bio_alloc, the bi_rw is zero.But after calling
-> > >> bio_add_page,
-> > >> it will use bi_rw.
-> > >> Fox example, in functiion __bio_add_page,it will call
-> > >> merge_bvec_fn().
-> > >> The merge_bvec_fn of raid456 will use the bi_rw to judge the merge.
-> > >> >> if ((bvm->bi_rw & 1) == WRITE)
-> > >> >> return biovec->bv_len; /* always allow writes to be mergeable */
-> > >
-> > >So if bio_add_page() requires bi_rw to be set, then shouldn't it be
-> > >set up for every caller? I noticed there are about 50 call sites for
-> > >bio_add_page(), and you've only touched about 10 of them. Indeed, I
-> > >notice that the RAID0/1 code uses bio_add_page, and as that can be
-> > >stacked on top of RAID456, it also needs to set bi_rw correctly.
-> > >As a result, your patch set is nowhere near complete, not does it
-> > >document that bio_add_page requires that bi_rw be set before calling
-> > >(which is the new API requirement, AFAICT).
-> > There are many place call bio_add_page and I send some of those. Because
-> > my abilty, so I only send
-> > some patchs which i understand clearly.
->
-> Sure, but my point is that there is no point changing only a few and
-> ignoring the great majority of callers. Either fix them all, fix it
-> some other way (e.g. API change), or remove the code from the RAID5
-> function that requires it.
+The general direction I have in mind is to put the resource table in
+its final location while we do the first pass of fw parsing.
 
-A while back, we tried to address this by changing the alloc functions to
-take rw argument and set it (as per Jens suggestion). I guess the patch did
-not make it in. Please check:
+This will solve all sort of open issues we have (or going to have soon):
 
-https://lkml.org/lkml/2011/7/11/275
+1. dynamically-allocated address of the vrings can be communicated
+2. vdev statuses can be communicated
+3. virtio config space will finally become bi-directional as it should
+4. dynamically probed rproc-to-rproc IPC could then take place
 
-and the follow ups. If needed, I can dust up that patch and resend it.
+It's the real deal :)
 
->
+The only problem with this approach is that the resource table isn't
+reloaded throughout cycles of power up/down, and that is insecure.
+We'll have to manually reload it somewhere after the rproc is powered
+down (or before it is powered up again).
 
-<snip>
+This change will break existing firmwares, but it looks required and inevitable.
 
->
-> It's entirely possible that when bi_rw was added to struct
-> bvec_merge_data, the person who added it was mistaken that bi_rw was
-> set at this point in time when in fact it never has been. Hence it's
-> presence and reliance on it would be a bug.
->
-> That's what I'm asking - is this actually beneificial, or should it
-> simply be removed from struct bvec_merge_data? Data is needed to
-> answer that question....
-
-There are cases where we found it really beneficial to know the rw
-field to decide if the can be really merged or not.
-
-
-Regards,
-Muthu
-
-
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks,
+Ohad.
