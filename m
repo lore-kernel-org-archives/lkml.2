@@ -1,209 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005Ab2HJSym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:54:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50412 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab2HJSyk (ORCPT
+	id S1759936Ab2HJTGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 15:06:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62482 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab2HJTGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:54:40 -0400
-Date: Fri, 10 Aug 2012 11:53:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Takashi Iwai <tiwai@suse.de>
-cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Giacomo Comes <comes@naic.edu>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: i915 regression on 3.6-rc1: lid blanks screen
-In-Reply-To: <s5hpq6yyke5.wl%tiwai@suse.de>
-Message-ID: <alpine.LSU.2.00.1208101145440.2648@eggly.anvils>
-References: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils> <s5h3941ke2p.wl%tiwai@suse.de> <alpine.LSU.2.00.1208052113530.1300@eggly.anvils> <CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com> <alpine.LSU.2.00.1208061122060.1425@eggly.anvils>
- <s5h1ujfyn39.wl%tiwai@suse.de> <CAKMK7uF_5K6d=xw7SsRJqw7dg5ca6HMdf3jvsQcQqhmSNLkaww@mail.gmail.com> <s5hpq6yyke5.wl%tiwai@suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 10 Aug 2012 15:06:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL 1/3] arm-soc: bug fixes for v3.6-rc2
+Date: Fri, 10 Aug 2012 21:06:13 +0200
+Message-Id: <1344625575-27560-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1344625575-27560-1-git-send-email-arnd@arndb.de>
+References: <1344625575-27560-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:u4TBp8D35kVH2lT2QGSY6yk1U7psRvo52+lHwUQ+IuY
+ VQvlpZbAjSgw7Jo8c8UM8IWMPCdHytYRKKi0MU3Hg/2SxC/Hhw
+ DfWGDoLP62hcz4ySW6cxcatclSPHG50Lj9NlfyGy4inp43RFa4
+ WeDortJgZciilT/57w7NAb0BuJkRYts4Jf5rrEFObBq9ES1U1r
+ aRAISYb+aZ/IwMSOCJanDBlzMxt7iFnyO7ZyyYuMs3e2pPctRy
+ eGEXOe8lgl9EKjMqr4ivXgQL8C/YMVLgs2YhBoGAY8YewKNDkl
+ CAy2DMBRUBI8dJ1t9Z+lgCXAkXq/x5d9CKVLOPq0gGHf7tJLNh
+ p/l8zxsqBGvyDyNj+V7N7kxM7RM4CJlXOfTcc/4rc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Aug 2012, Takashi Iwai wrote:
-> At Fri, 10 Aug 2012 14:35:13 +0200,
-> Daniel Vetter wrote:
-> > 
-> > On Fri, Aug 10, 2012 at 1:59 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> > > At Mon, 6 Aug 2012 11:25:30 -0700 (PDT),
-> > > Hugh Dickins wrote:
-> > >>
-> > >> On Mon, 6 Aug 2012, Daniel Vetter wrote:
-> > >> > On Mon, Aug 6, 2012 at 6:21 AM, Hugh Dickins <hughd@google.com> wrote:
-> > >> > > On Sun, 5 Aug 2012, Takashi Iwai wrote:
-> > >> > >> At Sat, 4 Aug 2012 10:01:13 -0700 (PDT),
-> > >> > >> Hugh Dickins wrote:
-> > >> > >> >
-> > >> > >> > Sorry to report that with 3.6-rc1, closing and opening the lid on
-> > >> > >> > this ThinkPad T420s leaves the screen blank, and I have to reboot.
-> > >> > >> >
-> > >> > >> > Bisection led to this commit, and reverting indeed gets my screen back:
-> > >> > >> >
-> > >> > >> > commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b
-> > >> > >> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > >> > >> > Date:   Wed Jul 11 16:27:52 2012 +0200
-> > >> > >> >
-> > >> > >> >     drm/i915/lvds: ditch ->prepare special case
-> > >> > > ...
-> > >> > >>
-> > >> > >> Hm, it's surprising.
-> > >> > >>
-> > >> > >> Could you check whether the counter-part intel_lvds_enable() is
-> > >> > >> called?  If the prepare callback affects, it must be from the mode
-> > >> > >> setting (drm_crtc_helper_set_mode()).
-> > >> > >
-> > >> > > Yes, I put a dump_stack() in both, and intel_lvds_enable() gets called
-> > >> > > about 0.28 seconds after the intel_lvds_disable() when I lift the lid;
-> > >> > > but with no video display until I revert that commit.
-> > >> >
-> > >> > Can you please boot with drm.debug=0xe added to your kernel cmdline,
-> > >> > reproduce the issue (with the two dump_stack calls added) and then
-> > >> > attach the full dmesg?
-> > >>
-> > >> Collected, I'll send it to you both privately in a moment.
-> > >>
-> > >> >
-> > >> > Also a few other things to try: What happens if you do a modeset on
-> > >> > the LVDS while it's still working, e.g.
-> > >>
-> > >> In the dmesg, I've only gone to runlevel 3, simply working on the
-> > >> console without startx.  For these xrandrs to work, I did startx
-> > >> and used the graphics screen.
-> > >
-> > > OK, now I can see the problem here, too.  The key is that it happens
-> > > only on Linux console, not on X.  That's why no one else reported.
-> > > I guess the problem can be seen on many laptops with LVDS on PCH.
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-A correction there: for me it was happening both on X and on console;
-but once I found that it happened even on the simple console, I mostly
-stuck to bisecting and testing on that.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-> > >
-> > > Looking at intel_reg_dumper output, BLC_PWM_CPU_CTL is 0 while other
-> > > registers are set correctly.  This seems coming from the rewrite of
-> > > backlight control code by commit
-> > >   24ded204: drm/i915: properly enable the blc controller on the right pipe
-> > > and
-> > >   a4f32fc3: drm/i915: don't forget the PCH backlight registers
-> > >
-> > > While the latter fixes the regression by the former commit, it still
-> > > doesn't cover this regression.
-> > >
-> > > I don't know the exact hardware behavior, but it looks like that
-> > > resetting BLC_PWM_PCH_CTL2 and BLC_PWM_PCH_CTL1 clears the
-> > > BLC_PWM_CPU_CTL (oh what confusing reg names).
-> > >
-> > > FWIW, the commit 520c41cf you mentioned is no direct cause.  This
-> > > patch works fine on the top of 3.5 kernel.  But it's like a bad drug,
-> > > the combination of this and other two commits break things.
-> > >
-> > > The patch below is my quick fix.  It worked on an HP laptop.
-> > > Hugh, could you give it a try?
-> > 
-> > Hm, this sounds eerily familiar to the backlight bug you've recently fixed in
-> > 
-> > commit 6db65cbb941f9d433659bdad02b307f6d94465df
-> > Author: Takashi Iwai <tiwai@suse.de>
-> > Date:   Thu Jun 21 15:30:41 2012 +0200
-> > 
-> >     drm/i915: Fix eDP blank screen after S3 resume on HP desktops
-> > 
-> > Have you checked other code-paths for such issues?
-> 
-> Not yet, I'd leave such a joy rather to you guys :)
-> 
-> > The resume code
-> > seems to follow this order already ... also, when you submit this
-> > patch, can you please add a small comment to explain the ordering
-> > constraint, like in the resume register restore function?
-> 
-> Sure, I'll add a comment and resubmit once when I hear it really fixes
-> on Hugh's machine, too.
+are available in the git repository at:
 
-Indeed, your patch really fixes it on my machine: many thanks!
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-Hugh
+for you to fetch changes up to de9234306bb28fe6c8c3bb908e3f9956f5276a02:
 
-> 
-> 
-> thanks,
-> 
-> Takashi
-> 
-> > 
-> > Thanks, Daniel
-> > 
-> > >
-> > >
-> > > thanks,
-> > >
-> > > Takashi
-> > >
-> > > ===
-> > > From: Takashi Iwai <tiwai@suse.de>
-> > > Subject: [PATCH] drm/i915: Fix blank panel at reopening lid on Linux console
-> > >
-> > > When you reopen the lid on Linux console on a laptop with PCH, the
-> > > panel suddenly goes blank.  It seems because BLC_PWM_CPU_CTL register
-> > > is cleared when BLC_PWM_PCH_CTL1 and BLC_PWM_PCH_CTL2 registers are
-> > > played.
-> > >
-> > > This patch fixes the problem by setting BLC_PWM_CPU_CTL after enabling
-> > > BLC_PWM_PCH_CTL_1 and _2 registers.
-> > >
-> > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> > > ---
-> > >  drivers/gpu/drm/i915/intel_panel.c | 9 +++++----
-> > >  1 file changed, 5 insertions(+), 4 deletions(-)
-> > >
-> > > diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> > > index 10c7d39..d640425 100644
-> > > --- a/drivers/gpu/drm/i915/intel_panel.c
-> > > +++ b/drivers/gpu/drm/i915/intel_panel.c
-> > > @@ -311,9 +311,6 @@ void intel_panel_enable_backlight(struct drm_device *dev,
-> > >         if (dev_priv->backlight_level == 0)
-> > >                 dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
-> > >
-> > > -       dev_priv->backlight_enabled = true;
-> > > -       intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-> > > -
-> > >         if (INTEL_INFO(dev)->gen >= 4) {
-> > >                 uint32_t reg, tmp;
-> > >
-> > > @@ -326,7 +323,7 @@ void intel_panel_enable_backlight(struct drm_device *dev,
-> > >                  * we don't track the backlight dpms state, hence check whether
-> > >                  * we have to do anything first. */
-> > >                 if (tmp & BLM_PWM_ENABLE)
-> > > -                       return;
-> > > +                       goto set_level;
-> > >
-> > >                 if (dev_priv->num_pipe == 3)
-> > >                         tmp &= ~BLM_PIPE_SELECT_IVB;
-> > > @@ -347,6 +344,10 @@ void intel_panel_enable_backlight(struct drm_device *dev,
-> > >                         I915_WRITE(BLC_PWM_PCH_CTL1, tmp);
-> > >                 }
-> > >         }
-> > > +
-> > > +set_level:
-> > > +       dev_priv->backlight_enabled = true;
-> > > +       intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-> > >  }
-> > >
-> > >  static void intel_panel_init_backlight(struct drm_device *dev)
-> > > --
-> > > 1.7.11.4
-> > >
-> > 
-> > 
-> > 
-> > -- 
-> > Daniel Vetter
-> > daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+  ARM: davinci: remove broken ntosd2_init_i2c (2012-08-10 13:14:36 +0200)
+
+----------------------------------------------------------------
+arm-soc: bug fixes for v3.6-rc2
+
+These are a bunch of bug fixes that came in after the merge window and
+one update for the MAINTAINERS file. The largest part of the fixes
+are patches that address bugs found by building all the ARM defconfig
+files. There are a lot more warnings that we have patches for, but
+the others are either still under discussion or are harmless and
+do not cause actual problems besides making the build slightly noisy.
+
+----------------------------------------------------------------
+Arnd Bergmann (19):
+      Merge branch 'imx/fixes-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+      Merge branch 'mxs/fixes-for-3.6' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+      Merge tag 'imx-fixes' of git://git.pengutronix.de/git/imx/linux-2.6 into fixes
+      mfd/asic3: fix asic3_mfd_probe return value
+      usb/ohci-omap: remove unused variable
+      ARM: pxa: remove irq_to_gpio from ezx-pcap driver
+      Input: eeti_ts: pass gpio value instead of IRQ
+      ARM: sa1100: include linux/io.h in hackkit leds code
+      ARM: s3c24xx: use new PWM driver
+      ARM: integrator: include <linux/export.h>
+      ARM: imx: gpmi-nand depends on mxs-dma
+      ARM: exynos: exynos_pm_add_dev_to_genpd may be unused
+      gpio: em: do not discard em_gio_irq_domain_cleanup
+      mtd/omap2: fix dmaengine_slave_config error handling
+      spi/s3c64xx: improve error handling
+      omap-rng: fix use of SIMPLE_DEV_PM_OPS
+      Merge branch 'testing/new-warnings' into fixes
+      ARM: s3c24xx: enable CONFIG_BUG for tct_hammer
+      ARM: davinci: remove broken ntosd2_init_i2c
+
+Fabio Estevam (5):
+      ARM: dts: imx27-3ds.dts: Fix serial console node
+      ARM: imx6q-sabrelite: Setup CLKO IOMUX
+      ARM: mx23: Fix registers range
+      ARM: mx28: Fix registers range
+      ARM: clk-imx31: Fix the keypad clock name
+
+Javier Martin (1):
+      i.MX27: Fix emma-prp and csi clocks.
+
+Linus Walleij (2):
+      MAINTAINERS: update entry for Linus Walleij
+      ARM: integrator: use clk_prepare_enable() for timer
+
+Marc Kleine-Budde (1):
+      ARM: mxs: always build ocotp
+
+Marek Vasut (1):
+      ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
+
+Sebastian Hesselbarth (1):
+      ARM: kirkwood: fix typo in Makefile.boot
+
+Shawn Guo (3):
+      ARM: imx: enable emi_slow_gate clock for imx5
+      ARM: dts: imx53-ard: add regulators for lan9220
+      ARM: dts: imx: fix gpio interrupts property
+
+Stephen Warren (1):
+      ARM: tegra: more regulator fixes for Harmony
+
+ MAINTAINERS                               |   17 ++++---
+ arch/arm/boot/dts/imx23.dtsi              |   52 ++++++++++----------
+ arch/arm/boot/dts/imx27-3ds.dts           |    2 +-
+ arch/arm/boot/dts/imx28.dtsi              |   74 ++++++++++++++---------------
+ arch/arm/boot/dts/imx51-babbage.dts       |    2 +-
+ arch/arm/boot/dts/imx53-ard.dts           |   22 ++++++++-
+ arch/arm/boot/dts/imx6q-sabrelite.dts     |    1 +
+ arch/arm/configs/imx_v6_v7_defconfig      |    1 +
+ arch/arm/configs/mxs_defconfig            |    1 -
+ arch/arm/configs/tct_hammer_defconfig     |    2 +-
+ arch/arm/mach-davinci/board-neuros-osd2.c |   39 ---------------
+ arch/arm/mach-exynos/pm_domains.c         |    2 +-
+ arch/arm/mach-imx/clk-imx27.c             |    8 ++--
+ arch/arm/mach-imx/clk-imx31.c             |    2 +-
+ arch/arm/mach-imx/clk-imx51-imx53.c       |    1 +
+ arch/arm/mach-integrator/core.c           |    1 +
+ arch/arm/mach-integrator/integrator_ap.c  |    2 +-
+ arch/arm/mach-kirkwood/Makefile.boot      |    4 +-
+ arch/arm/mach-mxs/Kconfig                 |    6 ---
+ arch/arm/mach-mxs/Makefile                |    3 +-
+ arch/arm/mach-pxa/raumfeld.c              |    2 +-
+ arch/arm/mach-s3c24xx/Kconfig             |    4 +-
+ arch/arm/mach-sa1100/leds-hackkit.c       |    1 +
+ arch/arm/mach-tegra/board-harmony-power.c |   32 +++++++------
+ arch/arm/plat-samsung/Kconfig             |    3 +-
+ drivers/char/hw_random/omap-rng.c         |    2 +-
+ drivers/gpio/gpio-em.c                    |    2 +-
+ drivers/input/touchscreen/eeti_ts.c       |   21 ++++----
+ drivers/mfd/asic3.c                       |    1 +
+ drivers/mfd/ezx-pcap.c                    |    2 +-
+ drivers/mtd/nand/Kconfig                  |    2 +-
+ drivers/mtd/nand/omap2.c                  |    7 ++-
+ drivers/spi/spi-s3c64xx.c                 |    2 +-
+ drivers/usb/host/ohci-omap.c              |    2 -
+ include/linux/input/eeti_ts.h             |    1 +
+ include/linux/mfd/ezx-pcap.h              |    1 +
+ 36 files changed, 160 insertions(+), 167 deletions(-)
