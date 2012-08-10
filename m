@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2HJQje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 12:39:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47877 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab2HJQjd (ORCPT
+	id S1755213Ab2HJQqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 12:46:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32978 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab2HJQqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 12:39:33 -0400
+	Fri, 10 Aug 2012 12:46:03 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <ap@solarrain.com>
+Subject: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
+Date: Fri, 10 Aug 2012 12:45:59 -0400
+Message-ID: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5025315B.4030401@ionic.de>
-References: <5021F00B.7000503@ionic.de>
-	<CAKMK7uFutq0Hn3FL==53Vvt-M00ReWaeXKq3uo8C_kzUfX+1ew@mail.gmail.com>
-	<5025315B.4030401@ionic.de>
-Date: Fri, 10 Aug 2012 18:39:32 +0200
-Message-ID: <CAKMK7uFsZyhC4b6YWiskm6dk8HPuy_-qaaxvOO2fhYu3krOEaQ@mail.gmail.com>
-Subject: Re: null pointer dereference while loading i915
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Mihai Moldovan <ionic@ionic.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac13FuVWg5MMg3U1RMS3xOtB0thpsA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 6:05 PM, Mihai Moldovan <ionic@ionic.de> wrote:
-> * On 10.08.2012 12:10 PM, Daniel Vetter wrote:
->> On Wed, Aug 8, 2012 at 6:50 AM, Mihai Moldovan <ionic@ionic.de> wrote:
->>> Hi Daniel, hi list
->>>
->>> ever since version 3.2.0 (maybe even earlier, but 3.0.2 is still working fine),
->>> my box is crashing when loading the i915 driver (mode-setting enabled.)
->>>
->>> The current version I'm testing with is 3.5.0.
->>>
->>> I was able to get the BUG output (please forgive any errors/flips in the output,
->>> I have had to transcribe the messages from the screen/images), however, I'm not
->>> able to find out what's wrong.
->>>
->>> If I see it correctly, there's a null pointer dereference in a printk called
->>> from inside gmbus_xfer. The only printk calls I can see in
->>> drivers/gpu/drm/i915/intel_i2c.c gmbus_xfer() however are issued by the
->>> DRM_DEBUG_KMS() and DRM_INFO() macros.
->>> Neither call looks wrong to me, I even tried to swap adapter->name with
->>> bus->adapter.name and make *sure* i < num is true, but haven't had any success.
->>>
->>> I'd really like to see this bug fixed, as it's preventing me from updating the
->>> kernel for over a year now.
->>>
->>> Also, while 3.0.2 works, it *does* spew error/warning messages related to gmbus
->>> and I've had corrupted VTs in the past (albeit after a long uptime with multiple
->>> X restarting and DVI cable unplugging/reattaching events), so maybe there's a
->>> lot more broken than "expected".
->>
->> Hm, this is rather strange. gmbus should not be enable on 3.2 nor 3.0,
->> since exactly this issue might happen. We've re-enabled gmbus again on
->> 3.5 after having fixed this bug. Are you sure that this is plain 3.2
->> you're running?
->
-> Sorry, I messed up the version numbers. Started bisecting yesterday and noticed,
-> that 3.0 up to 3.2 still work "fine" (see below), instead I've had another
-> problem with 3.2 (completely lockup after the kernel is running for a few
-> minutes, but I have no idea where this issue is coming from. Seems to be
-> happening with 3.2.0 only, so... *shrug*)
->
-> 3.0.2           => working, gmbus warnings as posted.
-> 3.1-09933/07170 => working, NO gmbus warnings, but render errors (see below)
-> 3.2-rc2 to rc4  => working, NO gmbus warnings, but render errors (see below)
-> --- (stopped bisecting 3.0 to 3.2 as this was pointless) ---
-> --- (restarted bisecting with 3.2 to 3.5) ---
-> 3.3.0-06109     => working, gmbus warnings just like with 3.0, render errors
-> (see below)
-> 3.4.0-07487     => working, gmbus warnings, hang errors (see below)
-> ...
->
-> I've done more steps, but have not yet finished bisecting, so stay tuned.
-> All those render errors look like that:
->
-> [drm] capturing error event; look for more information in
-> /debug/dri/0/i915_error_state
-> render error detected, EIR: 0x00000010
->   IPEIR: 0x00000000
->   IPEHR: 0x02000000
->   INSTDONE: 0xffffffff
->   INSTPS: 0x8001e025
->   INSTDONE1: 0xbfbbffff
->   ACTHD: 0x00a4203c
-> page table error
->   PGTBL_ER: 0x00100000
-> [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
->
-> I'll finish bisecting (and hope, that my guess was right, concerning the
-> varaiant I wasn't able to build) and will post the bisect log when done.
->
-> Meanwhile: at least for 3.0.2 and even older versions, gmbus must have been
-> enabled as I'm pretty sure I always saw those errors when booting (just
-> confirmed via logs for 3.0.0, 26.38.6, 2.6.39). Doesn't come up with 2.6.34,
-> 2.6.36.1, 3.1-..., 3.2-... though.
+Hello,
 
-Yeah, we've enabled gmbus a few times and then disabled it again due
-to bugs. Also, the usual debug messsage says gmbus even when gmbus
-isn't on ... yeah, slightly confusing, but that should be fixed, too.
+Motherboard: Supermicro X8DTH-6F
+Distro: Debian Testing x86_64
 
-For the gpu hang, please ensure that you're running the latest stable
-release of everything (to avoid hunting down already known issues and
-also because recent kernels dump more useful stuff), grab the entire
-i915_error_state from debugfs and file a bug report with the usual
-details at bugs.freedesktop.org against dri -> drm/intel.
+>From 3.4 -> 3.5.1 on x86_64 make oldconfig and a few minor changes and the
+machine attempts to boot but hangs at the filesystem mounting part of the
+boot process.
 
-Thanks,
+Picture of where it stops working (a little burry but readable)
+http://home.comcast.net/~jpiszcz/20120810/3.5-kernel-hangs.jpg
 
-Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Kernel config 3.4 (working)
+http://home.comcast.net/~jpiszcz/20120810/config-3.4.txt
+
+Kernel config 3.5.1 (hangs)
+http://home.comcast.net/~jpiszcz/20120810/config-3.5.1.txt
+
+As you see towards the end the machine has been sitting there for 1 hour as
+that's the timeout I have the drives spindown on the 3ware card.
+
+Any thoughts as what is wrong here?
+
+Diff between the two:
+
+$ diff -u config-3.4.txt  config-3.5.1.txt  |grep '^+C'
++CONFIG_ARCH_SUPPORTS_UPROBES=y
++CONFIG_BUILDTIME_EXTABLE_SORT=y
++CONFIG_CLOCKSOURCE_WATCHDOG=y
++CONFIG_ARCH_CLOCKSOURCE_DATA=y
++CONFIG_GENERIC_TIME_VSYSCALL=y
++CONFIG_GENERIC_CLOCKEVENTS=y
++CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
++CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
++CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
++CONFIG_GENERIC_CMOS_UPDATE=y
++CONFIG_TICK_ONESHOT=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_RCU_FANOUT_LEAF=16
++CONFIG_GENERIC_SMP_IDLE_THREAD=y
++CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
++CONFIG_SECCOMP_FILTER=y
++CONFIG_CROSS_MEMORY_ATTACH=y
++CONFIG_X86_DEV_DMA_OPS=y
++CONFIG_NETFILTER_NETLINK=y
++CONFIG_NF_CT_NETLINK=y
++CONFIG_HAVE_BPF_JIT=y
++CONFIG_E1000E=y
++CONFIG_IXGBE_HWMON=y
++CONFIG_NET_VENDOR_I825XX=y
++CONFIG_HID=y
++CONFIG_HIDRAW=y
++CONFIG_HID_GENERIC=y
++CONFIG_USB_HID=y
++CONFIG_HID_PID=y
++CONFIG_USB_HIDDEV=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_NFS_V2=y
++CONFIG_PANIC_ON_OOPS_VALUE=0
++CONFIG_RCU_CPU_STALL_INFO=y
++CONFIG_CRYPTO_CRC32C=y
++CONFIG_GENERIC_STRNCPY_FROM_USER=y
++CONFIG_GENERIC_STRNLEN_USER=y
+
+Justin.
+
+
