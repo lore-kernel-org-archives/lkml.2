@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab2HJJW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 05:22:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58472 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757948Ab2HJJW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 05:22:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,744,1336374000"; 
-   d="scan'208";a="196487130"
-Date: Fri, 10 Aug 2012 17:22:23 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Dave Peterson <dsp@llnl.gov>, kernel-janitors@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] edac_mc: fix kfree calls in the error path
-Message-ID: <20120810092223.GA27375@localhost>
-References: <20120809135416.GA13100@localhost>
- <5023F360.2050409@redhat.com>
+	id S1758332Ab2HJJdB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 05:33:01 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:10738
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757952Ab2HJJc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 05:32:59 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bhz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M8J96U-01-07R-02
+X-M-MSG: 
+Date: Fri, 10 Aug 2012 11:32:50 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <x86@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v3] irq_remap: disable IRQ remapping if any IOAPIC lacks
+ an IOMMU
+Message-ID: <20120810093250.GT1996@amd.com>
+References: <CAE9FiQVEsPisVUKeG0aejKzvS+Csp5Ca2KEQyy6ZJW-MR-VFUA@mail.gmail.com>
+ <1344432423-26495-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5023F360.2050409@redhat.com>
+In-Reply-To: <1344432423-26495-1-git-send-email-seth.forshee@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to free up memory in this order: 
+On Wed, Aug 08, 2012 at 08:27:03AM -0500, Seth Forshee wrote:
+> The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
+> but the only remapping unit described in the DMAR table matches id 0.
+> Interrupt remapping fails as a result, and the kernel panics with the
+> message "timer doesn't work through Interrupt-remapped IO-APIC."
+> 
+> To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
+> not found, do not allow IRQ remapping to be enabled.
+> 
+> v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
+>     and add FW_BUG to the log message
+> v3: Skip check if IOMMU doesn't support interrupt remapping and remove
+>     existing check that the IOMMU count equals the IOAPIC count
+> 
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/iommu/intel_irq_remapping.c |   18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
 
-  free csrows[i]->channels[j]
-  free csrows[i]->channels
-  free csrows[i]
-  free csrows
+Applied to iommu/fixes, thanks.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/edac/edac_mc.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- linux.orig/drivers/edac/edac_mc.c	2012-08-10 17:16:14.444794060 +0800
-+++ linux/drivers/edac/edac_mc.c	2012-08-10 17:16:19.048794169 +0800
-@@ -419,14 +419,16 @@ error:
- 		kfree(mci->dimms);
- 	}
- 	if (mci->csrows) {
--		for (chn = 0; chn < tot_channels; chn++) {
--			csr = mci->csrows[chn];
-+		for (row = 0; row < tot_csrows; row++) {
-+			csr = mci->csrows[row];
- 			if (csr) {
--				for (chn = 0; chn < tot_channels; chn++)
--					kfree(csr->channels[chn]);
-+				if (csr->channels) {
-+					for (chn = 0; chn < tot_channels; chn++)
-+						kfree(csr->channels[chn]);
-+					kfree(csr->channels);
-+				}
- 				kfree(csr);
- 			}
--			kfree(mci->csrows[i]);
- 		}
- 		kfree(mci->csrows);
- 	}
