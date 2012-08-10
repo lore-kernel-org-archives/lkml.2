@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab2HJIOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 04:14:55 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:48243 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757700Ab2HJIOt (ORCPT
+	id S1757988Ab2HJITN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 04:19:13 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:33012 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab2HJITD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 04:14:49 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/KGopRgmTKAj9VmSDpZpRNEFIPGqw/LfYRcIbKEs
-	/BYmfHr/t3y6rc
-Message-ID: <1344586484.4330.24.camel@marge.simpson.net>
-Subject: Re: [RFC/PATCH] sched: Honor sync wake up in select_idle_sibling
-From: Mike Galbraith <efault@gmx.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Fri, 10 Aug 2012 10:14:44 +0200
-In-Reply-To: <1344583512-25352-1-git-send-email-namhyung@kernel.org>
-References: <1344583512-25352-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Fri, 10 Aug 2012 04:19:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120809202054.GA24503@avionic-0098.mockup.avionic-design.de>
+References: <1343044770-6591-1-git-send-email-thierry.reding@avionic-design.de>
+	<CACRpkdaZcUvcJMUZTqCEU5FQYhE3EvSSfUEnEx0dYRt-6x5Nig@mail.gmail.com>
+	<20120809202054.GA24503@avionic-0098.mockup.avionic-design.de>
+Date: Fri, 10 Aug 2012 10:19:02 +0200
+Message-ID: <CACRpkdaSk9xBaiSAKCj4Pa2kyyfP178XN53i2Q2+CBFx=RoE0g@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: Add Avionic Design N-bit GPIO expander support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-10 at 16:25 +0900, Namhyung Kim wrote: 
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> When sync wakeup happens and there's the waker task running alone,
-> select the target cpu as if it's already idle.
+On Thu, Aug 9, 2012 at 10:20 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Sun, Jul 29, 2012 at 07:13:57PM +0200, Linus Walleij wrote:
+>> > +       client->irq = irq_of_parse_and_map(client->dev.of_node, 0);
+>> > +       if (client->irq == NO_IRQ)
+>>
+>> Just if (!client->irq) since NO_IRQ is 0 nowadays.
+>
+> At the risk of seeming pedantic, NO_IRQ is in fact quite often not 0.
 
-Ouch.  That defeats the purpose of select_idle_sibling().  Just because
-we're doing a sync wakeup does not mean there's no convertible overlap,
-nor that the waker is really really going to take a nap immediately.  A
-lot of the places that benefit up to and including hugely from looking
-for an idle shared cache to wake to do sync wakeups.
+No. A year back, yes, but not anymore. We went to great lengths in the
+ARM architecture to ensure NO_IRQ is *always 0. Russell spent
+a lot of time on this.
 
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/sched/fair.c | 11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index d0cc03b3e70b..64b68bc82b52 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2632,7 +2632,7 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
->  /*
->   * Try and locate an idle CPU in the sched_domain.
->   */
-> -static int select_idle_sibling(struct task_struct *p, int target)
-> +static int select_idle_sibling(struct task_struct *p, int target, int sync)
->  {
->  	int cpu = smp_processor_id();
->  	int prev_cpu = task_cpu(p);
-> @@ -2646,6 +2646,13 @@ static int select_idle_sibling(struct task_struct *p, int target)
->  		return cpu;
->  
->  	/*
-> +	 * If the task is going to be woken-up on this cpu and there's only
-> +	 * the sync-waker running, then it is the right target.
-> +	 */
-> +	if (target == cpu && sync && this_rq()->nr_running == 1)
-> +		return cpu;
-> +
-> +	/*
->  	 * If the task is going to be woken-up on the cpu where it previously
->  	 * ran and if it is currently idle, then it the right target.
->  	 */
-> @@ -2748,7 +2755,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
->  			prev_cpu = cpu;
->  
-> -		new_cpu = select_idle_sibling(p, prev_cpu);
-> +		new_cpu = select_idle_sibling(p, prev_cpu, sync);
->  		goto unlock;
->  	}
->  
+Consult the following article on LWN:
+http://lwn.net/Articles/470820/
 
+Then grep your gitlog and you'll see we got rid of it from ARM.
 
+If this driver is for some other arch like openrisc I might accept
+it but please reconsider.
+
+Yours,
+Linus Walleij
