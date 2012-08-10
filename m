@@ -1,130 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab2HJNAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:00:50 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22129 "EHLO relay.sw.ru"
+	id S1755582Ab2HJNJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 09:09:58 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:33811 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756052Ab2HJNAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:00:45 -0400
-Subject: [RFC PATCH 2/2] SUNRPC: connect local transports with
-	unix_stream_connect_root() helper
-To: Trond.Myklebust@netapp.com, davem@davemloft.net
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        tim.c.chen@linux.intel.com, devel@openvz.org
-Date: Fri, 10 Aug 2012 16:57:35 +0400
-Message-ID: <20120810125735.7115.62993.stgit@localhost.localdomain>
-In-Reply-To: <20120810125701.7115.71612.stgit@localhost.localdomain>
-References: <20120810125701.7115.71612.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1751185Ab2HJNJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 09:09:57 -0400
+X-ASG-Debug-ID: 1344604195-0421b5402c658d0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <5025080A.1040001@fusionio.com>
+Date: Fri, 10 Aug 2012 15:09:30 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jianpeng Ma <majianpeng@gmail.com>
+CC: shli <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] block: Fix not tracing all device plug-operation.
+References: <201208101945571256852@gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH 2/3] block: Fix not tracing all device plug-operation.
+In-Reply-To: <201208101945571256852@gmail.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1344604195
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.105236
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today, there is a problem in connecting of local SUNRPC thansports. These
-transports uses UNIX sockets and connection itself is done by rpciod
-workqueue.
-But UNIX sockets lookup is done in context of process file system root. I.e.
-all local thunsports are connecting in rpciod context.
-This works nice until we will try to mount NFS from process with other root -
-for example in container. This container can have it's own (nested) root and
-rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
-this container will register new service (Lockd for example) in global rpcbind
-- not containers's one.
-This patch solves the problem by using special helper
-unix_stream_connect_root(), which lookup socket file starting from passed
-root.
+On 08/10/2012 01:46 PM, Jianpeng Ma wrote:
+> If process handled two or more devices,there will not be trace some
+> devices plug-operation.
+> 
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+>  block/blk-core.c |   16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 7a3abc6..034f186 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1521,11 +1521,25 @@ get_rq:
+>  				struct request *__rq;
+>  
+>  				__rq = list_entry_rq(plug->list.prev);
+> -				if (__rq->q != q)
+> +				if (__rq->q != q) {
+>  					plug->should_sort = 1;
+> +					trace_block_plug(q);
+> +				}
+> +			} else {
+> +				struct request *__rq;
+> +				list_for_each_entry_reverse(__rq, &plug->list,
+> +					queuelist) {
+> +					if (__rq->q == q) {
+> +						list_add_tail(&req->queuelist,
+> +							&__rq->queuelist);
+> +						goto stat_acct;
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- net/sunrpc/xprtsock.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
+Did you verify this? It doesn't look right to me. You browse the list in
+reverse, which means __rq is the first one that has a matching q. Then
+you add the new req IN FRONT of that. You would want list_add() here
+instead, adding it as the last member of that q string, not in the
+middle.
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 890b03f..01a6f2a 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -37,6 +37,7 @@
- #include <linux/sunrpc/svcsock.h>
- #include <linux/sunrpc/xprtsock.h>
- #include <linux/file.h>
-+#include <linux/fs_struct.h>
- #ifdef CONFIG_SUNRPC_BACKCHANNEL
- #include <linux/sunrpc/bc_xprt.h>
- #endif
-@@ -45,6 +46,7 @@
- #include <net/checksum.h>
- #include <net/udp.h>
- #include <net/tcp.h>
-+#include <net/af_unix.h>
- 
- #include "sunrpc.h"
- 
-@@ -255,6 +257,11 @@ struct sock_xprt {
- 	void			(*old_state_change)(struct sock *);
- 	void			(*old_write_space)(struct sock *);
- 	void			(*old_error_report)(struct sock *);
-+
-+	/*
-+	 * Saved transport creator root. Required for local transports only.
-+	 */
-+	struct path		root;
- };
- 
- /*
-@@ -1873,7 +1880,8 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
- 	/* Tell the socket layer to start connecting... */
- 	xprt->stat.connect_count++;
- 	xprt->stat.connect_start = jiffies;
--	return kernel_connect(sock, xs_addr(xprt), xprt->addrlen, 0);
-+	return unix_stream_connect_root(&transport->root, sock, xs_addr(xprt),
-+					xprt->addrlen, 0);
- }
- 
- /**
-@@ -2213,6 +2221,18 @@ static void xs_connect(struct rpc_task *task)
- 	}
- }
- 
-+static void xs_local_destroy(struct rpc_xprt *xprt)
-+{
-+	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+	struct path root = transport->root;
-+
-+	dprintk("RPC:       xs_local_destroy xprt %p\n", xprt);
-+
-+	xs_destroy(xprt);
-+
-+	path_put(&root);
-+}
-+
- /**
-  * xs_local_print_stats - display AF_LOCAL socket-specifc stats
-  * @xprt: rpc_xprt struct containing statistics
-@@ -2431,7 +2451,7 @@ static struct rpc_xprt_ops xs_local_ops = {
- 	.send_request		= xs_local_send_request,
- 	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
- 	.close			= xs_close,
--	.destroy		= xs_destroy,
-+	.destroy		= xs_local_destroy,
- 	.print_stats		= xs_local_print_stats,
- };
- 
-@@ -2607,8 +2627,10 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
- 	dprintk("RPC:       set up xprt to %s via AF_LOCAL\n",
- 			xprt->address_strings[RPC_DISPLAY_ADDR]);
- 
--	if (try_module_get(THIS_MODULE))
-+	if (try_module_get(THIS_MODULE)) {
-+		get_fs_root(current->fs, &transport->root);
- 		return xprt;
-+	}
- 	ret = ERR_PTR(-EINVAL);
- out_err:
- 	xprt_free(xprt);
+-- 
+Jens Axboe
 
