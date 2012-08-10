@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2HJMJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 08:09:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56223 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab2HJMJQ (ORCPT
+	id S1753835Ab2HJMSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 08:18:42 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47293 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab2HJMSX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 08:09:16 -0400
+	Fri, 10 Aug 2012 08:18:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AAE97175@AUSP01VMBX24.collaborationhost.net>
-References: <1344525614-13910-1-git-send-email-gelurine@gmail.com> <ADE657CA350FB648AAC2C43247A983F00206AAE97175@AUSP01VMBX24.collaborationhost.net>
-From: =?UTF-8?B?R8O8bmfDtnIgRXJzZXltZW4=?= <gelurine@gmail.com>
-Date: Fri, 10 Aug 2012 15:08:54 +0300
-Message-ID: <CA+yaK82jMjGYxnYBcp1f==Eu90xWh7y0myZXVbSDi9ArW=S=Tw@mail.gmail.com>
-Subject: Re: [PATCH] Staging: comedi: ssv_snp: fix checkpatch.pl warnings
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1344545594.25895.YahooMailNeo@web120102.mail.ne1.yahoo.com>
+References: <1342922751.65328.YahooMailNeo@web120106.mail.ne1.yahoo.com>
+	<CAJd=RBC24UXztNoKews5sE06DRvk_cBEYunHT7Zc-rdvAFF0ew@mail.gmail.com>
+	<1343150934.42443.YahooMailNeo@web120104.mail.ne1.yahoo.com>
+	<CAJd=RBCy+zy6jRWkpjPx43H=jqs37-L8Qij4Z5y9DYak2L643w@mail.gmail.com>
+	<1344545594.25895.YahooMailNeo@web120102.mail.ne1.yahoo.com>
+Date: Fri, 10 Aug 2012 20:18:22 +0800
+Message-ID: <CAJd=RBA=gdh-9aSeNGSu=BMNgVAWOKNy_yL7sJPUUpyee5VBjQ@mail.gmail.com>
+Subject: Re: Direct I/O bug in kernel
+From: Hillf Danton <dhillf@gmail.com>
+To: Victor Meyerson <calculuspenguin@yahoo.com>
+Cc: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 7:27 PM, H Hartley Sweeten
-<hartleys@visionengravers.com> wrote:
-> You have a typo in the subject for this patch.
-> "ssv_snp" should be "ssv_dnp"
-Hello Hartley,
+On Fri, Aug 10, 2012 at 4:53 AM, Victor Meyerson
+<calculuspenguin@yahoo.com> wrote:
+> I tried that patch, although I had to edit a slightly different line as dio_bio_alloc was near line 392 instead of 349 in the version of fs/direct-io.c in my tree.  I still got different checksums between the two files and even different checksums from my earlier attempts.
+>
+> I am not sure if this helps, but Ralf asked if I can try a different page size to see if this problem occurs.  I originally had CONFIG_PAGE_SIZE_4KB=y and changed it to CONFIG_PAGE_SIZE_16KB=y (via menuconfig).  Having a page size of 16KB (and the above patch not applied) made the checksum on the files match each other and match the file made from the working kernel.
+>
 
-I missed that typo. This is my first patch for linux kernel, i am a bit nervous.
+Thanks for tests, Victor.
 
->> diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
->> index 84b9f2a..4cd0f1b 100644
->> --- a/drivers/staging/comedi/drivers/ssv_dnp.c
->> +++ b/drivers/staging/comedi/drivers/ssv_dnp.c
->> @@ -177,7 +177,7 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>       struct comedi_subdevice *s;
->>       int ret;
->>
->> -     printk(KERN_INFO "comedi%d: dnp: ", dev->minor);
->> +     pr_info("comedi%d: dnp: ", dev->minor);
->
-> Where possible, fixes like this should use the dev_printk versions.
-> For instance, this one would be:
->
->         dev_info(dev->class_dev, "dnp:");
->
-> But, there is a cleaner fix for this file. See below.
->
->>       dev->board_name = board->name;
->>
->> @@ -195,7 +195,7 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>       s->insn_bits = dnp_dio_insn_bits;
->>       s->insn_config = dnp_dio_insn_config;
->>
->> -     printk("attached\n");
->> +     pr_info("attached\n");
->
-> There are only two printk's in this file, both in the "attach" routine.
->
-> The first one does not have a "\n" and the function could exit without
-> ever terminating the message.
->
-> A better fix would be to merge the two messages into one "attached" message
-> at the end of the function. You could also use the dev->board_name instead of
-> the open coded string. Something like:
->
->         dev_info(dev->class_dev, "%s: attached\n", dev->board_name);
->
-> Also, the message should be moved so that it's the last thing that happens
-> before the function returns.
+Please elaborate on the role of page size in this case, Ralf.
 
-Thanks for advice, i will send a new patch with changes.
+Good Weekend
+Hillf
