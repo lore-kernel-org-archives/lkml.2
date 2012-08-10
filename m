@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab2HJVSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 17:18:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2933 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab2HJVS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 17:18:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6799"; a="224129309"
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: davidb@codeaurora.org
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH RESEND 2/2] msm: io: Change the default static iomappings to be shared
-Date: Fri, 10 Aug 2012 14:18:16 -0700
-Message-Id: <1344633496-1873-1-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	id S1759084Ab2HJVmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 17:42:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752853Ab2HJVmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 17:42:17 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] HWPOISON: fix action_result() to print out dirty/clean
+Date: Fri, 10 Aug 2012 17:41:51 -0400
+Message-Id: <1344634913-13681-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.4 kernel the static iomappings can be shared with the ioremap
-mappings. If ioremap is called with an address for which a static
-mapping already exists, then that mapping should be used instead
-of creating a new one.
-However, the MT_DEVICE_NONSHARED flag prevents this. Hence, get rid
-of this flag. Some targets (7X00) that require the static iomappings
-to be NONSHARED use the MSM_DEVICE_TYPE and MSM_CHIP_DEVICE_TYPE macros.
+action_result() fails to print out "dirty" even if an error occurred on a
+dirty pagecache, because when we check PageDirty in action_result() it was
+cleared after page isolation even if it's dirty before error handling. This
+can break some applications that monitor this message, so should be fixed.
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+There are several callers of action_result() except page_action(), but
+either of them are not for LRU pages but for free pages or kernel pages,
+so we don't have to consider dirty or not for them.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- arch/arm/mach-msm/io.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
+ mm/memory-failure.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 2409c0b..5fc2e48 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -33,23 +33,32 @@
- 		.virtual = (unsigned long) MSM_##name##_BASE, \
- 		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
- 		.length = chip##_##name##_SIZE, \
--		.type = MT_DEVICE_NONSHARED, \
-+		.type = MT_DEVICE, \
-+	 }
-+
-+#define MSM_CHIP_DEVICE_TYPE(name, chip, mem_type) {			      \
-+		.virtual = (unsigned long) MSM_##name##_BASE, \
-+		.pfn = __phys_to_pfn(chip##_##name##_PHYS), \
-+		.length = chip##_##name##_SIZE, \
-+		.type = mem_type, \
- 	 }
- 
- #define MSM_DEVICE(name) MSM_CHIP_DEVICE(name, MSM)
-+#define MSM_DEVICE_TYPE(name, mem_type) \
-+		MSM_CHIP_DEVICE_TYPE(name, MSM, mem_type)
- 
- #if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
- 	|| defined(CONFIG_ARCH_MSM7X25)
- static struct map_desc msm_io_desc[] __initdata = {
--	MSM_DEVICE(VIC),
--	MSM_CHIP_DEVICE(CSR, MSM7X00),
--	MSM_DEVICE(DMOV),
--	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
--	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
--	MSM_DEVICE(CLK_CTL),
-+	MSM_DEVICE_TYPE(VIC, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(CSR, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_DEVICE_TYPE(DMOV, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
-+	MSM_CHIP_DEVICE_TYPE(CLK_CTL, MSM7X00, MT_DEVICE_NONSHARED),
- #if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
- 	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
-+	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
+diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+index a6e2141..79dfb2f 100644
+--- v3.6-rc1.orig/mm/memory-failure.c
++++ v3.6-rc1/mm/memory-failure.c
+@@ -779,16 +779,16 @@ static struct page_state {
+ 	{ compound,	compound,	"huge",		me_huge_page },
  #endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
+ 
+-	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
+-	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
++	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
++	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
+ 
+-	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
+-	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
++	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
++	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
+ 
+-	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
+-	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
++	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
++	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
+ 
+-	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
++	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
+ 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
+ 
+ 	/*
+@@ -812,12 +812,8 @@ static struct page_state {
+ 
+ static void action_result(unsigned long pfn, char *msg, int result)
+ {
+-	struct page *page = pfn_to_page(pfn);
+-
+-	printk(KERN_ERR "MCE %#lx: %s%s page recovery: %s\n",
+-		pfn,
+-		PageDirty(page) ? "dirty " : "",
+-		msg, action_name[result]);
++	pr_err("MCE %#lx: %s page recovery: %s\n",
++		pfn, msg, action_name[result]);
+ }
+ 
+ static int page_action(struct page_state *ps, struct page *p,
 -- 
-Sent by an employee of the Qualcomm Innovation Center,Inc
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.11.2
 
