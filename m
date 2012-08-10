@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504Ab2HJR4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:56:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758402Ab2HJRzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:55:44 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+	id S1759332Ab2HJR45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:56:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45331 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758616Ab2HJR4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:56:52 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50254B44.7090107@jp.fujitsu.com>
+Date: Sat, 11 Aug 2012 02:56:20 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH v7 3/4] mm: introduce putback_movable_pages()
-Date: Fri, 10 Aug 2012 14:55:16 -0300
-Message-Id: <9147e5cccc4bb2d3f2e5f155e640148eb5365af5.1344619987.git.aquini@redhat.com>
-In-Reply-To: <cover.1344619987.git.aquini@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
-In-Reply-To: <cover.1344619987.git.aquini@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 02/11] memcg: Reclaim when more than one page needed.
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-3-git-send-email-glommer@parallels.com> <20120810154240.GG1425@dhcp22.suse.cz> <50253B95.7010905@jp.fujitsu.com> <20120810172824.GA14591@dhcp22.suse.cz>
+In-Reply-To: <20120810172824.GA14591@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PATCH "mm: introduce compaction and migration for virtio ballooned pages"
-hacks around putback_lru_pages() in order to allow ballooned pages to be
-re-inserted on balloon page list as if a ballooned page was like a LRU page.
+(2012/08/11 2:28), Michal Hocko wrote:
+> On Sat 11-08-12 01:49:25, KAMEZAWA Hiroyuki wrote:
+>> (2012/08/11 0:42), Michal Hocko wrote:
+>>> On Thu 09-08-12 17:01:10, Glauber Costa wrote:
+>>> [...]
+>>>> @@ -2317,18 +2318,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>>>>   	} else
+>>>>   		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+>>>>   	/*
+>>>> -	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
+>>>> -	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+>>>> -	 *
+>>>>   	 * Never reclaim on behalf of optional batching, retry with a
+>>>>   	 * single page instead.
+>>>>   	 */
+>>>> -	if (nr_pages == CHARGE_BATCH)
+>>>> +	if (nr_pages > min_pages)
+>>>>   		return CHARGE_RETRY;
+>>>
+>>> This is dangerous because THP charges will be retried now while they
+>>> previously failed with CHARGE_NOMEM which means that we will keep
+>>> attempting potentially endlessly.
+>>
+>> with THP, I thought nr_pages == min_pages, and no retry.
+>
+> right you are.
+>
+>>> Why cannot we simply do if (nr_pages < CHARGE_BATCH) and get rid of the
+>>> min_pages altogether?
+>>
+>> Hm, I think a slab can be larger than CHARGE_BATCH.
+>>
+>>> Also the comment doesn't seem to be valid anymore.
+>>>
+>> I agree it's not clean. Because our assumption on nr_pages are changed,
+>> I think this behavior should not depend on nr_pages value..
+>> Shouldn't we have a flag to indicate "trial-for-batched charge" ?
+>
+> dunno, it would require a new parameter anyway (because abusing gfp
+> doesn't seem great idea).
+>
+ok, agreed.
 
-As ballooned pages are not legitimate LRU pages, this patch introduces
-putback_movable_pages() to properly cope with cases where the isolated
-pageset contains ballooned pages and LRU pages, thus fixing the mentioned
-inelegant hack around putback_lru_pages().
+-Kame
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- include/linux/migrate.h |  2 ++
- mm/compaction.c         |  4 ++--
- mm/migrate.c            | 20 ++++++++++++++++++++
- mm/page_alloc.c         |  2 +-
- 4 files changed, 25 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ce7e667..ff103a1 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -10,6 +10,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
- #ifdef CONFIG_MIGRATION
- 
- extern void putback_lru_pages(struct list_head *l);
-+extern void putback_movable_pages(struct list_head *l);
- extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
-@@ -33,6 +34,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- #else
- 
- static inline void putback_lru_pages(struct list_head *l) {}
-+static inline void putback_movable_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e4e871b..8567bb8 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -837,9 +837,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
- 						nr_remaining);
- 
--		/* Release LRU pages not migrated */
-+		/* Release isolated pages not migrated */
- 		if (err) {
--			putback_lru_pages(&cc->migratepages);
-+			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
- 			if (err == -ENOMEM) {
- 				ret = COMPACT_PARTIAL;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 80f22bb..1165134 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -79,6 +79,26 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
-+			putback_lru_page(page);
-+	}
-+}
-+
-+/*
-+ * Put previously isolated pages back onto the appropriated lists
-+ * from where they were once taken off for compaction/migration.
-+ *
-+ * This function shall be used instead of putback_lru_pages(),
-+ * whenever the isolated pageset has been built by isolate_migratepages_range()
-+ */
-+void putback_movable_pages(struct list_head *l)
-+{
-+	struct page *page;
-+	struct page *page2;
-+
-+	list_for_each_entry_safe(page, page2, l, lru) {
-+		list_del(&page->lru);
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				page_is_file_cache(page));
- 		if (unlikely(movable_balloon_page(page)))
- 			putback_balloon_page(page);
- 		else
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 009ac28..78b7663 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5669,7 +5669,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 				    0, false, MIGRATE_SYNC);
- 	}
- 
--	putback_lru_pages(&cc.migratepages);
-+	putback_movable_pages(&cc.migratepages);
- 	return ret > 0 ? 0 : ret;
- }
- 
--- 
-1.7.11.2
 
