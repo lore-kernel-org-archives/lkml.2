@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab2HJPMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:12:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab2HJPMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:12:43 -0400
-Date: Fri, 10 Aug 2012 17:12:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 01/11] memcg: Make it possible to use the stock for
- more than one page.
-Message-ID: <20120810151239.GF1425@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-2-git-send-email-glommer@parallels.com>
+	id S932149Ab2HJPPD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:15:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59331 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab2HJPO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 11:14:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344517279-30646-2-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50222370.1030807@profihost.ag>
+References: <5018FC9B.8040808@redhat.com>
+	<501E4615.7060801@profihost.ag>
+	<501E4AFD.3020806@redhat.com>
+	<501E96BB.5060702@profihost.ag>
+	<501EC2E2.8010802@profihost.ag>
+	<501F8226.9090500@redhat.com>
+	<501F846C.50903@profihost.ag>
+	<501FB4A8.6080609@redhat.com>
+	<501FBAA2.6050205@redhat.com>
+	<5021FE4B.5070701@profihost.ag>
+	<20120808080657.GA16887@stefanha-thinkpad.localdomain>
+	<50222370.1030807@profihost.ag>
+Date: Fri, 10 Aug 2012 16:14:56 +0100
+Message-ID: <CAJSP0QX2Cn_Q0QCjDfiAqgpH2axiDdaLeFg8Aies-kJtCRJ9MQ@mail.gmail.com>
+Subject: Re: KVM segfaults with 3.5 while installing ubuntu 12.04
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Michael Roth <mdroth@linux.vnet.ibm.com>
+Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
+        mtosatti@redhat.com, kvm@vger.kernel.org,
+        qemu-devel <qemu-devel@nongnu.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kevin Wolf <kwolf@redhat.com>, Stefan Priebe <s.priebe@profihost.ag>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-08-12 17:01:09, Glauber Costa wrote:
-> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
-> 
-> We currently have a percpu stock cache scheme that charges one page at a
-> time from memcg->res, the user counter. When the kernel memory
-> controller comes into play, we'll need to charge more than that.
-> 
-> This is because kernel memory allocations will also draw from the user
-> counter, and can be bigger than a single page, as it is the case with
-> the stack (usually 2 pages) or some higher order slabs.
-> 
-> [ glommer@parallels.com: added a changelog ]
-> 
-> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Aug 8, 2012 at 9:29 AM, Stefan Priebe <s.priebe@profihost.ag> wrote:
+> ah OK - thanks. Will there be a fixed 1.1.2 as well?
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+mdroth: Kevin has the fix in his block branch, which means qemu.git
+will get it soon.  Here's the commit:
 
-> ---
->  mm/memcontrol.c | 28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 95162c9..bc7bfa7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2096,20 +2096,28 @@ struct memcg_stock_pcp {
->  static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
->  static DEFINE_MUTEX(percpu_charge_mutex);
->  
-> -/*
-> - * Try to consume stocked charge on this cpu. If success, one page is consumed
-> - * from local stock and true is returned. If the stock is 0 or charges from a
-> - * cgroup which is not current target, returns false. This stock will be
-> - * refilled.
-> +/**
-> + * consume_stock: Try to consume stocked charge on this cpu.
-> + * @memcg: memcg to consume from.
-> + * @nr_pages: how many pages to charge.
-> + *
-> + * The charges will only happen if @memcg matches the current cpu's memcg
-> + * stock, and at least @nr_pages are available in that stock.  Failure to
-> + * service an allocation will refill the stock.
-> + *
-> + * returns true if succesfull, false otherwise.
->   */
-> -static bool consume_stock(struct mem_cgroup *memcg)
-> +static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
->  {
->  	struct memcg_stock_pcp *stock;
->  	bool ret = true;
->  
-> +	if (nr_pages > CHARGE_BATCH)
-> +		return false;
-> +
->  	stock = &get_cpu_var(memcg_stock);
-> -	if (memcg == stock->cached && stock->nr_pages)
-> -		stock->nr_pages--;
-> +	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
-> +		stock->nr_pages -= nr_pages;
->  	else /* need to call res_counter_charge */
->  		ret = false;
->  	put_cpu_var(memcg_stock);
-> @@ -2408,7 +2416,7 @@ again:
->  		VM_BUG_ON(css_is_removed(&memcg->css));
->  		if (mem_cgroup_is_root(memcg))
->  			goto done;
-> -		if (nr_pages == 1 && consume_stock(memcg))
-> +		if (consume_stock(memcg, nr_pages))
->  			goto done;
->  		css_get(&memcg->css);
->  	} else {
-> @@ -2433,7 +2441,7 @@ again:
->  			rcu_read_unlock();
->  			goto done;
->  		}
-> -		if (nr_pages == 1 && consume_stock(memcg)) {
-> +		if (consume_stock(memcg, nr_pages)) {
->  			/*
->  			 * It seems dagerous to access memcg without css_get().
->  			 * But considering how consume_stok works, it's not
-> -- 
-> 1.7.11.2
-> 
+http://repo.or.cz/w/qemu/kevin.git/commit/730a9c53b4e52681fcfe31cf38854cbf91e132c7
+
+>
+> Am 08.08.2012 10:06, schrieb Stefan Hajnoczi:
+>
+>> On Wed, Aug 08, 2012 at 07:51:07AM +0200, Stefan Priebe wrote:
+>>>
+>>> Any news? Was this applied upstream?
+>>
+>>
+>> Kevin is ill.  He has asked me to review and test patches in his
+>> absence.  When he gets back later this week this will get picked up (and
+>> included in QEMU 1.2).
+>>
+>> Here is the tree, it includes this patch:
+>>
+>> https://github.com/stefanha/qemu/commits/for-kevin
+>>
+>> Stefan
+>>
 > --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
