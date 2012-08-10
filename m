@@ -1,136 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab2HJHYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 03:24:17 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40422 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756613Ab2HJHYO (ORCPT
+	id S1757136Ab2HJHaE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 03:30:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34025 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755643Ab2HJHaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 03:24:14 -0400
-From: Hanjun Guo <guohanjun@huawei.com>
-To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-CC: Eric Biederman <ebiederm@xmission.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Haren Myneni <hbabu@us.ibm.com>, Tony Luck <tony.luck@intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [BUGFIX PATCH] kexec & iosapic: kexec oops when iosapic was removed
-Date: Fri, 10 Aug 2012 15:23:15 +0800
-Message-ID: <1344583395-9128-1-git-send-email-guohanjun@huawei.com>
-X-Mailer: git-send-email 1.7.10.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.69.25]
-X-CFilter-Loop: Reflected
+	Fri, 10 Aug 2012 03:30:00 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish198519851985@gmail.com>,
+        anish kumar <anish.singh@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] [PATCH V6]Extcon: adc_jack: adc-jack driver to support 3.5 pi or simliar devices
+Date: Fri, 10 Aug 2012 00:29:43 -0700
+Message-Id: <1344583783-12593-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
-We are working on a node hot-plug project, and IOAPIC is one of these devices to
-be removed. but after IOSAPIC was removed, we use kexec to start a new kernel,
-oops happended.
+From: anish kumar <anish198519851985@gmail.com>
 
-I reviewed the code and find out:
-iosapic_remove
-  iosapic_free
-    memset(&iosapic_lists[index], 0, sizeof(iosapic_lists[0]))
-      iosapic_lists[index].addr was set to 0;
+External connector devices that decides connection information based on
+ADC values may use adc-jack device driver. The user simply needs to
+provide a table of adc range and connection states. Then, extcon
+framework will automatically notify others.
 
-and then kexec a new kernel
-kexec_disable_iosapic
-  iosapic_write(rte->iosapic,..)
-    __iosapic_write(iosapic->addr, reg, val);
-      addr was set to 0 when iosapic_remove, and oops happened
+Changes in V1:
+added Lars-Peter Clausen suggested changes:
+Using macros to get rid of boiler plate code such as devm_kzalloc
+and module_platform_driver.Other changes suggested are related to
+coding guidelines.
 
-here is the oops information:
+Changes in V2:
+Removed some unnecessary checks and changed the way we are un-regitering
+extcon and freeing the irq while removing.
 
-Starting new kernel
-kexec[11336]: Oops 8804682956800 [1]
-Modules linked in: raw(N) ipv6(N) acpi_cpufreq(N) binfmt_misc(N) fuse(N) nls_iso
-8859_1(N) loop(N) ipmi_si(N) ipmi_devintf(N) ipmi_msghandler(N) mca_ereport(N) s
-csi_ereport(N) nic_ereport(N) pcie_ereport(N) err_transport(N) nvlist(PN) dm_mod
-(N) tpm_tis(N) tpm(N) ppdev(N) tpm_bios(N) serio_raw(N) i2c_i801(N) iTCO_wdt(N)
-i2c_core(N) iTCO_vendor_support(N) sg(N) ioatdma(N) igb(N) mptctl(N) dca(N) parp
-ort_pc(N) parport(N) container(N) button(N) usbhid(N) hid(N) uhci_hcd(N) ehci_hc
-d(N) usbcore(N) sd_mod(N) crc_t10dif(N) ext3(N) mbcache(N) jbd(N) fan(N) process
-or(N) ide_pci_generic(N) ide_core(N) ata_piix(N) libata(N) mptsas(N) mptscsih(N)
- mptbase(N) scsi_transport_sas(N) scsi_mod(N) thermal(N) thermal_sys(N) hwmon(N)
+Changes in V3:
+Renamed the files to comply with extcon naming.
 
-Supported: Yes, External
+Changes in V4:
+Added the cancel_work_sync during removing of driver.
 
-Pid: 11336, CPU 0, comm:                kexec
-psr : 0000101009522030 ifs : 8000000000000791 ip  : [<a00000010004c160>]    Tain
-ted: P          N  (2.6.32.12_RAS_V1R3C00B011)
-ip is at kexec_disable_iosapic+0x120/0x1e0
-unat: 0000000000000000 pfs : 0000000000000791 rsc : 0000000000000003
-rnat: 0000000000000000 bsps: 0000000000000000 pr  : 65519aa6a555a659
-ldrs: 0000000000000000 ccv : 00000000ea3cf51e fpsr: 0009804c8a70033f
-csd : 0000000000000000 ssd : 0000000000000000
-b0  : a00000010004c150 b6  : a000000100012620 b7  : a00000010000cda0
-f6  : 000000000000000000000 f7  : 1003e0000000002000000
-f8  : 1003e0000000050000003 f9  : 1003e0000028fb97183cd
-f10 : 1003ee9f380df3c548b67 f11 : 1003e00000000000000cc
-r1  : a0000001016cf660 r2  : 0000000000000000 r3  : 0000000000000000
-r8  : 0000001009526030 r9  : a000000100012620 r10 : e00000010053f600
-r11 : c0000000fec34040 r12 : e00000078f76fd30 r13 : e00000078f760000
-r14 : 0000000000000000 r15 : 0000000000000000 r16 : 0000000000000000
-r17 : 0000000000000000 r18 : 0000000000007fff r19 : 0000000000000000
-r20 : 0000000000000000 r21 : e00000010053f590 r22 : a000000100cf0000
-r23 : 0000000000000036 r24 : e0000007002f8a84 r25 : 0000000000000022
-r26 : e0000007002f8a88 r27 : 0000000000000020 r28 : 0000000000000002
-r29 : a0000001012c8c60 r30 : 0000000000000000 r31 : 0000000000322e49
+Changes in V5:
+Added the dependency of IIO in Kconfig.
 
-Call Trace:
- [<a000000100018ca0>] show_stack+0x80/0xa0
-                                sp=e00000078f76f8f0 bsp=e00000078f761380
- [<a000000100019300>] show_regs+0x640/0x920
-                                sp=e00000078f76fac0 bsp=e00000078f761328
- [<a00000010002a130>] die+0x190/0x2e0
-                                sp=e00000078f76fad0 bsp=e00000078f7612e8
- [<a000000100922fa0>] ia64_do_page_fault+0x840/0xb20
-                                sp=e00000078f76fad0 bsp=e00000078f761288
- [<a00000010000d5c0>] ia64_native_leave_kernel+0x0/0x270
-                                sp=e00000078f76fb60 bsp=e00000078f761288
- [<a00000010004c160>] kexec_disable_iosapic+0x120/0x1e0
-                                sp=e00000078f76fd30 bsp=e00000078f761200
- [<a000000100016970>] machine_shutdown+0x110/0x140
-                                sp=e00000078f76fd30 bsp=e00000078f7611c8
- [<a000000100133530>] kernel_kexec+0xd0/0x120
-                                sp=e00000078f76fd30 bsp=e00000078f7611a0
- [<a0000001000eca40>] sys_reboot+0x480/0x4e0
-                                sp=e00000078f76fd30 bsp=e00000078f761128
- [<a00000010000d420>] ia64_ret_from_syscall+0x0/0x20
-                                sp=e00000078f76fe30 bsp=e00000078f761120
-Kernel panic - not syncing: Fatal exception
-irq 69: nobody cared (try booting with the "irqpoll" option)
+Changes in V6:
+Some nitpicks related to naming.
 
-
-Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: anish kumar <anish.singh@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 ---
- arch/ia64/kernel/iosapic.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/extcon/Kconfig                 |    6 +
+ drivers/extcon/Makefile                |    1 +
+ drivers/extcon/extcon-adc-jack.c       |  195 ++++++++++++++++++++++++++++++++
+ include/linux/extcon/extcon-adc-jack.h |   73 ++++++++++++
+ 4 files changed, 275 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/extcon/extcon-adc-jack.c
+ create mode 100644 include/linux/extcon/extcon-adc-jack.h
 
-diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
-index ef4b5d8..11ce1ec 100644
---- a/arch/ia64/kernel/iosapic.c
-+++ b/arch/ia64/kernel/iosapic.c
-@@ -276,6 +276,9 @@ kexec_disable_iosapic(void)
- 		vec = irq_to_vector(irq);
- 		list_for_each_entry(rte, &info->rtes,
- 				rte_list) {
-+			if (rte->refcnt == NO_REF_RTE)
-+				continue;
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index e175c8e..dd5b01b 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -21,6 +21,12 @@ config EXTCON_GPIO
+ 	  Say Y here to enable GPIO based extcon support. Note that GPIO
+ 	  extcon supports single state per extcon instance.
+ 
++config EXTCON_ADC_JACK
++	tristate "ADC Jack extcon support"
++	depends on IIO
++	help
++	  Say Y here to enable extcon device driver based on ADC values.
 +
- 			iosapic_write(rte->iosapic,
- 					IOSAPIC_RTE_LOW(rte->rte_index),
- 					IOSAPIC_MASK|vec);
+ config EXTCON_MAX77693
+ 	tristate "MAX77693 EXTCON Support"
+ 	depends on MFD_MAX77693
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 88961b3..bc7111e 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -4,6 +4,7 @@
+ 
+ obj-$(CONFIG_EXTCON)		+= extcon_class.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
++obj-$(CONFIG_EXTCON_ADC_JACK)   += extcon-adc-jack.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+ obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+new file mode 100644
+index 0000000..da058f7
+--- /dev/null
++++ b/drivers/extcon/extcon-adc-jack.c
+@@ -0,0 +1,195 @@
++/*
++ * drivers/extcon/extcon-adc-jack.c
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/iio/consumer.h>
++#include <linux/extcon/extcon-adc-jack.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_data - internal data for adc_jack device driver
++ * @edev        - extcon device.
++ * @cable_names - list of supported cables.
++ * @num_cables  - size of cable_names.
++ * @adc_conditions       - list of adc value conditions.
++ * @num_conditions       - size of adc_conditions.
++ * @irq         - irq number of attach/detach event (0 if not exist).
++ * @handling_delay      - interrupt handler will schedule extcon event
++ *                      handling at handling_delay jiffies.
++ * @handler     - extcon event handler called by interrupt handler.
++ * @chan	- iio channel being queried.
++ */
++struct adc_jack_data {
++	struct extcon_dev edev;
++
++	const char **cable_names;
++	int num_cables;
++	struct adc_jack_cond *adc_conditions;
++	int num_conditions;
++
++	int irq;
++	unsigned long handling_delay; /* in jiffies */
++	struct delayed_work handler;
++
++	struct iio_channel *chan;
++};
++
++static void adc_jack_handler(struct work_struct *work)
++{
++	struct adc_jack_data *data = container_of(to_delayed_work(work),
++						  struct adc_jack_data,
++						  handler);
++	u32 state = 0;
++	int ret, adc_val;
++	int i;
++
++	ret = iio_read_channel_raw(data->chan, &adc_val);
++	if (ret < 0) {
++		dev_err(data->edev.dev, "read channel() error: %d\n", ret);
++		return;
++	}
++
++	/* Get state from adc value with adc_conditions */
++	for (i = 0; i < data->num_conditions; i++) {
++		struct adc_jack_cond *def = &data->adc_conditions[i];
++		if (!def->state)
++			break;
++		if (def->min_adc <= adc_val && def->max_adc >= adc_val) {
++			state = def->state;
++			break;
++		}
++	}
++	/* if no def has met, it means state = 0 (no cables attached) */
++
++	extcon_set_state(&data->edev, state);
++}
++
++static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
++{
++	struct adc_jack_data *data = _data;
++
++	schedule_delayed_work(&data->handler, data->handling_delay);
++	return IRQ_HANDLED;
++}
++
++static int __devinit adc_jack_probe(struct platform_device *pdev)
++{
++	struct adc_jack_data *data;
++	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
++	int i, err = 0;
++
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->edev.name = pdata->name;
++
++	if (pdata->cable_names)
++		data->edev.supported_cable = pdata->cable_names;
++	else
++		data->edev.supported_cable = extcon_cable_name;
++
++	/* Check the length of array and set num_cables */
++	for (i = 0; data->edev.supported_cable[i]; i++)
++		;
++	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
++			i - 1);
++		goto out;
++	}
++	data->num_cables = i;
++
++	if (!pdata->adc_conditions ||
++	    !pdata->adc_conditions[0].state) {
++		err = -EINVAL;
++		dev_err(&pdev->dev, "error: adc_conditions not defined.\n");
++		goto out;
++	}
++	data->adc_conditions = pdata->adc_conditions;
++
++	/* Check the length of array and set num_conditions */
++	for (i = 0; data->adc_conditions[i].state; i++)
++		;
++	data->num_conditions = i;
++
++	data->chan = iio_channel_get(dev_name(&pdev->dev),
++						pdata->consumer_channel);
++	if (IS_ERR(data->chan)) {
++		err = PTR_ERR(data->chan);
++		goto out;
++	}
++
++	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
++
++	INIT_DELAYED_WORK_DEFERRABLE(&data->handler, adc_jack_handler);
++
++	platform_set_drvdata(pdev, data);
++
++	err = extcon_dev_register(&data->edev, &pdev->dev);
++	if (err)
++		goto out;
++
++	data->irq = platform_get_irq(pdev, 0);
++	if (!data->irq) {
++		dev_err(&pdev->dev, "platform_get_irq failed\n");
++		err = -ENODEV;
++		goto err_irq;
++	}
++
++	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
++				pdata->irq_flags, pdata->name, data);
++
++	if (err) {
++		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
++		err = -EINVAL;
++		goto err_irq;
++	}
++
++	goto out;
++
++err_irq:
++	extcon_dev_unregister(&data->edev);
++out:
++	return err;
++}
++
++static int __devexit adc_jack_remove(struct platform_device *pdev)
++{
++	struct adc_jack_data *data = platform_get_drvdata(pdev);
++
++	free_irq(data->irq, data);
++	cancel_work_sync(&data->handler.work);
++	extcon_dev_unregister(&data->edev);
++
++	return 0;
++}
++
++static struct platform_driver adc_jack_driver = {
++	.probe		= adc_jack_probe,
++	.remove		= __devexit_p(adc_jack_remove),
++	.driver		= {
++		.name	= "adc-jack",
++		.owner	= THIS_MODULE,
++	},
++};
++
++module_platform_driver(adc_jack_driver);
+diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
+new file mode 100644
+index 0000000..a1603cf
+--- /dev/null
++++ b/include/linux/extcon/extcon-adc-jack.h
+@@ -0,0 +1,73 @@
++/*
++ * include/linux/extcon/extcon-adc-jack.h
++ *
++ * Analog Jack extcon driver with ADC-based detection capability.
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _EXTCON_ADC_JACK_H_
++#define _EXTCON_ADC_JACK_H_ __FILE__
++
++#include <linux/module.h>
++#include <linux/extcon.h>
++
++/**
++ * struct adc_jack_cond - condition to use an extcon state
++ * @state	- the corresponding extcon state (if 0, this struct denotes
++ *		the last adc_jack_cond element among the array)
++ * @min_adc	- min adc value for this condition
++ * @max_adc	- max adc value for this condition
++ *
++ * For example, if { .state = 0x3, .min_adc = 100, .max_adc = 200}, it means
++ * that if ADC value is between (inclusive) 100 and 200, than the cable 0 and
++ * 1 are attached (1<<0 | 1<<1 == 0x3)
++ *
++ * Note that you don't need to describe condition for "no cable attached"
++ * because when no adc_jack_cond is met, state = 0 is automatically chosen.
++ */
++struct adc_jack_cond {
++	u32 state; /* extcon state value. 0 if invalid */
++	u32 min_adc;
++	u32 max_adc;
++};
++
++/**
++ * struct adc_jack_pdata - platform data for adc jack device.
++ * @name	- name of the extcon device. If null, "adc-jack" is used.
++ * @consumer_channel - Unique name to identify the channel on the consumer
++ *                   side. This typically describes the channels used within
++ *                   the consumer. E.g. 'battery_voltage'
++ * @cable_names	- array of cable names ending with null. If the array itself
++ *		if null, extcon standard cable names are chosen.
++ * @adc_contitions	- array of struct adc_jack_cond conditions ending
++ *			with .state = 0 entry. This describes how to decode
++ *			adc values into extcon state.
++ * @irq_flags	- irq flags used for the @irq
++ * @handling_delay_ms	- in some devices, we need to read ADC value some
++ *			milli-seconds after the interrupt occurs. You may
++ *			describe such delays with @handling_delay_ms, which
++ *			is rounded-off by jiffies.
++ */
++struct adc_jack_pdata {
++	const char *name;
++	const char *consumer_channel;
++	/*
++	 * NULL if standard extcon names are used.
++	 * The last entry should be NULL
++	 */
++	const char **cable_names;
++	/* The last entry's state should be 0 */
++	struct adc_jack_cond *adc_conditions;
++
++	unsigned long irq_flags;
++	unsigned long handling_delay_ms; /* in ms */
++};
++
++#endif /* _EXTCON_ADC_JACK_H */
 -- 
-1.7.6.1
-
+1.7.1
 
