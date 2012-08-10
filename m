@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab2HJKCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:02:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62934 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758660Ab2HJKCi (ORCPT
+	id S1759653Ab2HJKEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:04:48 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58950 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759212Ab2HJKEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:02:38 -0400
-Date: Fri, 10 Aug 2012 12:02:33 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
-Message-ID: <20120810100233.GA1503@avionic-0098.mockup.avionic-design.de>
-References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
- <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
- <20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
- <CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
+	Fri, 10 Aug 2012 06:04:46 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:zMo0YdtZRkdWNcPuUbrqZb0zYIdTsbY0OIgaeUx0GtA
- 7V21EzHKge8OVqg8DnCYdzdBpF5ubStkc740fl+vkO6TQ/6Wqw
- 4EvecnVAb96NZORVH9qw1wbKf7atKuykN0kK6g244NHUlJV81q
- MtibTw76QByVx3fR7xRYMgXAR8jE6qUj3RLF6v3GNuAdxBnjaK
- TIYEK/jkPb29lOk9M2r1lUT4ENWyjDbjxHi2V41HjOOaggDHs8
- r+ybYyAUmNgYZcj62CBv3O8IEsBfjILzpJ2xRjFWk3n+61I1L2
- 1aB0Auoo0+0eDgnR9L6zQUF2rsVMmcf7eHA4Kuhu31GntmiHnA
- ALpSsHCb2Kwl2JGkYFp88zJ0HiwdyzsjlbuC6EnjBED4JJVfub
- 7ldmCSbq7S6WQORgC9UMmN63W+dnDFUBHLiexARVFDX49gQB/u
- ayYLb
+In-Reply-To: <20120810100233.GA1503@avionic-0098.mockup.avionic-design.de>
+References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
+	<1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
+	<20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
+	<CAK9yfHwmfW9K9jBfJJXr5S1nJOsetedkEQ96Rh4DT_zvOGr4eQ@mail.gmail.com>
+	<20120810100233.GA1503@avionic-0098.mockup.avionic-design.de>
+Date: Fri, 10 Aug 2012 15:34:46 +0530
+Message-ID: <CAK9yfHxXEBecVbiMyBKA_sHfzA1evCYeV9W66McUqZ67f2q3hA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10 August 2012 15:32, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Fri, Aug 10, 2012 at 03:29:08PM +0530, Sachin Kamat wrote:
+>> On 10 August 2012 15:25, Thierry Reding
+>> <thierry.reding@avionic-design.de> wrote:
+>> > On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
+>> >> Fixes the following:
+>> >> WARNING: line over 80 characters
+>> >> ERROR: spaces required around that ':' (ctx:VxW)
+>> >> WARNING: Prefer pr_warn(... to pr_warning(...
+>> >>
+>> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> >> ---
+>> >>  drivers/pwm/core.c |    6 +++---
+>> >>  1 files changed, 3 insertions(+), 3 deletions(-)
+>> >>
+>> >> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+>> >> index efc20f8..929be13 100644
+>> >> --- a/drivers/pwm/core.c
+>> >> +++ b/drivers/pwm/core.c
+>> >> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_device *pwm, const char *label)
+>> >>  }
+>> >>
+>> >>  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
+>> >> -                                           const struct of_phandle_args *args)
+>> >> +                                          const struct of_phandle_args *args)
+>> >>  {
+>> >>       struct pwm_device *pwm;
+>> >>
+>> >
+>> > Can this hunk be removed, please? I think aligning the arguments is more
+>> > useful than respecting the 80-columns limit.
+>>
+>> Sure, if you think so. Anyway it was just one space deleted. Do you
+>> want me to re-send the patch?
+>
+> No, with your permission, I'll just leave that hunk out and remove the
+> "WARNING: line over 80 characters" line from the commit message.
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK. That is fine with me.
+Thanks.
 
-On Fri, Aug 10, 2012 at 03:29:08PM +0530, Sachin Kamat wrote:
-> On 10 August 2012 15:25, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
-> >> Fixes the following:
-> >> WARNING: line over 80 characters
-> >> ERROR: spaces required around that ':' (ctx:VxW)
-> >> WARNING: Prefer pr_warn(... to pr_warning(...
-> >>
-> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> >> ---
-> >>  drivers/pwm/core.c |    6 +++---
-> >>  1 files changed, 3 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> >> index efc20f8..929be13 100644
-> >> --- a/drivers/pwm/core.c
-> >> +++ b/drivers/pwm/core.c
-> >> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_device *p=
-wm, const char *label)
-> >>  }
-> >>
-> >>  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
-> >> -                                           const struct of_phandle_ar=
-gs *args)
-> >> +                                          const struct of_phandle_arg=
-s *args)
-> >>  {
-> >>       struct pwm_device *pwm;
-> >>
-> >
-> > Can this hunk be removed, please? I think aligning the arguments is more
-> > useful than respecting the 80-columns limit.
->=20
-> Sure, if you think so. Anyway it was just one space deleted. Do you
-> want me to re-send the patch?
+>
+> Thierry
 
-No, with your permission, I'll just leave that hunk out and remove the
-"WARNING: line over 80 characters" line from the commit message.
 
-Thierry
 
---LZvS9be/3tNcYl/X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQJNw5AAoJEN0jrNd/PrOhH+oQAIS1X0KZVda6k88SVEAJPoxv
-2iXF1+cW81YYG24myVmAq6eYLPH73ThdsbMQEnKPhUMFx6Xno8/7s0WrvofsXPVK
-dwXYxes9yeYNkLguRJFTN+4hT404tiaK2G3OJg2ucpaB22oJAIhIso+hnFy0MdGV
-vCHZg+9Mt+nZZLdKVbOYnec+AbOIbGaRAkj1dv50eaNfsgomzF2IpuzGoQbco1xg
-HwTC5GgCZPdNU1DW6BmoEPP9kMw3ZMX6LgGbI/R8x+eyWo1QKkSYvigUTQ2ypQWH
-NnyjtG5/RzBWXijyFO8jSrEdjAzUYV4aCwPKgzeYnKjAiCpQ+YXXzNQr032yJMQM
-K/D4Yodxq6s7LiOQL3wj0/SR2JG1Civ7LVwUaVkyQOKdqUKl/uANc/WV2fjaYyOR
-dyK6RoXyS3kdO4gi33iu0lmfxL5irnpuRwtsKJi0TNIuQP2mLKSOBV8jmXcU+0iD
-t5JQ47q/TgBxZTdIPz9BfhAIYswUhsgJEU7I1uMqGvVod1KQ+mTIz1H03kzPgekS
-l5Jy9Uen9yAg9oCyKVyn67L6a4WFrF6LTMoB6uaj2/pmSFnNrlANl8tCTnVF8Vie
-BCtXqSCgVZrDCxvPyNpkB8/qzt4XgaDphPkbbeJwKlHRQF22dnMKoYFHOTws5Zew
-GF3rSZfniBusVCg++4KQ
-=CIhC
------END PGP SIGNATURE-----
-
---LZvS9be/3tNcYl/X--
+-- 
+With warm regards,
+Sachin
