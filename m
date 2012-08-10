@@ -1,49 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760053Ab2HJSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:44:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53039 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758239Ab2HJSoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:44:13 -0400
-Message-ID: <50255618.9080708@zytor.com>
-Date: Fri, 10 Aug 2012 11:42:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932206Ab2HJStJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:49:09 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27153 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab2HJStE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:49:04 -0400
+Date: Fri, 10 Aug 2012 20:49:02 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: csr: Fix up version.h includes
+Message-ID: <alpine.LNX.2.00.1208102046530.17673@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond.Myklebust@netapp.com, davem@davemloft.net,
-        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        tim.c.chen@linux.intel.com, devel@openvz.org
-Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
-References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk> <5025537D.9060300@zytor.com> <20120810194028.792f29f1@pyramind.ukuu.org.uk>
-In-Reply-To: <20120810194028.792f29f1@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 11:40 AM, Alan Cox wrote:
-> 
-> Agreed on open() for sockets.. the lack of open is a Berklix derived
-> pecularity of the interface. It would equally be useful to be able to
-> open "/dev/socket/ipv4/1.2.3.4/1135" and the like for scripts and stuff
-> 
-> That needs VFS changes however so you can pass the remainder of a path to
-> a device node. It also lets you do a lot of other sane stuff like
-> 
-> 	open /dev/ttyS0/9600/8n1
-> 
+Include version.h where actually needed, remove where unneeded.
 
-Well, supporting device node subpaths would be nice, but I don't think
-that that is a requirement either for being able to open() a socket (as
-a Linux extension) nor for supporting something like your above
-/dev/socket/... since that could be done with a filesystem rather than
-just a device node.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/csr/csr_panic.c            | 1 -
+ drivers/staging/csr/drv.c                  | 3 +--
+ drivers/staging/csr/io.c                   | 2 +-
+ drivers/staging/csr/monitor.c              | 3 +--
+ drivers/staging/csr/netdev.c               | 3 +--
+ drivers/staging/csr/sdio_mmc.c             | 2 +-
+ drivers/staging/csr/sme_native.c           | 2 +-
+ drivers/staging/csr/sme_sys.c              | 2 +-
+ drivers/staging/csr/ul_int.c               | 1 +
+ drivers/staging/csr/unifi_pdu_processing.c | 2 +-
+ drivers/staging/csr/unifi_wext.h           | 1 +
+ 11 files changed, 10 insertions(+), 12 deletions(-)
 
-	-hpa
+diff --git a/drivers/staging/csr/csr_panic.c b/drivers/staging/csr/csr_panic.c
+index 353a829..095f7fa 100644
+--- a/drivers/staging/csr/csr_panic.c
++++ b/drivers/staging/csr/csr_panic.c
+@@ -9,7 +9,6 @@
+ *****************************************************************************/
+ 
+ #include <linux/kernel.h>
+-#include <linux/version.h>
+ #include <linux/module.h>
+ 
+ #include "csr_panic.h"
+diff --git a/drivers/staging/csr/drv.c b/drivers/staging/csr/drv.c
+index b2c27f4..9834d92 100644
+--- a/drivers/staging/csr/drv.c
++++ b/drivers/staging/csr/drv.c
+@@ -15,8 +15,6 @@
+  * ---------------------------------------------------------------------------
+  */
+ 
+-
+-
+ /*
+  * Porting Notes:
+  * Part of this file contains an example for how to glue the OS layer
+@@ -37,6 +35,7 @@
+ #include <linux/poll.h>
+ #include <asm/uaccess.h>
+ #include <linux/jiffies.h>
++#include <linux/version.h>
+ 
+ #include "csr_wifi_hip_unifiversion.h"
+ #include "unifi_priv.h"
+diff --git a/drivers/staging/csr/io.c b/drivers/staging/csr/io.c
+index e6503d96..deaff25 100644
+--- a/drivers/staging/csr/io.c
++++ b/drivers/staging/csr/io.c
+@@ -31,6 +31,7 @@
+  * ---------------------------------------------------------------------------
+  */
+ #include <linux/proc_fs.h>
++#include <linux/version.h>
+ 
+ #include "csr_wifi_hip_unifi.h"
+ #include "csr_wifi_hip_unifiversion.h"
+@@ -38,7 +39,6 @@
+ #include "unifiio.h"
+ #include "unifi_priv.h"
+ 
+-
+ /*
+  * Array of pointers to context structs for unifi devices that are present.
+  * The index in the array corresponds to the wlan interface number
+diff --git a/drivers/staging/csr/monitor.c b/drivers/staging/csr/monitor.c
+index 628782a..ca7559b 100644
+--- a/drivers/staging/csr/monitor.c
++++ b/drivers/staging/csr/monitor.c
+@@ -10,6 +10,7 @@
+  * ---------------------------------------------------------------------------
+  */
+ 
++#include <linux/version.h>
+ #include "unifi_priv.h"
+ 
+ #ifdef UNIFI_SNIFF_ARPHRD
+@@ -23,8 +24,6 @@
+ #define ETH_P_80211_RAW ETH_P_ALL
+ #endif
+ 
+-
+-
+ /*
+  * ---------------------------------------------------------------------------
+  *  uf_start_sniff
+diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
+index 1e6e111..0e34020 100644
+--- a/drivers/staging/csr/netdev.c
++++ b/drivers/staging/csr/netdev.c
+@@ -15,7 +15,6 @@
+  * ---------------------------------------------------------------------------
+  */
+ 
+-
+ /*
+  * Porting Notes:
+  * This file implements the data plane of the UniFi linux driver.
+@@ -48,7 +47,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/mutex.h>
+ #include <linux/semaphore.h>
+-
++#include <linux/version.h>
+ #include <linux/vmalloc.h>
+ #include "csr_wifi_hip_unifi.h"
+ #include "csr_wifi_hip_conversions.h"
+diff --git a/drivers/staging/csr/sdio_mmc.c b/drivers/staging/csr/sdio_mmc.c
+index d3fd57c..713d2a4 100644
+--- a/drivers/staging/csr/sdio_mmc.c
++++ b/drivers/staging/csr/sdio_mmc.c
+@@ -14,7 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
+-
++#include <linux/version.h>
+ #include <linux/mmc/core.h>
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+diff --git a/drivers/staging/csr/sme_native.c b/drivers/staging/csr/sme_native.c
+index 229268f..845b654 100644
+--- a/drivers/staging/csr/sme_native.c
++++ b/drivers/staging/csr/sme_native.c
+@@ -12,7 +12,7 @@
+  */
+ 
+ #include <linux/netdevice.h>
+-
++#include <linux/version.h>
+ #include "unifi_priv.h"
+ #include "csr_wifi_hip_unifi.h"
+ #include "csr_wifi_hip_conversions.h"
+diff --git a/drivers/staging/csr/sme_sys.c b/drivers/staging/csr/sme_sys.c
+index 99de27e..7ff3f43 100644
+--- a/drivers/staging/csr/sme_sys.c
++++ b/drivers/staging/csr/sme_sys.c
+@@ -14,6 +14,7 @@
+  * ---------------------------------------------------------------------------
+  */
+ 
++#include <linux/version.h>
+ #include "csr_wifi_hip_unifiversion.h"
+ #include "unifi_priv.h"
+ #include "csr_wifi_hip_conversions.h"
+@@ -21,7 +22,6 @@
+ #include "csr_wifi_sme_sef.h"
+ #endif
+ 
+-
+ /*
+  * This file implements the SME SYS API and contains the following functions:
+  * CsrWifiRouterCtrlMediaStatusReqHandler()
+diff --git a/drivers/staging/csr/ul_int.c b/drivers/staging/csr/ul_int.c
+index 46d3507..819690d 100644
+--- a/drivers/staging/csr/ul_int.c
++++ b/drivers/staging/csr/ul_int.c
+@@ -12,6 +12,7 @@
+  *
+  * ***************************************************************************
+  */
++#include <linux/version.h>
+ #include "csr_wifi_hip_unifi.h"
+ #include "csr_wifi_hip_conversions.h"
+ #include "unifi_priv.h"
+diff --git a/drivers/staging/csr/unifi_pdu_processing.c b/drivers/staging/csr/unifi_pdu_processing.c
+index 7c7e8d4..c28f4dd 100644
+--- a/drivers/staging/csr/unifi_pdu_processing.c
++++ b/drivers/staging/csr/unifi_pdu_processing.c
+@@ -14,7 +14,7 @@
+  * ---------------------------------------------------------------------------
+  */
+ 
+-
++#include <linux/version.h>
+ #include <linux/types.h>
+ #include <linux/etherdevice.h>
+ #include <linux/vmalloc.h>
+diff --git a/drivers/staging/csr/unifi_wext.h b/drivers/staging/csr/unifi_wext.h
+index 6d7a995..fc0a06a 100644
+--- a/drivers/staging/csr/unifi_wext.h
++++ b/drivers/staging/csr/unifi_wext.h
+@@ -16,6 +16,7 @@
+ #define __LINUX_UNIFI_WEXT_H__ 1
+ 
+ #include <linux/kernel.h>
++#include <linux/version.h>
+ #include <net/iw_handler.h>
+ #include "csr_wifi_sme_prim.h"
+ 
+-- 
+1.7.11.4
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
