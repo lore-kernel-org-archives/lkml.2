@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759932Ab2HJXJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 19:09:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16792 "EHLO mga02.intel.com"
+	id S1760266Ab2HJXKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 19:10:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54746 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab2HJXJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 19:09:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,748,1336374000"; 
-   d="scan'208";a="179173690"
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 2/3] HWPOISON: undo memory error handling for dirty pagecache
-References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1344634913-13681-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Fri, 10 Aug 2012 16:09:48 -0700
-In-Reply-To: <1344634913-13681-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-	(Naoya Horiguchi's message of "Fri, 10 Aug 2012 17:41:52 -0400")
-Message-ID: <m2a9y2cpj7.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754862Ab2HJXJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 19:09:54 -0400
+Message-ID: <50259494.8060304@zytor.com>
+Date: Fri, 10 Aug 2012 16:09:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond.Myklebust@netapp.com, davem@davemloft.net,
+        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
+References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk> <20120810191149.GA17985@fieldses.org> <20120810202818.06236f46@pyramind.ukuu.org.uk>
+In-Reply-To: <20120810202818.06236f46@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+On 08/10/2012 12:28 PM, Alan Cox wrote:
+> Explicitly for Linux yes - this is not generally true of the AF_UNIX
+> socket domain and even the permissions aspect isn't guaranteed to be
+> supported on some BSD environments !
 
-> Current memory error handling on dirty pagecache has a bug that user
-> processes who use corrupted pages via read() or write() can't be aware
-> of the memory error and result in discarding dirty data silently.
->
-> The following patch is to improve handling/reporting memory errors on
-> this case, but as a short term solution I suggest that we should undo
-> the present error handling code and just leave errors for such cases
-> (which expect the 2nd MCE to panic the system) to ensure data consistency.
+Yes, but let's worry about what the Linux behavior should be.
 
-Not sure that's the right approach. It's not worse than any other IO 
-errors isn't it? 
+> The name is however just a proxy for the socket itself. You don't even
+> get a device node in the usual sense or the same inode in the file system
+> space.
 
--Andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+No, but it is looked up the same way any other inode is (the difference
+between FIFOs and sockets is that sockets have separate connections,
+which is also why open() on sockets would be nice.)
+
+However, there is a fundamental difference between AF_UNIX sockets and
+open(), and that is how the pathname is delivered.  It thus would make
+more sense to provide the openat()-like information in struct
+sockaddr_un, but that may be very hard to do in a sensible way.  In that
+sense it perhaps would be cleaner to be able to do an open[at]() on the
+socket node with O_PATH (perhaps there should be an O_SOCKET option,
+even?) and pass the resulting file descriptor to bind() or connect().
+
+	-hpa
+
+
+
