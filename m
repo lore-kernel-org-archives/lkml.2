@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab2HJT3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 15:29:54 -0400
-Received: from fallback6.mail.ru ([94.100.176.134]:51969 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab2HJT3w (ORCPT
+	id S1757599Ab2HJTbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 15:31:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37028 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2HJTbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 15:29:52 -0400
-Message-ID: <50255E31.8060904@list.ru>
-Date: Fri, 10 Aug 2012 23:17:05 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 10 Aug 2012 15:31:51 -0400
+Date: Fri, 10 Aug 2012 21:32:10 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: sumit.semwal@linaro.org, rob.clark@linaro.org,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 1/4] dma-buf: remove fallback for
+ !CONFIG_DMA_SHARED_BUFFER
+Message-ID: <20120810193210.GG5738@phenom.ffwll.local>
+Mail-Followup-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	sumit.semwal@linaro.org, rob.clark@linaro.org,
+	linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
+References: <20120810145728.5490.44707.stgit@patser.local>
 MIME-Version: 1.0
-To: Linux kernel <linux-kernel@vger.kernel.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org
-Subject: Q: how to control the TTY output queue in real time?
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam: Not detected
-X-Mras: Ok
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120810145728.5490.44707.stgit@patser.local>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Aug 10, 2012 at 04:57:43PM +0200, Maarten Lankhorst wrote:
+> Documentation says that code requiring dma-buf should add it to
+> select, so inline fallbacks are not going to be used. A link error
+> will make it obvious what went wrong, instead of silently doing
+> nothing at runtime.
+> 
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-I am writing an app that needs to control the
-serial xmit in real-time. What I need is a notification
-that the TTY output queue fillup (returned by TIOCOUTQ
-ioctl) have dropped below the specified value.
-I haven't found anything that can help implementing
-this. If I can't get an async notification, the sync
-notification will do too, like, for instance, the tcdrain()
-call, but with the argument to specify the needed fillup,
-below which the function will return.
-If there is nothing like this, then even the notification
-on every transmitted char will do.
-But I've found nothing of the above. :(
+I've botched it more than once to update these when creating new dma-buf
+code. Hence
 
-Any suggestions how the real-time control can be
-implemented?
-
-(please CC me the replies)
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
