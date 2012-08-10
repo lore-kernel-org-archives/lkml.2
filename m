@@ -1,181 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab2HJDsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:48:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27311 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757986Ab2HJDrK (ORCPT
+	id S1755139Ab2HJD43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:56:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45928 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab2HJD41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:47:10 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=mjixex2a8-4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=jGCNUNN5igRJAktnj2cA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120810034708.589220175@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 09 Aug 2012 23:43:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 4/4] perf/events: Use helper functions in event assignment to shrink
- macro size
-References: <20120810034302.758092203@goodmis.org>
-Content-Disposition: inline; filename=0004-perf-events-Use-helper-functions-in-event-assignment.patch
+	Thu, 9 Aug 2012 23:56:27 -0400
+Date: Thu, 9 Aug 2012 20:56:14 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-b2104ba4a037e296901e73a0d396826c13625bb0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1344544736.8326.17.camel@sbsiddha-desk.sc.intel.com>
+References: <1344544736.8326.17.camel@sbsiddha-desk.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86, fpu:
+  fix build issues with CONFIG_IA32_EMULATION, CONFIG_X86_X32_ABI
+Git-Commit-ID: b2104ba4a037e296901e73a0d396826c13625bb0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 09 Aug 2012 20:56:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Commit-ID:  b2104ba4a037e296901e73a0d396826c13625bb0
+Gitweb:     http://git.kernel.org/tip/b2104ba4a037e296901e73a0d396826c13625bb0
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Thu, 9 Aug 2012 13:38:56 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 9 Aug 2012 17:13:57 -0700
 
-The functions that assign the contents for the perf software events are
-defined by the TRACE_EVENT() macros. Each event has its own unique
-way to assign data to its buffer. When you have over 700 events,
-that means there's 700 functions assigning data uniquely for each
-event.
+x86, fpu: fix build issues with CONFIG_IA32_EMULATION, CONFIG_X86_X32_ABI
 
-By making helper functions in the core kernel to do the work
-instead, we can shrink the size of the kernel down a bit.
+Fengguang's automated build reported some compilation failures:
+> arch/x86/kernel/signal.c: In function 'setup_rt_frame':
+> arch/x86/kernel/signal.c:626:4: error: implicit declaration of function '__setup_frame'
+> ...
 
-With a kernel configured with 707 events, the change in size was:
+Code saving fsave prefix is applicable only for CONFIG_X86_32 or
+CONFIG_IA32_EMULATION. Use config_enabled() checks to remove the unnecessary
+code compile-time for x86_64 kernels build without CONFIG_IA32_EMULATION.
 
-   text    data     bss     dec     hex filename
-19966937        2594648 1945600 24507185        175f331 vmlinux-before
-19924761        2594584 1945600 24464945        1754e31 vmlinux-after
+Peter reported some build failures with CONFIG_X86_X32_ABI:
+> arch/x86/kernel/signal.c:792:12: error:
+> static declaration of ‘x32_setup_rt_frame’ follows non-static declaration
+> ...
 
-That's a total of 42240 bytes, which comes down to 59 bytes per event.
+Fix it by moving the x32_setup_rt_frame() code around and removing the
+non-static declaration.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Also while we are at this, fix a spurious warning:
+> arch/x86/kernel/xsave.c:209:15: warning: ignoring return value
+> of ‘__clear_user’, declared with attribute warn_unused_result
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1344544736.8326.17.camel@sbsiddha-desk.sc.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- include/linux/ftrace_event.h    |   13 +++++++++++++
- include/trace/ftrace.h          |   31 ++++++++-----------------------
- kernel/trace/trace_event_perf.c |   26 ++++++++++++++++++++++++++
- 3 files changed, 47 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/fpu-internal.h |    7 +--
+ arch/x86/kernel/signal.c            |  134 ++++++++++++++++++-----------------
+ arch/x86/kernel/xsave.c             |   10 ++-
+ 3 files changed, 77 insertions(+), 74 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index b9f39d3..06c6d04 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -313,6 +313,19 @@ struct perf_event;
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 35ad161..ba83a08 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -22,7 +22,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/xsave.h>
  
- DECLARE_PER_CPU(struct pt_regs, perf_trace_regs);
+-#ifdef CONFIG_IA32_EMULATION
++#ifdef CONFIG_X86_64
+ # include <asm/sigcontext32.h>
+ # include <asm/user32.h>
+ int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+@@ -52,17 +52,12 @@ extern user_regset_get_fn fpregs_get, xfpregs_get, fpregs_soft_get,
+ extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
+ 				 xstateregs_set;
  
-+struct perf_trace_event {
-+	struct pt_regs		regs;
-+	u64			addr;
-+	u64			count;
-+	int			entry_size;
-+	int			rctx;
-+};
+-
+ /*
+  * xstateregs_active == fpregs_active. Please refer to the comment
+  * at the definition of fpregs_active.
+  */
+ #define xstateregs_active	fpregs_active
+ 
+-int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-		       siginfo_t *info, compat_sigset_t *set,
+-		       struct pt_regs *regs);
+-
+ #ifdef CONFIG_MATH_EMULATION
+ # define HAVE_HWFP             (boot_cpu_data.hard_math)
+ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 356e442..e10f96a 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -472,6 +472,74 @@ static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ }
+ #endif /* CONFIG_X86_32 */
+ 
++static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
++			      siginfo_t *info, compat_sigset_t *set,
++			      struct pt_regs *regs)
++{
++#ifdef CONFIG_X86_X32_ABI
++	struct rt_sigframe_x32 __user *frame;
++	void __user *restorer;
++	int err = 0;
++	void __user *fpstate = NULL;
 +
-+extern void *perf_trace_event_setup(struct ftrace_event_call *event_call, 
-+				    struct perf_trace_event *pe);
-+extern void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
-+				    struct perf_trace_event *pe);
++	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
 +
- extern int  perf_trace_init(struct perf_event *event);
- extern void perf_trace_destroy(struct perf_event *event);
- extern int  perf_trace_add(struct perf_event *event, int flags);
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 8118451..a02d48d 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -677,10 +677,10 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #define __get_str(field) (char *)__get_dynamic_array(field)
- 
- #undef __perf_addr
--#define __perf_addr(a) __addr = (a)
-+#define __perf_addr(a) __pe.addr = (a)
- 
- #undef __perf_count
--#define __perf_count(c) __count = (c)
-+#define __perf_count(c) __pe.count = (c)
- 
- #undef TP_perf_assign
- #define TP_perf_assign(args...) args
-@@ -693,36 +693,21 @@ perf_trace_##call(void *__data, proto)					\
- 	struct ftrace_event_call *event_call = __data;			\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
- 	struct ftrace_raw_##call *entry;				\
--	struct pt_regs __regs;						\
--	u64 __addr = 0, __count = 1;					\
--	struct hlist_head *head;					\
--	int __entry_size;						\
-+	struct perf_trace_event __pe;					\
- 	int __data_size;						\
--	int rctx;							\
--									\
--	perf_fetch_caller_regs(&__regs);				\
- 									\
- 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
--	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
--			     sizeof(u64));				\
--	__entry_size -= sizeof(u32);					\
--									\
--	if (WARN_ONCE(__entry_size > PERF_MAX_TRACE_SIZE,		\
--		      "profile buffer not large enough"))		\
--		return;							\
-+	__pe.entry_size = __data_size + sizeof(*entry);			\
-+	__pe.addr = 0;							\
-+	__pe.count = 1;							\
- 									\
--	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
--		__entry_size, event_call->event.type, &__regs, &rctx);	\
--	if (!entry)							\
--		return;							\
-+	entry = perf_trace_event_setup(event_call, &__pe);		\
- 									\
- 	tstruct								\
- 									\
- 	{ assign; }							\
- 									\
--	head = this_cpu_ptr(event_call->perf_events);			\
--	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
--		__count, &__regs, head);				\
-+	perf_trace_event_submit(entry, event_call, &__pe);		\
++	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
++		return -EFAULT;
++
++	if (ka->sa.sa_flags & SA_SIGINFO) {
++		if (copy_siginfo_to_user32(&frame->info, info))
++			return -EFAULT;
++	}
++
++	put_user_try {
++		/* Create the ucontext.  */
++		if (cpu_has_xsave)
++			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
++		else
++			put_user_ex(0, &frame->uc.uc_flags);
++		put_user_ex(0, &frame->uc.uc_link);
++		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
++		put_user_ex(sas_ss_flags(regs->sp),
++			    &frame->uc.uc_stack.ss_flags);
++		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
++		put_user_ex(0, &frame->uc.uc__pad0);
++		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
++					regs, set->sig[0]);
++		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
++
++		if (ka->sa.sa_flags & SA_RESTORER) {
++			restorer = ka->sa.sa_restorer;
++		} else {
++			/* could use a vstub here */
++			restorer = NULL;
++			err |= -EFAULT;
++		}
++		put_user_ex(restorer, &frame->pretcode);
++	} put_user_catch(err);
++
++	if (err)
++		return -EFAULT;
++
++	/* Set up registers for signal handler */
++	regs->sp = (unsigned long) frame;
++	regs->ip = (unsigned long) ka->sa.sa_handler;
++
++	/* We use the x32 calling convention here... */
++	regs->di = sig;
++	regs->si = (unsigned long) &frame->info;
++	regs->dx = (unsigned long) &frame->uc;
++
++	loadsegment(ds, __USER_DS);
++	loadsegment(es, __USER_DS);
++
++	regs->cs = __USER_CS;
++	regs->ss = __USER_DS;
++#endif	/* CONFIG_X86_X32_ABI */
++
++	return 0;
++}
++
+ #ifdef CONFIG_X86_32
+ /*
+  * Atomically swap in the new signal mask, and wait for a signal.
+@@ -789,72 +857,6 @@ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
  }
  
- /*
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 9824419..75484aa 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -21,6 +21,32 @@ typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
- /* Count the events in use (per event id, not per instance) */
- static int	total_ref_count;
- 
-+void *perf_trace_event_setup(struct ftrace_event_call *event_call, 
-+			     struct perf_trace_event *pe)
-+{
-+	perf_fetch_caller_regs(&pe->regs);
-+
-+	pe->entry_size = ALIGN(pe->entry_size + sizeof(u32), sizeof(u64));
-+	pe->entry_size -= sizeof(u32);
-+
-+	if (WARN_ONCE(pe->entry_size > PERF_MAX_TRACE_SIZE,
-+		      "profile buffer not large enough"))
-+		return NULL;
-+
-+	return perf_trace_buf_prepare(pe->entry_size,
-+			event_call->event.type, &pe->regs, &pe->rctx);
-+}
-+
-+void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
-+			     struct perf_trace_event *pe)
-+{
-+	struct hlist_head *head;
-+
-+	head = this_cpu_ptr(event_call->perf_events);
-+	perf_trace_buf_submit(raw_data, pe->entry_size, pe->rctx, pe->addr,
-+			      pe->count, &pe->regs, head);
-+}
-+
- static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- 				 struct perf_event *p_event)
+ #ifdef CONFIG_X86_X32_ABI
+-static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
+-			      siginfo_t *info, compat_sigset_t *set,
+-			      struct pt_regs *regs)
+-{
+-	struct rt_sigframe_x32 __user *frame;
+-	void __user *restorer;
+-	int err = 0;
+-	void __user *fpstate = NULL;
+-
+-	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
+-
+-	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		return -EFAULT;
+-
+-	if (ka->sa.sa_flags & SA_SIGINFO) {
+-		if (copy_siginfo_to_user32(&frame->info, info))
+-			return -EFAULT;
+-	}
+-
+-	put_user_try {
+-		/* Create the ucontext.  */
+-		if (cpu_has_xsave)
+-			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
+-		else
+-			put_user_ex(0, &frame->uc.uc_flags);
+-		put_user_ex(0, &frame->uc.uc_link);
+-		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
+-		put_user_ex(sas_ss_flags(regs->sp),
+-			    &frame->uc.uc_stack.ss_flags);
+-		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
+-		put_user_ex(0, &frame->uc.uc__pad0);
+-		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
+-					regs, set->sig[0]);
+-		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+-
+-		if (ka->sa.sa_flags & SA_RESTORER) {
+-			restorer = ka->sa.sa_restorer;
+-		} else {
+-			/* could use a vstub here */
+-			restorer = NULL;
+-			err |= -EFAULT;
+-		}
+-		put_user_ex(restorer, &frame->pretcode);
+-	} put_user_catch(err);
+-
+-	if (err)
+-		return -EFAULT;
+-
+-	/* Set up registers for signal handler */
+-	regs->sp = (unsigned long) frame;
+-	regs->ip = (unsigned long) ka->sa.sa_handler;
+-
+-	/* We use the x32 calling convention here... */
+-	regs->di = sig;
+-	regs->si = (unsigned long) &frame->info;
+-	regs->dx = (unsigned long) &frame->uc;
+-
+-	loadsegment(ds, __USER_DS);
+-	loadsegment(es, __USER_DS);
+-
+-	regs->cs = __USER_CS;
+-	regs->ss = __USER_DS;
+-
+-	return 0;
+-}
+-
+ asmlinkage long sys32_x32_rt_sigreturn(struct pt_regs *regs)
  {
--- 
-1.7.10.4
-
-
+ 	struct rt_sigframe_x32 __user *frame;
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 2917e34..a23d100 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -205,8 +205,8 @@ static inline int save_user_xstate(struct xsave_struct __user *buf)
+ 	else
+ 		err = fsave_user((struct i387_fsave_struct __user *) buf);
+ 
+-	if (unlikely(err))
+-		__clear_user(buf, xstate_size);
++	if (unlikely(err) && __clear_user(buf, xstate_size))
++		err = -EFAULT;
+ 	return err;
+ }
+ 
+@@ -236,6 +236,9 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	struct task_struct *tsk = current;
+ 	int ia32_fxstate = (buf != buf_fx);
+ 
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!access_ok(VERIFY_WRITE, buf, size))
+ 		return -EACCES;
+ 
+@@ -333,6 +336,9 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	u64 xstate_bv = 0;
+ 	int fx_only = 0;
+ 
++	ia32_fxstate &= (config_enabled(CONFIG_X86_32) ||
++			 config_enabled(CONFIG_IA32_EMULATION));
++
+ 	if (!buf) {
+ 		drop_fpu(tsk);
+ 		return 0;
