@@ -1,198 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab2HJRvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:51:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33321 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab2HJRvm (ORCPT
+	id S1758898Ab2HJRxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:53:34 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24542 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746Ab2HJRxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:51:42 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50254A0A.3080805@jp.fujitsu.com>
-Date: Sat, 11 Aug 2012 02:51:06 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 10 Aug 2012 13:53:32 -0400
+Date: Fri, 10 Aug 2012 19:53:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: linux-kernel@vger.kernel.org, ap@solarrain.com
+Subject: Re: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
+In-Reply-To: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com>
+Message-ID: <alpine.LNX.2.00.1208101948590.17673@swampdragon.chaosbits.net>
+References: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com>
-In-Reply-To: <1344517279-30646-10-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/09 22:01), Glauber Costa wrote:
-> The current memcg slab cache management fails to present satisfatory
-> hierarchical behavior in the following scenario:
+On Fri, 10 Aug 2012, Justin Piszcz wrote:
+
+> Hello,
 > 
-> -> /cgroups/memory/A/B/C
+> Motherboard: Supermicro X8DTH-6F
+> Distro: Debian Testing x86_64
 > 
-> * kmem limit set at A,
-> * A and B have no tasks,
-> * span a new task in in C.
+> >From 3.4 -> 3.5.1 on x86_64 make oldconfig and a few minor changes and the
+> machine attempts to boot but hangs at the filesystem mounting part of the
+> boot process.
 > 
-> Because kmem_accounted is a boolean that was not set for C, no
-> accounting would be done. This is, however, not what we expect.
+> Picture of where it stops working (a little burry but readable)
+> http://home.comcast.net/~jpiszcz/20120810/3.5-kernel-hangs.jpg
 > 
-> The basic idea, is that when a cgroup is limited, we walk the tree
-> upwards (something Kame and I already thought about doing for other
-> purposes), and make sure that we store the information about the parent
-> being limited in kmem_accounted (that is turned into a bitmap: two
-> booleans would not be space efficient). The code for that is taken from
-> sched/core.c. My reasons for not putting it into a common place is to
-> dodge the type issues that would arise from a common implementation
-> between memcg and the scheduler - but I think that it should ultimately
-> happen, so if you want me to do it now, let me know.
+> Kernel config 3.4 (working)
+> http://home.comcast.net/~jpiszcz/20120810/config-3.4.txt
 > 
-> We do the reverse operation when a formerly limited cgroup becomes
-> unlimited.
+> Kernel config 3.5.1 (hangs)
+> http://home.comcast.net/~jpiszcz/20120810/config-3.5.1.txt
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-
-
-
-> ---
->   mm/memcontrol.c | 88 +++++++++++++++++++++++++++++++++++++++++++++++++++------
->   1 file changed, 79 insertions(+), 9 deletions(-)
+> As you see towards the end the machine has been sitting there for 1 hour as
+> that's the timeout I have the drives spindown on the 3ware card.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3216292..3d30b79 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -295,7 +295,8 @@ struct mem_cgroup {
->   	 * Should the accounting and control be hierarchical, per subtree?
->   	 */
->   	bool use_hierarchy;
-> -	bool kmem_accounted;
-> +
-> +	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
->   
->   	bool		oom_lock;
->   	atomic_t	under_oom;
-> @@ -348,6 +349,38 @@ struct mem_cgroup {
->   #endif
->   };
->   
-> +enum {
-> +	KMEM_ACCOUNTED_THIS, /* accounted by this cgroup itself */
-> +	KMEM_ACCOUNTED_PARENT, /* accounted by any of its parents. */
-> +};
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +static bool memcg_kmem_account(struct mem_cgroup *memcg)
-> +{
-> +	return !test_and_set_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
-> +}
-> +
-> +static bool memcg_kmem_clear_account(struct mem_cgroup *memcg)
-> +{
-> +	return test_and_clear_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
-> +}
-> +
-> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
-> +{
-> +	return test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
-> +}
-> +
-> +static void memcg_kmem_account_parent(struct mem_cgroup *memcg)
-> +{
-> +	set_bit(KMEM_ACCOUNTED_PARENT, &memcg->kmem_accounted);
-> +}
-> +
-> +static void memcg_kmem_clear_account_parent(struct mem_cgroup *memcg)
-> +{
-> +	clear_bit(KMEM_ACCOUNTED_PARENT, &memcg->kmem_accounted);
-> +}
-> +#endif /* CONFIG_MEMCG_KMEM */
-> +
->   /* Stuffs for move charges at task migration. */
->   /*
->    * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-> @@ -614,7 +647,7 @@ EXPORT_SYMBOL(__memcg_kmem_free_page);
->   
->   static void disarm_kmem_keys(struct mem_cgroup *memcg)
->   {
-> -	if (memcg->kmem_accounted)
-> +	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
->   		static_key_slow_dec(&memcg_kmem_enabled_key);
->   }
->   #else
-> @@ -4171,17 +4204,54 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
->   static void memcg_update_kmem_limit(struct mem_cgroup *memcg, u64 val)
->   {
->   #ifdef CONFIG_MEMCG_KMEM
-> -	/*
-> -	 * Once enabled, can't be disabled. We could in theory disable it if we
-> -	 * haven't yet created any caches, or if we can shrink them all to
-> -	 * death. But it is not worth the trouble.
-> -	 */
-> +	struct mem_cgroup *iter;
-> +
->   	mutex_lock(&set_limit_mutex);
-> -	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
-> +	if ((val != RESOURCE_MAX) && memcg_kmem_account(memcg)) {
-> +
-> +		/*
-> +		 * Once enabled, can't be disabled. We could in theory disable
-> +		 * it if we haven't yet created any caches, or if we can shrink
-> +		 * them all to death. But it is not worth the trouble
-> +		 */
->   		static_key_slow_inc(&memcg_kmem_enabled_key);
-> -		memcg->kmem_accounted = true;
-> +
-> +		if (!memcg->use_hierarchy)
-> +			goto out;
-> +
-> +		for_each_mem_cgroup_tree(iter, memcg) {
-> +			if (iter == memcg)
-> +				continue;
-> +			memcg_kmem_account_parent(iter);
-> +		}
+> Any thoughts as what is wrong here?
+> 
+Not really, but some (rather obvious) ideas on what to try:
 
-Could you add an explanation comment ?
+- Does 3.5 work? (could be that whatever broke things for you was 
+introduced in 3.5.1).
 
+- Does the latest 3.4.8 work?
 
-> +	} else if ((val == RESOURCE_MAX) && memcg_kmem_clear_account(memcg)) {
-> +
-> +		if (!memcg->use_hierarchy)
-> +			goto out;
-> +
-ditto.
+- Does 3.6-rc1 (or even the latest snapshot of Linus' tree, post-rc1) 
+work?
 
-> +		for_each_mem_cgroup_tree(iter, memcg) {
-> +			struct mem_cgroup *parent;
-> +
-> +			if (iter == memcg)
-> +				continue;
-> +			/*
-> +			 * We should only have our parent bit cleared if none
-> +			 * of our parents are accounted. The transversal order
-> +			 * of our iter function forces us to always look at the
-> +			 * parents.
-> +			 */
-> +			parent = parent_mem_cgroup(iter);
-> +			for (; parent != memcg; parent = parent_mem_cgroup(iter))
-> +				if (memcg_kmem_is_accounted(parent))
-> +					goto noclear;
-> +			memcg_kmem_clear_account_parent(iter);
+- If noone comes up with a good idea as to the cause of your troubles, you 
+could try bisecting between your last working kernel and 3.5.1 to try and 
+narrow it down to one (or a few) commits that are causing your trouble.
 
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
