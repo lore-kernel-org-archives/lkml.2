@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab2HJWhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 18:37:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63073 "EHLO mx1.redhat.com"
+	id S932361Ab2HJWiC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 18:38:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13911 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760363Ab2HJWhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 18:37:50 -0400
+	id S1760355Ab2HJWh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 18:37:57 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v8 5/6] kvm: KVM_IRQ_ACKFD
+Subject: [PATCH v8 6/6] kvm: Add de-assert option to KVM_IRQ_ACKFD
 To: avi@redhat.com, mst@redhat.com
 Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 10 Aug 2012 16:37:48 -0600
-Message-ID: <20120810223746.809.87948.stgit@bling.home>
+Date: Fri, 10 Aug 2012 16:37:56 -0600
+Message-ID: <20120810223754.809.60610.stgit@bling.home>
 In-Reply-To: <20120810223633.809.44188.stgit@bling.home>
 References: <20120810223633.809.44188.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -22,469 +22,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable a mechanism for IRQ ACKs to be exposed through an eventfd.  The
-user can specify the GSI and optionally an IRQ source ID and have the
-provided eventfd trigger whenever the irqchip resamples it's inputs,
-for instance on EOI.
+It's likely (vfio) that one of the reasons to watch for an IRQ ACK
+is to de-assert and re-enable an interrupt.  As the IRQ ACK notfier
+is already watching a GSI for an IRQ source ID we can easily couple
+these together.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/virtual/kvm/api.txt |   18 ++
- arch/x86/kvm/x86.c                |    2 
- include/linux/kvm.h               |   16 ++
- include/linux/kvm_host.h          |   13 ++
- virt/kvm/eventfd.c                |  285 +++++++++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c               |   10 +
- 6 files changed, 344 insertions(+)
+ Documentation/virtual/kvm/api.txt |    4 ++++
+ arch/x86/kvm/x86.c                |    1 +
+ include/linux/kvm.h               |    3 +++
+ virt/kvm/eventfd.c                |   14 +++++++++++++-
+ 4 files changed, 21 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 17cd599..77b4837 100644
+index 77b4837..128d4c3 100644
 --- a/Documentation/virtual/kvm/api.txt
 +++ b/Documentation/virtual/kvm/api.txt
-@@ -2011,6 +2011,24 @@ of IRQ source IDs.  These IDs are also shared with KVM internal users
- (ex. KVM assigned devices, PIT, shared user ID), therefore not all IDs
- may be allocated through this interface.
+@@ -2029,6 +2029,10 @@ the eventfd is only triggered when the specified IRQ source ID is
+ pending.  On deassign, fd, gsi, and irq_source_id (if provided on assign)
+ must be provided.
  
-+4.78 KVM_IRQ_ACKFD
-+
-+Capability: KVM_CAP_IRQ_ACKFD
-+Architectures: x86
-+Type: vm ioctl
-+Parameters: struct kvm_irq_ackfd (in)
-+Returns: 0 on success, -errno on error
-+
-+Allows userspace notification of IRQ ACKs, or resampling of irqchip
-+inputs, often associated with an EOI.  User provided kvm_irq_ackfd.fd
-+and kvm_irq_ackfd.gsi are required and result in an eventfd trigger
-+whenever the GSI is acknowledged.  When KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_FD
-+is available, KVM_IRQ_ACKFD supports the KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID
-+flag which indicates kvm_irqfd.irq_source_id is provided.  With this,
-+the eventfd is only triggered when the specified IRQ source ID is
-+pending.  On deassign, fd, gsi, and irq_source_id (if provided on assign)
-+must be provided.
-+
++When KVM_CAP_IRQ_ACKFD_DEASSERT is available the flag
++KVM_IRQ_ACKFD_FLAG_IRQ_DEASSERT may be used on assignment to specify
++that the GSI should be de-asserted prior to eventfd notification.
++This flag requires an IRQ source ID to be provided as described above.
  
  5. The kvm_run structure
  ------------------------
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 19680ed..3d98e59 100644
+index 3d98e59..691b00d 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -2176,6 +2176,8 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_KVMCLOCK_CTRL:
- 	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
+@@ -2178,6 +2178,7 @@ int kvm_dev_ioctl_check_extension(long ext)
  	case KVM_CAP_IRQFD_ASSERT_ONLY:
-+	case KVM_CAP_IRQ_ACKFD:
-+	case KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID:
+ 	case KVM_CAP_IRQ_ACKFD:
+ 	case KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID:
++	case KVM_CAP_IRQ_ACKFD_DEASSERT:
  		r = 1;
  		break;
  	case KVM_CAP_COALESCED_MMIO:
 diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 19b1235..0f53bd5 100644
+index 0f53bd5..331631e 100644
 --- a/include/linux/kvm.h
 +++ b/include/linux/kvm.h
-@@ -621,6 +621,8 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_NR_IRQ_SOURCE_ID 81
- #define KVM_CAP_IRQFD_IRQ_SOURCE_ID 82
+@@ -623,6 +623,7 @@ struct kvm_ppc_smmu_info {
  #define KVM_CAP_IRQFD_ASSERT_ONLY 83
-+#define KVM_CAP_IRQ_ACKFD 84
-+#define KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID 85
+ #define KVM_CAP_IRQ_ACKFD 84
+ #define KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID 85
++#define KVM_CAP_IRQ_ACKFD_DEASSERT 86
  
  #ifdef KVM_CAP_IRQ_ROUTING
  
-@@ -707,6 +709,18 @@ struct kvm_irq_source_id {
- 	__u8 pad[24];
- };
+@@ -712,6 +713,8 @@ struct kvm_irq_source_id {
+ #define KVM_IRQ_ACKFD_FLAG_DEASSIGN (1 << 0)
+ /* Available with KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID */
+ #define KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID (1 << 1)
++/* Available with KVM_CAP_IRQ_ACKFD_DEASSERT */
++#define KVM_IRQ_ACKFD_FLAG_DEASSERT (1 << 2)
  
-+#define KVM_IRQ_ACKFD_FLAG_DEASSIGN (1 << 0)
-+/* Available with KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_ID */
-+#define KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID (1 << 1)
-+
-+struct kvm_irq_ackfd {
-+	__u32 flags;
-+	__u32 fd;
-+	__u32 gsi;
-+	__u32 irq_source_id;
-+	__u8 pad[16];
-+};
-+
- struct kvm_clock_data {
- 	__u64 clock;
+ struct kvm_irq_ackfd {
  	__u32 flags;
-@@ -849,6 +863,8 @@ struct kvm_s390_ucas_mapping {
- #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
- /* Available with KVM_CAP_IRQ_SOURCE_ID */
- #define KVM_IRQ_SOURCE_ID         _IOWR(KVMIO, 0xa8, struct kvm_irq_source_id)
-+/* Available with KVM_CAP_IRQ_ACKFD */
-+#define KVM_IRQ_ACKFD             _IOW(KVMIO,  0xa9, struct kvm_irq_ackfd)
- 
- /*
-  * ioctls for vcpu fds
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ea6d7a1..cdc55c2 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -285,6 +285,10 @@ struct kvm {
- 		struct list_head  items;
- 	} irqfds;
- 	struct list_head ioeventfds;
-+	struct {
-+		spinlock_t        lock;
-+		struct list_head  items;
-+	} irq_ackfds;
- #endif
- 	struct kvm_vm_stat stat;
- 	struct kvm_arch arch;
-@@ -831,6 +835,8 @@ int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
- void kvm_irqfd_release(struct kvm *kvm);
- void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
- int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
-+int kvm_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args);
-+void kvm_irq_ackfd_release(struct kvm *kvm);
- 
- #else
- 
-@@ -843,6 +849,13 @@ static inline int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
- 
- static inline void kvm_irqfd_release(struct kvm *kvm) {}
- 
-+static inline int kvm_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void kvm_irq_ackfd_release(struct kvm *kvm) {}
-+
- #ifdef CONFIG_HAVE_KVM_IRQCHIP
- static inline void kvm_irq_routing_update(struct kvm *kvm,
- 					  struct kvm_irq_routing_table *irq_rt)
 diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index df41038..ff5c784 100644
+index ff5c784..ffc6a13 100644
 --- a/virt/kvm/eventfd.c
 +++ b/virt/kvm/eventfd.c
-@@ -300,6 +300,8 @@ kvm_eventfd_init(struct kvm *kvm)
- 	spin_lock_init(&kvm->irqfds.lock);
- 	INIT_LIST_HEAD(&kvm->irqfds.items);
- 	INIT_LIST_HEAD(&kvm->ioeventfds);
-+	spin_lock_init(&kvm->irq_ackfds.lock);
-+	INIT_LIST_HEAD(&kvm->irq_ackfds.items);
+@@ -682,6 +682,7 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 
+ struct _irq_ackfd {
+ 	struct kvm *kvm;
++	bool deassert; /* de-assert on ack? */
+ 	struct eventfd_ctx *eventfd; /* signaled on ack */
+ 	struct kvm_irq_ack_notifier notifier;
+ 	/* Setup/shutdown */
+@@ -805,6 +806,10 @@ static void irq_ackfd_acked(struct kvm_irq_ack_notifier *notifier)
+ 
+ 	ackfd = container_of(notifier, struct _irq_ackfd, notifier);
+ 
++	if (ackfd->deassert)
++		kvm_set_irq(ackfd->kvm, ackfd->notifier.irq_source_id,
++			    ackfd->notifier.gsi, 0);
++
+ 	eventfd_signal(ackfd->eventfd, 1);
  }
  
- /*
-@@ -668,3 +670,286 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+@@ -845,6 +850,12 @@ static int kvm_assign_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
+ 		ackfd->notifier.irq_source_id = -1;
+ 	ackfd->notifier.irq_acked = irq_ackfd_acked;
  
- 	return kvm_assign_ioeventfd(kvm, args);
- }
-+
-+/*
-+ * --------------------------------------------------------------------
-+ * irq_ackfd: Expose IRQ ACKs to userspace via eventfd
-+ *
-+ * userspace can register to recieve eventfd notification for ACKs of
-+ * interrupt lines.
-+ * --------------------------------------------------------------------
-+ */
-+
-+struct _irq_ackfd {
-+	struct kvm *kvm;
-+	struct eventfd_ctx *eventfd; /* signaled on ack */
-+	struct kvm_irq_ack_notifier notifier;
-+	/* Setup/shutdown */
-+	wait_queue_t wait;
-+	poll_table pt;
-+	struct work_struct shutdown;
-+	struct list_head list;
-+};
-+
-+/* Called under irq_ackfds.lock */
-+static void irq_ackfd_shutdown(struct work_struct *work)
-+{
-+	struct _irq_ackfd *ackfd = container_of(work, struct _irq_ackfd,
-+						shutdown);
-+	struct kvm *kvm = ackfd->kvm;
-+	u64 cnt;
-+
-+	/*
-+	 * Stop ACK signaling
-+	 */
-+	kvm_unregister_irq_ack_notifier(kvm, &ackfd->notifier);
-+
-+	/*
-+	 * Synchronize with the wait-queue and unhook ourselves to prevent
-+	 * further events.
-+	 */
-+	eventfd_ctx_remove_wait_queue(ackfd->eventfd, &ackfd->wait, &cnt);
-+
-+	/*
-+	 * Release resources
-+	 */
-+	eventfd_ctx_put(ackfd->eventfd);
-+	kfree(ackfd);
-+}
-+
-+/* assumes kvm->irq_ackfds.lock is held */
-+static bool irq_ackfd_is_active(struct _irq_ackfd *ackfd)
-+{
-+	return list_empty(&ackfd->list) ? false : true;
-+}
-+
-+/*
-+ * Mark the irq_ackfd as inactive and schedule it for removal
-+ *
-+ * assumes kvm->irq_ackfds.lock is held
-+ */
-+static void irq_ackfd_deactivate(struct _irq_ackfd *ackfd)
-+{
-+	BUG_ON(!irq_ackfd_is_active(ackfd));
-+
-+	list_del_init(&ackfd->list);
-+
-+	/* Borrow irqfd's workqueue, we don't need our own. */
-+	queue_work(irqfd_cleanup_wq, &ackfd->shutdown);
-+}
-+
-+/*
-+ * Called with wqh->lock held and interrupts disabled
-+ */
-+static int irq_ackfd_wakeup(wait_queue_t *wait, unsigned mode,
-+			    int sync, void *key)
-+{
-+	unsigned long flags = (unsigned long)key;
-+
-+	if (unlikely(flags & POLLHUP)) {
-+		/* The eventfd is closing, detach from KVM */
-+		struct _irq_ackfd *ackfd;
-+		unsigned long flags;
-+
-+		ackfd = container_of(wait, struct _irq_ackfd, wait);
-+
-+		spin_lock_irqsave(&ackfd->kvm->irq_ackfds.lock, flags);
-+
-+		/*
-+		 * We must check if someone deactivated the irq_ackfd before
-+		 * we could acquire the irq_ackfds.lock since the item is
-+		 * deactivated from the KVM side before it is unhooked from
-+		 * the wait-queue.  If it is already deactivated, we can
-+		 * simply return knowing the other side will cleanup for us.
-+		 * We cannot race against the irq_ackfd going away since the
-+		 * other side is required to acquire wqh->lock, which we hold
-+		 */
-+		if (irq_ackfd_is_active(ackfd))
-+				irq_ackfd_deactivate(ackfd);
-+
-+		spin_unlock_irqrestore(&ackfd->kvm->irq_ackfds.lock, flags);
-+	}
-+
-+	return 0;
-+}
-+
-+static void irq_ackfd_ptable_queue_proc(struct file *file,
-+					wait_queue_head_t *wqh,
-+					poll_table *pt)
-+{
-+	struct _irq_ackfd *ackfd = container_of(pt, struct _irq_ackfd, pt);
-+	add_wait_queue(wqh, &ackfd->wait);
-+}
-+
-+/*
-+ * This function is called as the kvm VM fd is being released. Shutdown all
-+ * irq_ackfds that still remain open
-+ */
-+void kvm_irq_ackfd_release(struct kvm *kvm)
-+{
-+	struct _irq_ackfd *tmp, *ackfd;
-+
-+	spin_lock_irq(&kvm->irq_ackfds.lock);
-+
-+	list_for_each_entry_safe(ackfd, tmp, &kvm->irq_ackfds.items, list)
-+		irq_ackfd_deactivate(ackfd);
-+
-+	spin_unlock_irq(&kvm->irq_ackfds.lock);
-+
-+	flush_workqueue(irqfd_cleanup_wq);
-+}
-+
-+static void irq_ackfd_acked(struct kvm_irq_ack_notifier *notifier)
-+{
-+	struct _irq_ackfd *ackfd;
-+
-+	ackfd = container_of(notifier, struct _irq_ackfd, notifier);
-+
-+	eventfd_signal(ackfd->eventfd, 1);
-+}
-+
-+static int kvm_assign_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
-+{
-+	struct file *file = NULL;
-+	struct eventfd_ctx *eventfd = NULL;
-+	struct _irq_ackfd *ackfd = NULL, *tmp;
-+	int ret;
-+	u64 cnt;
-+
-+	file = eventfd_fget(args->fd);
-+	if (IS_ERR(file)) {
-+		ret = PTR_ERR(file);
++	ackfd->deassert = args->flags & KVM_IRQ_ACKFD_FLAG_DEASSERT;
++	if (ackfd->deassert && ackfd->notifier.irq_source_id < 0) {
++		ret = -EINVAL;
 +		goto fail;
 +	}
 +
-+	eventfd = eventfd_ctx_fileget(file);
-+	if (IS_ERR(eventfd)) {
-+		ret = PTR_ERR(eventfd);
-+		goto fail;
-+	}
-+
-+	ackfd = kzalloc(sizeof(*ackfd), GFP_KERNEL);
-+	if (!ackfd) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+
-+	INIT_LIST_HEAD(&ackfd->list);
-+	INIT_WORK(&ackfd->shutdown, irq_ackfd_shutdown);
-+	ackfd->kvm = kvm;
-+	ackfd->eventfd = eventfd;
-+	ackfd->notifier.gsi = args->gsi;
-+	if (args->flags & KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID)
-+		ackfd->notifier.irq_source_id = args->irq_source_id;
-+	else
-+		ackfd->notifier.irq_source_id = -1;
-+	ackfd->notifier.irq_acked = irq_ackfd_acked;
-+
-+	/*
-+	 * Install our own custom wake-up handling so we are notified via
-+	 * a callback whenever someone releases the underlying eventfd
-+	 */
-+	init_waitqueue_func_entry(&ackfd->wait, irq_ackfd_wakeup);
-+	init_poll_funcptr(&ackfd->pt, irq_ackfd_ptable_queue_proc);
-+
-+	/*
-+	 * Install the wait queue function to allow cleanup when the
-+	 * eventfd is closed by the user.  This grabs the wqh lock, so
-+	 * we do it out of spinlock, holding the file reference ensures
-+	 * we won't see a POLLHUP until setup is complete.
-+	 */
-+	file->f_op->poll(file, &ackfd->pt);
-+
-+	spin_lock_irq(&kvm->irq_ackfds.lock);
-+
-+	/* Check for duplicates.  */
-+	list_for_each_entry(tmp, &kvm->irq_ackfds.items, list) {
-+		if (ackfd->eventfd == tmp->eventfd &&
-+		    ackfd->notifier.gsi == tmp->notifier.gsi &&
-+		    ackfd->notifier.irq_source_id ==
-+		    tmp->notifier.irq_source_id) {
-+			spin_unlock_irq(&kvm->irq_ackfds.lock);
-+			ret = -EBUSY;
-+			goto fail_unqueue;
-+		}
-+	}
-+
-+	list_add_tail(&ackfd->list, &kvm->irq_ackfds.items);
-+
-+	spin_unlock_irq(&kvm->irq_ackfds.lock);
-+
-+	/* This can sleep, so register after spinlock.  */
-+	kvm_register_irq_ack_notifier(kvm, &ackfd->notifier);
-+
-+	fput(file); /* Enable POLLHUP */
-+
-+	return 0;
-+
-+fail_unqueue:
-+	eventfd_ctx_remove_wait_queue(eventfd, &ackfd->wait, &cnt);
-+fail:
-+	if (eventfd && !IS_ERR(eventfd))
-+		eventfd_ctx_put(eventfd);
-+
-+	if (file && !IS_ERR(file))
-+		fput(file);
-+
-+	kfree(ackfd);
-+
-+	return ret;
-+}
-+
-+static int kvm_deassign_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
-+{
-+	struct eventfd_ctx *eventfd = NULL;
-+	struct _irq_ackfd *ackfd;
-+	int irq_source_id = -1, ret = -ENOENT;
-+
-+	eventfd = eventfd_ctx_fdget(args->fd);
-+	if (IS_ERR(eventfd)) {
-+		ret = PTR_ERR(eventfd);
-+		goto fail;
-+	}
-+
-+	if (args->flags & KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID)
-+		irq_source_id = args->irq_source_id;
-+
-+	spin_lock_irq(&kvm->irq_ackfds.lock);
-+
-+	list_for_each_entry(ackfd, &kvm->irq_ackfds.items, list) {
-+		if (ackfd->eventfd == eventfd &&
-+		    ackfd->notifier.gsi == args->gsi &&
-+		    ackfd->notifier.irq_source_id == irq_source_id) {
-+			irq_ackfd_deactivate(ackfd);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irq(&kvm->irq_ackfds.lock);
-+
-+fail:
-+	if (eventfd && !IS_ERR(eventfd))
-+		eventfd_ctx_put(eventfd);
-+
-+	/*
-+	 * Block until we know all outstanding shutdown jobs have completed
-+	 * so that we guarantee there will not be any more ACKs signaled on
-+	 * this eventfd once this deassign function returns.
-+	 */
-+	flush_workqueue(irqfd_cleanup_wq);
-+
-+	return ret;
-+}
-+
-+int kvm_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
-+{
-+	if (args->flags & ~(KVM_IRQ_ACKFD_FLAG_DEASSIGN |
-+			    KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID))
-+		return -EINVAL;
-+
-+	if (args->flags & KVM_IRQ_ACKFD_FLAG_DEASSIGN)
-+		return kvm_deassign_irq_ackfd(kvm, args);
-+
-+	return kvm_assign_irq_ackfd(kvm, args);
-+}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index e120cb3..bbe3a20 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -619,6 +619,7 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
- 	struct kvm *kvm = filp->private_data;
+ 	/*
+ 	 * Install our own custom wake-up handling so we are notified via
+ 	 * a callback whenever someone releases the underlying eventfd
+@@ -945,7 +956,8 @@ fail:
+ int kvm_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
+ {
+ 	if (args->flags & ~(KVM_IRQ_ACKFD_FLAG_DEASSIGN |
+-			    KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID))
++			    KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID |
++			    KVM_IRQ_ACKFD_FLAG_DEASSERT))
+ 		return -EINVAL;
  
- 	kvm_irqfd_release(kvm);
-+	kvm_irq_ackfd_release(kvm);
- 
- 	kvm_put_kvm(kvm);
- 	return 0;
-@@ -2109,6 +2110,15 @@ static long kvm_vm_ioctl(struct file *filp,
- 		break;
- 	}
- #endif
-+	case KVM_IRQ_ACKFD: {
-+		struct kvm_irq_ackfd data;
-+
-+		r = -EFAULT;
-+		if (copy_from_user(&data, argp, sizeof(data)))
-+			goto out;
-+		r = kvm_irq_ackfd(kvm, &data);
-+		break;
-+	}
- 	default:
- 		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
- 		if (r == -ENOTTY)
+ 	if (args->flags & KVM_IRQ_ACKFD_FLAG_DEASSIGN)
 
