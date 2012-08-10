@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab2HJWXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 18:23:47 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54538 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760226Ab2HJWXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 18:23:37 -0400
+	id S1760297Ab2HJWX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 18:23:57 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:49480 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760244Ab2HJWXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 18:23:42 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
@@ -16,90 +15,200 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Matt Hellsley <matthltc@us.ibm.com>,
         David Hansen <dave@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 12/16] perf symbol: set symtab_type in dso__load_sym
-Date: Fri, 10 Aug 2012 15:22:58 -0700
-Message-Id: <1344637382-22789-13-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH 15/16] perf symbol: convert dso__load_syms to take 2 symsrc's
+Date: Fri, 10 Aug 2012 15:23:01 -0700
+Message-Id: <1344637382-22789-16-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081022-2356-0000-0000-0000012BC062
+x-cbid: 12081022-8974-0000-0000-00000C0CDDA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In certain cases, dso__load requires dso->symbol_type to be set prior to
-calling it. With the introduction of symsrc*, the symtab_type is now
-stored in a symsrc which is then passed to dso__load_sym().
+To properly handle platforms with an opd section, both a runtime image
+(which contains the opd section but possibly lacks symbols) and a symbol
+image (which probably lacks an opd section but has symbols).
 
-Change dso__load_sym() to use the symtab_type from them symsrc (setting
-dso->symtab_type as well).
+The next patch ("perf symbol: use both runtime and debug images")
+adjusts the callsite in dso__load() to take advantage of being able to
+pass both runtime & debug images.
 
-Setup for later patch
-"perf symbol: use both runtime and debug images"
+Assumptions made here:
+
+ - The opd section, if it exists in the runtime image, has headers in
+   both the runtime image and the debug/syms image.
+ - The index of the opd section (again, only if it exists in the
+   runtime image) is the same in both the runtime and debug/symbols
+   image.
+
+Both of these are true on RHEL, but it is unclear how accurate they are
+in general (on platforms with function descriptors in opd sections).
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- tools/perf/util/symbol-elf.c |  2 ++
- tools/perf/util/symbol.c     | 13 +++++++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ tools/perf/util/symbol-elf.c     | 47 ++++++++++++++++++++--------------------
+ tools/perf/util/symbol-minimal.c |  1 +
+ tools/perf/util/symbol.c         |  4 ++--
+ tools/perf/util/symbol.h         |  5 +++--
+ 4 files changed, 30 insertions(+), 27 deletions(-)
 
 diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 6974b2a..3a9c38a 100644
+index 492ebec..36e4a45 100644
 --- a/tools/perf/util/symbol-elf.c
 +++ b/tools/perf/util/symbol-elf.c
-@@ -645,6 +645,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 	int nr = 0;
- 	size_t opdidx = 0;
+@@ -619,7 +619,8 @@ out_close:
+ 	return err;
+ }
  
-+	dso->symtab_type = ss->type;
-+
- 	elf = ss->elf;
- 	ehdr = ss->ehdr;
- 	sec = ss->symtab;
+-int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
++int dso__load_sym(struct dso *dso, struct map *map,
++		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
+ 		  symbol_filter_t filter, int kmodule)
+ {
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+@@ -630,31 +631,27 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	int err = -1;
+ 	uint32_t idx;
+ 	GElf_Ehdr ehdr;
+-	GElf_Shdr shdr, opdshdr;
++	GElf_Shdr shdr;
+ 	Elf_Data *syms, *opddata = NULL;
+ 	GElf_Sym sym;
+-	Elf_Scn *sec, *sec_strndx, *opdsec;
++	Elf_Scn *sec, *sec_strndx;
+ 	Elf *elf;
+ 	int nr = 0;
+-	size_t opdidx = 0;
+ 
+-	dso->symtab_type = ss->type;
++	dso->symtab_type = syms_ss->type;
+ 
+-	if (!ss->symtab) {
+-		ss->symtab  = ss->dynsym;
+-		ss->symshdr = ss->dynshdr;
++	if (!syms_ss->symtab) {
++		syms_ss->symtab  = syms_ss->dynsym;
++		syms_ss->symshdr = syms_ss->dynshdr;
+ 	}
+ 
+-	elf = ss->elf;
+-	ehdr = ss->ehdr;
+-	sec = ss->symtab;
+-	shdr = ss->symshdr;
++	elf = syms_ss->elf;
++	ehdr = syms_ss->ehdr;
++	sec = syms_ss->symtab;
++	shdr = syms_ss->symshdr;
+ 
+-	opdsec = ss->opdsec;
+-	opdshdr = ss->opdshdr;
+-	opdidx  = ss->opdidx;
+-	if (opdsec)
+-		opddata = elf_rawdata(opdsec, NULL);
++	if (runtime_ss->opdsec)
++		opddata = elf_rawdata(runtime_ss->opdsec, NULL);
+ 
+ 	syms = elf_getdata(sec, NULL);
+ 	if (syms == NULL)
+@@ -679,13 +676,14 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	nr_syms = shdr.sh_size / shdr.sh_entsize;
+ 
+ 	memset(&sym, 0, sizeof(sym));
+-	dso->adjust_symbols = ss->adjust_symbols;
++	dso->adjust_symbols = runtime_ss->adjust_symbols;
+ 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
+ 		struct symbol *f;
+ 		const char *elf_name = elf_sym__name(&sym, symstrs);
+ 		char *demangled = NULL;
+ 		int is_label = elf_sym__is_label(&sym);
+ 		const char *section_name;
++		bool used_opd = false;
+ 
+ 		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
+ 		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
+@@ -704,14 +702,16 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 				continue;
+ 		}
+ 
+-		if (opdsec && sym.st_shndx == opdidx) {
+-			u32 offset = sym.st_value - opdshdr.sh_addr;
++		if (runtime_ss->opdsec && sym.st_shndx == runtime_ss->opdidx) {
++			u32 offset = sym.st_value - syms_ss->opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+ 			sym.st_value = DSO__SWAP(dso, u64, *opd);
+-			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
++			sym.st_shndx = elf_addr_to_index(runtime_ss->elf,
++					sym.st_value);
++			used_opd = true;
+ 		}
+ 
+-		sec = elf_getscn(elf, sym.st_shndx);
++		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
+ 
+@@ -777,7 +777,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 			goto new_symbol;
+ 		}
+ 
+-		if (curr_dso->adjust_symbols && sym.st_value) {
++		if ((used_opd && runtime_ss->adjust_symbols)
++				|| (!used_opd && syms_ss->adjust_symbols)) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 3290f04..c0377a9 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -280,6 +280,7 @@ int dso__synthesize_plt_symbols(struct dso *dso __used,
+ }
+ 
+ int dso__load_sym(struct dso *dso, struct map *map __used, struct symsrc *ss,
++		  struct symsrc *runtime_ss __used,
+ 		  symbol_filter_t filter __used, int kmodule __used)
+ {
+ 	unsigned char *build_id[BUILD_ID_SIZE];
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index afec3f0..2b3495a 100644
+index 8e7d74f..739e5a3 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -1079,14 +1079,14 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- restart:
- 	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
- 
--		dso->symtab_type = binary_type_symtab[i];
-+		enum dso_binary_type symtab_type = binary_type_symtab[i];
- 
--		if (dso__binary_type_file(dso, dso->symtab_type,
-+		if (dso__binary_type_file(dso, symtab_type,
- 					  root_dir, name, PATH_MAX))
+@@ -1094,7 +1094,7 @@ restart:
  			continue;
+ 		}
  
- 		/* Name is now the name of the next image to try */
--		if (symsrc__init(&ss, dso, name, dso->symtab_type) < 0)
-+		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
- 			continue;
+-		ret = dso__load_sym(dso, map, &ss, filter, 0);
++		ret = dso__load_sym(dso, map, &ss, &ss, filter, 0);
  
- 		ret = dso__load_sym(dso, map, &ss, filter, 0,
-@@ -1361,16 +1361,17 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	int err = -1;
- 	struct symsrc ss;
- 	char symfs_vmlinux[PATH_MAX];
-+	enum dso_binary_type symtab_type;
- 
- 	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
- 		 symbol_conf.symfs, vmlinux);
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+		symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
- 	else
--		dso->symtab_type = DSO_BINARY_TYPE__VMLINUX;
-+		symtab_type = DSO_BINARY_TYPE__VMLINUX;
- 
--	if (symsrc__init(&ss, dso, symfs_vmlinux, dso->symtab_type))
-+	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
+ 		/*
+ 		 * Some people seem to have debuginfo files _WITHOUT_ debug
+@@ -1380,7 +1380,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
  		return -1;
  
- 	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
+-	err = dso__load_sym(dso, map, &ss, filter, 0);
++	err = dso__load_sym(dso, map, &ss, &ss, filter, 0);
+ 	symsrc__destroy(&ss);
+ 
+ 	if (err > 0) {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index c73f4f2..d55635d 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -369,8 +369,9 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size);
+ int dso__test_data(void);
+-int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+-		  symbol_filter_t filter, int kmodule);
++int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
++		  struct symsrc *runtime_ss, symbol_filter_t filter,
++		  int kmodule);
+ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
+ 				struct map *map, symbol_filter_t filter);
+ 
 -- 
 1.7.11.3
 
