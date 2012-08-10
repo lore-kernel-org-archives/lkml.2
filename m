@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab2HJNQr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:16:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40883 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988Ab2HJNQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:16:46 -0400
-Date: Fri, 10 Aug 2012 15:16:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120810131643.GC1425@dhcp22.suse.cz>
-References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
- <20120803133235.GA8434@dhcp22.suse.cz>
- <20120810094825.GA1440@dhcp22.suse.cz>
- <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
- <20120810122730.GA1425@dhcp22.suse.cz>
- <CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
- <20120810125102.GB1425@dhcp22.suse.cz>
- <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
+	id S1755996Ab2HJNTC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 09:19:02 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8794 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab2HJNS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 09:18:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 10 Aug 2012 06:13:31 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <olof@lixom.net>
+CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: tegra: use IO_ADDRESS for getting virtual address
+Date: Fri, 10 Aug 2012 18:33:02 +0530
+Message-ID: <1344603782-2541-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing Kamezawa and David]
+Use macro IO_ADDRESS for getting virtual address of
+corresponding physical address to make the consistency
+with rest of Tegra code-base.
+This macro calls the IO_TO_VIRT() which is defined in
+arch/arm/mach-tegra/include/mach/iomap.h
 
-On Fri 10-08-12 20:53:36, Hillf Danton wrote:
-> On Fri, Aug 10, 2012 at 8:51 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Fri 10-08-12 20:37:20, Hillf Danton wrote:
-> >> On Fri, Aug 10, 2012 at 8:27 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> >> >
-> >> > I guess you mean unmap_ref_private and that has been changed by you
-> >> > (0c176d5 mm: hugetlb: fix pgoff computation when unmapping page from
-> >> > vma)...  I was wrong at that time when giving my Reviewed-by. The patch
-> >> > didn't break anything because you still find all relevant vmas because
-> >> > vma_hugecache_offset just provides a smaller index which is still within
-> >> > boundaries.
-> >>
-> >> No, as shown by the log message of 0c176d52b,  that fix was
-> >> triggered by  (vma->vm_pgoff >> PAGE_SHIFT), thus I dont see
-> >> what you really want to revert.
-> >
-> > fix for that would be a part of the revert of course.
-> >
-> 
-> Fine, go ahead ;)
-
-there you go
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
->From 973187e9bad72181f4563a675ca64235f8612a2a Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 10 Aug 2012 15:03:07 +0200
-Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
- vma_prio_tree_foreach
+ arch/arm/mach-tegra/apbio.c |    4 ++--
+ arch/arm/mach-tegra/fuse.c  |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
-from vma) fixed pgoff calculation but it has replaced it by
-vma_hugecache_offset which is not approapriate for offsets used for
-vma_prio_tree_foreach because that one expects index in page units
-rather than in huge_page_shift.
-Using vma_hugecache_offset is not incorrect because the pgoff will fit
-into the same vmas but it is confusing.
-
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/hugetlb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c39e4be..a74ea31 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * from page cache lookup which is in HPAGE_SIZE units.
- 	 */
- 	address = address & huge_page_mask(h);
--	pgoff = vma_hugecache_offset(h, vma, address);
-+	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-+			vma->vm_pgoff;
- 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
+index dc0fe38..643a378 100644
+--- a/arch/arm/mach-tegra/apbio.c
++++ b/arch/arm/mach-tegra/apbio.c
+@@ -293,12 +293,12 @@ static apbio_write_fptr apbio_write;
  
- 	/*
+ static u32 tegra_apb_readl_direct(unsigned long offset)
+ {
+-	return readl(IO_TO_VIRT(offset));
++	return readl(IO_ADDRESS(offset));
+ }
+ 
+ static void tegra_apb_writel_direct(u32 value, unsigned long offset)
+ {
+-	writel(value, IO_TO_VIRT(offset));
++	writel(value, IO_ADDRESS(offset));
+ }
+ 
+ void tegra_apb_io_init(void)
+diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+index f946d12..0b7db17 100644
+--- a/arch/arm/mach-tegra/fuse.c
++++ b/arch/arm/mach-tegra/fuse.c
+@@ -93,9 +93,9 @@ void tegra_init_fuse(void)
+ {
+ 	u32 id;
+ 
+-	u32 reg = readl(IO_TO_VIRT(TEGRA_CLK_RESET_BASE + 0x48));
++	u32 reg = readl(IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x48));
+ 	reg |= 1 << 28;
+-	writel(reg, IO_TO_VIRT(TEGRA_CLK_RESET_BASE + 0x48));
++	writel(reg, IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x48));
+ 
+ 	reg = tegra_fuse_readl(FUSE_SKU_INFO);
+ 	tegra_sku_id = reg & 0xFF;
 -- 
-1.7.10.4
+1.7.1.1
 
-
--- 
-Michal Hocko
-SUSE Labs
