@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab2HJBir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 21:38:47 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:51114 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab2HJBiq (ORCPT
+	id S1758915Ab2HJBjh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 21:39:37 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42186 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab2HJBjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 21:38:46 -0400
-Message-ID: <1344562719.2996.7.camel@phoenix>
-Subject: [PATCH 6/6] regulator: mc13xxx: Remove get_voltage implementation
- for single voltage regulators
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Yong Shen <yong.shen@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Date: Fri, 10 Aug 2012 09:38:39 +0800
-In-Reply-To: <1344562353.2996.1.camel@phoenix>
-References: <1344562353.2996.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 9 Aug 2012 21:39:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120726134748.GA20605@localhost>
+References: <20120726134748.GA20605@localhost>
+Date: Thu, 9 Aug 2012 18:39:34 -0700
+X-Google-Sender-Auth: qCcYuTCx1EdYfcMwLSec07sPsXs
+Message-ID: <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+From: Kees Cook <keescook@chromium.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not required after commit f7df20ec
-"regulator: core: Use list_voltage() to read single voltage regulators"
+Hi,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/mc13783-regulator.c      |    1 -
- drivers/regulator/mc13892-regulator.c      |    1 -
- drivers/regulator/mc13xxx-regulator-core.c |   11 -----------
- drivers/regulator/mc13xxx.h                |    1 -
- 4 files changed, 14 deletions(-)
+So, after taking a closer look at this, I cannot understand how it's
+possible. Yama's task_lock call is against "current", not "child",
+which is what ptrace_may_access() is locking. And the same code makes
+sure that current != child. Yama would never get called if current ==
+child.
 
-diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
-index 2587ea1..4977b19 100644
---- a/drivers/regulator/mc13783-regulator.c
-+++ b/drivers/regulator/mc13783-regulator.c
-@@ -324,7 +324,6 @@ static struct regulator_ops mc13783_gpo_regulator_ops = {
- 	.is_enabled = mc13783_gpo_regulator_is_enabled,
- 	.list_voltage = regulator_list_voltage_table,
- 	.set_voltage = mc13xxx_fixed_regulator_set_voltage,
--	.get_voltage = mc13xxx_fixed_regulator_get_voltage,
- };
- 
- static int __devinit mc13783_regulator_probe(struct platform_device *pdev)
-diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-index 09265f0..1fa6381 100644
---- a/drivers/regulator/mc13892-regulator.c
-+++ b/drivers/regulator/mc13892-regulator.c
-@@ -390,7 +390,6 @@ static struct regulator_ops mc13892_gpo_regulator_ops = {
- 	.is_enabled = mc13892_gpo_regulator_is_enabled,
- 	.list_voltage = regulator_list_voltage_table,
- 	.set_voltage = mc13xxx_fixed_regulator_set_voltage,
--	.get_voltage = mc13xxx_fixed_regulator_get_voltage,
- };
- 
- static int mc13892_sw_regulator_get_voltage_sel(struct regulator_dev *rdev)
-diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
-index 8151889..88cbb83 100644
---- a/drivers/regulator/mc13xxx-regulator-core.c
-+++ b/drivers/regulator/mc13xxx-regulator-core.c
-@@ -152,23 +152,12 @@ int mc13xxx_fixed_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
- }
- EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_set_voltage);
- 
--int mc13xxx_fixed_regulator_get_voltage(struct regulator_dev *rdev)
--{
--	int id = rdev_get_id(rdev);
--
--	dev_dbg(rdev_get_dev(rdev), "%s id: %d\n", __func__, id);
--
--	return rdev->desc->volt_table[0];
--}
--EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_get_voltage);
--
- struct regulator_ops mc13xxx_fixed_regulator_ops = {
- 	.enable = mc13xxx_regulator_enable,
- 	.disable = mc13xxx_regulator_disable,
- 	.is_enabled = mc13xxx_regulator_is_enabled,
- 	.list_voltage = regulator_list_voltage_table,
- 	.set_voltage = mc13xxx_fixed_regulator_set_voltage,
--	.get_voltage = mc13xxx_fixed_regulator_get_voltage,
- };
- EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_ops);
- 
-diff --git a/drivers/regulator/mc13xxx.h b/drivers/regulator/mc13xxx.h
-index eaff551..06c8903 100644
---- a/drivers/regulator/mc13xxx.h
-+++ b/drivers/regulator/mc13xxx.h
-@@ -34,7 +34,6 @@ struct mc13xxx_regulator_priv {
- 
- extern int mc13xxx_fixed_regulator_set_voltage(struct regulator_dev *rdev,
- 		int min_uV, int max_uV, unsigned *selector);
--extern int mc13xxx_fixed_regulator_get_voltage(struct regulator_dev *rdev);
- 
- #ifdef CONFIG_OF
- extern int mc13xxx_get_num_regulators_dt(struct platform_device *pdev);
+How did you reproduce this situation?
+
+Thanks,
+
+-Kees
+
+On Thu, Jul 26, 2012 at 6:47 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Kees,
+>
+> Here is a recursive lock possibility:
+>
+>         ptrace_may_access()
+> =>        task_lock(task);
+>             yama_ptrace_access_check()
+>               get_task_comm()
+> =>              task_lock(task);
+>
+> [   60.230444] =============================================
+> [   60.232078] [ INFO: possible recursive locking detected ]
+> [   60.232078] 3.5.0+ #281 Not tainted
+> [   60.232078] ---------------------------------------------
+> [   60.232078] trinity-child0/17019 is trying to acquire lock:
+> [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c1176ffa>] get_task_comm+0x4a/0xf0
+> [   60.232078]
+> [   60.232078] but task is already holding lock:
+> [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
+> [   60.232078]
+> [   60.232078] other info that might help us debug this:
+> [   60.232078]  Possible unsafe locking scenario:
+> [   60.232078]
+> [   60.232078]        CPU0
+> [   60.232078]        ----
+> [   60.232078]   lock(&(&p->alloc_lock)->rlock);
+> [   60.232078]   lock(&(&p->alloc_lock)->rlock);
+> [   60.232078]
+> [   60.232078]  *** DEADLOCK ***
+> [   60.232078]
+> [   60.232078]  May be due to missing lock nesting notation
+> [   60.232078]
+> [   60.232078] 3 locks held by trinity-child0/17019:
+> [   60.232078]  #0:  (&p->lock){+.+.+.}, at: [<c11a9683>] seq_read+0x33/0x6b0
+> [   60.232078]  #1:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c11ff8ae>] lock_trace+0x2e/0xb0
+> [   60.232078]  #2:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
+> [   60.232078]
+> [   60.232078] stack backtrace:
+> [   60.232078] Pid: 17019, comm: trinity-child0 Not tainted 3.5.0+ #281
+> [   60.232078] Call Trace:
+> [   60.232078]  [<c10c6238>] __lock_acquire+0x1498/0x14f0
+> [   60.232078]  [<c10be7e7>] ? trace_hardirqs_off+0x27/0x40
+> [   60.232078]  [<c10c6360>] lock_acquire+0xd0/0x110
+> [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
+> [   60.232078]  [<c1422290>] _raw_spin_lock+0x60/0x110
+> [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
+> [   60.232078]  [<c1176ffa>] get_task_comm+0x4a/0xf0
+> [   60.232078]  [<c1246798>] yama_ptrace_access_check+0x468/0x4a0
+> [   60.232078]  [<c124648f>] ? yama_ptrace_access_check+0x15f/0x4a0
+> [   60.232078]  [<c124209a>] security_ptrace_access_check+0x1a/0x30
+> [   60.232078]  [<c1065229>] __ptrace_may_access+0x189/0x310
+> [   60.232078]  [<c10650cc>] ? __ptrace_may_access+0x2c/0x310
+> [   60.232078]  [<c106542d>] ptrace_may_access+0x7d/0xf0
+> [   60.232078]  [<c11ff8ea>] lock_trace+0x6a/0xb0
+> [   60.232078]  [<c11ffa46>] proc_pid_stack+0x76/0x170
+> [   60.232078]  [<c1201064>] proc_single_show+0x74/0x100
+> [   60.232078]  [<c11a97b3>] seq_read+0x163/0x6b0
+> [   60.232078]  [<c105bf70>] ? do_setitimer+0x220/0x330
+> [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
+> [   60.232078]  [<c116b55a>] vfs_read+0xca/0x280
+> [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
+> [   60.232078]  [<c116b776>] sys_read+0x66/0xe0
+> [   60.232078]  [<c1423d9d>] syscall_call+0x7/0xb
+> [   60.232078]  [<c1420000>] ? __schedule+0x2a0/0xc80
+>
+> Thanks,
+> Fengguang
+
+
+
 -- 
-1.7.9.5
-
-
-
+Kees Cook
+Chrome OS Security
