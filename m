@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760075Ab2HJTLa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 15:11:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31753 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab2HJTL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 15:11:26 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=AkM0CkaJG2RumsF6DccA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344625884.6935.103.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.40-rt60
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 10 Aug 2012 15:11:24 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760173Ab2HJTMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 15:12:07 -0400
+Received: from fieldses.org ([174.143.236.118]:40404 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759963Ab2HJTME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 15:12:04 -0400
+Date: Fri, 10 Aug 2012 15:11:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond.Myklebust@netapp.com, davem@davemloft.net,
+        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified
+ root
+Message-ID: <20120810191149.GA17985@fieldses.org>
+References: <20120810125701.7115.71612.stgit@localhost.localdomain>
+ <50254FA6.3060806@zytor.com>
+ <20120810192628.79a34d28@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120810192628.79a34d28@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 10, 2012 at 07:26:28PM +0100, Alan Cox wrote:
+> > On that whole subject...
+> > 
+> > Do we need a Unix domain socket equivalent to openat()?
+> 
+> I don't think so. The name is just a file system indexing trick, it's not
+> really the socket proper. It's little more than "ascii string with
+> permissions attached"
 
-Dear RT Folks,
+That's overstating the case.  As I understand it the address is resolved
+by a pathname lookup like any other--it can follow symlinks, is relative
+to the current working directory and filesystem namespace, etc.  So a
+unix-domain socket equivalent to openat() would at least be
+well-defined--whether it's needed or not, I don't know.
 
-I'm pleased to announce the 3.0.40-rt60 stable release.
-
-
-This release is just an update to the new stable 3.0.40 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 810bfb094d8b827b9748a0e237b83675467d94e1
-
-
-Or to build 3.0.40-rt60 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.40.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.40-rt60.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+--b.
