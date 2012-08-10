@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab2HJBjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 21:39:37 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42186 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757017Ab2HJBjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 21:39:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120726134748.GA20605@localhost>
-References: <20120726134748.GA20605@localhost>
-Date: Thu, 9 Aug 2012 18:39:34 -0700
-X-Google-Sender-Auth: qCcYuTCx1EdYfcMwLSec07sPsXs
-Message-ID: <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
-Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
-From: Kees Cook <keescook@chromium.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1759007Ab2HJBkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 21:40:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8302 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755941Ab2HJBj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 21:39:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,743,1336374000"; 
+   d="scan'208";a="132195211"
+Message-ID: <1344562866.1682.698.camel@rui.sh.intel.com>
+Subject: Re: thermal patches in linux-next
+From: Zhang Rui <rui.zhang@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Amit Kachhap <amit.kachhap@linaro.org>, Guenter Roeck <linux@roeck-us.net>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Date: Fri, 10 Aug 2012 09:41:06 +0800
+In-Reply-To: <20120810090859.7ec67594f794c38c52096544@canb.auug.org.au>
+References: <1344308038.1682.637.camel@rui.sh.intel.com>
+	 <1344494746.1682.669.camel@rui.sh.intel.com>
+	 <20120810090859.7ec67594f794c38c52096544@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, Stephen,
 
-So, after taking a closer look at this, I cannot understand how it's
-possible. Yama's task_lock call is against "current", not "child",
-which is what ptrace_may_access() is locking. And the same code makes
-sure that current != child. Yama would never get called if current ==
-child.
+On 五, 2012-08-10 at 09:08 +1000, Stephen Rothwell wrote:
+> Hi Rui,
+> 
+> On Thu, 09 Aug 2012 14:45:46 +0800 Zhang Rui <rui.zhang@intel.com> wrote:
+> >
+> > On 二, 2012-08-07 at 10:53 +0800, Zhang Rui wrote:
+> > > Hi, all,
+> > > 
+> > > I just created a git tree for catching all thermal changes.
+> > > http://git.kernel.org/?p=linux/kernel/git/rzhang/linux.git;a=summary
+> > > and I also created the next branch, which I'd like to be set for
+> > > linux-next inclusion, but don't know how.
+> > > 
+> > I create a tree for thermal management,
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+> > 
+> > could you please include my next branch for linux-next?
+> 
+> Included from today.
+> 
+Thank you.
 
-How did you reproduce this situation?
+> > And could you please drop these commits
+> > ef25a0fe0087963c1611c1c8903886fbea053f76
+> > 09ec52fca274ba88d68df3198de92abdaaff417b
+> > ab6d2f029358c917508bf88bbd6a9193a8e39fc8
+> > 66447fa993cbce56b4076f169a56f62350f6c7b8
+> > ec62abb8b46021ca9ee6b8692b26974ace9007f0
+> > 5ecbaf57d7885eedd924e391d91847d3df9fe0f8
+> > 851414b2249afd8c128d29912dfd7060eaea8932
+> > and pull my next branch instead?
+> 
+> That is not how linux-next normally works.  Those commits are in Adnrew's
+> quilt series, so you need to ask him to drop them.  However, because of
+> the way the akpm tree works, any duplicate patches will disappear from my
+> copy of Andrew's series.
+> 
+Andrew,
 
-Thanks,
+could you please drop these patches?
+these commits either will be or has been re-based on top of my tree.
 
--Kees
-
-On Thu, Jul 26, 2012 at 6:47 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Hi Kees,
->
-> Here is a recursive lock possibility:
->
->         ptrace_may_access()
-> =>        task_lock(task);
->             yama_ptrace_access_check()
->               get_task_comm()
-> =>              task_lock(task);
->
-> [   60.230444] =============================================
-> [   60.232078] [ INFO: possible recursive locking detected ]
-> [   60.232078] 3.5.0+ #281 Not tainted
-> [   60.232078] ---------------------------------------------
-> [   60.232078] trinity-child0/17019 is trying to acquire lock:
-> [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c1176ffa>] get_task_comm+0x4a/0xf0
-> [   60.232078]
-> [   60.232078] but task is already holding lock:
-> [   60.232078]  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
-> [   60.232078]
-> [   60.232078] other info that might help us debug this:
-> [   60.232078]  Possible unsafe locking scenario:
-> [   60.232078]
-> [   60.232078]        CPU0
-> [   60.232078]        ----
-> [   60.232078]   lock(&(&p->alloc_lock)->rlock);
-> [   60.232078]   lock(&(&p->alloc_lock)->rlock);
-> [   60.232078]
-> [   60.232078]  *** DEADLOCK ***
-> [   60.232078]
-> [   60.232078]  May be due to missing lock nesting notation
-> [   60.232078]
-> [   60.232078] 3 locks held by trinity-child0/17019:
-> [   60.232078]  #0:  (&p->lock){+.+.+.}, at: [<c11a9683>] seq_read+0x33/0x6b0
-> [   60.232078]  #1:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c11ff8ae>] lock_trace+0x2e/0xb0
-> [   60.232078]  #2:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<c10653fa>] ptrace_may_access+0x4a/0xf0
-> [   60.232078]
-> [   60.232078] stack backtrace:
-> [   60.232078] Pid: 17019, comm: trinity-child0 Not tainted 3.5.0+ #281
-> [   60.232078] Call Trace:
-> [   60.232078]  [<c10c6238>] __lock_acquire+0x1498/0x14f0
-> [   60.232078]  [<c10be7e7>] ? trace_hardirqs_off+0x27/0x40
-> [   60.232078]  [<c10c6360>] lock_acquire+0xd0/0x110
-> [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
-> [   60.232078]  [<c1422290>] _raw_spin_lock+0x60/0x110
-> [   60.232078]  [<c1176ffa>] ? get_task_comm+0x4a/0xf0
-> [   60.232078]  [<c1176ffa>] get_task_comm+0x4a/0xf0
-> [   60.232078]  [<c1246798>] yama_ptrace_access_check+0x468/0x4a0
-> [   60.232078]  [<c124648f>] ? yama_ptrace_access_check+0x15f/0x4a0
-> [   60.232078]  [<c124209a>] security_ptrace_access_check+0x1a/0x30
-> [   60.232078]  [<c1065229>] __ptrace_may_access+0x189/0x310
-> [   60.232078]  [<c10650cc>] ? __ptrace_may_access+0x2c/0x310
-> [   60.232078]  [<c106542d>] ptrace_may_access+0x7d/0xf0
-> [   60.232078]  [<c11ff8ea>] lock_trace+0x6a/0xb0
-> [   60.232078]  [<c11ffa46>] proc_pid_stack+0x76/0x170
-> [   60.232078]  [<c1201064>] proc_single_show+0x74/0x100
-> [   60.232078]  [<c11a97b3>] seq_read+0x163/0x6b0
-> [   60.232078]  [<c105bf70>] ? do_setitimer+0x220/0x330
-> [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
-> [   60.232078]  [<c116b55a>] vfs_read+0xca/0x280
-> [   60.232078]  [<c11a9650>] ? seq_lseek+0x1f0/0x1f0
-> [   60.232078]  [<c116b776>] sys_read+0x66/0xe0
-> [   60.232078]  [<c1423d9d>] syscall_call+0x7/0xb
-> [   60.232078]  [<c1420000>] ? __schedule+0x2a0/0xc80
->
-> Thanks,
-> Fengguang
+thanks,
+rui
+> 
+> In this case, I will remove them if they conflict too much or you take
+> them (rebased) into your tree.
+> 
+> Andrew, any chance of a new mmotm series?  I am still working off (a reduced
+> part) of the mmotm series from July 21 ...
+> 
+> Thanks for adding your subsystem tree as a participant of linux-next.  As
+> you may know, this is not a judgment of your code.  The purpose of
+> linux-next is for integration testing and to lower the impact of
+> conflicts between subsystems in the next merge window. 
+> 
+> You will need to ensure that the patches/commits in your tree/series have
+> been:
+>      * submitted under GPL v2 (or later) and include the Contributor's
+> 	Signed-off-by,
+>      * posted to the relevant mailing list,
+>      * reviewed by you (or another maintainer of your subsystem tree),
+>      * successfully unit tested, and 
+>      * destined for the current or next Linux merge window.
+> 
+> Basically, this should be just what you would send to Linus (or ask him
+> to fetch).  It is allowed to be rebased if you deem it necessary.
+> 
 
 
-
--- 
-Kees Cook
-Chrome OS Security
