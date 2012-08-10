@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab2HJMAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 08:00:30 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35394 "EHLO
+	id S1754574Ab2HJMHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 08:07:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63648 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab2HJMA3 (ORCPT
+	with ESMTP id S1753583Ab2HJMHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 08:00:29 -0400
+	Fri, 10 Aug 2012 08:07:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1208091816240.9631@eggly.anvils>
-References: <CAJd=RBAjGaOXfQQ_NX+ax6=tJJ0eg7EXCFHz3rdvSR3j1K3qHA@mail.gmail.com>
-	<alpine.LSU.2.00.1208091816240.9631@eggly.anvils>
-Date: Fri, 10 Aug 2012 20:00:28 +0800
-Message-ID: <CAJd=RBDu5ebAAOuie5yNc8x7vkn7LPfDZZyGzRsCUFNRojWmwQ@mail.gmail.com>
-Subject: Re: [patch] mmap: feed back correct prev vma when finding vma
+In-Reply-To: <20120810094825.GA1440@dhcp22.suse.cz>
+References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
+	<20120803133235.GA8434@dhcp22.suse.cz>
+	<20120810094825.GA1440@dhcp22.suse.cz>
+Date: Fri, 10 Aug 2012 20:07:12 +0800
+Message-ID: <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
+Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
 From: Hillf Danton <dhillf@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 9:26 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Thu, 9 Aug 2012, Hillf Danton wrote:
->> After walking rb tree, if vma is determined, prev vma has to be determined
->> based on vma; and rb_prev should be considered only if no vma determined.
+On Fri, Aug 10, 2012 at 5:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Fri 03-08-12 15:32:35, Michal Hocko wrote:
+>> On Fri 03-08-12 20:56:45, Hillf Danton wrote:
+>> > The computation of page offset index is open coded, and incorrect, to
+>> > be used in scanning prio tree, as huge page offset is required, and is
+>> > fixed with the well defined routine.
+>>
+>> I guess that nobody reported this because if someone really wants to
+>> share he will use aligned address for mmap/shmat and so the index is 0.
+>> Anyway it is worth fixing. Thanks for pointing out!
 >
-> Why?  Because you think more code is better code?  I disagree.
+> I have looked at the code again and I don't think there is any problem
+> at all. vma_prio_tree_foreach understands page units so it will find
+> appropriate svmas.
+> Or am I missing something?
 
-s/more/correct/
-
-Because feedback is incorrect if we return vma corresponding to
-the root node.
+Well, what if another case of vma_prio_tree_foreach used by hugetlb
+is correct?
 
 Hillf
