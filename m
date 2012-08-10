@@ -1,96 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751Ab2HJR1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:27:41 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:49396 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754721Ab2HJR1i (ORCPT
+	id S1758115Ab2HJR14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:27:56 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53770 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757910Ab2HJR1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:27:38 -0400
-Message-ID: <50254434.7040701@xenotime.net>
-Date: Fri, 10 Aug 2012 10:26:12 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 10 Aug 2012 13:27:53 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50254475.4000201@jp.fujitsu.com>
+Date: Sat, 11 Aug 2012 02:27:17 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Alex Elder <elder@inktank.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH]  lib/parser.c: avoid overflow in match_number()
-References: <5024179D.30308@inktank.com>
-In-Reply-To: <5024179D.30308@inktank.com>
-Content-Type: text/plain; charset=UTF-8
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com>
+In-Reply-To: <1344517279-30646-7-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 01:03 PM, Alex Elder wrote:
-
-> The result of converting an integer value to another signed integer
-> type that's unable to represent the original value is implementation
-> defined.  (See notes in section 6.3.1.3 of the C standard.)
+(2012/08/09 22:01), Glauber Costa wrote:
+> This patch introduces infrastructure for tracking kernel memory pages to
+> a given memcg. This will happen whenever the caller includes the flag
+> __GFP_KMEMCG flag, and the task belong to a memcg other than the root.
 > 
-> In match_number(), the result of simple_strtol() (which returns type
-> long) is assigned to a value of type int.
+> In memcontrol.h those functions are wrapped in inline accessors.  The
+> idea is to later on, patch those with static branches, so we don't incur
+> any overhead when no mem cgroups with limited kmem are being used.
 > 
-> Instead, handle the result of simple_strtol() in a well-defined way,
-> and return -ERANGE if the result won't fit in the int variable used
-> to hold the parsed result.
+> [ v2: improved comments and standardized function names ]
 > 
-> No current callers pay attention to the particular error value
-> returned, so this additional return code shouldn't do any harm.
-> 
-> Signed-off-by: Alex Elder <elder@inktank.com>
-
-
-Makes sense to me, but I wonder who will merge it.
-
-I'm Cc-ing a couple of possibilities.
-
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  lib/parser.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
+>   include/linux/memcontrol.h |  79 +++++++++++++++++++
+>   mm/memcontrol.c            | 185 +++++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 264 insertions(+)
 > 
-> Index: b/lib/parser.c
-> ===================================================================
-> --- a/lib/parser.c
-> +++ b/lib/parser.c
-> @@ -122,13 +122,14 @@ int match_token(char *s, const match_tab
->   *
->   * Description: Given a &substring_t and a base, attempts to parse the substring
->   * as a number in that base. On success, sets @result to the integer represented
-> - * by the string and returns 0. Returns either -ENOMEM or -EINVAL on failure.
-> + * by the string and returns 0. Returns -ENOMEM, -EINVAL, or -ERANGE on failure.
->   */
->  static int match_number(substring_t *s, int *result, int base)
->  {
->      char *endp;
->      char *buf;
->      int ret;
-> +    long val;
->      size_t len = s->to - s->from;
-> 
->      buf = kmalloc(len + 1, GFP_KERNEL);
-> @@ -136,10 +137,15 @@ static int match_number(substring_t *s,
->          return -ENOMEM;
->      memcpy(buf, s->from, len);
->      buf[len] = '\0';
-> -    *result = simple_strtol(buf, &endp, base);
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 8d9489f..75b247e 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -21,6 +21,7 @@
+>   #define _LINUX_MEMCONTROL_H
+>   #include <linux/cgroup.h>
+>   #include <linux/vm_event_item.h>
+> +#include <linux/hardirq.h>
+>   
+>   struct mem_cgroup;
+>   struct page_cgroup;
+> @@ -399,6 +400,11 @@ struct sock;
+>   #ifdef CONFIG_MEMCG_KMEM
+>   void sock_update_memcg(struct sock *sk);
+>   void sock_release_memcg(struct sock *sk);
 > +
->      ret = 0;
-> +    val = simple_strtol(buf, &endp, base);
->      if (endp == buf)
->          ret = -EINVAL;
-> +    else if (val < (long) INT_MIN || val > (long) INT_MAX)
-> +        ret = -ERANGE;
-> +    else
-> +        *result = (int) val;
->      kfree(buf);
->      return ret;
->  }
-> -- 
+> +#define memcg_kmem_on 1
+> +bool __memcg_kmem_new_page(gfp_t gfp, void *handle, int order);
+> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order);
+> +void __memcg_kmem_free_page(struct page *page, int order);
+>   #else
+>   static inline void sock_update_memcg(struct sock *sk)
+>   {
+> @@ -406,6 +412,79 @@ static inline void sock_update_memcg(struct sock *sk)
+>   static inline void sock_release_memcg(struct sock *sk)
+>   {
+>   }
+> +
+> +#define memcg_kmem_on 0
+> +static inline bool
+> +__memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
+> +{
+> +	return false;
+> +}
+> +
+> +static inline void  __memcg_kmem_free_page(struct page *page, int order)
+> +{
+> +}
+> +
+> +static inline void
+> +__memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
+> +{
+> +}
+>   #endif /* CONFIG_MEMCG_KMEM */
+> +
+> +/**
+> + * memcg_kmem_new_page: verify if a new kmem allocation is allowed.
+> + * @gfp: the gfp allocation flags.
+> + * @handle: a pointer to the memcg this was charged against.
+> + * @order: allocation order.
+> + *
+> + * returns true if the memcg where the current task belongs can hold this
+> + * allocation.
+> + *
+> + * We return true automatically if this allocation is not to be accounted to
+> + * any memcg.
+> + */
+> +static __always_inline bool
+> +memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
+> +{
+> +	if (!memcg_kmem_on)
+> +		return true;
+> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
+> +		return true;
+> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+> +		return true;
+> +	return __memcg_kmem_new_page(gfp, handle, order);
+> +}
+> +
+> +/**
+> + * memcg_kmem_free_page: uncharge pages from memcg
+> + * @page: pointer to struct page being freed
+> + * @order: allocation order.
+> + *
+> + * there is no need to specify memcg here, since it is embedded in page_cgroup
+> + */
+> +static __always_inline void
+> +memcg_kmem_free_page(struct page *page, int order)
+> +{
+> +	if (memcg_kmem_on)
+> +		__memcg_kmem_free_page(page, order);
+> +}
+> +
+> +/**
+> + * memcg_kmem_commit_page: embeds correct memcg in a page
+> + * @handle: a pointer to the memcg this was charged against.
+> + * @page: pointer to struct page recently allocated
+> + * @handle: the memcg structure we charged against
+> + * @order: allocation order.
+> + *
+> + * Needs to be called after memcg_kmem_new_page, regardless of success or
+> + * failure of the allocation. if @page is NULL, this function will revert the
+> + * charges. Otherwise, it will commit the memcg given by @handle to the
+> + * corresponding page_cgroup.
+> + */
+> +static __always_inline void
+> +memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
+> +{
+> +	if (memcg_kmem_on)
+> +		__memcg_kmem_commit_page(page, handle, order);
+> +}
+
+Doesn't this 2 functions has no short-cuts ?
+
+if (memcg_kmem_on && handle) ?
+
+Maybe free() needs to access page_cgroup...
 
 
--- 
-~Randy
+
+>   #endif /* _LINUX_MEMCONTROL_H */
+>   
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 54e93de..e9824c1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -10,6 +10,10 @@
+>    * Copyright (C) 2009 Nokia Corporation
+>    * Author: Kirill A. Shutemov
+>    *
+> + * Kernel Memory Controller
+> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
+> + * Authors: Glauber Costa and Suleiman Souhlal
+> + *
+>    * This program is free software; you can redistribute it and/or modify
+>    * it under the terms of the GNU General Public License as published by
+>    * the Free Software Foundation; either version 2 of the License, or
+> @@ -434,6 +438,9 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
+>   #include <net/ip.h>
+>   
+>   static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
+> +static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
+> +
+>   void sock_update_memcg(struct sock *sk)
+>   {
+>   	if (mem_cgroup_sockets_enabled) {
+> @@ -488,6 +495,118 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>   }
+>   EXPORT_SYMBOL(tcp_proto_cgroup);
+>   #endif /* CONFIG_INET */
+> +
+> +static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
+> +{
+> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+> +		memcg->kmem_accounted;
+> +}
+> +
+> +/*
+> + * We need to verify if the allocation against current->mm->owner's memcg is
+> + * possible for the given order. But the page is not allocated yet, so we'll
+> + * need a further commit step to do the final arrangements.
+> + *
+> + * It is possible for the task to switch cgroups in this mean time, so at
+> + * commit time, we can't rely on task conversion any longer.  We'll then use
+> + * the handle argument to return to the caller which cgroup we should commit
+> + * against
+> + *
+> + * Returning true means the allocation is possible.
+> + */
+> +bool __memcg_kmem_new_page(gfp_t gfp, void *_handle, int order)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	struct mem_cgroup **handle = (struct mem_cgroup **)_handle;
+> +	bool ret = true;
+> +	size_t size;
+> +	struct task_struct *p;
+> +
+> +	*handle = NULL;
+> +	rcu_read_lock();
+> +	p = rcu_dereference(current->mm->owner);
+> +	memcg = mem_cgroup_from_task(p);
+> +	if (!memcg_kmem_enabled(memcg))
+> +		goto out;
+> +
+> +	mem_cgroup_get(memcg);
+> +
+
+This mem_cgroup_get() will be a potentioal performance problem.
+Don't you have good idea to avoid accessing atomic counter here ?
+I think some kind of percpu counter or a feature to disable "move task"
+will be a help.
+
+
+> +	size = PAGE_SIZE << order;
+> +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+> +	if (!ret) {
+> +		mem_cgroup_put(memcg);
+> +		goto out;
+> +	}
+> +
+> +	*handle = memcg;
+> +out:
+> +	rcu_read_unlock();
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(__memcg_kmem_new_page);
+> +
+> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order)
+> +{
+> +	struct page_cgroup *pc;
+> +	struct mem_cgroup *memcg = handle;
+> +
+> +	if (!memcg)
+> +		return;
+> +
+> +	WARN_ON(mem_cgroup_is_root(memcg));
+> +	/* The page allocation must have failed. Revert */
+> +	if (!page) {
+> +		size_t size = PAGE_SIZE << order;
+> +
+> +		memcg_uncharge_kmem(memcg, size);
+> +		mem_cgroup_put(memcg);
+> +		return;
+> +	}
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	lock_page_cgroup(pc);
+> +	pc->mem_cgroup = memcg;
+> +	SetPageCgroupUsed(pc);
+> +	unlock_page_cgroup(pc);
+> +}
+> +
+> +void __memcg_kmem_free_page(struct page *page, int order)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	size_t size;
+> +	struct page_cgroup *pc;
+> +
+> +	if (mem_cgroup_disabled())
+> +		return;
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	lock_page_cgroup(pc);
+> +	memcg = pc->mem_cgroup;
+> +	pc->mem_cgroup = NULL;
+
+shouldn't this happen after checking "Used" bit ?
+Ah, BTW, why do you need to clear pc->memcg ?
+
+> +	if (!PageCgroupUsed(pc)) {
+> +		unlock_page_cgroup(pc);
+> +		return;
+> +	}
+> +	ClearPageCgroupUsed(pc);
+> +	unlock_page_cgroup(pc);
+> +
+> +	/*
+> +	 * Checking if kmem accounted is enabled won't work for uncharge, since
+> +	 * it is possible that the user enabled kmem tracking, allocated, and
+> +	 * then disabled it again.
+> +	 *
+> +	 * We trust if there is a memcg associated with the page, it is a valid
+> +	 * allocation
+> +	 */
+> +	if (!memcg)
+> +		return;
+> +
+> +	WARN_ON(mem_cgroup_is_root(memcg));
+> +	size = (1 << order) << PAGE_SHIFT;
+> +	memcg_uncharge_kmem(memcg, size);
+> +	mem_cgroup_put(memcg);
+
+Why do we need ref-counting here ? kmem res_counter cannot work as
+reference ?
+
+
+> +}
+> +EXPORT_SYMBOL(__memcg_kmem_free_page);
+>   #endif /* CONFIG_MEMCG_KMEM */
+>   
+>   #if defined(CONFIG_INET) && defined(CONFIG_MEMCG_KMEM)
+> @@ -5759,3 +5878,69 @@ static int __init enable_swap_account(char *s)
+>   __setup("swapaccount=", enable_swap_account);
+>   
+>   #endif
+> +
+> +#ifdef CONFIG_MEMCG_KMEM
+> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
+> +{
+
+What does 'delta' means ?
+
+
+> +	struct res_counter *fail_res;
+> +	struct mem_cgroup *_memcg;
+> +	int ret;
+> +	bool may_oom;
+> +	bool nofail = false;
+> +
+> +	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
+> +	    !(gfp & __GFP_NORETRY);
+> +
+> +	ret = 0;
+> +
+> +	if (!memcg)
+> +		return ret;
+> +
+> +	_memcg = memcg;
+> +	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
+> +	    &_memcg, may_oom);
+> +
+> +	if (ret == -EINTR)  {
+> +		nofail = true;
+> +		/*
+> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
+> +		 * OOM kill or fatal signal.  Since our only options are to
+> +		 * either fail the allocation or charge it to this cgroup, do
+> +		 * it as a temporary condition. But we can't fail. From a
+> +		 * kmem/slab perspective, the cache has already been selected,
+> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
+> +		 * our minds
+> +		 */
+> +		res_counter_charge_nofail(&memcg->res, delta, &fail_res);
+> +		if (do_swap_account)
+> +			res_counter_charge_nofail(&memcg->memsw, delta,
+> +						  &fail_res);
+> +		ret = 0;
+
+Hm, you returns 0 and this charge may never be uncharged....right ?
+
+Thanks,
+-Kame
+
+
