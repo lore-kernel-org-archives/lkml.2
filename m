@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759797Ab2HJSbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:31:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52922 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab2HJSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:31:46 -0400
-Message-ID: <5025537D.9060300@zytor.com>
-Date: Fri, 10 Aug 2012 11:31:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1759895Ab2HJSfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:35:12 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:22721 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759750Ab2HJSfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:35:10 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhAFADRTJVBXQCzb/2dsb2JhbABEhTqjJJEMgQiCIAEBBVYGHAEQCwsNCRYPCQMCAQIBERYeBg0BBQIBAYd5AROlZYd9ChmBC4h3iw+GZAOVSYVcijOCYQ
+Message-ID: <50255393.7070400@gmail.com>
+Date: Fri, 10 Aug 2012 20:31:47 +0200
+From: Jan Ceuleers <jan.ceuleers@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond.Myklebust@netapp.com, davem@davemloft.net,
-        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        tim.c.chen@linux.intel.com, devel@openvz.org
-Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
-References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk>
-In-Reply-To: <20120810192628.79a34d28@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
+To: Masatake YAMATO <yamato@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/15] Declaring udp protocols has its own proc entry
+References: <20120810.230559.1897275934845172399.yamato@redhat.com>
+In-Reply-To: <20120810.230559.1897275934845172399.yamato@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 11:26 AM, Alan Cox wrote:
->> On that whole subject...
->>
->> Do we need a Unix domain socket equivalent to openat()?
+On 08/10/2012 04:05 PM, Masatake YAMATO wrote:
+> Declaring udp protocols has its own proc entry.
 > 
-> I don't think so. The name is just a file system indexing trick, it's not
-> really the socket proper. It's little more than "ascii string with
-> permissions attached" - indeed we also support an abstract name space
-> which for a lot of uses is actually more convenient.
+> Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+> ---
+>  net/ipv4/udp.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+> index b4c3582..2b822ac 100644
+> --- a/net/ipv4/udp.c
+> +++ b/net/ipv4/udp.c
+> @@ -1963,6 +1963,9 @@ struct proto udp_prot = {
+>  	.compat_getsockopt = compat_udp_getsockopt,
+>  #endif
+>  	.clear_sk	   = sk_prot_clear_portaddr_nulls,
+> +#ifdef CONFIG_PROC_FS
+> +	.has_own_proc_entry= 1,
+> +#endif
+>  };
+>  EXPORT_SYMBOL(udp_prot);
+>  
 > 
 
-I don't really understand why Unix domain sockets is different than any
-other pathname users in this sense.  (Actually, I have never understood
-why open() on a Unix domain socket doesn't give the equivalent of a
-socket() + connect() -- it would make logical sense and would provide
-additional functionality).
+Two points:
 
-It would be different if the Unix domain sockets simply required an
-absolute pathname (it is not just about the root, it is also about the
-cwd, which is where the -at() functions come into play), but that is not
-the case.
-
-The abstract namespace is irrelevant for this, obviously.
-
-> AF_UNIX between roots raises some interesting semantic questions when
-> you begin passing file descriptors down them as well.
-
-Why is that?  A file descriptor carries all that information with it...
-
-	-hpa
+- I haven't seen patch 01/15;
+- these patches should go to netdev rather than lkml
