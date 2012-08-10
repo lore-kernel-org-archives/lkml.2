@@ -1,40 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab2HJRIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:08:45 -0400
-Received: from bente.schedom-europe.net ([193.109.184.68]:46200 "EHLO
-	bente.schedom-europe.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab2HJRIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:08:44 -0400
-Message-ID: <50254019.1030304@telenet.be>
-Date: Fri, 10 Aug 2012 19:08:41 +0200
-From: Janpieter Sollie <janpieter.sollie@telenet.be>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1756339Ab2HJRLe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:11:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753310Ab2HJRLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 13:11:32 -0400
+Date: Fri, 10 Aug 2012 13:11:12 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH 1/6] floppy: don't call alloc_ordered_workqueue inside
+ the alloc_disk loop
+Message-ID: <20120810171112.GF5416@redhat.com>
+References: <1344542391-16474-1-git-send-email-herton.krzesinski@canonical.com>
+ <1344542391-16474-2-git-send-email-herton.krzesinski@canonical.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: POI: nvidia forcedeth phy id not present
-References: <50243237.9040704@telenet.be> <50244458.5040906@telenet.be>
-In-Reply-To: <50244458.5040906@telenet.be>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344542391-16474-2-git-send-email-herton.krzesinski@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A primary concern seems to be solved (4k frame size).
-However, it is not really a patch yet, just a dirty workaround (just replaced ETH_DATA_LEN with
-a value 4000, my switch is limited to 4k)
+On Thu, Aug 09, 2012 at 04:59:46PM -0300, Herton Ronaldo Krzesinski wrote:
+> Since commit 070ad7e ("floppy: convert to delayed work and single-thread
+> wq"), we end up calling alloc_ordered_workqueue multiple times inside
+> the loop, which shouldn't be intended. Besides the leak, other side
+> effect in the current code is if blk_init_queue fails, we would end up
+> calling unregister_blkdev even if we didn't call yet register_blkdev.
+> 
+> Just moved the allocation of floppy_wq before the loop, and adjusted the
+> code accordingly.
+> 
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> Cc: stable@vger.kernel.org # 3.5+
 
-486c486
-< #define NV_PKTLIMIT_1_ETH_DATA_LEN /* hard limit not known */
----
-> #define NV_PKTLIMIT_1 4000 /* hard limit not known */
+Looks good to me.
 
-I will try to improve the MTU detection in driver, but it can take some time before I really
-understand what each function does. I do not know if this workaround forces a value to the
-'initiated' phy, or just forces a wrong MTU to be used on standard nvidia cards.
-the results are worth considering: dd -if=//server/share of=/dev/null went from 91 to 112 mbps
-(and this is no file cache, the pc has 2gb ram (>50% used by GUI) and the source file is 30 ...)
-any help developing a patch may be useful.  Is there some documentation about this driver module?
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> ---
+>  drivers/block/floppy.c |   15 ++++++---------
+>  1 file changed, 6 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> index a7d6347..c8d9e68 100644
+> --- a/drivers/block/floppy.c
+> +++ b/drivers/block/floppy.c
+> @@ -4138,6 +4138,10 @@ static int __init do_floppy_init(void)
+>  
+>  	raw_cmd = NULL;
+>  
+> +	floppy_wq = alloc_ordered_workqueue("floppy", 0);
+> +	if (!floppy_wq)
+> +		return -ENOMEM;
+> +
+>  	for (dr = 0; dr < N_DRIVE; dr++) {
+>  		disks[dr] = alloc_disk(1);
+>  		if (!disks[dr]) {
+> @@ -4145,16 +4149,10 @@ static int __init do_floppy_init(void)
+>  			goto out_put_disk;
+>  		}
+>  
+> -		floppy_wq = alloc_ordered_workqueue("floppy", 0);
+> -		if (!floppy_wq) {
+> -			err = -ENOMEM;
+> -			goto out_put_disk;
+> -		}
+> -
+>  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
+>  		if (!disks[dr]->queue) {
+>  			err = -ENOMEM;
+> -			goto out_destroy_workq;
+> +			goto out_put_disk;
+>  		}
+>  
+>  		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
+> @@ -4318,8 +4316,6 @@ out_release_dma:
+>  out_unreg_region:
+>  	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
+>  	platform_driver_unregister(&floppy_driver);
+> -out_destroy_workq:
+> -	destroy_workqueue(floppy_wq);
+>  out_unreg_blkdev:
+>  	unregister_blkdev(FLOPPY_MAJOR, "fd");
+>  out_put_disk:
+> @@ -4335,6 +4331,7 @@ out_put_disk:
+>  		}
+>  		put_disk(disks[dr]);
+>  	}
+> +	destroy_workqueue(floppy_wq);
+>  	return err;
+>  }
+>  
+> -- 
+> 1.7.9.5
