@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2HJNJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 09:09:58 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:33811 "EHLO mx2.fusionio.com"
+	id S1755776Ab2HJNQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 09:16:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab2HJNJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 09:09:57 -0400
-X-ASG-Debug-ID: 1344604195-0421b5402c658d0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <5025080A.1040001@fusionio.com>
-Date: Fri, 10 Aug 2012 15:09:30 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752988Ab2HJNQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 09:16:46 -0400
+Date: Fri, 10 Aug 2012 15:16:43 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
+Message-ID: <20120810131643.GC1425@dhcp22.suse.cz>
+References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
+ <20120803133235.GA8434@dhcp22.suse.cz>
+ <20120810094825.GA1440@dhcp22.suse.cz>
+ <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
+ <20120810122730.GA1425@dhcp22.suse.cz>
+ <CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
+ <20120810125102.GB1425@dhcp22.suse.cz>
+ <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
 MIME-Version: 1.0
-To: Jianpeng Ma <majianpeng@gmail.com>
-CC: shli <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] block: Fix not tracing all device plug-operation.
-References: <201208101945571256852@gmail.com>
-X-ASG-Orig-Subj: Re: [PATCH 2/3] block: Fix not tracing all device plug-operation.
-In-Reply-To: <201208101945571256852@gmail.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1344604195
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.105236
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 01:46 PM, Jianpeng Ma wrote:
-> If process handled two or more devices,there will not be trace some
-> devices plug-operation.
-> 
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> ---
->  block/blk-core.c |   16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 7a3abc6..034f186 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1521,11 +1521,25 @@ get_rq:
->  				struct request *__rq;
->  
->  				__rq = list_entry_rq(plug->list.prev);
-> -				if (__rq->q != q)
-> +				if (__rq->q != q) {
->  					plug->should_sort = 1;
-> +					trace_block_plug(q);
-> +				}
-> +			} else {
-> +				struct request *__rq;
-> +				list_for_each_entry_reverse(__rq, &plug->list,
-> +					queuelist) {
-> +					if (__rq->q == q) {
-> +						list_add_tail(&req->queuelist,
-> +							&__rq->queuelist);
-> +						goto stat_acct;
+[CCing Kamezawa and David]
 
-Did you verify this? It doesn't look right to me. You browse the list in
-reverse, which means __rq is the first one that has a matching q. Then
-you add the new req IN FRONT of that. You would want list_add() here
-instead, adding it as the last member of that q string, not in the
-middle.
+On Fri 10-08-12 20:53:36, Hillf Danton wrote:
+> On Fri, Aug 10, 2012 at 8:51 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Fri 10-08-12 20:37:20, Hillf Danton wrote:
+> >> On Fri, Aug 10, 2012 at 8:27 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> >
+> >> > I guess you mean unmap_ref_private and that has been changed by you
+> >> > (0c176d5 mm: hugetlb: fix pgoff computation when unmapping page from
+> >> > vma)...  I was wrong at that time when giving my Reviewed-by. The patch
+> >> > didn't break anything because you still find all relevant vmas because
+> >> > vma_hugecache_offset just provides a smaller index which is still within
+> >> > boundaries.
+> >>
+> >> No, as shown by the log message of 0c176d52b,  that fix was
+> >> triggered by  (vma->vm_pgoff >> PAGE_SHIFT), thus I dont see
+> >> what you really want to revert.
+> >
+> > fix for that would be a part of the revert of course.
+> >
+> 
+> Fine, go ahead ;)
+
+there you go
+---
+>From 973187e9bad72181f4563a675ca64235f8612a2a Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 10 Aug 2012 15:03:07 +0200
+Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
+ vma_prio_tree_foreach
+
+0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
+from vma) fixed pgoff calculation but it has replaced it by
+vma_hugecache_offset which is not approapriate for offsets used for
+vma_prio_tree_foreach because that one expects index in page units
+rather than in huge_page_shift.
+Using vma_hugecache_offset is not incorrect because the pgoff will fit
+into the same vmas but it is confusing.
+
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/hugetlb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c39e4be..a74ea31 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * from page cache lookup which is in HPAGE_SIZE units.
+ 	 */
+ 	address = address & huge_page_mask(h);
+-	pgoff = vma_hugecache_offset(h, vma, address);
++	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
+ 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+ 
+ 	/*
+-- 
+1.7.10.4
+
 
 -- 
-Jens Axboe
-
+Michal Hocko
+SUSE Labs
