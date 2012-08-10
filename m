@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760098Ab2HJAJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 20:09:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17440 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756041Ab2HJAJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 20:09:03 -0400
-X-ExtLoop1: 1
+	id S1752307Ab2HJA1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 20:27:00 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41880 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2HJA06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 20:26:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6798"; a="221069646"
 X-IronPort-AV: E=Sophos;i="4.77,743,1336374000"; 
-   d="scan'208";a="195862891"
-Date: Fri, 10 Aug 2012 08:09:00 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: linux-rdma@vger.kernel.org, Parav Pandit <parav.pandit@emulex.com>,
-        Sean Hefty <sean.hefty@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: BUG: RDMA/ocrdma calls invalid vlan_dev_real_dev()
-Message-ID: <20120810000900.GC16305@localhost>
-References: <20120809095933.GA6832@localhost>
- <CAG4TOxO88=sV26S4JT9RJPzp_DiekfSoOsQn3j8cpb6=HgW7Zw@mail.gmail.com>
+   d="scan'208";a="303630333"
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+To: Ben Hutchings <bhutchings@solarflare.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Joe Perches <joe@perches.com>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "hao-ran.liu@canonical.com" <hao-ran.liu@canonical.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Subject: RE: [PATCH] net: add new QCA alx ethernet driver
+Thread-Topic: [PATCH] net: add new QCA alx ethernet driver
+Thread-Index: AQHNddTRDXcTbtvZbUiDfP8UijeOlpdRNsGAgAAciACAAAmfAIAAGj8AgAAIwoCAAIekAIAAB8AAgAABlQCAADpFgP//5pPw
+Date: Fri, 10 Aug 2012 00:26:57 +0000
+Message-ID: <157393863283F442885425D2C454285623E1FC1E@NASANEXD02A.na.qualcomm.com>
+References: <6349D7A510622448B1BA0967850A8438013692CA@NASANEXD02D.na.qualcomm.com>
+	 <1344485382.2024.9.camel@joe2Laptop>
+	 <6349D7A510622448B1BA0967850A843801369364@NASANEXD02D.na.qualcomm.com>
+	 <20120808.231804.12694947300243733.davem@davemloft.net>
+	 <6349D7A510622448B1BA0967850A8438013693DD@NASANEXD02D.na.qualcomm.com>
+	 <20120809145454.GA21195@home.goodmis.org>
+	 <1344525758.3165.8.camel@joe2Laptop>
+	 <1344526098.6935.44.camel@gandalf.stny.rr.com>
+ <1344538611.2593.4.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1344538611.2593.4.camel@bwh-desktop.uk.solarflarecom.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.235.14.28]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG4TOxO88=sV26S4JT9RJPzp_DiekfSoOsQn3j8cpb6=HgW7Zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7A0RH6p030483
 
-On Thu, Aug 09, 2012 at 04:54:37PM -0700, Roland Dreier wrote:
-> thanks for the report.  I assume the system doesn't actually have ocrdma hw?
-
-Yeah, it's a test boot inside KVM.
-
-Thanks,
-Fengguang
-
-> - R.
-> On Aug 9, 2012 3:00 AM, "Fengguang Wu" <fengguang.wu@intel.com> wrote:
+> The alterations to the description of atl1c ought to be broken out as a
+> separate patch, though.
 > 
-> > Hi Parav,
-> >
-> > commit fe2caefcdf ("RDMA/ocrdma: Add driver for Emulex OneConnect IBoE
-> > RDMA adapter") triggers the below kernel BUG for the attached config.
-> >
-> > [  280.861196] kernel BUG at
-> > /c/kernel-tests/src/stable/include/linux/if_vlan.h:113!
-> > [  280.861196] invalid opcode: 0000 [#1] PREEMPT
-> > [  280.861196] CPU 0
-> > [  280.861196] Pid: 304, comm: ip Not tainted 3.6.0-rc1 #1 Bochs Bochs
-> > [  280.861196] RIP: 0010:[<ffffffff816df084>]  [<ffffffff816df084>]
-> > ocrdma_inet6addr_event+0x4/0x6
-> > [  280.861196] RSP: 0018:ffff8800066a1548  EFLAGS: 00000202
-> > [  280.861196] RAX: 0000000000000001 RBX: 0000000000000000 RCX:
-> > 00000000ffffffff
-> > [  280.861196] RDX: ffff880006b6b400 RSI: 0000000000000001 RDI:
-> > ffffffff8207ecc0
-> > [  280.861196] RBP: ffff8800066a1548 R08: 0000000000000000 R09:
-> > ffffffff8109b657
-> > [  280.861196] R10: ffffffff00000000 R11: ffffffff81e0f318 R12:
-> > 00000000ffffffff
-> > [  280.861196] R13: ffffffff8207ecc0 R14: 0000000000000000 R15:
-> > 0000000000000000
-> > [  280.861196] FS:  00007f025c12f700(0000) GS:ffffffff81dfb000(0000)
-> > knlGS:0000000000000000
-> > [  280.861196] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [  280.861196] CR2: 00007fe4e1d30000 CR3: 0000000006b65000 CR4:
-> > 00000000000006b0
-> > [  280.861196] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> > 0000000000000000
-> > [  280.861196] DR3: 0000000000000000 DR6: 0000000000000000 DR7:
-> > 0000000000000000
-> > [  280.861196] Process ip (pid: 304, threadinfo ffff8800066a0000, task
-> > ffff880006a7c2c0)
-> > [  280.861196] Stack:
-> > [  280.861196]  ffff8800066a1598 ffffffff8109b5a2 ffff880006b6b400
-> > 0000000000000001
-> > [  280.861196]  ffff8800066a1598 0000000000000001 ffff880006b6b400
-> > 00000000ffffffff
-> > [  280.861196]  0000000000000000 ffffffff820ad9b0 ffff8800066a15f8
-> > ffffffff8109b6b7
-> > [  280.861196] Call Trace:
-> > [  280.861196]  [<ffffffff8109b5a2>] notifier_call_chain+0x60/0x90
-> > [  280.861196]  [<ffffffff8109b6b7>] __atomic_notifier_call_chain+0x60/0x92
-> > [  280.861196]  [<ffffffff8109b657>] ?
-> > atomic_notifier_chain_unregister+0x46/0x46
-> > [  280.861196]  [<ffffffff8109b6f8>] atomic_notifier_call_chain+0xf/0x11
-> > [  280.861196]  [<ffffffff81898dbc>] ipv6_add_addr+0x333/0x388
-> > [  280.861196]  [<ffffffff81898ade>] ? ipv6_add_addr+0x55/0x388
-> > [  280.861196]  [<ffffffff8189be09>] add_addr+0x12/0x5c
-> > [  280.861196]  [<ffffffff8189c0ff>] init_loopback+0x7b/0x7f
-> > [  280.861196]  [<ffffffff8189d25a>] addrconf_notify+0x178/0x2d4
-> > [  280.861196]  [<ffffffff8109b5a2>] notifier_call_chain+0x60/0x90
-> > [  280.861196]  [<ffffffff8109b87a>] __raw_notifier_call_chain+0x9/0xb
-> > [  280.861196]  [<ffffffff8109b88b>] raw_notifier_call_chain+0xf/0x11
-> > [  280.861196]  [<ffffffff817dfac6>] call_netdevice_notifiers+0x45/0x4a
-> > [  280.861196]  [<ffffffff817e2bbd>] __dev_notify_flags+0x32/0x56
-> > [  280.861196]  [<ffffffff817e2c24>] dev_change_flags+0x43/0x4e
-> > [  280.861196]  [<ffffffff817ef770>] do_setlink+0x2da/0x7f6
-> > [  280.861196]  [<ffffffff81033fba>] ? native_sched_clock+0x38/0x68
-> > [  280.861196]  [<ffffffff81033ff3>] ? sched_clock+0x9/0xd
-> > [  280.861196]  [<ffffffff810a0326>] ?
-> > sched_clock_local.constprop.2+0xd/0x78
-> > [  280.861196]  [<ffffffff810a043a>] ? sched_clock_cpu+0x7b/0x89
-> > [  280.861196]  [<ffffffff817f02cf>] rtnl_newlink+0x264/0x438
-> > [  280.861196]  [<ffffffff817f0125>] ? rtnl_newlink+0xba/0x438
-> > [  280.861196]  [<ffffffff8125a98a>] ? avc_has_perm_noaudit+0xd1/0xe3
-> > [  280.861196]  [<ffffffff8125a8db>] ? avc_has_perm_noaudit+0x22/0xe3
-> > [  280.861196]  [<ffffffff817ee988>] rtnetlink_rcv_msg+0x22c/0x23b
-> > [  280.861196]  [<ffffffff817ee720>] ? rtnl_lock+0x12/0x14
-> > [  280.861196]  [<ffffffff817ee75c>] ? __rtnl_unlock+0x12/0x12
-> > [  280.861196]  [<ffffffff8181e535>] netlink_rcv_skb+0x3d/0x8a
-> > [  280.861196]  [<ffffffff817ee743>] rtnetlink_rcv+0x21/0x28
-> > [  280.861196]  [<ffffffff8181d2a4>] netlink_unicast+0x12c/0x1b8
-> > [  280.861196]  [<ffffffff8181d8f5>] netlink_sendmsg+0x212/0x29a
-> > [  280.861196]  [<ffffffff817cf525>] sock_sendmsg+0x9e/0xbf
-> > [  280.861196]  [<ffffffff817cf78e>] __sys_sendmsg+0x248/0x2d5
-> > [  280.861196]  [<ffffffff819c2107>] ? _raw_spin_unlock_irq+0x34/0x50
-> > [  280.861196]  [<ffffffff8109dc1d>] ?
-> > finish_task_switch.constprop.48+0x72/0xd9
-> > [  280.861196]  [<ffffffff8109dbdf>] ?
-> > finish_task_switch.constprop.48+0x34/0xd9
-> > [  280.861196]  [<ffffffff819c0ed9>] ? __schedule+0x501/0x607
-> > [  280.861196]  [<ffffffff810b1d85>] ? put_lock_stats.isra.17+0xe/0x28
-> > [  280.861196]  [<ffffffff810b1e6c>] ? lock_release_holdtime+0xcd/0xd5
-> > [  280.861196]  [<ffffffff817d0a96>] sys_sendmsg+0x3d/0x5e
-> > [  280.861196]  [<ffffffff819c3377>] system_call_fastpath+0x16/0x1b
-> > [  280.861196] Code: 00 00 ad de 48 89 93 a8 0b 00 00 e8 c9 2f 2e 00 48 8d
-> > bb b0 0b 00 00 48 c7 c6 86 f0 6d 81 e8 b0 b2 9e ff 59 5b 5d c3 55 48 89 e5
-> > <0f> 0b 55 48 89 e5 41 54 53 48 89 fb 48 8b bf a0 fc ff ff 4c 8d
-> > [  280.861196] RIP  [<ffffffff816df084>] ocrdma_inet6addr_event+0x4/0x6
-> > [  280.861196]  RSP <ffff8800066a1548>
-> >
-> > Thanks,
-> > Fengguang
-> >
+
+Yes, we will separate it. thanks !
+
+-Xiong
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
