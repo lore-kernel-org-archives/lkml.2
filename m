@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab2HJDOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:14:06 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64942 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab2HJDOE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:14:04 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-52-50247c799bda
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 1/7] perf hists: Separate out hist print functions
-References: <1344243462-28403-1-git-send-email-namhyung@kernel.org>
-	<1344243462-28403-2-git-send-email-namhyung@kernel.org>
-	<20120809191827.GE4084@infradead.org>
-Date: Fri, 10 Aug 2012 12:08:13 +0900
-In-Reply-To: <20120809191827.GE4084@infradead.org> (Arnaldo Carvalho de Melo's
-	message of "Thu, 9 Aug 2012 16:18:27 -0300")
-Message-ID: <87fw7vwijm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1760123Ab2HJDRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:17:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757429Ab2HJDRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Aug 2012 23:17:07 -0400
+Date: Thu, 9 Aug 2012 23:17:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+Subject: 3.5.1 ext4_ sleeping while atomic bug.
+Message-ID: <20120810031701.GA17765@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, tytso@mit.edu,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Arnaldo
-
-On Thu, 9 Aug 2012 16:18:27 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Aug 06, 2012 at 05:57:36PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Separate out those functions into ui/hist.c. This is required for
->> upcoming changes.
->
-> Isn't it better to further separate it by introducing the ui/stdio/
-> directory since these functions use fprintf?
->
-Maybe. I agree that general ui code reside on ui/ and front-end
-specifics should go to their subdirectories. But not sure for the stdio
-case since they'll have very simple code only.
-
-For this case, most of functions would be converted to manipulate a
-string buffer like scnprintf and shared by all front-end's as long as
-possible - callchain print code needs some more working. But if you
-want, I'll separate out actual fprintf's to ui/stdio/.
-
-Thanks,
-Namhyung
+BUG: sleeping function called from invalid context at include/linux/buffer_head.h:333
+in_atomic(): 1, irqs_disabled(): 0, pid: 9894, name: fstest
+3 locks held by fstest/9894:
+ #0:  (&type->i_mutex_dir_key#4/1){+.+.+.}, at: [<ffffffff811d5dae>] kern_path_create+0x7e/0x140
+ #1:  (&ei->i_data_sem){++++..}, at: [<ffffffff81252e76>] ext4_map_blocks+0xb6/0x250
+ #2:  (&(&bgl->locks[i].lock)->rlock){+.+...}, at: [<ffffffff8124a5e7>] ext4_validate_block_bitmap+0x77/0x230
+Pid: 9894, comm: fstest Not tainted 3.5.1-1.fc17.x86_64.debug #1
+Call Trace:
+ [<ffffffff8109cd0a>] __might_sleep+0x18a/0x240
+ [<ffffffff811fb430>] __sync_dirty_buffer+0x30/0xf0
+ [<ffffffff811fb503>] sync_dirty_buffer+0x13/0x20
+ [<ffffffff81273018>] ext4_commit_super+0x1e8/0x260
+ [<ffffffff81273283>] save_error_info+0x23/0x30
+ [<ffffffff81274539>] __ext4_error+0x89/0xa0
+ [<ffffffff8124a5e7>] ? ext4_validate_block_bitmap+0x77/0x230
+ [<ffffffff8124a72b>] ext4_validate_block_bitmap+0x1bb/0x230
+ [<ffffffff8124b0ae>] ext4_read_block_bitmap_nowait+0x8e/0x3b0
+ [<ffffffff812891c0>] ext4_mb_init_cache+0x160/0x990
+ [<ffffffff810d16bd>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+ [<ffffffff81289b16>] ext4_mb_init_group+0x126/0x250
+ [<ffffffff81289d56>] ext4_mb_good_group+0x116/0x130
+ [<ffffffff8128c493>] ext4_mb_regular_allocator+0x1a3/0x420
+ [<ffffffff811aa920>] ? kmem_cache_alloc+0xe0/0x290
+ [<ffffffff8128e2c1>] ext4_mb_new_blocks+0x4f1/0xb90
+ [<ffffffff811fad9f>] ? __find_get_block+0xaf/0x220
+ [<ffffffff81293e7e>] ext4_alloc_branch+0x42e/0x690
+ [<ffffffff816c6030>] ? _raw_spin_unlock_irq+0x30/0x50
+ [<ffffffff812949a7>] ext4_ind_map_blocks+0x1e7/0x990
+ [<ffffffff816c348a>] ? down_write+0x9a/0xb0
+ [<ffffffff81252e76>] ? ext4_map_blocks+0xb6/0x250
+ [<ffffffff81252ea5>] ext4_map_blocks+0xe5/0x250
+ [<ffffffff8125306b>] ext4_getblk+0x5b/0x1f0
+ [<ffffffff81253218>] ext4_bread+0x18/0xa0
+ [<ffffffff8125e527>] ext4_mkdir+0x147/0x3d0
+ [<ffffffff811d2536>] vfs_mkdir+0xa6/0x130
+ [<ffffffff811d6c6e>] sys_mkdirat+0xbe/0xd0
+ [<ffffffff811d6c99>] sys_mkdir+0x19/0x20
+ [<ffffffff816cefe9>] system_call_fastpath+0x16/0x1b
 
