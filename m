@@ -1,160 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760228Ab2HJLFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 07:05:24 -0400
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:48872 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab2HJLFU convert rfc822-to-8bit (ORCPT
+	id S1755789Ab2HJLM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 07:12:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53860 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab2HJLM0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 07:05:20 -0400
-From: <Parav.Pandit@Emulex.Com>
-To: <fengguang.wu@intel.com>, <roland@kernel.org>
-CC: <linux-rdma@vger.kernel.org>, <sean.hefty@intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: RE: BUG: RDMA/ocrdma calls invalid vlan_dev_real_dev()
-Thread-Topic: BUG: RDMA/ocrdma calls invalid vlan_dev_real_dev()
-Thread-Index: AQHNdhWxJzMA+r/npEW/rIV8xvkpSpdSndeAgAAEBQCAAEHzcA==
-Date: Fri, 10 Aug 2012 11:05:18 +0000
-Message-ID: <5D6C0ABE6A236946864C45679362BBE20AD77C06@CMEXMB1.ad.emulex.com>
-References: <20120809095933.GA6832@localhost>
- <CAG4TOxO88=sV26S4JT9RJPzp_DiekfSoOsQn3j8cpb6=HgW7Zw@mail.gmail.com>
- <20120810000900.GC16305@localhost>
-In-Reply-To: <20120810000900.GC16305@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.200.200]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Aug 2012 07:12:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Martin <dave.martin@linaro.org>
+Subject: Re: [PATCH 04/10] ARM: pass -marm to gcc by default
+Date: Fri, 10 Aug 2012 11:12:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <alpine.LFD.2.02.1208091721460.5231@xanadu.home> <20120810095911.GA2157@linaro.org>
+In-Reply-To: <20120810095911.GA2157@linaro.org>
 MIME-Version: 1.0
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201208101112.20416.arnd@arndb.de>
+X-Provags-ID: V02:K0:u+HQTzQVHKiRcNq4nDuf3WGxTxodfTMw44PpGiDJg78
+ b0rcK28glk0I3slK5+CrLxhWWit8N0fb0ofYaLgrRm7/cUvEq7
+ fJijcTa3hUWAtqqrKYVADNUWl+FbLeY+ARnFCPPwYyn40cs4Su
+ orDVtP8zTHBKom3BiFv5NFozQbse+BoLsTOPKn0myEYrLNXe6i
+ yOg1VtsA+BoRi5Reg5U07ClmBpCe0sMyCKR834GVe22MSsJ+wa
+ qjKz4XAUkl59GpfoaoCe+xhvpUcZX7Oj1O6n01ssRRclsYlaFc
+ yEynM3weoRGAMXRdlr2mkq953adFytJafhhHX9/WXD+rqzM9or
+ xOjTFH3cCZ9aY6kM2plw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll provide you fix in short while.
+On Friday 10 August 2012, Dave Martin wrote:
+> On Thu, Aug 09, 2012 at 05:22:30PM -0400, Nicolas Pitre wrote:
+> > On Thu, 9 Aug 2012, Russell King - ARM Linux wrote:
+> > 
+> > > On Thu, Aug 09, 2012 at 05:12:58PM -0400, Nicolas Pitre wrote:
+> > > > CFLAGS_THUMB2 should probably be renamed to something more appropriate 
+> > > > in this case, e.g. CFLAGS_MODE.
+> > > 
+> > > CFLAGS_ISA would be more relevant to it, because it's selecting the
+> > > instruction set.
+> > 
+> > Agreed.  This particular TLA escaped my mind somehow.
+> 
+> Seems fair enough.  It doesn't quite match the official architectural
+> terminology, but it clear enough what it means, and less cumbersome than
+> the alternatives.
+> 
+> Best not to use MODE though.  That word is way too overloaded.
 
-Parav
+Ok. I already noticed that we already set -marm in KBUILD_CFLAGS but
+not in the AFLAGS. This new version should cover all the issues
+and make it more obvious what's actually going on.
 
-> -----Original Message-----
-> From: Fengguang Wu [mailto:fengguang.wu@intel.com]
-> Sent: Friday, August 10, 2012 5:39 AM
-> To: Roland Dreier
-> Cc: linux-rdma@vger.kernel.org; Pandit, Parav; Sean Hefty; linux-
-> kernel@vger.kernel.org
-> Subject: Re: BUG: RDMA/ocrdma calls invalid vlan_dev_real_dev()
-> 
-> On Thu, Aug 09, 2012 at 04:54:37PM -0700, Roland Dreier wrote:
-> > thanks for the report.  I assume the system doesn't actually have ocrdma
-> hw?
-> 
-> Yeah, it's a test boot inside KVM.
-> 
-> Thanks,
-> Fengguang
-> 
-> > - R.
-> > On Aug 9, 2012 3:00 AM, "Fengguang Wu" <fengguang.wu@intel.com>
-> wrote:
-> >
-> > > Hi Parav,
-> > >
-> > > commit fe2caefcdf ("RDMA/ocrdma: Add driver for Emulex OneConnect
-> > > IBoE RDMA adapter") triggers the below kernel BUG for the attached
-> config.
-> > >
-> > > [  280.861196] kernel BUG at
-> > > /c/kernel-tests/src/stable/include/linux/if_vlan.h:113!
-> > > [  280.861196] invalid opcode: 0000 [#1] PREEMPT [  280.861196] CPU
-> > > 0 [  280.861196] Pid: 304, comm: ip Not tainted 3.6.0-rc1 #1 Bochs
-> > > Bochs [  280.861196] RIP: 0010:[<ffffffff816df084>]
-> > > [<ffffffff816df084>]
-> > > ocrdma_inet6addr_event+0x4/0x6
-> > > [  280.861196] RSP: 0018:ffff8800066a1548  EFLAGS: 00000202 [
-> > > 280.861196] RAX: 0000000000000001 RBX: 0000000000000000 RCX:
-> > > 00000000ffffffff
-> > > [  280.861196] RDX: ffff880006b6b400 RSI: 0000000000000001 RDI:
-> > > ffffffff8207ecc0
-> > > [  280.861196] RBP: ffff8800066a1548 R08: 0000000000000000 R09:
-> > > ffffffff8109b657
-> > > [  280.861196] R10: ffffffff00000000 R11: ffffffff81e0f318 R12:
-> > > 00000000ffffffff
-> > > [  280.861196] R13: ffffffff8207ecc0 R14: 0000000000000000 R15:
-> > > 0000000000000000
-> > > [  280.861196] FS:  00007f025c12f700(0000) GS:ffffffff81dfb000(0000)
-> > > knlGS:0000000000000000
-> > > [  280.861196] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b [
-> > > 280.861196] CR2: 00007fe4e1d30000 CR3: 0000000006b65000 CR4:
-> > > 00000000000006b0
-> > > [  280.861196] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> > > 0000000000000000
-> > > [  280.861196] DR3: 0000000000000000 DR6: 0000000000000000 DR7:
-> > > 0000000000000000
-> > > [  280.861196] Process ip (pid: 304, threadinfo ffff8800066a0000,
-> > > task
-> > > ffff880006a7c2c0)
-> > > [  280.861196] Stack:
-> > > [  280.861196]  ffff8800066a1598 ffffffff8109b5a2 ffff880006b6b400
-> > > 0000000000000001
-> > > [  280.861196]  ffff8800066a1598 0000000000000001 ffff880006b6b400
-> > > 00000000ffffffff [  280.861196]  0000000000000000 ffffffff820ad9b0
-> > > ffff8800066a15f8
-> > > ffffffff8109b6b7
-> > > [  280.861196] Call Trace:
-> > > [  280.861196]  [<ffffffff8109b5a2>] notifier_call_chain+0x60/0x90 [
-> > > 280.861196]  [<ffffffff8109b6b7>]
-> > > __atomic_notifier_call_chain+0x60/0x92
-> > > [  280.861196]  [<ffffffff8109b657>] ?
-> > > atomic_notifier_chain_unregister+0x46/0x46
-> > > [  280.861196]  [<ffffffff8109b6f8>]
-> > > atomic_notifier_call_chain+0xf/0x11
-> > > [  280.861196]  [<ffffffff81898dbc>] ipv6_add_addr+0x333/0x388 [
-> > > 280.861196]  [<ffffffff81898ade>] ? ipv6_add_addr+0x55/0x388 [
-> > > 280.861196]  [<ffffffff8189be09>] add_addr+0x12/0x5c [  280.861196]
-> > > [<ffffffff8189c0ff>] init_loopback+0x7b/0x7f [  280.861196]
-> > > [<ffffffff8189d25a>] addrconf_notify+0x178/0x2d4 [  280.861196]
-> > > [<ffffffff8109b5a2>] notifier_call_chain+0x60/0x90 [  280.861196]
-> > > [<ffffffff8109b87a>] __raw_notifier_call_chain+0x9/0xb [
-> > > 280.861196]  [<ffffffff8109b88b>] raw_notifier_call_chain+0xf/0x11 [
-> > > 280.861196]  [<ffffffff817dfac6>] call_netdevice_notifiers+0x45/0x4a
-> > > [  280.861196]  [<ffffffff817e2bbd>] __dev_notify_flags+0x32/0x56 [
-> > > 280.861196]  [<ffffffff817e2c24>] dev_change_flags+0x43/0x4e [
-> > > 280.861196]  [<ffffffff817ef770>] do_setlink+0x2da/0x7f6 [
-> > > 280.861196]  [<ffffffff81033fba>] ? native_sched_clock+0x38/0x68 [
-> > > 280.861196]  [<ffffffff81033ff3>] ? sched_clock+0x9/0xd [
-> > > 280.861196]  [<ffffffff810a0326>] ?
-> > > sched_clock_local.constprop.2+0xd/0x78
-> > > [  280.861196]  [<ffffffff810a043a>] ? sched_clock_cpu+0x7b/0x89 [
-> > > 280.861196]  [<ffffffff817f02cf>] rtnl_newlink+0x264/0x438 [
-> > > 280.861196]  [<ffffffff817f0125>] ? rtnl_newlink+0xba/0x438 [
-> > > 280.861196]  [<ffffffff8125a98a>] ? avc_has_perm_noaudit+0xd1/0xe3 [
-> > > 280.861196]  [<ffffffff8125a8db>] ? avc_has_perm_noaudit+0x22/0xe3 [
-> > > 280.861196]  [<ffffffff817ee988>] rtnetlink_rcv_msg+0x22c/0x23b [
-> > > 280.861196]  [<ffffffff817ee720>] ? rtnl_lock+0x12/0x14 [
-> > > 280.861196]  [<ffffffff817ee75c>] ? __rtnl_unlock+0x12/0x12 [
-> > > 280.861196]  [<ffffffff8181e535>] netlink_rcv_skb+0x3d/0x8a [
-> > > 280.861196]  [<ffffffff817ee743>] rtnetlink_rcv+0x21/0x28 [
-> > > 280.861196]  [<ffffffff8181d2a4>] netlink_unicast+0x12c/0x1b8 [
-> > > 280.861196]  [<ffffffff8181d8f5>] netlink_sendmsg+0x212/0x29a [
-> > > 280.861196]  [<ffffffff817cf525>] sock_sendmsg+0x9e/0xbf [
-> > > 280.861196]  [<ffffffff817cf78e>] __sys_sendmsg+0x248/0x2d5 [
-> > > 280.861196]  [<ffffffff819c2107>] ? _raw_spin_unlock_irq+0x34/0x50 [
-> > > 280.861196]  [<ffffffff8109dc1d>] ?
-> > > finish_task_switch.constprop.48+0x72/0xd9
-> > > [  280.861196]  [<ffffffff8109dbdf>] ?
-> > > finish_task_switch.constprop.48+0x34/0xd9
-> > > [  280.861196]  [<ffffffff819c0ed9>] ? __schedule+0x501/0x607 [
-> > > 280.861196]  [<ffffffff810b1d85>] ? put_lock_stats.isra.17+0xe/0x28
-> > > [  280.861196]  [<ffffffff810b1e6c>] ?
-> > > lock_release_holdtime+0xcd/0xd5 [  280.861196]  [<ffffffff817d0a96>]
-> > > sys_sendmsg+0x3d/0x5e [  280.861196]  [<ffffffff819c3377>]
-> > > system_call_fastpath+0x16/0x1b [  280.861196] Code: 00 00 ad de 48
-> > > 89 93 a8 0b 00 00 e8 c9 2f 2e 00 48 8d bb b0 0b 00 00 48 c7 c6 86 f0
-> > > 6d 81 e8 b0 b2 9e ff 59 5b 5d c3 55 48 89 e5 <0f> 0b 55 48 89 e5 41
-> > > 54 53 48 89 fb 48 8b bf a0 fc ff ff 4c 8d [  280.861196] RIP
-> > > [<ffffffff816df084>] ocrdma_inet6addr_event+0x4/0x6 [  280.861196]
-> > > RSP <ffff8800066a1548>
-> > >
-> > > Thanks,
-> > > Fengguang
-> > >
+	Arnd
+
+8<----
+>From 34763772164d1442509f27d7f8a09326ff4b7878 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 30 Apr 2012 12:40:00 +0000
+Subject: [PATCH] ARM: pass -marm to gcc by default for both C and assembler
+
+The Linaro cross toolchain and probably others nowadays default to
+building in THUMB2 mode. When building a kernel for a CPU that does
+not support THUMB2, the compiler complains about incorrect flags.
+We can work around this by setting -marm for all non-T2 builds.
+
+Without this patch, building assabet_defconfig results in:
+
+usr/initramfs_data.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+arch/arm/nwfpe/entry.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+firmware/cis/PCMLM28.cis.gen.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
+(and many more)
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Dave Martin <dave.martin@linaro.org>
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 30eae87..ca0dabc 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -21,8 +21,6 @@ endif
+ OBJCOPYFLAGS	:=-O binary -R .comment -S
+ GZFLAGS		:=-9
+ #KBUILD_CFLAGS	+=-pipe
+-# Explicitly specifiy 32-bit ARM ISA since toolchain default can be -mthumb:
+-KBUILD_CFLAGS	+=$(call cc-option,-marm,)
+ 
+ # Never generate .eh_frame
+ KBUILD_CFLAGS	+= $(call cc-option,-fno-dwarf2-cfi-asm)
+@@ -105,17 +103,20 @@ endif
+ ifeq ($(CONFIG_THUMB2_KERNEL),y)
+ AFLAGS_AUTOIT	:=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
+ AFLAGS_NOWARN	:=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
+-CFLAGS_THUMB2	:=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
+-AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
++CFLAGS_ISA	:=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
++AFLAGS_ISA	:=$(CFLAGS_ISA) -Wa$(comma)-mthumb
+ # Work around buggy relocation from gas if requested:
+ ifeq ($(CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11),y)
+ CFLAGS_MODULE	+=-fno-optimize-sibling-calls
+ endif
++else
++CFLAGS_ISA	:=$(call cc-option,-marm,)
++AFLAGS_ISA	:=$(CFLAGS_ISA)
+ endif
+ 
+ # Need -Uarm for gcc < 3.x
+-KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -msoft-float -Uarm
+-KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -msoft-float
++KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_ISA) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -msoft-float -Uarm
++KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_ISA) $(arch-y) $(tune-y) -include asm/unified.h -msoft-float
+ 
+ CHECKFLAGS	+= -D__arm__
+ 
