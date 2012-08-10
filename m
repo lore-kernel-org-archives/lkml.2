@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759281Ab2HJVmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 17:42:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23728 "EHLO mx1.redhat.com"
+	id S1758965Ab2HJVmS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 17:42:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758717Ab2HJVmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753645Ab2HJVmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Aug 2012 17:42:17 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
@@ -12,96 +12,36 @@ To: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
 Cc: Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
         Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH 2/3] HWPOISON: undo memory error handling for dirty pagecache
-Date: Fri, 10 Aug 2012 17:41:52 -0400
-Message-Id: <1344634913-13681-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3 v1] HWPOISON: improve dirty pagecache error handling
+Date: Fri, 10 Aug 2012 17:41:50 -0400
+Message-Id: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current memory error handling on dirty pagecache has a bug that user
-processes who use corrupted pages via read() or write() can't be aware
-of the memory error and result in discarding dirty data silently.
+Hi,
 
-The following patch is to improve handling/reporting memory errors on
-this case, but as a short term solution I suggest that we should undo
-the present error handling code and just leave errors for such cases
-(which expect the 2nd MCE to panic the system) to ensure data consistency.
+This patchset is to improve handling and reporting of memory errors on
+dirty pagecache.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org
----
- mm/memory-failure.c | 54 +++++++++++------------------------------------------
- 1 file changed, 11 insertions(+), 43 deletions(-)
+Patch 1 is to fix a messaging bug, and patch 2 is to temporarily undo
+the code which can happen the data lost.  I think these two are obvious
+fixes so I want to push them to merge promptly.
 
-diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
-index 79dfb2f..7e62797 100644
---- v3.6-rc1.orig/mm/memory-failure.c
-+++ v3.6-rc1/mm/memory-failure.c
-@@ -613,49 +613,17 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
-  */
- static int me_pagecache_dirty(struct page *p, unsigned long pfn)
- {
--	struct address_space *mapping = page_mapping(p);
--
--	SetPageError(p);
--	/* TBD: print more information about the file. */
--	if (mapping) {
--		/*
--		 * IO error will be reported by write(), fsync(), etc.
--		 * who check the mapping.
--		 * This way the application knows that something went
--		 * wrong with its dirty file data.
--		 *
--		 * There's one open issue:
--		 *
--		 * The EIO will be only reported on the next IO
--		 * operation and then cleared through the IO map.
--		 * Normally Linux has two mechanisms to pass IO error
--		 * first through the AS_EIO flag in the address space
--		 * and then through the PageError flag in the page.
--		 * Since we drop pages on memory failure handling the
--		 * only mechanism open to use is through AS_AIO.
--		 *
--		 * This has the disadvantage that it gets cleared on
--		 * the first operation that returns an error, while
--		 * the PageError bit is more sticky and only cleared
--		 * when the page is reread or dropped.  If an
--		 * application assumes it will always get error on
--		 * fsync, but does other operations on the fd before
--		 * and the page is dropped between then the error
--		 * will not be properly reported.
--		 *
--		 * This can already happen even without hwpoisoned
--		 * pages: first on metadata IO errors (which only
--		 * report through AS_EIO) or when the page is dropped
--		 * at the wrong time.
--		 *
--		 * So right now we assume that the application DTRT on
--		 * the first EIO, but we're not worse than other parts
--		 * of the kernel.
--		 */
--		mapping_set_error(mapping, EIO);
--	}
--
--	return me_pagecache_clean(p, pfn);
-+	/*
-+	 * The original memory error handling on dirty pagecache has
-+	 * a bug that user processes who use corrupted pages via read()
-+	 * or write() can't be aware of the memory error and result
-+	 * in throwing out dirty data silently.
-+	 *
-+	 * Until we solve the problem, let's close the path of memory
-+	 * error handling for dirty pagecache. We just leave errors
-+	 * for the 2nd MCE to trigger panics.
-+	 */
-+	return IGNORED;
- }
- 
- /*
--- 
-1.7.11.2
+Patch 3 is for a new feature. The problem in error reporting (where AS_EIO
+we rely on to report the error to userspace is cleared once checked) is
+discussed when hwpoison core patches were reviewed, and we left it unfixed
+because it can be fixed with more generic solution which covers legacy EIO.
+But in my opinion, legacy EIO and hwpoison are different in how it can or
+should be handled (for example, as described in patch 3, we can recover
+from memory errors on dirty pagecache with overwriting.) So this patch
+only solves the problem of memory error reporting.
 
+My test for this patchset is available on:
+https://github.com/Naoya-Horiguchi/test_memory_error_on_dirty_pagecache.git
+
+Could you review or comment?
+
+Thanks,
+Naoya
