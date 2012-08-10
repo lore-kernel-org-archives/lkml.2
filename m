@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab2HJVQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 17:16:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58476 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758010Ab2HJVQQ (ORCPT
+	id S1758861Ab2HJVSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 17:18:11 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20067 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758010Ab2HJVSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 17:16:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: xtensa port maintenance
-Date: Fri, 10 Aug 2012 21:15:59 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        linux-next@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@tensilica.com>,
-        Kirill Krinkin <kirill.krinkin@gmail.com>
-References: <50205592.1030205@gmail.com>
-In-Reply-To: <50205592.1030205@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208102115.59946.arnd@arndb.de>
-X-Provags-ID: V02:K0:pRMOcj5EsLyn83OkGg4Zawib/l5eUiowXBUYX7ngpX7
- RjPLw29S/HvTKHoOf7oDQF/cUU14R7rLkU7eCmYliuIUYYHq/y
- NnD0wFKyHeGp558CIpc2c24L8Sjj4AzQTw3Elsk6WNh7tkP4ut
- kWbC1xWuMeQO07LIwcM6E9oICEap/JdF/QicpOKFKO8s2yfbhT
- a4VmWLkb5OYHUQGqkcdFXjqB6XrUvhQM10+ZLBfBPaQrVbeUtr
- SAduGYxVg74A9bMgbgZt3baP2kLYMKIZvQWeNhWMjKcJg2Gz4W
- 1CoGTd+rKMeriBdetj2zNWSsRsUFHyl13RgQxKXxaS8yrWwLx1
- j95RnXuOsj1/SeBOBbE8=
+	Fri, 10 Aug 2012 17:18:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6799"; a="221829657"
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: davidb@codeaurora.org
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH RESEND 1/2] msm: io: Remove 7x30 iomap region from 7x00
+Date: Fri, 10 Aug 2012 14:18:00 -0700
+Message-Id: <1344633480-1815-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 August 2012, Max Filippov wrote:
-> I have a couple of questions regarding the path of xtensa-specific patches
-> upstream:
->     - which git tree should they be targeted for? Should I set up a tree for
->       pull requests, or will patches be picked up into some existing tree?
->       (Looks like Linus' tree is the right target. AFAIK previously xtensa
->       patches went mostly through akpm tree).
+This is redundant code.
 
-Setting up a git tree is a good first step if you want to be the official
-maintainer, and if you want to get it included into linux-next.
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/mach-msm/io.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-You should also update the maintainers file to list your git tree and name,
-and have Chris give you an official approval for that update. My impression
-is that he is still occasionally doing work on upstream maintainance but
-has moved on to other priorities now. The two of you should decide
-together if you want to both be listed as maintainers or one of you
-should be a primary contact and the other one doing work in the background.
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index a1e7b11..2409c0b 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -51,9 +51,6 @@ static struct map_desc msm_io_desc[] __initdata = {
+ 	defined(CONFIG_DEBUG_MSM_UART3)
+ 	MSM_DEVICE(DEBUG_UART),
+ #endif
+-#ifdef CONFIG_ARCH_MSM7X30
+-	MSM_DEVICE(GCC),
+-#endif
+ 	{
+ 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
+ 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
+-- 
+Sent by an employee of the Qualcomm Innovation Center,Inc
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
->     - which mailing lists should they go to?
->       (I guess that besides linux-xtensa@linux-xtensa.org list they should go
->       to linux-kernel@vger.kernel.org for general review. Anything else?)
-
-There is also linux-arch, which has the architecture maintainers. You can
-consult that list if you have specific questions about changes that are
-going on across architectures.
-
-What kind of changes to you expect to do to the architecture port?
-Are there additional platforms you want to get supported? Do you
-want to stay compatible with existing user space software, or are you
-thinking about moving to the new generic system call interfaces that
-would require rebuilding all user land binaries?
-
-	Arnd
