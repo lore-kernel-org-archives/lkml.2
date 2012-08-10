@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab2HJPVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 11:21:00 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53346 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab2HJPU4 (ORCPT
+	id S1759639Ab2HJP0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 11:26:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44201 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926Ab2HJP0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 11:20:56 -0400
-Message-ID: <502526D5.3080002@wwwdotorg.org>
-Date: Fri, 10 Aug 2012 09:20:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 10 Aug 2012 11:26:18 -0400
+Date: Fri, 10 Aug 2012 10:26:04 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Alex Kelly <alex.page.kelly@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 2/3] fs: Make core dump functionality optional
+Message-ID: <20120810152604.GA27585@sergelap>
+References: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
+ <1344587169-18682-2-git-send-email-alex.page.kelly@gmail.com>
+ <20120810132323.GA21048@sergelap>
+ <20120810150157.GA23457@leaf>
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Jiri Kosina <trivial@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trivial: pinctrl core: remove extraneous code lines
-References: <1344610429-12607-1-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1344610429-12607-1-git-send-email-richard.genoud@gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120810150157.GA23457@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 08:53 AM, Richard Genoud wrote:
-> In function pinctrl_get_locked, pointer p is returned on error, and also
-> return on no_error.
-> So, we just return it with no error test.
+Quoting Josh Triplett (josh@joshtriplett.org):
+> On Fri, Aug 10, 2012 at 08:23:23AM -0500, Serge Hallyn wrote:
+> > Quoting Alex Kelly (alex.page.kelly@gmail.com):
+> > > Adds an expert Kconfig option, CONFIG_COREDUMP, which allows disabling of core dump.
+> > > This saves approximately 2.6k in the compiled kernel, and complements CONFIG_ELF_CORE,
+> > > which now depends on it.
+> > 
+> > Is there another reason than the 2.6k to do this?  My kernels range
+> > between 4.8 and 5M, so that's .05% size savings?
 > 
-> It's pretty the same in function pinctrl_lookup_state_locked: state is
-> returned in every case, so we drop the error test and just return state.
+> A kitchen-sink kernel might take up that much space, but you can build a
+> minimal embedded kernel that only takes up ~200k, at which point 2.6k
+> represents a >1% decrease.  Add a few more changes like this, and those
+> decreases start to add up.  At this point, no one thing you can chop out
+> of the kernel will give you a 100k decrease by itself; you need a pile
+> of changes like this one to do that.
 > 
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> ---
->  drivers/pinctrl/core.c |   10 ++--------
->  1 files changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index fb7f3be..7365d46 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -657,11 +657,7 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev)
->  	if (p != NULL)
->  		return ERR_PTR(-EBUSY);
->  
-> -	p = create_pinctrl(dev);
-> -	if (IS_ERR(p))
-> -		return p;
-> -
-> -	return p;
-> +	return create_pinctrl(dev);
->  }
+> - Josh Triplett
 
-This makes sense.
-
->  /**
-> @@ -738,10 +734,8 @@ static struct pinctrl_state *pinctrl_lookup_state_locked(struct pinctrl *p,
->  			dev_dbg(p->dev, "using pinctrl dummy state (%s)\n",
->  				name);
->  			state = create_state(p, name);
-> -			if (IS_ERR(state))
-> -				return state;
->  		} else {
-> -			return ERR_PTR(-ENODEV);
-> +			state = ERR_PTR(-ENODEV);
->  		}
->  	}
-
-Personally I find the code much clearer as it is, but the result of this
-patch still looks correct.
-
+I see.  That's an order of magnitude smaller than what i figured you'd
+get with a reasonable kernel  :)
