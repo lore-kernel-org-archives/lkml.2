@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab2HJQR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 12:17:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34239 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab2HJQRy (ORCPT
+	id S1755963Ab2HJQYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 12:24:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:58272 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab2HJQYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 12:17:54 -0400
+	Fri, 10 Aug 2012 12:24:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6798"; a="223981261"
+Message-ID: <502535C1.8060907@codeaurora.org>
+Date: Fri, 10 Aug 2012 12:24:33 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
-References: <1344587169-18682-1-git-send-email-alex.page.kelly@gmail.com>
-Date: Fri, 10 Aug 2012 09:17:52 -0700
-X-Google-Sender-Auth: bukmIuv3aEdDr-u8Fco-mij_OR0
-Message-ID: <CAGXu5jJ2+6qa8++7tuTMeFY9VOxj5mM97DhDp_=0oc4A3DuHYA@mail.gmail.com>
-Subject: Re: [PATCHv4 1/3] fs: Move core dump functionality into its own file
-From: Kees Cook <keescook@chromium.org>
-To: Alex Kelly <alex.page.kelly@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [36/36] AArch64: MAINTAINERS update
+References: <1341608777-12982-37-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1341608777-12982-37-git-send-email-catalin.marinas@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 1:26 AM, Alex Kelly <alex.page.kelly@gmail.com> wrote:
-> This prepares for making core dump functionality optional.
->
-> The variable "suid_dumpable" and associated functions are left in fs/exec.c
-> because they're used elsewhere, such as in ptrace.
->
-> Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Hi Catalin,
+
+On 07/06/2012 05:06 PM, Catalin Marinas wrote:
+> This patch updates the MAINTAINERS file for the AArch64 Linux kernel
+> port.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> 
 > ---
-> v2: This patch set is a second revision that follows some suggestions from
-> Ingo Molnar and Josh Triplett. Specifically, authorship of commits is
-> revised for consistency, and an additional two patches cleaning up artifacts
-> and making headers more sane are added.
->
-> v3: This version fixes a few more authorship issues and some problems caused
-> by a bad git send-email config. Sorry about the extra mails
->
-> v4: This version fixes some ordering issues pointed out by Kees Cook and Josh
-> Triplett, such that the order of the functions moved to fs/coredump.c is now
-> consistent with their original order in fs/exec.c. v4 also drops some extra
-> blank lines unintentionally introduced in fs/coredump.c, to avoid the need to
-> clean them up later. That left the cleanup patch just reformatting a comment,
-> so I dropped that patch. Some of the functions moved to coredump.c need a lot
-> of cleaning up, but I'm not sure that those formatting changes should be
-> folded into this patch series.
+> MAINTAINERS |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index eb22272..50699f5 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -192,6 +192,12 @@ S:	Supported
+>  F:	Documentation/scsi/aacraid.txt
+>  F:	drivers/scsi/aacraid/
+>  
+> +AARCH64 ARCHITECTURE
+> +M:	Catalin Marinas <catalin.marinas@arm.com>
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 
-Thanks for the cleanups! This looks great now.
+I think it's important to include the Linux ARM kernel mailing list as a recipient for these changes and I hope you'll do so in all future revisions of the 64-bit patches.
 
-For all three patches:
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
+Thanks,
+Christopher
 
 -- 
-Kees Cook
-Chrome OS Security
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
