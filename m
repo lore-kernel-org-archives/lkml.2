@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab2HJJzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 05:55:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51925 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758223Ab2HJJzk (ORCPT
+	id S1759456Ab2HJJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 05:56:08 -0400
+Received: from mail.renton.name ([90.155.165.44]:43890 "EHLO
+	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759304Ab2HJJzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 05:55:40 -0400
-Date: Fri, 10 Aug 2012 11:55:36 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH 2/2] pwm: core: Fix coding style issues
-Message-ID: <20120810095536.GA20314@avionic-0098.mockup.avionic-design.de>
-References: <1344573730-21907-1-git-send-email-sachin.kamat@linaro.org>
- <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
+	Fri, 10 Aug 2012 05:55:43 -0400
+Date: Fri, 10 Aug 2012 13:53:51 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: Attaching a process to cgroups
+Message-ID: <20120810095351.GA16494@beaver>
+References: <20120619185856.GC31797@beaver>
+ <1340195298.15707.3.camel@marge.simpson.net>
+ <20120725133637.GA9169@beaver>
+ <1343224667.5745.67.camel@marge.simpson.net>
+ <20120808164033.GB13735@beaver>
+ <20120808165129.GG2403@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1344573730-21907-2-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <20120808165129.GG2403@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:Zo9MMwazSMTdIvibIgT/ZtM4eF36ws+UQHC+36p53ju
- kCryZuChRMJw/8sXepaOSbJOyfwFytbr5KOAsdDAtwf9lYjoio
- hEzP+A3nWs0G+8+hUesIeHL5rCEACiwbCMgBLtJ5ANxwf7Cij3
- Q5ClMJ0laEp/VSljjIv2pVm1bp2rxhOcZY0j05UCIxQD9Ahq0/
- 6WEiodrs8AdOAmt/5DapNViExQP/sxv0cGU+OUy0kya/v42QnG
- Vn7opYYUjeziAHHUFDVfbELMTFd4C8ktlDiYjfDbOJua6ET5vR
- LbBjKMBNSsu23/MVaTsgOzJX1K9QsBaK+0/b9yhQSLEfppwIk0
- CzXF9ZvUaaliZLzEQUJ6u1eCOzxzCoDaKm0aXDqZBxzrBRfpt/
- HblJZt+wBKgPPn/f2m6iXW4wqyxHNM7IdTEp4YwbSQHTu2d1Ol
- XJOva
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 08, 2012 at 09:51:29AM -0700, Paul E. McKenney wrote:
+> On Wed, Aug 08, 2012 at 08:40:33PM +0400, Alexey Vlasov wrote:
+> > 
+> > In general I've changed it to synchronize_rcu_expedited () and all the
+> > delays have gone both on writing and reading files from cgroups.
+> 
+> Is the writing and reading from cgroups something that your workload
+> does all the time, or is it something that happens only on occasional
+> updates to your cgroup configuration?
 
---9amGYk9869ThD9tj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There always were some delay on writing. It reproduces easily, you have
+to create some 1000 groups (may be it can be enough to create 1 group, I
+didn't check it actually) and write pid to a task file of the group. I
+described it in my first message.
 
-On Fri, Aug 10, 2012 at 10:12:10AM +0530, Sachin Kamat wrote:
-> Fixes the following:
-> WARNING: line over 80 characters
-> ERROR: spaces required around that ':' (ctx:VxW)
-> WARNING: Prefer pr_warn(... to pr_warning(...
->=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/pwm/core.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> index efc20f8..929be13 100644
-> --- a/drivers/pwm/core.c
-> +++ b/drivers/pwm/core.c
-> @@ -130,7 +130,7 @@ static int pwm_device_request(struct pwm_device *pwm,=
- const char *label)
->  }
-> =20
->  static struct pwm_device *of_pwm_simple_xlate(struct pwm_chip *pc,
-> -					      const struct of_phandle_args *args)
-> +					     const struct of_phandle_args *args)
->  {
->  	struct pwm_device *pwm;
-> =20
+Delays on reading appeared when there began an active rotation of
+proccesses in task files and may be by renewing of counters
+(cpuacct.stat, memory.stat) due to the cgroups hierarchy. LA has grown
+from 10 to 500 and all the programms that read cgroups files in /proc
+(htop for example) practically stopped working.
 
-Can this hunk be removed, please? I think aligning the arguments is more
-useful than respecting the 80-columns limit.
-
-Thierry
-
---9amGYk9869ThD9tj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQJNqYAAoJEN0jrNd/PrOhIBAP/2mAJgQ42M1GAOSJIdHMnq0t
-sN2l1+M4g6aQqOpkALxfpNBFn5GBJ9E3/fHPS4+SlKi4cqqbB62VuXTkwmYuUrBd
-KDnpCnj0CFBay221OGH3DvUcqwYCzrnjZXvV6ev59Npb0Y8zMKda1msGv2ELXnM0
-dZBD2ZmdQSkxuGo+25q/v36e3L3FT5VBY+vLClZbHng9MGpCkpkNuhrpjBL7Lk4v
-0s9lab+zb+H97nocAIWacdKNPUW4aqveiEdmDMUn2pG5v6seD+4G0L3ZMs1LAPae
-rhEeWYeNWBmmHeIy0eGPgYwhtLyGsDs+LSerLB5K3vGj5kp0rMc39yHLFE4CFL8C
-08m1R3AP7LXg+FKesl1GPECBU1367grG5mx7ALmyo7Yet7HwSRR5ov2Lvaxzo8VF
-RzZPSoWF+gu9+kmk0cbuTtFzPp9QEeJvCqivmDYqzWDwGMX6ZgoMVu3zLVaxc/6s
-yxJ21xXhaRcc7iP0FM942TkD84EASzYDmefrk1eak9XxF4rmI4HKT43tlebbB68/
-ErSbLOKIwrcbjuAFAvPgpuCwOAk4h6v7hljEUH4cOVWXPjAD7cdBldkeQphQVMAV
-A936eCuXLEnXD/w+taziqc/rCnf4SUQ+/U7+JO5bSCKPQCiRpziJWhszrwUipM99
-YiHNK6aVGRSlio7yxL1G
-=REgP
------END PGP SIGNATURE-----
-
---9amGYk9869ThD9tj--
+-- 
+BRGDS. Alexey Vlasov.
