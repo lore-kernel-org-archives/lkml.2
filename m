@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2HJG2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 02:28:12 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51259 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab2HJG2J (ORCPT
+	id S1754783Ab2HJG2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 02:28:46 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34811 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab2HJG2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 02:28:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/xmePJko9d43x55ETcwkG3
-Date: Thu, 9 Aug 2012 23:28:00 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH 07/11] ARM: OMAP/ASoC: Zoom2: Let the codec to handle
- the hs_extmute GPIO
-Message-ID: <20120810062800.GO11011@atomide.com>
-References: <1344418887-5262-1-git-send-email-peter.ujfalusi@ti.com>
- <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
+	Fri, 10 Aug 2012 02:28:43 -0400
+Date: Fri, 10 Aug 2012 09:28:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: Ben Chan <benchan@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in
+ gdm_wimax_event_init
+Message-ID: <20120810062829.GA4546@mwanda>
+References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
+ <CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com>
+ <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
+ <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344418887-5262-8-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [120808 02:42]:
-> Remove the use of set_hs_extmute callback and let the codec driver to
-> handle the extmute GPIO.
+Ben, I'm confused.  Do you have a way to test this, or are you just
+doing manual review?
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+regards,
+dan carpenter
+
