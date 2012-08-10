@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2HJM1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 08:27:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38093 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab2HJM1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 08:27:32 -0400
-Date: Fri, 10 Aug 2012 14:27:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120810122730.GA1425@dhcp22.suse.cz>
-References: <CAJd=RBB=jKD+9JcuBmBGC8R8pAQ-QoWHexMNMsXpb9zV548h5g@mail.gmail.com>
- <20120803133235.GA8434@dhcp22.suse.cz>
- <20120810094825.GA1440@dhcp22.suse.cz>
- <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
+	id S1754988Ab2HJM1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 08:27:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37119 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2HJM1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 08:27:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20120810100547.GG24328@opensource.wolfsonmicro.com>
+References: <1344562353.2996.1.camel@phoenix> <20120810100547.GG24328@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 10 Aug 2012 20:27:32 +0800
+Message-ID: <CAF+7xWmmuf0bSROpvd+2RW-XFV=_nf6Zu3KC9-hW2rWDwVwncg@mail.gmail.com>
+Subject: Re: [PATCH 1/6] regulator: core: Add checking n_voltages if using
+ list_voltage() to read voltage regulators
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-08-12 20:07:12, Hillf Danton wrote:
-> On Fri, Aug 10, 2012 at 5:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Fri 03-08-12 15:32:35, Michal Hocko wrote:
-> >> On Fri 03-08-12 20:56:45, Hillf Danton wrote:
-> >> > The computation of page offset index is open coded, and incorrect, to
-> >> > be used in scanning prio tree, as huge page offset is required, and is
-> >> > fixed with the well defined routine.
-> >>
-> >> I guess that nobody reported this because if someone really wants to
-> >> share he will use aligned address for mmap/shmat and so the index is 0.
-> >> Anyway it is worth fixing. Thanks for pointing out!
-> >
-> > I have looked at the code again and I don't think there is any problem
-> > at all. vma_prio_tree_foreach understands page units so it will find
-> > appropriate svmas.
-> > Or am I missing something?
-> 
-> Well, what if another case of vma_prio_tree_foreach used by hugetlb
-> is correct?
+2012/8/10 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Aug 10, 2012 at 09:32:33AM +0800, Axel Lin wrote:
+>> Use list_voltage() to read single voltage regulators should be only applied to
+>> single voltage regulators, thus add checking n_voltages for this case.
+>
+> We should be failing to register these regulators in the first place, or
+> at least complaining extremely loudly about them.
 
-I guess you mean unmap_ref_private and that has been changed by you
-(0c176d5 mm: hugetlb: fix pgoff computation when unmapping page from
-vma)...  I was wrong at that time when giving my Reviewed-by. The patch
-didn't break anything because you still find all relevant vmas because
-vma_hugecache_offset just provides a smaller index which is still within
-boundaries.
-I think that 0c176d52 should be reverted because we do not have to refer
-to the head page in this case and as we can see it causes confusion.
-
-> 
-> Hillf
-
--- 
-Michal Hocko
-SUSE Labs
+Oh. My original intention is to prevent using list_voltage() to read
+voltage regulators for the case "n_voltages > 1" in case of both get_voltage
+and get_voltage_sel are not implemented.
