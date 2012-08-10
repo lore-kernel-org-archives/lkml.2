@@ -1,154 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760134Ab2HJDTt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Aug 2012 23:19:49 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:43548 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759020Ab2HJDTr (ORCPT
+	id S1758413Ab2HJDUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Aug 2012 23:20:08 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:46089 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab2HJDUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Aug 2012 23:19:47 -0400
+	Thu, 9 Aug 2012 23:20:03 -0400
 From: Dong Hao <haodong@linux.vnet.ibm.com>
 To: avi@redhat.com, acme@infradead.org
 Cc: mtosatti@redhat.com, mingo@elte.hu, dsahern@gmail.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v6 0/3] KVM: perf: kvm events analysis tool
-Date: Fri, 10 Aug 2012 11:19:07 +0800
-Message-Id: <1344568750-5147-1-git-send-email-haodong@linux.vnet.ibm.com>
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Dong Hao <haodong@linux.vnet.ibm.com>
+Subject: [PATCH v6 2/3] KVM: x86: tracemmio begin and complete
+Date: Fri, 10 Aug 2012 11:19:09 +0800
+Message-Id: <1344568750-5147-3-git-send-email-haodong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.5
-x-cbid: 12081003-8372-0000-0000-0000036D9A8C
+In-Reply-To: <1344568750-5147-1-git-send-email-haodong@linux.vnet.ibm.com>
+References: <1344568750-5147-1-git-send-email-haodong@linux.vnet.ibm.com>
+x-cbid: 12081003-0542-0000-0000-000002B2DCE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong<xiaoguangrong@linux.vnet.ibm.com>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-This patchset introduces a perf-based tool (perf kvm stat record/report)
-which can analysis kvm events more smartly. This is a presentation on
-2012 Japan LinuxCon:
-http://events.linuxfoundation.org/images/stories/pdf/lcjp2012_guangrong.pdf
-You can get more detail from it. Any question/comment please feel free let
-us know.
+'perf kvm stat record/report' will use kvm_exit and kvm_mmio(read...) to
+calculate mmio read emulated time for the old kernel, in order to trace
+mmio read event more exactly, we add kvm_mmio_begin to trace the time when
+mmio read begins, also, add kvm_io_done to trace the time when mmio/pio is
+completed
 
-Patch 1 and patch 3 can be applied to either tip tree or kvm tree, but patch 2
-can only be applied to kvm tree. Fortunately, patch 2 is just doing the
-"improvement" work, and it can be picked up independently.
+[ Dong Hao <haodong@linux.vnet.ibm.com>: rebase it on current kvm tree ]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/x86.c         |   32 ++++++++++++++++++++------------
+ include/trace/events/kvm.h |   37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+), 12 deletions(-)
 
-Usage:
-- kvm stat
-  run a command and gather performance counter statistics, it is the alias of
-  perf stat
-
-- trace kvm events:
-  perf kvm stat record, or, if other tracepoints are interesting as well, we
-  can append the events like this:
-  perf kvm stat record -e timer:*
-  If many guests are running, we can track the specified guest by using -p or
-  --pid
-
-- show the result:
-  perf kvm stat report
-
-The output example is following:
-# pgrep qemu-kvm
-27841
-27888
-27936
-
-total 3 guests are running on the host
-
-Then, track the guest whose pid is 27936:
-# ./perf kvm stat record -p 27936
-^C[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.177 MB perf.data.guest (~7742 samples) ]
-
-See the vmexit events:
-# ./perf kvm stat report --event=vmexit
-
-
-Analyze events for all VCPUs:
-
-             VM-EXIT    Samples  Samples%     Time%         Avg time
-
-         APIC_ACCESS        237    80.34%     0.01%     20.86us ( +-   8.03% )
-                 HLT         45    15.25%    99.98% 790874.75us ( +-  16.93% )
-  EXTERNAL_INTERRUPT         11     3.73%     0.00%     47.70us ( +-  17.45% )
-       EXCEPTION_NMI          1     0.34%     0.00%      5.11us ( +-   -nan% )
-           CR_ACCESS          1     0.34%     0.00%      6.33us ( +-   -nan% )
-
-Total Samples:295, Total events handled time:35594844.34us.
-
-See the mmio events:
-# ./perf kvm stat report --event=mmio
-
-
-Analyze events for all VCPUs:
-
-         MMIO Access    Samples  Samples%     Time%         Avg time
-
-        0xfee00380:W        151    82.07%    76.19%      7.72us ( +-  11.96% )
-        0xfee00300:W         11     5.98%    18.86%     26.23us ( +-  27.33% )
-        0xfee00300:R         11     5.98%     2.16%      3.00us ( +-   9.17% )
-        0xfee00310:W         11     5.98%     2.79%      3.88us ( +-   9.15% )
-
-Total Samples:184, Total events handled time:1529.42us.
-
-See the ioport event:
-# ./perf kvm stat report --event=ioport
-
-
-Analyze events for all VCPUs:
-
-      IO Port Access    Samples  Samples%     Time%         Avg time
-
-          0x5658:PIN       3357    55.22%    92.13%    162.31us ( +-   0.87% )
-         0xc090:POUT       1221    20.09%     2.10%     10.18us ( +-   4.97% )
-            0x60:PIN        748    12.30%     3.18%     25.17us ( +-   5.01% )
-            0x64:PIN        748    12.30%     2.57%     20.35us ( +-  11.81% )
-         0xc050:POUT          5     0.08%     0.01%      8.79us ( +-  12.88% )
-
-Total Samples:6079, Total events handled time:591405.43us.
-
-And, --vcpu is used to track the specified vcpu and --key is used to sort the
-result:
-# ./perf kvm stat report --event=ioport --vcpu=0 --key=time
-
-
-Analyze events for VCPU 0:
-
-      IO Port Access    Samples  Samples%     Time%         Avg time
-
-          0x5658:PIN        145    94.77%    99.67%    133.00us ( +-   2.96% )
-         0xc090:POUT          8     5.23%     0.33%      7.99us ( +-  16.85% )
-
-Total Samples:153, Total events handled time:19348.87us.
-
-Changelog:
-- merge "perf kvm-events" into perf "perf kvm stat" as Ingo's suggestion
-- track kvm events for the specified guest
-- rename kvm_mmio_done to kvm_io_done
-- fix compiling-error on i386
-
-
-Dong Hao (3):
-  KVM: x86: export svm/vmx exit code and vector code to userspace
-  KVM: x86: tracemmio begin and complete
-  KVM: perf kvm events analysis tool
-
- arch/x86/include/asm/kvm_host.h       |   36 +-
- arch/x86/include/asm/svm.h            |  205 +++++---
- arch/x86/include/asm/vmx.h            |  126 ++++--
- arch/x86/kvm/trace.h                  |   89 ----
- arch/x86/kvm/x86.c                    |   32 +-
- include/trace/events/kvm.h            |   37 ++
- tools/perf/Documentation/perf-kvm.txt |   30 ++-
- tools/perf/MANIFEST                   |    3 +
- tools/perf/builtin-kvm.c              |  858 ++++++++++++++++++++++++++++++++-
- tools/perf/util/header.c              |   55 ++-
- tools/perf/util/header.h              |    1 +
- tools/perf/util/thread.h              |    2 +
- 12 files changed, 1234 insertions(+), 240 deletions(-)
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8ebf65c..164ed9d 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3807,9 +3807,12 @@ mmio:
+ 	/*
+ 	 * Is this MMIO handled locally?
+ 	 */
++	trace_kvm_mmio_begin(vcpu->vcpu_id, write, gpa);
+ 	handled = ops->read_write_mmio(vcpu, gpa, bytes, val);
+-	if (handled == bytes)
++	if (handled == bytes) {
++		trace_kvm_io_done(vcpu->vcpu_id);
+ 		return X86EMUL_CONTINUE;
++	}
+ 
+ 	gpa += handled;
+ 	bytes -= handled;
+@@ -4002,6 +4005,7 @@ static int emulator_pio_in_out(struct kvm_vcpu *vcpu, int size,
+ 	vcpu->arch.pio.size = size;
+ 
+ 	if (!kernel_pio(vcpu, vcpu->arch.pio_data)) {
++		trace_kvm_io_done(vcpu->vcpu_id);
+ 		vcpu->arch.pio.count = 0;
+ 		return 1;
+ 	}
+@@ -4602,9 +4606,7 @@ restart:
+ 		inject_emulated_exception(vcpu);
+ 		r = EMULATE_DONE;
+ 	} else if (vcpu->arch.pio.count) {
+-		if (!vcpu->arch.pio.in)
+-			vcpu->arch.pio.count = 0;
+-		else
++		if (vcpu->arch.pio.in)
+ 			writeback = false;
+ 		r = EMULATE_DO_MMIO;
+ 	} else if (vcpu->mmio_needed) {
+@@ -4635,8 +4637,6 @@ int kvm_fast_pio_out(struct kvm_vcpu *vcpu, int size, unsigned short port)
+ 	unsigned long val = kvm_register_read(vcpu, VCPU_REGS_RAX);
+ 	int ret = emulator_pio_out_emulated(&vcpu->arch.emulate_ctxt,
+ 					    size, port, &val, 1);
+-	/* do not return to emulator after return from userspace */
+-	vcpu->arch.pio.count = 0;
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(kvm_fast_pio_out);
+@@ -5487,11 +5487,16 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_run *run = vcpu->run;
+ 	struct kvm_mmio_fragment *frag;
+-	int r;
++	int r = 1;
+ 
+ 	if (!(vcpu->arch.pio.count || vcpu->mmio_needed))
+ 		return 1;
+ 
++	if (vcpu->arch.pio.count && !vcpu->arch.pio.in) {
++		vcpu->arch.pio.count = 0;
++		goto exit;
++	}
++
+ 	if (vcpu->mmio_needed) {
+ 		/* Complete previous fragment */
+ 		frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
+@@ -5499,8 +5504,10 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+ 			memcpy(frag->data, run->mmio.data, frag->len);
+ 		if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
+ 			vcpu->mmio_needed = 0;
++
+ 			if (vcpu->mmio_is_write)
+-				return 1;
++				goto exit;
++
+ 			vcpu->mmio_read_completed = 1;
+ 			goto done;
+ 		}
+@@ -5517,11 +5524,12 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+ 	}
+ done:
+ 	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	r = emulate_instruction(vcpu, EMULTYPE_NO_DECODE);
++	r = emulate_instruction(vcpu, EMULTYPE_NO_DECODE) == EMULATE_DONE;
+ 	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+-	if (r != EMULATE_DONE)
+-		return 0;
+-	return 1;
++
++exit:
++	trace_kvm_io_done(vcpu->vcpu_id);
++	return r;
+ }
+ 
+ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run)
+diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+index 7ef9e75..5be5ad3 100644
+--- a/include/trace/events/kvm.h
++++ b/include/trace/events/kvm.h
+@@ -177,6 +177,43 @@ TRACE_EVENT(kvm_mmio,
+ 		  __entry->len, __entry->gpa, __entry->val)
+ );
+ 
++TRACE_EVENT(kvm_mmio_begin,
++	TP_PROTO(unsigned int vcpu_id, bool rw, u64 gpa),
++	TP_ARGS(vcpu_id, rw, gpa),
++
++	TP_STRUCT__entry(
++		__field(unsigned int, vcpu_id)
++		__field(int, type)
++		__field(u64, gpa)
++	),
++
++	TP_fast_assign(
++		__entry->vcpu_id = vcpu_id;
++		__entry->type = rw ? KVM_TRACE_MMIO_WRITE :
++					KVM_TRACE_MMIO_READ;
++		__entry->gpa = gpa;
++	),
++
++	TP_printk("vcpu %u mmio %s gpa 0x%llx", __entry->vcpu_id,
++			__print_symbolic(__entry->type, kvm_trace_symbol_mmio),
++			__entry->gpa)
++);
++
++TRACE_EVENT(kvm_io_done,
++	TP_PROTO(unsigned int vcpu_id),
++	TP_ARGS(vcpu_id),
++
++	TP_STRUCT__entry(
++		__field(        unsigned int,   vcpu_id         )
++	),
++
++	TP_fast_assign(
++		__entry->vcpu_id = vcpu_id;
++	),
++
++	TP_printk("vcpu %u", __entry->vcpu_id)
++);
++
+ #define kvm_fpu_load_symbol	\
+ 	{0, "unload"},		\
+ 	{1, "load"}
 -- 
 1.7.2.5
 
