@@ -1,54 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab2HJRtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 13:49:42 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42704 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab2HJRtk (ORCPT
+	id S1758831Ab2HJRvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 13:51:46 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33321 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746Ab2HJRvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 13:49:40 -0400
+	Fri, 10 Aug 2012 13:51:42 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50254A0A.3080805@jp.fujitsu.com>
+Date: Sat, 11 Aug 2012 02:51:06 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120810062829.GA4546@mwanda>
-References: <1343141382-31087-1-git-send-email-benchan@chromium.org>
- <CAHdPZaOTvF=e3j8ypzK8_V5Uh_8Nk1U74uVe4tcXs+cdQvimjg@mail.gmail.com>
- <CAC5Y2nMeYvKhMjPFFa-3tGLOOyxXX1B8MZSbXrMLsNDPJmdmzA@mail.gmail.com>
- <CAHdPZaPwUHHUyvgU1N=FAggF5Gg_p7cf-290Yd1+i+9eNyDY1g@mail.gmail.com> <20120810062829.GA4546@mwanda>
-From: Ben Chan <benchan@chromium.org>
-Date: Fri, 10 Aug 2012 10:49:19 -0700
-X-Google-Sender-Auth: fL55-qqQ0RN-dfJFGjUZl9Ul0-Q
-Message-ID: <CAC5Y2nOz+Q1wrqGezZP9O+a2_EWSV+yPOZ4kP=e0E3GfJWQWFg@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: gdm72xx: fix reference counting in gdm_wimax_event_init
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "devendra.aaru" <devendra.aaru@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
+ children
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com>
+In-Reply-To: <1344517279-30646-10-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+(2012/08/09 22:01), Glauber Costa wrote:
+> The current memcg slab cache management fails to present satisfatory
+> hierarchical behavior in the following scenario:
+> 
+> -> /cgroups/memory/A/B/C
+> 
+> * kmem limit set at A,
+> * A and B have no tasks,
+> * span a new task in in C.
+> 
+> Because kmem_accounted is a boolean that was not set for C, no
+> accounting would be done. This is, however, not what we expect.
+> 
+> The basic idea, is that when a cgroup is limited, we walk the tree
+> upwards (something Kame and I already thought about doing for other
+> purposes), and make sure that we store the information about the parent
+> being limited in kmem_accounted (that is turned into a bitmap: two
+> booleans would not be space efficient). The code for that is taken from
+> sched/core.c. My reasons for not putting it into a common place is to
+> dodge the type issues that would arise from a common implementation
+> between memcg and the scheduler - but I think that it should ultimately
+> happen, so if you want me to do it now, let me know.
+> 
+> We do the reverse operation when a formerly limited cgroup becomes
+> unlimited.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
 
-I manually walked through the driver code and spotted the issue. But
-this morning I was able to get an extra module to verify my patch on
-hardware.
 
-I tested the following patterns using two identical modules, and
-checked the creation/destruction/ref_cnt of wm_event:
-- insert module A, remove A
-- insert A, insert B, remove A, remove B
-- insert A, insert B, remove B, remove A
-- insert A, insert B, remove A, remove B
-- insert A, insert B, remove B, insert B, remove B, remove A
 
-Thanks,
-Ben
+> ---
+>   mm/memcontrol.c | 88 +++++++++++++++++++++++++++++++++++++++++++++++++++------
+>   1 file changed, 79 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 3216292..3d30b79 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -295,7 +295,8 @@ struct mem_cgroup {
+>   	 * Should the accounting and control be hierarchical, per subtree?
+>   	 */
+>   	bool use_hierarchy;
+> -	bool kmem_accounted;
+> +
+> +	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
+>   
+>   	bool		oom_lock;
+>   	atomic_t	under_oom;
+> @@ -348,6 +349,38 @@ struct mem_cgroup {
+>   #endif
+>   };
+>   
+> +enum {
+> +	KMEM_ACCOUNTED_THIS, /* accounted by this cgroup itself */
+> +	KMEM_ACCOUNTED_PARENT, /* accounted by any of its parents. */
+> +};
+> +
+> +#ifdef CONFIG_MEMCG_KMEM
+> +static bool memcg_kmem_account(struct mem_cgroup *memcg)
+> +{
+> +	return !test_and_set_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
+> +}
+> +
+> +static bool memcg_kmem_clear_account(struct mem_cgroup *memcg)
+> +{
+> +	return test_and_clear_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
+> +}
+> +
+> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
+> +{
+> +	return test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
+> +}
+> +
+> +static void memcg_kmem_account_parent(struct mem_cgroup *memcg)
+> +{
+> +	set_bit(KMEM_ACCOUNTED_PARENT, &memcg->kmem_accounted);
+> +}
+> +
+> +static void memcg_kmem_clear_account_parent(struct mem_cgroup *memcg)
+> +{
+> +	clear_bit(KMEM_ACCOUNTED_PARENT, &memcg->kmem_accounted);
+> +}
+> +#endif /* CONFIG_MEMCG_KMEM */
+> +
+>   /* Stuffs for move charges at task migration. */
+>   /*
+>    * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+> @@ -614,7 +647,7 @@ EXPORT_SYMBOL(__memcg_kmem_free_page);
+>   
+>   static void disarm_kmem_keys(struct mem_cgroup *memcg)
+>   {
+> -	if (memcg->kmem_accounted)
+> +	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
+>   		static_key_slow_dec(&memcg_kmem_enabled_key);
+>   }
+>   #else
+> @@ -4171,17 +4204,54 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>   static void memcg_update_kmem_limit(struct mem_cgroup *memcg, u64 val)
+>   {
+>   #ifdef CONFIG_MEMCG_KMEM
+> -	/*
+> -	 * Once enabled, can't be disabled. We could in theory disable it if we
+> -	 * haven't yet created any caches, or if we can shrink them all to
+> -	 * death. But it is not worth the trouble.
+> -	 */
+> +	struct mem_cgroup *iter;
+> +
+>   	mutex_lock(&set_limit_mutex);
+> -	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
+> +	if ((val != RESOURCE_MAX) && memcg_kmem_account(memcg)) {
+> +
+> +		/*
+> +		 * Once enabled, can't be disabled. We could in theory disable
+> +		 * it if we haven't yet created any caches, or if we can shrink
+> +		 * them all to death. But it is not worth the trouble
+> +		 */
+>   		static_key_slow_inc(&memcg_kmem_enabled_key);
+> -		memcg->kmem_accounted = true;
+> +
+> +		if (!memcg->use_hierarchy)
+> +			goto out;
+> +
+> +		for_each_mem_cgroup_tree(iter, memcg) {
+> +			if (iter == memcg)
+> +				continue;
+> +			memcg_kmem_account_parent(iter);
+> +		}
 
-On Thu, Aug 9, 2012 at 11:28 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> Ben, I'm confused.  Do you have a way to test this, or are you just
-> doing manual review?
->
-> regards,
-> dan carpenter
->
+Could you add an explanation comment ?
+
+
+> +	} else if ((val == RESOURCE_MAX) && memcg_kmem_clear_account(memcg)) {
+> +
+> +		if (!memcg->use_hierarchy)
+> +			goto out;
+> +
+ditto.
+
+> +		for_each_mem_cgroup_tree(iter, memcg) {
+> +			struct mem_cgroup *parent;
+> +
+> +			if (iter == memcg)
+> +				continue;
+> +			/*
+> +			 * We should only have our parent bit cleared if none
+> +			 * of our parents are accounted. The transversal order
+> +			 * of our iter function forces us to always look at the
+> +			 * parents.
+> +			 */
+> +			parent = parent_mem_cgroup(iter);
+> +			for (; parent != memcg; parent = parent_mem_cgroup(iter))
+> +				if (memcg_kmem_is_accounted(parent))
+> +					goto noclear;
+> +			memcg_kmem_clear_account_parent(iter);
+
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
