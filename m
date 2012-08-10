@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab2HJOGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 10:06:35 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:52959 "EHLO smtp.ispras.ru"
+	id S1758024Ab2HJOGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 10:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756746Ab2HJOGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 10:06:30 -0400
-From: Marina Makienko <makienko@ispras.ru>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Marina Makienko <makienko@ispras.ru>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH] target: Add blk_put_request()
-Date: Fri, 10 Aug 2012 18:02:35 +0400
-Message-Id: <1344607355-9310-1-git-send-email-makienko@ispras.ru>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1344585899-31466-1-git-send-email-makienko@ispras.ru>
+	id S1757932Ab2HJOGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 10:06:47 -0400
+Date: Fri, 10 Aug 2012 23:06:45 +0900 (JST)
+Message-Id: <20120810.230645.732660170719385986.yamato@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 04/15] Declaring udplite protocols has its own proc entry
+From: Masatake YAMATO <yamato@redhat.com>
+Organization: Red Hat Japan, Inc.
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk requests are obtained (some memory is allocated for them)
-by means of functions blk_get_request and blk_make_request.
-After usage (usually with help of blk_execute_rq) these requests
-should be put (and freed) with help of blk_put_request.
+Declaring udplite protocols has its own proc entry.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Marina Makienko <makienko@ispras.ru>
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 ---
-There is no problems in drivers/target/target_core_pscsi.c
+ net/ipv4/udplite.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Please ignore the previous message. 
+diff --git a/net/ipv4/udplite.c b/net/ipv4/udplite.c
+index 2c46acd..0b398b5 100644
+--- a/net/ipv4/udplite.c
++++ b/net/ipv4/udplite.c
+@@ -62,6 +62,9 @@ struct proto 	udplite_prot = {
+ 	.compat_getsockopt = compat_udp_getsockopt,
+ #endif
+ 	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++#ifdef CONFIG_PROC_FS
++	.has_own_proc_entry= 1,
++#endif
+ };
+ EXPORT_SYMBOL(udplite_prot);
+ 
 -- 
-1.7.7
+1.7.11.2
 
