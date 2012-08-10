@@ -1,69 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760149Ab2HJKef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 06:34:35 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41655 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751317Ab2HJKee (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 06:34:34 -0400
-From: Florian Westphal <fw@strlen.de>
-To: kvm@vger.kernel.org
-Cc: avi@redhat.com, linux-kernel@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>
-Subject: [PATCH] kvm: disable stealtime via reboot notifier to avoid mem corruption
-Date: Fri, 10 Aug 2012 12:36:22 +0200
-Message-Id: <1344594982-8516-1-git-send-email-fw@strlen.de>
-X-Mailer: git-send-email 1.7.8.6
+	id S1760168Ab2HJKhf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 06:37:35 -0400
+Received: from tundra.namei.org ([65.99.196.166]:33437 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754333Ab2HJKhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 06:37:31 -0400
+Date: Fri, 10 Aug 2012 20:37:30 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] security subsystem: Yama fix
+Message-ID: <alpine.LRH.2.02.1208102035200.14083@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-else, we get memory corruption on reboot; found when tracking down
-initramfs unpack error on initial reboot (with qemu-kvm -smp 2,
-no problem with single-core).
+Hi Linus,
 
-problem with doing it via kvm_shutdown() is that this file
-depends on CONFIG_KVM_CLOCK, also its not enough to call it for one
-cpu only.
+This fixes an issue in the Yama LSM.
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
----
- not subscribed, please CC on replies.
- Also, I don't know much about kvm or kexec, so its possible
- that i missed something.
+Please apply.
 
- In any case, this seems to fix the initramfs corruption for me.
- patch is against virt/kvm/kvm.git.
 
- arch/x86/kernel/kvm.c      |    1 +
- arch/x86/kernel/kvmclock.c |    1 -
- 2 files changed, 1 insertions(+), 1 deletions(-)
+The following changes since commit f4ba394c1b02e7fc2179fda8d3941a5b3b65efb6:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index c1d61ee..1596cc8 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -354,6 +354,7 @@ static void kvm_pv_guest_cpu_reboot(void *unused)
- 	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI))
- 		wrmsrl(MSR_KVM_PV_EOI_EN, 0);
- 	kvm_pv_disable_apf();
-+	kvm_disable_steal_time();
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Kees Cook (1):
+      Yama: higher restrictions should block PTRACE_TRACEME
+
+ Documentation/security/Yama.txt |   14 ++++++-------
+ include/linux/security.h        |    2 --
+ security/yama/yama_lsm.c        |   41 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 9 deletions(-)
+commit 9d8dad742ad1c74d7e7210ee05d0b44961d5ea16
+Author: Kees Cook <keescook@chromium.org>
+Date:   Thu Aug 9 19:01:26 2012 -0700
+
+    Yama: higher restrictions should block PTRACE_TRACEME
+    
+    The higher ptrace restriction levels should be blocking even
+    PTRACE_TRACEME requests. The comments in the LSM documentation are
+    misleading about when the checks happen (the parent does not go through
+    security_ptrace_access_check() on a PTRACE_TRACEME call).
+    
+    Signed-off-by: Kees Cook <keescook@chromium.org>
+    Cc: stable@vger.kernel.org # 3.5.x and later
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/Documentation/security/Yama.txt b/Documentation/security/Yama.txt
+index e369de2..dd908cf 100644
+--- a/Documentation/security/Yama.txt
++++ b/Documentation/security/Yama.txt
+@@ -46,14 +46,13 @@ restrictions, it can call prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, ...)
+ so that any otherwise allowed process (even those in external pid namespaces)
+ may attach.
+ 
+-These restrictions do not change how ptrace via PTRACE_TRACEME operates.
+-
+-The sysctl settings are:
++The sysctl settings (writable only with CAP_SYS_PTRACE) are:
+ 
+ 0 - classic ptrace permissions: a process can PTRACE_ATTACH to any other
+     process running under the same uid, as long as it is dumpable (i.e.
+     did not transition uids, start privileged, or have called
+-    prctl(PR_SET_DUMPABLE...) already).
++    prctl(PR_SET_DUMPABLE...) already). Similarly, PTRACE_TRACEME is
++    unchanged.
+ 
+ 1 - restricted ptrace: a process must have a predefined relationship
+     with the inferior it wants to call PTRACE_ATTACH on. By default,
+@@ -61,12 +60,13 @@ The sysctl settings are:
+     classic criteria is also met. To change the relationship, an
+     inferior can call prctl(PR_SET_PTRACER, debugger, ...) to declare
+     an allowed debugger PID to call PTRACE_ATTACH on the inferior.
++    Using PTRACE_TRACEME is unchanged.
+ 
+ 2 - admin-only attach: only processes with CAP_SYS_PTRACE may use ptrace
+-    with PTRACE_ATTACH.
++    with PTRACE_ATTACH, or through children calling PTRACE_TRACEME.
+ 
+-3 - no attach: no processes may use ptrace with PTRACE_ATTACH. Once set,
+-    this sysctl cannot be changed to a lower value.
++3 - no attach: no processes may use ptrace with PTRACE_ATTACH nor via
++    PTRACE_TRACEME. Once set, this sysctl value cannot be changed.
+ 
+ The original children-only logic was based on the restrictions in grsecurity.
+ 
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 4e5a73c..3dea6a9 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1242,8 +1242,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	Check that the @parent process has sufficient permission to trace the
+  *	current process before allowing the current process to present itself
+  *	to the @parent process for tracing.
+- *	The parent process will still have to undergo the ptrace_access_check
+- *	checks before it is allowed to trace this one.
+  *	@parent contains the task_struct structure for debugger process.
+  *	Return 0 if permission is granted.
+  * @capget:
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 83554ee..d51b7c7 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -290,10 +290,51 @@ static int yama_ptrace_access_check(struct task_struct *child,
+ 	return rc;
  }
  
- static int kvm_pv_reboot_notify(struct notifier_block *nb,
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index f1b42b3..5a2fa7d 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -191,7 +191,6 @@ static void kvm_crash_shutdown(struct pt_regs *regs)
- static void kvm_shutdown(void)
- {
- 	native_write_msr(msr_kvm_system_time, 0, 0);
--	kvm_disable_steal_time();
- 	native_machine_shutdown();
- }
++/**
++ * yama_ptrace_traceme - validate PTRACE_TRACEME calls
++ * @parent: task that will become the ptracer of the current task
++ *
++ * Returns 0 if following the ptrace is allowed, -ve on error.
++ */
++static int yama_ptrace_traceme(struct task_struct *parent)
++{
++	int rc;
++
++	/* If standard caps disallows it, so does Yama.  We should
++	 * only tighten restrictions further.
++	 */
++	rc = cap_ptrace_traceme(parent);
++	if (rc)
++		return rc;
++
++	/* Only disallow PTRACE_TRACEME on more aggressive settings. */
++	switch (ptrace_scope) {
++	case YAMA_SCOPE_CAPABILITY:
++		if (!ns_capable(task_user_ns(parent), CAP_SYS_PTRACE))
++			rc = -EPERM;
++		break;
++	case YAMA_SCOPE_NO_ATTACH:
++		rc = -EPERM;
++		break;
++	}
++
++	if (rc) {
++		char name[sizeof(current->comm)];
++		printk_ratelimited(KERN_NOTICE
++			"ptraceme of pid %d was attempted by: %s (pid %d)\n",
++			current->pid,
++			get_task_comm(name, parent),
++			parent->pid);
++	}
++
++	return rc;
++}
++
+ static struct security_operations yama_ops = {
+ 	.name =			"yama",
  
--- 
-1.7.8.6
-
+ 	.ptrace_access_check =	yama_ptrace_access_check,
++	.ptrace_traceme =	yama_ptrace_traceme,
+ 	.task_prctl =		yama_task_prctl,
+ 	.task_free =		yama_task_free,
+ };
