@@ -1,188 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab2HJSYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 14:24:24 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:44027 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759877Ab2HJSYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 14:24:17 -0400
-Date: Fri, 10 Aug 2012 14:24:09 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-Subject: Re: 3.5.1 ext4_ sleeping while atomic bug.
-Message-ID: <20120810182409.GA10333@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-References: <20120810031701.GA17765@redhat.com>
+	id S1759797Ab2HJSbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 14:31:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52922 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754786Ab2HJSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 14:31:46 -0400
+Message-ID: <5025537D.9060300@zytor.com>
+Date: Fri, 10 Aug 2012 11:31:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120810031701.GA17765@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond.Myklebust@netapp.com, davem@davemloft.net,
+        linux-nfs@vger.kernel.org, eric.dumazet@gmail.com, xemul@parallels.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
+References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk>
+In-Reply-To: <20120810192628.79a34d28@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 08/10/2012 11:26 AM, Alan Cox wrote:
+>> On that whole subject...
+>>
+>> Do we need a Unix domain socket equivalent to openat()?
+> 
+> I don't think so. The name is just a file system indexing trick, it's not
+> really the socket proper. It's little more than "ascii string with
+> permissions attached" - indeed we also support an abstract name space
+> which for a lot of uses is actually more convenient.
+> 
 
-Thanks for the bug report!  The following should address the bug which
-you found.
+I don't really understand why Unix domain sockets is different than any
+other pathname users in this sense.  (Actually, I have never understood
+why open() on a Unix domain socket doesn't give the equivalent of a
+socket() + connect() -- it would make logical sense and would provide
+additional functionality).
 
-						- Ted
+It would be different if the Unix domain sockets simply required an
+absolute pathname (it is not just about the root, it is also about the
+cwd, which is where the -at() functions come into play), but that is not
+the case.
 
->From 05ca87aa00121756b5d41f3d71eb8b51bed3bc92 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Fri, 10 Aug 2012 13:57:52 -0400
-Subject: [PATCH] ext4: don't call ext4_error while block group is locked
+The abstract namespace is irrelevant for this, obviously.
 
-While in ext4_validate_block_bitmap(), if an block allocation bitmap
-is found to be invalid, we call ext4_error() while the block group is
-still locked.  This causes ext4_commit_super() to call a function
-which might sleep while in an atomic context.
+> AF_UNIX between roots raises some interesting semantic questions when
+> you begin passing file descriptors down them as well.
 
-There's no need to keep the block group locked at this point, so hoist
-the ext4_error() call up to ext4_validate_block_bitmap() and release
-the block group spinlock before calling ext4_error().
+Why is that?  A file descriptor carries all that information with it...
 
-The reported stack trace can be found at:
-
-	http://article.gmane.org/gmane.comp.file-systems.ext4/33731
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: stable@vger.kernel.org
----
- fs/ext4/balloc.c | 62 +++++++++++++++++++++++++++++++++-----------------------
- fs/ext4/bitmap.c |  1 -
- 2 files changed, 37 insertions(+), 26 deletions(-)
-
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index d23b31c..1b50890 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -280,14 +280,18 @@ struct ext4_group_desc * ext4_get_group_desc(struct super_block *sb,
- 	return desc;
- }
- 
--static int ext4_valid_block_bitmap(struct super_block *sb,
--				   struct ext4_group_desc *desc,
--				   unsigned int block_group,
--				   struct buffer_head *bh)
-+/*
-+ * Return the block number which was discovered to be invalid, or 0 if
-+ * the block bitmap is valid.
-+ */
-+static ext4_fsblk_t ext4_valid_block_bitmap(struct super_block *sb,
-+					    struct ext4_group_desc *desc,
-+					    unsigned int block_group,
-+					    struct buffer_head *bh)
- {
- 	ext4_grpblk_t offset;
- 	ext4_grpblk_t next_zero_bit;
--	ext4_fsblk_t bitmap_blk;
-+	ext4_fsblk_t blk;
- 	ext4_fsblk_t group_first_block;
- 
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-@@ -297,37 +301,33 @@ static int ext4_valid_block_bitmap(struct super_block *sb,
- 		 * or it has to also read the block group where the bitmaps
- 		 * are located to verify they are set.
- 		 */
--		return 1;
-+		return 0;
- 	}
- 	group_first_block = ext4_group_first_block_no(sb, block_group);
- 
- 	/* check whether block bitmap block number is set */
--	bitmap_blk = ext4_block_bitmap(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_block_bitmap(sb, desc);
-+	offset = blk - group_first_block;
- 	if (!ext4_test_bit(offset, bh->b_data))
- 		/* bad block bitmap */
--		goto err_out;
-+		return blk;
- 
- 	/* check whether the inode bitmap block number is set */
--	bitmap_blk = ext4_inode_bitmap(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_inode_bitmap(sb, desc);
-+	offset = blk - group_first_block;
- 	if (!ext4_test_bit(offset, bh->b_data))
- 		/* bad block bitmap */
--		goto err_out;
-+		return blk;
- 
- 	/* check whether the inode table block number is set */
--	bitmap_blk = ext4_inode_table(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_inode_table(sb, desc);
-+	offset = blk - group_first_block;
- 	next_zero_bit = ext4_find_next_zero_bit(bh->b_data,
- 				offset + EXT4_SB(sb)->s_itb_per_group,
- 				offset);
--	if (next_zero_bit >= offset + EXT4_SB(sb)->s_itb_per_group)
--		/* good bitmap for inode tables */
--		return 1;
--
--err_out:
--	ext4_error(sb, "Invalid block bitmap - block_group = %d, block = %llu",
--			block_group, bitmap_blk);
-+	if (next_zero_bit < offset + EXT4_SB(sb)->s_itb_per_group)
-+		/* bad bitmap for inode tables */
-+		return blk;
- 	return 0;
- }
- 
-@@ -336,14 +336,26 @@ void ext4_validate_block_bitmap(struct super_block *sb,
- 			       unsigned int block_group,
- 			       struct buffer_head *bh)
- {
-+	ext4_fsblk_t	blk;
-+
- 	if (buffer_verified(bh))
- 		return;
- 
- 	ext4_lock_group(sb, block_group);
--	if (ext4_valid_block_bitmap(sb, desc, block_group, bh) &&
--	    ext4_block_bitmap_csum_verify(sb, block_group, desc, bh,
--					  EXT4_BLOCKS_PER_GROUP(sb) / 8))
--		set_buffer_verified(bh);
-+	blk = ext4_valid_block_bitmap(sb, desc, block_group, bh);
-+	if (unlikely(blk != 0)) {
-+		ext4_unlock_group(sb, block_group);
-+		ext4_error(sb, "bg %u: block %llu: invalid block bitmap",
-+			   block_group, blk);
-+		return;
-+	}
-+	if (unlikely(!ext4_block_bitmap_csum_verify(sb, block_group,
-+			desc, bh, EXT4_BLOCKS_PER_GROUP(sb) / 8))) {
-+		ext4_unlock_group(sb, block_group);
-+		ext4_error(sb, "bg %u: bad block bitmap checksum", block_group);
-+		return;
-+	}
-+	set_buffer_verified(bh);
- 	ext4_unlock_group(sb, block_group);
- }
- 
-diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
-index f8716ea..5c2d181 100644
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -79,7 +79,6 @@ int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
- 	if (provided == calculated)
- 		return 1;
- 
--	ext4_error(sb, "Bad block bitmap checksum: block_group = %u", group);
- 	return 0;
- }
- 
--- 
-1.7.12.rc0.22.gcdd159b
-
+	-hpa
