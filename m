@@ -1,42 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760472Ab2HJX5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 19:57:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55006 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760066Ab2HJX51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 19:57:27 -0400
-Message-ID: <50259FCE.4070205@zytor.com>
-Date: Fri, 10 Aug 2012 16:57:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754774Ab2HKABc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 20:01:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55036 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2HKAB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 20:01:28 -0400
+Date: Fri, 10 Aug 2012 17:01:14 -0700
+From: tip-bot for Andrew Boie <andrew.p.boie@intel.com>
+Message-ID: <tip-484d90eec884d814b005c9736bcf3fd018acba65@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andrew.p.boie@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andrew.p.boie@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1344624546-29691-1-git-send-email-andrew.p.boie@intel.com>
+References: <1344624546-29691-1-git-send-email-andrew.p.boie@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, build: Globally set -fno-pic
+Git-Commit-ID: 484d90eec884d814b005c9736bcf3fd018acba65
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Betty Dall <betty.dall@hp.com>
-CC: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor
- ID first
-References: <1344464246-14618-1-git-send-email-andi@firstfloor.org> <1344551691.10751.12.camel@ejdallLaptop>
-In-Reply-To: <1344551691.10751.12.camel@ejdallLaptop>
-X-Enigmail-Version: 1.4.3
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 10 Aug 2012 17:01:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 03:34 PM, Betty Dall wrote:
-> 
-> I thought this should be a break instead of a continue since the code
-> does a break if the class is 0xffffffff. If the function does not have a
-> valid VENDOR_ID, then the remaining function numbers do not have to be
-> scanned because functions are required to be implemented in order (no
-> skipping a function number.)
-> 
+Commit-ID:  484d90eec884d814b005c9736bcf3fd018acba65
+Gitweb:     http://git.kernel.org/tip/484d90eec884d814b005c9736bcf3fd018acba65
+Author:     Andrew Boie <andrew.p.boie@intel.com>
+AuthorDate: Fri, 10 Aug 2012 11:49:06 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 10 Aug 2012 16:12:30 -0700
 
-Is that true?  This is certainly not true in PCI in general: there is
-required to be a function 0, but there is no guarantee that functions
-1-7 don't have gaps.
+x86, build: Globally set -fno-pic
 
-	-hpa
+GCC built with nonstandard options can enable -fpic by default.
+We never want this for 32-bit kernels and it will break the build.
 
+[ hpa: Notably the Android toolchain apparently does this. ]
+
+Change-Id: Iaab7d66e598b1c65ac4a4f0229eca2cd3d0d2898
+Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
+Link: http://lkml.kernel.org/r/1344624546-29691-1-git-send-email-andrew.p.boie@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Makefile             |    4 ++++
+ arch/x86/boot/Makefile        |    2 +-
+ arch/x86/realmode/rm/Makefile |    2 +-
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index b0c5276..682e9c2 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -27,6 +27,10 @@ ifeq ($(CONFIG_X86_32),y)
+ 
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
++        # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
++        # with nonstandard options
++        KBUILD_CFLAGS += -fno-pic
++
+         # prevent gcc from keeping the stack 16 byte aligned
+         KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=2)
+ 
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 5a747dd..f7535be 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -57,7 +57,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+ 			$(call cc-option, -fno-unit-at-a-time)) \
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index b2d534c..8869287 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -72,7 +72,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+ 			$(call cc-option, -fno-unit-at-a-time)) \
