@@ -1,51 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab2HKKny (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 06:43:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37805 "EHLO mga11.intel.com"
+	id S1754448Ab2HKLPV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 07:15:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4334 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab2HKKnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 06:43:53 -0400
+	id S1751294Ab2HKLPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 07:15:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,749,1336374000"; 
-   d="scan'208";a="197649686"
-Date: Sat, 11 Aug 2012 03:43:52 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Betty Dall <betty.dall@hp.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor ID
- first
-Message-ID: <20120811104352.GI2644@tassilo.jf.intel.com>
-References: <1344464246-14618-1-git-send-email-andi@firstfloor.org>
- <1344551691.10751.12.camel@ejdallLaptop>
- <50259FCE.4070205@zytor.com>
+   d="scan'208";a="184974495"
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: improve handling/reporting of memory error on dirty pagecache
+References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1344634913-13681-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Sat, 11 Aug 2012 04:15:06 -0700
+In-Reply-To: <1344634913-13681-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+	(Naoya Horiguchi's message of "Fri, 10 Aug 2012 17:41:53 -0400")
+Message-ID: <m21ujdd6it.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50259FCE.4070205@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 04:57:02PM -0700, H. Peter Anvin wrote:
-> On 08/09/2012 03:34 PM, Betty Dall wrote:
-> > 
-> > I thought this should be a break instead of a continue since the code
-> > does a break if the class is 0xffffffff. If the function does not have a
-> > valid VENDOR_ID, then the remaining function numbers do not have to be
-> > scanned because functions are required to be implemented in order (no
-> > skipping a function number.)
-> > 
-> 
-> Is that true?  This is certainly not true in PCI in general: there is
-> required to be a function 0, but there is no guarantee that functions
-> 1-7 don't have gaps.
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-These scans are for special known devices, presumably true for them.
+I'm sceptical on the patch, but here's my review.
 
-Anwyays if you don't like it please use v1 of the patch.
+>   - return -EHWPOISON when we access to the error-affected address with
+>     read(), partial-page write(), fsync(),
+
+Note that a lot of user space does not like new errnos (nothing in
+strerror etc.). It's probably better to reuse some existing errno.
+
+> @@ -270,6 +273,9 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
+>  	if (end_byte < start_byte)
+>  		return 0;
+>  
+> +	if (unlikely(hwpoison_file_range(mapping, start_byte, end_byte)))
+> +		return -EHWPOISON;
+> +
+
+That function uses a global lock. fdatawait is quite common. This will
+likely cause performance problems in IO workloads.
+
+You need to get that lock out of the hot path somehow.
+
+Probably better to try to put the data into a existing data structure,
+or if you cannot do that you would need some way to localize the lock.
+
+Or at least make it conditional of hwpoison errors being around. 
+
+
+>  	pagevec_init(&pvec, 0);
+>  	while ((index <= end) &&
+>  			(nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
+> @@ -369,6 +375,16 @@ int filemap_write_and_wait_range(struct address_space *mapping,
+>  				err = err2;
+>  		}
+>  	}
+> +
+> +	/*
+> +	 * When AS_HWPOISON is set, dirty page with memory error is
+> +	 * removed from pagecache and mapping->nrpages is decreased by 1.
+> +	 * So in order to detect memory error on single page file, we need
+> +	 * to check AS_HWPOISON bit outside if(mapping->nrpages) block below.
+> +	 */
+> +	if (unlikely(hwpoison_file_range(mapping, lstart, lend)))
+> +		return -EHWPOISON;
+
+Same here.
+>  					ra, filp, page,
+> @@ -2085,6 +2123,9 @@ inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, i
+>          if (unlikely(*pos < 0))
+>                  return -EINVAL;
+>  
+> +	if (unlikely(hwpoison_partial_write(file->f_mapping, *pos, *count)))
+> +		return -EHWPOISON;
+
+Same here.
+> +
+> +		/*
+> +		 * Memory error is reported to userspace by AS_HWPOISON flags
+> +		 * in mapping->flags. The mechanism is similar to that of
+> +		 * AS_EIO, but we have separete flags because there'are two
+> +		 * differences between them:
+> +		 *  1. Expected userspace handling. When user processes get
+> +		 *     -EIO, they can retry writeback hoping the error in IO
+> +		 *     devices is temporary, switch to write to other devices,
+> +		 *     or do some other application-specific handling.
+> +		 *     For -EHWPOISON, we can clear the error by overwriting
+> +		 *     the corrupted page.
+> +		 *  2. When to clear. For -EIO, we can think that we recover
+> +		 *     from the error when writeback succeeds. For -EHWPOISON
+> +		 *     OTOH, we can see that things are back to normal when
+> +		 *     corrupted data are overwritten from user buffer.
+> +		 */
+> +		hwp = kmalloc(sizeof(struct hwp_dirty), GFP_ATOMIC);
+
+You need to check the return value, especially for GFP_ATOMIC which is
+common to fail
+
+> +		hwp->page = p;
+> +		hwp->fpage = NULL;
+> +		hwp->mapping = mapping;
+> +		hwp->index = page_index(p);
+> +		hwp->ino = inode->i_ino;
+> +		hwp->dev = inode->i_sb->s_dev;
+> +		add_hwp_dirty(hwp);
 
 -Andi
 -- 
