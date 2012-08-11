@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab2HKSjh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 14:39:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60757 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab2HKSje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 14:39:34 -0400
-Message-ID: <5026A6D1.8070403@zytor.com>
-Date: Sat, 11 Aug 2012 11:39:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754227Ab2HKTPl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 15:15:41 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62489 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2HKTPi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 15:15:38 -0400
+Date: Sat, 11 Aug 2012 21:15:53 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Giacomo Comes <comes@naic.edu>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i915: Fix blank panel at reopening lid
+Message-ID: <20120811191553.GA5132@phenom.ffwll.local>
+Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Giacomo Comes <comes@naic.edu>,
+	Paulo Zanoni <paulo.r.zanoni@intel.com>,
+	linux-kernel@vger.kernel.org
+References: <s5h3941ke2p.wl%tiwai@suse.de>
+ <alpine.LSU.2.00.1208052113530.1300@eggly.anvils>
+ <CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com>
+ <alpine.LSU.2.00.1208061122060.1425@eggly.anvils>
+ <s5h1ujfyn39.wl%tiwai@suse.de>
+ <CAKMK7uF_5K6d=xw7SsRJqw7dg5ca6HMdf3jvsQcQqhmSNLkaww@mail.gmail.com>
+ <s5hpq6yyke5.wl%tiwai@suse.de>
+ <alpine.LSU.2.00.1208101145440.2648@eggly.anvils>
+ <s5hvcgq7wpp.wl%tiwai@suse.de>
+ <s5hsjbt9as5.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>, amwang@redhat.com,
-        dyoung@redhat.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, xiyou.wangcong@gmail.com, rjw@sisk.pl,
-        yinghai.lu@oracle.com, tiwai@suse.de, kexec@lists.infradead.org
-CC: Tejun Heo <tj@kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
-References: <1339478463-31172-1-git-send-email-amwang@redhat.com> <5004D8BF.6050205@jp.fujitsu.com> <500D20A1.1030800@redhat.com> <500D340F.5080801@jp.fujitsu.com> <1343145331.16290.45.camel@cr0> <500F3B7C.70009@jp.fujitsu.com> <20120811175759.GA1814@cantor.Home> <20120811182644.GA1787@cantor.Home> <5026A5AE.6050608@zytor.com>
-In-Reply-To: <5026A5AE.6050608@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hsjbt9as5.wl%tiwai@suse.de>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2012 11:34 AM, H. Peter Anvin wrote:
-> On 08/11/2012 11:26 AM, Jerry Snitselaar wrote:
->>>
->>> This patch from Jacob Shin solves the problem, and seems like it might
->>> be a better solution.
->>>
->>> [PATCH 2/5] x86: find_early_table_space based on memory ranges that
->>> are being mapped
->>>
->>> https://lkml.org/lkml/2012/8/9/540
->>>
->> Actually, apply that series of 5 patches.
->>
->
-> I was hoping Tejun would comment on it, but I think I'll pull it into -tip.
->
-> However, the real question is what we should do for -stable; applying
-> the full patch series seems a big aggressive for that.  On the other
-> hand, if it really is The Right Thing then perhaps we should do so anyway.
->
-
-Ah, right... still waiting for a rev of the patch to address Yinghai's 
-legitimate request for minor code restructuring.  Other than that, the 
-patchset is really The Right Thing.
-
-	-hpa
-
-
+On Sat, Aug 11, 2012 at 08:56:42AM +0200, Takashi Iwai wrote:
+> When you reopen the lid on a laptop with PCH, the panel suddenly goes
+> blank sometimes.  It seems because BLC_PWM_CPU_CTL register is cleared
+> to zero when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 registers are
+> enabled.
+> 
+> This patch fixes the problem by moving the call of the function setting
+> BLC_PWM_CPU_CTL after enabling other two registers.
+> 
+> Reported-and-tested-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+> v1->v2: add comments, fixed changelog
+Picked up for -fixes, thanks for the patch.
+-Daniel
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
