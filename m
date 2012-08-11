@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2HKM5o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 08:57:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65436 "EHLO
+	id S1754821Ab2HKM7w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 08:59:52 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51969 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab2HKM5X (ORCPT
+	with ESMTP id S1754476Ab2HKM5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 08:57:23 -0400
+	Sat, 11 Aug 2012 08:57:36 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -19,9 +19,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Ben Dooks <ben.dooks@codethink.co.uk>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 06/11] ARM: mvebu: add pinctrl device in DT for Armada 370/XP SoCs
-Date: Sat, 11 Aug 2012 14:56:44 +0200
-Message-Id: <1344689809-6223-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 11/11] arm: mvebu: add pinctrl support in defconfig
+Date: Sat, 11 Aug 2012 14:56:49 +0200
+Message-Id: <1344689809-6223-12-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -30,13 +30,6 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-
-The Armada 370 and XP SoCs have configurable muxing for a certain
-number of their pins, controlled through a pinctrl driver.
-
-The 'compatible' property is defined in the SoC-specific .dtsi files,
-since the compatible string identifies the number of pins and other
-SoC-specific properties.
 
 Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
@@ -56,27 +49,22 @@ Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/configs/mvebu_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index 6b6b932..7c72a70 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -63,6 +63,13 @@
- 			       reg = <0xd0020300 0x30>;
- 			       interrupts = <37>, <38>, <39>, <40>;
- 		};
-+
-+                pinctrl@d0018000 {
-+                               reg = <0xd0018000 0x38>;
-+                               #address-cells = <1>;
-+                               #size-cells = <1>;
-+                               ranges;
-+                };
- 	};
- };
- 
+diff --git a/arch/arm/configs/mvebu_defconfig b/arch/arm/configs/mvebu_defconfig
+index 2e86b31..cb07e64 100644
+--- a/arch/arm/configs/mvebu_defconfig
++++ b/arch/arm/configs/mvebu_defconfig
+@@ -21,6 +21,8 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_PINCTRL_ARMADA_370=y
++CONFIG_PINCTRL_ARMADA_XP=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
+ # CONFIG_EXT3_FS_XATTR is not set
 -- 
 1.7.10.4
 
