@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab2HKEO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 00:14:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40246 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab2HKEOv (ORCPT
+	id S1751900Ab2HKFHG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 01:07:06 -0400
+Received: from mailgw.tensilica.com ([65.119.96.134]:33771 "EHLO
+	mailgw.tensilica.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab2HKFHC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 00:14:51 -0400
+	Sat, 11 Aug 2012 01:07:02 -0400
+X-Greylist: delayed 1198 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Aug 2012 01:07:02 EDT
+From: Marc Gauthier <marc@tensilica.com>
+To: Pete Delaney <piet.delaney@gmail.com>, Chris Zankel <chris@zankel.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "'Mahavir Prasad'" <er.mahavir@gmail.com>,
+        Prasanna Rao <Prasanna.Rao@transwitch.com>,
+        Shimon Edelhaus <Shimon.Edelhaus@transwitch.com>,
+        Rakesh Jain <Rakesh.Jain@imgtec.com>
+Date: Fri, 10 Aug 2012 21:47:00 -0700
+Subject: Re: xtensa port maintenance
+Thread-Topic: xtensa port maintenance
+Thread-Index: Ac13TtaTKR/N6QtaQieM1Mc9xOMhiQAKqAEA
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D022DEE8CB5@exch.hq.tensilica.com>
+References: <50205592.1030205@gmail.com> <201208102115.59946.arnd@arndb.de>
+ <50258D88.7090903@zankel.net> <5025975D.9030100@gmail.com>
+In-Reply-To: <5025975D.9030100@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [72.21.198.64]
-In-Reply-To: <0de101cd774c$fb2afa10$f180ee30$@lucidpixels.com>
-References: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com>
-	<alpine.LNX.2.00.1208101948590.17673@swampdragon.chaosbits.net>
-	<CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
-	<0de101cd774c$fb2afa10$f180ee30$@lucidpixels.com>
-Date: Sat, 11 Aug 2012 00:14:51 -0400
-Message-ID: <CAO9zADzxste_Zs0CGtNoTL0SARV41-q4X-8i8fXBPVNQ4ADDcA@mail.gmail.com>
-Subject: Re: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, ap@solarrain.com, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 7:07 PM, Justin Piszcz
->
-> Hi,
->
-> Found the root cause, the 3.5.1 kernel cannot mount my ext4 filesystem
-> (60TB).
->
-> The 3.4 kernel works fine.
->
-> This is proven by commenting out the filesystem in /etc/fstab with
-> 3.5.1, and all is OK.
->
-> --
->
-> Hi again,
->
-> I tested with linux-3.6-rc1:
->
-> The same problem, here is what I get from the strace:
->
-> irectory)
-> 4434  readlink("/dev", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
-> 4434  readlink("/dev/sda1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid
-> argument)
-> 4434  readlink("/r1", 0x7fff3b05c670, 4096) = -1 EINVAL (Invalid argument)
-> 4434  getuid()                          = 0
-> 4434  geteuid()                         = 0
-> 4434  getgid()                          = 0
-> 4434  getegid()                         = 0
-> 4434  prctl(PR_GET_DUMPABLE)            = 1
-> 4434  lstat("/etc/mtab", {st_mode=S_IFLNK|0777, st_size=12, ...}) = 0
-> 4434  getuid()                          = 0
-> 4434  geteuid()                         = 0
-> 4434  getgid()                          = 0
-> 4434  getegid()                         = 0
-> 4434  prctl(PR_GET_DUMPABLE)            = 1
-> 4434  stat("/run", {st_mode=S_IFDIR|0755, st_size=820, ...}) = 0
-> 4434  lstat("/run/mount/utab", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-> 4434  open("/run/mount/utab", O_RDWR|O_CREAT, 0644) = 3
-> 4434  close(3)                          = 0
-> 4434  mount("/dev/sda1", "/r1", "ext4", MS_MGC_VAL|MS_NOATIME, NULL
->
-> --
->
-> (w/ 3.6-rc1)
->
-> [   89.868843] mount           R  running task        0  4434   4433
-> 0x00000009
-> [   89.868847]  ffff880c246b7b68 ffffffff816c9279 ffff880c246b7aa8
-> ffff880c246b7fd8
-> [   89.868851]  ffff880c246b7fd8 0000000000004000 ffff88062720cdb0
-> ffff880c246862d0
-> [   89.868855]  00000000000116c0 ffff880623a863c0 ffff880623a863c0
-> 00000000ffffffff
-> [   89.868855] Call Trace:
-> [   89.868858]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
-> [   89.868860]  [<ffffffff816c9279>] ? __schedule+0x299/0x770
-> [   89.868864]  [<ffffffff8114a729>] ? ext4_get_group_desc+0x49/0xb0
-> [   89.868868]  [<ffffffff81161d41>] ? ext4_calculate_overhead+0x131/0x3e0
-> [   89.868871]  [<ffffffff81163a3b>] ? ext4_fill_super+0x1a4b/0x28d0
-> [   89.868875]  [<ffffffff810cc301>] ? mount_bdev+0x1a1/0x1e0
-> [   89.868877]  [<ffffffff81161ff0>] ? ext4_calculate_overhead+0x3e0/0x3e0
-> [   89.868880]  [<ffffffff8115dd00>] ? ext4_mount+0x10/0x20
-> [   89.868882]  [<ffffffff810cc55b>] ? mount_fs+0x1b/0xd0
-> [   89.868885]  [<ffffffff810e57af>] ? vfs_kern_mount+0x6f/0x110
-> [   89.868888]  [<ffffffff810e58cf>] ? do_kern_mount+0x4f/0x100
-> [   89.868890]  [<ffffffff810e6dae>] ? do_mount+0x2fe/0x8a0
-> [   89.868894]  [<ffffffff8109c0a3>] ? strndup_user+0x53/0x70
-> [   89.868896]  [<ffffffff810e73e0>] ? sys_mount+0x90/0xe0
-> [   89.868899]  [<ffffffff816cafa1>] ? tracesys+0xd4/0xd9
->
-> Justin.
->
->
->
+Chris Zankel wrote:
+> I have set up a tree on github for now, and will work close
+> with Max to get his changes to Stephen's linux-next tree and
+> eventually Linus' tree.
+> I think it's fine to add Max as a second maintainer [...]
 
-CC: linux-ext4
+Thanks for helping!
 
-Any ideas here (kernel 3.4 and below can mount 60TB ext4 no issues)
-but > 3.5.1 (did not try 3.5) cannot mount the filesystem.
 
-Justin.
+Pete Delaney wrote:
+> I'm afraid that doing it piecemeal has failed in the past
 
-Justin.
+Proper patches work fine, was just never done.
+(Can discuss off this To: list.)
+
+
+> Mind anding Marc and myself?
+
+Acting as maintainer involves submitting useful patches over
+some period of time.  Right now that's Max and Chris.
+(Love to do it, but have plenty as it is on my plate.)
+
+Thanks,
+-Marc
