@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab2HKUBj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 16:01:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44605 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2HKUBi (ORCPT
+	id S1754584Ab2HKUc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 16:32:29 -0400
+Received: from h219-110-095-176.catv01.itscom.jp ([219.110.95.176]:49265 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752044Ab2HKUc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 16:01:38 -0400
-Date: Sat, 11 Aug 2012 13:01:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 5/5] x86: Move enabling of PSE and PGE out of
- init_memory_mapping
-Message-ID: <20120811200133.GG2874@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
- <1344547389-4599-6-git-send-email-jacob.shin@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344547389-4599-6-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 11 Aug 2012 16:32:27 -0400
+X-Greylist: delayed 1500 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Aug 2012 16:32:27 EDT
+From: Masatake YAMATO <yamato@redhat.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Masatake YAMATO <yamato@redhat.com>
+Subject: [PATCH v2 05/15] ipv4: declaring raw protocols has its own proc entry
+Date: Sun, 12 Aug 2012 05:07:08 +0900
+Message-Id: <1344715638-22997-5-git-send-email-yamato@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1344715638-22997-1-git-send-email-yamato@redhat.com>
+References: <1344715638-22997-1-git-send-email-yamato@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Declaring raw protocols has its own proc entry.
 
-On Thu, Aug 09, 2012 at 04:23:09PM -0500, Jacob Shin wrote:
-> Since we now call init_memory_mapping for each E820_RAM region in a
-> loop, move cr4 writes out to setup_arch.
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ net/ipv4/raw.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Shouldn't this happen before init_memory_mapping() is called multiple
-times?  Also, there seem to be other stuff which need to be moved out.
-
-Thanks.
-
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index ff0f071..3980a4a 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -901,6 +901,7 @@ struct proto raw_prot = {
+ 	.compat_getsockopt = compat_raw_getsockopt,
+ 	.compat_ioctl	   = compat_raw_ioctl,
+ #endif
++	.has_own_proc_entry= 1,
+ };
+ 
+ #ifdef CONFIG_PROC_FS
 -- 
-tejun
+1.7.11.2
+
