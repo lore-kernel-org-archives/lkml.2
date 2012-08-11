@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2HKJhi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 05:37:38 -0400
+	id S1754019Ab2HKJiI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 05:38:08 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63723 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab2HKJeM (ORCPT
+	with ESMTP id S1753588Ab2HKJeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 05:34:12 -0400
+	Sat, 11 Aug 2012 05:34:07 -0400
 From: Huacai Chen <chenhuacai@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: [PATCH V5 15/18] MIPS: Loongson 3: Add Loongson-3 SMP support.
-Date: Sat, 11 Aug 2012 17:32:20 +0800
-Message-Id: <1344677543-22591-16-git-send-email-chenhc@lemote.com>
+        Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH V5 14/18] ALSA: HDA: Make hda sound card usable for Loongson.
+Date: Sat, 11 Aug 2012 17:32:19 +0800
+Message-Id: <1344677543-22591-15-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
 References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
@@ -23,422 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IPI registers of Loongson-3 include IPI_SET, IPI_CLEAR, IPI_STATUS,
-IPI_EN and IPI_MAILBOX_BUF. Each bit of IPI_STATUS indicate a type of
-IPI and IPI_EN indicate whether the IPI is enabled. The sender write 1
-to IPI_SET bits generate IPIs in IPI_STATUS, and receiver write 1 to
-bits of IPI_CLEAR to clear IPIs. IPI_MAILBOX_BUF are used to deliver
-more information about IPIs.
+Lemote A1004(Laptop) and A1205(All-In-One) use Conexant's hda codec,
+this patch modify patch_conexant.c to add Lemote specific code.
 
-Why we change code in arch/mips/loongson/common/setup.c?
-
-If without this change, when SMP configured, system cannot boot since
-it hang at printk() in cgroup_init_early(). The root cause is:
-
-console_trylock()
-  \-->down_trylock(&console_sem)
-    \-->raw_spin_unlock_irqrestore(&sem->lock, flags)
-      \-->_raw_spin_unlock_irqrestore()(SMP/UP have different versions)
-        \-->__raw_spin_unlock_irqrestore()  (following is the SMP case)
-          \-->do_raw_spin_unlock()
-            \-->arch_spin_unlock()
-              \-->nudge_writes()
-                \-->mb()
-                  \-->wbflush()
-                    \-->__wbflush()
-
-In previous code __wbflush() is initialized in plat_mem_setup(), but
-cgroup_init_early() is called before plat_mem_setup(). Therefore, In
-this patch we make changes to avoid boot failure.
-
+Signed-off-by: Jie Chen <chenj@lemote.com>
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
+Cc: alsa-devel@alsa-project.org
 ---
- arch/mips/loongson/common/init.c       |    5 +
- arch/mips/loongson/common/setup.c      |    8 +-
- arch/mips/loongson/loongson-3/Makefile |    2 +
- arch/mips/loongson/loongson-3/smp.c    |  278 ++++++++++++++++++++++++++++++++
- arch/mips/loongson/loongson-3/smp.h    |   24 +++
- 5 files changed, 312 insertions(+), 5 deletions(-)
- create mode 100644 arch/mips/loongson/loongson-3/smp.c
- create mode 100644 arch/mips/loongson/loongson-3/smp.h
+ include/linux/pci_ids.h        |    2 ++
+ sound/pci/hda/patch_conexant.c |   24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mips/loongson/common/init.c b/arch/mips/loongson/common/init.c
-index 1c29b19..30d20ad 100644
---- a/arch/mips/loongson/common/init.c
-+++ b/arch/mips/loongson/common/init.c
-@@ -12,6 +12,8 @@
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index fc35260..b28270e 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2918,3 +2918,5 @@
+ #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
  
- #include <loongson.h>
+ #define PCI_VENDOR_ID_OCZ		0x1b85
++
++#define PCI_VENDOR_ID_LEMOTE		0x1c06
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 1436118..b7de368 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4414,6 +4414,8 @@ static const struct hda_codec_ops cx_auto_patch_ops = {
+ enum {
+ 	CXT_PINCFG_LENOVO_X200,
+ 	CXT_PINCFG_LENOVO_TP410,
++	CXT_PINCFG_LEMOTE_A1004,
++	CXT_PINCFG_LEMOTE_A1205,
+ 	CXT_FIXUP_STEREO_DMIC,
+ };
  
-+extern struct plat_smp_ops loongson3_smp_ops;
-+
- /* Loongson CPU address windows config space base address */
- unsigned long __maybe_unused _loongson_addrwincfg_base;
+@@ -4441,6 +4443,18 @@ static const struct hda_pintbl cxt_pincfg_lenovo_tp410[] = {
+ 	{}
+ };
  
-@@ -33,6 +35,9 @@ void __init prom_init(void)
- 
- 	/*init the uart base address */
- 	prom_init_uart_base();
-+#if defined(CONFIG_SMP)
-+	register_smp_ops(&loongson3_smp_ops);
-+#endif
- }
- 
- void __init prom_free_prom_memory(void)
-diff --git a/arch/mips/loongson/common/setup.c b/arch/mips/loongson/common/setup.c
-index 27d826b..464cc5a 100644
---- a/arch/mips/loongson/common/setup.c
-+++ b/arch/mips/loongson/common/setup.c
-@@ -18,9 +18,6 @@
- #include <linux/screen_info.h>
- #endif
- 
--void (*__wbflush)(void);
--EXPORT_SYMBOL(__wbflush);
--
- static void wbflush_loongson(void)
- {
- 	asm(".set\tpush\n\t"
-@@ -32,10 +29,11 @@ static void wbflush_loongson(void)
- 	    ".set mips0\n\t");
- }
- 
-+void (*__wbflush)(void) = wbflush_loongson;
-+EXPORT_SYMBOL(__wbflush);
-+
- void __init plat_mem_setup(void)
- {
--	__wbflush = wbflush_loongson;
--
- #ifdef CONFIG_VT
- #if defined(CONFIG_VGA_CONSOLE)
- 	conswitchp = &vga_con;
-diff --git a/arch/mips/loongson/loongson-3/Makefile b/arch/mips/loongson/loongson-3/Makefile
-index b9968cd..70152b2 100644
---- a/arch/mips/loongson/loongson-3/Makefile
-+++ b/arch/mips/loongson/loongson-3/Makefile
-@@ -2,3 +2,5 @@
- # Makefile for Loongson-3 family machines
- #
- obj-y			+= irq.o
-+
-+obj-$(CONFIG_SMP)	+= smp.o
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
-new file mode 100644
-index 0000000..8923117
---- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -0,0 +1,278 @@
-+/*
-+ * Copyright (C) 2010, 2011, 2012, Lemote, Inc.
-+ * Author: Chen Huacai, chenhc@lemote.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/cpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/cpufreq.h>
-+#include <asm/processor.h>
-+#include <asm/time.h>
-+#include <asm/clock.h>
-+#include <asm/tlbflush.h>
-+#include <loongson.h>
-+
-+#include "smp.h"
-+
-+/* write a 64bit value to ipi register */
-+void loongson3_ipi_write64(uint64_t action, void * addr)
-+{
-+	*((uint64_t *)addr) = action;
++/* Lemote A1004/A1205 with cxt5066 */
++static const struct hda_pintbl cxt_pincfg_lemote[] = {
++	{ 0x1a, 0x90a10020 }, /* Internal mic */
++	{ 0x1b, 0x03a11020 }, /* External mic */
++	{ 0x1d, 0x400101f0 }, /* Not used */
++	{ 0x1e, 0x40a701f0 }, /* Not used */
++	{ 0x20, 0x404501f0 }, /* Not used */
++	{ 0x22, 0x404401f0 }, /* Not used */
++	{ 0x23, 0x40a701f0 }, /* Not used */
++	{}
 +};
 +
-+/* read a 64bit value from ipi register */
-+uint64_t loongson3_ipi_read64(void * addr)
-+{
-+	return *((uint64_t *)addr);
-+};
-+
-+/* write a 32bit value to ipi register */
-+void loongson3_ipi_write32(uint32_t action, void * addr)
-+{
-+	*((uint32_t *)addr) = action;
-+};
-+
-+/* read a 32bit value from ipi register */
-+uint32_t loongson3_ipi_read32(void * addr)
-+{
-+	return *((uint32_t *)addr);
-+};
-+
-+static void *ipi_set0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + SET0),
-+};
-+
-+static void *ipi_clear0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + CLEAR0),
-+};
-+
-+static void *ipi_status_regs0[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + STATUS0),
-+};
-+
-+static void *ipi_en0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + EN0),
-+};
-+
-+static volatile void *ipi_mailbox_buf[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core3_offset + BUF),
-+};
-+
-+/*
-+ * Simple enough, just poke the appropriate ipi register
-+ */
-+static void loongson3_send_ipi_single(int cpu, unsigned int action)
-+{
-+	loongson3_ipi_write32((u32)action, ipi_set0_regs[cpu]);
-+}
-+
-+static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int action)
-+{
-+	unsigned int i;
-+
-+	for_each_cpu(i, mask)
-+		loongson3_send_ipi_single(i, action);
-+}
-+
-+void loongson3_ipi_interrupt(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+	unsigned int action;
-+
-+	/* Load the ipi register to figure out what we're supposed to do */
-+	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
-+
-+	/* Clear the ipi register to clear the interrupt */
-+	loongson3_ipi_write32((u32)action, ipi_clear0_regs[cpu]);
-+
-+	if (action & SMP_RESCHEDULE_YOURSELF) {
-+		scheduler_ipi();
-+	}
-+
-+	if (action & SMP_CALL_FUNCTION) {
-+		smp_call_function_interrupt();
-+	}
-+}
-+
-+/*
-+ * SMP init and finish on secondary CPUs
-+ */
-+void __cpuinit loongson3_init_secondary(void)
-+{
-+	int i;
-+	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
-+			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
-+
-+	/* Set interrupt mask, but don't enable */
-+	change_c0_status(ST0_IM, imask);
-+
-+	for (i = 0; i < NR_CPUS; i++) {
-+		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
-+	}
-+}
-+
-+void __cpuinit loongson3_smp_finish(void)
-+{
-+	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
-+	local_irq_enable();
-+	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
-+	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-+			smp_processor_id(), read_c0_status());
-+}
-+
-+void __init loongson3_smp_setup(void)
-+{
-+	int i, num;
-+
-+	init_cpu_possible(cpu_none_mask);
-+	set_cpu_possible(0, true);
-+
-+	__cpu_number_map[0] = 0;
-+	__cpu_logical_map[0] = 0;
-+
-+	/* For unified kernel, NR_CPUS is the maximum possible value,
-+	 * nr_cpus_loongson is the really present value */
-+	for (i = 1, num = 0; i < nr_cpus_loongson; i++) {
-+		set_cpu_possible(i, true);
-+		__cpu_number_map[i] = ++num;
-+		__cpu_logical_map[num] = i;
-+	}
-+	printk(KERN_INFO "Detected %i available secondary CPU(s)\n", num);
-+}
-+
-+void __init loongson3_prepare_cpus(unsigned int max_cpus)
-+{
-+}
-+
-+/*
-+ * Setup the PC, SP, and GP of a secondary processor and start it runing!
-+ */
-+void __cpuinit loongson3_boot_secondary(int cpu, struct task_struct *idle)
-+{
-+	volatile unsigned long startargs[4];
-+
-+	printk(KERN_INFO "Booting CPU#%d...\n", cpu);
-+
-+	/* startargs[] are initial PC, SP and GP for secondary CPU */
-+	startargs[0] = (unsigned long)&smp_bootstrap;
-+	startargs[1] = (unsigned long)__KSTK_TOS(idle);
-+	startargs[2] = (unsigned long)task_thread_info(idle);
-+	startargs[3] = 0;
-+
-+	printk(KERN_DEBUG "CPU#%d, func_pc=%lx, sp=%lx, gp=%lx\n",
-+			cpu, startargs[0], startargs[1], startargs[2]);
-+
-+	loongson3_ipi_write64(startargs[3], (void *)(ipi_mailbox_buf[cpu]+0x18));
-+	loongson3_ipi_write64(startargs[2], (void *)(ipi_mailbox_buf[cpu]+0x10));
-+	loongson3_ipi_write64(startargs[1], (void *)(ipi_mailbox_buf[cpu]+0x8));
-+	loongson3_ipi_write64(startargs[0], (void *)(ipi_mailbox_buf[cpu]+0x0));
-+}
-+
-+/*
-+ * Final cleanup after all secondaries booted
-+ */
-+void __init loongson3_cpus_done(void)
-+{
-+}
-+
-+struct plat_smp_ops loongson3_smp_ops = {
-+	.send_ipi_single = loongson3_send_ipi_single,
-+	.send_ipi_mask = loongson3_send_ipi_mask,
-+	.init_secondary = loongson3_init_secondary,
-+	.smp_finish = loongson3_smp_finish,
-+	.cpus_done = loongson3_cpus_done,
-+	.boot_secondary = loongson3_boot_secondary,
-+	.smp_setup = loongson3_smp_setup,
-+	.prepare_cpus = loongson3_prepare_cpus,
-+};
-diff --git a/arch/mips/loongson/loongson-3/smp.h b/arch/mips/loongson/loongson-3/smp.h
-new file mode 100644
-index 0000000..dc9ce69
---- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.h
-@@ -0,0 +1,24 @@
-+/* for Loongson-3A smp support */
-+
-+/* 4 groups(nodes) in maximum in numa case */
-+#define  smp_core_group0_base    0x900000003ff01000
-+#define  smp_core_group1_base    0x900010003ff01000
-+#define  smp_core_group2_base    0x900020003ff01000
-+#define  smp_core_group3_base    0x900030003ff01000
-+
-+/* 4 cores in each group(node) */
-+#define  smp_core0_offset  0x000
-+#define  smp_core1_offset  0x100
-+#define  smp_core2_offset  0x200
-+#define  smp_core3_offset  0x300
-+
-+/* ipi registers offsets */
-+#define  STATUS0  0x00
-+#define  EN0      0x04
-+#define  SET0     0x08
-+#define  CLEAR0   0x0c
-+#define  STATUS1  0x10
-+#define  MASK1    0x14
-+#define  SET1     0x18
-+#define  CLEAR1   0x1c
-+#define  BUF      0x20
+ static const struct hda_fixup cxt_fixups[] = {
+ 	[CXT_PINCFG_LENOVO_X200] = {
+ 		.type = HDA_FIXUP_PINS,
+@@ -4450,6 +4464,14 @@ static const struct hda_fixup cxt_fixups[] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = cxt_pincfg_lenovo_tp410,
+ 	},
++	[CXT_PINCFG_LEMOTE_A1004] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = cxt_pincfg_lemote,
++	},
++	[CXT_PINCFG_LEMOTE_A1205] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = cxt_pincfg_lemote,
++	},
+ 	[CXT_FIXUP_STEREO_DMIC] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cxt_fixup_stereo_dmic,
+@@ -4467,6 +4489,8 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_LEMOTE, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_LEMOTE, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205),
+ 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
+ 	{}
 -- 
 1.7.7.3
 
