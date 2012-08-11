@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab2HKTPl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 15:15:41 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62489 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab2HKTPi (ORCPT
+	id S1754573Ab2HKTWc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 15:22:32 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40009 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2HKTW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 15:15:38 -0400
-Date: Sat, 11 Aug 2012 21:15:53 +0200
+	Sat, 11 Aug 2012 15:22:27 -0400
+Date: Sat, 11 Aug 2012 21:22:47 +0200
 From: Daniel Vetter <daniel@ffwll.ch>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Giacomo Comes <comes@naic.edu>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drm/i915: Fix blank panel at reopening lid
-Message-ID: <20120811191553.GA5132@phenom.ffwll.local>
-Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
-	Hugh Dickins <hughd@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Giacomo Comes <comes@naic.edu>,
-	Paulo Zanoni <paulo.r.zanoni@intel.com>,
-	linux-kernel@vger.kernel.org
-References: <s5h3941ke2p.wl%tiwai@suse.de>
- <alpine.LSU.2.00.1208052113530.1300@eggly.anvils>
- <CAKMK7uHZ3F9neO6=ZX2MFLzYmincPeEF23udgZ-0YJ0R+WHEkg@mail.gmail.com>
- <alpine.LSU.2.00.1208061122060.1425@eggly.anvils>
- <s5h1ujfyn39.wl%tiwai@suse.de>
- <CAKMK7uF_5K6d=xw7SsRJqw7dg5ca6HMdf3jvsQcQqhmSNLkaww@mail.gmail.com>
- <s5hpq6yyke5.wl%tiwai@suse.de>
- <alpine.LSU.2.00.1208101145440.2648@eggly.anvils>
- <s5hvcgq7wpp.wl%tiwai@suse.de>
- <s5hsjbt9as5.wl%tiwai@suse.de>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        sumit.semwal@linaro.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 2/4] dma-fence: dma-buf synchronization
+ (v8 )
+Message-ID: <20120811192247.GB5132@phenom.ffwll.local>
+Mail-Followup-To: Rob Clark <rob.clark@linaro.org>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	sumit.semwal@linaro.org, linaro-mm-sig@lists.linaro.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	linux-media@vger.kernel.org
+References: <20120810145728.5490.44707.stgit@patser.local>
+ <20120810145750.5490.5639.stgit@patser.local>
+ <20120810202916.GI5738@phenom.ffwll.local>
+ <CAF6AEGvzaJmVmnZmEp0QBfja8Vzb0mpLa_2J6bdUZj=fgDAHVg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5hsjbt9as5.wl%tiwai@suse.de>
+In-Reply-To: <CAF6AEGvzaJmVmnZmEp0QBfja8Vzb0mpLa_2J6bdUZj=fgDAHVg@mail.gmail.com>
 X-Operating-System: Linux phenom 3.4.0-rc3+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 08:56:42AM +0200, Takashi Iwai wrote:
-> When you reopen the lid on a laptop with PCH, the panel suddenly goes
-> blank sometimes.  It seems because BLC_PWM_CPU_CTL register is cleared
-> to zero when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 registers are
-> enabled.
+On Sat, Aug 11, 2012 at 10:14:40AM -0500, Rob Clark wrote:
+> On Fri, Aug 10, 2012 at 3:29 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Fri, Aug 10, 2012 at 04:57:52PM +0200, Maarten Lankhorst wrote:
+> >> +
+> >> +     if (!ret) {
+> >> +             cb->base.flags = 0;
+> >> +             cb->base.func = __dma_fence_wake_func;
+> >> +             cb->base.private = priv;
+> >> +             cb->fence = fence;
+> >> +             cb->func = func;
+> >> +             __add_wait_queue(&fence->event_queue, &cb->base);
+> >> +     }
+> >> +     spin_unlock_irqrestore(&fence->event_queue.lock, flags);
+> >> +
+> >> +     return ret;
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(dma_fence_add_callback);
+> >
+> > I think for api completenes we should also have a
+> > dma_fence_remove_callback function.
 > 
-> This patch fixes the problem by moving the call of the function setting
-> BLC_PWM_CPU_CTL after enabling other two registers.
+> We did originally but Maarten found it was difficult to deal with
+> properly when the gpu's hang.  I think his alternative was just to
+> require the hung driver to signal the fence.  I had kicked around the
+> idea of a dma_fence_cancel() alternative to signal that could pass an
+> error thru to the waiting driver.. although not sure if the other
+> driver could really do anything differently at that point.
+
+Well, the idea is not to cancel all callbacks, but just a single one, in
+case a driver wants to somehow abort the wait. E.g. when the own gpu dies
+I guess we should clear all these fence callbacks so that they can't
+clobber the hw state after the reset.
+
+> >> +
+> >> +/**
+> >> + * dma_fence_wait - wait for a fence to be signaled
+> >> + *
+> >> + * @fence:   [in]    The fence to wait on
+> >> + * @intr:    [in]    if true, do an interruptible wait
+> >> + * @timeout: [in]    absolute time for timeout, in jiffies.
+> >
+> > I don't quite like this, I think we should keep the styl of all other
+> > wait_*_timeout functions and pass the arg as timeout in jiffies (and also
+> > the same return semantics). Otherwise well have funny code that needs to
+> > handle return values differently depending upon whether it waits upon a
+> > dma_fence or a native object (where it would us the wait_*_timeout
+> > functions directly).
 > 
-> Reported-and-tested-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
-> v1->v2: add comments, fixed changelog
-Picked up for -fixes, thanks for the patch.
--Daniel
+> We did start out this way, but there was an ugly jiffies roll-over
+> problem that was difficult to deal with properly.  Using an absolute
+> time avoided the problem.
+
+Well, as-is the api works differently than all the other _timeout apis
+I've seen in the kernel, which makes it confusing. Also, I don't quite see
+what jiffies wraparound issue there is?
+
+> > Also, I think we should add the non-_timeout variants, too, just for
+> > completeness.
+
+This request here has the same reasons, essentially: If we offer a
+dma_fence wait api that matches the usual wait apis closely, it's harder
+to get their usage wrong. I know that i915 has some major cludge for a
+wait_seqno interface internally, but that's no reason to copy that
+approach ;-)
+
+Cheers, Daniel
 -- 
 Daniel Vetter
 Mail: daniel@ffwll.ch
