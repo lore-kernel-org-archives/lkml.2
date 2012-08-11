@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab2HKLVC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 07:21:02 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54776 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab2HKLU7 (ORCPT
+	id S1754614Ab2HKLbf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 07:31:35 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51539 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754038Ab2HKLbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 07:20:59 -0400
+	Sat, 11 Aug 2012 07:31:33 -0400
+Message-ID: <50264287.9000900@gmail.com>
+Date: Sat, 11 Aug 2012 15:31:19 +0400
+From: Denis <yefremov.denis@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120810142602.12411.63440.stgit@localhost6.localdomain6>
-References: <20120810141517.12411.83398.stgit@localhost6.localdomain6>
-	<20120810142602.12411.63440.stgit@localhost6.localdomain6>
-Date: Sat, 11 Aug 2012 13:20:58 +0200
-Message-ID: <CALgW_8X_gSDG0GdoU4WShohsyhdXOXTh8o9KsYPFtnkzcJXpCQ@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] IPC: message queue copy feature introduced
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, eparis@parisplace.org, a.p.zijlstra@chello.nl,
-        arnd@arndb.de, hughd@google.com, linux-kernel@vger.kernel.org,
-        cmetcalf@tilera.com, yeohc@au1.ibm.com,
-        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
-        kosaki.motohiro@jp.fujitsu.com, hpa@zytor.com, casey@schaufler-ca.com,
-        sds@tycho.nsa.govjames.l.morris, devel@openvz.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: balbi@ti.com
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: otg: twl4030-usb: spin_unlock_irq in interrupt handler
+References: <1342856418-1451-1-git-send-email-yefremov.denis@gmail.com> <20120809093706.GM12174@arwen.pp.htv.fi>
+In-Reply-To: <20120809093706.GM12174@arwen.pp.htv.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
-
-2012/8/10 Stanislav Kinsbursky <skinsbursky@parallels.com>:
-> This patch is required for checkpoint/restore in userspace.
-> IOW, c/r requires some way to get all pending IPC messages without deleting
-> them from the queue (checkpoint can fail and in this case tasks will be resumed,
-> so queue have to be valid).
-> To achive this, new operation flag MSG_COPY for sys_msgrcv() system call was
-> introduced. Also, copy counter was added to msg_queue structure. It's set to
-> zero by default and increases by one on each copy operation and decreased by
-> one on each receive operation until reaches zero.
-
-Is msq->q_copy_cnt really necessary?
-As far as I can see user space needs the ability to read the n-th message.
-
-The implementation adds a state variable to the kernel, adds two
-automatic updates of the state into msgrcv() (an increase during
-MSG_COPY, a decrease during normal receives) and adds a msgctl() to
-set the state to a certain value.
-
-a) What about the simpler approach:
-- if MSG_COPY is set, then @mtype is interpreted as the number of the
-message that should be copied.
-  If there are less than @mtype messages, then -ENOMSG is returned.
-
-b) I do not understand the purpose of the decrease of msq->q_copy_cnt:
-Do you want to handle normal msgrcv() calls in parallel with
-msgrcv(|MSG_COPY) calls?
-I don't think that this will work:
-What if msq->q_copy_cnt is 1 and and msgrcv() call receives the 20th
-message in the queue?
-
---
-  Manfred
+On 09.08.2012 13:37, Felipe Balbi wrote:
+> Hi,
+>
+> I have pushed a patch which I think solves this issue. Can you test ?
+Hi,
+my patch is unneeded since this is a threaded interrupt handler. And it 
+runs with
+interrupt line masked globally on the controller(because of IRQF_ONESHOT).
+And I think that "sti" instruction can't reenable this line because it 
+is cpu related.
+The point was that if "local_irq_enable" is called in primary irq 
+handler or in
+request_irq handler you reenables (maybe accidentally) interrupts on the 
+cpu.
+Because after patch https://lkml.org/lkml/2010/3/25/434 these handlers 
+runs with
+interrupts disabled.
+Some time ago our static tool didn't make any difference between 
+ordinary and
+threaded interrupts handlers. At that time I didn't know it and didn't 
+check the
+code enough. So it was a false positive.
