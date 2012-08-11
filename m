@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2HKMwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 08:52:10 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56782 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753171Ab2HKMwG (ORCPT
+	id S1754701Ab2HKM5L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 08:57:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51969 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab2HKM5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 08:52:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344641012.22564.294.camel@haakon2.linux-iscsi.org>
-References: <1344641012.22564.294.camel@haakon2.linux-iscsi.org>
-Date: Sat, 11 Aug 2012 13:52:04 +0100
-Message-ID: <CAJSP0QXX=4etJ_uGYFzXQ0eEE0M+Ude7ha0aH5SaX1oEUvQoLA@mail.gmail.com>
-Subject: Re: virtio-scsi <-> vhost multi lun/adapter performance results with 3.6-rc0
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-devel <kvm@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Christoph Hellwig <hch@lst.de>, hare@suse.de,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 11 Aug 2012 08:57:06 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 00/11] pinctrl: mvebu: pinctrl driver
+Date: Sat, 11 Aug 2012 14:56:38 +0200
+Message-Id: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 12:23 AM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
-> Using a KVM guest with 32x vCPUs and 4G memory, the results for 4x
-> random I/O now look like:
->
-> workload         | jobs | 25% write / 75% read | 75% write / 25% read
-> -----------------|------|----------------------|---------------------
-> 1x rd_mcp LUN    |   8  |     ~155K IOPs       |      ~145K IOPs
-> 16x rd_mcp LUNs  |  16  |     ~315K IOPs       |      ~305K IOPs
-> 32x rd_mcp LUNs  |  16  |     ~425K IOPs       |      ~410K IOPs
->
-> The full fio randrw results for the six test cases are attached below.
-> Also, using a workload of fio numjobs > 16 currently makes performance
-> start to fall off pretty sharply regardless of the number of vCPUs..
->
-> So running a similar workload with loopback SCSI ports on bare-metal
-> produces ~1M random IOPs with 12x LUNs + numjobs=32.  At numjobs=16 here
-> with vhost the 16x LUN configuration ends up being in the range of ~310K
-> IOPs for the current sweet spot..
+This patch set adds a core pinctrl driver for Marvell MVEBU SoCs and
+SoC specific stubs for Armada 370, Armada XP, Dove, and Kirkwood.
+The SoC specific stubs use the pinctrl-mvebu core driver that handles
+pinctrl API and register accesses for common pinctrl registers.
 
-This makes me wonder what a comparison against baremetal looks like
-and the perf top, mpstat, and kvm_stat results on the host.
+As especially Dove has some pinctrl registers that do not match the
+common pinctrl register layout the core driver has been extended by
+some callbacks to allow uncommon Dove pinctrl registers.
 
-Stefan
+DT binding documentation is added for all supported SoCs but as
+Dove and Kirkwood are not yet ready for full DT support, the pinctrl
+driver is only activated for Armada 370 and XP.
+
+The driver has been tested on Dove, 88f6281 variant of Kirkwood,
+Armada 370, and XP.
+
+Sebastian Hesselbarth (3):
+  pinctrl: mvebu: pinctrl driver core
+  pinctrl: mvebu: dove pinctrl driver
+  pinctrl: mvebu: kirkwood pinctrl driver
+
+Thomas Petazzoni (8):
+  pinctrl: mvebu: add pinctrl driver for Armada 370
+  pinctrl: mvebu: add pinctrl driver for Armada XP
+  ARM: mvebu: add pinctrl device in DT for Armada 370/XP SoCs
+  ARM: mvebu: Add pinctrl support to Armada XP SoCs
+  ARM: mvebu: Add pinctrl support to Armada 370 SoC
+  ARM: mvebu: adjust Armada XP evaluation board DTS
+  arm: mvebu: enable PINCTRL usage
+  arm: mvebu: add pinctrl support in defconfig
+
+ .../pinctrl/marvell,armada-370-pinctrl.txt         |   95 +++
+ .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |  100 +++
+ .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   71 ++
+ .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |  279 +++++++
+ .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   46 ++
+ arch/arm/Kconfig                                   |    3 +
+ arch/arm/boot/dts/armada-370-xp.dtsi               |    7 +
+ arch/arm/boot/dts/armada-370.dtsi                  |    4 +
+ arch/arm/boot/dts/armada-xp-db.dts                 |    4 +-
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi           |   27 +
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi           |   27 +
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi           |   27 +
+ arch/arm/configs/mvebu_defconfig                   |    2 +
+ drivers/pinctrl/Kconfig                            |   34 +
+ drivers/pinctrl/Makefile                           |    5 +
+ drivers/pinctrl/pinctrl-armada-370.c               |  421 +++++++++++
+ drivers/pinctrl/pinctrl-armada-xp.c                |  466 ++++++++++++
+ drivers/pinctrl/pinctrl-dove.c                     |  622 ++++++++++++++++
+ drivers/pinctrl/pinctrl-kirkwood.c                 |  460 ++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.c                    |  758 ++++++++++++++++++++
+ drivers/pinctrl/pinctrl-mvebu.h                    |  175 +++++
+ 21 files changed, 3631 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78230.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78260.dtsi
+ create mode 100644 arch/arm/boot/dts/armada-xp-mv78460.dtsi
+ create mode 100644 drivers/pinctrl/pinctrl-armada-370.c
+ create mode 100644 drivers/pinctrl/pinctrl-armada-xp.c
+ create mode 100644 drivers/pinctrl/pinctrl-dove.c
+ create mode 100644 drivers/pinctrl/pinctrl-kirkwood.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.c
+ create mode 100644 drivers/pinctrl/pinctrl-mvebu.h
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+---
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lior Amsalem <alior@marvell.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+-- 
+1.7.10.4
+
