@@ -1,125 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2HKKh0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 06:37:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47096 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2HKKgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 06:36:00 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v2 1/6] ARM: dove: unify clock setup
-Date: Sat, 11 Aug 2012 12:35:21 +0200
-Message-Id: <1344681326-17946-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752796Ab2HKKny (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 06:43:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37805 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab2HKKnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 06:43:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,749,1336374000"; 
+   d="scan'208";a="197649686"
+Date: Sat, 11 Aug 2012 03:43:52 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Betty Dall <betty.dall@hp.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor ID
+ first
+Message-ID: <20120811104352.GI2644@tassilo.jf.intel.com>
+References: <1344464246-14618-1-git-send-email-andi@firstfloor.org>
+ <1344551691.10751.12.camel@ejdallLaptop>
+ <50259FCE.4070205@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50259FCE.4070205@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch synchronizes the clock setup of dove with other orion-based
-platforms.
+On Fri, Aug 10, 2012 at 04:57:02PM -0700, H. Peter Anvin wrote:
+> On 08/09/2012 03:34 PM, Betty Dall wrote:
+> > 
+> > I thought this should be a break instead of a continue since the code
+> > does a break if the class is 0xffffffff. If the function does not have a
+> > valid VENDOR_ID, then the remaining function numbers do not have to be
+> > scanned because functions are required to be implemented in order (no
+> > skipping a function number.)
+> > 
+> 
+> Is that true?  This is certainly not true in PCI in general: there is
+> required to be a function 0, but there is no guarantee that functions
+> 1-7 don't have gaps.
 
-In dove_find_tclk there was a note about DOVE_SAMPLE_HI/LO register to
-detect tclk. While it might be possible to set a different tclk frequency
-with reset strapping the Dove datasheets don't tell anything about tclk
-frequency here. Therefore, I removed that comment.
+These scans are for special known devices, presumably true for them.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rabeeh Khoury <rabeeh@solid-run.com>
-Cc: Ian Molton <ian.molton@codethink.co.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Maen Suleiman <maen@marvell.com>
-Cc: Olof Johansson <olof@lixom.net>
+Anwyays if you don't like it please use v1 of the patch.
 
-v2: remove useless clk_prepare_enable for fixed rate tclk
----
- arch/arm/mach-dove/common.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index 4db5de5..b6f092c 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -33,8 +33,6 @@
- #include <plat/addr-map.h>
- #include "common.h"
- 
--static int get_tclk(void);
--
- /*****************************************************************************
-  * I/O Address Mapping
-  ****************************************************************************/
-@@ -70,12 +68,13 @@ void __init dove_map_io(void)
- /*****************************************************************************
-  * CLK tree
-  ****************************************************************************/
-+static int dove_tclk;
- static struct clk *tclk;
- 
--static void __init clk_init(void)
-+static void __init dove_clk_init(void)
- {
- 	tclk = clk_register_fixed_rate(NULL, "tclk", NULL, CLK_IS_ROOT,
--				       get_tclk());
-+				       dove_tclk);
- 
- 	orion_clkdev_init(tclk);
- }
-@@ -187,16 +186,16 @@ void __init dove_init_early(void)
- 	orion_time_set_base(TIMER_VIRT_BASE);
- }
- 
--static int get_tclk(void)
-+static int __init dove_find_tclk(void)
- {
--	/* use DOVE_RESET_SAMPLE_HI/LO to detect tclk */
- 	return 166666667;
- }
- 
- static void __init dove_timer_init(void)
- {
-+	dove_tclk = dove_find_tclk();
- 	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
--			IRQ_DOVE_BRIDGE, get_tclk());
-+			IRQ_DOVE_BRIDGE, dove_tclk);
- }
- 
- struct sys_timer dove_timer = {
-@@ -284,8 +283,8 @@ void __init dove_sdio1_init(void)
- 
- void __init dove_init(void)
- {
--	printk(KERN_INFO "Dove 88AP510 SoC, ");
--	printk(KERN_INFO "TCLK = %dMHz\n", (get_tclk() + 499999) / 1000000);
-+	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
-+		(dove_tclk + 499999) / 1000000);
- 
- #ifdef CONFIG_CACHE_TAUROS2
- 	tauros2_init();
-@@ -293,7 +292,7 @@ void __init dove_init(void)
- 	dove_setup_cpu_mbus();
- 
- 	/* Setup root of clk tree */
--	clk_init();
-+	dove_clk_init();
- 
- 	/* internal devices that every board has */
- 	dove_rtc_init();
+-Andi
 -- 
-1.7.10.4
-
+ak@linux.intel.com -- Speaking for myself only
