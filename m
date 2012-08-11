@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab2HKWlx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 18:41:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61798 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab2HKWlw convert rfc822-to-8bit (ORCPT
+	id S1754718Ab2HKW4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 18:56:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33469 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2HKW4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 18:41:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,752,1336374000"; 
-   d="scan'208";a="133068141"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Naoya Horiguchi <nhoriguc@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] HWPOISON: improve handling/reporting of memory
- error on dirty pagecache
-Thread-Topic: [PATCH 3/3] HWPOISON: improve handling/reporting of memory
- error on dirty pagecache
-Thread-Index: AQHNd0EDhdRZgJSR4E+O42RL++g+1ZdVNO6A
-Date: Sat, 11 Aug 2012 22:41:49 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19375BFE@ORSMSX104.amr.corp.intel.com>
-References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1344634913-13681-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1344634913-13681-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 11 Aug 2012 18:56:14 -0400
+Date: Sat, 11 Aug 2012 15:56:09 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-usb@vger.kernel.org, Matthias Urlichs <smurf@smurf.noris.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [Regression, post-3.5] NULL pointer dereference in usb-wwan
+ after resume from system suspend
+Message-ID: <20120811225609.GA20031@kroah.com>
+References: <201208120039.19463.rjw@sisk.pl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208120039.19463.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> dirty pagecache error recoverable under some conditions. Consider that
-> if there is a copy of the corrupted dirty pagecache on user buffer and
-> you write() over the error page with the copy data, then we can ignore
-> the effect of the error because no one consumes the corrupted data.
+On Sun, Aug 12, 2012 at 12:39:19AM +0200, Rafael J. Wysocki wrote:
+> Hi,
+> 
+> The usb-wwan driver triggers a NULL pointer dereference oops after resume
+> from system suspend on my Toshiba Portege R500, but since that driver
+> hasn't changed since v3.5 and it is only used by the option driver, I suppose
+> that the latter is responsible for that.
+> 
+> This is a clear regression from v3.5, it hasn't happened ever before.
+> 
+> I'll collect some details tomorrow.
 
-This sounds like a quite rare corner case. If the page is already dirty, it is
-most likely because someone recently did a write(2) (or touched it via
-mmap(2)). Now you are hoping that some process is going to write the
-same page again.  Do you have an application in mind where this would
-be common. Remember that the write(2), memory-error, new write(2)
-have to happen close together (before Linux decides to write out the
-dirty page).
+Known bug, we have a fix for it in the usb-next tree now, it will be
+going to Linus in a few days.
 
--Tony
+If you want, I can dig up the patch for it and send it to you, if it's
+stopping other things from working for you at the moment.
 
+thanks,
+
+greg k-h
