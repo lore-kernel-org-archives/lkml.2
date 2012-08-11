@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760544Ab2HKB3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:29:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57430 "EHLO bear.ext.ti.com"
+	id S932264Ab2HKBaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:30:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60265 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759527Ab2HKBZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:47 -0400
+	id S1758456Ab2HKBZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:25:40 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v2 18/22] ARM: add virt_to_idmap for interconnect aliasing
-Date: Fri, 10 Aug 2012 21:25:01 -0400
-Message-ID: <1344648306-15619-19-git-send-email-cyril@ti.com>
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [RFC v2 21/22] ARM: keystone: enable SMP on Keystone machines
+Date: Fri, 10 Aug 2012 21:25:04 -0400
+Message-ID: <1344648306-15619-22-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
 References: <1344648306-15619-1-git-send-email-cyril@ti.com>
@@ -23,75 +23,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vitaly Andrianov <vitalya@ti.com>
-
-On some PAE systems (e.g. TI Keystone), memory is above the 32-bit addressible
-limit, and the interconnect provides an aliased view of parts of physical
-memory in the 32-bit addressible space.  This alias is strictly for boot time
-usage, and is not otherwise usable because of coherency limitations.
-
-On such systems, the idmap mechanism needs to take this aliased mapping into
-account.  This patch introduces a virt_to_idmap() macro, which can be used on
-such sub-architectures to represent the interconnect supported boot time
-alias.  Most other systems would leave this macro untouched, i.e., do a simply
-virt_to_phys() and nothing more.
+This patch adds basic SMP support for Keystone machines.  Nothing very fancy
+here, just enough to get 4 CPUs booted up.  This does not include support for
+hotplug, etc.
 
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/include/asm/memory.h |    9 +++++++++
- arch/arm/kernel/smp.c         |    2 +-
- arch/arm/mm/idmap.c           |    4 ++--
- 3 files changed, 12 insertions(+), 3 deletions(-)
+ arch/arm/Kconfig                    |    1 +
+ arch/arm/configs/keystone_defconfig |    2 +
+ arch/arm/mach-keystone/Makefile     |    1 +
+ arch/arm/mach-keystone/keystone.c   |    3 ++
+ arch/arm/mach-keystone/keystone.h   |   23 +++++++++++
+ arch/arm/mach-keystone/platsmp.c    |   74 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 104 insertions(+)
+ create mode 100644 arch/arm/mach-keystone/keystone.h
+ create mode 100644 arch/arm/mach-keystone/platsmp.c
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index e5d0cc8..59f101c 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -257,6 +257,15 @@ static inline void *phys_to_virt(phys_addr_t x)
- #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index f1b8aa0..37b4e9c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -416,6 +416,7 @@ config ARCH_KEYSTONE
+ 	select SPARSE_IRQ
+ 	select NEED_MACH_MEMORY_H
+ 	select HAVE_SCHED_CLOCK
++	select HAVE_SMP
+ 	help
+ 	  Support for boards based on the Texas Instruments Keystone family of
+ 	  SoCs.
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+index 7f2a04b..5f71e66 100644
+--- a/arch/arm/configs/keystone_defconfig
++++ b/arch/arm/configs/keystone_defconfig
+@@ -1,7 +1,9 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_BLK_DEV_INITRD=y
+ CONFIG_ARCH_KEYSTONE=y
++CONFIG_SMP=y
+ CONFIG_ARM_ARCH_TIMER=y
++CONFIG_NR_CPUS=4
+ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+ CONFIG_VFP=y
+diff --git a/arch/arm/mach-keystone/Makefile b/arch/arm/mach-keystone/Makefile
+index d4671d5..3f6b8ab 100644
+--- a/arch/arm/mach-keystone/Makefile
++++ b/arch/arm/mach-keystone/Makefile
+@@ -1 +1,2 @@
+ obj-y					:= keystone.o
++obj-$(CONFIG_SMP)			+= platsmp.o
+diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
+index 702c184..6a8ece9 100644
+--- a/arch/arm/mach-keystone/keystone.c
++++ b/arch/arm/mach-keystone/keystone.c
+@@ -26,6 +26,8 @@
+ #include <asm/arch_timer.h>
+ #include <asm/hardware/gic.h>
  
- /*
-+ * These are for systems that have a hardware interconnect supported alias of
-+ * physical memory for idmap purposes.  Most cases should leave these
-+ * untouched.
-+ */
-+#ifndef virt_to_idmap
-+#define virt_to_idmap(x) virt_to_phys(x)
-+#endif
++#include "keystone.h"
 +
+ static struct map_desc io_desc[] = {
+ 	{
+ 		.virtual        = 0xfe800000UL,
+@@ -73,6 +75,7 @@ static const char *keystone_match[] __initconst = {
+ };
+ 
+ DT_MACHINE_START(KEYSTONE, "Keystone")
++	smp_ops(keystone_smp_ops)
+ 	.map_io		= keystone_map_io,
+ 	.init_irq	= keystone_init_irq,
+ 	.timer		= &keystone_timer,
+diff --git a/arch/arm/mach-keystone/keystone.h b/arch/arm/mach-keystone/keystone.h
+new file mode 100644
+index 0000000..71bd0f4
+--- /dev/null
++++ b/arch/arm/mach-keystone/keystone.h
+@@ -0,0 +1,23 @@
 +/*
-  * Virtual <-> DMA view memory address translations
-  * Again, these are *only* valid on the kernel direct mapped RAM
-  * memory.  Use of these is *deprecated* (and that doesn't mean
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9831716..628f895 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -62,7 +62,7 @@ static DECLARE_COMPLETION(cpu_running);
- 
- static unsigned long get_arch_pgd(pgd_t *pgd)
- {
--	phys_addr_t pgdir = virt_to_phys(pgd);
-+	phys_addr_t pgdir = virt_to_idmap(pgd);
- 	BUG_ON(pgdir & ARCH_PGD_MASK);
- 	return pgdir >> ARCH_PGD_SHIFT;
- }
-diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
-index ab88ed4..919cb6e 100644
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -85,8 +85,8 @@ static int __init init_static_idmap(void)
- 		return -ENOMEM;
- 
- 	/* Add an identity mapping for the physical address of the section. */
--	idmap_start = virt_to_phys((void *)__idmap_text_start);
--	idmap_end = virt_to_phys((void *)__idmap_text_end);
-+	idmap_start = virt_to_idmap((void *)__idmap_text_start);
-+	idmap_end = virt_to_idmap((void *)__idmap_text_end);
- 
- 	pr_info("Setting up static identity map for 0x%llx - 0x%llx\n",
- 		(long long)idmap_start, (long long)idmap_end);
++ * Copyright 2010-2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef __KEYSTONE_H__
++#define __KEYSTONE_H__
++
++extern struct smp_ops keystone_smp_ops;
++extern void secondary_startup(void);
++
++#endif /* __KEYSTONE_H__ */
+diff --git a/arch/arm/mach-keystone/platsmp.c b/arch/arm/mach-keystone/platsmp.c
+new file mode 100644
+index 0000000..dbe7601
+--- /dev/null
++++ b/arch/arm/mach-keystone/platsmp.c
+@@ -0,0 +1,74 @@
++/*
++ * Copyright 2012 Texas Instruments, Inc.
++ *
++ * Based on platsmp.c, Copyright 2010-2011 Calxeda, Inc.
++ * Based on platsmp.c, Copyright (C) 2002 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/init.h>
++#include <linux/smp.h>
++#include <linux/io.h>
++
++#include <asm/smp_plat.h>
++#include <asm/smp_ops.h>
++#include <asm/hardware/gic.h>
++#include <asm/cacheflush.h>
++#include <asm/memory.h>
++
++#include "keystone.h"
++
++static void __init keystone_smp_init_cpus(void)
++{
++	unsigned int i, ncores;
++
++	ncores = 4;
++
++	/* sanity check */
++	if (ncores > NR_CPUS) {
++		pr_warn("restricted to %d cpus\n", NR_CPUS);
++		ncores = NR_CPUS;
++	}
++
++	for (i = 0; i < ncores; i++)
++		set_cpu_possible(i, true);
++
++	set_smp_cross_call(gic_raise_softirq);
++}
++
++static void __init keystone_smp_prepare_cpus(unsigned int max_cpus)
++{
++	/* nothing for now */
++}
++
++static void __cpuinit keystone_secondary_init(unsigned int cpu)
++{
++	gic_secondary_init(0);
++}
++
++static int __cpuinit
++keystone_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	unsigned long *ptr;
++	
++	ptr = phys_to_virt(0x800001f0);
++	ptr[cpu] = virt_to_idmap(&secondary_startup);
++	__cpuc_flush_dcache_area(ptr, sizeof(ptr) * 4);
++
++	return 0;
++}
++
++struct smp_ops keystone_smp_ops __initdata = {
++	smp_init_ops(keystone)
++	smp_secondary_ops(keystone)
++};
 -- 
 1.7.9.5
 
