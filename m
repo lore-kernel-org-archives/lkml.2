@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2HKAMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 20:12:32 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33680 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab2HKAM3 (ORCPT
+	id S1757640Ab2HKAlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 20:41:00 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:56623 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751831Ab2HKAk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 20:12:29 -0400
-From: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
-To: romieu@fr.zoreil.com, nic_swsd@realtek.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
-Subject: [PATCH 1/1] 	r8169: Removed unused macros from r8169.c
-Date: Fri, 10 Aug 2012 07:33:11 -0700
-Message-Id: <1344609191-5229-1-git-send-email-dayanidhi.sreenivasan@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <r8169-Removed-unused-macros-from-r8169.c>
-References: <r8169-Removed-unused-macros-from-r8169.c>
+	Fri, 10 Aug 2012 20:40:58 -0400
+Message-ID: <5025A9C6.1080207@xenotime.net>
+Date: Fri, 10 Aug 2012 17:39:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Salar Ali Mumtaz <salaarali@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
+References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net> <50213D69.3060904@gmail.com> <5021486B.6020907@xenotime.net> <50240770.6070207@gmail.com>
+In-Reply-To: <50240770.6070207@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/09/2012 11:54 AM, Salar Ali Mumtaz wrote:
 
-Signed-off-by: Dayanidhi Sreenivasan <dayanidhi.sreenivasan@gmail.com>
----
- drivers/net/ethernet/realtek/r8169.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+> On 12-08-07 12:55 PM, Randy Dunlap wrote:
+> 
+>> In Kconfig language, is "" the same as 'n' ?
+>> If so, I'm OK with your proposal above.
+>>
+> 
+> 
+> So a colleague of mine tested this and came up with a conclusion that expressions in Kconfig can only deal with boolean or tristate operands and no casting is made with strings. Using any string operand as part of a boolean expression is simply a type error and Kconfig probably marks such operand as 'n', regardless of its value.
+> 
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b47d5b3..60b45ca 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -78,23 +78,18 @@ static const int multicast_filter_limit = 32;
- 
- #define MAX_READ_REQUEST_SHIFT	12
- #define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
--#define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
- #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
- 
- #define R8169_REGS_SIZE		256
- #define R8169_NAPI_WEIGHT	64
- #define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
- #define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
--#define RX_BUF_SIZE	1536	/* Rx Buffer size */
- #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
- #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
- 
- #define RTL8169_TX_TIMEOUT	(6*HZ)
- #define RTL8169_PHY_TIMEOUT	(10*HZ)
- 
--#define RTL_EEPROM_SIG		cpu_to_le32(0x8129)
--#define RTL_EEPROM_SIG_MASK	cpu_to_le32(0xffff)
--#define RTL_EEPROM_SIG_ADDR	0x0000
- 
- /* write/read MMIO register */
- #define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
+
+My question was about FRV, which is a boolean,
+but still did not display as 'n' in your example.
+
+
 -- 
-1.7.5.4
-
+~Randy
