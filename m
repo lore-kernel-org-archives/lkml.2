@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab2HKRgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 13:36:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64175 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab2HKRgW (ORCPT
+	id S1753594Ab2HKR6K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 13:58:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63622 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab2HKR6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 13:36:22 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <linux-ext4@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Cc: <ap@solarrain.com>
-Subject: 3.4->(3.5.1 || 3.6-rc1) => can no longer mount 60TB ext4 filesystem
-Date: Sat, 11 Aug 2012 13:36:19 -0400
-Message-ID: <005501cd77e7$d222d020$76687060$@lucidpixels.com>
+	Sat, 11 Aug 2012 13:58:05 -0400
+Date: Sat, 11 Aug 2012 10:57:59 -0700
+From: Jerry Snitselaar <dev@snitselaar.org>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: amwang@redhat.com, dyoung@redhat.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, xiyou.wangcong@gmail.com, hpa@zytor.com,
+        rjw@sisk.pl, yinghai.lu@oracle.com, tiwai@suse.de,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+Message-ID: <20120811175759.GA1814@cantor.Home>
+Reply-To: Jerry Snitselaar <dev@snitselaar.org>
+Mail-Followup-To: Takao Indoh <indou.takao@jp.fujitsu.com>,
+	amwang@redhat.com, dyoung@redhat.com, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, xiyou.wangcong@gmail.com, hpa@zytor.com,
+	rjw@sisk.pl, yinghai.lu@oracle.com, tiwai@suse.de,
+	kexec@lists.infradead.org
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com>
+ <5004D8BF.6050205@jp.fujitsu.com>
+ <500D20A1.1030800@redhat.com>
+ <500D340F.5080801@jp.fujitsu.com>
+ <1343145331.16290.45.camel@cr0>
+ <500F3B7C.70009@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac1358ontTKdJMg5Qm6TTJ4MVEu5ow==
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500F3B7C.70009@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed Jul 25 12, Takao Indoh wrote:
+> >Thanks for tracking this, Takao!
+> >
+> >I bet you are using x86_64 not x86 PAE? If so, could you try this patch
+> >https://patchwork.kernel.org/patch/1195751/
+> >? I already reviewed it.
+> 
+> Great, I applied it and now kdump works. Thanks!
+> 
+> Thanks,
+> Takao Indoh
+> 
 
-I upgrade to each new kernel release and with 3.5.1 (from 3.4) I can no
-longer mount my 60TB ext4 volume.
-If I boot back to 3.4, it works fine.
+This patch from Jacob Shin solves the problem, and seems like it might
+be a better solution.
 
-Details here:
-https://lkml.org/lkml/2012/8/10/205
+[PATCH 2/5] x86: find_early_table_space based on memory ranges that
+are being mapped
 
-Anything I can do besides testing each 3.5-rcX to find where the regression
-lies?
-
-Justin.
-
+https://lkml.org/lkml/2012/8/9/540
 
