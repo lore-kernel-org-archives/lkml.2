@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab2HKVO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 17:14:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28002 "EHLO mx1.redhat.com"
+	id S1754964Ab2HKWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 18:23:59 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34241 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab2HKVO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 17:14:57 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: improve handling/reporting of memory error on dirty pagecache
-Date: Sat, 11 Aug 2012 17:14:34 -0400
-Message-Id: <1344719674-7267-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <m21ujdd6it.fsf@firstfloor.org>
+	id S1752359Ab2HKWX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 18:23:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 14/15] sh: MTU2: Basic runtime PM support
+Date: Sun, 12 Aug 2012 00:29:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <201207291612.43138.rjw@sisk.pl> <201208060149.37972.rjw@sisk.pl> <CAMuHMdUFeS6HNFuKVDLrFEo0f5=jrufa4QoD+aeZJHJD1Q1xCQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdUFeS6HNFuKVDLrFEo0f5=jrufa4QoD+aeZJHJD1Q1xCQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208120029.52938.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, Aug 11, 2012 at 04:15:06AM -0700, Andi Kleen wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
-> I'm sceptical on the patch, but here's my review.
-
-Thank you for taking your time for the review.
-
-> >   - return -EHWPOISON when we access to the error-affected address with
-> >     read(), partial-page write(), fsync(),
-> 
-> Note that a lot of user space does not like new errnos (nothing in
-> strerror etc.). It's probably better to reuse some existing errno.
-
-I'm OK to use EIO if user space can know that it comes from memory errors.
-The reason why I thought that user space should distinguish it from IO errors
-is that the possible responses of user space for memory errors are different
-from those for IO errors, considering that we can recover from memory errors
-with overwriting. OTOH what user space can do for IO errors is to wait for
-IO devices to recover by itself and retry, to change the IO's target to
-another device, or something like that.
-
-> > @@ -270,6 +273,9 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
-> >  	if (end_byte < start_byte)
-> >  		return 0;
-> >  
-> > +	if (unlikely(hwpoison_file_range(mapping, start_byte, end_byte)))
-> > +		return -EHWPOISON;
+On Saturday, August 11, 2012, Geert Uytterhoeven wrote:
+> On Mon, Aug 6, 2012 at 1:49 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > @@ -341,8 +346,19 @@ static int __devinit sh_mtu2_probe(struc
+> >         if (ret) {
+> >                 kfree(p);
+> >                 platform_set_drvdata(pdev, NULL);
+> > +               pm_runtime_idle(&pdev->dev);
+> > +               return ret;
+> >         }
+> > -       return ret;
+> > +       if (is_early_platform_device(pdev))
+> > +               return 0;
 > > +
+> > + out:
+> > +       if (cfg->clockevent_rating)
 > 
-> That function uses a global lock. fdatawait is quite common. This will
-> likely cause performance problems in IO workloads.
-
-OK, I should avoid it.
-
-> You need to get that lock out of the hot path somehow.
+> drivers/clocksource/sh_mtu2.c:356:6: error: 'cfg' undeclared (first
+> use in this function)
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6883515/
 > 
-> Probably better to try to put the data into a existing data structure,
-> or if you cannot do that you would need some way to localize the lock.
-
-Yes, I have thought about adding some data like new pagecache tag or
-new members in struct address_space, but it makes the size of heavily
-used data structure larger so I'm not sure it's acceptable.
-And localizing the lock is worth trying, I think.
-
-> Or at least make it conditional of hwpoison errors being around. 
-
-I'll try to do your suggestions, but I'm not sure your point of the
-last one. Can you explain more about 'make it conditional' option?
-
+> Presumably there's a
 > 
+>         struct sh_timer_config *cfg = p->pdev->dev.platform_data;
 > 
-> >  	pagevec_init(&pvec, 0);
-> >  	while ((index <= end) &&
-> >  			(nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
-> > @@ -369,6 +375,16 @@ int filemap_write_and_wait_range(struct address_space *mapping,
-> >  				err = err2;
-> >  		}
-> >  	}
-> > +
-> > +	/*
-> > +	 * When AS_HWPOISON is set, dirty page with memory error is
-> > +	 * removed from pagecache and mapping->nrpages is decreased by 1.
-> > +	 * So in order to detect memory error on single page file, we need
-> > +	 * to check AS_HWPOISON bit outside if(mapping->nrpages) block below.
-> > +	 */
-> > +	if (unlikely(hwpoison_file_range(mapping, lstart, lend)))
-> > +		return -EHWPOISON;
-> 
-> Same here.
-> >  					ra, filp, page,
-> > @@ -2085,6 +2123,9 @@ inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, i
-> >          if (unlikely(*pos < 0))
-> >                  return -EINVAL;
-> >  
-> > +	if (unlikely(hwpoison_partial_write(file->f_mapping, *pos, *count)))
-> > +		return -EHWPOISON;
-> 
-> Same here.
-> > +
-> > +		/*
-> > +		 * Memory error is reported to userspace by AS_HWPOISON flags
-> > +		 * in mapping->flags. The mechanism is similar to that of
-> > +		 * AS_EIO, but we have separete flags because there'are two
-> > +		 * differences between them:
-> > +		 *  1. Expected userspace handling. When user processes get
-> > +		 *     -EIO, they can retry writeback hoping the error in IO
-> > +		 *     devices is temporary, switch to write to other devices,
-> > +		 *     or do some other application-specific handling.
-> > +		 *     For -EHWPOISON, we can clear the error by overwriting
-> > +		 *     the corrupted page.
-> > +		 *  2. When to clear. For -EIO, we can think that we recover
-> > +		 *     from the error when writeback succeeds. For -EHWPOISON
-> > +		 *     OTOH, we can see that things are back to normal when
-> > +		 *     corrupted data are overwritten from user buffer.
-> > +		 */
-> > +		hwp = kmalloc(sizeof(struct hwp_dirty), GFP_ATOMIC);
-> 
-> You need to check the return value, especially for GFP_ATOMIC which is
-> common to fail
+> missing at the top of sh_mtu2_probe()
 
-OK, I'll fix it.
+Precisely.
 
-Thanks,
-Naoya
+It should be fixed now, thanks for the report!
+
+Rafael
