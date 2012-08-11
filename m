@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab2HKBaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:30:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43686 "EHLO arroyo.ext.ti.com"
+	id S932375Ab2HKBaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:30:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57420 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755142Ab2HKBZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:39 -0400
+	id S1758455Ab2HKBZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:25:40 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v2 06/22] ARM: LPAE: use signed arithmetic for mask definitions
-Date: Fri, 10 Aug 2012 21:24:49 -0400
-Message-ID: <1344648306-15619-7-git-send-email-cyril@ti.com>
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v2 09/22] ARM: LPAE: use phys_addr_t for initrd location and size
+Date: Fri, 10 Aug 2012 21:24:52 -0400
+Message-ID: <1344648306-15619-10-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
 References: <1344648306-15619-1-git-send-email-cyril@ti.com>
@@ -23,57 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch applies to PAGE_MASK, PMD_MASK, and PGDIR_MASK, where forcing
-unsigned long math truncates the mask at the 32-bits.  This clearly does bad
-things on PAE systems.
+From: Vitaly Andrianov <vitalya@ti.com>
 
-This patch fixes this problem by defining these masks as signed quantities.
-We then rely on sign extension to do the right thing.
+This patch fixes the initrd setup code to use phys_addr_t instead of assuming
+32-bit addressing.  Without this we cannot boot on systems where initrd is
+located above the 4G physical address limit.
 
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/include/asm/page.h           |    2 +-
- arch/arm/include/asm/pgtable-3level.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mm/init.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
-index ecf9019..1e0fe08 100644
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -13,7 +13,7 @@
- /* PAGE_SHIFT determines the page size */
- #define PAGE_SHIFT		12
- #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
--#define PAGE_MASK		(~(PAGE_SIZE-1))
-+#define PAGE_MASK		(~((1 << PAGE_SHIFT) - 1))
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 19ba70b..bae9d05 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -36,12 +36,13 @@
  
- #ifndef __ASSEMBLY__
+ #include "mm.h"
  
-diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-index b249035..ae39d11 100644
---- a/arch/arm/include/asm/pgtable-3level.h
-+++ b/arch/arm/include/asm/pgtable-3level.h
-@@ -48,16 +48,16 @@
- #define PMD_SHIFT		21
+-static unsigned long phys_initrd_start __initdata = 0;
++static phys_addr_t phys_initrd_start __initdata = 0;
+ static unsigned long phys_initrd_size __initdata = 0;
  
- #define PMD_SIZE		(1UL << PMD_SHIFT)
--#define PMD_MASK		(~(PMD_SIZE-1))
-+#define PMD_MASK		(~((1 << PMD_SHIFT) - 1))
- #define PGDIR_SIZE		(1UL << PGDIR_SHIFT)
--#define PGDIR_MASK		(~(PGDIR_SIZE-1))
-+#define PGDIR_MASK		(~((1 << PGDIR_SHIFT) - 1))
+ static int __init early_initrd(char *p)
+ {
+-	unsigned long start, size;
++	phys_addr_t start;
++	unsigned long size;
+ 	char *endp;
  
- /*
-  * section address mask and size definitions.
-  */
- #define SECTION_SHIFT		21
- #define SECTION_SIZE		(1UL << SECTION_SHIFT)
--#define SECTION_MASK		(~(SECTION_SIZE-1))
-+#define SECTION_MASK		(~((1 << SECTION_SHIFT) - 1))
- 
- #define USER_PTRS_PER_PGD	(PAGE_OFFSET / PGDIR_SIZE)
- 
+ 	start = memparse(p, &endp);
+@@ -347,14 +348,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	if (phys_initrd_size &&
+ 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx is not a memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size &&
+ 	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
+-		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
+-		       phys_initrd_start, phys_initrd_size);
++		pr_err("INITRD: 0x%08llx+0x%08lx overlaps in-use memory region - disabling initrd\n",
++		       (u64)phys_initrd_start, phys_initrd_size);
+ 		phys_initrd_start = phys_initrd_size = 0;
+ 	}
+ 	if (phys_initrd_size) {
 -- 
 1.7.9.5
 
