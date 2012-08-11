@@ -1,165 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759689Ab2HKBZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:25:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43693 "EHLO arroyo.ext.ti.com"
+	id S1759983Ab2HKB0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:26:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57426 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759392Ab2HKBZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:43 -0400
+	id S1759481Ab2HKBZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:25:46 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v2 00/22] Introducing the TI Keystone platform
-Date: Fri, 10 Aug 2012 21:24:43 -0400
-Message-ID: <1344648306-15619-1-git-send-email-cyril@ti.com>
+        Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH v2 15/22] ARM: mm: use physical addresses in highmem sanity checks
+Date: Fri, 10 Aug 2012 21:24:58 -0400
+Message-ID: <1344648306-15619-16-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
+References: <1344648306-15619-1-git-send-email-cyril@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a follow on to the series posted earlier (archived at [1]).
+This patch modifies the highmem sanity checking code to use physical addresses
+instead.  This change eliminates the wrap-around problems associated with the
+original virtual address based checks, and this simplifies the code a bit.
 
-Patches 01/22 .. 09/22 of this series have been pretty intensively reviewed;
-thanks to all who helped.  We've modified per feedback, and these should be in
-reasonable shape.
+The one constraint imposed here is that low physical memory must be mapped in
+a monotonically increasing fashion if there are multiple banks of memory,
+i.e., x < y must => pa(x) < pa(y).
 
-Patches 10/22 .. 19/22 of this series have not been very widely reviewed.
-We'd very much appreciate eyeballs here.
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+---
+ arch/arm/mm/mmu.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
-Patches 20/22 .. 22/22 of this series are specific to the TI Keystone platform.
-These are not ready to be merged in.  These are being provided here for the sake
-of completeness, and to better illustrate the other patches in this series.
-These are dependent on the smpops patches (see [2]).
-
-These patches are also available on the following git repository:
-git://arago-project.org/git/projects/linux-keystone.git keystone-v2
-
-
-[1] - http://thread.gmane.org/gmane.linux.kernel/1336081
-[2] - http://permalink.gmane.org/gmane.linux.ports.arm.kernel/171540
-
-
-Series changelog:
-
-(01/22) ARM: add mechanism for late code patching
-  (v2)	pulled runtime patching code into separate source files
-  (v2)	reordered arguments to patch macros for consistency with assembly
-	"Rd, Rt, imm" ordering
-  (v2)	added support for mov immediate patching
-  (v2)	cache flush patched instructions instead of entire kernel code
-  (v2)	pack patch table to reduce table volume
-  (v2)	add to module vermagic to reflect abi change
-  (v2)	misc. cleanups in naming and structure
-
-(02/22) ARM: add self test for runtime patch mechanism
-  (v2)	added init-time tests to verify instruction encoding
-
-(03/22) ARM: use late patch framework for phys-virt patching
-  (v2)	move __pv_offset and __pv_phys_offset to C code
-  (v2)	restore conditional init of __pv_offset and __pv_phys_offset
-
-(04/22) ARM: LPAE: use phys_addr_t on virt <--> phys conversion
-  (v2)	fix patched __phys_to_virt() to use 32-bit operand
-  (v2)	convert non-patch __phys_to_virt and __virt_to_phys to inlines to retain
-	type checking
-
-(05/22) ARM: LPAE: support 64-bit virt_to_phys patching
-  (v2)	use phys_addr_t instead of split high/low phys_offsets
-  (v2)	use mov immediate instead of add to zero when patching in high order
-	physical address bits
-  (v2)	fix __pv_phys_offset handling for big-endian
-  (v2)	remove set_phys_offset()
-
-(06/22) ARM: LPAE: use signed arithmetic for mask definitions
-(07/22) ARM: LPAE: use phys_addr_t in alloc_init_pud()
-(08/22) ARM: LPAE: use phys_addr_t in free_memmap()
-  (v2)	unchanged from v1
-
-(09/22) ARM: LPAE: use phys_addr_t for initrd location and size
-  (v2)	revert to unsigned long for initrd size
-
-(10/22) ARM: LPAE: use phys_addr_t in switch_mm()
-  (v2)	use phys_addr_t instead of u64 in switch_mm()
-  (v2)	revert on changes to v6 and v7-2level
-  (v2)	fix register mapping for big-endian in v7-3level
-
-(11/22) ARM: LPAE: use 64-bit accessors for TTBR registers
-  (v2)	restore comment in cpu_set_reserved_ttbr0()
-
-(12/22) ARM: LPAE: define ARCH_LOW_ADDRESS_LIMIT for bootmem
-(13/22) ARM: LPAE: factor out T1SZ and TTBR1 computations
-  (v2)	unchanged from v1
-
-(14/22) ARM: LPAE: accomodate >32-bit addresses for page table base
-  (v2)	apply arch_pgd_shift only on lpae
-  (v2)	move arch_pgd_shift definition to asm/memory.h
-  (v2)	revert on changes to non-lpae procs
-  (v2)	add check to ensure that the pgd physical address is aligned at an
-	ARCH_PGD_SHIFT boundary
-
-(15/22) ARM: mm: use physical addresses in highmem sanity checks
-(16/22) ARM: mm: cleanup checks for membank overlap with vmalloc area
-(17/22) ARM: mm: clean up membank size limit checks
-(18/22) ARM: add virt_to_idmap for interconnect aliasing
-  (v2)	unchanged from v1
-
-(19/22) ARM: recreate kernel mappings in early_paging_init()
-  (v2)	disable on !lpae at compile time
-
-
- arch/arm/Kconfig                                  |   36 ++++
- arch/arm/Makefile                                 |    1 +
- arch/arm/boot/dts/keystone-sim.dts                |   77 +++++++
- arch/arm/configs/keystone_defconfig               |   23 +++
- arch/arm/include/asm/mach/arch.h                  |    1 +
- arch/arm/include/asm/memory.h                     |   94 ++++++---
- arch/arm/include/asm/module.h                     |    7 +
- arch/arm/include/asm/page.h                       |    2 +-
- arch/arm/include/asm/pgtable-3level-hwdef.h       |   10 +
- arch/arm/include/asm/pgtable-3level.h             |    6 +-
- arch/arm/include/asm/proc-fns.h                   |   28 ++-
- arch/arm/include/asm/runtime-patch.h              |  175 ++++++++++++++++
- arch/arm/kernel/Makefile                          |    1 +
- arch/arm/kernel/armksyms.c                        |    4 -
- arch/arm/kernel/head.S                            |  107 +++-------
- arch/arm/kernel/module.c                          |    7 +-
- arch/arm/kernel/runtime-patch.c                   |  230 +++++++++++++++++++++
- arch/arm/kernel/setup.c                           |   18 ++
- arch/arm/kernel/smp.c                             |   11 +-
- arch/arm/kernel/vmlinux.lds.S                     |   13 +-
- arch/arm/mach-keystone/Makefile                   |    2 +
- arch/arm/mach-keystone/Makefile.boot              |    1 +
- arch/arm/mach-keystone/include/mach/debug-macro.S |   44 ++++
- arch/arm/mach-keystone/include/mach/memory.h      |   47 +++++
- arch/arm/mach-keystone/include/mach/timex.h       |   21 ++
- arch/arm/mach-keystone/include/mach/uncompress.h  |   24 +++
- arch/arm/mach-keystone/keystone.c                 |  124 +++++++++++
- arch/arm/mach-keystone/keystone.h                 |   23 +++
- arch/arm/mach-keystone/platsmp.c                  |   84 ++++++++
- arch/arm/mm/context.c                             |    9 +-
- arch/arm/mm/idmap.c                               |    4 +-
- arch/arm/mm/init.c                                |   19 +-
- arch/arm/mm/mmu.c                                 |  114 +++++++---
- arch/arm/mm/proc-v7-3level.S                      |   50 +++--
- 34 files changed, 1214 insertions(+), 203 deletions(-)
- create mode 100644 arch/arm/boot/dts/keystone-sim.dts
- create mode 100644 arch/arm/configs/keystone_defconfig
- create mode 100644 arch/arm/include/asm/runtime-patch.h
- create mode 100644 arch/arm/kernel/runtime-patch.c
- create mode 100644 arch/arm/mach-keystone/Makefile
- create mode 100644 arch/arm/mach-keystone/Makefile.boot
- create mode 100644 arch/arm/mach-keystone/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-keystone/include/mach/memory.h
- create mode 100644 arch/arm/mach-keystone/include/mach/timex.h
- create mode 100644 arch/arm/mach-keystone/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-keystone/keystone.c
- create mode 100644 arch/arm/mach-keystone/keystone.h
- create mode 100644 arch/arm/mach-keystone/platsmp.c
-
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 53eeeb8..f764c03 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -895,6 +895,7 @@ phys_addr_t arm_lowmem_limit __initdata = 0;
+ void __init sanity_check_meminfo(void)
+ {
+ 	int i, j, highmem = 0;
++	phys_addr_t vmalloc_limit = __pa(vmalloc_min - 1) + 1;
+ 
+ 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
+ 		struct membank *bank = &meminfo.bank[j];
+@@ -904,8 +905,7 @@ void __init sanity_check_meminfo(void)
+ 			highmem = 1;
+ 
+ #ifdef CONFIG_HIGHMEM
+-		if (__va(bank->start) >= vmalloc_min ||
+-		    __va(bank->start) < (void *)PAGE_OFFSET)
++		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
+ 
+ 		bank->highmem = highmem;
+@@ -914,8 +914,8 @@ void __init sanity_check_meminfo(void)
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+ 		 */
+-		if (!highmem && __va(bank->start) < vmalloc_min &&
+-		    bank->size > vmalloc_min - __va(bank->start)) {
++		if (!highmem && bank->start < vmalloc_limit &&
++		    bank->size > vmalloc_limit - bank->start) {
+ 			if (meminfo.nr_banks >= NR_BANKS) {
+ 				printk(KERN_CRIT "NR_BANKS too low, "
+ 						 "ignoring high memory\n");
+@@ -924,12 +924,12 @@ void __init sanity_check_meminfo(void)
+ 					(meminfo.nr_banks - i) * sizeof(*bank));
+ 				meminfo.nr_banks++;
+ 				i++;
+-				bank[1].size -= vmalloc_min - __va(bank->start);
+-				bank[1].start = __pa(vmalloc_min - 1) + 1;
++				bank[1].size -= vmalloc_limit - bank->start;
++				bank[1].start = vmalloc_limit;
+ 				bank[1].highmem = highmem = 1;
+ 				j++;
+ 			}
+-			bank->size = vmalloc_min - __va(bank->start);
++			bank->size = vmalloc_limit - bank->start;
+ 		}
+ #else
+ 		bank->highmem = highmem;
+@@ -949,8 +949,7 @@ void __init sanity_check_meminfo(void)
+ 		 * Check whether this memory bank would entirely overlap
+ 		 * the vmalloc area.
+ 		 */
+-		if (__va(bank->start) >= vmalloc_min ||
+-		    __va(bank->start) < (void *)PAGE_OFFSET) {
++		if (bank->start >= vmalloc_limit) {
+ 			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+ 			       "(vmalloc region overlap).\n",
+ 			       (unsigned long long)bank->start,
+@@ -962,9 +961,8 @@ void __init sanity_check_meminfo(void)
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
+-		if (__va(bank->start + bank->size) > vmalloc_min ||
+-		    __va(bank->start + bank->size) < __va(bank->start)) {
+-			unsigned long newsize = vmalloc_min - __va(bank->start);
++		if (bank->start + bank->size > vmalloc_limit)
++			unsigned long newsize = vmalloc_limit - bank->start;
+ 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
+ 			       "to -%.8llx (vmalloc region overlap).\n",
+ 			       (unsigned long long)bank->start,
 -- 
 1.7.9.5
 
