@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab2HKGqB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 02:46:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57569 "EHLO mx2.suse.de"
+	id S1752222Ab2HKG4q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 02:56:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57975 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab2HKGp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 02:45:57 -0400
-Date: Sat, 11 Aug 2012 08:45:54 +0200
-Message-ID: <s5hvcgq7wpp.wl%tiwai@suse.de>
+	id S1750767Ab2HKG4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 02:56:45 -0400
+Date: Sat, 11 Aug 2012 08:56:42 +0200
+Message-ID: <s5hsjbt9as5.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Hugh Dickins <hughd@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Chris Wilson <chris@chris-wilson.co.uk>,
         Giacomo Comes <comes@naic.edu>,
         Paulo Zanoni <paulo.r.zanoni@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: i915 regression on 3.6-rc1: lid blanks screen
-In-Reply-To: <alpine.LSU.2.00.1208101145440.2648@eggly.anvils>
+Subject: [PATCH v2] drm/i915: Fix blank panel at reopening lid
+In-Reply-To: <s5hvcgq7wpp.wl%tiwai@suse.de>
 References: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils>
 	<s5h3941ke2p.wl%tiwai@suse.de>
 	<alpine.LSU.2.00.1208052113530.1300@eggly.anvils>
@@ -26,6 +26,7 @@ References: <alpine.LSU.2.00.1208040936570.1161@eggly.anvils>
 	<CAKMK7uF_5K6d=xw7SsRJqw7dg5ca6HMdf3jvsQcQqhmSNLkaww@mail.gmail.com>
 	<s5hpq6yyke5.wl%tiwai@suse.de>
 	<alpine.LSU.2.00.1208101145440.2648@eggly.anvils>
+	<s5hvcgq7wpp.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -35,119 +36,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 10 Aug 2012 11:53:51 -0700 (PDT),
-Hugh Dickins wrote:
-> 
-> On Fri, 10 Aug 2012, Takashi Iwai wrote:
-> > At Fri, 10 Aug 2012 14:35:13 +0200,
-> > Daniel Vetter wrote:
-> > > 
-> > > On Fri, Aug 10, 2012 at 1:59 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> > > > At Mon, 6 Aug 2012 11:25:30 -0700 (PDT),
-> > > > Hugh Dickins wrote:
-> > > >>
-> > > >> On Mon, 6 Aug 2012, Daniel Vetter wrote:
-> > > >> > On Mon, Aug 6, 2012 at 6:21 AM, Hugh Dickins <hughd@google.com> wrote:
-> > > >> > > On Sun, 5 Aug 2012, Takashi Iwai wrote:
-> > > >> > >> At Sat, 4 Aug 2012 10:01:13 -0700 (PDT),
-> > > >> > >> Hugh Dickins wrote:
-> > > >> > >> >
-> > > >> > >> > Sorry to report that with 3.6-rc1, closing and opening the lid on
-> > > >> > >> > this ThinkPad T420s leaves the screen blank, and I have to reboot.
-> > > >> > >> >
-> > > >> > >> > Bisection led to this commit, and reverting indeed gets my screen back:
-> > > >> > >> >
-> > > >> > >> > commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b
-> > > >> > >> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > > >> > >> > Date:   Wed Jul 11 16:27:52 2012 +0200
-> > > >> > >> >
-> > > >> > >> >     drm/i915/lvds: ditch ->prepare special case
-> > > >> > > ...
-> > > >> > >>
-> > > >> > >> Hm, it's surprising.
-> > > >> > >>
-> > > >> > >> Could you check whether the counter-part intel_lvds_enable() is
-> > > >> > >> called?  If the prepare callback affects, it must be from the mode
-> > > >> > >> setting (drm_crtc_helper_set_mode()).
-> > > >> > >
-> > > >> > > Yes, I put a dump_stack() in both, and intel_lvds_enable() gets called
-> > > >> > > about 0.28 seconds after the intel_lvds_disable() when I lift the lid;
-> > > >> > > but with no video display until I revert that commit.
-> > > >> >
-> > > >> > Can you please boot with drm.debug=0xe added to your kernel cmdline,
-> > > >> > reproduce the issue (with the two dump_stack calls added) and then
-> > > >> > attach the full dmesg?
-> > > >>
-> > > >> Collected, I'll send it to you both privately in a moment.
-> > > >>
-> > > >> >
-> > > >> > Also a few other things to try: What happens if you do a modeset on
-> > > >> > the LVDS while it's still working, e.g.
-> > > >>
-> > > >> In the dmesg, I've only gone to runlevel 3, simply working on the
-> > > >> console without startx.  For these xrandrs to work, I did startx
-> > > >> and used the graphics screen.
-> > > >
-> > > > OK, now I can see the problem here, too.  The key is that it happens
-> > > > only on Linux console, not on X.  That's why no one else reported.
-> > > > I guess the problem can be seen on many laptops with LVDS on PCH.
-> 
-> A correction there: for me it was happening both on X and on console;
-> but once I found that it happened even on the simple console, I mostly
-> stuck to bisecting and testing on that.
+When you reopen the lid on a laptop with PCH, the panel suddenly goes
+blank sometimes.  It seems because BLC_PWM_CPU_CTL register is cleared
+to zero when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 registers are
+enabled.
 
-Maybe depending on the desktop setup.  When a power-management stuff
-is running, it may readjust the backlight level upon lid open, then it
-fixes the issue casually.
+This patch fixes the problem by moving the call of the function setting
+BLC_PWM_CPU_CTL after enabling other two registers.
 
+Reported-and-tested-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+v1->v2: add comments, fixed changelog
 
-> > > >
-> > > > Looking at intel_reg_dumper output, BLC_PWM_CPU_CTL is 0 while other
-> > > > registers are set correctly.  This seems coming from the rewrite of
-> > > > backlight control code by commit
-> > > >   24ded204: drm/i915: properly enable the blc controller on the right pipe
-> > > > and
-> > > >   a4f32fc3: drm/i915: don't forget the PCH backlight registers
-> > > >
-> > > > While the latter fixes the regression by the former commit, it still
-> > > > doesn't cover this regression.
-> > > >
-> > > > I don't know the exact hardware behavior, but it looks like that
-> > > > resetting BLC_PWM_PCH_CTL2 and BLC_PWM_PCH_CTL1 clears the
-> > > > BLC_PWM_CPU_CTL (oh what confusing reg names).
-> > > >
-> > > > FWIW, the commit 520c41cf you mentioned is no direct cause.  This
-> > > > patch works fine on the top of 3.5 kernel.  But it's like a bad drug,
-> > > > the combination of this and other two commits break things.
-> > > >
-> > > > The patch below is my quick fix.  It worked on an HP laptop.
-> > > > Hugh, could you give it a try?
-> > > 
-> > > Hm, this sounds eerily familiar to the backlight bug you've recently fixed in
-> > > 
-> > > commit 6db65cbb941f9d433659bdad02b307f6d94465df
-> > > Author: Takashi Iwai <tiwai@suse.de>
-> > > Date:   Thu Jun 21 15:30:41 2012 +0200
-> > > 
-> > >     drm/i915: Fix eDP blank screen after S3 resume on HP desktops
-> > > 
-> > > Have you checked other code-paths for such issues?
-> > 
-> > Not yet, I'd leave such a joy rather to you guys :)
-> > 
-> > > The resume code
-> > > seems to follow this order already ... also, when you submit this
-> > > patch, can you please add a small comment to explain the ordering
-> > > constraint, like in the resume register restore function?
-> > 
-> > Sure, I'll add a comment and resubmit once when I hear it really fixes
-> > on Hugh's machine, too.
-> 
-> Indeed, your patch really fixes it on my machine: many thanks!
+ drivers/gpu/drm/i915/intel_panel.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-OK, I'll resend the patch with more comments.
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 10c7d39..d564c05 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -311,9 +311,6 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+ 
+-	dev_priv->backlight_enabled = true;
+-	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+-
+ 	if (INTEL_INFO(dev)->gen >= 4) {
+ 		uint32_t reg, tmp;
+ 
+@@ -326,7 +323,7 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 		 * we don't track the backlight dpms state, hence check whether
+ 		 * we have to do anything first. */
+ 		if (tmp & BLM_PWM_ENABLE)
+-			return;
++			goto set_level;
+ 
+ 		if (dev_priv->num_pipe == 3)
+ 			tmp &= ~BLM_PIPE_SELECT_IVB;
+@@ -347,6 +344,14 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 			I915_WRITE(BLC_PWM_PCH_CTL1, tmp);
+ 		}
+ 	}
++
++set_level:
++	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
++	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
++	 * registers are set.
++	 */
++	dev_priv->backlight_enabled = true;
++	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+ }
+ 
+ static void intel_panel_init_backlight(struct drm_device *dev)
+-- 
+1.7.11.4
 
-
-thanks,
-
-Takashi
