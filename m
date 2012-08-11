@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab2HKKeW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 06:34:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40364 "EHLO mx1.redhat.com"
+	id S1754407Ab2HKKe1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 06:34:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26436 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995Ab2HKKeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 06:34:05 -0400
+	id S1750869Ab2HKKeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 06:34:04 -0400
 From: Hans de Goede <hdegoede@redhat.com>
 To: Linux Media Mailing List <linux-media@vger.kernel.org>
 Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
         David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
         Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 4/4] radio-shark2: Only compile led support when CONFIG_LED_CLASS is set
-Date: Sat, 11 Aug 2012 12:34:55 +0200
-Message-Id: <1344681295-2485-5-git-send-email-hdegoede@redhat.com>
+Subject: [PATCH 3/4] radio-shark: Only compile led support when CONFIG_LED_CLASS is set
+Date: Sat, 11 Aug 2012 12:34:54 +0200
+Message-Id: <1344681295-2485-4-git-send-email-hdegoede@redhat.com>
 In-Reply-To: <1344681295-2485-1-git-send-email-hdegoede@redhat.com>
 References: <1344681295-2485-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,39 +22,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
- drivers/media/radio/radio-shark2.c | 122 ++++++++++++++++++++++---------------
- 1 file changed, 73 insertions(+), 49 deletions(-)
+ drivers/media/radio/radio-shark.c | 135 ++++++++++++++++++++++----------------
+ 1 file changed, 79 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/media/radio/radio-shark2.c b/drivers/media/radio/radio-shark2.c
-index 217483c..7b4efdf 100644
---- a/drivers/media/radio/radio-shark2.c
-+++ b/drivers/media/radio/radio-shark2.c
+diff --git a/drivers/media/radio/radio-shark.c b/drivers/media/radio/radio-shark.c
+index 05e12bf..e1970bf 100644
+--- a/drivers/media/radio/radio-shark.c
++++ b/drivers/media/radio/radio-shark.c
 @@ -35,6 +35,11 @@
  #include <media/v4l2-device.h>
- #include "radio-tea5777.h"
+ #include <sound/tea575x-tuner.h>
  
 +#if defined(CONFIG_LEDS_CLASS) || \
-+    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_RADIO_SHARK2_MODULE))
++    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_RADIO_SHARK_MODULE))
 +#define SHARK_USE_LEDS 1
 +#endif
 +
- MODULE_AUTHOR("Hans de Goede <hdegoede@redhat.com>");
- MODULE_DESCRIPTION("Griffin radioSHARK2, USB radio receiver driver");
- MODULE_LICENSE("GPL");
-@@ -43,7 +48,6 @@ static int debug;
- module_param(debug, int, 0);
- MODULE_PARM_DESC(debug, "Debug level (0-1)");
+ /*
+  * Version Information
+  */
+@@ -56,44 +61,18 @@ MODULE_LICENSE("GPL");
  
--
- #define SHARK_IN_EP		0x83
- #define SHARK_OUT_EP		0x05
- 
-@@ -54,36 +58,18 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
- 
- enum { BLUE_LED, RED_LED, NO_LEDS };
+ enum { BLUE_LED, BLUE_PULSE_LED, RED_LED, NO_LEDS };
  
 -static void shark_led_set_blue(struct led_classdev *led_cdev,
 -			       enum led_brightness value);
+-static void shark_led_set_blue_pulse(struct led_classdev *led_cdev,
+-				     enum led_brightness value);
 -static void shark_led_set_red(struct led_classdev *led_cdev,
 -			      enum led_brightness value);
 -
@@ -64,6 +58,12 @@ index 217483c..7b4efdf 100644
 -		.brightness	= LED_OFF,
 -		.max_brightness = 127,
 -		.brightness_set = shark_led_set_blue,
+-	},
+-	[BLUE_PULSE_LED] = {
+-		.name		= "%s:blue-pulse:",
+-		.brightness	= LED_OFF,
+-		.max_brightness = 255,
+-		.brightness_set = shark_led_set_blue_pulse,
 -	},
 -	[RED_LED] = {
 -		.name		= "%s:red:",
@@ -76,7 +76,7 @@ index 217483c..7b4efdf 100644
  struct shark_device {
  	struct usb_device *usbdev;
  	struct v4l2_device v4l2_dev;
- 	struct radio_tea5777 tea;
+ 	struct snd_tea575x tea;
  
 +#ifdef SHARK_USE_LEDS
  	struct work_struct led_work;
@@ -87,16 +87,16 @@ index 217483c..7b4efdf 100644
 +#endif
  
  	u8 *transfer_buffer;
- };
-@@ -161,6 +147,7 @@ static struct radio_tea5777_ops shark_tea_ops = {
- 	.read_reg  = shark_read_reg,
+ 	u32 last_val;
+@@ -175,6 +154,7 @@ static struct snd_tea575x_ops shark_tea_ops = {
+ 	.read_val  = shark_read_val,
  };
  
 +#ifdef SHARK_USE_LEDS
  static void shark_led_work(struct work_struct *work)
  {
  	struct shark_device *shark =
-@@ -208,21 +195,72 @@ static void shark_led_set_red(struct led_classdev *led_cdev,
+@@ -235,21 +215,78 @@ static void shark_led_set_red(struct led_classdev *led_cdev,
  	schedule_work(&shark->led_work);
  }
  
@@ -106,6 +106,12 @@ index 217483c..7b4efdf 100644
 +		.brightness	= LED_OFF,
 +		.max_brightness = 127,
 +		.brightness_set = shark_led_set_blue,
++	},
++	[BLUE_PULSE_LED] = {
++		.name		= "%s:blue-pulse:",
++		.brightness	= LED_OFF,
++		.max_brightness = 255,
++		.brightness_set = shark_led_set_blue_pulse,
 +	},
 +	[RED_LED] = {
 +		.name		= "%s:red:",
@@ -163,7 +169,7 @@ index 217483c..7b4efdf 100644
  
  	mutex_lock(&shark->tea.mutex);
  	v4l2_device_disconnect(&shark->v4l2_dev);
- 	radio_tea5777_exit(&shark->tea);
+ 	snd_tea575x_exit(&shark->tea);
  	mutex_unlock(&shark->tea.mutex);
  
 -	for (i = 0; i < NO_LEDS; i++)
@@ -174,7 +180,7 @@ index 217483c..7b4efdf 100644
  
  	v4l2_device_put(&shark->v4l2_dev);
  }
-@@ -240,7 +278,7 @@ static int usb_shark_probe(struct usb_interface *intf,
+@@ -267,7 +304,7 @@ static int usb_shark_probe(struct usb_interface *intf,
  			   const struct usb_device_id *id)
  {
  	struct shark_device *shark;
@@ -183,7 +189,7 @@ index 217483c..7b4efdf 100644
  
  	shark = kzalloc(sizeof(struct shark_device), GFP_KERNEL);
  	if (!shark)
-@@ -250,8 +288,13 @@ static int usb_shark_probe(struct usb_interface *intf,
+@@ -277,8 +314,13 @@ static int usb_shark_probe(struct usb_interface *intf,
  	if (!shark->transfer_buffer)
  		goto err_alloc_buffer;
  
@@ -198,7 +204,7 @@ index 217483c..7b4efdf 100644
  	retval = v4l2_device_register(&intf->dev, &shark->v4l2_dev);
  	if (retval) {
  		v4l2_err(&shark->v4l2_dev, "couldn't register v4l2_device\n");
-@@ -275,32 +318,13 @@ static int usb_shark_probe(struct usb_interface *intf,
+@@ -303,32 +345,13 @@ static int usb_shark_probe(struct usb_interface *intf,
  		goto err_init_tea;
  	}
  
@@ -210,7 +216,7 @@ index 217483c..7b4efdf 100644
 -		shark->leds[i].name = shark->led_names[i];
 -		/*
 -		 * We don't fail the probe if we fail to register the leds,
--		 * because once we've called radio_tea5777_init, the /dev/radio0
+-		 * because once we've called snd_tea575x_init, the /dev/radio0
 -		 * node may be opened from userspace holding a reference to us!
 -		 *
 -		 * Note we cannot register the leds first instead as
