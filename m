@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab2HKFYw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 01:24:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52988 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab2HKFYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 01:24:46 -0400
+	id S1752824Ab2HKGYH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 02:24:07 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:11229 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754Ab2HKGYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Aug 2012 02:24:03 -0400
+Message-ID: <5025FA5A.4090403@parallels.com>
+Date: Sat, 11 Aug 2012 10:23:22 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-X-Originating-IP: [121.44.126.22]
-In-Reply-To: <20120808235731.GA7262@moria.home.lan>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
-	<1344290921-25154-3-git-send-email-koverstreet@google.com>
-	<20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
-	<20120808235731.GA7262@moria.home.lan>
-Date: Sat, 11 Aug 2012 15:24:45 +1000
-Message-ID: <CAOzFzEhPW5-edb6mnL2gNbb4956u2MbWqQovv01010PyBCbc+g@mail.gmail.com>
-Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for dm_rq_clone_bio_info
-From: Joseph Glanville <joseph.glanville@orionvm.com.au>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net,
-        yehuda@hq.newdream.net, snitzer@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
+References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk> <20120810191149.GA17985@fieldses.org> <20120810202818.06236f46@pyramind.ukuu.org.uk> <50259494.8060304@zytor.com>
+In-Reply-To: <50259494.8060304@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kent, Tejun
+On 08/11/2012 03:09 AM, H. Peter Anvin wrote:
+> On 08/10/2012 12:28 PM, Alan Cox wrote:
+>> Explicitly for Linux yes - this is not generally true of the AF_UNIX
+>> socket domain and even the permissions aspect isn't guaranteed to be
+>> supported on some BSD environments !
+> 
+> Yes, but let's worry about what the Linux behavior should be.
+> 
+>> The name is however just a proxy for the socket itself. You don't even
+>> get a device node in the usual sense or the same inode in the file system
+>> space.
+> 
+> 
+> No, but it is looked up the same way any other inode is (the difference
+> between FIFOs and sockets is that sockets have separate connections,
+> which is also why open() on sockets would be nice.)
+> 
+> However, there is a fundamental difference between AF_UNIX sockets and
+> open(), and that is how the pathname is delivered.  It thus would make
+> more sense to provide the openat()-like information in struct
+> sockaddr_un, but that may be very hard to do in a sensible way.  In that
+> sense it perhaps would be cleaner to be able to do an open[at]() on the
+> socket node with O_PATH (perhaps there should be an O_SOCKET option,
+> even?) and pass the resulting file descriptor to bind() or connect().
 
-On 9 August 2012 09:57, Kent Overstreet <koverstreet@google.com> wrote:
->> Also, how was this tested?
->
-> Well, AFAICT the only request based dm target is multipath, and from the
-> documentation I've seen it doesn't appear to work without multipath
-> hardware, or at least I haven't seen it documented how. So, unless
-> there's another user I missed it's not been tested.
+I vote for this (openat + O_WHATEVER on a unix socket) as well. It will 
+help us in checkpoint-restore, making handling of overmounted/unlinked
+sockets much cleaner.
 
-Multipath can be tested quite easily with a loopback scsi target, you
-don't require specialized hardware.
-The easiest way to do this would probably be the built in LIO target +
-open_iscsi initiator.
+> 	-hpa
 
-I haven't attempted running this current version of the patch series
-but I haven't run into issues with bcache+multipath in the past.
+Thanks,
+Pavel
 
->
->>
->> Thanks.
->>
->> --
->> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-CTO | Orion Virtualisation Solutions | www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
