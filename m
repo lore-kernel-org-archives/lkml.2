@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2HKM7w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 08:59:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51969 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab2HKM5g (ORCPT
+	id S1754756Ab2HKNOl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 09:14:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48394 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab2HKNOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 08:57:36 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 11/11] arm: mvebu: add pinctrl support in defconfig
-Date: Sat, 11 Aug 2012 14:56:49 +0200
-Message-Id: <1344689809-6223-12-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Sat, 11 Aug 2012 09:14:40 -0400
+Subject: Re: [PATCH 01/16] perf symbol: correct comment wrt kallsyms loading
+From: Namhyung Kim <namhyung@kernel.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Matt Hellsley <matthltc@us.ibm.com>,
+        David Hansen <dave@linux.vnet.ibm.com>
+In-Reply-To: <1344637382-22789-2-git-send-email-cody@linux.vnet.ibm.com>
+References: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
+	 <1344637382-22789-2-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 11 Aug 2012 22:14:33 +0900
+Message-ID: <1344690873.2003.1.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+2012-08-10 (금), 15:22 -0700, Cody P Schafer:
+> In kallsyms_parse() when calling process_symbol() (a callback argument
+> to kallsyms_parse()), we pass start as both start & end (ie:
+> start=start, end=start).
+> 
+> In map__process_kallsym_symbol(), the length is calculated as 'end - start + 1',
+> making the length 1, not 0.
+> 
+> Essentially, start & end define an inclusive range.
+> 
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
----
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lior Amsalem <alior@marvell.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/configs/mvebu_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
+This seems not needed any more due to the patch #2, right?
 
-diff --git a/arch/arm/configs/mvebu_defconfig b/arch/arm/configs/mvebu_defconfig
-index 2e86b31..cb07e64 100644
---- a/arch/arm/configs/mvebu_defconfig
-+++ b/arch/arm/configs/mvebu_defconfig
-@@ -21,6 +21,8 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_OF_PLATFORM=y
-+CONFIG_PINCTRL_ARMADA_370=y
-+CONFIG_PINCTRL_ARMADA_XP=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_FS_XATTR is not set
--- 
-1.7.10.4
+Thanks,
+Namhyung
+
+
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/symbol.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index f02de8a..891f83c 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -605,7 +605,7 @@ int kallsyms__parse(const char *filename, void *arg,
+>  
+>  		/*
+>  		 * module symbols are not sorted so we add all
+> -		 * symbols with zero length and rely on
+> +		 * symbols, setting length to 1, and rely on
+>  		 * symbols__fixup_end() to fix it up.
+>  		 */
+>  		err = process_symbol(arg, symbol_name,
+
+
 
