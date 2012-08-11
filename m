@@ -1,462 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab2HKKEg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 06:04:36 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:60054 "EHLO
+	id S1753462Ab2HKKRZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 06:17:25 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:41251 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753656Ab2HKKEd (ORCPT
+	by vger.kernel.org with ESMTP id S1750804Ab2HKKRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 06:04:33 -0400
+	Sat, 11 Aug 2012 06:17:21 -0400
+X-Greylist: delayed 768 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Aug 2012 06:17:21 EDT
 To: Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [PATCH 2/2] ARM: local timers: add timer support using IO mapped
- register
+Subject: Re: [PATCH 1/2] ARM: local timers: Unmask interrupt before new TVAL is set
 X-PHP-Originating-Script: 0:func.inc
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Date: Sat, 11 Aug 2012 12:04:15 +0200
+Date: Sat, 11 Aug 2012 12:17:14 +0200
 From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arm-msm@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 Organization: ARM Ltd
-In-Reply-To: <1344635921-5147-1-git-send-email-rvaswani@codeaurora.org>
-References: <1344635921-5147-1-git-send-email-rvaswani@codeaurora.org>
-Message-ID: <6e478bc5efb598b4a15ff9d534b94001@localhost>
+In-Reply-To: <1344635854-5033-1-git-send-email-rvaswani@codeaurora.org>
+References: <1344635854-5033-1-git-send-email-rvaswani@codeaurora.org>
+Message-ID: <cdb51f00bafa8151a880d8cc7898631e@localhost>
 User-Agent: RoundCube Webmail/0.3.1
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: rvaswani@codeaurora.org, grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk, linux-arm-msm@vger.kernel.org, linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-SA-Exim-Rcpt-To: rvaswani@codeaurora.org, linux@arm.linux.org.uk, linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 X-SA-Exim-Mail-From: marc.zyngier@arm.com
 X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rohit,
-
-On Fri, 10 Aug 2012 14:58:41 -0700, Rohit Vaswani
+On Fri, 10 Aug 2012 14:57:34 -0700, Rohit Vaswani
 <rvaswani@codeaurora.org>
 wrote:
-> The current arch_timer only support accessing through CP15 interface.
-> Add support for ARM processors that only support IO mapped register
-> interface
-
-This is quite a departure from the current implementation, which raises a
-couple of questions:
-- What does CP15 ID_PFR1[19:16] report? Can we easily detect that we do
-not have the CP15 interface?
-- What about HYP mode? Is there any way to control the access of the
-physical timer at PL1?
-
+> Level triggered interrupt is deasserted when a new TVAL is written
+> only when the interrupt is unmasked. Make sure that the interrupt
+> is unmasked in CTL register before TVAL is written.
+> If this order is not followed, there are chances that on some
+> hardware you would not receive any timer interrupts.
+> 
 > Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 > ---
->  .../devicetree/bindings/arm/arch_timer.txt         |    7 +
->  arch/arm/kernel/arch_timer.c                       |  259
->  ++++++++++++++++----
->  2 files changed, 223 insertions(+), 43 deletions(-)
+>  arch/arm/kernel/arch_timer.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 52478c8..1c71799 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -14,6 +14,13 @@ The timer is attached to a GIC to deliver its
-> per-processor interrupts.
->  
->  - clock-frequency : The frequency of the main counter, in Hz. Optional.
->  
-> +- irq-is-not-percpu: Specify is the timer irq is *NOT* a percpu (PPI)
-> interrupt
-> +  In the default case i.e without this property, the timer irq is
-treated
-> as a
-> +  PPI interrupt. Optional.
-
-Ouch! How do you specify the various interrupts for all CPUs? Do you end
-up with 4 SPIs per CPU?
-
-> +- If the node address and reg is specified, the arch_timer will try to
-> use the memory
-> +  mapped timer. Optional.
-> +
->  Example:
->  
->  	timer {
 > diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
-> index 1d0d9df..09604b7 100644
+> index dd58035..1d0d9df 100644
 > --- a/arch/arm/kernel/arch_timer.c
 > +++ b/arch/arm/kernel/arch_timer.c
-> @@ -18,6 +18,7 @@
->  #include <linux/clockchips.h>
->  #include <linux/interrupt.h>
->  #include <linux/of_irq.h>
-> +#include <linux/of_address.h>
->  #include <linux/io.h>
+> @@ -126,8 +126,8 @@ static int arch_timer_set_next_event(unsigned long
+evt,
+>  	ctrl |= ARCH_TIMER_CTRL_ENABLE;
+>  	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
 >  
->  #include <asm/cputype.h>
-> @@ -29,8 +30,17 @@
->  static unsigned long arch_timer_rate;
->  static int arch_timer_ppi;
->  static int arch_timer_ppi2;
-> +static int is_irq_percpu;
->  
->  static struct clock_event_device __percpu **arch_timer_evt;
-> +static void __iomem *timer_base;
-> +
-> +struct arch_timer_operations {
-> +	void (*reg_write)(int, u32);
-> +	u32 (*reg_read)(int);
-> +	cycle_t (*get_cntpct)(void);
-> +	cycle_t (*get_cntvct)(void);
-> +};
+> -	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
+>  	arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
+> +	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
 
-I already have something similar in a patch series that I'd like to get
-merged in 3.7, implementing support for the virtual timers (needed for
-virtualisation). Have a look at:
-git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
-timers-next
+But by doing so, you're opening a window where TVAL can be negative (from
+a previous timer trigger) and the interrupt unmasked, which would lead to
+an immediate trigger, before TVAL is updated with the new value.
 
->  /*
->   * Architected system timer support.
-> @@ -44,7 +54,29 @@ static struct clock_event_device __percpu
-> **arch_timer_evt;
->  #define ARCH_TIMER_REG_FREQ		1
->  #define ARCH_TIMER_REG_TVAL		2
->  
-> -static void arch_timer_reg_write(int reg, u32 val)
-> +/* Iomapped Register Offsets */
-> +#define ARCH_TIMER_CNTP_LOW_REG		0x000
-> +#define ARCH_TIMER_CNTP_HIGH_REG	0x004
-> +#define ARCH_TIMER_CNTV_LOW_REG		0x008
-> +#define ARCH_TIMER_CNTV_HIGH_REG	0x00C
-> +#define ARCH_TIMER_CTRL_REG		0x02C
-> +#define ARCH_TIMER_FREQ_REG		0x010
-> +#define ARCH_TIMER_CNTP_TVAL_REG	0x028
-> +#define ARCH_TIMER_CNTV_TVAL_REG	0x038
-> +
-> +static void timer_reg_write_mem(int reg, u32 val)
-> +{
-> +	switch (reg) {
-> +	case ARCH_TIMER_REG_CTRL:
-> +		__raw_writel(val, timer_base + ARCH_TIMER_CTRL_REG);
-> +		break;
-> +	case ARCH_TIMER_REG_TVAL:
-> +		__raw_writel(val, timer_base + ARCH_TIMER_CNTP_TVAL_REG);
-> +		break;
-> +	}
-> +}
-> +
-> +static void timer_reg_write_cp15(int reg, u32 val)
->  {
->  	switch (reg) {
->  	case ARCH_TIMER_REG_CTRL:
-> @@ -58,7 +90,28 @@ static void arch_timer_reg_write(int reg, u32 val)
->  	isb();
->  }
->  
-> -static u32 arch_timer_reg_read(int reg)
-> +static u32 timer_reg_read_mem(int reg)
-> +{
-> +	u32 val;
-> +
-> +	switch (reg) {
-> +	case ARCH_TIMER_REG_CTRL:
-> +		val = __raw_readl(timer_base + ARCH_TIMER_CTRL_REG);
-> +		break;
-> +	case ARCH_TIMER_REG_FREQ:
-> +		val = __raw_readl(timer_base + ARCH_TIMER_FREQ_REG);
-> +		break;
-> +	case ARCH_TIMER_REG_TVAL:
-> +		val = __raw_readl(timer_base + ARCH_TIMER_CNTP_TVAL_REG);
-> +		break;
-> +	default:
-> +		BUG();
-> +	}
-> +
-> +	return val;
-> +}
-> +
-> +static u32 timer_reg_read_cp15(int reg)
->  {
->  	u32 val;
->  
-> @@ -79,6 +132,103 @@ static u32 arch_timer_reg_read(int reg)
->  	return val;
->  }
->  
-> +static cycle_t arch_counter_get_cntpct_mem(void)
-> +{
-> +	u32 cvall, cvalh, thigh;
-> +
-> +	do {
-> +		cvalh = __raw_readl(timer_base + ARCH_TIMER_CNTP_HIGH_REG);
-> +		cvall = __raw_readl(timer_base + ARCH_TIMER_CNTP_LOW_REG);
-> +		thigh = __raw_readl(timer_base + ARCH_TIMER_CNTP_HIGH_REG);
-> +	} while (cvalh != thigh);
-> +
-> +	return ((cycle_t) cvalh << 32) | cvall;
-> +}
-> +
-> +static cycle_t arch_counter_get_cntpct_cp15(void)
-> +{
-> +	u32 cvall, cvalh;
-> +
-> +	asm volatile("mrrc p15, 0, %0, %1, c14" : "=r" (cvall), "=r" (cvalh));
-> +
-> +	return ((cycle_t) cvalh << 32) | cvall;
-> +}
-> +
-> +static cycle_t arch_counter_get_cntvct_mem(void)
-> +{
-> +	u32 cvall, cvalh, thigh;
-> +
-> +	do {
-> +		cvalh = __raw_readl(timer_base + ARCH_TIMER_CNTV_HIGH_REG);
-> +		cvall = __raw_readl(timer_base + ARCH_TIMER_CNTV_LOW_REG);
-> +		thigh = __raw_readl(timer_base + ARCH_TIMER_CNTV_HIGH_REG);
-> +	} while (cvalh != thigh);
-> +
-> +	return ((cycle_t) cvalh << 32) | cvall;
-> +}
-> +
-> +static cycle_t arch_counter_get_cntvct_cp15(void)
-> +{
-> +	u32 cvall, cvalh;
-> +
-> +	asm volatile("mrrc p15, 1, %0, %1, c14" : "=r" (cvall), "=r" (cvalh));
-> +
-> +	return ((cycle_t) cvalh << 32) | cvall;
-> +}
-> +
-> +static struct arch_timer_operations arch_timer_ops_cp15 = {
-> +	.reg_read = &timer_reg_read_cp15,
-> +	.reg_write = &timer_reg_write_cp15,
-> +	.get_cntpct = &arch_counter_get_cntpct_cp15,
-> +	.get_cntvct = &arch_counter_get_cntvct_cp15,
-> +};
-> +
-> +static struct arch_timer_operations arch_timer_ops_mem = {
-> +	.reg_read = &timer_reg_read_mem,
-> +	.reg_write = &timer_reg_write_mem,
-> +	.get_cntpct = &arch_counter_get_cntpct_mem,
-> +	.get_cntvct = &arch_counter_get_cntvct_mem,
-> +};
-> +
-> +static struct arch_timer_operations *arch_specific_timer =
-> &arch_timer_ops_cp15;
-> +
-> +static inline void arch_timer_reg_write(int reg, u32 val)
-> +{
-> +	arch_specific_timer->reg_write(reg, val);
-> +}
-> +
-> +static inline u32 arch_timer_reg_read(int reg)
-> +{
-> +	return arch_specific_timer->reg_read(reg);
-> +}
-> +
-> +static inline cycle_t arch_counter_get_cntpct(void)
-> +{
-> +	return arch_specific_timer->get_cntpct();
-> +}
-> +
-> +static inline cycle_t arch_counter_get_cntvct(void)
-> +{
-> +	return arch_specific_timer->get_cntvct();
-> +}
-> +
-> +static u32 notrace arch_counter_get_cntvct32(void)
-> +{
-> +	cycle_t cntvct = arch_counter_get_cntpct();
-> +
-> +	/*
-> +	 * The sched_clock infrastructure only knows about counters
-> +	 * with at most 32bits. Forget about the upper 24 bits for the
-> +	 * time being...
-> +	 */
-> +	return (u32)(cntvct & (u32)~0);
-> +}
-> +
-> +static cycle_t arch_counter_read(struct clocksource *cs)
-> +{
-> +	return arch_counter_get_cntpct();
-> +}
-> +
->  static irqreturn_t arch_timer_handler(int irq, void *dev_id)
->  {
->  	struct clock_event_device *evt = *(struct clock_event_device
-**)dev_id;
-> @@ -167,7 +317,9 @@ static int arch_timer_available(void)
->  {
->  	unsigned long freq;
->  
-> -	if (!local_timer_is_architected())
-> +	if (timer_base)
-> +		arch_specific_timer = &arch_timer_ops_mem;
-> +	else if (!local_timer_is_architected())
->  		return -ENXIO;
->  
->  	if (arch_timer_rate == 0) {
-> @@ -188,41 +340,6 @@ static int arch_timer_available(void)
->  	return 0;
->  }
->  
-> -static inline cycle_t arch_counter_get_cntpct(void)
-> -{
-> -	u32 cvall, cvalh;
-> -
-> -	asm volatile("mrrc p15, 0, %0, %1, c14" : "=r" (cvall), "=r" (cvalh));
-> -
-> -	return ((cycle_t) cvalh << 32) | cvall;
-> -}
-> -
-> -static inline cycle_t arch_counter_get_cntvct(void)
-> -{
-> -	u32 cvall, cvalh;
-> -
-> -	asm volatile("mrrc p15, 1, %0, %1, c14" : "=r" (cvall), "=r" (cvalh));
-> -
-> -	return ((cycle_t) cvalh << 32) | cvall;
-> -}
-> -
-> -static u32 notrace arch_counter_get_cntvct32(void)
-> -{
-> -	cycle_t cntvct = arch_counter_get_cntvct();
-> -
-> -	/*
-> -	 * The sched_clock infrastructure only knows about counters
-> -	 * with at most 32bits. Forget about the upper 24 bits for the
-> -	 * time being...
-> -	 */
-> -	return (u32)(cntvct & (u32)~0);
-> -}
-> -
-> -static cycle_t arch_counter_read(struct clocksource *cs)
-> -{
-> -	return arch_counter_get_cntpct();
-> -}
-> -
->  static struct clocksource clocksource_counter = {
->  	.name	= "arch_sys_counter",
->  	.rating	= 400,
-> @@ -262,8 +379,12 @@ static int __init arch_timer_register(void)
->  
->  	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
->  
-> -	err = request_percpu_irq(arch_timer_ppi, arch_timer_handler,
-> +	if (is_irq_percpu)
-> +		err = request_percpu_irq(arch_timer_ppi, arch_timer_handler,
->  				 "arch_timer", arch_timer_evt);
-> +	else
-> +		err = request_irq(arch_timer_ppi, arch_timer_handler, 0,
-> +			"arch_timer", arch_timer_evt);
+Does your hardware deassert the interrupt even when the enable bit is not
+set? If so, would the following sequence work?
 
-So you end up enabling the interrupt earlier than expected. Are you sure
-this is safe?
+        ctrl &= ~(ARCH_TIMER_CTRL_ENABLE | ARCH_TIMER_CTRL_IT_MASK);
+        arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
 
->  	if (err) {
->  		pr_err("arch_timer: can't register interrupt %d (%d)\n",
->  		       arch_timer_ppi, err);
-> @@ -271,8 +392,13 @@ static int __init arch_timer_register(void)
->  	}
->  
->  	if (arch_timer_ppi2) {
-> -		err = request_percpu_irq(arch_timer_ppi2, arch_timer_handler,
-> -					 "arch_timer", arch_timer_evt);
-> +		if (is_irq_percpu)
-> +			err = request_percpu_irq(arch_timer_ppi2,
-> +					arch_timer_handler, "arch_timer",
-> +					arch_timer_evt);
-> +		else
-> +			err = request_irq(arch_timer_ppi2, arch_timer_handler,
-> +					0, "arch_timer", arch_timer_evt);
->  		if (err) {
->  			pr_err("arch_timer: can't register interrupt %d (%d)\n",
->  			       arch_timer_ppi2, err);
-> @@ -314,10 +440,40 @@ static const struct of_device_id
-> arch_timer_of_match[] __initconst = {
->  	{},
->  };
->  
-> +static int __init arch_timer_base_init(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	if (!timer_base) {
-> +		np = of_find_matching_node(NULL, arch_timer_of_match);
-> +		if (!np) {
-> +			pr_err("arch_timer: can't find DT node\n");
-> +			return -ENODEV;
-> +		}
-> +
-> +		if (of_get_address(np, 0, NULL, NULL)) {
-> +			timer_base = of_iomap(np, 0);
-> +			if (!timer_base) {
-> +				pr_err("arch_timer: cant map timer base\n");
-> +				return -ENOMEM;
-> +			}
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static inline void __init arch_timer_base_free(void)
-> +{
-> +	if (timer_base)
-> +		iounmap(timer_base);
-> +}
-> +
->  int __init arch_timer_of_register(void)
->  {
->  	struct device_node *np;
->  	u32 freq;
-> +	int ret;
->  
->  	np = of_find_matching_node(NULL, arch_timer_of_match);
->  	if (!np) {
-> @@ -331,20 +487,37 @@ int __init arch_timer_of_register(void)
->  
->  	arch_timer_ppi = irq_of_parse_and_map(np, 0);
->  	arch_timer_ppi2 = irq_of_parse_and_map(np, 1);
-> +
-> +	ret = arch_timer_base_init();
-> +	if (ret)
-> +		return ret;
-> +
-> +	is_irq_percpu = !(of_property_read_bool(np, "irq-is-not-percpu"));
-> +
->  	pr_info("arch_timer: found %s irqs %d %d\n",
->  		np->name, arch_timer_ppi, arch_timer_ppi2);
->  
-> -	return arch_timer_register();
-> +	ret = arch_timer_register();
-> +	if (ret)
-> +		arch_timer_base_free();
-> +
-> +	return ret;
->  }
->  
->  int __init arch_timer_sched_clock_init(void)
->  {
->  	int err;
->  
-> -	err = arch_timer_available();
-> +	err = arch_timer_base_init();
->  	if (err)
->  		return err;
->  
-> +	err = arch_timer_available();
-> +	if (err) {
-> +		arch_timer_base_free();
-> +		return err;
-> +	}
-> +
->  	setup_sched_clock(arch_counter_get_cntvct32, 32, arch_timer_rate);
->  	return 0;
->  }
+	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
 
+        ctrl |= ARCH_TIMER_CTRL_ENABLE;
+        arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
+
+Thanks,
+
+        M.
 -- 
 Fast, cheap, reliable. Pick two.
+
