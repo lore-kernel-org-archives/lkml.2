@@ -1,175 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2HKDM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 23:12:58 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:32776 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab2HKDMf (ORCPT
+	id S1753860Ab2HKDNT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 23:13:19 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:33368 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab2HKDNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 23:12:35 -0400
-Message-ID: <5025CD77.2030100@linux.vnet.ibm.com>
-Date: Sat, 11 Aug 2012 11:11:51 +0800
+	Fri, 10 Aug 2012 23:13:16 -0400
+Message-ID: <5025CDC6.2050704@linux.vnet.ibm.com>
+Date: Sat, 11 Aug 2012 11:13:10 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Marcelo Tosatti <mtosatti@redhat.com>
 CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 05/12] KVM: reorganize hva_to_pfn
-References: <5020E423.9080004@linux.vnet.ibm.com> <5020E509.8070901@linux.vnet.ibm.com> <20120810175115.GA12477@amt.cnet>
-In-Reply-To: <20120810175115.GA12477@amt.cnet>
+Subject: Re: [PATCH v5 11/12] KVM: x86: introduce set_mmio_exit_info
+References: <5020E423.9080004@linux.vnet.ibm.com> <5020E5E2.4080603@linux.vnet.ibm.com> <20120810180348.GB12477@amt.cnet>
+In-Reply-To: <20120810180348.GB12477@amt.cnet>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081103-2000-0000-0000-000008AC5BDE
+x-cbid: 12081103-4790-0000-0000-000004163502
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2012 01:51 AM, Marcelo Tosatti wrote:
-> On Tue, Aug 07, 2012 at 05:51:05PM +0800, Xiao Guangrong wrote:
->> We do too many things in hva_to_pfn, this patch reorganize the code,
->> let it be better readable
+On 08/11/2012 02:03 AM, Marcelo Tosatti wrote:
+
+>>  int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+>>  			void *val, unsigned int bytes,
+>>  			struct x86_exception *exception,
+>> @@ -3870,14 +3881,10 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+>>  		return rc;
 >>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  virt/kvm/kvm_main.c |  159 +++++++++++++++++++++++++++++++--------------------
->>  1 files changed, 97 insertions(+), 62 deletions(-)
+>>  	gpa = vcpu->mmio_fragments[0].gpa;
+>> -
+>>  	vcpu->mmio_needed = 1;
+>>  	vcpu->mmio_cur_fragment = 0;
 >>
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index 26ffc87..dd01bcb 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -1043,83 +1043,118 @@ static inline int check_user_page_hwpoison(unsigned long addr)
->>  	return rc == -EHWPOISON;
+>> -	vcpu->run->mmio.len = vcpu->mmio_fragments[0].len;
+>> -	vcpu->run->mmio.is_write = vcpu->mmio_is_write = ops->write;
+>> -	vcpu->run->exit_reason = KVM_EXIT_MMIO;
+>> -	vcpu->run->mmio.phys_addr = gpa;
+>> +	set_mmio_exit_info(vcpu, &vcpu->mmio_fragments[0], ops->write);
+>>
+>>  	return ops->read_write_exit_mmio(vcpu, gpa, val, bytes);
 >>  }
->>
->> -static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
->> -			bool write_fault, bool *writable)
->> +/*
->> + * The atomic path to get the writable pfn which will be stored in @pfn,
->> + * true indicates success, otherwise false is returned.
->> + */
->> +static bool hva_to_pfn_fast(unsigned long addr, bool atomic, bool *async,
->> +			    bool write_fault, bool *writable, pfn_t *pfn)
+>> @@ -5486,7 +5493,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>>   */
+>>  static int complete_mmio(struct kvm_vcpu *vcpu)
 >>  {
->>  	struct page *page[1];
->> -	int npages = 0;
->> -	pfn_t pfn;
->> +	int npages;
+>> -	struct kvm_run *run = vcpu->run;
+>>  	struct kvm_mmio_fragment *frag;
+>>  	int r;
 >>
->> -	/* we can do it either atomically or asynchronously, not both */
->> -	BUG_ON(atomic && async);
->> +	if (!(async || atomic))
->> +		return false;
+>> @@ -5497,7 +5503,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+>>  		/* Complete previous fragment */
+>>  		frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
+>>  		if (!vcpu->mmio_is_write)
+>> -			memcpy(frag->data, run->mmio.data, frag->len);
+>> +			memcpy(frag->data, vcpu->run->mmio.data, frag->len);
+>>  		if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
+>>  			vcpu->mmio_needed = 0;
+>>  			if (vcpu->mmio_is_write)
+>> @@ -5507,12 +5513,7 @@ static int complete_mmio(struct kvm_vcpu *vcpu)
+>>  		}
+>>  		/* Initiate next fragment */
+>>  		++frag;
+>> -		run->exit_reason = KVM_EXIT_MMIO;
+>> -		run->mmio.phys_addr = frag->gpa;
+>> -		if (vcpu->mmio_is_write)
+>> -			memcpy(run->mmio.data, frag->data, frag->len);
+>> -		run->mmio.len = frag->len;
+>> -		run->mmio.is_write = vcpu->mmio_is_write;
+>> +		set_mmio_exit_info(vcpu, frag, vcpu->mmio_is_write);
+>>  		return 0;
 >>
->> -	BUG_ON(!write_fault && !writable);
->> +	npages = __get_user_pages_fast(addr, 1, 1, page);
->> +	if (npages == 1) {
->> +		*pfn = page_to_pfn(page[0]);
->>
->> -	if (writable)
->> -		*writable = true;
->> +		if (writable)
->> +			*writable = true;
->> +		return true;
->> +	}
->> +
->> +	return false;
->> +}
->>
->> -	if (atomic || async)
->> -		npages = __get_user_pages_fast(addr, 1, 1, page);
->> +/*
->> + * The slow path to get the pfn of the specified host virtual address,
->> + * 1 indicates success, -errno is returned if error is detected.
->> + */
->> +static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
->> +			   bool *writable, pfn_t *pfn)
->> +{
->> +	struct page *page[1];
->> +	int npages = 0;
->>
->> -	if (unlikely(npages != 1) && !atomic) {
->> -		might_sleep();
->> +	might_sleep();
->>
->> -		if (writable)
->> -			*writable = write_fault;
->> -
->> -		if (async) {
->> -			down_read(&current->mm->mmap_sem);
->> -			npages = get_user_page_nowait(current, current->mm,
->> -						     addr, write_fault, page);
->> -			up_read(&current->mm->mmap_sem);
->> -		} else
->> -			npages = get_user_pages_fast(addr, 1, write_fault,
->> -						     page);
->> -
->> -		/* map read fault as writable if possible */
->> -		if (unlikely(!write_fault) && npages == 1) {
->> -			struct page *wpage[1];
->> -
->> -			npages = __get_user_pages_fast(addr, 1, 1, wpage);
->> -			if (npages == 1) {
->> -				*writable = true;
->> -				put_page(page[0]);
->> -				page[0] = wpage[0];
->> -			}
->> -			npages = 1;
->> +	if (writable)
->> +		*writable = write_fault;
->> +
->> +	if (async) {
->> +		down_read(&current->mm->mmap_sem);
->> +		npages = get_user_page_nowait(current, current->mm,
->> +					      addr, write_fault, page);
->> +		up_read(&current->mm->mmap_sem);
->> +	} else
->> +		npages = get_user_pages_fast(addr, 1, write_fault,
->> +					     page);
->> +	if (npages != 1)
->> +		return npages;
+>>  	}
+>> -- 
+>> 1.7.7.6
 > 
->  * Returns number of pages pinned. This may be fewer than the number
->  * requested. If nr_pages is 0 or negative, returns 0. If no pages
->  * were pinned, returns -errno.
->  */
-> int get_user_pages_fast(unsigned long start, int nr_pages, int write,
->                         struct page **pages)
-> 
-> 
-> Current behaviour is
-> 
->         if (atomic || async)
->                 npages = __get_user_pages_fast(addr, 1, 1, page);
-> 
-> 	if (npages != 1) 
-> 		slow path retry;
-> 
-> The changes above change this, don't they?
+> IMO having a function is unnecessary (it makes it harder the code).
 
-Marcelo,
-
-Sorry, I do not know why you thought the logic was changed, in this patch,
-the logic is:
-
-	/* return true if it is successful. */
-        if (hva_to_pfn_fast(addr, atomic, async, write_fault, writable, &pfn))
-                return pfn;
-
-	/* atomic can not go to slow path. */
-        if (atomic)
-                return KVM_PFN_ERR_FAULT;
-
-	/* get pfn by the slow path */
-        npages = hva_to_pfn_slow(addr, async, write_fault, writable, &pfn);
-        if (npages == 1)
-                return pfn;
-
-	/* the error-handle path. */
-	......
-
-
-Did i miss something?
+Okay, i will drop this patch.
 
 
