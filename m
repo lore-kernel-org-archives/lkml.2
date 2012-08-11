@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760482Ab2HKB2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:28:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57436 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759392Ab2HKBZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:56 -0400
+	id S1760520Ab2HKB2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:28:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53625 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759664Ab2HKBZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:25:54 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [RFC v2 22/22] ARM: keystone: add switch over to high physical address range
-Date: Fri, 10 Aug 2012 21:25:05 -0400
-Message-ID: <1344648306-15619-23-git-send-email-cyril@ti.com>
+Subject: [PATCH v2 16/22] ARM: mm: cleanup checks for membank overlap with vmalloc area
+Date: Fri, 10 Aug 2012 21:24:59 -0400
+Message-ID: <1344648306-15619-17-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
 References: <1344648306-15619-1-git-send-email-cyril@ti.com>
@@ -23,217 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keystone platforms have their physical memory mapped at an address outside the
-32-bit physical range.  A Keystone machine with 16G of RAM would find its
-memory at 0x0800000000 - 0x0bffffffff.
+On Keystone platforms, physical memory is entirely outside the 32-bit
+addressible range.  Therefore, the (bank->start > ULONG_MAX) check below marks
+the entire system memory as highmem, and this causes unpleasentness all over.
 
-For boot purposes, the interconnect supports a limited alias of some of this
-memory within the 32-bit addressable space (0x80000000 - 0xffffffff).  This
-aliasing is implemented in hardware, and is not intended to be used much
-beyond boot.  For instance, DMA coherence does not work when running out of
-this aliased address space.
+This patch eliminates the extra bank start check (against ULONG_MAX) by
+checking bank->start against the physical address corresponding to vmalloc_min
+instead.
 
-Therefore, we've taken the approach of booting out of the low physical address
-range, and subsequently we switch over to the high range once we're safely
-inside machine specific territory.  This patch implements this switch over
-mechanism, which involves rewiring the TTBRs and page tables to point to the
-new physical address space.
+In the process, this patch also cleans up parts of the highmem sanity check
+code by removing what has now become a redundant check for banks that entirely
+overlap with the vmalloc range.
 
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/Kconfig                             |    1 +
- arch/arm/boot/dts/keystone-sim.dts           |    8 +++---
- arch/arm/configs/keystone_defconfig          |    1 +
- arch/arm/mach-keystone/include/mach/memory.h |   25 +++++++++++++++++
- arch/arm/mach-keystone/keystone.c            |   39 ++++++++++++++++++++++++++
- arch/arm/mach-keystone/platsmp.c             |   16 +++++++++--
- 6 files changed, 83 insertions(+), 7 deletions(-)
+ arch/arm/mm/mmu.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 37b4e9c..18ffff7 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -417,6 +417,7 @@ config ARCH_KEYSTONE
- 	select NEED_MACH_MEMORY_H
- 	select HAVE_SCHED_CLOCK
- 	select HAVE_SMP
-+	select ZONE_DMA if ARM_LPAE
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
-diff --git a/arch/arm/boot/dts/keystone-sim.dts b/arch/arm/boot/dts/keystone-sim.dts
-index acec30f8..17ee473 100644
---- a/arch/arm/boot/dts/keystone-sim.dts
-+++ b/arch/arm/boot/dts/keystone-sim.dts
-@@ -4,8 +4,8 @@
- / {
- 	model = "Texas Instruments Keystone 2 SoC";
- 	compatible = "ti,keystone-evm";
--	#address-cells = <1>;
--	#size-cells = <1>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
- 	interrupt-parent = <&gic>;
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index f764c03..3d685c6 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -901,15 +901,12 @@ void __init sanity_check_meminfo(void)
+ 		struct membank *bank = &meminfo.bank[j];
+ 		*bank = meminfo.bank[i];
  
- 	aliases {
-@@ -13,11 +13,11 @@
- 	};
+-		if (bank->start > ULONG_MAX)
+-			highmem = 1;
+-
+-#ifdef CONFIG_HIGHMEM
+ 		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
  
- 	chosen {
--		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x85000000,2M";
-+		bootargs = "console=ttyS0,115200n8 debug earlyprintk lpj=50000 rdinit=/bin/ash rw root=/dev/ram0 initrd=0x805000000,2M";
- 	};
+ 		bank->highmem = highmem;
  
- 	memory {
--		reg = <0x80000000 0x8000000>;
-+		reg = <0x00000008 0x00000000 0x00000000 0x8000000>;
- 	};
++#ifdef CONFIG_HIGHMEM
+ 		/*
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+@@ -932,8 +929,6 @@ void __init sanity_check_meminfo(void)
+ 			bank->size = vmalloc_limit - bank->start;
+ 		}
+ #else
+-		bank->highmem = highmem;
+-
+ 		/*
+ 		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
+ 		 */
+@@ -946,18 +941,6 @@ void __init sanity_check_meminfo(void)
+ 		}
  
- 	cpus {
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index 5f71e66..8ea3b96 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -1,6 +1,7 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_BLK_DEV_INITRD=y
- CONFIG_ARCH_KEYSTONE=y
-+CONFIG_ARM_LPAE=y
- CONFIG_SMP=y
- CONFIG_ARM_ARCH_TIMER=y
- CONFIG_NR_CPUS=4
-diff --git a/arch/arm/mach-keystone/include/mach/memory.h b/arch/arm/mach-keystone/include/mach/memory.h
-index 7c78b1e..a5f7a1a 100644
---- a/arch/arm/mach-keystone/include/mach/memory.h
-+++ b/arch/arm/mach-keystone/include/mach/memory.h
-@@ -19,4 +19,29 @@
- #define MAX_PHYSMEM_BITS	36
- #define SECTION_SIZE_BITS	34
- 
-+#define KEYSTONE_LOW_PHYS_START		0x80000000ULL
-+#define KEYSTONE_LOW_PHYS_SIZE		0x80000000ULL /* 2G */
-+#define KEYSTONE_LOW_PHYS_END		(KEYSTONE_LOW_PHYS_START + \
-+					 KEYSTONE_LOW_PHYS_SIZE - 1)
-+
-+#define KEYSTONE_HIGH_PHYS_START	0x800000000ULL
-+#define KEYSTONE_HIGH_PHYS_SIZE		0x400000000ULL	/* 16G */
-+#define KEYSTONE_HIGH_PHYS_END		(KEYSTONE_HIGH_PHYS_START + \
-+					 KEYSTONE_HIGH_PHYS_SIZE - 1)
-+#ifdef CONFIG_ARM_LPAE
-+
-+#ifndef __ASSEMBLY__
-+
-+static inline phys_addr_t __virt_to_idmap(unsigned long x)
-+{
-+	return (phys_addr_t)(x) - CONFIG_PAGE_OFFSET +
-+		KEYSTONE_LOW_PHYS_START;
-+}
-+
-+#define virt_to_idmap(x)	__virt_to_idmap((unsigned long)(x))
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* CONFIG_ARM_LPAE */
-+
- #endif /* __ASM_MACH_MEMORY_H */
-diff --git a/arch/arm/mach-keystone/keystone.c b/arch/arm/mach-keystone/keystone.c
-index 6a8ece9..c4be7a7 100644
---- a/arch/arm/mach-keystone/keystone.c
-+++ b/arch/arm/mach-keystone/keystone.c
-@@ -74,6 +74,41 @@ static const char *keystone_match[] __initconst = {
- 	NULL,
- };
- 
-+static void __init keystone_init_meminfo(void)
-+{
-+	bool lpae = IS_ENABLED(CONFIG_ARM_LPAE);
-+	bool pvpatch = IS_ENABLED(CONFIG_ARM_PATCH_PHYS_VIRT);
-+	phys_addr_t offset = PHYS_OFFSET - KEYSTONE_LOW_PHYS_START;
-+	phys_addr_t mem_start, mem_end;
-+
-+	BUG_ON(meminfo.nr_banks < 1);
-+	mem_start = meminfo.bank[0].start;
-+	mem_end = mem_start + meminfo.bank[0].size - 1;
-+
-+	/* nothing to do if we are running out of the <32-bit space */
-+	if (mem_start >= KEYSTONE_LOW_PHYS_START &&
-+	    mem_end   <= KEYSTONE_LOW_PHYS_END)
-+		return;
-+
-+	if (!lpae || !pvpatch) {
-+		panic("Enable %s%s%s to run outside 32-bit space\n",
-+		      !lpae ? __stringify(CONFIG_ARM_LPAE) : "",
-+		      (!lpae && !pvpatch) ? " and " : "",
-+		      !pvpatch ? __stringify(CONFIG_ARM_PATCH_PHYS_VIRT) : "");
-+	}
-+
-+	if (mem_start < KEYSTONE_HIGH_PHYS_START ||
-+	    mem_end   > KEYSTONE_HIGH_PHYS_END) {
-+		panic("Invalid address space for memory (%08llx-%08llx)\n",
-+		      mem_start, mem_end);
-+	}
-+
-+	offset += KEYSTONE_HIGH_PHYS_START;
-+	pr_info("switching to high address space at 0x%llx\n", offset);
-+	__pv_phys_offset = offset;
-+	__pv_offset      = offset - PAGE_OFFSET;
-+}
-+
- DT_MACHINE_START(KEYSTONE, "Keystone")
- 	smp_ops(keystone_smp_ops)
- 	.map_io		= keystone_map_io,
-@@ -82,4 +117,8 @@ DT_MACHINE_START(KEYSTONE, "Keystone")
- 	.handle_irq	= gic_handle_irq,
- 	.init_machine	= keystone_init,
- 	.dt_compat	= keystone_match,
-+	.init_meminfo	= keystone_init_meminfo,
-+#ifdef CONFIG_ZONE_DMA
-+	.dma_zone_size	= SZ_2G,
-+#endif
- MACHINE_END
-diff --git a/arch/arm/mach-keystone/platsmp.c b/arch/arm/mach-keystone/platsmp.c
-index dbe7601..0151906 100644
---- a/arch/arm/mach-keystone/platsmp.c
-+++ b/arch/arm/mach-keystone/platsmp.c
-@@ -24,6 +24,7 @@
- #include <asm/smp_ops.h>
- #include <asm/hardware/gic.h>
- #include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
- #include <asm/memory.h>
- 
- #include "keystone.h"
-@@ -51,17 +52,26 @@ static void __init keystone_smp_prepare_cpus(unsigned int max_cpus)
- 	/* nothing for now */
- }
- 
-+static void __cpuinit keystone_secondary_initmem(void)
-+{
-+#ifdef CONFIG_ARM_LPAE
-+	pgd_t *pgd0 = pgd_offset_k(0);
-+	cpu_set_ttbr(1, __pa(pgd0) + TTBR1_OFFSET);
-+	local_flush_tlb_all();
-+#endif
-+}
-+
- static void __cpuinit keystone_secondary_init(unsigned int cpu)
- {
- 	gic_secondary_init(0);
-+	keystone_secondary_initmem();
- }
- 
- static int __cpuinit
- keystone_boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
--	unsigned long *ptr;
--	
--	ptr = phys_to_virt(0x800001f0);
-+	unsigned long *ptr = (unsigned long *)(PAGE_OFFSET + 0x1f0);
-+
- 	ptr[cpu] = virt_to_idmap(&secondary_startup);
- 	__cpuc_flush_dcache_area(ptr, sizeof(ptr) * 4);
- 
+ 		/*
+-		 * Check whether this memory bank would entirely overlap
+-		 * the vmalloc area.
+-		 */
+-		if (bank->start >= vmalloc_limit) {
+-			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+-			       "(vmalloc region overlap).\n",
+-			       (unsigned long long)bank->start,
+-			       (unsigned long long)bank->start + bank->size - 1);
+-			continue;
+-		}
+-
+-		/*
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
 -- 
 1.7.9.5
 
