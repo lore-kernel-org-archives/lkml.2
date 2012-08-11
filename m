@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab2HKBZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:25:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43681 "EHLO arroyo.ext.ti.com"
+	id S1759255Ab2HKBZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:25:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43682 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755080Ab2HKBZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:36 -0400
+	id S1755116Ab2HKBZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:25:37 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
         <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
         Cyril Chemparathy <cyril@ti.com>, Vitaly Andrianov <vitalya@ti.com>
-Subject: [PATCH v2 14/22] ARM: LPAE: accomodate >32-bit addresses for page table base
-Date: Fri, 10 Aug 2012 21:24:57 -0400
-Message-ID: <1344648306-15619-15-git-send-email-cyril@ti.com>
+Subject: [PATCH v2 17/22] ARM: mm: clean up membank size limit checks
+Date: Fri, 10 Aug 2012 21:25:00 -0400
+Message-ID: <1344648306-15619-18-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
 References: <1344648306-15619-1-git-send-email-cyril@ti.com>
@@ -23,151 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch redefines the early boot time use of the R4 register to steal a few
-low order bits (ARCH_PGD_SHIFT bits) on LPAE systems.  This allows for up to
-38-bit physical addresses.
+This patch cleans up the highmem sanity check code by simplifying the range
+checks with a pre-calculated size_limit.  This patch should otherwise have no
+functional impact on behavior.
+
+This patch also removes a redundant (bank->start < vmalloc_limit) check, since
+this is already covered by the !highmem condition.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
- arch/arm/include/asm/memory.h |   15 +++++++++++++++
- arch/arm/kernel/head.S        |   10 ++++------
- arch/arm/kernel/smp.c         |   11 +++++++++--
- arch/arm/mm/proc-v7-3level.S  |    8 ++++++++
- 4 files changed, 36 insertions(+), 8 deletions(-)
+ arch/arm/mm/mmu.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 64db5a4..e5d0cc8 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -18,6 +18,7 @@
- #include <linux/types.h>
- #include <linux/sizes.h>
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 3d685c6..662684b 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -899,10 +899,15 @@ void __init sanity_check_meminfo(void)
  
-+#include <asm/cache.h>
- #include <asm/runtime-patch.h>
- 
- #ifdef CONFIG_NEED_MACH_MEMORY_H
-@@ -143,6 +144,20 @@
- #define page_to_phys(page)	(__pfn_to_phys(page_to_pfn(page)))
- #define phys_to_page(phys)	(pfn_to_page(__phys_to_pfn(phys)))
- 
-+/*
-+ * Minimum guaranted alignment in pgd_alloc().  The page table pointers passed
-+ * around in head.S and proc-*.S are shifted by this amount, in order to
-+ * leave spare high bits for systems with physical address extension.  This
-+ * does not fully accomodate the 40-bit addressing capability of ARM LPAE, but
-+ * gives us about 38-bits or so.
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define ARCH_PGD_SHIFT		L1_CACHE_SHIFT
-+#else
-+#define ARCH_PGD_SHIFT		0
-+#endif
-+#define ARCH_PGD_MASK		((1 << ARCH_PGD_SHIFT) - 1)
+ 	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
+ 		struct membank *bank = &meminfo.bank[j];
++		phys_addr_t size_limit;
 +
- #ifndef __ASSEMBLY__
+ 		*bank = meminfo.bank[i];
++		size_limit = bank->size;
  
- /*
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 61fb8df..9664db0 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -152,7 +152,7 @@ ENDPROC(stext)
-  *
-  * Returns:
-  *  r0, r3, r5-r7 corrupted
-- *  r4 = physical page table address
-+ *  r4 = page table (see ARCH_PGD_SHIFT in asm/memory.h)
-  */
- __create_page_tables:
- 	pgtbl	r4, r8				@ page table address
-@@ -306,6 +306,7 @@ __create_page_tables:
+ 		if (bank->start >= vmalloc_limit)
+ 			highmem = 1;
++		else
++			size_limit = vmalloc_limit - bank->start;
+ 
+ 		bank->highmem = highmem;
+ 
+@@ -911,8 +916,7 @@ void __init sanity_check_meminfo(void)
+ 		 * Split those memory banks which are partially overlapping
+ 		 * the vmalloc area greatly simplifying things later.
+ 		 */
+-		if (!highmem && bank->start < vmalloc_limit &&
+-		    bank->size > vmalloc_limit - bank->start) {
++		if (!highmem && bank->size > size_limit) {
+ 			if (meminfo.nr_banks >= NR_BANKS) {
+ 				printk(KERN_CRIT "NR_BANKS too low, "
+ 						 "ignoring high memory\n");
+@@ -921,12 +925,12 @@ void __init sanity_check_meminfo(void)
+ 					(meminfo.nr_banks - i) * sizeof(*bank));
+ 				meminfo.nr_banks++;
+ 				i++;
+-				bank[1].size -= vmalloc_limit - bank->start;
++				bank[1].size -= size_limit;
+ 				bank[1].start = vmalloc_limit;
+ 				bank[1].highmem = highmem = 1;
+ 				j++;
+ 			}
+-			bank->size = vmalloc_limit - bank->start;
++			bank->size = size_limit;
+ 		}
+ #else
+ 		/*
+@@ -944,14 +948,13 @@ void __init sanity_check_meminfo(void)
+ 		 * Check whether this memory bank would partially overlap
+ 		 * the vmalloc area.
+ 		 */
+-		if (bank->start + bank->size > vmalloc_limit)
+-			unsigned long newsize = vmalloc_limit - bank->start;
++		if (bank->size > size_limit) {
+ 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
+ 			       "to -%.8llx (vmalloc region overlap).\n",
+ 			       (unsigned long long)bank->start,
+ 			       (unsigned long long)bank->start + bank->size - 1,
+-			       (unsigned long long)bank->start + newsize - 1);
+-			bank->size = newsize;
++			       (unsigned long long)bank->start + size_limit - 1);
++			bank->size = size_limit;
+ 		}
  #endif
- #ifdef CONFIG_ARM_LPAE
- 	sub	r4, r4, #0x1000		@ point to the PGD table
-+	mov	r4, r4, lsr #ARCH_PGD_SHIFT
- #endif
- 	mov	pc, lr
- ENDPROC(__create_page_tables)
-@@ -379,7 +380,7 @@ __secondary_data:
-  *  r0  = cp#15 control register
-  *  r1  = machine ID
-  *  r2  = atags or dtb pointer
-- *  r4  = page table pointer
-+ *  r4  = page table (see ARCH_PGD_SHIFT in asm/memory.h)
-  *  r9  = processor ID
-  *  r13 = *virtual* address to jump to upon completion
-  */
-@@ -398,10 +399,7 @@ __enable_mmu:
- #ifdef CONFIG_CPU_ICACHE_DISABLE
- 	bic	r0, r0, #CR_I
- #endif
--#ifdef CONFIG_ARM_LPAE
--	mov	r5, #0
--	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
--#else
-+#ifndef CONFIG_ARM_LPAE
- 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index ebd8ad2..9831716 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -60,6 +60,13 @@ enum ipi_msg_type {
- 
- static DECLARE_COMPLETION(cpu_running);
- 
-+static unsigned long get_arch_pgd(pgd_t *pgd)
-+{
-+	phys_addr_t pgdir = virt_to_phys(pgd);
-+	BUG_ON(pgdir & ARCH_PGD_MASK);
-+	return pgdir >> ARCH_PGD_SHIFT;
-+}
-+
- int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
- {
- 	int ret;
-@@ -69,8 +76,8 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
- 	 * its stack and the page tables.
- 	 */
- 	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
--	secondary_data.pgdir = virt_to_phys(idmap_pgd);
--	secondary_data.swapper_pg_dir = virt_to_phys(swapper_pg_dir);
-+	secondary_data.pgdir = get_arch_pgd(idmap_pgd);
-+	secondary_data.swapper_pg_dir = get_arch_pgd(swapper_pg_dir);
- 	__cpuc_flush_dcache_area(&secondary_data, sizeof(secondary_data));
- 	outer_clean_range(__pa(&secondary_data), __pa(&secondary_data + 1));
- 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index e28383f..6fa0444 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -120,6 +120,7 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	 */
- 	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
- 	ldr	\tmp, =swapper_pg_dir		@ swapper_pg_dir virtual address
-+	mov	\tmp, \tmp, lsr #ARCH_PGD_SHIFT
- 	cmp	\ttbr1, \tmp			@ PHYS_OFFSET > PAGE_OFFSET? (branch below)
- 	mrc	p15, 0, \tmp, c2, c0, 2		@ TTB control register
- 	orr	\tmp, \tmp, #TTB_EAE
-@@ -139,8 +140,15 @@ ENDPROC(cpu_v7_set_pte_ext)
- 	 */
- 	orrls	\tmp, \tmp, #TTBR1_SIZE				@ TTBCR.T1SZ
- 	mcr	p15, 0, \tmp, c2, c0, 2				@ TTBCR
-+	mov	\tmp, \ttbr1, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
-+	mov	\ttbr1, \ttbr1, lsl #ARCH_PGD_SHIFT		@ lower bits
- 	addls	\ttbr1, \ttbr1, #TTBR1_OFFSET
- 	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
-+	mov	\tmp, \ttbr0, lsr #(32 - ARCH_PGD_SHIFT)	@ upper bits
-+	mov	\ttbr0, \ttbr0, lsl #ARCH_PGD_SHIFT		@ lower bits
-+	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
-+	mcrr	p15, 1, \ttbr1, \zero, c2			@ load TTBR1
-+	mcrr	p15, 0, \ttbr0, \zero, c2			@ load TTBR0
- 	.endm
- 
- 	__CPUINIT
+ 		if (!bank->highmem && bank->start + bank->size > arm_lowmem_limit)
 -- 
 1.7.9.5
 
