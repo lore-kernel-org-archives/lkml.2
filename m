@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2HKBaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Aug 2012 21:30:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57420 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758455Ab2HKBZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Aug 2012 21:25:40 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <arnd@arndb.de>, <catalin.marinas@arm.com>, <grant.likely@secretlab.ca>,
-        <nico@linaro.org>, <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v2 09/22] ARM: LPAE: use phys_addr_t for initrd location and size
-Date: Fri, 10 Aug 2012 21:24:52 -0400
-Message-ID: <1344648306-15619-10-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344648306-15619-1-git-send-email-cyril@ti.com>
-References: <1344648306-15619-1-git-send-email-cyril@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1759594Ab2HKBbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Aug 2012 21:31:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53246 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab2HKBbn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Aug 2012 21:31:43 -0400
+Date: Sat, 11 Aug 2012 09:32:02 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: "Shaohua Li" <shli@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3 V1] block: Fix not tracing all device plug-operation.
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201208110931595001851@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7B1Vopv002496
 
-From: Vitaly Andrianov <vitalya@ti.com>
+If process handled two or more devices,there will not be trace some
+devices plug-operation.
 
-This patch fixes the initrd setup code to use phys_addr_t instead of assuming
-32-bit addressing.  Without this we cannot boot on systems where initrd is
-located above the 4G physical address limit.
+V0-->V1
+Fix a bug when insert a req to plug-list which already had the same request-queue, it should
+used list_add not list_add_tail.
 
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 ---
- arch/arm/mm/init.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ block/blk-core.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 19ba70b..bae9d05 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -36,12 +36,13 @@
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 7a3abc6..034f186 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1521,11 +1521,25 @@ get_rq:
+ 				struct request *__rq;
  
- #include "mm.h"
- 
--static unsigned long phys_initrd_start __initdata = 0;
-+static phys_addr_t phys_initrd_start __initdata = 0;
- static unsigned long phys_initrd_size __initdata = 0;
- 
- static int __init early_initrd(char *p)
- {
--	unsigned long start, size;
-+	phys_addr_t start;
-+	unsigned long size;
- 	char *endp;
- 
- 	start = memparse(p, &endp);
-@@ -347,14 +348,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
- #ifdef CONFIG_BLK_DEV_INITRD
- 	if (phys_initrd_size &&
- 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
--		pr_err("INITRD: 0x%08lx+0x%08lx is not a memory region - disabling initrd\n",
--		       phys_initrd_start, phys_initrd_size);
-+		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
-+		       (u64)phys_initrd_start, phys_initrd_size);
- 		phys_initrd_start = phys_initrd_size = 0;
- 	}
- 	if (phys_initrd_size &&
- 	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
--		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
--		       phys_initrd_start, phys_initrd_size);
-+		pr_err("INITRD: 0x%08llx+0x%08lx overlaps in-use memory region - disabling initrd\n",
-+		       (u64)phys_initrd_start, phys_initrd_size);
- 		phys_initrd_start = phys_initrd_size = 0;
- 	}
- 	if (phys_initrd_size) {
+ 				__rq = list_entry_rq(plug->list.prev);
+-				if (__rq->q != q)
++				if (__rq->q != q) {
+ 					plug->should_sort = 1;
++					trace_block_plug(q);
++				}
++			} else {
++				struct request *__rq;
++				list_for_each_entry_reverse(__rq, &plug->list,
++					queuelist) {
++					if (__rq->q == q) {
++						list_add(&req->queuelist,
++							&__rq->queuelist);
++						goto stat_acct;
++					}
++				}
++				trace_block_plug(q);
+ 			}
+ 		}
+ 		list_add_tail(&req->queuelist, &plug->list);
++stat_acct:
+ 		drive_stat_acct(req, 1);
+ 	} else {
+ 		spin_lock_irq(q->queue_lock);
 -- 
 1.7.9.5
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
