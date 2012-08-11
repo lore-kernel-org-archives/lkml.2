@@ -1,137 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2HKN2V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 09:28:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64932 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab2HKN2Q (ORCPT
+	id S1754856Ab2HKNcK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 09:32:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47554 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab2HKNcH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 09:28:16 -0400
-Subject: Re: [PATCH 11/16] perf symbol: introduce symsrc structure.
-From: Namhyung Kim <namhyung@kernel.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Matt Hellsley <matthltc@us.ibm.com>,
-        David Hansen <dave@linux.vnet.ibm.com>
-In-Reply-To: <1344637382-22789-12-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-1-git-send-email-cody@linux.vnet.ibm.com>
-	 <1344637382-22789-12-git-send-email-cody@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Aug 2012 22:28:09 +0900
-Message-ID: <1344691689.2003.11.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Sat, 11 Aug 2012 09:32:07 -0400
+Message-ID: <50265EC9.5020602@parallels.com>
+Date: Sat, 11 Aug 2012 17:31:53 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "eparis@parisplace.org" <eparis@parisplace.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "arnd@arndb.de" <arnd@arndb.de>, "hughd@google.com" <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "yeohc@au1.ibm.com" <yeohc@au1.ibm.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "casey@schaufler-ca.com" <casey@schaufler-ca.com>,
+        "sds@tycho.nsa.govjames.l.morris" <sds@tycho.nsa.govjames.l.morris>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3 08/10] IPC: message queue copy feature introduced
+References: <20120810141517.12411.83398.stgit@localhost6.localdomain6> <20120810142602.12411.63440.stgit@localhost6.localdomain6> <CALgW_8X_gSDG0GdoU4WShohsyhdXOXTh8o9KsYPFtnkzcJXpCQ@mail.gmail.com>
+In-Reply-To: <CALgW_8X_gSDG0GdoU4WShohsyhdXOXTh8o9KsYPFtnkzcJXpCQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-08-10 (금), 15:22 -0700, Cody P Schafer:
-> Factors opening of certain sections & tracking certain elf info into an
-> external structure.
-> 
-> The goal here is to keep multiple elfs (and their looked up
-> sections/indexes) around during the symbol generation process (in
-> dso__load()).
-> 
-> We need this to properly resolve symbols on PPC due to the
-> use of function descriptors & the .opd section (ie: symbols which are
-> functions don't point to their actual location, they point to their
-> function descriptor in .opd which contains their actual location.
-> 
-> It would be possible to just keep the (Elf *) around, but then we'd end
-> up with duplicate code for looking up the same sections and checking for
-> the existence of an important section wouldn't be as clean (and we need
-> to keep the Elf stuff confined to symtab-elf.c).
-> 
-> Utilized by the later patch
-> "perf symbol: use both runtime and debug images"
-> 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  tools/perf/util/symbol-elf.c     | 119 +++++++++++++++++++++++++++++----------
->  tools/perf/util/symbol-minimal.c |  30 +++++++++-
->  tools/perf/util/symbol.c         |  22 ++++----
->  tools/perf/util/symbol.h         |  36 +++++++++++-
->  4 files changed, 163 insertions(+), 44 deletions(-)
-> 
-[SNIP]
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 37f1ea1..5e55f98 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -11,6 +11,12 @@
->  #include <stdio.h>
->  #include <byteswap.h>
->  
-> +#ifndef NO_LIBELF
+11.08.2012 15:20, Manfred Spraul пишет:
+> Hi Stanislav,
+>
+> 2012/8/10 Stanislav Kinsbursky <skinsbursky@parallels.com>:
+>> This patch is required for checkpoint/restore in userspace.
+>> IOW, c/r requires some way to get all pending IPC messages without deleting
+>> them from the queue (checkpoint can fail and in this case tasks will be resumed,
+>> so queue have to be valid).
+>> To achive this, new operation flag MSG_COPY for sys_msgrcv() system call was
+>> introduced. Also, copy counter was added to msg_queue structure. It's set to
+>> zero by default and increases by one on each copy operation and decreased by
+>> one on each receive operation until reaches zero.
+> Is msq->q_copy_cnt really necessary?
+> As far as I can see user space needs the ability to read the n-th message.
+>
+> The implementation adds a state variable to the kernel, adds two
+> automatic updates of the state into msgrcv() (an increase during
+> MSG_COPY, a decrease during normal receives) and adds a msgctl() to
+> set the state to a certain value.
+>
+> a) What about the simpler approach:
+> - if MSG_COPY is set, then @mtype is interpreted as the number of the
+> message that should be copied.
+>    If there are less than @mtype messages, then -ENOMSG is returned.
 
-Should be NO_LIBELF_SUPPORT.
+Hi, Manfred.
+Your approach is simplier, but makes the call less generic and adds 
+limitations.
+I.e. sys_msgrcv() allows you to receive message by type. And from my pow 
+this logic have to be preserved - you can specify type and then copy all 
+the messages of specified type.
 
+> b) I do not understand the purpose of the decrease of msq->q_copy_cnt:
+> Do you want to handle normal msgrcv() calls in parallel with
+> msgrcv(|MSG_COPY) calls?
 
-> +#include <libelf.h>
-> +#include <gelf.h>
-> +#include <elf.h>
-> +#endif
-> +
->  #ifdef HAVE_CPLUS_DEMANGLE
->  extern char *cplus_demangle(const char *, int);
->  
-> @@ -219,6 +225,34 @@ struct dso {
->  	char		 name[0];
->  };
->  
-> +struct symsrc {
-> +	char *name;
-> +	int fd;
-> +	enum dso_binary_type type;
-> +
-> +#ifndef NO_LIBELF
+Actually, I'm not going to copy a message from a queue, when somebody is 
+reading from it. But better to handle this case by decreasing 
+msq->q_copy_cnt, because otherwise this counter becomes invalid in case 
+of somebody is reading from queue. And this logic is similar to new 
+"peek" logic for sockets (introduced in 3.4 or 3.5).
+But I understand, that in case of queue with messages with different 
+types this approach works only if mtype is not specified for copy 
+operation. Otherwise result is unpredictable.
 
-Ditto.
+> I don't think that this will work:
+> What if msq->q_copy_cnt is 1 and and msgrcv() call receives the 20th
+> message in the queue?
 
-Thanks,
-Namhyung
+By "receives" you mean "copied"? If so, then it can happen only if mtype 
+was specified. And this logic is a part of current implementation.
 
-
-> +	Elf *elf;
-> +	GElf_Ehdr ehdr;
-> +
-> +	Elf_Scn *opdsec;
-> +	size_t opdidx;
-> +	GElf_Shdr opdshdr;
-> +
-> +	Elf_Scn *symtab;
-> +	GElf_Shdr symshdr;
-> +
-> +	Elf_Scn *dynsym;
-> +	size_t dynsym_idx;
-> +	GElf_Shdr dynshdr;
-> +
-> +	bool adjust_symbols;
-> +#endif
-> +};
-> +
-> +void symsrc__destroy(struct symsrc *ss);
-> +int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
-> +		 enum dso_binary_type type);
-> +
->  #define DSO__SWAP(dso, type, val)			\
->  ({							\
->  	type ____r = val;				\
-> @@ -334,7 +368,7 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
->  			    struct machine *machine, u64 addr,
->  			    u8 *data, ssize_t size);
->  int dso__test_data(void);
-> -int dso__load_sym(struct dso *dso, struct map *map, const char *name, int fd,
-> +int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
->  		  symbol_filter_t filter, int kmodule, int want_symtab);
->  int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
->  				symbol_filter_t filter);
-
-
+>
+> --
+>    Manfred
 
