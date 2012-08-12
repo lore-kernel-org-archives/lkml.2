@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab2HLOwq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:52:46 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64623 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2HLOwl (ORCPT
+	id S1752122Ab2HLOws (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:52:48 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33220 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab2HLOwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:52:41 -0400
+	Sun, 12 Aug 2012 10:52:43 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-fbdev@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
@@ -15,9 +15,9 @@ Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 07/11] fblog: allow selecting fbs via sysfs and module-parameters
-Date: Sun, 12 Aug 2012 16:53:21 +0200
-Message-Id: <1344783205-2384-8-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 09/11] fblog: register console driver
+Date: Sun, 12 Aug 2012 16:53:23 +0200
+Message-Id: <1344783205-2384-10-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
@@ -25,159 +25,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fblog is mainly useful during boot, reboot, panics and maintenance. In all
-cases you often want to control which monitors are used for console
-output. Moreover, in multi-seat environments it is desireable to reduce
-system-overhead by not drawing the console to all framebuffers. Four
-mechanisms to select framebuffers for fblog are added:
+We want to print the kernel log to all FBs so we need a console driver.
+This registers the driver on startup and writes all messages to all
+registered fblog instances.
 
-1) "active" module parameter: This parameter selects whether fblog has
-access to available framebuffer devices. If it is true, then fblog will
-open devices following the rules described below and rendering will take
-place. If it is false, new hotplugged devices will not be activated and no
-more rendering to currently active devices takes place. However, active
-devices will continue rendering after this is set to true again.
-
-2) "active" sysfs attribute for each fblog object. Reading this value
-returns whether a framebuffer is currently active. Writing it opens/closes
-the framebuffer. This allows runtime control which fbs are used. For
-instance, init can set these to 0 after bootup.
-Note that a framebuffer is only active if this is 1 _and_ the "active"
-module parameter is set to "true".
-
-3) "activate_on_hotplug" module parameter: This selects whether a device
-is activated by default when hotplugged. This is true by default so new
-devices will be automatically activated.
-
-4) "main_only" module parameter: This selects what devices are activated
-on hotplug. This has no effect if "activate_on_hotplug" is false.
-Otherwise, if this is true then only fb0 will be activated on hotplug.
-This is false by default.
+We cannot share a console buffer between FBs because they might have
+different resolutions. Therefore, we create one buffer per object. We
+destroy the buffer during close() so we do not waste memory if it is not
+used.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/fblog.c | 66 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 65 insertions(+), 1 deletion(-)
+ drivers/video/console/fblog.c | 150 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 150 insertions(+)
 
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index 1c526c5..aed77dc 100644
+index 8bcd0ce..2e39577 100644
 --- a/drivers/video/console/fblog.c
 +++ b/drivers/video/console/fblog.c
-@@ -44,6 +44,9 @@ struct fblog_fb {
+@@ -25,11 +25,34 @@
+ 
+ #define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
+ 
++#include <linux/console.h>
+ #include <linux/device.h>
+ #include <linux/fb.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ 
++/**
++ * struct fblog_buf: Console text buffer
++ *
++ * Each framebuffer has its own text buffer which contains all characters that
++ * are currently printed on screen. The buffers might have different sizes and
++ * can be resized during runtime. When the buffer content changes, we redraw the
++ * screen.
++ *
++ * width: Width of buffer in characters
++ * height: Height of buffer in characters
++ * lines: Array of lines
++ * pos_x: Cursor x-position
++ * pos_y: Cursor y-position
++ */
++struct fblog_buf {
++	size_t width;
++	size_t height;
++	u16 **lines;
++	size_t pos_x;
++	size_t pos_y;
++};
++
+ enum fblog_flags {
+ 	FBLOG_KILLED,
+ 	FBLOG_OPEN,
+@@ -42,6 +65,7 @@ struct fblog_fb {
+ 	struct fb_info *info;
+ 	struct device dev;
+ 	struct mutex lock;
++	struct fblog_buf buf;
+ };
  
  static DEFINE_MUTEX(fblog_registration_lock);
- static struct fblog_fb *fblog_fbs[FB_MAX];
-+static bool active = true;
-+static bool activate_on_hotplug = true;
-+static bool main_only = false;
+@@ -52,6 +76,106 @@ static bool main_only = false;
  
  #define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
  
-@@ -63,6 +66,9 @@ static int fblog_open(struct fblog_fb *fb)
- {
- 	int ret;
- 
-+	if (!active)
-+		return -EPERM;
-+
- 	mutex_lock(&fb->lock);
- 
- 	if (test_bit(FBLOG_KILLED, &fb->flags)) {
-@@ -115,6 +121,40 @@ static void fblog_close(struct fblog_fb *fb, bool kill_dev)
- 	mutex_unlock(&fb->lock);
- }
- 
-+static ssize_t fblog_dev_active_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
++static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
++			     size_t height)
 +{
-+	struct fblog_fb *fb = to_fblog_dev(dev);
++	u16 **lines = NULL;
++	size_t i, j, minw, minh;
 +
-+	return snprintf(buf, PAGE_SIZE, "%d\n",
-+			!!test_bit(FBLOG_OPEN, &fb->flags));
-+}
++	if (buf->height == height && buf->width == width)
++		return;
 +
-+static ssize_t fblog_dev_active_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf,
-+				      size_t count)
-+{
-+	struct fblog_fb *fb = to_fblog_dev(dev);
-+	unsigned long num;
-+	int ret = 0;
++	if (width && height) {
++		lines = kzalloc(height * sizeof(char *), GFP_KERNEL);
++		if (!lines)
++			return;
 +
-+	num = simple_strtoul(buf, NULL, 10);
++		for (i = 0; i < height; ++i) {
++			lines[i] = kzalloc(width * sizeof(u16), GFP_KERNEL);
++			if (!lines[i]) {
++				while (i--)
++					kfree(lines[i]);
++				return;
++			}
++		}
 +
-+	mutex_lock(&fb->info->lock);
-+	if (num)
-+		ret = fblog_open(fb);
-+	else
-+		fblog_close(fb, false);
-+	mutex_unlock(&fb->info->lock);
++		/* copy old lines */
++		minw = min(width, buf->width);
++		minh = min(height, buf->height);
++		if (height >= buf->height)
++			i = 0;
++		else
++			i = buf->height - height;
 +
-+	return ret ? ret : count;
-+}
-+
-+static DEVICE_ATTR(active, S_IRUGO | S_IWUSR | S_IWGRP, fblog_dev_active_show,
-+		   fblog_dev_active_store);
-+
- /*
-  * fblog framebuffer list
-  * The fblog_fbs[] array contains all currently registered framebuffers. If a
-@@ -148,6 +188,7 @@ static void fblog_do_unregister(struct fb_info *info)
- 	fblog_fbs[info->node] = NULL;
- 
- 	fblog_close(fb, true);
-+	device_remove_file(&fb->dev, &dev_attr_active);
- 	device_del(&fb->dev);
- 	put_device(&fb->dev);
- }
-@@ -156,6 +197,7 @@ static void fblog_do_register(struct fb_info *info, bool force)
- {
- 	struct fblog_fb *fb;
- 	int ret;
-+	bool do_open = true;
- 
- 	fb = fblog_fbs[info->node];
- 	if (fb && fb->info != info) {
-@@ -186,7 +228,20 @@ static void fblog_do_register(struct fb_info *info, bool force)
- 		return;
- 	}
- 
--	fblog_open(fb);
-+	ret = device_create_file(&fb->dev, &dev_attr_active);
-+	if (ret) {
-+		pr_err("fblog: cannot create sysfs entry");
-+		/* do not open fb if we cannot create control file */
-+		do_open = false;
++		for (j = 0; j < minh; ++i, ++j)
++			memcpy(lines[j], buf->lines[i], minw * sizeof(u16));
++	} else {
++		width = 0;
++		height = 0;
 +	}
 +
-+	if (!activate_on_hotplug)
-+		do_open = false;
-+	if (main_only && info->node != 0)
-+		do_open = false;
++	for (i = 0; i < buf->height; ++i)
++		kfree(buf->lines[i]);
++	kfree(buf->lines);
 +
-+	if (do_open)
-+		fblog_open(fb);
- }
++	buf->lines = lines;
++	buf->width = width;
++	buf->height = height;
++}
++
++static void fblog_buf_deinit(struct fblog_buf *buf)
++{
++	fblog_buf_resize(buf, 0, 0);
++}
++
++static void fblog_buf_rotate(struct fblog_buf *buf)
++{
++	u16 *line;
++
++	if (!buf->height)
++		return;
++
++	line = buf->lines[0];
++	memset(line, 0, sizeof(u16) * buf->width);
++
++	memmove(buf->lines, &buf->lines[1], sizeof(char*) * (buf->height - 1));
++	buf->lines[buf->height - 1] = line;
++}
++
++static void fblog_buf_write(struct fblog_buf *buf, const char *str, size_t len)
++{
++	char c;
++
++	if (!buf->height)
++		return;
++
++	while (len--) {
++		c = *str++;
++
++		if (c == 0)
++			c = '?';
++
++		if (c == '\n') {
++			buf->pos_x = 0;
++			if (++buf->pos_y >= buf->height) {
++				buf->pos_y = buf->height - 1;
++				fblog_buf_rotate(buf);
++			}
++		} else {
++			if (buf->pos_x >= buf->width) {
++				buf->pos_x = 0;
++				++buf->pos_y;
++			}
++			if (buf->pos_y >= buf->height) {
++				buf->pos_y = buf->height - 1;
++				fblog_buf_rotate(buf);
++			}
++
++			buf->lines[buf->pos_y][buf->pos_x++] = c;
++		}
++	}
++}
++
+ /*
+  * fblog_open/close()
+  * These functions manage access to the underlying framebuffer. While opened, we
+@@ -66,6 +190,7 @@ static bool main_only = false;
  
- static void fblog_register(struct fb_info *info, bool force)
-@@ -321,6 +376,15 @@ static void __exit fblog_exit(void)
+ static int fblog_open(struct fblog_fb *fb)
+ {
++	static const char init_str[] = "Framebuffer log initialized\n";
+ 	int ret;
+ 
+ 	if (!active)
+@@ -93,6 +218,8 @@ static int fblog_open(struct fblog_fb *fb)
+ 		goto out_unref;
  	}
- }
  
-+module_param(active, bool, S_IRUGO | S_IWUSR | S_IWGRP);
-+MODULE_PARM_DESC(active, "Activate fblog rendering");
++	fblog_buf_resize(&fb->buf, 80, 24);
++	fblog_buf_write(&fb->buf, init_str, sizeof(init_str) - 1);
+ 	set_bit(FBLOG_OPEN, &fb->flags);
+ 	mutex_unlock(&fb->lock);
+ 	return 0;
+@@ -115,6 +242,7 @@ static void fblog_close(struct fblog_fb *fb, bool kill_dev)
+ 			fb->info->fbops->fb_release(fb->info, 0);
+ 		module_put(fb->info->fbops->owner);
+ 		clear_bit(FBLOG_OPEN, &fb->flags);
++		fblog_buf_deinit(&fb->buf);
+ 	}
+ 
+ 	if (kill_dev)
+@@ -379,6 +507,26 @@ static struct notifier_block fblog_notifier = {
+ 	.notifier_call = fblog_event,
+ };
+ 
++static void fblog_con_write(struct console *con, const char *buf,
++			    unsigned int len)
++{
++	int i;
 +
-+module_param(activate_on_hotplug, bool, S_IRUGO | S_IWUSR | S_IWGRP);
-+MODULE_PARM_DESC(activate_on_hotplug, "Activate fblog on hotplugged devices");
++	mutex_lock(&fblog_registration_lock);
++	for (i = 0; i < FB_MAX; ++i) {
++		if (fblog_fbs[i]) {
++			fblog_buf_write(&fblog_fbs[i]->buf, buf, len);
++		}
++	}
++	mutex_unlock(&fblog_registration_lock);
++}
 +
-+module_param(main_only, bool, S_IRUGO);
-+MODULE_PARM_DESC(main_only, "Activate fblog by default only on main devices");
++static struct console fblog_con_driver = {
++	.name = "fblog",
++	.write = fblog_con_write,
++	.flags = CON_PRINTBUFFER | CON_ENABLED,
++};
 +
- module_init(fblog_init);
- module_exit(fblog_exit);
- MODULE_LICENSE("GPL");
+ static int __init fblog_init(void)
+ {
+ 	int ret;
+@@ -390,6 +538,7 @@ static int __init fblog_init(void)
+ 	}
+ 
+ 	fblog_scan();
++	register_console(&fblog_con_driver);
+ 
+ 	return 0;
+ }
+@@ -399,6 +548,7 @@ static void __exit fblog_exit(void)
+ 	unsigned int i;
+ 	struct fb_info *info;
+ 
++	unregister_console(&fblog_con_driver);
+ 	fb_unregister_client(&fblog_notifier);
+ 
+ 	/* We scan through the whole registered_fb array here instead of
 -- 
 1.7.11.4
 
