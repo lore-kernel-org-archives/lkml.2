@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab2HLMSS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 08:18:18 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47739 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2HLMRV (ORCPT
+	id S1752071Ab2HLMSN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 08:18:13 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:36013 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab2HLMRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Aug 2012 08:17:21 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <kgdb-bugreport@lists.sourceforge.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 1/4] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
-Date: Sun, 12 Aug 2012 07:16:42 -0500
-Message-ID: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 4/4] kgdboc: Accept either kbd or kdb to activate the vga + keyboard kdb shell
+Date: Sun, 12 Aug 2012 07:16:45 -0500
+Message-ID: <1344773805-12844-4-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
+References: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fault was detected using the kgdb test suite on boot and it
-crashes recursively due to the fact that CONFIG_KPROBES on mips adds
-an extra die notifier in the page fault handler.  The crash signature
-looks like this:
+It is a common enough mistake for people to specify "kdb" when they
+meant to type "kbd" that the kgdboc can just accept both since they
+both mean the same thing anyway.  Specifically it is for the case
+where you want kdb to be active on your graphics console + keyboard
+(where kbd was the original abbreviation for keyboard).
 
-kgdbts:RUN bad memory access test
-KGDB: re-enter exception: ALL breakpoints killed
-Call Trace:
-[<807b7548>] dump_stack+0x20/0x54
-[<807b7548>] dump_stack+0x20/0x54
+With this change kgdboc will now accept either to mean the same thing:
+   kgdboc=kbd
+   kgdboc=kdb
 
-The fix for now is to have kgdb return immediately if the fault type
-is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
-to happen.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- arch/mips/kernel/kgdb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/tty/serial/kgdboc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/kernel/kgdb.c b/arch/mips/kernel/kgdb.c
-index f4546e9..23817a6 100644
---- a/arch/mips/kernel/kgdb.c
-+++ b/arch/mips/kernel/kgdb.c
-@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
- 	struct pt_regs *regs = args->regs;
- 	int trap = (regs->cp0_cause & 0x7c) >> 2;
+diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
+index 2b42a01..509e714 100644
+--- a/drivers/tty/serial/kgdboc.c
++++ b/drivers/tty/serial/kgdboc.c
+@@ -97,7 +97,8 @@ static void kgdboc_restore_input(void)
  
-+#ifdef CONFIG_KPROBES
-+	/*
-+	 * Return immediately if the kprobes fault notifier has set
-+	 * DIE_PAGE_FAULT.
-+	 */
-+	if (cmd == DIE_PAGE_FAULT)
-+		return NOTIFY_DONE;
-+#endif /* CONFIG_KPROBES */
-+
- 	/* Userspace events, ignore. */
- 	if (user_mode(regs))
- 		return NOTIFY_DONE;
+ static int kgdboc_register_kbd(char **cptr)
+ {
+-	if (strncmp(*cptr, "kbd", 3) == 0) {
++	if (strncmp(*cptr, "kbd", 3) == 0 ||
++		strncmp(*cptr, "kdb", 3) == 0) {
+ 		if (kdb_poll_idx < KDB_POLL_FUNC_MAX) {
+ 			kdb_poll_funcs[kdb_poll_idx] = kdb_get_kbd_char;
+ 			kdb_poll_idx++;
 -- 
 1.7.9.5
 
