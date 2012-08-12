@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab2HLS5t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 14:57:49 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:55170 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab2HLS5s (ORCPT
+	id S1752414Ab2HLTEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 15:04:42 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46170 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2HLTEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 14:57:48 -0400
-Message-ID: <5027FC98.2040903@panasas.com>
-Date: Sun, 12 Aug 2012 21:57:28 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Sun, 12 Aug 2012 15:04:41 -0400
+Date: Sun, 12 Aug 2012 21:05:00 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>, Carsten Emde <C.Emde@osadl.org>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: [Intel-gfx] 3.6-rc1 breaks my laptop graphics (intel)
+Message-ID: <20120812190500.GI5575@phenom.ffwll.local>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Paulo Zanoni <paulo.r.zanoni@intel.com>,
+	Kamal Mostafa <kamal@canonical.com>,
+	Carsten Emde <C.Emde@osadl.org>,
+	Eugeni Dodonov <eugeni.dodonov@intel.com>,
+	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+References: <20120812182157.GA1949@kroah.com>
+ <20120812182530.GG5575@phenom.ffwll.local>
+ <20120812183305.GA17759@kroah.com>
+ <20120812184802.GA1963@kroah.com>
 MIME-Version: 1.0
-To: Sachin Bhamare <sbhamare@panasas.com>
-CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Benny Halevy <bhalevy@tonian.com>, <osd-dev@open-osd.org>,
-        <linux-kernel@vger.kernel.org>, <ldv-project@ispras.ru>
-Subject: Re: [PATCH] exofs: check for allocation failure in uri_store()
-References: <1344445357-986-1-git-send-email-khoroshilov@ispras.ru> <5024075B.4090804@panasas.com>
-In-Reply-To: <5024075B.4090804@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120812184802.GA1963@kroah.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 09:54 PM, Sachin Bhamare wrote:
+On Sun, Aug 12, 2012 at 11:48:02AM -0700, Greg KH wrote:
+> On Sun, Aug 12, 2012 at 11:33:05AM -0700, Greg KH wrote:
+> > On Sun, Aug 12, 2012 at 08:25:31PM +0200, Daniel Vetter wrote:
+> > > On Sun, Aug 12, 2012 at 11:21:57AM -0700, Greg KH wrote:
+> > > > Hi Daniel.
+> > > > 
+> > > > The 3.6-rc1 kernel breaks my laptop, booting to a black screen when the
+> > > > i915 driver initializes itself.  I bisected this down to commit
+> > > > 24ded204429fa0f5501d37c63ee35c555c0b75ee (drm/i915: properly enable the
+> > > > blc controller on the right pipe), and when I revert that, and also
+> > > > a4f32fc3a37e982fffce8ec583643990ff288419 (drm/i915: don't forget the PCH
+> > > > backlight registers) which depended on the first patch, my laptop works
+> > > > just fine.
+> > > > 
+> > > > Below is the combined revert.
+> > > > 
+> > > > Any thoughts?  Any patch I can try out?
+> > > 
+> > > http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-fixes&id=770c12312ad617172b1a65b911d3e6564fc5aca8
+> > > 
+> > > which is already merged to drm-intel-fixes.
+> > 
+> > Ah, thanks, I'll go try that out, the Subject: line didn't draw my
+> > attention to it being the same problem as mine :)
+> 
+> Yes, that works, many thanks.
+> 
+> I'm guessing this is going to be going to Linus soon, right?
 
-> On 8/8/12 10:02 AM, Alexey Khoroshilov wrote:
->> There is no memory allocation failure check in uri_store().
->> That can lead to NULL pointer dereference.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
->> ---
->>  fs/exofs/sys.c |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/exofs/sys.c b/fs/exofs/sys.c
->> index 5a7b691..1b4f2f9 100644
->> --- a/fs/exofs/sys.c
->> +++ b/fs/exofs/sys.c
->> @@ -80,8 +80,13 @@ static ssize_t uri_show(struct exofs_dev *edp, char *buf)
->>  
->>  static ssize_t uri_store(struct exofs_dev *edp, const char *buf, size_t len)
->>  {
->> +	uint8_t *new_uri;
->> +
->>  	edp->urilen = strlen(buf) + 1;
->> -	edp->uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
->> +	new_uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
->> +	if (new_uri == NULL)
->> +		return -ENOMEM;
->> +	edp->uri = new_uri;
->>  	strncpy(edp->uri, buf, edp->urilen);
->>  	return edp->urilen;
->>  }
-> Ack-by : Sachin Bhamare <sbhamare@panasas.com>
+Yeah, I'm stalling a bit for test results on an edp regression fixer that
+affects the new macbook air, but I'll send current -fixes to Dave in a few
+days.
 
-
-Has been pushed to linux-next will be included in the next RCX
-push to Linus.
-
-Thanks
-Boaz
+Thanks for reporting this regression,
+Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
