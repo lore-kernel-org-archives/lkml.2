@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2HLOyo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:54:44 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60286 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2HLOwg (ORCPT
+	id S1752370Ab2HLOym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:54:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33220 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2HLOwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:52:36 -0400
+	Sun, 12 Aug 2012 10:52:38 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-fbdev@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
@@ -15,9 +15,9 @@ Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 03/11] fblog: new framebuffer kernel log dummy driver
-Date: Sun, 12 Aug 2012 16:53:17 +0200
-Message-Id: <1344783205-2384-4-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 05/11] fblog: register one fblog object per framebuffer
+Date: Sun, 12 Aug 2012 16:53:19 +0200
+Message-Id: <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
@@ -25,211 +25,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fblog displays all kernel log messages on all connected framebuffers. It
-replaces fbcon when CONFIG_VT=n is selected. Its main purpose is to debug
-boot problems by displaying the whole boot log on the screen. This patch
-provides the first dummy module-init/deinit functions.
+One fblog object is associated to each registered framebuffer. This way,
+we can draw the console to each framebuffer. When a framebuffer driver
+unregisters a framebuffer, we also unregister our fblog object. That is,
+our lifetime is coupled to the lifetime of the framebuffer. However, this
+does not mean that we are always active. On the contrary, we do not even
+own a reference to the framebuffer. We don't need it as we are notified
+_before_ the last reference is dropped.
 
-As it uses all the font and fb functions I placed it in
-drivers/video/console. However, this means that we need to move the check
-for CONFIG_VT in Makefile/Kconfig from drivers/video into
-drivers/video/console as fblog does not depend on CONFIG_VT.
+However, if other users have a reference to our object, we simply mark it
+as dead when the associated framebuffer dies and leave it alone. When the
+last reference is dropped, it will be automatically freed.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/Kconfig          |  5 +----
- drivers/video/Makefile         |  2 +-
- drivers/video/console/Kconfig  | 37 +++++++++++++++++++++++++++++--------
- drivers/video/console/Makefile |  1 +
- drivers/video/console/fblog.c  | 41 +++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 73 insertions(+), 13 deletions(-)
- create mode 100644 drivers/video/console/fblog.c
+ drivers/video/console/fblog.c | 195 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 195 insertions(+)
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 0217f74..e8fd53d 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2448,10 +2448,7 @@ source "drivers/video/omap/Kconfig"
- source "drivers/video/omap2/Kconfig"
- source "drivers/video/exynos/Kconfig"
- source "drivers/video/backlight/Kconfig"
--
--if VT
--	source "drivers/video/console/Kconfig"
--endif
-+source "drivers/video/console/Kconfig"
- 
- if FB || SGI_NEWPORT_CONSOLE
- 	source "drivers/video/logo/Kconfig"
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index ee8dafb..9f8a7f0 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -11,7 +11,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
-                                      modedb.o fbcvt.o
- fb-objs                           := $(fb-y)
- 
--obj-$(CONFIG_VT)		  += console/
-+obj-y				  += console/
- obj-$(CONFIG_LOGO)		  += logo/
- obj-y				  += backlight/
- 
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index e2c96d0..7374362 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -6,7 +6,7 @@ menu "Console display driver support"
- 
- config VGA_CONSOLE
- 	bool "VGA text console" if EXPERT || !X86
--	depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
-+	depends on VT && !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
- 	default y
- 	help
- 	  Saying Y here will allow you to use Linux in text mode through a
-@@ -45,7 +45,7 @@ config VGACON_SOFT_SCROLLBACK_SIZE
- 	 screenfuls of scrollback buffer
- 
- config MDA_CONSOLE
--	depends on !M68K && !PARISC && ISA
-+	depends on VT && !M68K && !PARISC && ISA
- 	tristate "MDA text console (dual-headed) (EXPERIMENTAL)"
- 	---help---
- 	  Say Y here if you have an old MDA or monochrome Hercules graphics
-@@ -61,14 +61,14 @@ config MDA_CONSOLE
- 
- config SGI_NEWPORT_CONSOLE
-         tristate "SGI Newport Console support"
--        depends on SGI_IP22 
-+        depends on VT && SGI_IP22
-         help
-           Say Y here if you want the console on the Newport aka XL graphics
-           card of your Indy.  Most people say Y here.
- 
- config DUMMY_CONSOLE
- 	bool
--	depends on VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y 
-+	depends on VT && (VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y)
- 	default y
- 
- config DUMMY_CONSOLE_COLUMNS
-@@ -89,7 +89,7 @@ config DUMMY_CONSOLE_ROWS
- 
- config FRAMEBUFFER_CONSOLE
- 	tristate "Framebuffer Console support"
--	depends on FB
-+	depends on VT && FB
- 	select CRC32
- 	help
- 	  Low-level framebuffer-based console driver.
-@@ -122,16 +122,37 @@ config FRAMEBUFFER_CONSOLE_ROTATION
- 
- config STI_CONSOLE
-         bool "STI text console"
--        depends on PARISC
-+        depends on VT && PARISC
-         default y
-         help
-           The STI console is the builtin display/keyboard on HP-PARISC
-           machines.  Say Y here to build support for it into your kernel.
-           The alternative is to use your primary serial port as a console.
- 
-+config FBLOG
-+	tristate "Framebuffer Kernel Log Driver"
-+	depends on !VT && FB
-+	default n
-+	help
-+	  This driver displays all kernel log messages on all connected
-+	  framebuffers. It is mutually exclusive with CONFIG_FRAMEBUFFER_CONSOLE
-+	  and CONFIG_VT. It was mainly created for debugging purposes when
-+	  CONFIG_VT is not selected but you still want kernel boot messages on
-+	  the screen.
-+
-+	  This driver overwrites all other graphics output on the framebuffer as
-+	  long as it is active so the kernel log will always be visible. You
-+	  need to disable this driver via sysfs to be able to start another
-+	  graphics application.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called fblog.
-+
- config FONTS
- 	bool "Select compiled-in fonts"
--	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
-+	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE || FBLOG
- 	help
- 	  Say Y here if you would like to use fonts other than the default
- 	  your frame buffer console usually use.
-@@ -158,7 +179,7 @@ config FONT_8x8
- 
- config FONT_8x16
- 	bool "VGA 8x16 font" if FONTS
--	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON
-+	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON || FBLOG
- 	default y if !SPARC && !FONTS
- 	help
- 	  This is the "high resolution" font for the VGA frame buffer (the one
-diff --git a/drivers/video/console/Makefile b/drivers/video/console/Makefile
-index 9a52226..ec0e155 100644
---- a/drivers/video/console/Makefile
-+++ b/drivers/video/console/Makefile
-@@ -20,6 +20,7 @@ font-objs += $(font-objs-y)
- 
- # Each configuration option enables a list of files.
- 
-+obj-$(CONFIG_FBLOG)               += fblog.o font.o fbdraw.o
- obj-$(CONFIG_DUMMY_CONSOLE)       += dummycon.o
- obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
- obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-new file mode 100644
-index 0000000..fb39737
---- /dev/null
+index fb39737..279f4d8 100644
+--- a/drivers/video/console/fblog.c
 +++ b/drivers/video/console/fblog.c
-@@ -0,0 +1,41 @@
-+/*
-+ * Framebuffer Kernel Log Driver
-+ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
-+ */
+@@ -23,15 +23,210 @@
+  * all fblog instances before running other graphics applications.
+  */
+ 
++#define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
++
++#include <linux/device.h>
++#include <linux/fb.h>
+ #include <linux/module.h>
++#include <linux/mutex.h>
++
++enum fblog_flags {
++	FBLOG_KILLED,
++};
++
++struct fblog_fb {
++	unsigned long flags;
++	struct fb_info *info;
++	struct device dev;
++};
++
++static DEFINE_MUTEX(fblog_registration_lock);
++static struct fblog_fb *fblog_fbs[FB_MAX];
++
++#define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
 +
 +/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
++ * fblog framebuffer list
++ * The fblog_fbs[] array contains all currently registered framebuffers. If a
++ * framebuffer is in that list, we always must make sure that we own a reference
++ * to it. If it is added through the notifier callbacks, then this is always
++ * guaranteed.
++ * We are only interested in registered framebuffers. That is, if a driver calls
++ * unregister_framebuffer() we directly unlink it from our list. This guarantees
++ * that the associated fb_info is always valid. However, we might still have
++ * pending users so we mark it as dead so no further framebuffer actions are
++ * done. If the last user then drops a reference, the memory gets freed
++ * automatically.
 + */
 +
-+/*
-+ * Framebuffer Kernel Log
-+ * This driver prints the kernel log to all connected display devices. It
-+ * replaces CONFIG_VT and cannot run simultaneously with it. It does not provide
-+ * any virtual-terminal, though. It should only be used to get kernel boot
-+ * messages to debug kernel errors.
-+ * Hence, this driver is neither optimized for speed, nor does it provide any
-+ * fancy features like colored text output.
-+ * This driver forcibly writes to the framebuffer while active, therefore, you
-+ * cannot run other graphics applications simultaneously. You need to disable
-+ * all fblog instances before running other graphics applications.
-+ */
-+
-+#include <linux/module.h>
-+
-+static int __init fblog_init(void)
++static void fblog_release(struct device *dev)
 +{
++	struct fblog_fb *fb = to_fblog_dev(dev);
++
++	kfree(fb);
++	module_put(THIS_MODULE);
++}
++
++static void fblog_do_unregister(struct fb_info *info)
++{
++	struct fblog_fb *fb;
++
++	fb = fblog_fbs[info->node];
++	if (!fb || fb->info != info)
++		return;
++
++	fblog_fbs[info->node] = NULL;
++
++	device_del(&fb->dev);
++	put_device(&fb->dev);
++}
++
++static void fblog_do_register(struct fb_info *info, bool force)
++{
++	struct fblog_fb *fb;
++	int ret;
++
++	fb = fblog_fbs[info->node];
++	if (fb && fb->info != info) {
++		if (!force)
++			return;
++
++		fblog_do_unregister(fb->info);
++	}
++
++	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
++	if (!fb)
++		return;
++
++	fb->info = info;
++	__module_get(THIS_MODULE);
++	device_initialize(&fb->dev);
++	fb->dev.class = fb_class;
++	fb->dev.release = fblog_release;
++	dev_set_name(&fb->dev, "fblog%d", info->node);
++	fblog_fbs[info->node] = fb;
++
++	ret = device_add(&fb->dev);
++	if (ret) {
++		fblog_fbs[info->node] = NULL;
++		set_bit(FBLOG_KILLED, &fb->flags);
++		put_device(&fb->dev);
++		return;
++	}
++}
++
++static void fblog_register(struct fb_info *info, bool force)
++{
++	mutex_lock(&fblog_registration_lock);
++	fblog_do_register(info, force);
++	mutex_unlock(&fblog_registration_lock);
++}
++
++static void fblog_unregister(struct fb_info *info)
++{
++	mutex_lock(&fblog_registration_lock);
++	fblog_do_unregister(info);
++	mutex_unlock(&fblog_registration_lock);
++}
++
++static int fblog_event(struct notifier_block *self, unsigned long action,
++		       void *data)
++{
++	struct fb_event *event = data;
++	struct fb_info *info = event->info;
++
++	switch(action) {
++	case FB_EVENT_FB_REGISTERED:
++		/* This is called when a low-level system driver registers a new
++		 * framebuffer. The registration lock is held but the console
++		 * lock might not be held when this is called. */
++		fblog_register(info, true);
++		break;
++	case FB_EVENT_FB_UNREGISTERED:
++		/* This is called when a low-level system driver unregisters a
++		 * framebuffer. The registration lock is held but the console
++		 * lock might not be held. */
++		fblog_unregister(info);
++		break;
++	}
++
 +	return 0;
 +}
 +
-+static void __exit fblog_exit(void)
++static void fblog_scan(void)
 +{
++	unsigned int i;
++	struct fb_info *info, *tmp;
++
++	for (i = 0; i < FB_MAX; ++i) {
++		info = get_fb_info(i);
++		if (!info || IS_ERR(info))
++			continue;
++
++		fblog_register(info, false);
++
++		/* There is a very subtle race-condition. Even though we might
++		 * own a reference to the fb, it may still get unregistered
++		 * between our call from get_fb_info() and fblog_register().
++		 * Therefore, we simply check whether the same fb still is
++		 * registered by calling get_fb_info() again. Only if they
++		 * differ we know that it got unregistered, therefore, we
++		 * call fblog_unregister() with the old pointer. */
++
++		tmp = get_fb_info(i);
++		if (tmp && !IS_ERR(tmp))
++			put_fb_info(tmp);
++		if (tmp != info)
++			fblog_unregister(info);
++
++		/* Here we either called fblog_unregister() and therefore do not
++		 * need any reference to the fb, or we can be sure that the FB
++		 * is registered and FB_EVENT_FB_UNREGISTERED will be called
++		 * before the last reference is dropped. Hence, we can drop our
++		 * reference here. */
++
++		put_fb_info(info);
++	}
 +}
 +
-+module_init(fblog_init);
-+module_exit(fblog_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
-+MODULE_DESCRIPTION("Framebuffer Kernel Log Driver");
++static struct notifier_block fblog_notifier = {
++	.notifier_call = fblog_event,
++};
+ 
+ static int __init fblog_init(void)
+ {
++	int ret;
++
++	ret = fb_register_client(&fblog_notifier);
++	if (ret) {
++		pr_err("cannot register framebuffer notifier\n");
++		return ret;
++	}
++
++	fblog_scan();
++
+ 	return 0;
+ }
+ 
+ static void __exit fblog_exit(void)
+ {
++	unsigned int i;
++	struct fb_info *info;
++
++	fb_unregister_client(&fblog_notifier);
++
++	/* We scan through the whole registered_fb array here instead of
++	 * fblog_fbs because we need to get the device lock _before_ the
++	 * fblog-registration-lock. */
++
++	for (i = 0; i < FB_MAX; ++i) {
++		info = get_fb_info(i);
++		if (!info || IS_ERR(info))
++			continue;
++
++		fblog_unregister(info);
++		put_fb_info(info);
++	}
+ }
+ 
+ module_init(fblog_init);
 -- 
 1.7.11.4
 
