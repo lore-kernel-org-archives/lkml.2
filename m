@@ -1,262 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab2HLOym (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:54:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33220 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2HLOwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:52:38 -0400
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: linux-fbdev@vger.kernel.org
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	id S1752106Ab2HLOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:55:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54396 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab2HLOzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 10:55:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,756,1336374000"; 
+   d="scan'208";a="198761272"
+Date: Sun, 12 Aug 2012 22:55:52 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 05/11] fblog: register one fblog object per framebuffer
-Date: Sun, 12 Aug 2012 16:53:19 +0200
-Message-Id: <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
-References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] m68k: add generic atomic64_t support
+Message-ID: <20120812145552.GA17062@localhost>
+References: <20120812142355.GA16664@localhost>
+ <CAMuHMdXNC1SR5HgScihSc=WyX5bk4xB2LefpbS8ZuKJfDTF64A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdXNC1SR5HgScihSc=WyX5bk4xB2LefpbS8ZuKJfDTF64A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One fblog object is associated to each registered framebuffer. This way,
-we can draw the console to each framebuffer. When a framebuffer driver
-unregisters a framebuffer, we also unregister our fblog object. That is,
-our lifetime is coupled to the lifetime of the framebuffer. However, this
-does not mean that we are always active. On the contrary, we do not even
-own a reference to the framebuffer. We don't need it as we are notified
-_before_ the last reference is dropped.
-
-However, if other users have a reference to our object, we simply mark it
-as dead when the associated framebuffer dies and leave it alone. When the
-last reference is dropped, it will be automatically freed.
-
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
----
- drivers/video/console/fblog.c | 195 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 195 insertions(+)
-
-diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index fb39737..279f4d8 100644
---- a/drivers/video/console/fblog.c
-+++ b/drivers/video/console/fblog.c
-@@ -23,15 +23,210 @@
-  * all fblog instances before running other graphics applications.
-  */
+On Sun, Aug 12, 2012 at 04:47:31PM +0200, Geert Uytterhoeven wrote:
+> Hi Fengguang,
+> 
+> On Sun, Aug 12, 2012 at 4:23 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > This fixes build errors like:
+> >
+> > fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
+> > fs/namespace.c:2290:1: error: implicit declaration of function 'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
+> > fs/namespace.c:2290:1: error: initializer element is not constant
+> > fs/namespace.c: In function 'alloc_mnt_ns':
+> > fs/namespace.c:2299:2: error: implicit declaration of function 'atomic64_add_return' [-Werror=implicit-function-declaration]
+> 
+> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> > ---
+> >  arch/m68k/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > --- linux.orig/arch/m68k/Kconfig        2012-08-12 21:15:49.730533572 +0800
+> > +++ linux/arch/m68k/Kconfig     2012-08-12 22:19:56.202624988 +0800
+> > @@ -12,6 +12,7 @@ config M68K
+> >         select FPU if MMU
+> >         select ARCH_WANT_IPC_PARSE_VERSION
+> >         select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
+> > +       select GENERIC_ATOMIC64
+> 
+> For several CPU types (68020/68030/68040/68080), this is already selected in
+> arch/m68k/Kconfig.cpu
+> So probably this select should be moved to cover more CPU types?
  
-+#define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
-+
-+#include <linux/device.h>
-+#include <linux/fb.h>
- #include <linux/module.h>
-+#include <linux/mutex.h>
-+
-+enum fblog_flags {
-+	FBLOG_KILLED,
-+};
-+
-+struct fblog_fb {
-+	unsigned long flags;
-+	struct fb_info *info;
-+	struct device dev;
-+};
-+
-+static DEFINE_MUTEX(fblog_registration_lock);
-+static struct fblog_fb *fblog_fbs[FB_MAX];
-+
-+#define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
-+
-+/*
-+ * fblog framebuffer list
-+ * The fblog_fbs[] array contains all currently registered framebuffers. If a
-+ * framebuffer is in that list, we always must make sure that we own a reference
-+ * to it. If it is added through the notifier callbacks, then this is always
-+ * guaranteed.
-+ * We are only interested in registered framebuffers. That is, if a driver calls
-+ * unregister_framebuffer() we directly unlink it from our list. This guarantees
-+ * that the associated fb_info is always valid. However, we might still have
-+ * pending users so we mark it as dead so no further framebuffer actions are
-+ * done. If the last user then drops a reference, the memory gets freed
-+ * automatically.
-+ */
-+
-+static void fblog_release(struct device *dev)
-+{
-+	struct fblog_fb *fb = to_fblog_dev(dev);
-+
-+	kfree(fb);
-+	module_put(THIS_MODULE);
-+}
-+
-+static void fblog_do_unregister(struct fb_info *info)
-+{
-+	struct fblog_fb *fb;
-+
-+	fb = fblog_fbs[info->node];
-+	if (!fb || fb->info != info)
-+		return;
-+
-+	fblog_fbs[info->node] = NULL;
-+
-+	device_del(&fb->dev);
-+	put_device(&fb->dev);
-+}
-+
-+static void fblog_do_register(struct fb_info *info, bool force)
-+{
-+	struct fblog_fb *fb;
-+	int ret;
-+
-+	fb = fblog_fbs[info->node];
-+	if (fb && fb->info != info) {
-+		if (!force)
-+			return;
-+
-+		fblog_do_unregister(fb->info);
-+	}
-+
-+	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
-+	if (!fb)
-+		return;
-+
-+	fb->info = info;
-+	__module_get(THIS_MODULE);
-+	device_initialize(&fb->dev);
-+	fb->dev.class = fb_class;
-+	fb->dev.release = fblog_release;
-+	dev_set_name(&fb->dev, "fblog%d", info->node);
-+	fblog_fbs[info->node] = fb;
-+
-+	ret = device_add(&fb->dev);
-+	if (ret) {
-+		fblog_fbs[info->node] = NULL;
-+		set_bit(FBLOG_KILLED, &fb->flags);
-+		put_device(&fb->dev);
-+		return;
-+	}
-+}
-+
-+static void fblog_register(struct fb_info *info, bool force)
-+{
-+	mutex_lock(&fblog_registration_lock);
-+	fblog_do_register(info, force);
-+	mutex_unlock(&fblog_registration_lock);
-+}
-+
-+static void fblog_unregister(struct fb_info *info)
-+{
-+	mutex_lock(&fblog_registration_lock);
-+	fblog_do_unregister(info);
-+	mutex_unlock(&fblog_registration_lock);
-+}
-+
-+static int fblog_event(struct notifier_block *self, unsigned long action,
-+		       void *data)
-+{
-+	struct fb_event *event = data;
-+	struct fb_info *info = event->info;
-+
-+	switch(action) {
-+	case FB_EVENT_FB_REGISTERED:
-+		/* This is called when a low-level system driver registers a new
-+		 * framebuffer. The registration lock is held but the console
-+		 * lock might not be held when this is called. */
-+		fblog_register(info, true);
-+		break;
-+	case FB_EVENT_FB_UNREGISTERED:
-+		/* This is called when a low-level system driver unregisters a
-+		 * framebuffer. The registration lock is held but the console
-+		 * lock might not be held. */
-+		fblog_unregister(info);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static void fblog_scan(void)
-+{
-+	unsigned int i;
-+	struct fb_info *info, *tmp;
-+
-+	for (i = 0; i < FB_MAX; ++i) {
-+		info = get_fb_info(i);
-+		if (!info || IS_ERR(info))
-+			continue;
-+
-+		fblog_register(info, false);
-+
-+		/* There is a very subtle race-condition. Even though we might
-+		 * own a reference to the fb, it may still get unregistered
-+		 * between our call from get_fb_info() and fblog_register().
-+		 * Therefore, we simply check whether the same fb still is
-+		 * registered by calling get_fb_info() again. Only if they
-+		 * differ we know that it got unregistered, therefore, we
-+		 * call fblog_unregister() with the old pointer. */
-+
-+		tmp = get_fb_info(i);
-+		if (tmp && !IS_ERR(tmp))
-+			put_fb_info(tmp);
-+		if (tmp != info)
-+			fblog_unregister(info);
-+
-+		/* Here we either called fblog_unregister() and therefore do not
-+		 * need any reference to the fb, or we can be sure that the FB
-+		 * is registered and FB_EVENT_FB_UNREGISTERED will be called
-+		 * before the last reference is dropped. Hence, we can drop our
-+		 * reference here. */
-+
-+		put_fb_info(info);
-+	}
-+}
-+
-+static struct notifier_block fblog_notifier = {
-+	.notifier_call = fblog_event,
-+};
- 
- static int __init fblog_init(void)
- {
-+	int ret;
-+
-+	ret = fb_register_client(&fblog_notifier);
-+	if (ret) {
-+		pr_err("cannot register framebuffer notifier\n");
-+		return ret;
-+	}
-+
-+	fblog_scan();
-+
- 	return 0;
- }
- 
- static void __exit fblog_exit(void)
- {
-+	unsigned int i;
-+	struct fb_info *info;
-+
-+	fb_unregister_client(&fblog_notifier);
-+
-+	/* We scan through the whole registered_fb array here instead of
-+	 * fblog_fbs because we need to get the device lock _before_ the
-+	 * fblog-registration-lock. */
-+
-+	for (i = 0; i < FB_MAX; ++i) {
-+		info = get_fb_info(i);
-+		if (!info || IS_ERR(info))
-+			continue;
-+
-+		fblog_unregister(info);
-+		put_fb_info(info);
-+	}
- }
- 
- module_init(fblog_init);
--- 
-1.7.11.4
+Got it! If possible, will you do that move? You surely know it much
+better than me :)
 
+> For which config do you get this build error? I can't seem to trigger it in
+> current mainline nor -next with m5475evb_defconfig.
+> Does it depend on additional patches to introduce more atomic64 uses?
+
+Yes, it's triggered on Eric's userns tree. I just sent out another
+email with details.  Sorry that I blindly used it as an example in the
+changelog, w/o foreseeing it caused reproduce trouble on your side..
+
+Thanks,
+Fengguang
