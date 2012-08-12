@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab2HLKSX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 06:18:23 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:55874 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab2HLKSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 06:18:21 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Cruz Julian Bishop <cruzjbishop@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/7] Fat checkstyle patch set (1)
-References: <1344764687-4155-1-git-send-email-cruzjbishop@gmail.com>
-Date: Sun, 12 Aug 2012 19:18:19 +0900
-In-Reply-To: <1344764687-4155-1-git-send-email-cruzjbishop@gmail.com> (Cruz
-	Julian Bishop's message of "Sun, 12 Aug 2012 19:44:40 +1000")
-Message-ID: <877gt4behg.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	id S1751490Ab2HLKSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 06:18:36 -0400
+Received: from host194-150-static.37-85-b.business.telecomitalia.it ([85.37.150.194]:49321
+	"EHLO zimbra.computerteam.it" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751302Ab2HLKSe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 06:18:34 -0400
+X-Greylist: delayed 753 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Aug 2012 06:18:34 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Matter that needs your attention 
+To: linux-kernel@vger.kernel.org
+From: Ooi@zimbra.computerteam.it, teek@zimbra.computerteam.it
+Date: Sun, 12 Aug 2012 11:05:15 +0100
+Reply-To: ooitekc@yahoo.com.my
+Message-Id: <20120812100535.5BADFE8E75C@zimbra.computerteam.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cruz Julian Bishop <cruzjbishop@gmail.com> writes:
+Good day,
 
-> Hi (and to the mailing list, again).
->
-> This is a patch series that fixes checkpatch issues in fs/fat.
->
-> I didn't get to do all of the files, but I'll be sure to come back for
-> them later :)
->
-> Please let me know if I did something wrong - I'll be sure to take it on
-> for my next patches.
+This is a personal email directed to you for your consideration alone, I
+request that it remain and be treated as such only. Please bear with me for
+now and do not ask my name. I am a banker here in Malaysia
 
-Is this for -mm tree? Please make sure there is no conflict.
+I have an interesting business proposal for you that will be of immense
+benefit to both of us. Although this may be hard for you to believe, we
+stand to gain 7.2 million USD between us in a matter of days. Please grant
+me the benefit of doubt and hear me out. I need you to signify your interest
+by replying to this email..
 
-Yeah, small patch is preferred, but it should be the logical separation,
-and one patch would be better in this case, IMHO.
+Most importantly, I will need you to promise to keep whatever you learn from
+me between us even if you decide not to go along with me. I will make more
+details available to you on receipt of a positive response from you.
 
-Personally, I'm not against this type cleanup only if there is no
-conflict though (i.e. doesn't increase maintain cost). So, if akpm is
-fine to take this, then I'm ok.
-
-> Cruz Julian Bishop (7):
->   fs/fat: Fix a checkpatch issue in namei_msdos.c
->   fs/fat: Fix some checkpatch issues in fat.h
->   fs/fat: Changed indentation of some comments in fat.h
->   fs/fat: Fix two checkstyle issues in cache.c
->   fs/fat: Fixes some small checkpatch issues is dir.c
->   fs/fat: Fix all other checkstyle issues in dir.c
->   fs/fat: Fix checkpatch issues in fatent.c
-
-There was one strange new line in a patch. Otherwise,
-
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Warm regards from 
+Malaysia
