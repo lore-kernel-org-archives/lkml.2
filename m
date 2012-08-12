@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab2HLEuH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 00:50:07 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1115 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab2HLEuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 00:50:02 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50273628.50503@broadcom.com>
-Date: Sun, 12 Aug 2012 07:50:48 +0300
-From: "Yuval Mintz" <yuvalmin@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:13.0)
- Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Joren Van Onder" <joren.vanonder@gmail.com>
-cc: eilong@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bnx2x: Fix compiler warnings
-References: <1344741035-1493-1-git-send-email-joren.vanonder@gmail.com>
-In-Reply-To: <1344741035-1493-1-git-send-email-joren.vanonder@gmail.com>
-X-WSS-ID: 7C39EA153NK14433589-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751390Ab2HLGXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 02:23:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61157 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2HLGXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 02:23:18 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Denis Efremov <yefremov.denis@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH v2] macvtap: rcu_dereference outside read-lock section
+Date: Sun, 12 Aug 2012 10:26:31 +0400
+Message-Id: <1344752791-21140-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120811.181642.1587792778007257202.davem@davemloft.net>
+References: <20120811.181642.1587792778007257202.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Fix the following compiler warnings:
-> 
->  - drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:2908:3: warning: comparison
->    of distinct pointer types lacks a cast [enabled by default]
->  - drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c:1709:7: warning: comparison
->    of distinct pointer types lacks a cast [enabled by default]
-> 
-> Signed-off-by: Joren Van Onder <joren.vanonder@gmail.com>
-Thanks Joren.
-Acked-By: Yuval Mintz <yuvalmin@broadcom.com>
+rcu_dereference occurs in update section. Replacement by
+rcu_dereference_protected in order to prevent lockdep
+complaint.
 
+Found by Linux Driver Verification project (linuxtesting.org)
 
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+---
+ drivers/net/macvtap.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 0737bd4..0f0f9ce 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -94,7 +94,8 @@ static int get_slot(struct macvlan_dev *vlan, struct macvtap_queue *q)
+ 	int i;
+ 
+ 	for (i = 0; i < MAX_MACVTAP_QUEUES; i++) {
+-		if (rcu_dereference(vlan->taps[i]) == q)
++		if (rcu_dereference_protected(vlan->taps[i],
++					      lockdep_is_held(&macvtap_lock)) == q)
+ 			return i;
+ 	}
+ 
+-- 
+1.7.7
 
