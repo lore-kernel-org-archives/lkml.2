@@ -1,179 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab2HLQkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 12:40:23 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:33122 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2HLQkW (ORCPT
+	id S1752116Ab2HLQnP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 12:43:15 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:56633 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751873Ab2HLQnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 12:40:22 -0400
-Message-ID: <1344789618.5128.5.camel@lorien2>
-Subject: [PATCH v3] mm: Restructure kmem_cache_create() to move debug cache
- integrity checks into a new function
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: "Christoph Lameter (Open Source)" <cl@linux.com>
-Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+	Sun, 12 Aug 2012 12:43:13 -0400
+Date: Sun, 12 Aug 2012 12:43:12 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>, Ming Lei <tom.leiming@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
-Date: Sun, 12 Aug 2012 10:40:18 -0600
-In-Reply-To: <1344540801.2393.42.camel@lorien2>
-References: <1342221125.17464.8.camel@lorien2>
-	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
-	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
-	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
-	 <1344531695.2393.27.camel@lorien2>
-	 <alpine.DEB.2.02.1208091406590.20908@greybox.home>
-	 <1344540801.2393.42.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH][Alternative][RFC] PM / Runtime: Introduce driver runtime
+ PM work routine
+In-Reply-To: <201208092242.32602.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1208121203590.17879-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
-is defined. These checks interspersed with the regular code path has
-lead to compile time warnings when compiled without CONFIG_DEBUG_VM
-defined. Restructuring the code to move the integrity checks in to a new
-function would eliminate the current compile warning problem and also
-will allow for future changes to the debug only code to evolve without
-introducing new warnings in the regular path. This restructuring work
-is based on the discussion in the following thread:
+On Thu, 9 Aug 2012, Rafael J. Wysocki wrote:
 
-https://lkml.org/lkml/2012/7/13/424
+> There are some known concerns about this approach.
+> 
+> First of all, the patch at
+> 
+> https://patchwork.kernel.org/patch/1299781/
+> 
+> increases the size of struct device by the size of a pointer, which may seem to
+> be a bit excessive to somebody, although I personally don't think it's a big
+> problem.  We don't use _that_ many struct device objects for it to matter much.
+> 
+> Second, which is more important to me, it seems that for a given device func()
+> will always be the same pointer and it will be used by the device's driver
+> only.  In that case, most likely, it will be possible to determine the
+> address of func() at the time of driver initialization, so the setting and
+> clearing of power.func and passing the address of func() as an argument every
+> time __pm_runtime_get_and_call() is run may turn out to be an unnecessary
+> overhead.  Thus it may be more efficient to use a function pointer in struct
+> device_driver (it can't be located in struct dev_pm_ops, because some drivers
+> don't use it at all, like USB drivers, and it wouldn't be useful for subsystems
+> and PM domains) to store the address of func() permanently.
+> 
+> For the above reasons, the appended patch implements an alternative approach,
+> which is to modify the way pm_runtime_get() works so that, when the device is
+> not active, it will queue a resume request for the device _along_ _with_ the
+> execution of a driver routine provided through a new function pointer
+> .pm_runtime_work().  There also is pm_runtime_get_nowork() that won't do that
+> and works in the same way as the "old" pm_runtime_get().
+> 
+> Of course, the disadvantage of the new patch is that it makes the change
+> in struct device_driver, but perhaps it's not a big deal.
+> 
+> I wonder what you think.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- mm/slab_common.c |   90 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 48 insertions(+), 42 deletions(-)
+I have some concerns about this patch.
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 12637ce..44facdf 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -23,6 +23,52 @@ enum slab_state slab_state;
- LIST_HEAD(slab_caches);
- DEFINE_MUTEX(slab_mutex);
- 
-+#ifdef CONFIG_DEBUG_VM
-+static int kmem_cache_sanity_check(const char *name, size_t size)
-+{
-+	struct kmem_cache *s = NULL;
-+
-+	if (!name || in_interrupt() || size < sizeof(void *) ||
-+		size > KMALLOC_MAX_SIZE) {
-+		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
-+		return -EINVAL;
-+	}
-+
-+	list_for_each_entry(s, &slab_caches, list) {
-+		char tmp;
-+		int res;
-+
-+		/*
-+		 * This happens when the module gets unloaded and doesn't
-+		 * destroy its slab cache and no-one else reuses the vmalloc
-+		 * area of the module.  Print a warning.
-+		 */
-+		res = probe_kernel_address(s->name, tmp);
-+		if (res) {
-+			pr_err("Slab cache with size %d has lost its name\n",
-+			       s->object_size);
-+			continue;
-+		}
-+
-+		if (!strcmp(s->name, name)) {
-+			pr_err("%s (%s): Cache name already exists.\n",
-+			       __func__, name);
-+			dump_stack();
-+			s = NULL;
-+			return -EINVAL;
-+		}
-+	}
-+
-+	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
-+	return 0;
-+}
-+#else
-+static inline int kmem_cache_sanity_check(const char *name, size_t size)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * kmem_cache_create - Create a cache.
-  * @name: A string which is used in /proc/slabinfo to identify this cache.
-@@ -53,48 +99,11 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
- {
- 	struct kmem_cache *s = NULL;
- 
--#ifdef CONFIG_DEBUG_VM
--	if (!name || in_interrupt() || size < sizeof(void *) ||
--		size > KMALLOC_MAX_SIZE) {
--		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
--			" failed\n", name);
--		goto out;
--	}
--#endif
--
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
- 
--#ifdef CONFIG_DEBUG_VM
--	list_for_each_entry(s, &slab_caches, list) {
--		char tmp;
--		int res;
--
--		/*
--		 * This happens when the module gets unloaded and doesn't
--		 * destroy its slab cache and no-one else reuses the vmalloc
--		 * area of the module.  Print a warning.
--		 */
--		res = probe_kernel_address(s->name, tmp);
--		if (res) {
--			printk(KERN_ERR
--			       "Slab cache with size %d has lost its name\n",
--			       s->object_size);
--			continue;
--		}
--
--		if (!strcmp(s->name, name)) {
--			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
--				" already exists.\n",
--				name);
--			dump_stack();
--			s = NULL;
--			goto oops;
--		}
--	}
--
--	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
--#endif
-+	if (kmem_cache_sanity_check(name, size))
-+		goto oops;
- 
- 	s = __kmem_cache_create(name, size, align, flags, ctor);
- 
-@@ -102,9 +111,6 @@ oops:
- 	mutex_unlock(&slab_mutex);
- 	put_online_cpus();
- 
--#ifdef CONFIG_DEBUG_VM
--out:
--#endif
- 	if (!s && (flags & SLAB_PANIC))
- 		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
- 
--- 
-1.7.9.5
+Firstly, the patch doesn't do anything in the case where the device is
+already at full power.  Should we invoke the callback routine 
+synchronously?  This loses the advantage of a workqueue's "pristine" 
+environment, but on the other hand it is much more efficient.  (And 
+we're talking about hot pathways, where efficiency matters.)  The 
+alternative, of course, is to have the driver invoke the callback 
+directly if pm_runtime_get() returns 1.
+
+Secondly, is it necessary for __pm_runtime_barrier() to wait for the 
+callback routine?  More generally, does __pm_runtime_barrier() really 
+do what it's supposed to do?  What happens if it runs at the same time 
+as another thread is executing the pm_runtime_put(parent) call at the 
+end of rpm_resume(), or the rpm_resume(parent, 0) in the middle?
+
+Thirdly, I would reorganize the new code added to pm_runtime_work(); 
+see below.
 
 
+> @@ -533,6 +550,13 @@ static int rpm_resume(struct device *dev
+>  		goto out;
+>  	}
+>  
+> +	if ((rpmflags & RPM_ASYNC) && (rpmflags & RPM_RUN_WORK)) {
+> +		dev->power.run_driver_work = true;
+> +		rpm_queue_up_resume(dev);
+> +		retval = 0;
+> +		goto out;
+> +	}
+> +
+
+The section of code just before the start of this hunk exits the
+routine if the device is already active.  Do you want to put this new
+section in the preceding "if" block?
+
+Also, it feels odd to have this code here when there is another section
+lower down that also tests for RPM_ASYNC and does almost the same
+thing.  It suggests that this new section isn't in the right place.  
+For instance, consider what happens in the "no_callbacks" case where
+the parent is already active.
+
+> @@ -715,11 +736,29 @@ static void pm_runtime_work(struct work_
+>  		rpm_suspend(dev, RPM_NOWAIT | RPM_AUTO);
+>  		break;
+>  	case RPM_REQ_RESUME:
+> -		rpm_resume(dev, RPM_NOWAIT);
+> +		if (dev->power.run_driver_work && dev->driver->pm_runtime_work)
+> +			driver_work = dev->driver->pm_runtime_work;
+> +
+> +		dev->power.run_driver_work = false;
+> +		rpm_resume(dev, driver_work ? 0 : RPM_NOWAIT);
+>  		break;
+>  	}
+>  
+>   out:
+> +	if (driver_work) {
+> +		pm_runtime_get_noresume(dev);
+> +		dev->power.work_in_progress = true;
+> +		spin_unlock_irq(&dev->power.lock);
+> +
+> +		driver_work(dev);
+> +
+> +		spin_lock_irq(&dev->power.lock);
+> +		dev->power.work_in_progress = false;
+> +		wake_up_all(&dev->power.wait_queue);
+> +		pm_runtime_put_noidle(dev);
+> +		rpm_idle(dev, RPM_NOWAIT);
+> +	}
+> +
+
+It seems very illgical to do all the callback stuff here, after the
+"switch" statement.  IMO it would make more sense to put it all
+together, more or less as follows:
+
+	case RPM_REQ_RESUME:
+		if (dev->power.run_driver_work && dev->driver->pm_runtime_work) {
+			driver_work = dev->driver->pm_runtime_work;
+			dev->power.run_driver_work = false;
+			dev->power.work_in_progress = true;
+			pm_runtime_get_noresume(dev);
+			rpm_resume(dev, 0);
+			spin_unlock_irq(&dev->power.lock);
+
+			driver_work(dev);
+
+			spin_lock_irq(&dev->power.lock);
+			dev->power.work_in_progress = false;
+			wake_up_all(&dev->power.wait_queue);
+			pm_runtime_put_noidle(dev);
+			rpm_idle(dev, RPM_NOWAIT);
+		} else {
+			rpm_resume(dev, RPM_NOWAIT);
+		}
+		break;
+
+Notice also that it's important to do the _get_noresume _before_
+calling rpm_resume().  Otherwise the device might get suspended again
+before the callback gets a chance to run.
+
+Alan Stern
 
