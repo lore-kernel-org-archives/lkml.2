@@ -1,98 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368Ab2HLJbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 05:31:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49945 "EHLO mx2.suse.de"
+	id S1751507Ab2HLJch (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 05:32:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab2HLJbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 05:31:15 -0400
-Date: Sun, 12 Aug 2012 11:31:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
-Message-ID: <20120812093110.GB18057@dhcp22.suse.cz>
-References: <20120810094825.GA1440@dhcp22.suse.cz>
- <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
- <20120810122730.GA1425@dhcp22.suse.cz>
- <CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
- <20120810125102.GB1425@dhcp22.suse.cz>
- <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
- <20120810131643.GC1425@dhcp22.suse.cz>
- <CAJd=RBDtnF6eoTmDu4HOBGfHnWnxNsXEzArR51+-XhzFCwOmOQ@mail.gmail.com>
- <20120810134811.GD1425@dhcp22.suse.cz>
- <CAJd=RBDUJXOHKbes0KE1aQ7tJCYBr04+=-bCbs8xT9wJ-CtrTw@mail.gmail.com>
+	id S1751057Ab2HLJce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 05:32:34 -0400
+Date: Sun, 12 Aug 2012 12:33:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120812093336.GC1421@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204320.21081.32333.stgit@bling.home>
+ <501F99A8.9050006@redhat.com>
+ <501F9E99.9010109@redhat.com>
+ <501F9F27.708@redhat.com>
+ <1344540375.3441.228.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBDUJXOHKbes0KE1aQ7tJCYBr04+=-bCbs8xT9wJ-CtrTw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1344540375.3441.228.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 12-08-12 12:08:21, Hillf Danton wrote:
-> On Fri, Aug 10, 2012 at 9:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
+On Thu, Aug 09, 2012 at 01:26:15PM -0600, Alex Williamson wrote:
+> On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
+> > On 08/06/2012 01:38 PM, Avi Kivity wrote:
+> > 
+> > > Regarding the implementation, instead of a linked list, would an array
+> > > of counters parallel to the bitmap make it simpler?
+> > 
+> > Or even, replace the bitmap with an array of counters.
 > 
-> > It's been compile tested because it only restores the previous code with
-> > a simple and obvious bug fix.
+> I'm not sure a counter array is what we're really after.  That gives us
+> reference counting for the irq source IDs, but not the key->gsi lookup.
+> It also highlights another issue, that we have a limited set of source
+> IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
+> for the shared userspace ID and another for the PIT.  How happy are we
+> going to be with a limit of 62 level interrupts in use at one time?
 > 
-> It helps more if you elaborate on such a simple and obvious bug and
-> enrich your change log accordingly?
+> It's arguably a reasonable number since the most virtualization friendly
+> devices (sr-iov VFs) don't even support this kind of interrupt.  It's
+> also very wasteful allocating an entire source ID for a single GSI
+> within that source ID.  PCI supports interrupts A, B, C, and D, which,
+> in the most optimal config, each go to different GSIs.  So we could
+> theoretically be more efficient in our use and allocation of irq source
+> IDs if we tracked use by the source ID, gsi pair.
+> 
+> That probably makes it less practical to replace anything at the top
+> level with a counter array.  The key that we pass back is currently the
+> actual source ID, but we don't specify what it is, so we could split it
+> and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
+> an idr entry.
+> 
+> Michael, would the interface be more acceptable to you if we added
+> separate ioctls to allocate and free some representation of an irq
+> source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> for an irq source ID/gsi object which would then be passed as a
+> parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> representing the source id/gsi isn't magically freed on it's own.  This
+> would also allow us to deassign/close one end and reconfigure it later.
+> Thanks,
+> 
+> Alex
 
-Hmmm, to be honest I really don't care much about this change. It is just
-that your previous patch (0c176d5) made the code more confusing and this
-aims at fixing that.
+It's acceptable to me either way. I was only pointing out that as
+designed, the interface looks simple at first but then you find out some
+subtle limitations which are implementation driven. This gives
+an overall feeling the abstraction is too low level.
 
-But anyway. I will post this to Andrew unless somebody has any
-objections.
----
->From d07b88a70ee1dbcc96502c48cde878931e7deb38 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 10 Aug 2012 15:03:07 +0200
-Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
- vma_prio_tree_foreach
+If we compare to the existing irqfd, isn't the difference
+simply that irqfd deasserts immediately ATM, while we
+want to delay this until later?
 
-0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
-from vma) fixed pgoff calculation but it has replaced it by
-vma_hugecache_offset which is not approapriate for offsets used for
-vma_prio_tree_foreach because that one expects index in page units
-rather than in huge_page_shift.
-Using vma_hugecache_offset is not incorrect because the pgoff will fit
-into the same vmas but it is confusing so the standard PAGE_SHIFT based
-index calculation is used instead.
+If yes, then along the lines that you proposed, and combining with my
+idea of tracking deasserts, how do you like the following:
 
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/hugetlb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+/* Keep line asserted until guest has handled the interrupt. */
+#define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
+/* Notify after line is deasserted. */
+#define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c39e4be..a74ea31 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * from page cache lookup which is in HPAGE_SIZE units.
- 	 */
- 	address = address & huge_page_mask(h);
--	pgoff = vma_hugecache_offset(h, vma, address);
-+	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-+			vma->vm_pgoff;
- 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
- 
- 	/*
+	struct kvm_irqfd {
+		__u32 fd;
+		__u32 gsi;
+		__u32 flags;
+		/* eventfd to notify when line is deasserted */
+		__u32 deassert_eventfd;
+		__u8  pad[16];
+	};
+
+now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
+effective for level interrupts.
+
+Notes about lifetime of objects:
+	- closing deassert_eventfd does nothing (we can keep
+	  reference to it from irqfd so no need for
+          complex polling/flushing scheme)
+	- closing irqfd or deasserting dis-associates
+	  deassert_eventfd automatically
+	- source id is internal to irqfd and goes away with it
+
+it looks harder to misuse and fits what we want to do nicely,
+and needs less code to implement.
+
+Avi, what do you think?
+
 -- 
-1.7.10.4
-
-
--- 
-Michal Hocko
-SUSE Labs
+MST
