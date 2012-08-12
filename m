@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab2HLSsI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 14:48:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46722 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2HLSsG (ORCPT
+	id S1752478Ab2HLSuR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 14:50:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33149 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750848Ab2HLSuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 14:48:06 -0400
-Date: Sun, 12 Aug 2012 11:48:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>, Carsten Emde <C.Emde@osadl.org>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: 3.6-rc1 breaks my laptop graphics (intel)
-Message-ID: <20120812184802.GA1963@kroah.com>
-References: <20120812182157.GA1949@kroah.com>
- <20120812182530.GG5575@phenom.ffwll.local>
- <20120812183305.GA17759@kroah.com>
+	Sun, 12 Aug 2012 14:50:14 -0400
+Date: Sun, 12 Aug 2012 19:50:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
+        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
+Message-ID: <20120812185012.GB10627@opensource.wolfsonmicro.com>
+References: <20120808131356.GS16861@opensource.wolfsonmicro.com>
+ <50226CF4.1010202@ti.com>
+ <20120808135253.GC16861@opensource.wolfsonmicro.com>
+ <502274DA.9020204@ti.com>
+ <20120808141849.GA24328@opensource.wolfsonmicro.com>
+ <50227837.10400@ti.com>
+ <20120808144933.GC24328@opensource.wolfsonmicro.com>
+ <50238E8A.5030902@ti.com>
+ <20120809103600.GI24328@opensource.wolfsonmicro.com>
+ <5023C0D6.8040600@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120812183305.GA17759@kroah.com>
+In-Reply-To: <5023C0D6.8040600@ti.com>
+X-Cookie: Beware of Bigfoot!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 11:33:05AM -0700, Greg KH wrote:
-> On Sun, Aug 12, 2012 at 08:25:31PM +0200, Daniel Vetter wrote:
-> > On Sun, Aug 12, 2012 at 11:21:57AM -0700, Greg KH wrote:
-> > > Hi Daniel.
-> > > 
-> > > The 3.6-rc1 kernel breaks my laptop, booting to a black screen when the
-> > > i915 driver initializes itself.  I bisected this down to commit
-> > > 24ded204429fa0f5501d37c63ee35c555c0b75ee (drm/i915: properly enable the
-> > > blc controller on the right pipe), and when I revert that, and also
-> > > a4f32fc3a37e982fffce8ec583643990ff288419 (drm/i915: don't forget the PCH
-> > > backlight registers) which depended on the first patch, my laptop works
-> > > just fine.
-> > > 
-> > > Below is the combined revert.
-> > > 
-> > > Any thoughts?  Any patch I can try out?
-> > 
-> > http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-fixes&id=770c12312ad617172b1a65b911d3e6564fc5aca8
-> > 
-> > which is already merged to drm-intel-fixes.
-> 
-> Ah, thanks, I'll go try that out, the Subject: line didn't draw my
-> attention to it being the same problem as mine :)
+On Thu, Aug 09, 2012 at 04:53:26PM +0300, Peter Ujfalusi wrote:
+> On 08/09/2012 01:36 PM, Mark Brown wrote:
 
-Yes, that works, many thanks.
+> > Is there any actual case where an external mute is supplied via a
+> > mechanism other than a GPIO, and if there is would it not either need
+> > its own DT property or already need to interact with the driver from
+> > code, making the DT property redundant?
 
-I'm guessing this is going to be going to Linus soon, right?
+> Not with my knowledge. The only board using it is the zoom2 upstream. I know
+> other boards (not in upstream) which either uses the internal mute or GPIO.
 
-greg k-h
+OK, so we can probably only support GPIO for now then worry about other
+external mutes when there's something to work with.
