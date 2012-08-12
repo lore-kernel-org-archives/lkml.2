@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab2HLOQG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:16:06 -0400
-Received: from h219-110-095-176.catv01.itscom.jp ([219.110.95.176]:52212 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750852Ab2HLOQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:16:05 -0400
-From: Masatake YAMATO <yamato@redhat.com>
-To: open-iscsi@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Masatake YAMATO <yamato@redhat.com>
-Subject: [PATCH] libiscsi: avoid unnecessary multiple NULL assignments
-Date: Sun, 12 Aug 2012 23:15:51 +0900
-Message-Id: <1344780951-5011-1-git-send-email-yamato@redhat.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1752163Ab2HLOYA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:24:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59933 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852Ab2HLOX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 10:23:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,756,1336374000"; 
+   d="scan'208";a="198736935"
+Date: Sun, 12 Aug 2012 22:23:55 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] m68k: add generic atomic64_t support
+Message-ID: <20120812142355.GA16664@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In iscsi_free_task, NULL is assigned to task->sc twice: before and
-after kfifo_in invocatoin. Allocating and freeing iscsi_task are guarded
-with session->lock, so multiple NULL assignments cause no trouble. But
-people reading the source code may be confused.
+This fixes build errors like:
 
-The second NULL assignment comes from commit:
+fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
+fs/namespace.c:2290:1: error: implicit declaration of function 'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
+fs/namespace.c:2290:1: error: initializer element is not constant
+fs/namespace.c: In function 'alloc_mnt_ns':
+fs/namespace.c:2299:2: error: implicit declaration of function 'atomic64_add_return' [-Werror=implicit-function-declaration]
 
-    3e5c28ad0391389959ccae81c938c7533efb3490
-
-It seems that the line after kfifo_in invocation was introduced
-accidentally.
-
-Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- drivers/scsi/libiscsi.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/m68k/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 82c3fd4..7aacf3a 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -500,21 +500,20 @@ static void iscsi_free_task(struct iscsi_task *task)
- 	task->sc = NULL;
- 	/*
- 	 * login task is preallocated so do not free
- 	 */
- 	if (conn->login_task == task)
- 		return;
+--- linux.orig/arch/m68k/Kconfig	2012-08-12 21:15:49.730533572 +0800
++++ linux/arch/m68k/Kconfig	2012-08-12 22:19:56.202624988 +0800
+@@ -12,6 +12,7 @@ config M68K
+ 	select FPU if MMU
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
++	select GENERIC_ATOMIC64
  
- 	kfifo_in(&session->cmdpool.queue, (void*)&task, sizeof(void*));
- 
- 	if (sc) {
--		task->sc = NULL;
- 		/* SCSI eh reuses commands to verify us */
- 		sc->SCp.ptr = NULL;
- 		/*
- 		 * queue command may call this to free the task, so
- 		 * it will decide how to return sc to scsi-ml.
- 		 */
- 		if (oldstate != ISCSI_TASK_REQUEUE_SCSIQ)
- 			sc->scsi_done(sc);
- 	}
- }
--- 
-1.7.11.2
-
+ config RWSEM_GENERIC_SPINLOCK
+ 	bool
