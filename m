@@ -1,146 +1,436 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab2HLPXn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 11:23:43 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:55600 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab2HLPXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 11:23:42 -0400
-Date: Sun, 12 Aug 2012 17:22:07 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 2/6] ARM: dove: add clock gating control
-Message-ID: <20120812152207.GA6340@lunn.ch>
-References: <1344255815-4457-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1344681326-17946-3-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344681326-17946-3-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751624Ab2HLPZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 11:25:53 -0400
+Received: from h219-110-095-176.catv01.itscom.jp ([219.110.95.176]:39855 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750880Ab2HLPZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 11:25:52 -0400
+From: Masatake YAMATO <yamato@redhat.com>
+To: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Masatake YAMATO <yamato@redhat.com>
+Subject: [PATCH] be2iscsi: cleanup format strings using literal string concatenations
+Date: Mon, 13 Aug 2012 00:25:30 +0900
+Message-Id: <1344785130-24172-1-git-send-email-yamato@redhat.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 12:35:22PM +0200, Sebastian Hesselbarth wrote:
-> This patch adds clock gates from the clock gating control register
-> available on dove. All clock gates are hooked up to tclk, except for
-> gigabit ethernet controller (ge) which is a child of gephy to allow
-> both enabled/disabled at the same time.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Rabeeh Khoury <rabeeh@solid-run.com>
-> Cc: Ian Molton <ian.molton@codethink.co.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Maen Suleiman <maen@marvell.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> 
-> v2: adapted to removed clk_prepare_enable from patch 1
-> ---
->  arch/arm/mach-dove/common.c          |   59 +++++++++++++++++++++++++++++++++-
->  arch/arm/mach-dove/include/mach/pm.h |   54 ++++++++++++++++++++-----------
->  2 files changed, 94 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-> index b6f092c..7281591 100644
-> --- a/arch/arm/mach-dove/common.c
-> +++ b/arch/arm/mach-dove/common.c
-> @@ -16,6 +16,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/ata_platform.h>
->  #include <linux/gpio.h>
-> +#include <linux/mv643xx_i2c.h>
->  #include <asm/page.h>
->  #include <asm/setup.h>
->  #include <asm/timex.h>
-> @@ -24,6 +25,7 @@
->  #include <asm/mach/time.h>
->  #include <asm/mach/pci.h>
->  #include <mach/dove.h>
-> +#include <mach/pm.h>
->  #include <mach/bridge-regs.h>
->  #include <asm/mach/arch.h>
->  #include <linux/irq.h>
-> @@ -31,6 +33,7 @@
->  #include <plat/ehci-orion.h>
->  #include <plat/common.h>
->  #include <plat/addr-map.h>
-> +#include <plat/mv_xor.h>
->  #include "common.h"
->  
->  /*****************************************************************************
-> @@ -69,14 +72,68 @@ void __init dove_map_io(void)
->   * CLK tree
->   ****************************************************************************/
->  static int dove_tclk;
-> +
-> +static DEFINE_SPINLOCK(gating_lock);
->  static struct clk *tclk;
->  
-> +static struct clk __init *dove_register_gate(const char *name,
-> +					     const char *parent, u8 bit_idx)
-> +{
-> +	return clk_register_gate(NULL, name, parent, 0,
-> +				 (void __iomem *)CLOCK_GATING_CONTROL,
-> +				 bit_idx, 0, &gating_lock);
-> +}
-> +
->  static void __init dove_clk_init(void)
->  {
-> +	struct clk *usb0, *usb1, *sata, *pex0, *pex1, *sdio0, *sdio1;
-> +	struct clk *nand, *camera, *i2s0, *i2s1, *crypto, *ac97, *pdma;
-> +	struct clk *xor0, *xor1, *ge, *gephy;
-> +
->  	tclk = clk_register_fixed_rate(NULL, "tclk", NULL, CLK_IS_ROOT,
->  				       dove_tclk);
->  
-> -	orion_clkdev_init(tclk);
-> +	usb0 = dove_register_gate("usb0", "tclk", CLOCK_GATING_BIT_USB0);
-> +	usb1 = dove_register_gate("usb1", "tclk", CLOCK_GATING_BIT_USB1);
-> +	sata = dove_register_gate("sata", "tclk", CLOCK_GATING_BIT_SATA);
-> +	pex0 = dove_register_gate("pex1", "tclk", CLOCK_GATING_BIT_PCIE0);
-> +	pex1 = dove_register_gate("pex1", "tclk", CLOCK_GATING_BIT_PCIE1);
-> +	sdio0 = dove_register_gate("sdio0", "tclk", CLOCK_GATING_BIT_SDIO0);
-> +	sdio1 = dove_register_gate("sdio1", "tclk", CLOCK_GATING_BIT_SDIO1);
-> +	nand = dove_register_gate("nand", "tclk", CLOCK_GATING_BIT_NAND);
-> +	camera = dove_register_gate("camera", "tclk", CLOCK_GATING_BIT_CAMERA);
-> +	i2s0 = dove_register_gate("i2s0", "tclk", CLOCK_GATING_BIT_I2S0);
-> +	i2s1 = dove_register_gate("i2s1", "tclk", CLOCK_GATING_BIT_I2S1);
-> +	crypto = dove_register_gate("crypto", "tclk", CLOCK_GATING_BIT_CRYPTO);
-> +	ac97 = dove_register_gate("ac97", "tclk", CLOCK_GATING_BIT_AC97);
-> +	pdma = dove_register_gate("pdma", "tclk", CLOCK_GATING_BIT_PDMA);
-> +	xor0 = dove_register_gate("xor0", "tclk", CLOCK_GATING_BIT_XOR0);
-> +	xor1 = dove_register_gate("xor1", "tclk", CLOCK_GATING_BIT_XOR1);
-> +	gephy = dove_register_gate("gephy", "tclk", CLOCK_GATING_BIT_GIGA_PHY);
-> +	ge = dove_register_gate("ge", "gephy", CLOCK_GATING_BIT_GBE);
-> +
-> +	orion_clkdev_add(NULL, "orion_spi.0", tclk);
-> +	orion_clkdev_add(NULL, "orion_spi.1", tclk);
-> +	orion_clkdev_add(NULL, "orion_wdt", tclk);
-> +	orion_clkdev_add(NULL, MV64XXX_I2C_CTLR_NAME ".0", tclk);
-> +
-> +	orion_clkdev_add(NULL, "orion-ehci.0", usb0);
-> +	orion_clkdev_add(NULL, "orion-ehci.1", usb1);
-> +	orion_clkdev_add(NULL, MV643XX_ETH_NAME ".0", ge);
+In format strings for printk in be2iscsi, literal c string
+concatenations are used widely. However, the log output is a bit
+difficult to read because whitespaces are missed in the literal c
+strings like:
 
-Hi Sebastian
+    SE_DEBUG(DBG_LVL_1, "CQ Error %d, reset"
+			"received/sent on CID 0x%x...\n",
 
-Take a look at the patch [PATCH v3 7/7] NET: mv643xx: remove device
-name macro, from Ian Molten, and the discussion around the macro
-MV643XX_ETH_NAME and its friend.
+You will see "CQ Error 0xffffffff resetreceived/sent on CID ..." and
+wonder what is "resetreceived".
 
-It is probably best to not use the I2C and XOR macro as well.
+This patch cleanup these log messages:
 
-		 Andrew
+- inserting a white space between c string concatenations,
+- inserting a white space after punctuation, and
+- inserting white spaces before/after hypen.
+
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ drivers/scsi/be2iscsi/be_cmds.c  |  4 +--
+ drivers/scsi/be2iscsi/be_iscsi.c | 10 +++---
+ drivers/scsi/be2iscsi/be_main.c  | 70 ++++++++++++++++++++--------------------
+ drivers/scsi/be2iscsi/be_mgmt.c  |  2 +-
+ 4 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c
+index d2e9e93..d117e7a 100644
+--- a/drivers/scsi/be2iscsi/be_cmds.c
++++ b/drivers/scsi/be2iscsi/be_cmds.c
+@@ -93,7 +93,7 @@ int be_chk_reset_complete(struct beiscsi_hba *phba)
+ 	}
+ 
+ 	if ((status & 0x80000000) || (!num_loop)) {
+-		printk(KERN_ERR "Failed in be_chk_reset_complete"
++		printk(KERN_ERR "Failed in be_chk_reset_complete "
+ 		"status = 0x%x\n", status);
+ 		return -EIO;
+ 	}
+@@ -245,7 +245,7 @@ void beiscsi_async_link_state_process(struct beiscsi_hba *phba,
+ 						evt->physical_port);
+ 		break;
+ 	default:
+-		SE_DEBUG(DBG_LVL_1, "Unexpected Async Notification %d on"
++		SE_DEBUG(DBG_LVL_1, "Unexpected Async Notification %d on "
+ 				    "Physical Port %d\n",
+ 				     evt->port_link_status,
+ 				     evt->physical_port);
+diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+index 43f3503..15270dd 100644
+--- a/drivers/scsi/be2iscsi/be_iscsi.c
++++ b/drivers/scsi/be2iscsi/be_iscsi.c
+@@ -60,8 +60,8 @@ struct iscsi_cls_session *beiscsi_session_create(struct iscsi_endpoint *ep,
+ 	phba = beiscsi_ep->phba;
+ 	shost = phba->shost;
+ 	if (cmds_max > beiscsi_ep->phba->params.wrbs_per_cxn) {
+-		shost_printk(KERN_ERR, shost, "Cannot handle %d cmds."
+-			     "Max cmds per session supported is %d. Using %d. "
++		shost_printk(KERN_ERR, shost, "Cannot handle %d cmds. "
++			     "Max cmds per session supported is %d. Using %d."
+ 			     "\n", cmds_max,
+ 			      beiscsi_ep->phba->params.wrbs_per_cxn,
+ 			      beiscsi_ep->phba->params.wrbs_per_cxn);
+@@ -123,7 +123,7 @@ beiscsi_conn_create(struct iscsi_cls_session *cls_session, u32 cid)
+ 	struct iscsi_session *sess;
+ 	struct beiscsi_session *beiscsi_sess;
+ 
+-	SE_DEBUG(DBG_LVL_8, "In beiscsi_conn_create ,cid"
++	SE_DEBUG(DBG_LVL_8, "In beiscsi_conn_create, cid "
+ 		 "from iscsi layer=%d\n", cid);
+ 	shost = iscsi_session_to_shost(cls_session);
+ 	phba = iscsi_host_priv(shost);
+@@ -404,7 +404,7 @@ int be2iscsi_iface_set_param(struct Scsi_Host *shost,
+ 		 * BE2ISCSI only supports 1 interface
+ 		 */
+ 		if (iface_param->iface_num) {
+-			shost_printk(KERN_ERR, shost, "Invalid iface_num %d."
++			shost_printk(KERN_ERR, shost, "Invalid iface_num %d. "
+ 				     "Only iface_num 0 is supported.\n",
+ 				     iface_param->iface_num);
+ 			return -EINVAL;
+@@ -833,7 +833,7 @@ int beiscsi_conn_start(struct iscsi_cls_conn *cls_conn)
+ 	memset(&params, 0, sizeof(struct beiscsi_offload_params));
+ 	beiscsi_ep = beiscsi_conn->ep;
+ 	if (!beiscsi_ep)
+-		SE_DEBUG(DBG_LVL_1, "In beiscsi_conn_start , no beiscsi_ep\n");
++		SE_DEBUG(DBG_LVL_1, "In beiscsi_conn_start, no beiscsi_ep\n");
+ 
+ 	beiscsi_conn->login_in_progress = 0;
+ 	beiscsi_set_params_for_offld(beiscsi_conn, &params);
+diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
+index 0b1d99c..92e534b 100644
+--- a/drivers/scsi/be2iscsi/be_main.c
++++ b/drivers/scsi/be2iscsi/be_main.c
+@@ -113,7 +113,7 @@ static int beiscsi_eh_abort(struct scsi_cmnd *sc)
+ 				&nonemb_cmd.dma);
+ 	if (nonemb_cmd.va == NULL) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "Failed to allocate memory for"
++			 "Failed to allocate memory for "
+ 			 "mgmt_invalidate_icds\n");
+ 		return FAILED;
+ 	}
+@@ -189,7 +189,7 @@ static int beiscsi_eh_device_reset(struct scsi_cmnd *sc)
+ 				&nonemb_cmd.dma);
+ 	if (nonemb_cmd.va == NULL) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "Failed to allocate memory for"
++			 "Failed to allocate memory for "
+ 			 "mgmt_invalidate_icds\n");
+ 		return FAILED;
+ 	}
+@@ -843,7 +843,7 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
+ 					  &phwi_context->be_eq[i]);
+ 			if (ret) {
+ 				shost_printk(KERN_ERR, phba->shost,
+-					     "beiscsi_init_irqs-Failed to"
++					     "beiscsi_init_irqs-Failed to "
+ 					     "register msix for i = %d\n", i);
+ 				kfree(phba->msi_name[i]);
+ 				goto free_msix_irqs;
+@@ -860,7 +860,7 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
+ 		ret = request_irq(msix_vec, be_isr_mcc, 0, phba->msi_name[i],
+ 				  &phwi_context->be_eq[i]);
+ 		if (ret) {
+-			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
++			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs - "
+ 				     "Failed to register beiscsi_msix_mcc\n");
+ 			kfree(phba->msi_name[i]);
+ 			goto free_msix_irqs;
+@@ -870,7 +870,7 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
+ 		ret = request_irq(pcidev->irq, be_isr, IRQF_SHARED,
+ 				  "beiscsi", phba);
+ 		if (ret) {
+-			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
++			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs - "
+ 				     "Failed to register irq\\n");
+ 			return ret;
+ 		}
+@@ -979,7 +979,7 @@ free_io_sgl_handle(struct beiscsi_hba *phba, struct sgl_handle *psgl_handle)
+ 		 * failed in xmit_task or alloc_pdu.
+ 		 */
+ 		 SE_DEBUG(DBG_LVL_8,
+-			 "Double Free in IO SGL io_sgl_free_index=%d,"
++			 "Double Free in IO SGL io_sgl_free_index=%d, "
+ 			 "value there=%p\n", phba->io_sgl_free_index,
+ 			 phba->io_sgl_hndl_base[phba->io_sgl_free_index]);
+ 		return;
+@@ -1044,7 +1044,7 @@ free_wrb_handle(struct beiscsi_hba *phba, struct hwi_wrb_context *pwrb_context,
+ 		pwrb_context->free_index++;
+ 
+ 	SE_DEBUG(DBG_LVL_8,
+-		 "FREE WRB: pwrb_handle=%p free_index=0x%x"
++		 "FREE WRB: pwrb_handle=%p free_index=0x%x "
+ 		 "wrb_handles_available=%d\n",
+ 		 pwrb_handle, pwrb_context->free_index,
+ 		 pwrb_context->wrb_handles_available);
+@@ -1075,7 +1075,7 @@ void
+ free_mgmt_sgl_handle(struct beiscsi_hba *phba, struct sgl_handle *psgl_handle)
+ {
+ 
+-	SE_DEBUG(DBG_LVL_8, "In  free_mgmt_sgl_handle,eh_sgl_free_index=%d\n",
++	SE_DEBUG(DBG_LVL_8, "In  free_mgmt_sgl_handle, eh_sgl_free_index=%d\n",
+ 			     phba->eh_sgl_free_index);
+ 	if (phba->eh_sgl_hndl_base[phba->eh_sgl_free_index]) {
+ 		/*
+@@ -1083,7 +1083,7 @@ free_mgmt_sgl_handle(struct beiscsi_hba *phba, struct sgl_handle *psgl_handle)
+ 		 * failed in xmit_task or alloc_pdu.
+ 		 */
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "Double Free in eh SGL ,eh_sgl_free_index=%d\n",
++			 "Double Free in eh SGL, eh_sgl_free_index=%d\n",
+ 			 phba->eh_sgl_free_index);
+ 		return;
+ 	}
+@@ -1328,7 +1328,7 @@ static void hwi_complete_cmd(struct beiscsi_conn *beiscsi_conn,
+ 	case HWH_TYPE_LOGIN:
+ 		SE_DEBUG(DBG_LVL_1,
+ 			 "\t\t No HWH_TYPE_LOGIN Expected in hwi_complete_cmd"
+-			 "- Solicited path\n");
++			 " - Solicited path\n");
+ 		break;
+ 
+ 	case HWH_TYPE_NOP:
+@@ -1337,7 +1337,7 @@ static void hwi_complete_cmd(struct beiscsi_conn *beiscsi_conn,
+ 
+ 	default:
+ 		shost_printk(KERN_WARNING, phba->shost,
+-				"In hwi_complete_cmd, unknown type = %d"
++				"In hwi_complete_cmd, unknown type = %d "
+ 				"wrb_index 0x%x CID 0x%x\n", type,
+ 				((psol->dw[offsetof(struct amap_iscsi_wrb,
+ 				type) / 32] & SOL_WRB_INDEX_MASK) >> 16),
+@@ -1854,7 +1854,7 @@ static unsigned int beiscsi_process_cq(struct be_eq_obj *pbe_eq)
+ 		case CXN_INVALIDATE_NOTIFY:
+ 			SE_DEBUG(DBG_LVL_1,
+ 				 "Ignoring CQ Error notification for cmd/cxn"
+-				 "invalidate\n");
++				 " invalidate\n");
+ 			break;
+ 		case SOL_CMD_KILLED_DATA_DIGEST_ERR:
+ 		case CMD_KILLED_INVALID_STATSN_RCVD:
+@@ -1903,7 +1903,7 @@ static unsigned int beiscsi_process_cq(struct be_eq_obj *pbe_eq)
+ 			break;
+ 		case CXN_KILLED_RST_SENT:
+ 		case CXN_KILLED_RST_RCVD:
+-			SE_DEBUG(DBG_LVL_1, "CQ Error %d, reset"
++			SE_DEBUG(DBG_LVL_1, "CQ Error %d, reset "
+ 				"received/sent on CID 0x%x...\n",
+ 				 sol->dw[offsetof(struct amap_sol_cqe, code) /
+ 				 32] & CQE_CODE_MASK,
+@@ -2439,7 +2439,7 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
+ 	mem_descr += HWI_MEM_ASYNC_HEADER_BUF;
+ 	if (mem_descr->mem_array[0].virtual_address) {
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_BUF"
++			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_BUF "
+ 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
+ 	} else
+ 		shost_printk(KERN_WARNING, phba->shost,
+@@ -2455,7 +2455,7 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
+ 	mem_descr += HWI_MEM_ASYNC_HEADER_RING;
+ 	if (mem_descr->mem_array[0].virtual_address) {
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_RING"
++			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_RING "
+ 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
+ 	} else
+ 		shost_printk(KERN_WARNING, phba->shost,
+@@ -2467,7 +2467,7 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
+ 	mem_descr += HWI_MEM_ASYNC_HEADER_HANDLE;
+ 	if (mem_descr->mem_array[0].virtual_address) {
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_HANDLE"
++			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_HANDLE "
+ 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
+ 	} else
+ 		shost_printk(KERN_WARNING, phba->shost,
+@@ -2483,7 +2483,7 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
+ 	mem_descr += HWI_MEM_ASYNC_DATA_RING;
+ 	if (mem_descr->mem_array[0].virtual_address) {
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_RING"
++			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_RING "
+ 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
+ 	} else
+ 		shost_printk(KERN_WARNING, phba->shost,
+@@ -2512,7 +2512,7 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
+ 	mem_descr += HWI_MEM_ASYNC_DATA_BUF;
+ 	if (mem_descr->mem_array[0].virtual_address) {
+ 		SE_DEBUG(DBG_LVL_8,
+-			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_BUF"
++			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_BUF "
+ 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
+ 	} else
+ 		shost_printk(KERN_WARNING, phba->shost,
+@@ -2694,8 +2694,8 @@ static int beiscsi_create_eqs(struct beiscsi_hba *phba,
+ 					    phwi_context->cur_eqd);
+ 		if (ret) {
+ 			shost_printk(KERN_ERR, phba->shost,
+-				     "beiscsi_cmd_eq_create"
+-				     "Failedfor EQ\n");
++				     "beiscsi_cmd_eq_create "
++				     "Failed for EQ\n");
+ 			goto create_eq_error;
+ 		}
+ 		SE_DEBUG(DBG_LVL_8, "eqid = %d\n", phwi_context->be_eq[i].q.id);
+@@ -2752,7 +2752,7 @@ static int beiscsi_create_cqs(struct beiscsi_hba *phba,
+ 					    false, 0);
+ 		if (ret) {
+ 			shost_printk(KERN_ERR, phba->shost,
+-				     "beiscsi_cmd_eq_create"
++				     "beiscsi_cmd_eq_create "
+ 				     "Failed for ISCSI CQ\n");
+ 			goto create_cq_error;
+ 		}
+@@ -3221,7 +3221,7 @@ static int hwi_init_controller(struct beiscsi_hba *phba)
+ 			 phwi_ctrlr->phwi_ctxt);
+ 	} else {
+ 		shost_printk(KERN_ERR, phba->shost,
+-			     "HWI_MEM_ADDN_CONTEXT is more than one element."
++			     "HWI_MEM_ADDN_CONTEXT is more than one element. "
+ 			     "Failing to load\n");
+ 		return -ENOMEM;
+ 	}
+@@ -3268,7 +3268,7 @@ static int beiscsi_init_controller(struct beiscsi_hba *phba)
+ 
+ 	ret = beiscsi_get_memory(phba);
+ 	if (ret < 0) {
+-		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe -"
++		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe - "
+ 			     "Failed in beiscsi_alloc_memory\n");
+ 		return ret;
+ 	}
+@@ -3317,7 +3317,7 @@ static int beiscsi_init_sgl_handle(struct beiscsi_hba *phba)
+ 		}
+ 	} else {
+ 		shost_printk(KERN_ERR, phba->shost,
+-			     "HWI_MEM_SGLH is more than one element."
++			     "HWI_MEM_SGLH is more than one element. "
+ 			     "Failing to load\n");
+ 		return -ENOMEM;
+ 	}
+@@ -3345,7 +3345,7 @@ static int beiscsi_init_sgl_handle(struct beiscsi_hba *phba)
+ 		idx++;
+ 	}
+ 	SE_DEBUG(DBG_LVL_8,
+-		 "phba->io_sgl_hndl_avbl=%d"
++		 "phba->io_sgl_hndl_avbl=%d "
+ 		 "phba->eh_sgl_hndl_avbl=%d\n",
+ 		 phba->io_sgl_hndl_avbl,
+ 		 phba->eh_sgl_hndl_avbl);
+@@ -3509,7 +3509,7 @@ static int beiscsi_get_boot_info(struct beiscsi_hba *phba)
+ 				&nonemb_cmd.dma);
+ 	if (nonemb_cmd.va == NULL) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "Failed to allocate memory for"
++			 "Failed to allocate memory for "
+ 			 "beiscsi_get_session_info\n");
+ 		return -ENOMEM;
+ 	}
+@@ -3612,14 +3612,14 @@ static int beiscsi_init_port(struct beiscsi_hba *phba)
+ 	ret = beiscsi_init_controller(phba);
+ 	if (ret < 0) {
+ 		shost_printk(KERN_ERR, phba->shost,
+-			     "beiscsi_dev_probe - Failed in"
++			     "beiscsi_dev_probe - Failed in "
+ 			     "beiscsi_init_controller\n");
+ 		return ret;
+ 	}
+ 	ret = beiscsi_init_sgl_handle(phba);
+ 	if (ret < 0) {
+ 		shost_printk(KERN_ERR, phba->shost,
+-			     "beiscsi_dev_probe - Failed in"
++			     "beiscsi_dev_probe - Failed in "
+ 			     "beiscsi_init_sgl_handle\n");
+ 		goto do_cleanup_ctrlr;
+ 	}
+@@ -4356,7 +4356,7 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
+ 	}
+ 	ret = be_ctrl_init(phba, pcidev);
+ 	if (ret) {
+-		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
++		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe - "
+ 				"Failed in be_ctrl_init\n");
+ 		goto hba_free;
+ 	}
+@@ -4377,7 +4377,7 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
+ 			ret = be_chk_reset_complete(phba);
+ 			if (ret) {
+ 				shost_printk(KERN_ERR, phba->shost,
+-					"Failed to get out of reset."
++					"Failed to get out of reset. "
+ 					"Aborting Crashdump\n");
+ 				goto hba_free;
+ 			}
+@@ -4402,7 +4402,7 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
+ 	phba->shost->can_queue = phba->params.ios_per_ctrl;
+ 	ret = beiscsi_init_port(phba);
+ 	if (ret < 0) {
+-		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
++		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe - "
+ 			     "Failed in beiscsi_init_port\n");
+ 		goto free_port;
+ 	}
+@@ -4420,7 +4420,7 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
+ 		 phba->shost->host_no);
+ 	phba->wq = alloc_workqueue(phba->wq_name, WQ_MEM_RECLAIM, 1);
+ 	if (!phba->wq) {
+-		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
++		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe - "
+ 				"Failed to allocate work queue\n");
+ 		goto free_twq;
+ 	}
+@@ -4439,7 +4439,7 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
+ 	}
+ 	ret = beiscsi_init_irqs(phba);
+ 	if (ret < 0) {
+-		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
++		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe - "
+ 			     "Failed to beiscsi_init_irqs\n");
+ 		goto free_blkenbld;
+ 	}
+@@ -4543,7 +4543,7 @@ static int __init beiscsi_module_init(void)
+ 			iscsi_register_transport(&beiscsi_iscsi_transport);
+ 	if (!beiscsi_scsi_transport) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "beiscsi_module_init - Unable to  register beiscsi"
++			 "beiscsi_module_init - Unable to  register beiscsi "
+ 			 "transport.\n");
+ 		return -ENOMEM;
+ 	}
+@@ -4553,7 +4553,7 @@ static int __init beiscsi_module_init(void)
+ 	ret = pci_register_driver(&beiscsi_pci_driver);
+ 	if (ret) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "beiscsi_module_init - Unable to  register"
++			 "beiscsi_module_init - Unable to register "
+ 			 "beiscsi pci driver.\n");
+ 		goto unregister_iscsi_transport;
+ 	}
+diff --git a/drivers/scsi/be2iscsi/be_mgmt.c b/drivers/scsi/be2iscsi/be_mgmt.c
+index 2a09679..0ffce2d 100644
+--- a/drivers/scsi/be2iscsi/be_mgmt.c
++++ b/drivers/scsi/be2iscsi/be_mgmt.c
+@@ -551,7 +551,7 @@ static int mgmt_exec_nonemb_cmd(struct beiscsi_hba *phba,
+ 	status = phba->ctrl.mcc_numtag[tag] & 0x000000FF;
+ 	if (status || extd_status) {
+ 		SE_DEBUG(DBG_LVL_1,
+-			 "mgmt_exec_nonemb_cmd Failed status = %d"
++			 "mgmt_exec_nonemb_cmd Failed status = %d "
+ 			 "extd_status = %d\n", status, extd_status);
+ 		rc = -EIO;
+ 		goto free_tag;
+-- 
+1.7.11.2
+
