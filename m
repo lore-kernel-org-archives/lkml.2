@@ -1,109 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab2HLQdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 12:33:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48078 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab2HLQdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 12:33:08 -0400
-Message-ID: <5027DAAF.2060406@ti.com>
-Date: Sun, 12 Aug 2012 12:32:47 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-Reply-To: <cyril@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <arnd@arndb.de>, <catalin.marinas@arm.com>,
-        <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
-        <will.deacon@arm.com>
-Subject: Re: [PATCH v2 02/22] ARM: add self test for runtime patch mechanism
-References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-3-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208112226310.5231@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1208112226310.5231@xanadu.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1752078Ab2HLQkX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 12:40:23 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:33122 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab2HLQkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 12:40:22 -0400
+Message-ID: <1344789618.5128.5.camel@lorien2>
+Subject: [PATCH v3] mm: Restructure kmem_cache_create() to move debug cache
+ integrity checks into a new function
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: "Christoph Lameter (Open Source)" <cl@linux.com>
+Cc: penberg@kernel.org, glommer@parallels.com, js1304@gmail.com,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
+Date: Sun, 12 Aug 2012 10:40:18 -0600
+In-Reply-To: <1344540801.2393.42.camel@lorien2>
+References: <1342221125.17464.8.camel@lorien2>
+	 <CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
+	 <1344224494.3053.5.camel@lorien2> <1344266096.2486.17.camel@lorien2>
+	 <CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
+	 <1344272614.2486.40.camel@lorien2> <1344287631.2486.57.camel@lorien2>
+	 <alpine.DEB.2.02.1208090911100.15909@greybox.home>
+	 <1344531695.2393.27.camel@lorien2>
+	 <alpine.DEB.2.02.1208091406590.20908@greybox.home>
+	 <1344540801.2393.42.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/12 22:35, Nicolas Pitre wrote:
-> On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
->
->> This patch adds basic sanity tests to ensure that the instruction patching
->> results in valid instruction encodings.  This is done by verifying the output
->> of the patch process against a vector of assembler generated instructions at
->> init time.
->>
->> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
->> ---
-[...]
->> +	__asm__ __volatile__ (
->> +		"	.irp	shift1, 0, 6, 12, 18\n"
->> +		"	.irp	shift2, 0, 1, 2, 3, 4, 5\n"
->> +		"	add     r1, r2, #(0x41 << (\\shift1 + \\shift2))\n"
->> +		"	.endr\n"
->> +		"	.endr\n"
->
->
-> Maybe adding a "add r1, r2 #0x81 << 24" here might be a good thing since
-> this is the most used case but missing from the above.
->
+kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
+is defined. These checks interspersed with the regular code path has
+lead to compile time warnings when compiled without CONFIG_DEBUG_VM
+defined. Restructuring the code to move the integrity checks in to a new
+function would eliminate the current compile warning problem and also
+will allow for future changes to the debug only code to evolve without
+introducing new warnings in the regular path. This restructuring work
+is based on the discussion in the following thread:
 
-Indeed.  I've now replaced this with something a bit more extensive. 
-Does the following look better?
+https://lkml.org/lkml/2012/7/13/424
 
-+struct patch_test_imm8 {
-+       u16     imm;
-+       u16     shift;
-+       u32     insn;
-+};
-+
-+static void __init __used __naked __patch_test_code_imm8(void)
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ mm/slab_common.c |   90 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 48 insertions(+), 42 deletions(-)
+
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 12637ce..44facdf 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -23,6 +23,52 @@ enum slab_state slab_state;
+ LIST_HEAD(slab_caches);
+ DEFINE_MUTEX(slab_mutex);
+ 
++#ifdef CONFIG_DEBUG_VM
++static int kmem_cache_sanity_check(const char *name, size_t size)
 +{
-+       __asm__ __volatile__ (
++	struct kmem_cache *s = NULL;
 +
-+               /* a single test case */
-+               "       .macro          test_one, imm, sft\n"
-+               "       .hword          \\imm\n"
-+               "       .hword          \\sft\n"
-+               "       add             r1, r2, #(\\imm << \\sft)\n"
-+               "       .endm\n"
++	if (!name || in_interrupt() || size < sizeof(void *) ||
++		size > KMALLOC_MAX_SIZE) {
++		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
++		return -EINVAL;
++	}
 +
-+               /* a sequence of tests at 'inc' increments of shift */
-+               "       .macro          test_seq, imm, sft, max, inc\n"
-+               "       test_one        \\imm, \\sft\n"
-+               "       .if             \\sft < \\max\n"
-+               "       test_seq        \\imm, (\\sft + \\inc), \\max, 
-\\inc\n"
-+               "       .endif\n"
-+               "       .endm\n"
++	list_for_each_entry(s, &slab_caches, list) {
++		char tmp;
++		int res;
 +
-+               /* an empty record to mark the end */
-+               "       .macro          test_end\n"
-+               "       .hword          0, 0\n"
-+               "       .word           0\n"
-+               "       .endm\n"
++		/*
++		 * This happens when the module gets unloaded and doesn't
++		 * destroy its slab cache and no-one else reuses the vmalloc
++		 * area of the module.  Print a warning.
++		 */
++		res = probe_kernel_address(s->name, tmp);
++		if (res) {
++			pr_err("Slab cache with size %d has lost its name\n",
++			       s->object_size);
++			continue;
++		}
 +
-+               /* finally generate the test sequences */
-+               "       test_seq        0x41, 0, 24, 1\n"
-+               "       test_seq        0x81, 0, 24, 2\n"
-+               "       test_end\n"
-+               : : :
-+       );
++		if (!strcmp(s->name, name)) {
++			pr_err("%s (%s): Cache name already exists.\n",
++			       __func__, name);
++			dump_stack();
++			s = NULL;
++			return -EINVAL;
++		}
++	}
++
++	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
++	return 0;
 +}
++#else
++static inline int kmem_cache_sanity_check(const char *name, size_t size)
++{
++	return 0;
++}
++#endif
 +
+ /*
+  * kmem_cache_create - Create a cache.
+  * @name: A string which is used in /proc/slabinfo to identify this cache.
+@@ -53,48 +99,11 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+ {
+ 	struct kmem_cache *s = NULL;
+ 
+-#ifdef CONFIG_DEBUG_VM
+-	if (!name || in_interrupt() || size < sizeof(void *) ||
+-		size > KMALLOC_MAX_SIZE) {
+-		printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+-			" failed\n", name);
+-		goto out;
+-	}
+-#endif
+-
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
+ 
+-#ifdef CONFIG_DEBUG_VM
+-	list_for_each_entry(s, &slab_caches, list) {
+-		char tmp;
+-		int res;
+-
+-		/*
+-		 * This happens when the module gets unloaded and doesn't
+-		 * destroy its slab cache and no-one else reuses the vmalloc
+-		 * area of the module.  Print a warning.
+-		 */
+-		res = probe_kernel_address(s->name, tmp);
+-		if (res) {
+-			printk(KERN_ERR
+-			       "Slab cache with size %d has lost its name\n",
+-			       s->object_size);
+-			continue;
+-		}
+-
+-		if (!strcmp(s->name, name)) {
+-			printk(KERN_ERR "kmem_cache_create(%s): Cache name"
+-				" already exists.\n",
+-				name);
+-			dump_stack();
+-			s = NULL;
+-			goto oops;
+-		}
+-	}
+-
+-	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
+-#endif
++	if (kmem_cache_sanity_check(name, size))
++		goto oops;
+ 
+ 	s = __kmem_cache_create(name, size, align, flags, ctor);
+ 
+@@ -102,9 +111,6 @@ oops:
+ 	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ 
+-#ifdef CONFIG_DEBUG_VM
+-out:
+-#endif
+ 	if (!s && (flags & SLAB_PANIC))
+ 		panic("kmem_cache_create: Failed to create slab '%s'\n", name);
+ 
+-- 
+1.7.9.5
 
-[...]
->> +	u32 test_code_addr = (u32)(&__patch_test_code_imm8);
->> +	u32 *test_code = (u32 *)(test_code_addr & ~0x3);
->
-> Why this masking?  With Thumb2 you may find functions starting at
-> halfword aligned addresses.  Only the LSB (indicating thumb mode) should
-> be masked out.
->
 
-Fixed.  Thanks.
 
-Thanks
--- Cyril.
