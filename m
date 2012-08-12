@@ -1,121 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2HLDjM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 23:39:12 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39586 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab2HLDjJ (ORCPT
+	id S1755290Ab2HLD5E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 23:57:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab2HLD5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 23:39:09 -0400
-Date: Sat, 11 Aug 2012 23:39:06 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
-        linux@arm.linux.org.uk, will.deacon@arm.com
-Subject: Re: [PATCH v2 05/22] ARM: LPAE: support 64-bit virt_to_phys
- patching
-In-Reply-To: <1344648306-15619-6-git-send-email-cyril@ti.com>
-Message-ID: <alpine.LFD.2.02.1208112316560.5231@xanadu.home>
-References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-6-git-send-email-cyril@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 11 Aug 2012 23:57:01 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH] fat: use accessor function for msdos_dir_entry 'start'
+Date: Sat, 11 Aug 2012 23:56:50 -0400
+Message-Id: <1344743810-2443-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
+Use accessor function for msdos_dir_entry 'start'
 
-> This patch adds support for 64-bit physical addresses in virt_to_phys()
-> patching.  This does not do real 64-bit add/sub, but instead patches in the
-> upper 32-bits of the phys_offset directly into the output of virt_to_phys.
-> 
-> There is no corresponding change on the phys_to_virt() side, because
-> computations on the upper 32-bits would be discarded anyway.
-> 
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> ---
->  arch/arm/include/asm/memory.h |   22 ++++++++++++++++++----
->  arch/arm/kernel/head.S        |    4 ++++
->  arch/arm/kernel/setup.c       |    2 +-
->  3 files changed, 23 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 81e1714..dc5fbf3 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -154,14 +154,28 @@
->  #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
->  
->  extern unsigned long	__pv_offset;
-> -extern unsigned long	__pv_phys_offset;
-> +extern phys_addr_t	__pv_phys_offset;
->  #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
->  
->  static inline phys_addr_t __virt_to_phys(unsigned long x)
->  {
-> -	unsigned long t;
-> -	early_patch_imm8("add", t, x, __pv_offset, 0);
-> -	return t;
-> +	unsigned long tlo, thi;
-> +
-> +	early_patch_imm8("add", tlo, x, __pv_offset, 0);
-> +
-> +#ifdef CONFIG_ARM_LPAE
-> +	/*
-> +	 * On LPAE, we do not _need_ to do 64-bit arithmetic because the high
-> +	 * order 32 bits are never changed by the phys-virt offset.  We simply
-> +	 * patch in the high order physical address bits instead.
-> +	 */
-> +#ifdef __ARMEB__
-> +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
-> +#else
-> +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
-> +#endif
-> +#endif
-> +	return (u64)tlo | (u64)thi << 32;
->  }
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/fat/dir.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Hmmm...  I'm afraid this is going to be suboptimal when LPAE is not 
-selected.
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index 7b1b9c1..2f3e66e 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -1143,10 +1143,8 @@ int fat_alloc_new_dir(struct inode *dir, struct timespec *ts)
+ 		de[0].ctime_cs = de[1].ctime_cs = 0;
+ 		de[0].adate = de[0].cdate = de[1].adate = de[1].cdate = 0;
+ 	}
+-	de[0].start = cpu_to_le16(cluster);
+-	de[0].starthi = cpu_to_le16(cluster >> 16);
+-	de[1].start = cpu_to_le16(MSDOS_I(dir)->i_logstart);
+-	de[1].starthi = cpu_to_le16(MSDOS_I(dir)->i_logstart >> 16);
++	fat_set_start(&de[0], cluster);
++	fat_set_start(&de[1], MSDOS_I(dir)->i_logstart);
+ 	de[0].size = de[1].size = 0;
+ 	memset(de + 2, 0, sb->s_blocksize - 2 * sizeof(*de));
+ 	set_buffer_uptodate(bhs[0]);
+-- 
+1.7.9.5
 
-First of all, you do not need to cast tlo to a u64 in the return value.
-
-Then, I'm not sure if the compiler is smart enough to see that the 
-returned value is a phys_addr_t which can be a u32, and in this case the 
-(u64)thi << 32 is going to be truncated right away, and therefore there 
-is no point in emiting the corresponding instructions.
-
-Furthermore, if LPAE is not defined, then thi never gets initialized and 
-should produce a warning. Did you test compilation of the code with LPAE 
-turned off?
-
-I'd prefer something like this where more stuff is validated by the 
-compiler:
-
-static inline phys_addr_t __virt_to_phys(unsigned long x)
-{
-	unsigned long tlo, thi;
-	phys_addr_t ret;
-
-	early_patch_imm8("add", tlo, x, __pv_offset, 0);
-	ret = tlo;
-
-	if (sizeof(phys_addr_t) > 4) {
-#ifdef __ARMEB__
-		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
-#else
-		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
-#endif
-		ret |= ((u64)thi) << 32;
-	}
-
-	return ret);
-}
-
-This should let the compiler optimize things whether LPAE is enabledor 
-not while validating both cases.
-
-
-Nicolas
