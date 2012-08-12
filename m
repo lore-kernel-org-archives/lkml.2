@@ -1,61 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab2HLOKH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:10:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64696 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab2HLOKE (ORCPT
+	id S1752166Ab2HLONd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:13:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53216 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab2HLONc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:10:04 -0400
+	Sun, 12 Aug 2012 10:13:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <5027B6B2.70204@internode.on.net>
-References: <5027B6B2.70204@internode.on.net>
-Date: Sun, 12 Aug 2012 16:10:03 +0200
-Message-ID: <CAFLxGvw5G6iC76nSaAg=bfnRqvdA-g4nxd+0qd-M_0SAQ9DKrQ@mail.gmail.com>
-Subject: Re: fuse: implement i_op->atomic_open() prevents writes to ntfs-3g filesystem
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Arthur Marsh <arthur.marsh@internode.on.net>
-Cc: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <CAO9zADxPQc9vqdhOeXj1Du=TeV_k5pRtBV9jyVLz-zk0bYFk_w@mail.gmail.com>
+References: <0bac01cd7717$9fa6bbf0$def433d0$@lucidpixels.com>
+ <alpine.LNX.2.00.1208101948590.17673@swampdragon.chaosbits.net>
+ <CAO9zADxocKKFMsf5RqmP+YMjFLj58yDbdqFm1xexQ+mSLb7JHQ@mail.gmail.com>
+ <0de101cd774c$fb2afa10$f180ee30$@lucidpixels.com> <CAO9zADzxste_Zs0CGtNoTL0SARV41-q4X-8i8fXBPVNQ4ADDcA@mail.gmail.com>
+ <5027AB4A.6010200@sandeen.net> <CAO9zADxPQc9vqdhOeXj1Du=TeV_k5pRtBV9jyVLz-zk0bYFk_w@mail.gmail.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sun, 12 Aug 2012 10:13:01 -0400
+X-Google-Sender-Auth: eH8fv-GI8MCj6VKz8KSn0-mUj9U
+Message-ID: <CAP=VYLoRosDjR-ciSP6cLwVtxy=Xf_k-RgkXHxfi=WLtxiaY7A@mail.gmail.com>
+Subject: Re: Upgraded from 3.4 to 3.5.1 kernel: machine does not boot
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Eric Sandeen <sandeen@sandeen.net>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, ap@solarrain.com,
+        linux-ext4@vger.kernel.org, greg@kroah.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 3:59 PM, Arthur Marsh
-<arthur.marsh@internode.on.net> wrote:
-> [repost, apologies if you see it twice]
-> I'm running Debian unstable on AMD64 (quad core) with Linus' github.com
-> kernels.
+On Sun, Aug 12, 2012 at 9:51 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+> On Sun, Aug 12, 2012 at 9:10 AM, Eric Sandeen <sandeen@sandeen.net> wrote:
+>> On 8/10/12 11:14 PM, Justin Piszcz wrote:
+>>> On Fri, Aug 10, 2012 at 7:07 PM, Justin Piszcz
+>>>>
+>>>> Hi,
+>>>>
+>>>> Found the root cause, the 3.5.1 kernel cannot mount my ext4 filesystem
+>>>> (60TB).
+>>
+>> You are a brave man running ext4 at 60T, but thank you for testing :)
+>>
+>> Backing out 8aeb00ff85ad25453765dd339b408c0087db1527 from 3.5.1
+>> (952fc18ef9ec707ebdc16c0786ec360295e5ff15 upstream) probably helps?
+>>
+>> From a quick look, I think that essentially has a :
+>>
+>> for (i = 0; i < ngroups; i++) {
+>>
+>>         for (j = 0; j < ngroups; j++) {
+>>
+>>         }
+>> }
+>>
+>> type nested loop going on; for a filesystem this big it's going to take almost
+>> literally forever, if I read it right.
+>>
+>> -Eric
 >
-> Recently (post 3.5.0 kernels) writes to an ntfs-3g filesystem started
-> failing, and I bisected back to the following:
+> Hello,
 >
-> # git bisect good
-> c8ccbe032feb127a977c66865cb63d72d9a6e08b is the first bad commit
-> commit c8ccbe032feb127a977c66865cb63d72d9a6e08b
-> Author: Miklos Szeredi <mszeredi@suse.cz>
-> Date:   Tue Jun 5 15:10:22 2012 +0200
+> It worked!! I can mount my filesystem now!
 >
->     fuse: implement i_op->atomic_open()
+> I pulled down 3.5 and backed out that commit, I could not quickly find
+> a doc to do this, so I will add how to do that below:
 >
->     Add an ->atomic_open implementation which replaces the atomic
-> open+create
->     operation implemented via ->create.  No functionality is changed.
+> 1. Clone Linux repo (3.5/stable as of this writing)
+> git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 >
->     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 2. List commits:
+> git log
 >
-> :040000 040000 7a000897ad0d1524a7e1cb187bc77d92b8397d56
-> 38f02e55f70b009f8b1149cdd75f571c72406fe4 M      fs
+> 3. Show a specific commit
+> git show 8aeb00ff85ad25453765dd339b408c0087db1527
 >
-> Has this problem been seen by anyone else?
+> 4. How to revert the commit:
+> git revert 8aeb00ff85ad25453765dd339b408c0087db1527
 >
-> Is a fix already in the works?
+> # On branch master
+> nothing to commit (working directory clean)
 
-Adding some CCs.
+You didn't actually revert anything here, because your clone left
+you on "master" branch, which points at 3.5 (i.e. 3.5.0).   It does
+not contain the commit which is of interest to you.
 
--- 
-Thanks,
-//richard
+-------------
+linux-stable$git tag --contains 8aeb00ff
+v3.5.1
+linux-stable$git branch --contains 8aeb00ff
+  linux-3.5.y
+linux-stable$
+------------
+
+The master branch in linux-stable is left pointing at one of the
+most recent mainline (i.e. non-stable) tags, and all of the stable
+content is on individual branches (type "git branch" to see them).
+
+So if you do a "git checkout linux-3.5.y"  and then do the revert,
+you will actually be testing what you wanted to test.
+
+Paul.
+--
+
+>
+> 5. Recompile, reboot, does it work?
+> # df -h
+> Filesystem      Size  Used Avail Use% Mounted on
+> /dev/sda1        61T   17T   44T  28% /r1
+> # uname -a
+> Linux p34 3.5.0 #1 SMP Sun Aug 12 09:42:41 EDT 2012 x86_64 GNU/Linux
+>
+> Yes!
+>
+> CC: Greg to see if this can be backed out for 3.5.2?
+>
+> Justin.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
