@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab2HLMSP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 08:18:15 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:36014 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab2HLMRV (ORCPT
+	id S1752335Ab2HLMSS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 08:18:18 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47739 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2HLMRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Aug 2012 08:17:21 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <kgdb-bugreport@lists.sourceforge.net>,
         Jason Wessel <jason.wessel@windriver.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/4] pmac_zilog,kdb: Fix console poll hook to return instead of loop
-Date: Sun, 12 Aug 2012 07:16:43 -0500
-Message-ID: <1344773805-12844-2-git-send-email-jason.wessel@windriver.com>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 1/4] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
+Date: Sun, 12 Aug 2012 07:16:42 -0500
+Message-ID: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
-References: <1344773805-12844-1-git-send-email-jason.wessel@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kdb <-> kgdb transitioning does not work properly with this UART
-driver because the get character routine loops indefinitely as opposed
-to returning NO_POLL_CHAR per the expectation of the KDB I/O driver
-API.
+This fault was detected using the kgdb test suite on boot and it
+crashes recursively due to the fact that CONFIG_KPROBES on mips adds
+an extra die notifier in the page fault handler.  The crash signature
+looks like this:
 
-The symptom is a kernel hang when trying to switch debug modes.
+kgdbts:RUN bad memory access test
+KGDB: re-enter exception: ALL breakpoints killed
+Call Trace:
+[<807b7548>] dump_stack+0x20/0x54
+[<807b7548>] dump_stack+0x20/0x54
 
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The fix for now is to have kgdb return immediately if the fault type
+is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
+to happen.
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- drivers/tty/serial/pmac_zilog.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ arch/mips/kernel/kgdb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
-index 654755a..333c8d0 100644
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -1348,10 +1348,16 @@ static int pmz_verify_port(struct uart_port *port, struct serial_struct *ser)
- static int pmz_poll_get_char(struct uart_port *port)
- {
- 	struct uart_pmac_port *uap = (struct uart_pmac_port *)port;
-+	int tries = 2;
+diff --git a/arch/mips/kernel/kgdb.c b/arch/mips/kernel/kgdb.c
+index f4546e9..23817a6 100644
+--- a/arch/mips/kernel/kgdb.c
++++ b/arch/mips/kernel/kgdb.c
+@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
+ 	struct pt_regs *regs = args->regs;
+ 	int trap = (regs->cp0_cause & 0x7c) >> 2;
  
--	while ((read_zsreg(uap, R0) & Rx_CH_AV) == 0)
--		udelay(5);
--	return read_zsdata(uap);
-+	while (tries) {
-+		if ((read_zsreg(uap, R0) & Rx_CH_AV) != 0)
-+			return read_zsdata(uap);
-+		if (tries--)
-+			udelay(5);
-+	}
++#ifdef CONFIG_KPROBES
++	/*
++	 * Return immediately if the kprobes fault notifier has set
++	 * DIE_PAGE_FAULT.
++	 */
++	if (cmd == DIE_PAGE_FAULT)
++		return NOTIFY_DONE;
++#endif /* CONFIG_KPROBES */
 +
-+	return NO_POLL_CHAR;
- }
- 
- static void pmz_poll_put_char(struct uart_port *port, unsigned char c)
+ 	/* Userspace events, ignore. */
+ 	if (user_mode(regs))
+ 		return NOTIFY_DONE;
 -- 
 1.7.9.5
 
