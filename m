@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2HLDYN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 23:24:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59705 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab2HLDYK (ORCPT
+	id S1755276Ab2HLD2w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 23:28:52 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51388 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab2HLD2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 23:24:10 -0400
-From: Joren Van Onder <joren.vanonder@gmail.com>
-To: eilong@broadcom.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joren Van Onder <joren.vanonder@gmail.com>
-Subject: [PATCH] bnx2x: Fix compiler warnings
-Date: Sun, 12 Aug 2012 05:10:35 +0200
-Message-Id: <1344741035-1493-1-git-send-email-joren.vanonder@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 11 Aug 2012 23:28:51 -0400
+Date: Sun, 12 Aug 2012 05:28:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: improve handling/reporting of memory error on dirty pagecache
+Message-ID: <20120812032844.GE11413@one.firstfloor.org>
+References: <m21ujdd6it.fsf@firstfloor.org> <1344719674-7267-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344719674-7267-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compiler warnings:
+> > That function uses a global lock. fdatawait is quite common. This will
+> > likely cause performance problems in IO workloads.
+> 
+> OK, I should avoid it.
 
- - drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:2908:3: warning: comparison
-   of distinct pointer types lacks a cast [enabled by default]
- - drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c:1709:7: warning: comparison
-   of distinct pointer types lacks a cast [enabled by default]
-
-Signed-off-by: Joren Van Onder <joren.vanonder@gmail.com>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-index 77bcd4c..463b9ec 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -1278,7 +1278,7 @@ struct bnx2x {
- #define BNX2X_FW_RX_ALIGN_START	(1UL << BNX2X_RX_ALIGN_SHIFT)
+Maybe just RCU the hash table.
  
- #define BNX2X_FW_RX_ALIGN_END					\
--	max(1UL << BNX2X_RX_ALIGN_SHIFT, 			\
-+	max_t(u64, 1UL << BNX2X_RX_ALIGN_SHIFT,			\
- 	    SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
- 
- #define BNX2X_PXP_DRAM_ALIGN		(BNX2X_RX_ALIGN_SHIFT - 5)
--- 
-1.7.9.5
+> > You need to get that lock out of the hot path somehow.
+> > 
+> > Probably better to try to put the data into a existing data structure,
+> > or if you cannot do that you would need some way to localize the lock.
+> 
+> Yes, I have thought about adding some data like new pagecache tag or
+> new members in struct address_space, but it makes the size of heavily
+> used data structure larger so I'm not sure it's acceptable.
+> And localizing the lock is worth trying, I think.
 
+It's cheaper than a hash table lookup in the hot path.
+ 
+> > Or at least make it conditional of hwpoison errors being around. 
+> 
+> I'll try to do your suggestions, but I'm not sure your point of the
+> last one. Can you explain more about 'make it conditional' option?
+
+The code should check some flag first that is only set when hwpoison
+happened on the address space (or global, but that would mean that 
+performance can go down globally when any error is around)
+
+-Andi
