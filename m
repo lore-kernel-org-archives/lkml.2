@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab2HLJpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 05:45:41 -0400
+	id S1752149Ab2HLJpp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 05:45:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64222 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab2HLJpN (ORCPT
+	with ESMTP id S1751703Ab2HLJpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 05:45:13 -0400
+	Sun, 12 Aug 2012 05:45:16 -0400
 From: Cruz Julian Bishop <cruzjbishop@gmail.com>
 To: hirofumi@mail.parknet.co.jp
 Cc: linux-kernel@vger.kernel.org, Cruz Julian Bishop <cruzjbishop@gmail.com>
-Subject: [PATCH 4/7] fs/fat: Fix two checkpatch issues in cache.c
-Date: Sun, 12 Aug 2012 19:44:44 +1000
-Message-Id: <1344764687-4155-5-git-send-email-cruzjbishop@gmail.com>
+Subject: [PATCH 5/7] fs/fat: Fixes some small checkpatch issues in dir.c
+Date: Sun, 12 Aug 2012 19:44:45 +1000
+Message-Id: <1344764687-4155-6-git-send-email-cruzjbishop@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344764687-4155-1-git-send-email-cruzjbishop@gmail.com>
 References: <1344764687-4155-1-git-send-email-cruzjbishop@gmail.com>
@@ -20,45 +20,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This does the following:
-	1: Splits the arguments of a function call to stop it
-		from exceeding 80 characters
-	2: Re-indents the arguments of another function call
-		to prevent the splitting of a quoted string.
+This commit simply removes the spacing between function
+definitions and EXPORT_SYMBOL_GPL calls, which were
+previously generating warnings.
 
 Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
 ---
- fs/fat/cache.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/fat/dir.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/fs/fat/cache.c b/fs/fat/cache.c
-index 1cc7038..91ad9e1 100644
---- a/fs/fat/cache.c
-+++ b/fs/fat/cache.c
-@@ -190,7 +190,8 @@ static void __fat_cache_inval_inode(struct inode *inode)
- 	struct fat_cache *cache;
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index 7b1b9c1..4b04d5e 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -537,7 +537,6 @@ end_of_dir:
  
- 	while (!list_empty(&i->cache_lru)) {
--		cache = list_entry(i->cache_lru.next, struct fat_cache, cache_list);
-+		cache = list_entry(i->cache_lru.next,
-+				   struct fat_cache, cache_list);
- 		list_del_init(&cache->cache_list);
- 		i->nr_caches--;
- 		fat_cache_free(cache);
-@@ -261,9 +262,10 @@ int fat_get_cluster(struct inode *inode, int cluster, int *fclus, int *dclus)
- 		if (nr < 0)
- 			goto out;
- 		else if (nr == FAT_ENT_FREE) {
--			fat_fs_error_ratelimit(sb, "%s: invalid cluster chain"
--					       " (i_pos %lld)", __func__,
--					       MSDOS_I(inode)->i_pos);
-+			fat_fs_error_ratelimit(sb,
-+				       "%s: invalid cluster chain (i_pos %lld)",
-+				       __func__,
-+				       MSDOS_I(inode)->i_pos);
- 			nr = -EIO;
- 			goto out;
- 		} else if (nr == FAT_ENT_EOF) {
+ 	return err;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_search_long);
+ 
+ struct fat_ioctl_filldir_callback {
+@@ -892,7 +891,6 @@ int fat_get_dotdot_entry(struct inode *dir, struct buffer_head **bh,
+ 	}
+ 	return -ENOENT;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_get_dotdot_entry);
+ 
+ /* See if directory is empty */
+@@ -915,7 +913,6 @@ int fat_dir_empty(struct inode *dir)
+ 	brelse(bh);
+ 	return result;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_dir_empty);
+ 
+ /*
+@@ -961,7 +958,6 @@ int fat_scan(struct inode *dir, const unsigned char *name,
+ 	}
+ 	return -ENOENT;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_scan);
+ 
+ static int __fat_remove_entries(struct inode *dir, loff_t pos, int nr_slots)
+@@ -1049,7 +1045,6 @@ int fat_remove_entries(struct inode *dir, struct fat_slot_info *sinfo)
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_remove_entries);
+ 
+ static int fat_zeroed_cluster(struct inode *dir, sector_t blknr, int nr_used,
+@@ -1163,7 +1158,6 @@ error_free:
+ error:
+ 	return err;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_alloc_new_dir);
+ 
+ static int fat_add_new_entries(struct inode *dir, void *slots, int nr_slots,
+@@ -1379,5 +1373,4 @@ error_remove:
+ 		__fat_remove_entries(dir, pos, free_slots);
+ 	return err;
+ }
+-
+ EXPORT_SYMBOL_GPL(fat_add_entries);
 -- 
 1.7.9.5
 
