@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab2HLD2w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 23:28:52 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51388 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab2HLD2v (ORCPT
+	id S1755342Ab2HLDjM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 23:39:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39586 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967Ab2HLDjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 23:28:51 -0400
-Date: Sun, 12 Aug 2012 05:28:44 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: improve handling/reporting of memory error on dirty pagecache
-Message-ID: <20120812032844.GE11413@one.firstfloor.org>
-References: <m21ujdd6it.fsf@firstfloor.org> <1344719674-7267-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344719674-7267-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.4.2.2i
+	Sat, 11 Aug 2012 23:39:09 -0400
+Date: Sat, 11 Aug 2012 23:39:06 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
+        linux@arm.linux.org.uk, will.deacon@arm.com
+Subject: Re: [PATCH v2 05/22] ARM: LPAE: support 64-bit virt_to_phys
+ patching
+In-Reply-To: <1344648306-15619-6-git-send-email-cyril@ti.com>
+Message-ID: <alpine.LFD.2.02.1208112316560.5231@xanadu.home>
+References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-6-git-send-email-cyril@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > That function uses a global lock. fdatawait is quite common. This will
-> > likely cause performance problems in IO workloads.
+On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
+
+> This patch adds support for 64-bit physical addresses in virt_to_phys()
+> patching.  This does not do real 64-bit add/sub, but instead patches in the
+> upper 32-bits of the phys_offset directly into the output of virt_to_phys.
 > 
-> OK, I should avoid it.
-
-Maybe just RCU the hash table.
- 
-> > You need to get that lock out of the hot path somehow.
-> > 
-> > Probably better to try to put the data into a existing data structure,
-> > or if you cannot do that you would need some way to localize the lock.
+> There is no corresponding change on the phys_to_virt() side, because
+> computations on the upper 32-bits would be discarded anyway.
 > 
-> Yes, I have thought about adding some data like new pagecache tag or
-> new members in struct address_space, but it makes the size of heavily
-> used data structure larger so I'm not sure it's acceptable.
-> And localizing the lock is worth trying, I think.
-
-It's cheaper than a hash table lookup in the hot path.
- 
-> > Or at least make it conditional of hwpoison errors being around. 
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> ---
+>  arch/arm/include/asm/memory.h |   22 ++++++++++++++++++----
+>  arch/arm/kernel/head.S        |    4 ++++
+>  arch/arm/kernel/setup.c       |    2 +-
+>  3 files changed, 23 insertions(+), 5 deletions(-)
 > 
-> I'll try to do your suggestions, but I'm not sure your point of the
-> last one. Can you explain more about 'make it conditional' option?
+> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> index 81e1714..dc5fbf3 100644
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -154,14 +154,28 @@
+>  #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+>  
+>  extern unsigned long	__pv_offset;
+> -extern unsigned long	__pv_phys_offset;
+> +extern phys_addr_t	__pv_phys_offset;
+>  #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+>  
+>  static inline phys_addr_t __virt_to_phys(unsigned long x)
+>  {
+> -	unsigned long t;
+> -	early_patch_imm8("add", t, x, __pv_offset, 0);
+> -	return t;
+> +	unsigned long tlo, thi;
+> +
+> +	early_patch_imm8("add", tlo, x, __pv_offset, 0);
+> +
+> +#ifdef CONFIG_ARM_LPAE
+> +	/*
+> +	 * On LPAE, we do not _need_ to do 64-bit arithmetic because the high
+> +	 * order 32 bits are never changed by the phys-virt offset.  We simply
+> +	 * patch in the high order physical address bits instead.
+> +	 */
+> +#ifdef __ARMEB__
+> +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
+> +#else
+> +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
+> +#endif
+> +#endif
+> +	return (u64)tlo | (u64)thi << 32;
+>  }
 
-The code should check some flag first that is only set when hwpoison
-happened on the address space (or global, but that would mean that 
-performance can go down globally when any error is around)
+Hmmm...  I'm afraid this is going to be suboptimal when LPAE is not 
+selected.
 
--Andi
+First of all, you do not need to cast tlo to a u64 in the return value.
+
+Then, I'm not sure if the compiler is smart enough to see that the 
+returned value is a phys_addr_t which can be a u32, and in this case the 
+(u64)thi << 32 is going to be truncated right away, and therefore there 
+is no point in emiting the corresponding instructions.
+
+Furthermore, if LPAE is not defined, then thi never gets initialized and 
+should produce a warning. Did you test compilation of the code with LPAE 
+turned off?
+
+I'd prefer something like this where more stuff is validated by the 
+compiler:
+
+static inline phys_addr_t __virt_to_phys(unsigned long x)
+{
+	unsigned long tlo, thi;
+	phys_addr_t ret;
+
+	early_patch_imm8("add", tlo, x, __pv_offset, 0);
+	ret = tlo;
+
+	if (sizeof(phys_addr_t) > 4) {
+#ifdef __ARMEB__
+		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
+#else
+		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
+#endif
+		ret |= ((u64)thi) << 32;
+	}
+
+	return ret);
+}
+
+This should let the compiler optimize things whether LPAE is enabledor 
+not while validating both cases.
+
+
+Nicolas
