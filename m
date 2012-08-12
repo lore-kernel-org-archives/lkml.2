@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab2HLPOV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 11:14:21 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:46017 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2HLPOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 11:14:19 -0400
-Message-ID: <5027C836.4070904@panasas.com>
-Date: Sun, 12 Aug 2012 18:13:58 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Subject: Re: linux-next: manual merge of the osd tree with the nfs tree
-References: <20120809100328.b8d6af3b95e1537ffcb7b053@canb.auug.org.au>
-In-Reply-To: <20120809100328.b8d6af3b95e1537ffcb7b053@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1751204Ab2HLPTl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 11:19:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab2HLPTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 11:19:40 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: improve handling/reporting of memory error on dirty pagecache
+Date: Sun, 12 Aug 2012 11:19:21 -0400
+Message-Id: <1344784761-6183-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20120812032844.GE11413@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 03:03 AM, Stephen Rothwell wrote:
+Hi,
 
-> Hi Boaz,
+On Sun, Aug 12, 2012 at 05:28:44AM +0200, Andi Kleen wrote:
+> > > That function uses a global lock. fdatawait is quite common. This will
+> > > likely cause performance problems in IO workloads.
+> > 
+> > OK, I should avoid it.
 > 
-> Today's linux-next merge of the osd tree got a conflict in
-> fs/nfs/nfs4proc.c between commit 47fbf7976e0b ("NFSv4.1: Remove a bogus
-> BUG_ON() in nfs4_layoutreturn_done") from the nfs tree and commit
-> d8e8b68405db ("pnfs: Don't BUG on info received from Server") from the
-> osd tree.
+> Maybe just RCU the hash table.
+
+OK.
+
+> > > You need to get that lock out of the hot path somehow.
+> > > 
+> > > Probably better to try to put the data into a existing data structure,
+> > > or if you cannot do that you would need some way to localize the lock.
+> > 
+> > Yes, I have thought about adding some data like new pagecache tag or
+> > new members in struct address_space, but it makes the size of heavily
+> > used data structure larger so I'm not sure it's acceptable.
+> > And localizing the lock is worth trying, I think.
 > 
-> I just used the nfs tree version.
+> It's cheaper than a hash table lookup in the hot path.
+>  
+> > > Or at least make it conditional of hwpoison errors being around. 
+> > 
+> > I'll try to do your suggestions, but I'm not sure your point of the
+> > last one. Can you explain more about 'make it conditional' option?
+> 
+> The code should check some flag first that is only set when hwpoison
+> happened on the address space (or global, but that would mean that 
+> performance can go down globally when any error is around)
 
+I defined hwpoison_file_range() and hwpoison_partial_write() as wrapper
+functions of __hwpoison_* variants, and they hold hwp_dirty_lock only
+if AS_HWPOISON flag in mapping is set. So I hope we already did it.
+But yes, I understand that in general a global lock is not good,
+so I'll try to do other options.
 
-Sorry, was on vacation will fix right now. Your fix was correct
-
-Thanks
-Boaz
-
+Thank you,
+Naoya
