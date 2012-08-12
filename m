@@ -1,93 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2HLTcd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 15:32:33 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35000 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750733Ab2HLTcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 15:32:31 -0400
-Date: Sun, 12 Aug 2012 23:32:10 +0400
-From: Vasily Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-Subject: Re: [kernel-hardening] [PATCH 1/2] fs: add link restrictions
-Message-ID: <20120812193210.GA16669@albatros>
-References: <1343262548-21743-1-git-send-email-keescook@chromium.org>
- <1343262548-21743-2-git-send-email-keescook@chromium.org>
- <20120808121938.GA9995@albatros>
- <CAGXu5j+AUmNFLYmm-097JD-LgxKaYXxTmpnCdsdsqA+jLztXZQ@mail.gmail.com>
+	id S1751983Ab2HLUXG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 16:23:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263Ab2HLUXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 16:23:04 -0400
+Date: Sun, 12 Aug 2012 21:22:57 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates under
+ load V3
+Message-ID: <20120812202257.GA4177@suse.de>
+References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
+ <5023FE83.4090200@sandia.gov>
+ <20120809204630.GJ12690@suse.de>
+ <50243BE0.9060007@sandia.gov>
+ <20120810110225.GO12690@suse.de>
+ <502542C7.8050306@sandia.gov>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAGXu5j+AUmNFLYmm-097JD-LgxKaYXxTmpnCdsdsqA+jLztXZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <502542C7.8050306@sandia.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 23:34 -0700, Kees Cook wrote:
-> On Wed, Aug 8, 2012 at 5:19 AM, Vasily Kulikov <segoon@openwall.com> wrote:
-> > Hi Kees,
-> >
-> > On Wed, Jul 25, 2012 at 17:29 -0700, Kees Cook wrote:
-> >> +/**
-> >> + * safe_hardlink_source - Check for safe hardlink conditions
-> >> + * @inode: the source inode to hardlink from
-> >> + *
-> >> + * Return false if at least one of the following conditions:
-> >> + *    - inode is not a regular file
-> >> + *    - inode is setuid
-> >> + *    - inode is setgid and group-exec
-> >> + *    - access failure for read and write
-> >> + *
-> >> + * Otherwise returns true.
-> >> + */
-> >> +static bool safe_hardlink_source(struct inode *inode)
-> >> +{
-> >> +     umode_t mode = inode->i_mode;
-> >> +
-> >> +     /* Special files should not get pinned to the filesystem. */
-> >> +     if (!S_ISREG(mode))
-> >> +             return false;
-> >> +
-> >> +     /* Setuid files should not get pinned to the filesystem. */
-> >> +     if (mode & S_ISUID)
-> >> +             return false;
-> >
-> > We don't want to make hardlinks of SUID files, but we still allow to create
-> > hardlinks to SUID'ish cap'ed files.  Probably check whether the inode is
-> > setcap'ed?
+On Fri, Aug 10, 2012 at 11:20:07AM -0600, Jim Schutt wrote:
+> On 08/10/2012 05:02 AM, Mel Gorman wrote:
+> >On Thu, Aug 09, 2012 at 04:38:24PM -0600, Jim Schutt wrote:
 > 
-> Excellent idea. It doesn't look like there is anything "simple" to do
-> this already. It'd be close to get_file_caps() but without the bprm.
-> Maybe just get_vfs_caps_from_disk() and a walk of the caps? What would
-> you recommend?
-
-Yes, I think get_vfs_caps_from_disk() plus identifying whether any permitted
-or inheritable capability is set or effective bit is set.  IOW, if there is
-_anything_ related to cababilities in the file, it is protected.
-
-> > Probably we can enhance this further and allow LSMs to define whether this
-> > particular file is special in LSM's point of view (IOW, it can be able to move
-> > a process to another security domain which is served by LSM).
+> >>>
+> >>>Ok, this is an untested hack and I expect it would drop allocation success
+> >>>rates again under load (but not as much). Can you test again and see what
+> >>>effect, if any, it has please?
+> >>>
+> >>>---8<---
+> >>>mm: compaction: back out if contended
+> >>>
+> >>>---
+> >>
+> >><snip>
+> >>
+> >>Initial testing with this patch looks very good from
+> >>my perspective; CPU utilization stays reasonable,
+> >>write-out rate stays high, no signs of stress.
+> >>Here's an example after ~10 minutes under my test load:
+> >>
 > 
-> Yeah. Perhaps implementing the needed check above with a new security
-> check and have commoncaps do the vfs fetch with LSMs able to override?
+> Hmmm, I wonder if I should have tested this patch longer,
+> in view of the trouble I ran into testing the new patch?
+> See below.
+> 
 
-Yep.  Then uid and gid checks from the above code should move to commoncaps
-function as default candidates for "privileged files" checks.
+The two patches are quite different in what they do. I think it's
+unlikely they would share a common bug.
 
-Thanks,
+> > <SNIP>
+> >---8<---
+> >mm: compaction: Abort async compaction if locks are contended or taking too long
+> 
+> 
+> Hmmm, while testing this patch, a couple of my servers got
+> stuck after ~30 minutes or so, like this:
+> 
+> [ 2515.869936] INFO: task ceph-osd:30375 blocked for more than 120 seconds.
+> [ 2515.876630] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 2515.884447] ceph-osd        D 0000000000000000     0 30375      1 0x00000000
+> [ 2515.891531]  ffff8802e1a99e38 0000000000000082 ffff88056b38e298 ffff8802e1a99fd8
+> [ 2515.899013]  ffff8802e1a98010 ffff8802e1a98000 ffff8802e1a98000 ffff8802e1a98000
+> [ 2515.906482]  ffff8802e1a99fd8 ffff8802e1a98000 ffff880697d31700 ffff8802e1a84500
+> [ 2515.913968] Call Trace:
+> [ 2515.916433]  [<ffffffff8147fded>] schedule+0x5d/0x60
+> [ 2515.921417]  [<ffffffff81480b25>] rwsem_down_failed_common+0x105/0x140
+> [ 2515.927938]  [<ffffffff81480b73>] rwsem_down_write_failed+0x13/0x20
+> [ 2515.934195]  [<ffffffff8124bcd3>] call_rwsem_down_write_failed+0x13/0x20
+> [ 2515.940934]  [<ffffffff8147edc5>] ? down_write+0x45/0x50
+> [ 2515.946244]  [<ffffffff81127b62>] sys_mprotect+0xd2/0x240
+> [ 2515.951640]  [<ffffffff81489412>] system_call_fastpath+0x16/0x1b
+> <SNIP>
+> 
+> I tried to capture a perf trace while this was going on, but it
+> never completed.  "ps" on this system reports lots of kernel threads
+> and some user-space stuff, but hangs part way through - no ceph
+> executables in the output, oddly.
+> 
 
--- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+ps is probably locking up because it's trying to access a proc file for
+a process that is not releasing the mmap_sem.
+
+> I can retest your earlier patch for a longer period, to
+> see if it does the same thing, or I can do some other thing
+> if you tell me what it is.
+> 
+> Also, FWIW I sorted a little through SysRq-T output from such
+> a system; these bits looked interesting:
+> 
+> [ 3663.685097] INFO: rcu_sched self-detected stall on CPU { 17}  (t=60000 jiffies)
+> [ 3663.685099] sending NMI to all CPUs:
+> [ 3663.685101] NMI backtrace for cpu 0
+> [ 3663.685102] CPU 0 Modules linked in: btrfs zlib_deflate ib_ipoib rdma_ucm ib_ucm ib_uverbs ib_umad rdma_cm ib_cm iw_cm ib_addr ipv6 ib_sa iw_cxgb4 dm_mirror dm_region_hash dm_log dm_round_robin dm_multipath scsi_dh vhost_net macvtap macvlan tun uinput sg joydev sd_mod hid_generic coretemp hwmon kvm crc32c_intel ghash_clmulni_intel aesni_intel cryptd aes_x86_64 microcode serio_raw pcspkr ata_piix libata button mlx4_ib ib_mad ib_core mlx4_en mlx4_core mpt2sas scsi_transport_sas raid_class scsi_mod cxgb4 i2c_i801 i2c_core lpc_ich mfd_core ehci_hcd uhci_hcd i7core_edac edac_core dm_mod ioatdma nfs nfs_acl auth_rpcgss fscache lockd sunrpc broadcom tg3 bnx2 igb dca e1000 [last unloaded: scsi_wait_scan]
+> [ 3663.685138]
+> [ 3663.685140] Pid: 100027, comm: ceph-osd Not tainted 3.5.0-00019-g472719a #221 Supermicro X8DTH-i/6/iF/6F/X8DTH
+> [ 3663.685142] RIP: 0010:[<ffffffff81480ed5>]  [<ffffffff81480ed5>] _raw_spin_lock_irqsave+0x45/0x60
+> [ 3663.685148] RSP: 0018:ffff880a08191898  EFLAGS: 00000012
+> [ 3663.685149] RAX: ffff88063fffcb00 RBX: ffff88063fffcb00 RCX: 00000000000000c5
+> [ 3663.685149] RDX: 00000000000000bf RSI: 000000000000015a RDI: ffff88063fffcb00
+> [ 3663.685150] RBP: ffff880a081918a8 R08: 0000000000000000 R09: 0000000000000000
+> [ 3663.685151] R10: ffff88063fffcb98 R11: ffff88063fffcc38 R12: 0000000000000246
+> [ 3663.685152] R13: ffff88063fffcba8 R14: ffff88063fffcb90 R15: ffff88063fffc680
+> [ 3663.685153] FS:  00007fff90ae0700(0000) GS:ffff880627c00000(0000) knlGS:0000000000000000
+> [ 3663.685154] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 3663.685155] CR2: ffffffffff600400 CR3: 00000002b8fbe000 CR4: 00000000000007f0
+> [ 3663.685156] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 3663.685157] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 3663.685158] Process ceph-osd (pid: 100027, threadinfo ffff880a08190000, task ffff880a9a29ae00)
+> [ 3663.685158] Stack:
+> [ 3663.685159]  000000000000130a 0000000000000000 ffff880a08191948 ffffffff8111a760
+> [ 3663.685162]  ffffffff81a13420 0000000000000009 ffffea000004c240 0000000000000000
+> [ 3663.685165]  ffff88063fffcba0 000000003fffcb98 ffff880a08191a18 0000000000001600
+> [ 3663.685168] Call Trace:
+> [ 3663.685169]  [<ffffffff8111a760>] isolate_migratepages_range+0x150/0x4e0
+> [ 3663.685173]  [<ffffffff8111a5b0>] ? isolate_freepages+0x330/0x330
+> [ 3663.685175]  [<ffffffff8111af5b>] compact_zone+0x46b/0x4f0
+> [ 3663.685178]  [<ffffffff8111b3f8>] compact_zone_order+0xe8/0x100
+> [ 3663.685180]  [<ffffffff8111b4b6>] try_to_compact_pages+0xa6/0x110
+> [ 3663.685182]  [<ffffffff81100339>] __alloc_pages_direct_compact+0xd9/0x250
+> [ 3663.685187]  [<ffffffff81100883>] __alloc_pages_slowpath+0x3d3/0x750
+> [ 3663.685190]  [<ffffffff81100d3e>] __alloc_pages_nodemask+0x13e/0x1d0
+> [ 3663.685192]  [<ffffffff8113c894>] alloc_pages_vma+0x124/0x150
+> [ 3663.685195]  [<ffffffff8114e065>] do_huge_pmd_anonymous_page+0xf5/0x1e0
+> [ 3663.685199]  [<ffffffff81121bcd>] handle_mm_fault+0x21d/0x320
+> [ 3663.685202]  [<ffffffff8124bca4>] ? call_rwsem_down_read_failed+0x14/0x30
+> [ 3663.685205]  [<ffffffff81484e49>] do_page_fault+0x439/0x4a0
+> [ 3663.685208]  [<ffffffff8124bdaa>] ? trace_hardirqs_off_thunk+0x3a/0x6c
+> [ 3663.685211]  [<ffffffff8148154f>] page_fault+0x1f/0x30
+
+I went through the patch again but only found the following which is a
+weak candidate. Still, can you retest with the following patch on top and
+CONFIG_PROVE_LOCKING set please?
+
+---8<---
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 1827d9a..d4a51c6 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -64,7 +64,7 @@ static bool compact_checklock_irqsave(spinlock_t *lock, unsigned long *flags,
+ {
+ 	if (need_resched() || spin_is_contended(lock)) {
+ 		if (locked) {
+-			spin_unlock_irq(lock);
++			spin_unlock_irqrestore(lock, *flags);
+ 			locked = false;
+ 		}
+ 
+@@ -276,8 +276,8 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ 	list_for_each_entry(page, &cc->migratepages, lru)
+ 		count[!!page_is_file_cache(page)]++;
+ 
+-	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
++	mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
++	mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ }
+ 
+ /* Similar to reclaim, but different enough that they don't share logic */
