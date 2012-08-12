@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2HLUlV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 16:41:21 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37098 "EHLO
+	id S1752567Ab2HLUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 16:42:27 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37120 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2HLUlT (ORCPT
+	with ESMTP id S1751537Ab2HLUm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 16:41:19 -0400
-Date: Sun, 12 Aug 2012 13:41:18 -0700 (PDT)
-Message-Id: <20120812.134118.90820419749031873.davem@davemloft.net>
-To: mst@redhat.com
-Cc: yefremov.denis@gmail.com, jasowang@redhat.com, ebiederm@xmission.com,
-        ian.campbell@citrix.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH v2] macvtap: rcu_dereference outside read-lock section
+	Sun, 12 Aug 2012 16:42:26 -0400
+Date: Sun, 12 Aug 2012 13:42:25 -0700 (PDT)
+Message-Id: <20120812.134225.1778015851322929441.davem@davemloft.net>
+To: yuvalmin@broadcom.com
+Cc: joren.vanonder@gmail.com, eilong@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bnx2x: Fix compiler warnings
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120812084929.GB4430@redhat.com>
-References: <20120811.181642.1587792778007257202.davem@davemloft.net>
-	<1344752791-21140-1-git-send-email-yefremov.denis@gmail.com>
-	<20120812084929.GB4430@redhat.com>
+In-Reply-To: <50273628.50503@broadcom.com>
+References: <1344741035-1493-1-git-send-email-joren.vanonder@gmail.com>
+	<50273628.50503@broadcom.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,18 +25,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Sun, 12 Aug 2012 11:49:29 +0300
+From: "Yuval Mintz" <yuvalmin@broadcom.com>
+Date: Sun, 12 Aug 2012 07:50:48 +0300
 
-> On Sun, Aug 12, 2012 at 10:26:31AM +0400, Denis Efremov wrote:
->> rcu_dereference occurs in update section. Replacement by
->> rcu_dereference_protected in order to prevent lockdep
->> complaint.
+>> Fix the following compiler warnings:
 >> 
->> Found by Linux Driver Verification project (linuxtesting.org)
+>>  - drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:2908:3: warning: comparison
+>>    of distinct pointer types lacks a cast [enabled by default]
+>>  - drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c:1709:7: warning: comparison
+>>    of distinct pointer types lacks a cast [enabled by default]
 >> 
->> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-...
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Joren Van Onder <joren.vanonder@gmail.com>
+> Thanks Joren.
+> Acked-By: Yuval Mintz <yuvalmin@broadcom.com>
 
-Applied, thanks everyone.
+Applied.
