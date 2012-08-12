@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab2HLIsj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 04:48:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6289 "EHLO mx1.redhat.com"
+	id S1751368Ab2HLJbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 05:31:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab2HLIsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 04:48:35 -0400
-Date: Sun, 12 Aug 2012 11:49:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ian Campbell <ian.campbell@citrix.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH v2] macvtap: rcu_dereference outside read-lock section
-Message-ID: <20120812084929.GB4430@redhat.com>
-References: <20120811.181642.1587792778007257202.davem@davemloft.net>
- <1344752791-21140-1-git-send-email-yefremov.denis@gmail.com>
+	id S1750838Ab2HLJbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 05:31:15 -0400
+Date: Sun, 12 Aug 2012 11:31:11 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
+Message-ID: <20120812093110.GB18057@dhcp22.suse.cz>
+References: <20120810094825.GA1440@dhcp22.suse.cz>
+ <CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
+ <20120810122730.GA1425@dhcp22.suse.cz>
+ <CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
+ <20120810125102.GB1425@dhcp22.suse.cz>
+ <CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
+ <20120810131643.GC1425@dhcp22.suse.cz>
+ <CAJd=RBDtnF6eoTmDu4HOBGfHnWnxNsXEzArR51+-XhzFCwOmOQ@mail.gmail.com>
+ <20120810134811.GD1425@dhcp22.suse.cz>
+ <CAJd=RBDUJXOHKbes0KE1aQ7tJCYBr04+=-bCbs8xT9wJ-CtrTw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344752791-21140-1-git-send-email-yefremov.denis@gmail.com>
+In-Reply-To: <CAJd=RBDUJXOHKbes0KE1aQ7tJCYBr04+=-bCbs8xT9wJ-CtrTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 10:26:31AM +0400, Denis Efremov wrote:
-> rcu_dereference occurs in update section. Replacement by
-> rcu_dereference_protected in order to prevent lockdep
-> complaint.
+On Sun 12-08-12 12:08:21, Hillf Danton wrote:
+> On Fri, Aug 10, 2012 at 9:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Found by Linux Driver Verification project (linuxtesting.org)
+> > It's been compile tested because it only restores the previous code with
+> > a simple and obvious bug fix.
 > 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-> ---
->  drivers/net/macvtap.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 0737bd4..0f0f9ce 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -94,7 +94,8 @@ static int get_slot(struct macvlan_dev *vlan, struct macvtap_queue *q)
->  	int i;
->  
->  	for (i = 0; i < MAX_MACVTAP_QUEUES; i++) {
-> -		if (rcu_dereference(vlan->taps[i]) == q)
-> +		if (rcu_dereference_protected(vlan->taps[i],
-> +					      lockdep_is_held(&macvtap_lock)) == q)
+> It helps more if you elaborate on such a simple and obvious bug and
+> enrich your change log accordingly?
 
-And now it's too long.  Maybe a temporary would be better?
+Hmmm, to be honest I really don't care much about this change. It is just
+that your previous patch (0c176d5) made the code more confusing and this
+aims at fixing that.
 
-		struct macvtap_queue *t;
-		t = rcu_dereference_protected(vlan->taps[i],
-					      lockdep_is_held(&macvtap_lock));
-		if (t == q)
-  			return i;
-		
-?
+But anyway. I will post this to Andrew unless somebody has any
+objections.
+---
+>From d07b88a70ee1dbcc96502c48cde878931e7deb38 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 10 Aug 2012 15:03:07 +0200
+Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
+ vma_prio_tree_foreach
 
-Anyway -
+0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
+from vma) fixed pgoff calculation but it has replaced it by
+vma_hugecache_offset which is not approapriate for offsets used for
+vma_prio_tree_foreach because that one expects index in page units
+rather than in huge_page_shift.
+Using vma_hugecache_offset is not incorrect because the pgoff will fit
+into the same vmas but it is confusing so the standard PAGE_SHIFT based
+index calculation is used instead.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/hugetlb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c39e4be..a74ea31 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * from page cache lookup which is in HPAGE_SIZE units.
+ 	 */
+ 	address = address & huge_page_mask(h);
+-	pgoff = vma_hugecache_offset(h, vma, address);
++	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
+ 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+ 
+ 	/*
+-- 
+1.7.10.4
 
 
->  			return i;
->  	}
->  
-> -- 
-> 1.7.7
+-- 
+Michal Hocko
+SUSE Labs
