@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab2HLSuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 14:50:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33149 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750848Ab2HLSuO (ORCPT
+	id S1752442Ab2HLS5t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 14:57:49 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:55170 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab2HLS5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 14:50:14 -0400
-Date: Sun, 12 Aug 2012 19:50:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Dmitry Torokhov <dtor@mail.ru>,
-        alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH 04/11] MFD: twl4030-audio: Add DT support
-Message-ID: <20120812185012.GB10627@opensource.wolfsonmicro.com>
-References: <20120808131356.GS16861@opensource.wolfsonmicro.com>
- <50226CF4.1010202@ti.com>
- <20120808135253.GC16861@opensource.wolfsonmicro.com>
- <502274DA.9020204@ti.com>
- <20120808141849.GA24328@opensource.wolfsonmicro.com>
- <50227837.10400@ti.com>
- <20120808144933.GC24328@opensource.wolfsonmicro.com>
- <50238E8A.5030902@ti.com>
- <20120809103600.GI24328@opensource.wolfsonmicro.com>
- <5023C0D6.8040600@ti.com>
+	Sun, 12 Aug 2012 14:57:48 -0400
+Message-ID: <5027FC98.2040903@panasas.com>
+Date: Sun, 12 Aug 2012 21:57:28 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5023C0D6.8040600@ti.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sachin Bhamare <sbhamare@panasas.com>
+CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Benny Halevy <bhalevy@tonian.com>, <osd-dev@open-osd.org>,
+        <linux-kernel@vger.kernel.org>, <ldv-project@ispras.ru>
+Subject: Re: [PATCH] exofs: check for allocation failure in uri_store()
+References: <1344445357-986-1-git-send-email-khoroshilov@ispras.ru> <5024075B.4090804@panasas.com>
+In-Reply-To: <5024075B.4090804@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 04:53:26PM +0300, Peter Ujfalusi wrote:
-> On 08/09/2012 01:36 PM, Mark Brown wrote:
+On 08/09/2012 09:54 PM, Sachin Bhamare wrote:
 
-> > Is there any actual case where an external mute is supplied via a
-> > mechanism other than a GPIO, and if there is would it not either need
-> > its own DT property or already need to interact with the driver from
-> > code, making the DT property redundant?
+> On 8/8/12 10:02 AM, Alexey Khoroshilov wrote:
+>> There is no memory allocation failure check in uri_store().
+>> That can lead to NULL pointer dereference.
+>>
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>>
+>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+>> ---
+>>  fs/exofs/sys.c |    7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/fs/exofs/sys.c b/fs/exofs/sys.c
+>> index 5a7b691..1b4f2f9 100644
+>> --- a/fs/exofs/sys.c
+>> +++ b/fs/exofs/sys.c
+>> @@ -80,8 +80,13 @@ static ssize_t uri_show(struct exofs_dev *edp, char *buf)
+>>  
+>>  static ssize_t uri_store(struct exofs_dev *edp, const char *buf, size_t len)
+>>  {
+>> +	uint8_t *new_uri;
+>> +
+>>  	edp->urilen = strlen(buf) + 1;
+>> -	edp->uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
+>> +	new_uri = krealloc(edp->uri, edp->urilen, GFP_KERNEL);
+>> +	if (new_uri == NULL)
+>> +		return -ENOMEM;
+>> +	edp->uri = new_uri;
+>>  	strncpy(edp->uri, buf, edp->urilen);
+>>  	return edp->urilen;
+>>  }
+> Ack-by : Sachin Bhamare <sbhamare@panasas.com>
 
-> Not with my knowledge. The only board using it is the zoom2 upstream. I know
-> other boards (not in upstream) which either uses the internal mute or GPIO.
 
-OK, so we can probably only support GPIO for now then worry about other
-external mutes when there's something to work with.
+Has been pushed to linux-next will be included in the next RCX
+push to Linus.
+
+Thanks
+Boaz
