@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab2HLCgA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Aug 2012 22:36:00 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62503 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab2HLCf7 (ORCPT
+	id S1755242Ab2HLCmc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Aug 2012 22:42:32 -0400
+Received: from nctlincom01.orcon.net.nz ([60.234.4.74]:56981 "EHLO
+	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab2HLCm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Aug 2012 22:35:59 -0400
-Date: Sat, 11 Aug 2012 22:35:56 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
-        linux@arm.linux.org.uk, will.deacon@arm.com
-Subject: Re: [PATCH v2 02/22] ARM: add self test for runtime patch
- mechanism
-In-Reply-To: <1344648306-15619-3-git-send-email-cyril@ti.com>
-Message-ID: <alpine.LFD.2.02.1208112226310.5231@xanadu.home>
-References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-3-git-send-email-cyril@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 11 Aug 2012 22:42:29 -0400
+Message-ID: <50271811.9090006@orcon.net.nz>
+Date: Sun, 12 Aug 2012 14:42:25 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-alpha@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, Tony Luck <tony.luck@gmail.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        John David Anglin <dave.anglin@bell.net>, Mel Gorman <mgorman@suse.de>,
+        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: [next:akpm 129/309] net/core/sock.c:274:36: error: initializer
+ element is not constant
+References: <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com> <20120723114258.GV9222@suse.de> <20120723122905.GA22476@localhost> <BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl> <20120724074844.GA9519@localhost> <BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl> <1343193053.3139.6.camel@dabdike> <CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com> <20120802150209.GA26601@localhost> <502707D5.7020602@orcon.net.nz> <20120812021013.GA8442@localhost>
+In-Reply-To: <20120812021013.GA8442@localhost>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx4.orcon.net.nz on Sun, 12 Aug 2012 14:42:26 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Aug 12 14:42:27 2012
+X-DSPAM-Confidence: 0.7622
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: 0.00 () [Hold at 5.50] 
+X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=G2; city=Porirua; latitude=-41.1333; longitude=174.8500; http://maps.google.com/maps?q=-41.1333,174.8500&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 06HJCOVuR - 3206d0345793 - 20120812
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
-
-> This patch adds basic sanity tests to ensure that the instruction patching
-> results in valid instruction encodings.  This is done by verifying the output
-> of the patch process against a vector of assembler generated instructions at
-> init time.
+On 12/08/12 14:10, Fengguang Wu wrote:
+> On Sun, Aug 12, 2012 at 01:33:09PM +1200, Michael Cree wrote:
+>> On 03/08/12 03:02, Fengguang Wu wrote:
+>>> On Thu, Jul 26, 2012 at 10:06:41AM -0700, Tony Luck wrote:
+>>>> On Tue, Jul 24, 2012 at 10:10 PM, James Bottomley
+>>>> <James.Bottomley@hansenpartnership.com> wrote:
+>>>>>> Here is the line in sock.i:
+>>>>>>
+>>>>>> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+>>>>>> ((atomic_t) { (0) }) });
+>>>>>
+>>>>> The above line contains two compound literals.  It also uses a designated
+>>>>> initializer to initialize the field enabled.  A compound literal is not a
+>>>>> constant expression.
+>>>>
+>>>> Seeing the same thing on ia64 building next-20120726.  Same fix works
+>>>> for me ... so I'll steal this whole changelog and attributes.
+>>>
+>>> I got the same error for alpha, the same fix applies.
+>>
+>> Just trying this patch on Alpha against v3.6-rc1 and it leads to new
+>> compilation errors, namely:
+>>
+>> init/init_task.c:12: error: braced-group within expression allowed only
+>> inside a function
+>> init/init_task.c:13: error: braced-group within expression allowed only
+>> inside a function
+>> init/init_task.c:16: error: braced-group within expression allowed only
+>> inside a function
+>> init/init_task.c:16: error: braced-group within expression allowed only
+>> inside a function
+>> make[1]: *** [init/init_task.o] Error 1
 > 
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> ---
->  arch/arm/Kconfig                |   12 ++++++++++++
->  arch/arm/kernel/runtime-patch.c |   41 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 53 insertions(+)
+> Sorry! This will actually compile:
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index d0a04ad..7e552dc 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -211,6 +211,18 @@ config ARM_PATCH_PHYS_VIRT
->  	  this feature (eg, building a kernel for a single machine) and
->  	  you need to shrink the kernel to the minimal size.
->  
-> +config ARM_RUNTIME_PATCH_TEST
-> +	bool "Self test runtime patching mechanism" if ARM_RUNTIME_PATCH
-> +	default y
-> +	help
-> +	  Select this to enable init time self checking for the runtime kernel
-> +	  patching mechanism.  This enables an ISA specific set of tests that
-> +	  ensure that the instructions generated by the patch process are
-> +	  consistent with those generated by the assembler at compile time.
-> +
-> +	  Only disable this option if you need to shrink the kernel to the
-> +	  minimal size.
-> +
->  config NEED_MACH_IO_H
->  	bool
->  	help
-> diff --git a/arch/arm/kernel/runtime-patch.c b/arch/arm/kernel/runtime-patch.c
-> index fd37a2b..c471d8c 100644
-> --- a/arch/arm/kernel/runtime-patch.c
-> +++ b/arch/arm/kernel/runtime-patch.c
-> @@ -163,6 +163,44 @@ static int apply_patch_imm8(const struct patch_info *p)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_ARM_RUNTIME_PATCH_TEST
-> +static void __init __used __naked __patch_test_code_imm8(void)
-> +{
-> +	__asm__ __volatile__ (
-> +		"	.irp	shift1, 0, 6, 12, 18\n"
-> +		"	.irp	shift2, 0, 1, 2, 3, 4, 5\n"
-> +		"	add     r1, r2, #(0x41 << (\\shift1 + \\shift2))\n"
-> +		"	.endr\n"
-> +		"	.endr\n"
+> -#define ATOMIC_INIT(i)         ( { (i) } )
+> +#define ATOMIC_INIT(i)         { (i) }
 
+Thanks, it now compiles correctly.  I'm currently collecting Alpha
+patches to send on to Linus so will include this one.
 
-Maybe adding a "add r1, r2 #0x81 << 24" here might be a good thing since 
-this is the most used case but missing from the above.
-
-> +		"	.word	0\n"
-> +		: : :
-> +	);
-> +}
-> +
-> +static void __init test_patch_imm8(void)
-> +{
-> +	u32 test_code_addr = (u32)(&__patch_test_code_imm8);
-> +	u32 *test_code = (u32 *)(test_code_addr & ~0x3);
-
-Why this masking?  With Thumb2 you may find functions starting at 
-halfword aligned addresses.  Only the LSB (indicating thumb mode) should 
-be masked out.
-
-> +	int i, ret;
-> +	u32 ninsn, insn;
-> +
-> +	insn = test_code[0];
-> +	for (i = 0; test_code[i]; i++) {
-> +		ret = do_patch_imm8(insn, 0x41 << i, &ninsn);
-> +		if (ret < 0)
-> +			pr_err("runtime patch (imm8): failed at shift %d\n", i);
-> +		else if (ninsn != test_code[i])
-> +			pr_err("runtime patch (imm8): failed, need %x got %x\n",
-> +			       test_code[i], ninsn);
-> +	}
-> +}
-> +
-> +static void __init runtime_patch_test(void)
-> +{
-> +	test_patch_imm8();
-> +}
-> +#endif
-> +
->  int runtime_patch(const void *table, unsigned size)
->  {
->  	const struct patch_info *p = table, *end = (table + size);
-> @@ -185,5 +223,8 @@ void __init runtime_patch_kernel(void)
->  	const void *start = &__runtime_patch_table_begin;
->  	const void *end   = &__runtime_patch_table_end;
->  
-> +#ifdef CONFIG_ARM_RUNTIME_PATCH_TEST
-> +	runtime_patch_test();
-> +#endif
->  	BUG_ON(runtime_patch(start, end - start));
->  }
-> -- 
-> 1.7.9.5
-> 
+Cheers
+Michael.
