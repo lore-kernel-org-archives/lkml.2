@@ -1,198 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2HLXyI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 19:54:08 -0400
-Received: from 209-20-75-48.static.cloud-ips.com ([209.20.75.48]:40379 "EHLO
-	shiva.chad-versace.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2HLXyG (ORCPT
+	id S1752816Ab2HLXzC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 19:55:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40423 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab2HLXyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 19:54:06 -0400
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Aug 2012 19:54:06 EDT
+	Sun, 12 Aug 2012 19:54:36 -0400
+Message-ID: <50284234.40306@gmail.com>
+Date: Mon, 13 Aug 2012 09:54:28 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: David Herrmann <dh.herrmann@googlemail.com>
+CC: linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 05/11] fblog: register one fblog object per framebuffer
+References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com> <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
+In-Reply-To: <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Sun, 12 Aug 2012 16:47:18 -0700
-From: Ben Widawsky <ben@bwidawsk.net>
-To: George Spelvin <linux@horizon.com>
-Cc: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <intel-gfx@lists.freedesktop.org>
-Subject: Re: v3.5  Oops in =?UTF-8?Q?i=32c=5Falgo=5Fbit=2Ec=3Abit=5Fxfer+?=
- =?UTF-8?Q?=30x=32=33/=30x=38=37=30=3A=20i=39=31=35=20or=20i=32c=3F?=
-In-Reply-To: <20120809045014.21475.qmail@science.horizon.com>
-References: <20120809045014.21475.qmail@science.horizon.com>
-Message-ID: <e6945e875aa0667550285cd5da6d473f@bwidawsk.net>
-User-Agent: Roundcube Webmail/0.8-rc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-08 21:50, George Spelvin wrote:
-> I'm trying to run a v3.5 kernel (plus some -stable patches from Ted 
-> Ts'o) on
-> an Ubuntu system.  Things are generally working except for the 
-> following
-> Oops on each boot, which prevents the graphics system from loading.
->
-> [   36.187972] [drm] Initialized drm 1.1.0 20060810
-> [   36.230306] kvm: VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL does not work
-> properly. Using workaround
-> [   36.487606] i915 0000:00:02.0: setting latency timer to 64
-> [   36.555464] [drm] GMBUS [i915 gmbus ssc] timed out, falling back
-> to bit banging on pin 0
-> [   36.555490] BUG: unable to handle kernel NULL pointer dereference
-> at 0000000000000028
-> [   36.555626] IP: [<ffffffffa01807b3>] bit_xfer+0x23/0x870 
-> [i2c_algo_bit]
-> [   36.555701] PGD 212cb0067 PUD 212caf067 PMD 0
-> [   36.555803] Oops: 0000 [#1] SMP
-> [   36.555885] CPU 3
-> [   36.555907] Modules linked in: snd_seq_midi joydev i915(+)
-> snd_rawmidi snd_seq_midi_event snd_seq drm_kms_helper snd_timer
-> snd_seq_device kvm_intel drm kvm snd serio_raw soundcore i2c_algo_bit
-> snd_page_alloc lpc_ich video mei microcode mac_hid eeprom it87
-> hwmon_vid coretemp lp parport raid10 raid456 async_pq async_xor
-> firewire_ohci firewire_core xor async_memcpy async_raid6_recov
-> hid_microsoft floppy crc_itu_t r8169 pata_jmicron usbhid hid mptsas
-> mptscsih mptbase scsi_transport_sas raid6_pq async_tx raid1 raid0
-> multipath linear
-> [   36.557232]
-> [   36.557271] Pid: 623, comm: modprobe Not tainted 3.5.0 #3 Gigabyte
-> Technology Co., Ltd. H57M-USB3/H57M-USB3
-> [   36.557398] RIP: 0010:[<ffffffffa01807b3>]  [<ffffffffa01807b3>]
-> bit_xfer+0x23/0x870 [i2c_algo_bit]
-> [   36.557493] RSP: 0000:ffff880212c6d648  EFLAGS: 00010296
-> [   36.557544] RAX: ffff88021222c030 RBX: ffff880212c6d7e8 RCX:
-> 0000000000000000
-> [   36.557599] RDX: 0000000000000001 RSI: ffff880212c6d7e8 RDI:
-> ffff88021222c030
-> [   36.557655] RBP: ffff880212c6d6c8 R08: 0000000000000402 R09:
-> 0000000000000000
-> [   36.557710] R10: 0000000000000000 R11: 0000000000000006 R12:
-> 0000000000000001
-> [   36.557766] R13: ffff880212c6dfd8 R14: 0000000000000001 R15:
-> ffff88021222c030
-> [   36.557822] FS:  00007f5a7b85b700(0000) GS:ffff88021fcc0000(0000)
-> knlGS:0000000000000000
-> [   36.557899] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   36.557950] CR2: 0000000000000028 CR3: 0000000212cad000 CR4:
-> 00000000000007e0
-> [   36.558006] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [   36.558062] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [   36.558119] Process modprobe (pid: 623, threadinfo
-> ffff880212c6c000, task ffff88020fdf5b80)
-> [   36.558197] Stack:
-> [   36.558239]  0000000000000001 ffff880212c6dfd8 0000000000000001
-> 000000011222c000
-> [   36.558380]  ffff880212c6d6c8 ffffffff8166341e ffff88020ff6ca72
-> 000c510c00000018
-> [   36.558523]  ffff880212c6d6d8 ffff880212c6d698 0000000000000082
-> ffff880212c6d7e8
-> [   36.558671] Call Trace:
-> [   36.558719]  [<ffffffff8166341e>] ? printk+0x61/0x63
-> [   36.558790]  [<ffffffffa02e5a0b>] gmbus_xfer+0x56b/0x6f0 [i915]
-> [   36.558847]  [<ffffffff814ee7dc>] i2c_transfer+0x9c/0xe0
-> [   36.558899]  [<ffffffff811be91b>] ? ep_poll_callback+0x10b/0x150
-> [   36.558953]  [<ffffffff814ee976>] 
-> i2c_smbus_xfer_emulated+0x156/0x5d0
-> [   36.559010]  [<ffffffff81321d25>] ? idr_get_empty_slot+0x115/0x320
-> [   36.559064]  [<ffffffff814eefb3>] i2c_smbus_xfer+0x113/0x130
-> [   36.559118]  [<ffffffff8166e51e>] ? _raw_spin_lock+0xe/0x20
-> [   36.559173]  [<ffffffff81642fd9>] ? klist_next+0x89/0x110
-> [   36.559225]  [<ffffffff814ef61b>] i2c_default_probe+0xeb/0x130
-> [   36.559279]  [<ffffffff814ee18b>] ? i2c_check_addr_busy+0x3b/0x60
-> [   36.559332]  [<ffffffff814f077b>] i2c_do_add_adapter+0x1bb/0x290
-> [   36.559382]  [<ffffffff811ed1cb>] ? 
-> sysfs_do_create_link+0xeb/0x200
-> [   36.559433]  [<ffffffff81411897>] ? put_device+0x17/0x20
-> [   36.559482]  [<ffffffff814f0880>] ? __process_new_driver+0x30/0x30
-> [   36.559535]  [<ffffffff814f0892>] __process_new_adapter+0x12/0x20
-> [   36.559590]  [<ffffffff814140ee>] bus_for_each_drv+0x4e/0xa0
-> [   36.559642]  [<ffffffff814f029d>] i2c_register_adapter+0x16d/0x270
-> [   36.559696]  [<ffffffff814f0443>] i2c_add_adapter+0xa3/0xb0
-> [   36.559759]  [<ffffffffa02e5cfc>] intel_setup_gmbus+0xcc/0x1f0 
-> [i915]
-> [   36.559821]  [<ffffffffa02a938c>] i915_driver_load+0x2ac/0xb90 
-> [i915]
-> [   36.559882]  [<ffffffffa03f1b41>] ? drm_get_minor+0x261/0x300 
-> [drm]
-> [   36.559940]  [<ffffffffa03f4236>] drm_get_pci_dev+0x186/0x2d0 
-> [drm]
-> [   36.559995]  [<ffffffff8103c3e9>] ? 
-> default_spin_lock_flags+0x9/0x10
-> [   36.560060]  [<ffffffffa02f2142>] i915_pci_probe+0x16/0x20 [i915]
-> [   36.560115]  [<ffffffff813522ac>] local_pci_probe+0x5c/0xd0
-> [   36.560168]  [<ffffffff81352431>] pci_device_probe+0x111/0x120
-> [   36.560221]  [<ffffffff81415ede>] driver_probe_device+0x7e/0x220
-> [   36.560274]  [<ffffffff8141612b>] __driver_attach+0xab/0xb0
-> [   36.560327]  [<ffffffff81416080>] ? 
-> driver_probe_device+0x220/0x220
-> [   36.560375]  [<ffffffff81414195>] bus_for_each_dev+0x55/0x90
-> [   36.560421]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-> [   36.560470]  [<ffffffff814158de>] driver_attach+0x1e/0x20
-> [   36.560522]  [<ffffffff81415598>] bus_add_driver+0x198/0x270
-> [   36.560573]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-> [   36.560625]  [<ffffffff814167f7>] driver_register+0x77/0x150
-> [   36.560677]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-> [   36.560729]  [<ffffffff8135110e>] __pci_register_driver+0x5e/0xe0
-> [   36.560784]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-> [   36.560839]  [<ffffffffa03f449a>] drm_pci_init+0x11a/0x130 [drm]
-> [   36.560892]  [<ffffffffa0323000>] ? 0xffffffffa0322fff
-> [   36.560949]  [<ffffffffa032308b>] i915_init+0x8b/0x8d [i915]
-> [   36.561004]  [<ffffffff8100212a>] do_one_initcall+0x12a/0x180
-> [   36.561057]  [<ffffffff810af280>] sys_init_module+0x10b0/0x1f40
-> [   36.561111]  [<ffffffff810ab760>] ? free_notes_attrs+0x60/0x60
-> [   36.561165]  [<ffffffff81676769>] system_call_fastpath+0x16/0x1b
-> [   36.561218] Code: 5d c3 45 31 ff eb e9 90 55 48 89 e5 41 57 41 56
-> 41 55 41 54 53 48 83 ec 58 66 66 66 66 90 48 8b 4f 18 49 89 ff 48 89
-> f3 89 55 9c <48> 8b 41 28 48 89 4d 90 48 85 c0 74 0c ff d0 85 c0 89 
-> c1
-> 0f 88
-> [   36.562478] RIP  [<ffffffffa01807b3>] bit_xfer+0x23/0x870 
-> [i2c_algo_bit]
-> [   36.562544]  RSP <ffff880212c6d648>
-> [   36.562584] CR2: 0000000000000028
-> [   36.562667] ---[ end trace f73eb7bcfaa57c45 ]---
->
-> As far as I can tell, the passed i2c_adap->algo_data is NULL,
-> so the fetch of adap->pre_xfer is oopsing.
->
-> Unfortunately, I'm trying to run ext4 + metadata_csum, which requires
-> 3.5+patches.  I don't see anything relevant on the mailing list.
-> Do any DRM hackers have any ideas what's up?
->
-> System is an i3-530 with 8GiB of RAM.  (Its primary job is
-> file server, but the display also gets used sometime.)
->
-> Thanks!
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+On 13/08/12 00:53, David Herrmann wrote:
+> One fblog object is associated to each registered framebuffer. This way,
+> we can draw the console to each framebuffer. When a framebuffer driver
+> unregisters a framebuffer, we also unregister our fblog object. That is,
+> our lifetime is coupled to the lifetime of the framebuffer. However, this
+> does not mean that we are always active. On the contrary, we do not even
+> own a reference to the framebuffer. We don't need it as we are notified
+> _before_ the last reference is dropped.
+> 
+> However, if other users have a reference to our object, we simply mark it
+> as dead when the associated framebuffer dies and leave it alone. When the
+> last reference is dropped, it will be automatically freed.
+> 
+> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 
+Hi David,
 
-Adding intel-gfx.
+Quick review below.
 
-I'm not aware of a clean way to force disable gmbus in i915, but you 
-can try this in the meanwhile:
+Thanks,
+~Ryan
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c 
-b/drivers/gpu/drm/i915/intel_i2c.c
-index 1991a44..fd04e89 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -494,7 +494,7 @@ int intel_setup_gmbus(struct drm_device *dev)
-                 bus->reg0 = port | GMBUS_RATE_100KHZ;
+> ---
+>  drivers/video/console/fblog.c | 195 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 195 insertions(+)
+> 
+> diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
+> index fb39737..279f4d8 100644
+> --- a/drivers/video/console/fblog.c
+> +++ b/drivers/video/console/fblog.c
+> @@ -23,15 +23,210 @@
+>   * all fblog instances before running other graphics applications.
+>   */
+>  
+> +#define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
+> +
+> +#include <linux/device.h>
+> +#include <linux/fb.h>
+>  #include <linux/module.h>
+> +#include <linux/mutex.h>
+> +
+> +enum fblog_flags {
+> +	FBLOG_KILLED,
+> +};
+> +
+> +struct fblog_fb {
+> +	unsigned long flags;
 
-                 /* gmbus seems to be broken on i830 */
--               if (IS_I830(dev))
-+               if (1)
-                         bus->force_bit = true;
+Are more flags added in later patches? If not, why not just have:
 
-                 intel_gpio_setup(bus, port);
+  bool is_killed;
 
+?
 
--- 
-Ben Widawsky, Intel Open Source Technology Center
+> +	struct fb_info *info;
+> +	struct device dev;
+> +};
+> +
+> +static DEFINE_MUTEX(fblog_registration_lock);
+> +static struct fblog_fb *fblog_fbs[FB_MAX];
+> +
+> +#define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
+> +
+> +/*
+> + * fblog framebuffer list
+> + * The fblog_fbs[] array contains all currently registered framebuffers. If a
+> + * framebuffer is in that list, we always must make sure that we own a reference
+> + * to it. If it is added through the notifier callbacks, then this is always
+> + * guaranteed.
+> + * We are only interested in registered framebuffers. That is, if a driver calls
+> + * unregister_framebuffer() we directly unlink it from our list. This guarantees
+> + * that the associated fb_info is always valid. However, we might still have
+> + * pending users so we mark it as dead so no further framebuffer actions are
+> + * done. If the last user then drops a reference, the memory gets freed
+> + * automatically.
+> + */
+> +
+> +static void fblog_release(struct device *dev)
+> +{
+> +	struct fblog_fb *fb = to_fblog_dev(dev);
+> +
+> +	kfree(fb);
+> +	module_put(THIS_MODULE);
+> +}
+> +
+> +static void fblog_do_unregister(struct fb_info *info)
+> +{
+> +	struct fblog_fb *fb;
+> +
+> +	fb = fblog_fbs[info->node];
+> +	if (!fb || fb->info != info)
+> +		return;
+> +
+> +	fblog_fbs[info->node] = NULL;
+> +
+> +	device_del(&fb->dev);
+> +	put_device(&fb->dev);
+
+device_unregister?
+
+> +}
+> +
+> +static void fblog_do_register(struct fb_info *info, bool force)
+> +{
+> +	struct fblog_fb *fb;
+> +	int ret;
+> +
+> +	fb = fblog_fbs[info->node];
+> +	if (fb && fb->info != info) {
+> +		if (!force)
+> +			return;
+> +
+> +		fblog_do_unregister(fb->info);
+> +	}
+> +
+> +	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
+> +	if (!fb)
+> +		return;
+> +
+> +	fb->info = info;
+> +	__module_get(THIS_MODULE);
+> +	device_initialize(&fb->dev);
+> +	fb->dev.class = fb_class;
+> +	fb->dev.release = fblog_release;
+> +	dev_set_name(&fb->dev, "fblog%d", info->node);
+> +	fblog_fbs[info->node] = fb;
+> +
+> +	ret = device_add(&fb->dev);
+> +	if (ret) {
+> +		fblog_fbs[info->node] = NULL;
+> +		set_bit(FBLOG_KILLED, &fb->flags);
+> +		put_device(&fb->dev);
+
+kfree(fb); ?
+
+> +		return;
+> +	}
+> +}
+> +
+> +static void fblog_register(struct fb_info *info, bool force)
+> +{
+> +	mutex_lock(&fblog_registration_lock);
+> +	fblog_do_register(info, force);
+> +	mutex_unlock(&fblog_registration_lock);
+> +}
+> +
+> +static void fblog_unregister(struct fb_info *info)
+> +{
+> +	mutex_lock(&fblog_registration_lock);
+> +	fblog_do_unregister(info);
+> +	mutex_unlock(&fblog_registration_lock);
+> +}
+
+This locking is needlessly heavy, and could easily pushed down into the
+fb_do_(un)register functions. It would also help make it clear exactly
+what the lock is protecting.
+
+> +static int fblog_event(struct notifier_block *self, unsigned long action,
+> +		       void *data)
+> +{
+> +	struct fb_event *event = data;
+> +	struct fb_info *info = event->info;
+> +
+> +	switch(action) {
+> +	case FB_EVENT_FB_REGISTERED:
+> +		/* This is called when a low-level system driver registers a new
+> +		 * framebuffer. The registration lock is held but the console
+> +		 * lock might not be held when this is called. */
+
+Nitpick:
+
+  /*
+   * The Linux kernel multi-line
+   * comment style looks like
+   * this.
+   */
+
+> +		fblog_register(info, true);
+> +		break;
+> +	case FB_EVENT_FB_UNREGISTERED:
+> +		/* This is called when a low-level system driver unregisters a
+> +		 * framebuffer. The registration lock is held but the console
+> +		 * lock might not be held. */
+> +		fblog_unregister(info);
+> +		break;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void fblog_scan(void)
+> +{
+> +	unsigned int i;
+> +	struct fb_info *info, *tmp;
+> +
+> +	for (i = 0; i < FB_MAX; ++i) {
+> +		info = get_fb_info(i);
+> +		if (!info || IS_ERR(info))
+
+Nitpick:
+
+  if (IS_ERR_OR_NULL(info))
+
+> +			continue;
+> +
+> +		fblog_register(info, false);
+
+This function should really return a value to indicate if it failed.
+There is no point continuing if it didn't register anything.
+
+> +		/* There is a very subtle race-condition. Even though we might
+> +		 * own a reference to the fb, it may still get unregistered
+> +		 * between our call from get_fb_info() and fblog_register().
+> +		 * Therefore, we simply check whether the same fb still is
+> +		 * registered by calling get_fb_info() again. Only if they
+> +		 * differ we know that it got unregistered, therefore, we
+> +		 * call fblog_unregister() with the old pointer. */
+> +
+> +		tmp = get_fb_info(i);
+> +		if (tmp && !IS_ERR(tmp))
+> +			put_fb_info(tmp);
+> +		if (tmp != info)
+> +			fblog_unregister(info);
+
+It would be better to fix this issue properly. Calling fblog_unregister
+here also looks unsafe if the call to fblog_register above failed.
+
+> +		/* Here we either called fblog_unregister() and therefore do not
+> +		 * need any reference to the fb, or we can be sure that the FB
+> +		 * is registered and FB_EVENT_FB_UNREGISTERED will be called
+> +		 * before the last reference is dropped. Hence, we can drop our
+> +		 * reference here. */
+
+This seems a slightly odd reasoning. Why would you not hold a reference
+to something you are using?
+
+> +		put_fb_info(info);
+> +	}
+> +}
+> +
+> +static struct notifier_block fblog_notifier = {
+> +	.notifier_call = fblog_event,
+> +};
+>  
+>  static int __init fblog_init(void)
+>  {
+> +	int ret;
+> +
+> +	ret = fb_register_client(&fblog_notifier);
+> +	if (ret) {
+> +		pr_err("cannot register framebuffer notifier\n");
+> +		return ret;
+> +	}
+> +
+> +	fblog_scan();
+> +
+>  	return 0;
+>  }
+>  
+>  static void __exit fblog_exit(void)
+>  {
+> +	unsigned int i;
+> +	struct fb_info *info;
+> +
+> +	fb_unregister_client(&fblog_notifier);
+> +
+> +	/* We scan through the whole registered_fb array here instead of
+> +	 * fblog_fbs because we need to get the device lock _before_ the
+> +	 * fblog-registration-lock. */
+> +
+> +	for (i = 0; i < FB_MAX; ++i) {
+> +		info = get_fb_info(i);
+> +		if (!info || IS_ERR(info))
+> +			continue;
+> +
+> +		fblog_unregister(info);
+
+Given the description of the get_fb_info/fblog_register race above, can
+this unregister the wrong framebuffer?
+
+> +		put_fb_info(info);
+> +	}
+>  }
+>  
+>  module_init(fblog_init);
+> 
+
