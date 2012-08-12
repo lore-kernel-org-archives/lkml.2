@@ -1,98 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2HLSOP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 14:14:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42745 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab2HLSOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 14:14:14 -0400
-Message-ID: <5027F265.4030501@ti.com>
-Date: Sun, 12 Aug 2012 14:13:57 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-Reply-To: <cyril@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752380Ab2HLSWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 14:22:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36500 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab2HLSWC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 14:22:02 -0400
+Date: Sun, 12 Aug 2012 11:21:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>, Carsten Emde <C.Emde@osadl.org>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: 3.6-rc1 breaks my laptop graphics (intel)
+Message-ID: <20120812182157.GA1949@kroah.com>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <arnd@arndb.de>, <catalin.marinas@arm.com>,
-        <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
-        <will.deacon@arm.com>
-Subject: Re: [PATCH v2 01/22] ARM: add mechanism for late code patching
-References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-2-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208112220400.5231@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1208112220400.5231@xanadu.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/12 22:22, Nicolas Pitre wrote:
-> On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
->
->> The original phys_to_virt/virt_to_phys patching implementation relied on early
->> patching prior to MMU initialization.  On PAE systems running out of >4G
->> address space, this would have entailed an additional round of patching after
->> switching over to the high address space.
->>
->> The approach implemented here conceptually extends the original PHYS_OFFSET
->> patching implementation with the introduction of "early" patch stubs.  Early
->> patch code is required to be functional out of the box, even before the patch
->> is applied.  This is implemented by inserting functional (but inefficient)
->> load code into the .runtime.patch.code init section.  Having functional code
->> out of the box then allows us to defer the init time patch application until
->> later in the init sequence.
->>
->> In addition to fitting better with our need for physical address-space
->> switch-over, this implementation should be somewhat more extensible by virtue
->> of its more readable (and hackable) C implementation.  This should prove
->> useful for other similar init time specialization needs, especially in light
->> of our multi-platform kernel initiative.
->>
->> This code has been boot tested in both ARM and Thumb-2 modes on an ARMv7
->> (Cortex-A8) device.
->>
->> Note: the obtuse use of stringified symbols in patch_stub() and
->> early_patch_stub() is intentional.  Theoretically this should have been
->> accomplished with formal operands passed into the asm block, but this requires
->> the use of the 'c' modifier for instantiating the long (e.g. .long %c0).
->> However, the 'c' modifier has been found to ICE certain versions of GCC, and
->> therefore we resort to stringified symbols here.
->>
->> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
->
-> Reviewed-by: Nicolas Pitre <nico@linaro.org>
->
+Hi Daniel.
 
-Thanks.
+The 3.6-rc1 kernel breaks my laptop, booting to a black screen when the
+i915 driver initializes itself.  I bisected this down to commit
+24ded204429fa0f5501d37c63ee35c555c0b75ee (drm/i915: properly enable the
+blc controller on the right pipe), and when I revert that, and also
+a4f32fc3a37e982fffce8ec583643990ff288419 (drm/i915: don't forget the PCH
+backlight registers) which depended on the first patch, my laptop works
+just fine.
 
-I've been looking at the compiler emitted code, and had to make a couple 
-of changes to keep things streamlined...
+Below is the combined revert.
 
-[...]
->> +#define early_patch_imm8(insn, to, from, sym, offset)			\
->> +	early_patch_stub(PATCH_IMM8,					\
->> +			 /* code */					\
->> +			 "ldr	%0, =" __stringify(sym + offset) "\n"	\
->> +			 "ldr	%0, [%0]\n"				\
->> +			 insn " %0, %1, %0\n",				\
->> +			 /* patch_data */				\
->> +			 ".long " __stringify(sym + offset) "\n"	\
->> +			 insn " %0, %1, %2\n",				\
->> +			 : "=&r" (to)					\
->> +			 : "r" (from), "I" (__IMM8), "m" (sym)		\
->> +			 : "cc")
+Any thoughts?  Any patch I can try out?
 
-First, the "m" operand modifier for "sym" forces GCC to emit code to 
-load the address of the symbol into a register.  I've replaced this with 
-"i" (&(sym) to make that go away.  With this, the emitted code doesn't 
-contain any such unexpected nonsense.
+thanks,
 
-Second, marking the "to" operand as early clobber makes the compiler 
-generate horrid register moves around the assembly block, even when it 
-has registers to spare.  Simply adding a temporary variable does a much 
-much better job, especially since this temporary register is used only 
-in the patched-out "early" code.
+greg k-h
 
-Thanks
--- Cyril.
+------
+Subject: drm/i915: revert 24ded204429fa0f5501d37c63ee35c555c0b75ee and a4f32fc3a37e982fffce8ec583643990ff288419
+
+24ded204429fa0f5501d37c63ee35c555c0b75ee (drm/i915: properly enable the
+blc controller on the right pipe) breaks the boot for my laptop, so
+revert it, and a4f32fc3a37e982fffce8ec583643990ff288419 (drm/i915: don't
+forget the PCH backlight registers) which depended on it.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 8435355..4e786f2 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -383,8 +383,7 @@ extern u32 intel_panel_get_max_backlight(struct drm_device *dev);
+ extern u32 intel_panel_get_backlight(struct drm_device *dev);
+ extern void intel_panel_set_backlight(struct drm_device *dev, u32 level);
+ extern int intel_panel_setup_backlight(struct drm_device *dev);
+-extern void intel_panel_enable_backlight(struct drm_device *dev,
+-					 enum pipe pipe);
++extern void intel_panel_enable_backlight(struct drm_device *dev);
+ extern void intel_panel_disable_backlight(struct drm_device *dev);
+ extern void intel_panel_destroy_backlight(struct drm_device *dev);
+ extern enum drm_connector_status intel_panel_detect(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index e05c0d3..6547904 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -71,7 +71,6 @@ static struct intel_lvds *intel_attached_lvds(struct drm_connector *connector)
+ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
+ {
+ 	struct drm_device *dev = intel_lvds->base.base.dev;
+-	struct intel_crtc *intel_crtc = to_intel_crtc(intel_lvds->base.base.crtc);
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 ctl_reg, lvds_reg, stat_reg;
+ 
+@@ -108,7 +107,7 @@ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
+ 	if (wait_for((I915_READ(stat_reg) & PP_ON) != 0, 1000))
+ 		DRM_ERROR("timed out waiting for panel to power on\n");
+ 
+-	intel_panel_enable_backlight(dev, intel_crtc->pipe);
++	intel_panel_enable_backlight(dev);
+ }
+ 
+ static void intel_lvds_disable(struct intel_lvds *intel_lvds)
+@@ -1079,14 +1078,35 @@ bool intel_lvds_init(struct drm_device *dev)
+ 		goto failed;
+ 
+ out:
+-	/*
+-	 * Unlock registers and just
+-	 * leave them unlocked
+-	 */
+ 	if (HAS_PCH_SPLIT(dev)) {
++		u32 pwm;
++
++		pipe = (I915_READ(PCH_LVDS) & LVDS_PIPEB_SELECT) ? 1 : 0;
++
++		/* make sure PWM is enabled and locked to the LVDS pipe */
++		pwm = I915_READ(BLC_PWM_CPU_CTL2);
++		if (pipe == 0 && (pwm & BLM_PIPE_B))
++			I915_WRITE(BLC_PWM_CPU_CTL2, pwm & ~BLM_PWM_ENABLE);
++		if (pipe)
++			pwm |= BLM_PIPE_B;
++		else
++			pwm &= ~BLM_PIPE_B;
++		I915_WRITE(BLC_PWM_CPU_CTL2, pwm | BLM_PWM_ENABLE);
++
++		pwm = I915_READ(BLC_PWM_PCH_CTL1);
++		pwm |= BLM_PCH_PWM_ENABLE;
++		I915_WRITE(BLC_PWM_PCH_CTL1, pwm);
++		/*
++		 * Unlock registers and just
++		 * leave them unlocked
++		 */
+ 		I915_WRITE(PCH_PP_CONTROL,
+ 			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
+ 	} else {
++		/*
++		 * Unlock registers and just
++		 * leave them unlocked
++		 */
+ 		I915_WRITE(PP_CONTROL,
+ 			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
+ 	}
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 10c7d39..7180cc8 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -287,24 +287,9 @@ void intel_panel_disable_backlight(struct drm_device *dev)
+ 
+ 	dev_priv->backlight_enabled = false;
+ 	intel_panel_actually_set_backlight(dev, 0);
+-
+-	if (INTEL_INFO(dev)->gen >= 4) {
+-		uint32_t reg, tmp;
+-
+-		reg = HAS_PCH_SPLIT(dev) ? BLC_PWM_CPU_CTL2 : BLC_PWM_CTL2;
+-
+-		I915_WRITE(reg, I915_READ(reg) & ~BLM_PWM_ENABLE);
+-
+-		if (HAS_PCH_SPLIT(dev)) {
+-			tmp = I915_READ(BLC_PWM_PCH_CTL1);
+-			tmp &= ~BLM_PCH_PWM_ENABLE;
+-			I915_WRITE(BLC_PWM_PCH_CTL1, tmp);
+-		}
+-	}
+ }
+ 
+-void intel_panel_enable_backlight(struct drm_device *dev,
+-				  enum pipe pipe)
++void intel_panel_enable_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+@@ -313,40 +298,6 @@ void intel_panel_enable_backlight(struct drm_device *dev,
+ 
+ 	dev_priv->backlight_enabled = true;
+ 	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+-
+-	if (INTEL_INFO(dev)->gen >= 4) {
+-		uint32_t reg, tmp;
+-
+-		reg = HAS_PCH_SPLIT(dev) ? BLC_PWM_CPU_CTL2 : BLC_PWM_CTL2;
+-
+-
+-		tmp = I915_READ(reg);
+-
+-		/* Note that this can also get called through dpms changes. And
+-		 * we don't track the backlight dpms state, hence check whether
+-		 * we have to do anything first. */
+-		if (tmp & BLM_PWM_ENABLE)
+-			return;
+-
+-		if (dev_priv->num_pipe == 3)
+-			tmp &= ~BLM_PIPE_SELECT_IVB;
+-		else
+-			tmp &= ~BLM_PIPE_SELECT;
+-
+-		tmp |= BLM_PIPE(pipe);
+-		tmp &= ~BLM_PWM_ENABLE;
+-
+-		I915_WRITE(reg, tmp);
+-		POSTING_READ(reg);
+-		I915_WRITE(reg, tmp | BLM_PWM_ENABLE);
+-
+-		if (HAS_PCH_SPLIT(dev)) {
+-			tmp = I915_READ(BLC_PWM_PCH_CTL1);
+-			tmp |= BLM_PCH_PWM_ENABLE;
+-			tmp &= ~BLM_PCH_OVERRIDE_ENABLE;
+-			I915_WRITE(BLC_PWM_PCH_CTL1, tmp);
+-		}
+-	}
+ }
+ 
+ static void intel_panel_init_backlight(struct drm_device *dev)
