@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab2HLNwq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 09:52:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36046 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2HLNwo (ORCPT
+	id S1752258Ab2HLN7W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 09:59:22 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:62334 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751990Ab2HLN7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 09:52:44 -0400
+	Sun, 12 Aug 2012 09:59:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAFG1J1B5LUgY/2dsb2JhbABEhgGzd4EIgkoEER47FwYCBSECEQIoMQYCAogIl2iOQZF8gSGJcYMVggqBEgOITI4TiBiGZIJv
+Message-ID: <5027B6B2.70204@internode.on.net>
+Date: Sun, 12 Aug 2012 23:29:14 +0930
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120805 Icedove/10.0.6
 MIME-Version: 1.0
-X-Originating-IP: [72.73.18.11]
-In-Reply-To: <5027B04D.3090703@gmail.com>
-References: <005501cd77e7$d222d020$76687060$@lucidpixels.com>
-	<5027B04D.3090703@gmail.com>
-Date: Sun, 12 Aug 2012 09:52:43 -0400
-Message-ID: <CAO9zADzpVeeQqcm78GK-Y562ieS6i5wnan7roCCwm0KLY0vdUA@mail.gmail.com>
-Subject: Re: 3.4->(3.5.1 || 3.6-rc1) => can no longer mount 60TB ext4 filesystem
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org, ap@solarrain.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: fuse: implement i_op->atomic_open() prevents writes to ntfs-3g filesystem
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 9:31 AM, Daniel Mack <zonque@gmail.com> wrote:
-> On 11.08.2012 19:36, Justin Piszcz wrote:
->> Hello,
->>
->> I upgrade to each new kernel release and with 3.5.1 (from 3.4) I can no
->> longer mount my 60TB ext4 volume.
->> If I boot back to 3.4, it works fine.
->>
->> Details here:
->> https://lkml.org/lkml/2012/8/10/205
->>
->> Anything I can do besides testing each 3.5-rcX to find where the regression
->> lies?
->
-> I'm not at all familiar with ext4 internals, but as always, an wasy way
-> is to bisect such a problem. Any change you can do that?
->
->   http://www.kernel.org/pub/software/scm/git/docs/git-bisect.html
->
->
-> Daniel
->
+[repost, apologies if you see it twice]
+I'm running Debian unstable on AMD64 (quad core) with Linus' github.com 
+kernels.
 
-Hi,
+Recently (post 3.5.0 kernels) writes to an ntfs-3g filesystem started 
+failing, and I bisected back to the following:
 
-Thanks, will save this for the future-- would of done this but Eric
-Sandeen found the offending patch, I reverted it and I can mount the
-filesystem now.
+# git bisect good
+c8ccbe032feb127a977c66865cb63d72d9a6e08b is the first bad commit
+commit c8ccbe032feb127a977c66865cb63d72d9a6e08b
+Author: Miklos Szeredi <mszeredi@suse.cz>
+Date:   Tue Jun 5 15:10:22 2012 +0200
 
-The bad commit was 8aeb00ff85ad25453765dd339b408c0087db1527 (per sandeen)
+     fuse: implement i_op->atomic_open()
 
-Justin.
+     Add an ->atomic_open implementation which replaces the atomic 
+open+create
+     operation implemented via ->create.  No functionality is changed.
+
+     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+:040000 040000 7a000897ad0d1524a7e1cb187bc77d92b8397d56 
+38f02e55f70b009f8b1149cdd75f571c72406fe4 M      fs
+
+Has this problem been seen by anyone else?
+
+Is a fix already in the works?
+
+Regards,
+
+Arthur.
