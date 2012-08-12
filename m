@@ -1,317 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab2HLXzC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 19:55:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40423 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2HLXyg (ORCPT
+	id S1752763Ab2HLX4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 19:56:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65260 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab2HLX4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 19:54:36 -0400
-Message-ID: <50284234.40306@gmail.com>
-Date: Mon, 13 Aug 2012 09:54:28 +1000
-From: Ryan Mallon <rmallon@gmail.com>
+	Sun, 12 Aug 2012 19:56:42 -0400
+Message-ID: <50282141.2010408@landley.net>
+Date: Sun, 12 Aug 2012 16:33:53 -0500
+From: Rob Landley <rob@landley.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@googlemail.com>
-CC: linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH 05/11] fblog: register one fblog object per framebuffer
-References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com> <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
-In-Reply-To: <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com>
+To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Fun with mount flags.
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/12 00:53, David Herrmann wrote:
-> One fblog object is associated to each registered framebuffer. This way,
-> we can draw the console to each framebuffer. When a framebuffer driver
-> unregisters a framebuffer, we also unregister our fblog object. That is,
-> our lifetime is coupled to the lifetime of the framebuffer. However, this
-> does not mean that we are always active. On the contrary, we do not even
-> own a reference to the framebuffer. We don't need it as we are notified
-> _before_ the last reference is dropped.
-> 
-> However, if other users have a reference to our object, we simply mark it
-> as dead when the associated framebuffer dies and leave it alone. When the
-> last reference is dropped, it will be automatically freed.
-> 
-> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+Way back when I rewrote busybox mount 3 times, and now I'm writing 
+a mount implementation for toybox, and this  means I'm going through 
+the list of VFS flags in include/linux/fs.h and trying to figure out
+what they all _do_.
 
-Hi David,
+I _think_ there are three flags missing from the list filtered out in 
+fs/namespace.c function do_mount(), specifically:
 
-Quick review below.
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 1e4a5fe..83c9c49 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2175,7 +2175,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+ 
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_NOSEC | MS_NOUSER | MS_POSIXACL);
+ 
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
 
-Thanks,
-~Ryan
+"MS_NOUSER" tells attempts to mount this filesystem to fail (for pipefs
+and such) and you can set it yourself, meaning the attempt to mount
+will always fail. Not a big problem but: dude? (This is not the
+same thing as user/nouser in fstab, that's internal to the userspace
+mount command.)
 
-> ---
->  drivers/video/console/fblog.c | 195 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 195 insertions(+)
-> 
-> diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-> index fb39737..279f4d8 100644
-> --- a/drivers/video/console/fblog.c
-> +++ b/drivers/video/console/fblog.c
-> @@ -23,15 +23,210 @@
->   * all fblog instances before running other graphics applications.
->   */
->  
-> +#define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
-> +
-> +#include <linux/device.h>
-> +#include <linux/fb.h>
->  #include <linux/module.h>
-> +#include <linux/mutex.h>
-> +
-> +enum fblog_flags {
-> +	FBLOG_KILLED,
-> +};
-> +
-> +struct fblog_fb {
-> +	unsigned long flags;
+MS_POSIXACL tells the VFS layer the filesystem wants it to track extended
+attributes. The flag is set by each filesystem as appropriate, and most
+of them clear it first but SOME DON'T. (What happens if you pass MS_POSIXACL
+to mount when mounting jffs2 with access control list support disabled in
+the filesystem but enabled in the VFS? Beats me.)
 
-Are more flags added in later patches? If not, why not just have:
+MS_NOSEC is... weird. It's unconditionally set in fs/super.c function
+mount_bdev() on first mount, and then cleared again by various things that
+change attributes. It seems to fast-path some security checks. According
+to git annotate of Al Viro added it in commit 9e1f1de0 the description
+of which boils down to "found another way in which NFS sucks, try to work
+around it".
 
-  bool is_killed;
+(By the way, MS_RELATIME as supplied from userspace is a complete NOP.
+Read do_mount() if you don't believe me: it's never used before it's
+cleared.)
 
-?
+Anyway, it might be a good janitor project to zap these in do_mount and
+then grep for the various redundant clearing of them elsewhere, and
+clean up the duplication.
 
-> +	struct fb_info *info;
-> +	struct device dev;
-> +};
-> +
-> +static DEFINE_MUTEX(fblog_registration_lock);
-> +static struct fblog_fb *fblog_fbs[FB_MAX];
-> +
-> +#define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
-> +
-> +/*
-> + * fblog framebuffer list
-> + * The fblog_fbs[] array contains all currently registered framebuffers. If a
-> + * framebuffer is in that list, we always must make sure that we own a reference
-> + * to it. If it is added through the notifier callbacks, then this is always
-> + * guaranteed.
-> + * We are only interested in registered framebuffers. That is, if a driver calls
-> + * unregister_framebuffer() we directly unlink it from our list. This guarantees
-> + * that the associated fb_info is always valid. However, we might still have
-> + * pending users so we mark it as dead so no further framebuffer actions are
-> + * done. If the last user then drops a reference, the memory gets freed
-> + * automatically.
-> + */
-> +
-> +static void fblog_release(struct device *dev)
-> +{
-> +	struct fblog_fb *fb = to_fblog_dev(dev);
-> +
-> +	kfree(fb);
-> +	module_put(THIS_MODULE);
-> +}
-> +
-> +static void fblog_do_unregister(struct fb_info *info)
-> +{
-> +	struct fblog_fb *fb;
-> +
-> +	fb = fblog_fbs[info->node];
-> +	if (!fb || fb->info != info)
-> +		return;
-> +
-> +	fblog_fbs[info->node] = NULL;
-> +
-> +	device_del(&fb->dev);
-> +	put_device(&fb->dev);
+(I realize not a lot of people ever write mount implementations, but
+this is the second time _I've_ done it, and there's still no
+documentation on this, which means I need to write some...)
 
-device_unregister?
-
-> +}
-> +
-> +static void fblog_do_register(struct fb_info *info, bool force)
-> +{
-> +	struct fblog_fb *fb;
-> +	int ret;
-> +
-> +	fb = fblog_fbs[info->node];
-> +	if (fb && fb->info != info) {
-> +		if (!force)
-> +			return;
-> +
-> +		fblog_do_unregister(fb->info);
-> +	}
-> +
-> +	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
-> +	if (!fb)
-> +		return;
-> +
-> +	fb->info = info;
-> +	__module_get(THIS_MODULE);
-> +	device_initialize(&fb->dev);
-> +	fb->dev.class = fb_class;
-> +	fb->dev.release = fblog_release;
-> +	dev_set_name(&fb->dev, "fblog%d", info->node);
-> +	fblog_fbs[info->node] = fb;
-> +
-> +	ret = device_add(&fb->dev);
-> +	if (ret) {
-> +		fblog_fbs[info->node] = NULL;
-> +		set_bit(FBLOG_KILLED, &fb->flags);
-> +		put_device(&fb->dev);
-
-kfree(fb); ?
-
-> +		return;
-> +	}
-> +}
-> +
-> +static void fblog_register(struct fb_info *info, bool force)
-> +{
-> +	mutex_lock(&fblog_registration_lock);
-> +	fblog_do_register(info, force);
-> +	mutex_unlock(&fblog_registration_lock);
-> +}
-> +
-> +static void fblog_unregister(struct fb_info *info)
-> +{
-> +	mutex_lock(&fblog_registration_lock);
-> +	fblog_do_unregister(info);
-> +	mutex_unlock(&fblog_registration_lock);
-> +}
-
-This locking is needlessly heavy, and could easily pushed down into the
-fb_do_(un)register functions. It would also help make it clear exactly
-what the lock is protecting.
-
-> +static int fblog_event(struct notifier_block *self, unsigned long action,
-> +		       void *data)
-> +{
-> +	struct fb_event *event = data;
-> +	struct fb_info *info = event->info;
-> +
-> +	switch(action) {
-> +	case FB_EVENT_FB_REGISTERED:
-> +		/* This is called when a low-level system driver registers a new
-> +		 * framebuffer. The registration lock is held but the console
-> +		 * lock might not be held when this is called. */
-
-Nitpick:
-
-  /*
-   * The Linux kernel multi-line
-   * comment style looks like
-   * this.
-   */
-
-> +		fblog_register(info, true);
-> +		break;
-> +	case FB_EVENT_FB_UNREGISTERED:
-> +		/* This is called when a low-level system driver unregisters a
-> +		 * framebuffer. The registration lock is held but the console
-> +		 * lock might not be held. */
-> +		fblog_unregister(info);
-> +		break;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void fblog_scan(void)
-> +{
-> +	unsigned int i;
-> +	struct fb_info *info, *tmp;
-> +
-> +	for (i = 0; i < FB_MAX; ++i) {
-> +		info = get_fb_info(i);
-> +		if (!info || IS_ERR(info))
-
-Nitpick:
-
-  if (IS_ERR_OR_NULL(info))
-
-> +			continue;
-> +
-> +		fblog_register(info, false);
-
-This function should really return a value to indicate if it failed.
-There is no point continuing if it didn't register anything.
-
-> +		/* There is a very subtle race-condition. Even though we might
-> +		 * own a reference to the fb, it may still get unregistered
-> +		 * between our call from get_fb_info() and fblog_register().
-> +		 * Therefore, we simply check whether the same fb still is
-> +		 * registered by calling get_fb_info() again. Only if they
-> +		 * differ we know that it got unregistered, therefore, we
-> +		 * call fblog_unregister() with the old pointer. */
-> +
-> +		tmp = get_fb_info(i);
-> +		if (tmp && !IS_ERR(tmp))
-> +			put_fb_info(tmp);
-> +		if (tmp != info)
-> +			fblog_unregister(info);
-
-It would be better to fix this issue properly. Calling fblog_unregister
-here also looks unsafe if the call to fblog_register above failed.
-
-> +		/* Here we either called fblog_unregister() and therefore do not
-> +		 * need any reference to the fb, or we can be sure that the FB
-> +		 * is registered and FB_EVENT_FB_UNREGISTERED will be called
-> +		 * before the last reference is dropped. Hence, we can drop our
-> +		 * reference here. */
-
-This seems a slightly odd reasoning. Why would you not hold a reference
-to something you are using?
-
-> +		put_fb_info(info);
-> +	}
-> +}
-> +
-> +static struct notifier_block fblog_notifier = {
-> +	.notifier_call = fblog_event,
-> +};
->  
->  static int __init fblog_init(void)
->  {
-> +	int ret;
-> +
-> +	ret = fb_register_client(&fblog_notifier);
-> +	if (ret) {
-> +		pr_err("cannot register framebuffer notifier\n");
-> +		return ret;
-> +	}
-> +
-> +	fblog_scan();
-> +
->  	return 0;
->  }
->  
->  static void __exit fblog_exit(void)
->  {
-> +	unsigned int i;
-> +	struct fb_info *info;
-> +
-> +	fb_unregister_client(&fblog_notifier);
-> +
-> +	/* We scan through the whole registered_fb array here instead of
-> +	 * fblog_fbs because we need to get the device lock _before_ the
-> +	 * fblog-registration-lock. */
-> +
-> +	for (i = 0; i < FB_MAX; ++i) {
-> +		info = get_fb_info(i);
-> +		if (!info || IS_ERR(info))
-> +			continue;
-> +
-> +		fblog_unregister(info);
-
-Given the description of the get_fb_info/fblog_register race above, can
-this unregister the wrong framebuffer?
-
-> +		put_fb_info(info);
-> +	}
->  }
->  
->  module_init(fblog_init);
-> 
-
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
