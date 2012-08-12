@@ -1,60 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2HLEFR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 00:05:17 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:55797 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2HLEFM (ORCPT
+	id S1751190Ab2HLEFn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 00:05:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57758 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab2HLEFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 00:05:12 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH] fat: use accessor function for msdos_dir_entry 'start'
-References: <1344743810-2443-1-git-send-email-linkinjeon@gmail.com>
-Date: Sun, 12 Aug 2012 13:05:07 +0900
-In-Reply-To: <1344743810-2443-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sat, 11 Aug 2012 23:56:50 -0400")
-Message-ID: <871ujclpqk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 12 Aug 2012 00:05:40 -0400
+Date: Sat, 11 Aug 2012 21:05:40 -0700 (PDT)
+Message-Id: <20120811.210540.1158066885515664193.davem@davemloft.net>
+To: yamato@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 01/15] net: proc entry showing inodes on sockfs and
+ their types
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344715638-22997-1-git-send-email-yamato@redhat.com>
+References: <1344715638-22997-1-git-send-email-yamato@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
 
-> Use accessor function for msdos_dir_entry 'start'
+I also want to mention that I absolutely do not consider better lsof
+support important at all.
 
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
-Looks good. Thanks.
-
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> ---
->  fs/fat/dir.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-> index 7b1b9c1..2f3e66e 100644
-> --- a/fs/fat/dir.c
-> +++ b/fs/fat/dir.c
-> @@ -1143,10 +1143,8 @@ int fat_alloc_new_dir(struct inode *dir, struct timespec *ts)
->  		de[0].ctime_cs = de[1].ctime_cs = 0;
->  		de[0].adate = de[0].cdate = de[1].adate = de[1].cdate = 0;
->  	}
-> -	de[0].start = cpu_to_le16(cluster);
-> -	de[0].starthi = cpu_to_le16(cluster >> 16);
-> -	de[1].start = cpu_to_le16(MSDOS_I(dir)->i_logstart);
-> -	de[1].starthi = cpu_to_le16(MSDOS_I(dir)->i_logstart >> 16);
-> +	fat_set_start(&de[0], cluster);
-> +	fat_set_start(&de[1], MSDOS_I(dir)->i_logstart);
->  	de[0].size = de[1].size = 0;
->  	memset(de + 2, 0, sb->s_blocksize - 2 * sizeof(*de));
->  	set_buffer_uptodate(bhs[0]);
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+So if you want to add this, it had to be exactly zero overhead and it
+must not break anything that exists already.  Your patch set violates
+this on both counts.
