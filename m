@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab2HLOwk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 10:52:40 -0400
+	id S1752256Ab2HLOyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 10:54:24 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:58986 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2HLOwf (ORCPT
+	with ESMTP id S1751544Ab2HLOwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 10:52:35 -0400
+	Sun, 12 Aug 2012 10:52:39 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-fbdev@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
@@ -15,9 +15,9 @@ Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 02/11] fbcon: move bit_putcs() into separate source file
-Date: Sun, 12 Aug 2012 16:53:16 +0200
-Message-Id: <1344783205-2384-3-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 06/11] fblog: open fb on registration
+Date: Sun, 12 Aug 2012 16:53:20 +0200
+Message-Id: <1344783205-2384-7-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
@@ -25,320 +25,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to use font-draw-operations in other modules than fbcon, we
-need to split this function off of fbcon headers and sources. This also
-makes bit_putcs() totally independent of vc_* and fbcon_* structures.
+This opens the framebuffer upon registration so we can use it for
+drawing-operations. On unregistration we close it again.
 
-As scr_read() cannot be called inside of non-fbcon/vt functions, we need
-to assemble the buffer before passing it to fbdraw_font(). This slows down
-this operations a little bit but my rough benchmark showed that it didn't
-really matter. Anyway, if it does, we can still put it into VT_BUF_HAVE_RW
-conditions so platforms that don't use it won't be affected. And for other
-platforms we can add the buffer to the vc-struct so we can reuse it.
+While opening/closing or accessing the fb in any other way, we must hold
+the fb-mutex. However, since the notifiers are often called with the mutex
+already held, we cannot lock it _after_ taking the
+fblog_registration_lock. Therefore, we require the caller to make sure the
+fb-mutex is held.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/bitblit.c | 127 ++++------------------------------------
- drivers/video/console/fbdraw.c  | 125 +++++++++++++++++++++++++++++++++++++++
- drivers/video/console/fbdraw.h  |   4 ++
- 3 files changed, 139 insertions(+), 117 deletions(-)
+ drivers/video/console/fblog.c | 94 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 93 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
-index 6ec2905..c5d897b 100644
---- a/drivers/video/console/bitblit.c
-+++ b/drivers/video/console/bitblit.c
-@@ -54,132 +54,25 @@ static void bit_clear(struct vc_data *vc, struct fb_info *info, int sy,
- 	info->fbops->fb_fillrect(info, &region);
+diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
+index 279f4d8..1c526c5 100644
+--- a/drivers/video/console/fblog.c
++++ b/drivers/video/console/fblog.c
+@@ -32,12 +32,14 @@
+ 
+ enum fblog_flags {
+ 	FBLOG_KILLED,
++	FBLOG_OPEN,
+ };
+ 
+ struct fblog_fb {
+ 	unsigned long flags;
+ 	struct fb_info *info;
+ 	struct device dev;
++	struct mutex lock;
+ };
+ 
+ static DEFINE_MUTEX(fblog_registration_lock);
+@@ -46,6 +48,74 @@ static struct fblog_fb *fblog_fbs[FB_MAX];
+ #define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
+ 
+ /*
++ * fblog_open/close()
++ * These functions manage access to the underlying framebuffer. While opened, we
++ * have a valid reference to the fb and can use it for drawing operations. When
++ * the fb is unregistered, we drop our reference and close the fb so it can get
++ * deleted properly. We also mark it as dead so no further fblog_open() call
++ * will succeed.
++ * Both functions must be called with the fb->info->lock mutex held! But make
++ * sure to lock it _before_ locking the fblog-registration-lock. Otherwise, we
++ * will dead-lock with fb-registration.
++ */
++
++static int fblog_open(struct fblog_fb *fb)
++{
++	int ret;
++
++	mutex_lock(&fb->lock);
++
++	if (test_bit(FBLOG_KILLED, &fb->flags)) {
++		ret = -ENODEV;
++		goto unlock;
++	}
++
++	if (test_bit(FBLOG_OPEN, &fb->flags)) {
++		ret = 0;
++		goto unlock;
++	}
++
++	if (!try_module_get(fb->info->fbops->owner)) {
++		ret = -ENODEV;
++		goto out_killed;
++	}
++
++	if (fb->info->fbops->fb_open && fb->info->fbops->fb_open(fb->info, 0)) {
++		ret = -EIO;
++		goto out_unref;
++	}
++
++	set_bit(FBLOG_OPEN, &fb->flags);
++	mutex_unlock(&fb->lock);
++	return 0;
++
++out_unref:
++	module_put(fb->info->fbops->owner);
++out_killed:
++	set_bit(FBLOG_KILLED, &fb->flags);
++unlock:
++	mutex_unlock(&fb->lock);
++	return ret;
++}
++
++static void fblog_close(struct fblog_fb *fb, bool kill_dev)
++{
++	mutex_lock(&fb->lock);
++
++	if (test_bit(FBLOG_OPEN, &fb->flags)) {
++		if (fb->info->fbops->fb_release)
++			fb->info->fbops->fb_release(fb->info, 0);
++		module_put(fb->info->fbops->owner);
++		clear_bit(FBLOG_OPEN, &fb->flags);
++	}
++
++	if (kill_dev)
++		set_bit(FBLOG_KILLED, &fb->flags);
++
++	mutex_unlock(&fb->lock);
++}
++
++/*
+  * fblog framebuffer list
+  * The fblog_fbs[] array contains all currently registered framebuffers. If a
+  * framebuffer is in that list, we always must make sure that we own a reference
+@@ -77,6 +147,7 @@ static void fblog_do_unregister(struct fb_info *info)
+ 
+ 	fblog_fbs[info->node] = NULL;
+ 
++	fblog_close(fb, true);
+ 	device_del(&fb->dev);
+ 	put_device(&fb->dev);
+ }
+@@ -99,6 +170,7 @@ static void fblog_do_register(struct fb_info *info, bool force)
+ 		return;
+ 
+ 	fb->info = info;
++	mutex_init(&fb->lock);
+ 	__module_get(THIS_MODULE);
+ 	device_initialize(&fb->dev);
+ 	fb->dev.class = fb_class;
+@@ -113,6 +185,8 @@ static void fblog_do_register(struct fb_info *info, bool force)
+ 		put_device(&fb->dev);
+ 		return;
+ 	}
++
++	fblog_open(fb);
  }
  
--static inline void bit_putcs_aligned(struct vc_data *vc, struct fb_info *info,
--				     const u16 *s, u32 attr, u32 cnt,
--				     u32 d_pitch, u32 s_pitch, u32 cellsize,
--				     struct fb_image *image, u8 *buf, u8 *dst)
--{
--	u16 charmask = vc->vc_hi_font_mask ? 0x1ff : 0xff;
--	u32 idx = vc->vc_font.width >> 3;
--	u8 *src;
--
--	while (cnt--) {
--		src = vc->vc_font.data + (scr_readw(s++)&
--					  charmask)*cellsize;
--
--		if (attr) {
--			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
--			src = buf;
--		}
--
--		if (likely(idx == 1))
--			__fb_pad_aligned_buffer(dst, d_pitch, src, idx,
--						image->height);
--		else
--			fb_pad_aligned_buffer(dst, d_pitch, src, idx,
--					      image->height);
--
--		dst += s_pitch;
--	}
--
--	info->fbops->fb_imageblit(info, image);
--}
--
--static inline void bit_putcs_unaligned(struct vc_data *vc,
--				       struct fb_info *info, const u16 *s,
--				       u32 attr, u32 cnt, u32 d_pitch,
--				       u32 s_pitch, u32 cellsize,
--				       struct fb_image *image, u8 *buf,
--				       u8 *dst)
--{
--	u16 charmask = vc->vc_hi_font_mask ? 0x1ff : 0xff;
--	u32 shift_low = 0, mod = vc->vc_font.width % 8;
--	u32 shift_high = 8;
--	u32 idx = vc->vc_font.width >> 3;
--	u8 *src;
--
--	while (cnt--) {
--		src = vc->vc_font.data + (scr_readw(s++)&
--					  charmask)*cellsize;
--
--		if (attr) {
--			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
--			src = buf;
--		}
--
--		fb_pad_unaligned_buffer(dst, d_pitch, src, idx,
--					image->height, shift_high,
--					shift_low, mod);
--		shift_low += mod;
--		dst += (shift_low >= 8) ? s_pitch : s_pitch - 1;
--		shift_low &= 7;
--		shift_high = 8 - shift_low;
--	}
--
--	info->fbops->fb_imageblit(info, image);
--
--}
--
- static void bit_putcs(struct vc_data *vc, struct fb_info *info,
- 		      const unsigned short *s, int count, int yy, int xx,
- 		      int fg, int bg)
+ static void fblog_register(struct fb_info *info, bool force)
+@@ -134,6 +208,7 @@ static int fblog_event(struct notifier_block *self, unsigned long action,
  {
--	struct fb_image image;
--	u32 width = DIV_ROUND_UP(vc->vc_font.width, 8);
--	u32 cellsize = width * vc->vc_font.height;
--	u32 maxcnt = info->pixmap.size/cellsize;
--	u32 scan_align = info->pixmap.scan_align - 1;
--	u32 buf_align = info->pixmap.buf_align - 1;
--	u32 mod = vc->vc_font.width % 8, cnt, pitch, size;
-+	u16 *buf;
-+	int i;
- 	u32 attribute = get_attribute(info, scr_readw(s));
--	u8 *dst, *buf = NULL;
+ 	struct fb_event *event = data;
+ 	struct fb_info *info = event->info;
++	struct fblog_fb *fb;
  
--	image.fg_color = fg;
--	image.bg_color = bg;
--	image.dx = xx * vc->vc_font.width;
--	image.dy = yy * vc->vc_font.height;
--	image.height = vc->vc_font.height;
--	image.depth = 1;
-+	buf = kmalloc(sizeof(*buf) * count, GFP_KERNEL);
-+	if (!buf)
-+		return;
+ 	switch(action) {
+ 	case FB_EVENT_FB_REGISTERED:
+@@ -145,8 +220,21 @@ static int fblog_event(struct notifier_block *self, unsigned long action,
+ 	case FB_EVENT_FB_UNREGISTERED:
+ 		/* This is called when a low-level system driver unregisters a
+ 		 * framebuffer. The registration lock is held but the console
+-		 * lock might not be held. */
++		 * lock might not be held. The fb-lock is not held, either! */
++		mutex_lock(&info->lock);
+ 		fblog_unregister(info);
++		mutex_unlock(&info->lock);
++		break;
++	case FB_EVENT_FB_UNBIND:
++		/* Called directly before unregistering an FB. The FB is still
++		 * valid here and the registration lock is held but the console
++		 * lock might not be held (really?). */
++		mutex_lock(&fblog_registration_lock);
++		fb = fblog_fbs[info->node];
++		mutex_unlock(&fblog_registration_lock);
++
++		if (fb)
++			fblog_close(fb, true);
+ 		break;
+ 	}
  
--	if (attribute) {
--		buf = kmalloc(cellsize, GFP_KERNEL);
--		if (!buf)
--			return;
--	}
--
--	while (count) {
--		if (count > maxcnt)
--			cnt = maxcnt;
--		else
--			cnt = count;
--
--		image.width = vc->vc_font.width * cnt;
--		pitch = DIV_ROUND_UP(image.width, 8) + scan_align;
--		pitch &= ~scan_align;
--		size = pitch * image.height + buf_align;
--		size &= ~buf_align;
--		dst = fb_get_buffer_offset(info, &info->pixmap, size);
--		image.data = dst;
--
--		if (!mod)
--			bit_putcs_aligned(vc, info, s, attribute, cnt, pitch,
--					  width, cellsize, &image, buf, dst);
--		else
--			bit_putcs_unaligned(vc, info, s, attribute, cnt,
--					    pitch, width, cellsize, &image,
--					    buf, dst);
--
--		image.dx += cnt * vc->vc_font.width;
--		count -= cnt;
--		s += cnt;
--	}
-+	for (i = 0; i < count; ++i)
-+		buf[i] = scr_readw(s++);
+@@ -163,7 +251,9 @@ static void fblog_scan(void)
+ 		if (!info || IS_ERR(info))
+ 			continue;
  
--	/* buf is always NULL except when in monochrome mode, so in this case
--	   it's a gain to check buf against NULL even though kfree() handles
--	   NULL pointers just fine */
--	if (unlikely(buf))
--		kfree(buf);
-+	fbdraw_font(info, &vc->vc_font, vc->vc_hi_font_mask, xx, yy, fg, bg,
-+		    attribute, buf, count);
++		mutex_lock(&info->lock);
+ 		fblog_register(info, false);
++		mutex_unlock(&info->lock);
  
-+	kfree(buf);
+ 		/* There is a very subtle race-condition. Even though we might
+ 		 * own a reference to the fb, it may still get unregistered
+@@ -224,7 +314,9 @@ static void __exit fblog_exit(void)
+ 		if (!info || IS_ERR(info))
+ 			continue;
+ 
++		mutex_lock(&info->lock);
+ 		fblog_unregister(info);
++		mutex_unlock(&info->lock);
+ 		put_fb_info(info);
+ 	}
  }
- 
- static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
-diff --git a/drivers/video/console/fbdraw.c b/drivers/video/console/fbdraw.c
-index aa18f7e..f7c3da7 100644
---- a/drivers/video/console/fbdraw.c
-+++ b/drivers/video/console/fbdraw.c
-@@ -41,6 +41,131 @@ void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
- }
- EXPORT_SYMBOL_GPL(fbdraw_update_attr);
- 
-+static inline void bit_putcs_aligned(struct fb_info *info, bool hi_font,
-+				     struct console_font *font, u32 attribute,
-+				     u32 d_pitch, u32 s_pitch, u32 cellsize,
-+				     struct fb_image *image, u8 *buf, u8 *dst,
-+				     const u16 *chars, size_t cnt)
-+{
-+	u16 charmask = hi_font ? 0x1ff : 0xff;
-+	u32 idx = font->width >> 3;
-+	u8 *src;
-+
-+	while (cnt--) {
-+		src = font->data + ((*chars++) & charmask) * cellsize;
-+
-+		if (attribute) {
-+			fbdraw_update_attr(buf, src, attribute, font);
-+			src = buf;
-+		}
-+
-+		if (likely(idx == 1))
-+			__fb_pad_aligned_buffer(dst, d_pitch, src, idx,
-+						image->height);
-+		else
-+			fb_pad_aligned_buffer(dst, d_pitch, src, idx,
-+					      image->height);
-+
-+		dst += s_pitch;
-+	}
-+
-+	info->fbops->fb_imageblit(info, image);
-+}
-+
-+static inline void bit_putcs_unaligned(struct fb_info *info, bool hi_font,
-+				       struct console_font *font, u32 attribute,
-+				       u32 d_pitch, u32 s_pitch, u32 cellsize,
-+				       struct fb_image *image, u8 *buf, u8 *dst,
-+				       const u16 *chars, size_t cnt)
-+{
-+	u16 charmask = hi_font ? 0x1ff : 0xff;
-+	u32 shift_low = 0, mod = font->width % 8;
-+	u32 shift_high = 8;
-+	u32 idx = font->width >> 3;
-+	u8 *src;
-+
-+	while (cnt--) {
-+		src = font->data + ((*chars++) & charmask) * cellsize;
-+
-+		if (attribute) {
-+			fbdraw_update_attr(buf, src, attribute, font);
-+			src = buf;
-+		}
-+
-+		fb_pad_unaligned_buffer(dst, d_pitch, src, idx,
-+					image->height, shift_high,
-+					shift_low, mod);
-+		shift_low += mod;
-+		dst += (shift_low >= 8) ? s_pitch : s_pitch - 1;
-+		shift_low &= 7;
-+		shift_high = 8 - shift_low;
-+	}
-+
-+	info->fbops->fb_imageblit(info, image);
-+}
-+
-+void fbdraw_font(struct fb_info *info, struct console_font *font, bool hi_font,
-+		 unsigned int xpos, unsigned int ypos, int fg, int bg,
-+		 u32 attribute, const u16 *chars, size_t count)
-+{
-+	struct fb_image image;
-+	u32 width = DIV_ROUND_UP(font->width, 8);
-+	u32 cellsize = width * font->height;
-+	u32 maxcnt = info->pixmap.size / cellsize;
-+	u32 scan_align = info->pixmap.scan_align - 1;
-+	u32 buf_align = info->pixmap.buf_align - 1;
-+	u32 mod = font->width % 8, cnt, pitch, size;
-+	u8 *dst, *buf = NULL;
-+
-+	image.fg_color = fg;
-+	image.bg_color = bg;
-+	image.dx = xpos * font->width;
-+	image.dy = ypos * font->height;
-+	image.height = font->height;
-+	image.depth = 1;
-+
-+	if (attribute) {
-+		buf = kmalloc(cellsize, GFP_KERNEL);
-+		if (!buf)
-+			return;
-+	}
-+
-+	while (count) {
-+		if (count > maxcnt)
-+			cnt = maxcnt;
-+		else
-+			cnt = count;
-+
-+		image.width = font->width * cnt;
-+		pitch = DIV_ROUND_UP(image.width, 8) + scan_align;
-+		pitch &= ~scan_align;
-+		size = pitch * image.height + buf_align;
-+		size &= ~buf_align;
-+		dst = fb_get_buffer_offset(info, &info->pixmap, size);
-+		image.data = dst;
-+
-+		if (!mod)
-+			bit_putcs_aligned(info, hi_font, font, attribute,
-+					  pitch, width, cellsize, &image, buf,
-+					  dst, chars, cnt);
-+		else
-+			bit_putcs_unaligned(info, hi_font, font, attribute,
-+					    pitch, width, cellsize, &image, buf,
-+					    dst, chars, cnt);
-+
-+		image.dx += cnt * font->width;
-+		count -= cnt;
-+		chars += cnt;
-+	}
-+
-+	/* buf is always NULL except when in monochrome mode, so in this case
-+	   it's a gain to check buf against NULL even though kfree() handles
-+	   NULL pointers just fine */
-+	if (unlikely(buf))
-+		kfree(buf);
-+}
-+EXPORT_SYMBOL_GPL(fbdraw_font);
-+
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
- MODULE_DESCRIPTION("Framebuffer helpers for image draw-operations");
-diff --git a/drivers/video/console/fbdraw.h b/drivers/video/console/fbdraw.h
-index 77edd7f..b9f1ffa 100644
---- a/drivers/video/console/fbdraw.h
-+++ b/drivers/video/console/fbdraw.h
-@@ -23,4 +23,8 @@
- void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
- 			struct console_font *font);
- 
-+void fbdraw_font(struct fb_info *info, struct console_font *font, bool hi_font,
-+		 unsigned int xpos, unsigned int ypos, int fg, int bg,
-+		 u32 attribute, const u16 *chars, size_t count);
-+
- #endif /* _VIDEO_FBDRAW_H */
 -- 
 1.7.11.4
 
