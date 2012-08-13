@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab2HMR4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:56:07 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:53418
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750861Ab2HMR4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:56:05 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 01/18] Drivers: hv: vmbus: Use the standard format string to format GUIDs
-Date: Mon, 13 Aug 2012 10:06:50 -0700
-Message-Id: <1344877627-21779-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1344877584-21738-1-git-send-email-kys@microsoft.com>
-References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+	id S1752161Ab2HMSAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:00:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54237 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab2HMSAW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 14:00:22 -0400
+Date: Mon, 13 Aug 2012 11:00:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] workqueue: change value of lcpu in
+ queue_delayed_work_on()
+Message-ID: <20120813180017.GJ9180@google.com>
+References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
+ <1344874672-6257-2-git-send-email-js1304@gmail.com>
+ <20120813163219.GA9180@google.com>
+ <CAAmzW4NfPAVQnmD0vG71Ahz_=gmV7CQBNABpnEHFU7YBsYJOyQ@mail.gmail.com>
+ <20120813170303.GF9180@google.com>
+ <CAAmzW4Nfzq6i-KHky2qb1Qzgg1psVVEAME_mkzLfUWYGBXjH_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4Nfzq6i-KHky2qb1Qzgg1psVVEAME_mkzLfUWYGBXjH_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Format GUIDS as per MSFT standard. This makes interacting with MSFT
-tool stack easier.
+Hello,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: Olaf Hering <olaf@aepfle.de>
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/hv/vmbus_drv.c |   38 ++------------------------------------
- 1 files changed, 2 insertions(+), 36 deletions(-)
+On Tue, Aug 14, 2012 at 02:43:28AM +0900, JoonSoo Kim wrote:
+> >> And, do u mean  @cpu is WORK_CPU_UNBOUND?
+> >
+> > @cpu could be WORK_CPU_UNBOUND at that point.  The timer will be added
+> > to local CPU but @work->data would be pointing to WORK_CPU_UNBOUND,
+> > again triggering the condition.  Given that @cpu being
+> > WORK_CPU_UNBOUND is far more common than an actual CPU number, the
+> > patch would actually increase spurious nrt lookups.  The right thing
+> > to do is probably setting cpu to raw_smp_processor_id() beforehand.
+> 
+> I got your point.
+> Thanks for kind illustration.
+> 
+> Following is a alternative implementation for this.
+> I thinks this is too rare case, so it doesn't help in any real workload.
+> But how do you thinks?
+> 
+> @@ -1156,7 +1156,9 @@ int queue_delayed_work_on(int cpu, struct
+> workqueue_struct *wq,
+>                 if (!(wq->flags & WQ_UNBOUND)) {
+>                         struct global_cwq *gcwq = get_work_gcwq(work);
+> 
+> -                       if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
+> +                       if (!gcwq)
+> +                               lcpu = cpu;
+> +                       else if (gcwq->cpu != WORK_CPU_UNBOUND)
+>                                 lcpu = gcwq->cpu;
+>                         else
+>                                 lcpu = raw_smp_processor_id();
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 4748086..b76e8b3 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -146,43 +146,9 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
- 	get_channel_info(hv_dev, device_info);
- 
- 	if (!strcmp(dev_attr->attr.name, "class_id")) {
--		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
--			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
--			       device_info->chn_type.b[3],
--			       device_info->chn_type.b[2],
--			       device_info->chn_type.b[1],
--			       device_info->chn_type.b[0],
--			       device_info->chn_type.b[5],
--			       device_info->chn_type.b[4],
--			       device_info->chn_type.b[7],
--			       device_info->chn_type.b[6],
--			       device_info->chn_type.b[8],
--			       device_info->chn_type.b[9],
--			       device_info->chn_type.b[10],
--			       device_info->chn_type.b[11],
--			       device_info->chn_type.b[12],
--			       device_info->chn_type.b[13],
--			       device_info->chn_type.b[14],
--			       device_info->chn_type.b[15]);
-+		ret = sprintf(buf, "{%pUl}\n", device_info->chn_type.b);
- 	} else if (!strcmp(dev_attr->attr.name, "device_id")) {
--		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
--			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
--			       device_info->chn_instance.b[3],
--			       device_info->chn_instance.b[2],
--			       device_info->chn_instance.b[1],
--			       device_info->chn_instance.b[0],
--			       device_info->chn_instance.b[5],
--			       device_info->chn_instance.b[4],
--			       device_info->chn_instance.b[7],
--			       device_info->chn_instance.b[6],
--			       device_info->chn_instance.b[8],
--			       device_info->chn_instance.b[9],
--			       device_info->chn_instance.b[10],
--			       device_info->chn_instance.b[11],
--			       device_info->chn_instance.b[12],
--			       device_info->chn_instance.b[13],
--			       device_info->chn_instance.b[14],
--			       device_info->chn_instance.b[15]);
-+		ret = sprintf(buf, "{%pUl}\n", device_info->chn_instance.b);
- 	} else if (!strcmp(dev_attr->attr.name, "modalias")) {
- 		print_alias_name(hv_dev, alias_name);
- 		ret = sprintf(buf, "vmbus:%s\n", alias_name);
+Why not just do
+
+	if (cpu == WORK_CPU_UNBOUND)
+		cpu = raw_smp_processor_id();
+
+	if (!(wq->flags...) {
+		...
+		if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
+			lcpu = gcwq->cpu;
+		else
+			lcpu = cpu;
+	}
+	...
+
+	add_timer_on(timer, cpu);
+
+Also, can you please base the patches on top of the following git
+branch?
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
