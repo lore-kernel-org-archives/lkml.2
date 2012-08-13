@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab2HMUZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:25:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23644 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab2HMUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:25:48 -0400
-Date: Mon, 13 Aug 2012 17:24:52 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric Blake <eblake@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Gleb Natapov <gleb@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, Jan Kiszka <jan.kiszka@siemens.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is
- panicked
-Message-ID: <20120813202452.GA10321@amt.cnet>
-References: <5021D235.4050800@cn.fujitsu.com>
- <20120813182132.GB25268@amt.cnet>
- <50295A17.8010404@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50295A17.8010404@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755064Ab2HMUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:25:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab2HMUZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 16:25:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 78/82] iwlwifi: disable greenfield transmissions as a workaround
+Date: Mon, 13 Aug 2012 13:19:54 -0700
+Message-Id: <20120813201753.279520441@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 01:48:39PM -0600, Eric Blake wrote:
-> On 08/13/2012 12:21 PM, Marcelo Tosatti wrote:
-> > On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
-> >> We can know the guest is panicked when the guest runs on xen.
-> >> But we do not have such feature on kvm.
-> >>
-> >> Another purpose of this feature is: management app(for example:
-> >> libvirt) can do auto dump when the guest is panicked. If management
-> >> app does not do auto dump, the guest's user can do dump by hand if
-> >> he sees the guest is panicked.
-> >>
-> >> We have three solutions to implement this feature:
-> >> 1. use vmcall
-> >> 2. use I/O port
-> >> 3. use virtio-serial.
-> >>
-> >> We have decided to avoid touching hypervisor. The reason why I choose
-> >> choose the I/O port is:
-> >> 1. it is easier to implememt
-> >> 2. it does not depend any virtual device
-> >> 3. it can work when starting the kernel
-> > 
-> > How about searching for the "Kernel panic - not syncing" string 
-> > in the guests serial output? Say libvirtd could take an action upon
-> > that?
-> > 
-> > Advantages:
-> > - It works for all architectures.
-> > - It does not depend on any virtual device.
-> 
-> But it _does_ depend on a serial console,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Which already exists and is supported.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
->  and furthermore requires
-> libvirt to tee the serial console (right now, libvirt can treat the
-> console as an opaque pass-through to the end user, but if you expect
-> libvirt to parse the serial console for a particular string, you've lost
-> some efficiency).
-> 
-> > - It works as early as serial console output does (panics before
-> > that should be rare).
-> > - It allows you to see why the guest panicked.
-> 
-> I think your arguments for a serial console have already been made and
-> refuted in earlier versions of this patch series, which is WHY this
-> series is still applicable.
+------------------
 
-Refuted why, exactly? Efficiency to parse serial console output in
-libvirt should not be a major issue surely?
+From: Johannes Berg <johannes.berg@intel.com>
 
-Either way:
+commit 50e2a30cf6fcaeb2d27360ba614dd169a10041c5 upstream.
 
-The device should be arch independent, as "panic" is not specific 
-to a particular architecture. For example virtio which would also work
-on S390.
+There's a bug that causes the rate scaling to get stuck
+when it has to use single-stream rates with a peer that
+can do GF and SGI; the two are incompatible so we can't
+use them together, but that causes the algorithm to not
+work at all, it always rejects updates.
 
-Custom IO port == virtual device, so that depends on virtual
-device already.
+Disable greenfield for now to prevent that problem.
+
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Tested-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -709,11 +709,14 @@ static int rs_toggle_antenna(u32 valid_a
+  */
+ static bool rs_use_green(struct ieee80211_sta *sta)
+ {
+-	struct iwl_station_priv *sta_priv = (void *)sta->drv_priv;
+-	struct iwl_rxon_context *ctx = sta_priv->ctx;
+-
+-	return (sta->ht_cap.cap & IEEE80211_HT_CAP_GRN_FLD) &&
+-		!(ctx->ht.non_gf_sta_present);
++	/*
++	 * There's a bug somewhere in this code that causes the
++	 * scaling to get stuck because GF+SGI can't be combined
++	 * in SISO rates. Until we find that bug, disable GF, it
++	 * has only limited benefit and we still interoperate with
++	 * GF APs since we can always receive GF transmissions.
++	 */
++	return false;
+ }
+ 
+ /**
+
 
