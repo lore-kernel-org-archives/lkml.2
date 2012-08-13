@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab2HMVeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:34:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11816 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752414Ab2HMVeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:34:03 -0400
-Message-ID: <1344893641.4683.146.camel@ul30vt.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 13 Aug 2012 15:34:01 -0600
-In-Reply-To: <50276B11.8020708@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	  <20120724204320.21081.32333.stgit@bling.home>
-	 <501F99A8.9050006@redhat.com>  <501F9E99.9010109@redhat.com>
-	 <501F9F27.708@redhat.com> <1344540375.3441.228.camel@ul30vt.home>
-	 <50276B11.8020708@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753489Ab2HMVgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:36:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59109 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab2HMVgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:36:09 -0400
+Date: Mon, 13 Aug 2012 22:36:07 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+Subject: Re: [PATCH 2/2] apple_gmux: Add support for newer hardware
+Message-ID: <20120813213607.GB27838@srcf.ucam.org>
+References: <1344889232-3907-1-git-send-email-mjg@redhat.com>
+ <1344889232-3907-2-git-send-email-mjg@redhat.com>
+ <20120813210444.GJ24088@thinkpad-t410>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120813210444.GJ24088@thinkpad-t410>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-12 at 11:36 +0300, Avi Kivity wrote:
-> On 08/09/2012 10:26 PM, Alex Williamson wrote:
-> > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
-> >> On 08/06/2012 01:38 PM, Avi Kivity wrote:
-> >> 
-> >> > Regarding the implementation, instead of a linked list, would an array
-> >> > of counters parallel to the bitmap make it simpler?
-> >> 
-> >> Or even, replace the bitmap with an array of counters.
-> > 
-> > I'm not sure a counter array is what we're really after.  That gives us
-> > reference counting for the irq source IDs, but not the key->gsi lookup.
+On Mon, Aug 13, 2012 at 04:04:44PM -0500, Seth Forshee wrote:
+> > +
+> > +	while (i && (gwr & 0x01)) {
+> > +		inb(gmux_data->iostart + GMUX_PORT_READ);
+> > +		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
+> > +		msleep(100);
 > 
-> You can look up the gsi while registering the eoifd, so it's accessible
-> as eoifd->gsi instead of eoifd->source->gsi.  The irqfd can go away
-> while the eoifd is still active, but is this a problem?
+> Wouldn't it make more sense if the msleep was before reading the port
+> again? Otherwise there's no substantial dely between the first and
+> second times we read it.
 
-In my opinion, no, but Michael disagrees.
+Mm. I'm doing the same as the ACPI implementation - it may be that 
+reading GMUX_PORT_READ triggers the update of GMUX_PORT_WRITE? Hard to 
+know without the docs.
 
-> > It also highlights another issue, that we have a limited set of source
-> > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
-> > for the shared userspace ID and another for the PIT.  How happy are we
-> > going to be with a limit of 62 level interrupts in use at one time?
-> 
-> When we start being unhappy we can increase that number.  On the other
-> hand more locks and lists makes me unhappy now.
-
-Yep, good point.  My latest version removes the source ID object lock
-and list (and objects).  I still have a lock and list for the ack
-notification, but it's hard not to unless we combine them into one
-mega-irqfd ioctl as Michael suggests.
-
-> > It's arguably a reasonable number since the most virtualization friendly
-> > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
-> > also very wasteful allocating an entire source ID for a single GSI
-> > within that source ID.  PCI supports interrupts A, B, C, and D, which,
-> > in the most optimal config, each go to different GSIs.  So we could
-> > theoretically be more efficient in our use and allocation of irq source
-> > IDs if we tracked use by the source ID, gsi pair.
-> 
-> There are, in one userspace, just three gsis available for PCI links, so
-> you're compressing the source id space by 3.
-
-I imagine there's a way to put each PCI interrupt pin on a GSI, but
-still only 4, not a great expansion of source ID space.  I like
-Michael's idea of re-using source IDs if we run out better.
-
-> > That probably makes it less practical to replace anything at the top
-> > level with a counter array.  The key that we pass back is currently the
-> > actual source ID, but we don't specify what it is, so we could split it
-> > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
-> > an idr entry.
-> 
-> We can fix those kinds of problems by adding another layer of
-> indirection.  But I doubt they will be needed.  I don't see people
-> assigning 60 legacy devices to one guest.
-
-Yep, we can ignore it for now and put it in the hands of userspace to
-re-use IDs if needed.
-
-> > Michael, would the interface be more acceptable to you if we added
-> > separate ioctls to allocate and free some representation of an irq
-> > source ID, gsi pair?  For instance, an ioctl might return an idr entry
-> > for an irq source ID/gsi object which would then be passed as a
-> > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
-> > representing the source id/gsi isn't magically freed on it's own.  This
-> > would also allow us to deassign/close one end and reconfigure it later.
-> > Thanks,
-> 
-> Another option is to push the responsibility for allocating IDs for the
-> association to userspace.  Let userspace both create the irqfd and the
-> eoifd with the same ID, the kernel matches them at registration time and
-> copies the gsi/sourceid from the first to the second eventfd.
-
-Aside from the copying gsi/sourceid bit, you've just described my latest
-attempt at this series.  Specifying both a sourceid and gsi also allows
-userspace to make better use of the sourceid address space (use more
-than one gsi if userspace wants the complexity of managing them).
-Thanks,
-
-Alex
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
