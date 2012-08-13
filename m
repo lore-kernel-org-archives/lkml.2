@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab2HMSqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:46:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45001 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab2HMShm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:42 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
-        David Hansen <dave@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>,
-        Matt Hellsley <matthltc@us.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 33/38] perf symbols: Set symtab_type in dso__load_sym
-Date: Mon, 13 Aug 2012 15:37:14 -0300
-Message-Id: <1344883039-13495-34-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
-References: <1344883039-13495-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752161Ab2HMS4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:56:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:49509 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751558Ab2HMS4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 14:56:54 -0400
+Message-ID: <50294DF0.8040206@goop.org>
+Date: Mon, 13 Aug 2012 11:56:48 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad@darnok.org,
+        Ian.Campbell@eu.citrix.com, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] netvm: check for page == NULL when propogating the skb->pfmemalloc
+ flag
+References: <20120807085554.GF29814@suse.de> <20120808.155046.820543563969484712.davem@davemloft.net> <20120813102604.GC4177@suse.de> <20120813104745.GE4177@suse.de>
+In-Reply-To: <20120813104745.GE4177@suse.de>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
+On 08/13/2012 03:47 AM, Mel Gorman wrote:
+> Resending to correct Jeremy's address.
+>
+> On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
+>> From: Mel Gorman <mgorman@suse.de>
+>> Date: Tue, 7 Aug 2012 09:55:55 +0100
+>>
+>>> Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+>>> for the following bug triggered by a xen network driver
+>>  ...
+>>> The problem is that the xenfront driver is passing a NULL page to
+>>> __skb_fill_page_desc() which was unexpected. This patch checks that
+>>> there is a page before dereferencing.
+>>>
+>>> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>> That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
+>> It's the only driver passing NULL here.
+>>
+>> That whole song and dance figuring out what to do with the head
+>> fragment page, depending upon whether the length is greater than the
+>> RX_COPY_THRESHOLD, is completely unnecessary.
+>>
+>> Just use something like a call to __pskb_pull_tail(skb, len) and all
+>> that other crap around that area can simply be deleted.
+> I looked at this for a while but I did not see how __pskb_pull_tail()
+> could be used sensibly but I'm simily not familiar with writing network
+> device drivers or Xen.
+>
+> This messing with RX_COPY_THRESHOLD seems to be related to how the frontend
+> and backend communicate (maybe some fixed limitation of the xenbus). The
+> existing code looks like it is trying to take the fragments received and
+> pass them straight to the backend without copying by passing the fragments
+> to the backend without copying. I worry that if I try converting this to
+> __pskb_pull_tail() that it would either hit the limitation of xenbus or
+> introduce copying where it is not wanted.
+>
+> I'm going to have to punt this to Jeremy and the other Xen folk as I'm not
+> sure what the original intention was and I don't have a Xen setup anywhere
+> to test any patch. Jeremy, xen folk? 
 
-In certain cases, dso__load requires dso->symbol_type to be set prior to
-calling it. With the introduction of symsrc*, the symtab_type is now
-stored in a symsrc which is then passed to dso__load_sym().
+It's been a while since I've looked at that stuff, but as I remember,
+the issue is that since the packet ring memory is shared with another
+domain which may be untrustworthy, we want to make copies of the headers
+before making any decisions based on them so that the other domain can't
+change them after header processing but before they're actually sent. 
+(The packet payload is considered less important, but of course the same
+issue applies if you're using some kind of content-aware packet filter.)
 
-Change dso__load_sym() to use the symtab_type from them symsrc (setting
-dso->symtab_type as well).
+So that's the rationale for always copying RX_COPY_THRESHOLD, even if
+the packet is larger than that amount.  As far as I know, changing this
+behaviour wouldn't break the ring protocol, but it does introduce a
+potential security issue.
 
-Setup for later patch
-
-"perf symbols: Use both runtime and debug images"
-
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: David Hansen <dave@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Hellsley <matthltc@us.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-13-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol-elf.c |    2 ++
- tools/perf/util/symbol.c     |   13 +++++++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 6974b2a..3a9c38a 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -645,6 +645,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 	int nr = 0;
- 	size_t opdidx = 0;
- 
-+	dso->symtab_type = ss->type;
-+
- 	elf = ss->elf;
- 	ehdr = ss->ehdr;
- 	sec = ss->symtab;
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index afec3f0..2b3495a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1079,14 +1079,14 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- restart:
- 	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
- 
--		dso->symtab_type = binary_type_symtab[i];
-+		enum dso_binary_type symtab_type = binary_type_symtab[i];
- 
--		if (dso__binary_type_file(dso, dso->symtab_type,
-+		if (dso__binary_type_file(dso, symtab_type,
- 					  root_dir, name, PATH_MAX))
- 			continue;
- 
- 		/* Name is now the name of the next image to try */
--		if (symsrc__init(&ss, dso, name, dso->symtab_type) < 0)
-+		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
- 			continue;
- 
- 		ret = dso__load_sym(dso, map, &ss, filter, 0,
-@@ -1361,16 +1361,17 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	int err = -1;
- 	struct symsrc ss;
- 	char symfs_vmlinux[PATH_MAX];
-+	enum dso_binary_type symtab_type;
- 
- 	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
- 		 symbol_conf.symfs, vmlinux);
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+		symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
- 	else
--		dso->symtab_type = DSO_BINARY_TYPE__VMLINUX;
-+		symtab_type = DSO_BINARY_TYPE__VMLINUX;
- 
--	if (symsrc__init(&ss, dso, symfs_vmlinux, dso->symtab_type))
-+	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
- 		return -1;
- 
- 	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
--- 
-1.7.1
+    J
 
