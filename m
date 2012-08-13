@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2HMW1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:27:18 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755454Ab2HMWRC (ORCPT
+	id S1755454Ab2HMW1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:27:55 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43626 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2HMWQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:17:02 -0400
+	Mon, 13 Aug 2012 18:16:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 31/65] random: use lockless techniques in the interrupt path
-Date: Mon, 13 Aug 2012 15:14:15 -0700
-Message-Id: <20120813221417.702230387@linuxfoundation.org>
+        Tim Bentley <Tim.Bentley@Gmail.com>,
+        Felix Bitterli <felixb@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 27/65] ath9k: Add PID/VID support for AR1111
+Date: Mon, 13 Aug 2012 15:14:11 -0700
+Message-Id: <20120813221417.350704797@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,243 +32,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit 902c098a3663de3fa18639efbb71b6080f0bcd3c upstream.
+commit d4e5979c0da95791aa717c18e162540c7a596360 upstream.
 
-The real-time Linux folks don't like add_interrupt_randomness() taking
-a spinlock since it is called in the low-level interrupt routine.
-This also allows us to reduce the overhead in the fast path, for the
-random driver, which is the interrupt collection path.
+AR1111 is same as AR9485. The h/w
+difference between them is quite insignificant,
+Felix suggests only very few baseband features
+may not be available in AR1111. The h/w code for
+AR9485 is already present, so AR1111 should
+work fine with the addition of its PID/VID.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Tim Bentley <Tim.Bentley@Gmail.com>
+Cc: Felix Bitterli <felixb@qca.qualcomm.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Tested-by: Tim Bentley <Tim.Bentley@Gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c |   78 +++++++++++++++++++++++++-------------------------
- 1 file changed, 39 insertions(+), 39 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c  |    1 +
+ drivers/net/wireless/ath/ath9k/hw.h  |    1 +
+ drivers/net/wireless/ath/ath9k/pci.c |    1 +
+ 3 files changed, 3 insertions(+)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -418,9 +418,9 @@ struct entropy_store {
- 	/* read-write data: */
- 	spinlock_t lock;
- 	unsigned add_ptr;
-+	unsigned input_rotate;
- 	int entropy_count;
- 	int entropy_total;
--	int input_rotate;
- 	unsigned int initialized:1;
- 	__u8 last_data[EXTRACT_SIZE];
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -676,6 +676,7 @@ int ath9k_hw_init(struct ath_hw *ah)
+ 	case AR9300_DEVID_AR9340:
+ 	case AR9300_DEVID_AR9580:
+ 	case AR9300_DEVID_AR9462:
++	case AR9485_DEVID_AR1111:
+ 		break;
+ 	default:
+ 		if (common->bus_ops->ath_bus_type == ATH_USB)
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -48,6 +48,7 @@
+ #define AR9300_DEVID_AR9580	0x0033
+ #define AR9300_DEVID_AR9462	0x0034
+ #define AR9300_DEVID_AR9330	0x0035
++#define AR9485_DEVID_AR1111	0x0037
+ 
+ #define AR5416_AR9100_DEVID	0x000b
+ 
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -35,6 +35,7 @@ static DEFINE_PCI_DEVICE_TABLE(ath_pci_i
+ 	{ PCI_VDEVICE(ATHEROS, 0x0032) }, /* PCI-E  AR9485 */
+ 	{ PCI_VDEVICE(ATHEROS, 0x0033) }, /* PCI-E  AR9580 */
+ 	{ PCI_VDEVICE(ATHEROS, 0x0034) }, /* PCI-E  AR9462 */
++	{ PCI_VDEVICE(ATHEROS, 0x0037) }, /* PCI-E  AR1111/AR9485 */
+ 	{ 0 }
  };
-@@ -468,26 +468,24 @@ static __u32 const twist_table[8] = {
-  * it's cheap to do so and helps slightly in the expected case where
-  * the entropy is concentrated in the low-order bits.
-  */
--static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
--				   int nbytes, __u8 out[64])
-+static void __mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
- 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
- 	int input_rotate;
- 	int wordmask = r->poolinfo->poolwords - 1;
- 	const char *bytes = in;
- 	__u32 w;
--	unsigned long flags;
- 
--	/* Taps are constant, so we can load them without holding r->lock.  */
- 	tap1 = r->poolinfo->tap1;
- 	tap2 = r->poolinfo->tap2;
- 	tap3 = r->poolinfo->tap3;
- 	tap4 = r->poolinfo->tap4;
- 	tap5 = r->poolinfo->tap5;
- 
--	spin_lock_irqsave(&r->lock, flags);
--	input_rotate = r->input_rotate;
--	i = r->add_ptr;
-+	smp_rmb();
-+	input_rotate = ACCESS_ONCE(r->input_rotate);
-+	i = ACCESS_ONCE(r->add_ptr);
- 
- 	/* mix one byte at a time to simplify size handling and churn faster */
- 	while (nbytes--) {
-@@ -514,19 +512,23 @@ static void mix_pool_bytes_extract(struc
- 		input_rotate += i ? 7 : 14;
- 	}
- 
--	r->input_rotate = input_rotate;
--	r->add_ptr = i;
-+	ACCESS_ONCE(r->input_rotate) = input_rotate;
-+	ACCESS_ONCE(r->add_ptr) = i;
-+	smp_wmb();
- 
- 	if (out)
- 		for (j = 0; j < 16; j++)
- 			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
--
--	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
--static void mix_pool_bytes(struct entropy_store *r, const void *in, int bytes)
-+static void mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
--       mix_pool_bytes_extract(r, in, bytes, NULL);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&r->lock, flags);
-+	__mix_pool_bytes(r, in, nbytes, out);
-+	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- struct fast_pool {
-@@ -564,23 +566,22 @@ static void fast_mix(struct fast_pool *f
-  */
- static void credit_entropy_bits(struct entropy_store *r, int nbits)
- {
--	unsigned long flags;
--	int entropy_count;
-+	int entropy_count, orig;
- 
- 	if (!nbits)
- 		return;
- 
--	spin_lock_irqsave(&r->lock, flags);
--
- 	DEBUG_ENT("added %d entropy credits to %s\n", nbits, r->name);
--	entropy_count = r->entropy_count;
-+retry:
-+	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 	entropy_count += nbits;
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
- 	} else if (entropy_count > r->poolinfo->POOLBITS)
- 		entropy_count = r->poolinfo->POOLBITS;
--	r->entropy_count = entropy_count;
-+	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+		goto retry;
- 
- 	if (!r->initialized && nbits > 0) {
- 		r->entropy_total += nbits;
-@@ -593,7 +594,6 @@ static void credit_entropy_bits(struct e
- 		wake_up_interruptible(&random_read_wait);
- 		kill_fasync(&fasync, SIGIO, POLL_IN);
- 	}
--	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- /*********************************************************************
-@@ -680,7 +680,7 @@ static void add_timer_randomness(struct
- 		sample.cycles = get_cycles();
- 
- 	sample.num = num;
--	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
-+	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
- 	/*
- 	 * Calculate number of bits of randomness we probably added.
-@@ -764,7 +764,7 @@ void add_interrupt_randomness(int irq, i
- 	fast_pool->last = now;
- 
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
-+	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
-@@ -829,7 +829,7 @@ static void xfer_secondary_pool(struct e
- 
- 		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, tmp, bytes);
-+		mix_pool_bytes(r, tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
- }
-@@ -890,9 +890,11 @@ static void extract_buf(struct entropy_s
- 	int i;
- 	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
- 	__u8 extract[64];
-+	unsigned long flags;
- 
- 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
- 	sha_init(hash);
-+	spin_lock_irqsave(&r->lock, flags);
- 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
- 		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
- 
-@@ -905,7 +907,8 @@ static void extract_buf(struct entropy_s
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	mix_pool_bytes_extract(r, hash, sizeof(hash), extract);
-+	__mix_pool_bytes(r, hash, sizeof(hash), extract);
-+	spin_unlock_irqrestore(&r->lock, flags);
- 
- 	/*
- 	 * To avoid duplicates, we atomically extract a portion of the
-@@ -928,11 +931,10 @@ static void extract_buf(struct entropy_s
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
--			       size_t nbytes, int min, int reserved)
-+				 size_t nbytes, int min, int reserved)
- {
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
--	unsigned long flags;
- 
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
-@@ -941,6 +943,8 @@ static ssize_t extract_entropy(struct en
- 		extract_buf(r, tmp);
- 
- 		if (fips_enabled) {
-+			unsigned long flags;
-+
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -1034,22 +1038,18 @@ EXPORT_SYMBOL(get_random_bytes);
- static void init_std_data(struct entropy_store *r)
- {
- 	int i;
--	ktime_t now;
--	unsigned long flags;
-+	ktime_t now = ktime_get_real();
-+	unsigned long rv;
- 
--	spin_lock_irqsave(&r->lock, flags);
- 	r->entropy_count = 0;
- 	r->entropy_total = 0;
--	spin_unlock_irqrestore(&r->lock, flags);
--
--	now = ktime_get_real();
--	mix_pool_bytes(r, &now, sizeof(now));
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
--		if (!arch_get_random_long(&flags))
-+	mix_pool_bytes(r, &now, sizeof(now), NULL);
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+		if (!arch_get_random_long(&rv))
- 			break;
--		mix_pool_bytes(r, &flags, sizeof(flags));
-+		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
--	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
-+	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
- 
- static int rand_initialize(void)
-@@ -1186,7 +1186,7 @@ write_pool(struct entropy_store *r, cons
- 		count -= bytes;
- 		p += bytes;
- 
--		mix_pool_bytes(r, buf, bytes);
-+		mix_pool_bytes(r, buf, bytes, NULL);
- 		cond_resched();
- 	}
  
 
 
