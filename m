@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2HMWQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:16:34 -0400
+	id S1755418Ab2HMWQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:16:47 -0400
 Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab2HMWQ3 (ORCPT
+	with ESMTP id S1755391Ab2HMWQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:16:29 -0400
+	Mon, 13 Aug 2012 18:16:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Holler <holler@ahsoftware.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 23/65] video/smscufx: fix line counting in fb_write
-Date: Mon, 13 Aug 2012 15:14:07 -0700
-Message-Id: <20120813221417.008410909@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 26/65] mac80211: cancel mesh path timer
+Date: Mon, 13 Aug 2012 15:14:10 -0700
+Message-Id: <20120813221417.271970432@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -30,34 +29,30 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexander Holler <holler@ahsoftware.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 2fe2d9f47cfe1a3e66e7d087368b3d7155b04c15 upstream.
+commit dd4c9260e7f23f2e951cbfb2726e468c6d30306c upstream.
 
-Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-lines had an offset of -1. The result was that the last line on the display
-was never overwritten by writes to /dev/fbN.
+The mesh path timer needs to be canceled when
+leaving the mesh as otherwise it could fire
+after the interface has been removed already.
 
-The origin of this bug seems to have been udlfb.
-
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/smscufx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/mesh.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/video/smscufx.c
-+++ b/drivers/video/smscufx.c
-@@ -904,7 +904,7 @@ static ssize_t ufx_ops_write(struct fb_i
- 	result = fb_sys_write(info, buf, count, ppos);
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -595,6 +595,7 @@ void ieee80211_stop_mesh(struct ieee8021
  
- 	if (result > 0) {
--		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-+		int start = max((int)(offset / info->fix.line_length), 0);
- 		int lines = min((u32)((result / info->fix.line_length) + 1),
- 				(u32)info->var.yres);
- 
+ 	del_timer_sync(&sdata->u.mesh.housekeeping_timer);
+ 	del_timer_sync(&sdata->u.mesh.mesh_path_root_timer);
++	del_timer_sync(&sdata->u.mesh.mesh_path_timer);
+ 	/*
+ 	 * If the timer fired while we waited for it, it will have
+ 	 * requeued the work. Now the work will be running again
 
 
