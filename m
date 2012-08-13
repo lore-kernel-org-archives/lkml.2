@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2HMWDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:03:01 -0400
-Received: from exprod7og120.obsmtp.com ([64.18.2.18]:60149 "EHLO
-	exprod7og120.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab2HMWC6 (ORCPT
+	id S1754147Ab2HMWDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:03:09 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57384 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab2HMWDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:02:58 -0400
-Message-ID: <5029798A.5000605@genband.com>
-Date: Mon, 13 Aug 2012 16:02:50 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "J.Hwan Kim" <frog1120@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: allocation of contiguous memory in kernel mode
-References: <5023DB76.1030908@gmail.com>
-In-Reply-To: <5023DB76.1030908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Aug 2012 22:02:51.0197 (UTC) FILETIME=[61D8C6D0:01CD799F]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19112.001
-X-TM-AS-Result: No--12.743500-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 13 Aug 2012 18:03:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 02/44] SUNRPC: return negative value in case rpcbind client creation error
+Date: Mon, 13 Aug 2012 15:02:09 -0700
+Message-Id: <20120813220142.342626727@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
+References: <20120813220142.113186818@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 09:47 AM, J.Hwan Kim wrote:
-> Hi, everyone
->
-> I wish to alloc physically contiguous memory in kernel mode.
-> I used the __get_free_pages(gfp_mask, order) function,
-> but it fails occasionary.
-> I guess it is caused by memory fragmentation.
-> My code is kernel driver module which cannot use
-> bootmem allocation and its platform is x86_64.
-> My server desktop has 20GB memory.
-> I wish to know the method to allocate physically
-> contiguous memory not failing by fragmentation.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-There is no easy answer.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-The most portable option is to change the requirements so that you don't 
-need physically contiguous memory.  This is what most network devices 
-did to handle jumbo frames.
+------------------
 
-Can you build a new kernel with your code added instead of using a module?
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-What about booting with artificially limited physical memory (on the 
-kernel commandline) and then have the module explictly map in memory 
-from above the usual memory limit?
+commit caea33da898e4e14f0ba58173e3b7689981d2c0b upstream.
 
-Chris
+Without this patch kernel will panic on LockD start, because lockd_up() checks
+lockd_up_net() result for negative value.
+>From my pow it's better to return negative value from rpcbind routines instead
+of replacing all such checks like in lockd_up().
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/sunrpc/rpcb_clnt.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -193,7 +193,7 @@ static int rpcb_create_local_unix(void)
+ 	if (IS_ERR(clnt)) {
+ 		dprintk("RPC:       failed to create AF_LOCAL rpcbind "
+ 				"client (errno %ld).\n", PTR_ERR(clnt));
+-		result = -PTR_ERR(clnt);
++		result = PTR_ERR(clnt);
+ 		goto out;
+ 	}
+ 
+@@ -242,7 +242,7 @@ static int rpcb_create_local_net(void)
+ 	if (IS_ERR(clnt)) {
+ 		dprintk("RPC:       failed to create local rpcbind "
+ 				"client (errno %ld).\n", PTR_ERR(clnt));
+-		result = -PTR_ERR(clnt);
++		result = PTR_ERR(clnt);
+ 		goto out;
+ 	}
+ 
+
+
