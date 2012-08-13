@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2HMHB1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 03:01:27 -0400
-Received: from mail.gw90.de ([188.40.100.199]:58910 "EHLO mail.gw90.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab2HMHBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 03:01:25 -0400
-Message-ID: <1344841259.4126.4.camel@mattotaupa>
-Subject: Re: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Huacai Chen <chenhuacai@gmail.com>
-Cc: David Airlie <airlied@linux.ie>,
-        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Hongliang Tao <taohl@lemote.com>, Fuxin Zhang <zhangfx@lemote.com>,
-        Huacai Chen <chenhc@lemote.com>, Hua Yan <yanh@lemote.com>
-Date: Mon, 13 Aug 2012 09:00:59 +0200
-In-Reply-To: <1344823753-28780-1-git-send-email-chenhc@lemote.com>
-References: <1344823753-28780-1-git-send-email-chenhc@lemote.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-B8nkIRNeI7JGGg9GZ2WX"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
+	id S1752690Ab2HMHIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 03:08:44 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:54160 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751250Ab2HMHIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 03:08:43 -0400
+X-Sasl-enc: 75AczJedSVvWSBAXTnk6J3HJUVvcuPc2Jt1SmsxpGJpA 1344841722
+Message-ID: <5028A7F9.4040304@ladisch.de>
+Date: Mon, 13 Aug 2012 09:08:41 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] firewire: core: feed /dev/random with devices' GUIDs
+References: <5027CFA7.9000100@ladisch.de> <20120812235856.65e2c7d5@stein>
+In-Reply-To: <20120812235856.65e2c7d5@stein>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stefan Richter wrote:
+> On Aug 12 Clemens Ladisch wrote:
+>> Send the GUIDs of newly registered controllers and devices
+>> to the /dev/random driver to help seed its pools.
+>
+> This looks good to me, almost.  Isn't the call in fw_card_add redundant?
+> The local node's fw_device instance initializer feeds the same GUID,
+> although a little bit later.
 
---=-B8nkIRNeI7JGGg9GZ2WX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Oops, indeed.  Just drop that hunk:
 
-Dear Chen,
+--8<---------------------------------------------------------------->8--
+firewire: core: feed /dev/random with devices' GUIDs
 
+Send the GUIDs of newly registered controllers and devices
+to the /dev/random driver to help seed its pools.
 
-thanks for your patch.
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ drivers/firewire/core-device.c |    3 +++
+ 1 file changed, 3 insertions(+), 0 deletions(-)
 
-Firstly, is Chen your first or last name? If it is your first name, your
-=46rom address should be switched.
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -32,6 +32,7 @@
+ #include <linux/mod_devicetable.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
++#include <linux/random.h>
+ #include <linux/rwsem.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+@@ -1066,6 +1067,8 @@ static void fw_device_init(struct work_struct *work)
+ 		device->config_rom_retries = 0;
 
-Am Montag, den 13.08.2012, 10:09 +0800 schrieb Huacai Chen:
-> When SWIOTLB is configured, if without this patch kernel compilation
-> fails.
+ 		set_broadcast_channel(device, device->generation);
++
++		add_device_randomness(&device->config_rom[3], 8);
+ 	}
 
-Secondly, could you please always paste part of the error message into
-the commit message so that people hitting this problem and searching for
-it on the WWW have a higher chance finding your patch.
-
-Thirdly, do you know why this was not caught beforehand and compilation
-worked before?
-
-> Signed-off-by: Huacai Chen <chenhc@lemote.com>
-
-Lastly, the addresses in your From line and Signed-off-by line disagree.
-You can easily fix that, by adding
-
-    From: Huacai Chen <chenhc@lemote.com>
-
-to the beginning of your message.
-
-> Signed-off-by: Hongliang Tao <taohl@lemote.com>
-> Signed-off-by: Hua Yan <yanh@lemote.com>
-> Cc: dri-devel@lists.freedesktop.org
-> ---
->  drivers/gpu/drm/radeon/radeon_ttm.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon=
-/radeon_ttm.c
-> index 5b71c71..fc3ac22 100644
-> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
-> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-> @@ -41,6 +41,10 @@
->  #include "radeon_reg.h"
->  #include "radeon.h"
-> =20
-> +#ifdef CONFIG_SWIOTLB
-> +#include <linux/swiotlb.h>
-> +#endif
-> +
->  #define DRM_FILE_PAGE_OFFSET (0x100000000ULL >> PAGE_SHIFT)
-> =20
->  static int radeon_ttm_debugfs_init(struct radeon_device *rdev);
-
-With the clarification above
-
-    Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-
-can be added to your patch.
-
-
-Thanks,
-
-Paul
-
---=-B8nkIRNeI7JGGg9GZ2WX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlAopisACgkQPX1aK2wOHVinowCeNpCi0RKLCCdCgrKFB/DOLj3e
-QkcAmgM3vHRg5EXNhGPMIlFIQIJ1Un0h
-=Yn/n
------END PGP SIGNATURE-----
-
---=-B8nkIRNeI7JGGg9GZ2WX--
-
+ 	/*
