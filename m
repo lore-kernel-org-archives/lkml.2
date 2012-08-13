@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab2HMSo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:44:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45053 "EHLO
+	id S1753528Ab2HMSo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:44:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45052 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab2HMShr (ORCPT
+	with ESMTP id S1752883Ab2HMShr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 14:37:47 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -22,9 +22,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/38] perf: Add perf_output_skip function to skip bytes in sample
-Date: Mon, 13 Aug 2012 15:36:54 -0300
-Message-Id: <1344883039-13495-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 19/38] perf tools: Support user regs and stack in sample parsing
+Date: Mon, 13 Aug 2012 15:37:00 -0300
+Message-Id: <1344883039-13495-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -37,20 +37,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Introducing perf_output_skip function to be able to skip data within the
-perf ring buffer.
+Adding following info to be parsed out of the event sample:
+ - user register set
+ - user stack dump
 
-When writing data into perf ring buffer we first reserve needed place in
-ring buffer and then copy the actual data.
+Both are global and specific to all events within the session.
+This info will be used in the unwind patches coming in shortly.
 
-There's a possibility we won't be able to fill all the reserved size
-with data, so we need a way to skip the remaining bytes.
-
-This is going to be useful when storing the user stack dump, where we
-might end up with less data than we originally requested.
+Adding simple output printout (report -D) for both register and
+stack dumps.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: "Frank Ch. Eigler" <fche@redhat.com>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
@@ -66,59 +64,198 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1344345647-11536-11-git-send-email-jolsa@redhat.com
+[ Use evsel->attr.sample_regs_user ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/perf_event.h  |    2 ++
- kernel/events/internal.h    |    4 ++++
- kernel/events/ring_buffer.c |    6 ++++++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+ tools/perf/util/event.h   |   12 ++++++++++++
+ tools/perf/util/evsel.c   |   28 ++++++++++++++++++++++++++++
+ tools/perf/util/header.c  |    2 ++
+ tools/perf/util/session.c |   41 ++++++++++++++++++++++++++++++++++++++---
+ 4 files changed, 80 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index d41394a..8a73f75 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1321,6 +1321,8 @@ extern int perf_output_begin(struct perf_output_handle *handle,
- extern void perf_output_end(struct perf_output_handle *handle);
- extern unsigned int perf_output_copy(struct perf_output_handle *handle,
- 			     const void *buf, unsigned int len);
-+extern unsigned int perf_output_skip(struct perf_output_handle *handle,
-+				     unsigned int len);
- extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 7fd5408..ce7bdfc 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -114,6 +114,10 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d84870b..0e088d0 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -69,6 +69,16 @@ struct sample_event {
+ 	u64 array[];
+ };
  
- DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
++struct regs_dump {
++	u64 *regs;
++};
++
++struct stack_dump {
++	u16 offset;
++	u64 size;
++	char *data;
++};
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -82,6 +92,8 @@ struct perf_sample {
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
++	struct regs_dump  user_regs;
++	struct stack_dump user_stack;
+ };
  
-+#define MEMCPY_SKIP(dst, src, n) (n)
+ #define BUILD_ID_SIZE 20
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 2eaae14..a2da682 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include <byteswap.h>
++#include <linux/bitops.h>
+ #include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+@@ -733,6 +734,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data, bool swapped)
+ {
+ 	u64 type = evsel->attr.sample_type;
++	u64 regs_user = evsel->attr.sample_regs_user;
+ 	const u64 *array;
+ 
+ 	/*
+@@ -869,6 +871,32 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		sz /= sizeof(u64);
+ 		array += sz;
+ 	}
 +
-+DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
++	if (type & PERF_SAMPLE_REGS_USER) {
++		/* First u64 tells us if we have any regs in sample. */
++		u64 avail = *array++;
 +
- #ifndef arch_perf_out_copy_user
- #define arch_perf_out_copy_user __copy_from_user_inatomic
- #endif
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index b4c2ad3..23cb34f 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -188,6 +188,12 @@ unsigned int perf_output_copy(struct perf_output_handle *handle,
- 	return __output_copy(handle, buf, len);
++		if (avail) {
++			data->user_regs.regs = (u64 *)array;
++			array += hweight_long(regs_user);
++		}
++	}
++
++	if (type & PERF_SAMPLE_STACK_USER) {
++		u64 size = *array++;
++
++		data->user_stack.offset = ((char *)(array - 1)
++					  - (char *) event);
++
++		if (!size) {
++			data->user_stack.size = 0;
++		} else {
++			data->user_stack.data = (char *)array;
++			array += size / sizeof(*array);
++			data->user_stack.size = *array;
++		}
++	}
++
+ 	return 0;
  }
  
-+unsigned int perf_output_skip(struct perf_output_handle *handle,
-+			      unsigned int len)
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index dd5a53c..7e7d34f 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1830,6 +1830,8 @@ static const int attr_file_abi_sizes[] = {
+ 	[0] = PERF_ATTR_SIZE_VER0,
+ 	[1] = PERF_ATTR_SIZE_VER1,
+ 	[2] = PERF_ATTR_SIZE_VER2,
++	[3] = PERF_ATTR_SIZE_VER3,
++	[4] = PERF_ATTR_SIZE_VER4,
+ 	0,
+ };
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 2437fb0..c9ed7e3 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -15,6 +15,7 @@
+ #include "util.h"
+ #include "cpumap.h"
+ #include "event-parse.h"
++#include "perf_regs.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -860,6 +861,34 @@ static void branch_stack__printf(struct perf_sample *sample)
+ 			sample->branch_stack->entries[i].to);
+ }
+ 
++static void regs_dump__printf(u64 mask, u64 *regs)
 +{
-+	return __output_skip(handle, NULL, len);
++	unsigned rid, i = 0;
++
++	for_each_set_bit(rid, (unsigned long *) &mask, sizeof(mask) * 8) {
++		u64 val = regs[i++];
++
++		printf(".... %-5s 0x%" PRIx64 "\n",
++		       perf_reg_name(rid), val);
++	}
 +}
 +
- void perf_output_end(struct perf_output_handle *handle)
++static void regs_user__printf(struct perf_sample *sample, u64 mask)
++{
++	struct regs_dump *user_regs = &sample->user_regs;
++
++	if (user_regs->regs) {
++		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
++		regs_dump__printf(mask, user_regs->regs);
++	}
++}
++
++static void stack_user__printf(struct stack_dump *dump)
++{
++	printf("... ustack: size %" PRIu64 ", offset 0x%x\n",
++	       dump->size, dump->offset);
++}
++
+ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+@@ -897,7 +926,7 @@ static void dump_event(struct perf_session *session, union perf_event *event,
+ 	       event->header.size, perf_event__name(event->header.type));
+ }
+ 
+-static void dump_sample(struct perf_session *session, union perf_event *event,
++static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			struct perf_sample *sample)
  {
- 	perf_output_put_handle(handle);
+ 	u64 sample_type;
+@@ -909,13 +938,19 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 	       event->header.misc, sample->pid, sample->tid, sample->ip,
+ 	       sample->period, sample->addr);
+ 
+-	sample_type = perf_evlist__sample_type(session->evlist);
++	sample_type = evsel->attr.sample_type;
+ 
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN)
+ 		callchain__printf(sample);
+ 
+ 	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
++
++	if (sample_type & PERF_SAMPLE_REGS_USER)
++		regs_user__printf(sample, evsel->attr.sample_regs_user);
++
++	if (sample_type & PERF_SAMPLE_STACK_USER)
++		stack_user__printf(&sample->user_stack);
+ }
+ 
+ static struct machine *
+@@ -973,7 +1008,7 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_SAMPLE:
+-		dump_sample(session, event, sample);
++		dump_sample(evsel, event, sample);
+ 		if (evsel == NULL) {
+ 			++session->hists.stats.nr_unknown_id;
+ 			return 0;
 -- 
 1.7.1
 
