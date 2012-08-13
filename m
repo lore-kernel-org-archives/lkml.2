@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2HMUgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:36:31 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:41635 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab2HMUg2 (ORCPT
+	id S1754381Ab2HMUXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:23:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335Ab2HMUXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:36:28 -0400
-X-WSS-ID: 0M8PNWQ-0B-3KP-02
-X-M-MSG: 
-X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
-Message-ID: <50296522.2000809@sandia.gov>
-Date: Mon, 13 Aug 2012 14:35:46 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607
- Thunderbird/10.0.5
-MIME-Version: 1.0
-To: "Mel Gorman" <mgorman@suse.de>
-cc: Linux-MM <linux-mm@kvack.org>, "Rik van Riel" <riel@redhat.com>,
-        "Minchan Kim" <minchan@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates
- under load V3
-References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
- <5023FE83.4090200@sandia.gov> <20120809204630.GJ12690@suse.de>
- <50243BE0.9060007@sandia.gov> <20120810110225.GO12690@suse.de>
- <502542C7.8050306@sandia.gov> <20120812202257.GA4177@suse.de>
-In-Reply-To: <20120812202257.GA4177@suse.de>
-X-TMWD-Spam-Summary: TS=20120813203559; ID=1; SEV=2.3.1;
- DFV=B2012081323; IFV=NA; AIF=B2012081323; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230362E35303239363532462E303031383A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAAAAAAAAAAAAAAAAAAAAAAAfQ==
-X-MMS-Spam-Filter-ID: B2012081323_5.03.0010
-X-WSS-ID: 7C37BAA74N0922498-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
+	Mon, 13 Aug 2012 16:23:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 42/82] wireless: reg: restore previous behaviour of chan->max_power calculations
+Date: Mon, 13 Aug 2012 13:19:18 -0700
+Message-Id: <20120813201750.132923334@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On 08/12/2012 02:22 PM, Mel Gorman wrote:
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
->
-> I went through the patch again but only found the following which is a
-> weak candidate. Still, can you retest with the following patch on top and
-> CONFIG_PROVE_LOCKING set please?
->
+------------------
 
-I've gotten in several hours of testing on this patch with
-no issues at all, and no output from CONFIG_PROVE_LOCKING
-(I'm assuming it would show up on a serial console).  So,
-it seems to me this patch has done the trick.
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-CPU utilization is staying under control, and write-out rate
-is good.
+commit 5e31fc0815a4e2c72b1b495fe7a0d8f9bfb9e4b4 upstream.
 
-You can add my Tested-by: as you see fit.  If you work
-up any refinements and would like me to test, please
-let me know.
+commit eccc068e8e84c8fe997115629925e0422a98e4de
+Author: Hong Wu <Hong.Wu@dspg.com>
+Date:   Wed Jan 11 20:33:39 2012 +0200
 
-Thanks -- Jim
+    wireless: Save original maximum regulatory transmission power for the calucation of the local maximum transmit pow
+
+changed the way we calculate chan->max_power as min(chan->max_power,
+chan->max_reg_power). That broke rt2x00 (and perhaps some other
+drivers) that do not set chan->max_power. It is not so easy to fix this
+problem correctly in rt2x00.
+
+According to commit eccc068e8 changelog, change claim only to save
+maximum regulatory power - changing setting of chan->max_power was side
+effect. This patch restore previous calculations of chan->max_power and
+do not touch chan->max_reg_power.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/wireless/reg.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -891,7 +891,21 @@ static void handle_channel(struct wiphy
+ 	chan->max_antenna_gain = min(chan->orig_mag,
+ 		(int) MBI_TO_DBI(power_rule->max_antenna_gain));
+ 	chan->max_reg_power = (int) MBM_TO_DBM(power_rule->max_eirp);
+-	chan->max_power = min(chan->max_power, chan->max_reg_power);
++	if (chan->orig_mpwr) {
++		/*
++		 * Devices that have their own custom regulatory domain
++		 * but also use WIPHY_FLAG_STRICT_REGULATORY will follow the
++		 * passed country IE power settings.
++		 */
++		if (initiator == NL80211_REGDOM_SET_BY_COUNTRY_IE &&
++		    wiphy->flags & WIPHY_FLAG_CUSTOM_REGULATORY &&
++		    wiphy->flags & WIPHY_FLAG_STRICT_REGULATORY)
++			chan->max_power = chan->max_reg_power;
++		else
++			chan->max_power = min(chan->orig_mpwr,
++					      chan->max_reg_power);
++	} else
++		chan->max_power = chan->max_reg_power;
+ }
+ 
+ static void handle_band(struct wiphy *wiphy,
+
 
