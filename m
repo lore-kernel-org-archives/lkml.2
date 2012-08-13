@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab2HMRkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:40:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51139 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab2HMRj7 convert rfc822-to-8bit (ORCPT
+	id S1751822Ab2HMRnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:43:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46645 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab2HMRnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:39:59 -0400
-Message-ID: <50293BE9.3010408@parallels.com>
-Date: Mon, 13 Aug 2012 21:39:53 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+	Mon, 13 Aug 2012 13:43:02 -0400
+Message-ID: <50293CA1.80900@wwwdotorg.org>
+Date: Mon, 13 Aug 2012 11:42:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Pavel Emelianov <xemul@parallels.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
-References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk> <20120810191149.GA17985@fieldses.org> <20120810202818.06236f46@pyramind.ukuu.org.uk> <50259494.8060304@zytor.com> <5025FA5A.4090403@parallels.com> <50263ECC.4060501@parallels.com> <20120813164730.GB2497@fieldses.org>
-In-Reply-To: <20120813164730.GB2497@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: broonie@opensource.wolfsonmicro.com
+CC: Laxman Dewangan <ldewangan@nvidia.com>, sameo@linux.intel.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH V3] regulator: tps6586x: add support for SYS rail
+References: <1344152518-29378-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1344152518-29378-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-13.08.2012 20:47, J. Bruce Fields пишет:
-> On Sat, Aug 11, 2012 at 03:15:24PM +0400, Stanislav Kinsbursky wrote:
->> 11.08.2012 10:23, Pavel Emelyanov пишет:
->>> On 08/11/2012 03:09 AM, H. Peter Anvin wrote:
->>>> On 08/10/2012 12:28 PM, Alan Cox wrote:
->>>>> Explicitly for Linux yes - this is not generally true of the AF_UNIX
->>>>> socket domain and even the permissions aspect isn't guaranteed to be
->>>>> supported on some BSD environments !
->>>> Yes, but let's worry about what the Linux behavior should be.
->>>>
->>>>> The name is however just a proxy for the socket itself. You don't even
->>>>> get a device node in the usual sense or the same inode in the file system
->>>>> space.
->>>> No, but it is looked up the same way any other inode is (the difference
->>>> between FIFOs and sockets is that sockets have separate connections,
->>>> which is also why open() on sockets would be nice.)
->>>>
->>>> However, there is a fundamental difference between AF_UNIX sockets and
->>>> open(), and that is how the pathname is delivered.  It thus would make
->>>> more sense to provide the openat()-like information in struct
->>>> sockaddr_un, but that may be very hard to do in a sensible way.  In that
->>>> sense it perhaps would be cleaner to be able to do an open[at]() on the
->>>> socket node with O_PATH (perhaps there should be an O_SOCKET option,
->>>> even?) and pass the resulting file descriptor to bind() or connect().
->>> I vote for this (openat + O_WHATEVER on a unix socket) as well. It will
->>> help us in checkpoint-restore, making handling of overmounted/unlinked
->>> sockets much cleaner.
->> I have to notice, that it's not enough and doesn't solve the issue.
->> There should be some way how to connect/bind already existent unix
->> socket (from kernel, at least), because socket can be created in
->> user space.
->> And this way (sock operation or whatever) have to provide an ability
->> to lookup UNIX socket starting from specified root to support
->> containers.
-> I don't understand--the rpcbind sockets are created by the kernel.  What
-> am I missing?
+On 08/05/2012 01:41 AM, Laxman Dewangan wrote:
+> Device have SYS rail which is always ON. It is system
+> power bus. LDO5 and LDO_RTC get powered through this rail
+> internally. Add support for this rail and make the
+> LDO5/LDO_RTC input supply to "sys".
+> Update document accordingly.
 
-Kernel preform connect to rpcbind socket (i.e. user-space binds it), 
-doesn't it?
+Mark,
 
->
-> --b.
+This patch appears to have been applied correctly as b93fffb in your
+tree, but your for-next branch merge commit f110340 appears to have
+dropped the following two hunks:
+
+> diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+> index d156e1b..ec527d9 100644
+> --- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
+> +++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+> @@ -8,7 +8,8 @@ Required properties:
+>  - gpio-controller: mark the device as a GPIO controller
+>  - regulators: list of regulators provided by this controller, must have
+>    property "regulator-compatible" to match their hardware counterparts:
+> -  sm[0-2], ldo[0-9] and ldo_rtc
+> +  sys, sm[0-2], ldo[0-9] and ldo_rtc
+> +- sys-supply: The input supply for SYS.
+>  - sm0-supply: The input supply for the SM0.
+>  - sm1-supply: The input supply for the SM1.
+>  - sm2-supply: The input supply for the SM2.
+> @@ -30,6 +34,7 @@ Example:
+>  		#gpio-cells = <2>;
+>  		gpio-controller;
+>  
+> +		sys-supply = <&some_reg>;
+>  		sm0-supply = <&some_reg>;
+>  		sm1-supply = <&some_reg>;
+>  		sm2-supply = <&some_reg>;
 
