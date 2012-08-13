@@ -1,77 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab2HMKhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:37:53 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44313 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab2HMKhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:37:51 -0400
+	id S1751561Ab2HMKmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:42:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab2HMKmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:42:53 -0400
+Date: Mon, 13 Aug 2012 13:43:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, gleb@redhat.com
+Subject: [PATCH repost] kvm: drop parameter validation
+Message-ID: <20120813104358.GA16458@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1344846039.31459.14.camel@twins>
-References: <1344324343-3817-1-git-send-email-walken@google.com>
-	<1344846039.31459.14.camel@twins>
-Date: Mon, 13 Aug 2012 03:37:50 -0700
-Message-ID: <CANN689GFMvHHwnweK_=RrrSisOqm5CdcGat1txmW48t3k1VDNg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] rbtree based interval tree as a prio_tree replacement
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: riel@redhat.com, vrajesh@umich.edu, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 1:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-08-07 at 00:25 -0700, Michel Lespinasse wrote:
->> a faster worst-case complexity of O(k+log N) for stabbing queries in a
->> well-balanced prio tree, vs O(k*log N) for interval trees (where k=number
->> of matches, N=number of intervals). Now this sounds great, but in practice
->> prio trees don't realize this theorical benefit. First, the additional
->> constraint makes them harder to update, so that the kernel implementation
->> has to simplify things by balancing them like a radix tree, which is not
->> always ideal.
->
-> Not something spending a great deal of time on, but do you have any idea
-> what the radix like balancing does the the worst case stabbing
-> complexity?
+We validate irq pin number when routing is setup, so
+code handling illegal irq # in pic and ioapic on each injection
+is never called.
+Drop it.
 
-Well, it's not terribly bad as the height of the radix tree is still
-bounded by (IIRC) log(ULONG_MAX) + log(max pgoff_t in the file). So
-the complexity ends up being O(k + some constant) where the constant
-is in practice always larger than log(N).
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-One can still construct cases where a prio tree stabbing query would
-read less nodes (so touch less cache lines) than with augmented
-rbtree. I think the best way to explain this is to look at what
-augmented rbtree does - for a stabbing query returning k matches, it
-visits all nodes between the root and the k matching nodes (plus one
-extra path at the end to conclude that there are no further matches).
-So the worst case there would be if the matching nodes are all close
-to leaf level in the tree, and if the paths leading to them branch up
-close to the root level. It's easy to construct such a case by making
-all N nodes in the tree start to the left of the stabbing query, and
-having only an arbitrary k among them end to the right of the query.
-Prio tree achieves a better worst case complexity by placing these k
-nodes near the top of the tree (due to the heap constraint). But this
-worst case situation isn't very likely to begin with, and in the
-typical case the k paths leading to the matching nodes in an augmented
-rbtree don't branch up so close to the root so typically prio tree
-doesn't get an advantage there.
+Reposting, applies without changes to kvm/next.
 
-To sum it up, I would say that both algorithms are really pretty good,
-with prio tree getting a slightly better theorical worst-case and
-augmented rbtree getting (IMO) a practical advantage due to lower
-constant factors and a still very acceptable worst case.
+ arch/x86/kvm/i8259.c | 16 +++++++---------
+ virt/kvm/ioapic.c    | 35 +++++++++++++++++------------------
+ 2 files changed, 24 insertions(+), 27 deletions(-)
 
-> Anyway, I like the thing, that prio-tree code always made my head hurt.
-
-Black magic I tell you ;-)
-
+diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+index 1df8fb9..277ec0d 100644
+--- a/arch/x86/kvm/i8259.c
++++ b/arch/x86/kvm/i8259.c
+@@ -190,17 +190,15 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+ 
+ int kvm_pic_set_irq(struct kvm_pic *s, int irq, int irq_source_id, int level)
+ {
+-	int ret = -1;
++	int ret, irq_level;
+ 
+ 	pic_lock(s);
+-	if (irq >= 0 && irq < PIC_NUM_PINS) {
+-		int irq_level = __kvm_irq_line_state(&s->irq_states[irq],
+-						     irq_source_id, level);
+-		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
+-		pic_update_irq(s);
+-		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+-				      s->pics[irq >> 3].imr, ret == 0);
+-	}
++	irq_level = __kvm_irq_line_state(&s->irq_states[irq],
++					 irq_source_id, level);
++	ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
++	pic_update_irq(s);
++	trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
++			      s->pics[irq >> 3].imr, ret == 0);
+ 	pic_unlock(s);
+ 
+ 	return ret;
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index ef61d52..4d824c7 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -197,28 +197,27 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+ 	u32 old_irr;
+ 	u32 mask = 1 << irq;
+ 	union kvm_ioapic_redirect_entry entry;
+-	int ret = 1;
++	int ret, irq_level;
+ 
+ 	spin_lock(&ioapic->lock);
+ 	old_irr = ioapic->irr;
+-	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+-		int irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
+-						     irq_source_id, level);
+-		entry = ioapic->redirtbl[irq];
+-		irq_level ^= entry.fields.polarity;
+-		if (!irq_level)
+-			ioapic->irr &= ~mask;
+-		else {
+-			int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
+-			ioapic->irr |= mask;
+-			if ((edge && old_irr != ioapic->irr) ||
+-			    (!edge && !entry.fields.remote_irr))
+-				ret = ioapic_service(ioapic, irq);
+-			else
+-				ret = 0; /* report coalesced interrupt */
+-		}
+-		trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
++	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
++					 irq_source_id, level);
++	entry = ioapic->redirtbl[irq];
++	irq_level ^= entry.fields.polarity;
++	if (!irq_level) {
++		ioapic->irr &= ~mask;
++		ret = 1;
++	} else {
++		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
++		ioapic->irr |= mask;
++		if ((edge && old_irr != ioapic->irr) ||
++		    (!edge && !entry.fields.remote_irr))
++			ret = ioapic_service(ioapic, irq);
++		else
++			ret = 0; /* report coalesced interrupt */
+ 	}
++	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
+ 	spin_unlock(&ioapic->lock);
+ 
+ 	return ret;
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+MST
