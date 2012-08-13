@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2HMUWi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:22:38 -0400
+	id S1754243Ab2HMUWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:22:48 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956Ab2HMUWa (ORCPT
+	with ESMTP id S1754160Ab2HMUWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:22:30 -0400
+	Mon, 13 Aug 2012 16:22:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Holler <holler@ahsoftware.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 34/82] video/smscufx: fix line counting in fb_write
-Date: Mon, 13 Aug 2012 13:19:10 -0700
-Message-Id: <20120813201749.416073582@linuxfoundation.org>
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [ 36/82] sh: Fix up recursive fault in oops with unset TTB.
+Date: Mon, 13 Aug 2012 13:19:12 -0700
+Message-Id: <20120813201749.592000233@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,34 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexander Holler <holler@ahsoftware.de>
+From: Paul Mundt <lethal@linux-sh.org>
 
-commit 2fe2d9f47cfe1a3e66e7d087368b3d7155b04c15 upstream.
+commit 90eed7d87b748f9c0d11b9bad64a4c41e31b78c4 upstream.
 
-Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-lines had an offset of -1. The result was that the last line on the display
-was never overwritten by writes to /dev/fbN.
+Presently the oops code looks for the pgd either from the mm context or
+the cached TTB value. There are presently cases where the TTB can be
+unset or otherwise cleared by hardware, which we weren't handling,
+resulting in recursive faults on the NULL pgd. In these cases we can
+simply reload from swapper_pg_dir and continue on as normal.
 
-The origin of this bug seems to have been udlfb.
-
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/smscufx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sh/mm/fault.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/video/smscufx.c
-+++ b/drivers/video/smscufx.c
-@@ -904,7 +904,7 @@ static ssize_t ufx_ops_write(struct fb_i
- 	result = fb_sys_write(info, buf, count, ppos);
+--- a/arch/sh/mm/fault.c
++++ b/arch/sh/mm/fault.c
+@@ -58,11 +58,15 @@ static void show_pte(struct mm_struct *m
+ {
+ 	pgd_t *pgd;
  
- 	if (result > 0) {
--		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-+		int start = max((int)(offset / info->fix.line_length), 0);
- 		int lines = min((u32)((result / info->fix.line_length) + 1),
- 				(u32)info->var.yres);
+-	if (mm)
++	if (mm) {
+ 		pgd = mm->pgd;
+-	else
++	} else {
+ 		pgd = get_TTB();
  
++		if (unlikely(!pgd))
++			pgd = swapper_pg_dir;
++	}
++
+ 	printk(KERN_ALERT "pgd = %p\n", pgd);
+ 	pgd += pgd_index(addr);
+ 	printk(KERN_ALERT "[%08lx] *pgd=%0*Lx", addr,
 
 
