@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2HMDTw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 23:19:52 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:43404 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2HMDTv (ORCPT
+	id S1753248Ab2HMDXH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 23:23:07 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:16178 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab2HMDXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 23:19:51 -0400
-Date: Sun, 12 Aug 2012 23:19:48 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Cyril Chemparathy <cyril@ti.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
-        linux@arm.linux.org.uk, will.deacon@arm.com
-Subject: Re: [PATCH v2 02/22] ARM: add self test for runtime patch
- mechanism
-In-Reply-To: <5027DAAF.2060406@ti.com>
-Message-ID: <alpine.LFD.2.02.1208122314160.5231@xanadu.home>
-References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-3-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208112226310.5231@xanadu.home> <5027DAAF.2060406@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 12 Aug 2012 23:23:05 -0400
+Message-ID: <50287315.5010203@hp.com>
+Date: Sun, 12 Aug 2012 21:23:01 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Betty Dall <betty.dall@hp.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor
+ ID first
+References: <1344464246-14618-1-git-send-email-andi@firstfloor.org> <1344551691.10751.12.camel@ejdallLaptop> <50259FCE.4070205@zytor.com>
+In-Reply-To: <50259FCE.4070205@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Aug 2012, Cyril Chemparathy wrote:
+On 08/10/2012 05:57 PM, H. Peter Anvin wrote:
+> On 08/09/2012 03:34 PM, Betty Dall wrote:
+>> I thought this should be a break instead of a continue since the code
+>> does a break if the class is 0xffffffff. If the function does not have a
+>> valid VENDOR_ID, then the remaining function numbers do not have to be
+>> scanned because functions are required to be implemented in order (no
+>> skipping a function number.)
+>>
+> Is that true?  This is certainly not true in PCI in general: there is
+> required to be a function 0, but there is no guarantee that functions
+> 1-7 don't have gaps.
 
-> On 08/11/12 22:35, Nicolas Pitre wrote:
-> > On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
-> > 
-> > > This patch adds basic sanity tests to ensure that the instruction patching
-> > > results in valid instruction encodings.  This is done by verifying the
-> > > output
-> > > of the patch process against a vector of assembler generated instructions
-> > > at
-> > > init time.
-> > > 
-> > > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> > > ---
-> [...]
-> > > +	__asm__ __volatile__ (
-> > > +		"	.irp	shift1, 0, 6, 12, 18\n"
-> > > +		"	.irp	shift2, 0, 1, 2, 3, 4, 5\n"
-> > > +		"	add     r1, r2, #(0x41 << (\\shift1 + \\shift2))\n"
-> > > +		"	.endr\n"
-> > > +		"	.endr\n"
-> > 
-> > 
-> > Maybe adding a "add r1, r2 #0x81 << 24" here might be a good thing since
-> > this is the most used case but missing from the above.
-> > 
-> 
-> Indeed.  I've now replaced this with something a bit more extensive. Does the
-> following look better?
-> 
-> +struct patch_test_imm8 {
-> +       u16     imm;
-> +       u16     shift;
-> +       u32     insn;
-> +};
-> +
-> +static void __init __used __naked __patch_test_code_imm8(void)
-> +{
-> +       __asm__ __volatile__ (
-> +
-> +               /* a single test case */
-> +               "       .macro          test_one, imm, sft\n"
-> +               "       .hword          \\imm\n"
-> +               "       .hword          \\sft\n"
-> +               "       add             r1, r2, #(\\imm << \\sft)\n"
-> +               "       .endm\n"
-> +
-> +               /* a sequence of tests at 'inc' increments of shift */
-> +               "       .macro          test_seq, imm, sft, max, inc\n"
-> +               "       test_one        \\imm, \\sft\n"
-> +               "       .if             \\sft < \\max\n"
-> +               "       test_seq        \\imm, (\\sft + \\inc), \\max,
-> \\inc\n"
-> +               "       .endif\n"
-> +               "       .endm\n"
-> +
-> +               /* an empty record to mark the end */
-> +               "       .macro          test_end\n"
-> +               "       .hword          0, 0\n"
-> +               "       .word           0\n"
-> +               "       .endm\n"
-> +
-> +               /* finally generate the test sequences */
-> +               "       test_seq        0x41, 0, 24, 1\n"
-> +               "       test_seq        0x81, 0, 24, 2\n"
-> +               "       test_end\n"
-> +               : : :
-> +       );
-> +}
+If that is the case, there is a problem in the original code in
+arch/x86/kernel/aperture_64.c.The original code already stops scanning
+functions the first time it finds an invalid PCI class:
 
-Yes, this is certainly quite extensive.  :-)
+206                         for (func = 0; func < 8; func++) {
+207                                 u32 class, cap;
+208                                 u8 type;
+209                                 class = read_pci_config(bus, slot, func,
+210 PCI_CLASS_REVISION);
+211                                 if (class == 0xffffffff)
+212                                         break;
 
+-- 
+====================================================================
+Khalid Aziz
+khalid.aziz@hp.com
 
-Nicolas
