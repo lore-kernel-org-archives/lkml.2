@@ -1,176 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab2HMCFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 22:05:44 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38148 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753025Ab2HMCFn (ORCPT
+	id S1753077Ab2HMCGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 22:06:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56864 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab2HMCGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 22:05:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344823455-28387-1-git-send-email-chenhc@lemote.com>
-References: <1344823455-28387-1-git-send-email-chenhc@lemote.com>
-Date: Mon, 13 Aug 2012 10:05:41 +0800
-Message-ID: <CAAhV-H5PqXmjVxf61E_s2p6EiqxS4QS4PQkr32_fL26Y+79LwQ@mail.gmail.com>
-Subject: Re: [PATCH 01/16] MIPS: Loongson: Add basic Loongson-3 definition.
+	Sun, 12 Aug 2012 22:06:48 -0400
 From: Huacai Chen <chenhuacai@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
+        stable@vger.kernel.org
+Subject: [PATCH] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
+Date: Mon, 13 Aug 2012 10:06:12 +0800
+Message-Id: <1344823572-28461-1-git-send-email-chenhc@lemote.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, this is sent by mistake, please ignore it.
+When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
+And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
+empty function but attempt to actually disable the nonboot cpus. Since
+system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
+disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
+poweroff failure.
 
-On Mon, Aug 13, 2012 at 10:04 AM, Huacai Chen <chenhuacai@gmail.com> wrote:
-> Loongson-3 is a multi-core MIPS family CPU, it support MIPS64R2
-> fully. Loongson-3 has the same IMP field (0x6300) as Loongson-2.
->
-> Loongson-3 has a hardware-maintained cache, system software doesn't
-> need to maintain coherency.
->
-> Loongson-3A is the first revision of Loongson-3, and it is the quad-
-> core version of Loongson-2G. Loongson-3A has a simplified version named
-> Loongson-2Gq, the main difference between Loongson-3A/2Gq is 3A has two
-> HyperTransport controller but 2Gq has only one. HT0 is used for cross-
-> chip interconnection and HT1 is used to link PCI bus. Therefore, 2Gq
-> cannot support NUMA but 3A can. For software, Loongson-2Gq is simply
-> identified as Loongson-3A.
->
-> Exsisting Loongson family CPUs:
-> Loongson-1: Loongson-1A, Loongson-1B, they are 32-bit MIPS CPUs.
-> Loongson-2: Loongson-2E, Loongson-2F, Loongson-2G, they are 64-bit
->             single-core MIPS CPUs.
-> Loongson-3: Loongson-3A(including so-called Loongson-2Gq), they are
->             64-bit multi-core MIPS CPUs.
->
-> Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> Signed-off-by: Hongliang Tao <taohl@lemote.com>
-> Signed-off-by: Hua Yan <yanh@lemote.com>
-> ---
->  arch/mips/include/asm/addrspace.h            |    6 ++++++
->  arch/mips/include/asm/cpu.h                  |    6 ++++--
->  arch/mips/include/asm/mach-loongson/spaces.h |   15 +++++++++++++++
->  arch/mips/include/asm/module.h               |    2 ++
->  arch/mips/include/asm/pgtable-bits.h         |    7 +++++++
->  arch/mips/loongson/Platform                  |    1 +
->  6 files changed, 35 insertions(+), 2 deletions(-)
->  create mode 100644 arch/mips/include/asm/mach-loongson/spaces.h
->
-> diff --git a/arch/mips/include/asm/addrspace.h b/arch/mips/include/asm/addrspace.h
-> index 569f80a..cf62bfb 100644
-> --- a/arch/mips/include/asm/addrspace.h
-> +++ b/arch/mips/include/asm/addrspace.h
-> @@ -116,7 +116,13 @@
->  #define K_CALG_UNCACHED                2
->  #define K_CALG_NONCOHERENT     3
->  #define K_CALG_COH_EXCL                4
-> +
-> +#ifdef CONFIG_CPU_LOONGSON3
-> +#define K_CALG_COH_SHAREABLE   3
-> +#else
->  #define K_CALG_COH_SHAREABLE   5
-> +#endif
-> +
->  #define K_CALG_NOTUSED         6
->  #define K_CALG_UNCACHED_ACCEL  7
->
-> diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
-> index f21b7c0..75b6127 100644
-> --- a/arch/mips/include/asm/cpu.h
-> +++ b/arch/mips/include/asm/cpu.h
-> @@ -72,6 +72,7 @@
->  #define PRID_IMP_R5432         0x5400
->  #define PRID_IMP_R5500         0x5500
->  #define PRID_IMP_LOONGSON2     0x6300
-> +#define PRID_IMP_LOONGSON3     0x6300
->
->  #define PRID_IMP_UNKNOWN       0xff00
->
-> @@ -200,6 +201,7 @@
->  #define PRID_REV_LOONGSON1B    0x0020
->  #define PRID_REV_LOONGSON2E    0x0002
->  #define PRID_REV_LOONGSON2F    0x0003
-> +#define PRID_REV_LOONGSON3A    0x0005
->
->  /*
->   * Older processors used to encode processor version and revision in two
-> @@ -268,8 +270,8 @@ enum cpu_type_enum {
->          * MIPS64 class processors
->          */
->         CPU_5KC, CPU_5KE, CPU_20KC, CPU_25KF, CPU_SB1, CPU_SB1A, CPU_LOONGSON2,
-> -       CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS, CPU_CAVIUM_OCTEON2,
-> -       CPU_XLR, CPU_XLP,
-> +       CPU_LOONGSON3, CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS,
-> +       CPU_CAVIUM_OCTEON2, CPU_XLR, CPU_XLP,
->
->         CPU_LAST
->  };
-> diff --git a/arch/mips/include/asm/mach-loongson/spaces.h b/arch/mips/include/asm/mach-loongson/spaces.h
-> new file mode 100644
-> index 0000000..1e82804
-> --- /dev/null
-> +++ b/arch/mips/include/asm/mach-loongson/spaces.h
-> @@ -0,0 +1,15 @@
-> +#ifndef __ASM_MACH_LOONGSON_SPACES_H_
-> +#define __ASM_MACH_LOONGSON_SPACES_H_
-> +
-> +#ifndef CAC_BASE
-> +#if defined(CONFIG_64BIT)
-> +#if defined(CONFIG_DMA_NONCOHERENT) || defined(CONFIG_CPU_LOONGSON3)
-> +#define CAC_BASE        _AC(0x9800000000000000, UL)
-> +#else
-> +#define CAC_BASE        _AC(0xa800000000000000, UL)
-> +#endif /* CONFIG_DMA_NONCOHERENT || CONFIG_CPU_LOONGSON3 */
-> +#endif /* CONFIG_64BIT */
-> +#endif /* CONFIG_CAC_BASE */
-> +
-> +#include <asm/mach-generic/spaces.h>
-> +#endif
-> diff --git a/arch/mips/include/asm/module.h b/arch/mips/include/asm/module.h
-> index dca8bce..523600f 100644
-> --- a/arch/mips/include/asm/module.h
-> +++ b/arch/mips/include/asm/module.h
-> @@ -122,6 +122,8 @@ search_module_dbetables(unsigned long addr)
->  #define MODULE_PROC_FAMILY "LOONGSON1 "
->  #elif defined CONFIG_CPU_LOONGSON2
->  #define MODULE_PROC_FAMILY "LOONGSON2 "
-> +#elif defined CONFIG_CPU_LOONGSON3
-> +#define MODULE_PROC_FAMILY "LOONGSON3 "
->  #elif defined CONFIG_CPU_CAVIUM_OCTEON
->  #define MODULE_PROC_FAMILY "OCTEON "
->  #elif defined CONFIG_CPU_XLR
-> diff --git a/arch/mips/include/asm/pgtable-bits.h b/arch/mips/include/asm/pgtable-bits.h
-> index e9fe7e9..1afd39a 100644
-> --- a/arch/mips/include/asm/pgtable-bits.h
-> +++ b/arch/mips/include/asm/pgtable-bits.h
-> @@ -206,6 +206,13 @@ static inline uint64_t pte_to_entrylo(unsigned long pte_val)
->  #define _CACHE_UNCACHED                    _CACHE_UC_B
->  #define _CACHE_CACHABLE_NONCOHERENT _CACHE_WB
->
-> +#elif defined(CONFIG_CPU_LOONGSON3)
-> +
-> +#define _CACHE_UNCACHED             (2<<_CACHE_SHIFT)  /* LOONGSON       */
-> +#define _CACHE_CACHABLE_NONCOHERENT (3<<_CACHE_SHIFT)  /* LOONGSON       */
-> +#define _CACHE_CACHABLE_COHERENT    (3<<_CACHE_SHIFT)  /* LOONGSON-3     */
-> +#define _CACHE_UNCACHED_ACCELERATED (7<<_CACHE_SHIFT)  /* LOONGSON       */
-> +
->  #else
->
->  #define _CACHE_CACHABLE_NO_WA      (0<<_CACHE_SHIFT)  /* R4600 only      */
-> diff --git a/arch/mips/loongson/Platform b/arch/mips/loongson/Platform
-> index 29692e5..6205372 100644
-> --- a/arch/mips/loongson/Platform
-> +++ b/arch/mips/loongson/Platform
-> @@ -30,3 +30,4 @@ platform-$(CONFIG_MACH_LOONGSON) += loongson/
->  cflags-$(CONFIG_MACH_LOONGSON) += -I$(srctree)/arch/mips/include/asm/mach-loongson -mno-branch-likely
->  load-$(CONFIG_LEMOTE_FULOONG2E) += 0xffffffff80100000
->  load-$(CONFIG_LEMOTE_MACH2F) += 0xffffffff80200000
-> +load-$(CONFIG_CPU_LOONGSON3) += 0xffffffff80200000
-> --
-> 1.7.7.3
->
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+Cc: Yong Zhang <yong.zhang@windriver.com>
+Cc: stable@vger.kernel.org
+---
+ arch/mips/kernel/process.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index e9a5fd7..69b17a9 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
+ 			}
+ 		}
+ #ifdef CONFIG_HOTPLUG_CPU
+-		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
+-		    (system_state == SYSTEM_RUNNING ||
+-		     system_state == SYSTEM_BOOTING))
++		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+ 			play_dead();
+ #endif
+ 		rcu_idle_exit();
+-- 
+1.7.7.3
+
