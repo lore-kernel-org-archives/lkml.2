@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab2HMKTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:19:31 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42879 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab2HMKT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:19:28 -0400
-Message-ID: <5028D4AA.10301@gmail.com>
-Date: Mon, 13 Aug 2012 18:19:22 +0800
-From: Liu Bo <liub.liubo@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1751497Ab2HMK0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:26:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46717 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab2HMK0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:26:14 -0400
+Date: Mon, 13 Aug 2012 11:26:04 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad@darnok.org,
+        Ian.Campbell@eu.citrix.com, Jeremy Fitzhardinge <jeremy@xensource.com>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] netvm: check for page == NULL when propogating the
+ skb->pfmemalloc flag
+Message-ID: <20120813102604.GC4177@suse.de>
+References: <20120807085554.GF29814@suse.de>
+ <20120808.155046.820543563969484712.davem@davemloft.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG Report] BUG: unable to handle kernel NULL pointer dereference
- at
-References: <5028C4CC.9070301@gmail.com> <871ujbkt57.fsf@nemi.mork.no>
-In-Reply-To: <871ujbkt57.fsf@nemi.mork.no>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120808.155046.820543563969484712.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 06:01 PM, Bjørn Mork wrote:
-> Liu Bo <liub.liubo@gmail.com> writes:
+On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
+> From: Mel Gorman <mgorman@suse.de>
+> Date: Tue, 7 Aug 2012 09:55:55 +0100
 > 
->> I'm using mainline upstream 3.6.0-rc1 compiled based on Fedora-16.
->>
->> When I unplug my mobile usb card, I hit this:
->>
->> [  247.017258] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> [  247.017378] IP: [<ffffffffa03bf27f>] stop_read_write_urbs+0x3f/0x90 [usb_wwan]
+> > Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+> > for the following bug triggered by a xen network driver
+>  ...
+> > The problem is that the xenfront driver is passing a NULL page to
+> > __skb_fill_page_desc() which was unexpected. This patch checks that
+> > there is a page before dereferencing.
+> > 
+> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
 > 
-> Thanks for reporting.  This should be fixed by
+> That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
+> It's the only driver passing NULL here.
 > 
->  a1028f0 usb: usb_wwan: replace release and disconnect with a port_remove hook
+> That whole song and dance figuring out what to do with the head
+> fragment page, depending upon whether the length is greater than the
+> RX_COPY_THRESHOLD, is completely unnecessary.
 > 
-> currently in the usb tree, and hopefully going into the next -rc
-> 
-> 
-> 
-> Bjørn
-> 
+> Just use something like a call to __pskb_pull_tail(skb, len) and all
+> that other crap around that area can simply be deleted.
 
-okay, I'll test it later :)
+I looked at this for a while but I did not see how __pskb_pull_tail()
+could be used sensibly but I'm simily not familiar with writing network
+device drivers or Xen.
 
-Thanks for the quick fix, Bjørn.
+This messing with RX_COPY_THRESHOLD seems to be related to how the frontend
+and backend communicate (maybe some fixed limitation of the xenbus). The
+existing code looks like it is trying to take the fragments received and
+pass them straight to the backend without copying by passing the fragments
+to the backend without copying. I worry that if I try converting this to
+__pskb_pull_tail() that it would either hit the limitation of xenbus or
+introduce copying where it is not wanted.
 
-thanks,
-liubo
+I'm going to have to punt this to Jeremy and the other Xen folk as I'm not
+sure what the original intention was and I don't have a Xen setup anywhere
+to test any patch. Jeremy, xen folk? 
+
+-- 
+Mel Gorman
+SUSE Labs
