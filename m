@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2HMVgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:36:11 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59109 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab2HMVgJ (ORCPT
+	id S1753467Ab2HMVja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:39:30 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:41282 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753014Ab2HMVj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:36:09 -0400
-Date: Mon, 13 Aug 2012 22:36:07 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-Subject: Re: [PATCH 2/2] apple_gmux: Add support for newer hardware
-Message-ID: <20120813213607.GB27838@srcf.ucam.org>
-References: <1344889232-3907-1-git-send-email-mjg@redhat.com>
- <1344889232-3907-2-git-send-email-mjg@redhat.com>
- <20120813210444.GJ24088@thinkpad-t410>
+	Mon, 13 Aug 2012 17:39:28 -0400
+Date: Mon, 13 Aug 2012 17:39:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>, Ming Lei <tom.leiming@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH][Alternative][RFC] PM / Runtime: Introduce driver runtime
+ PM work routine
+In-Reply-To: <201208132156.48942.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1208131737400.27622-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120813210444.GJ24088@thinkpad-t410>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 04:04:44PM -0500, Seth Forshee wrote:
-> > +
-> > +	while (i && (gwr & 0x01)) {
-> > +		inb(gmux_data->iostart + GMUX_PORT_READ);
-> > +		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
-> > +		msleep(100);
+On Mon, 13 Aug 2012, Rafael J. Wysocki wrote:
+
+> > I guess the best we can say is that if you call pm_runtime_barrier()  
+> > after updating the dev_pm_ops method pointers then after the barrier
+> > returns, the old method pointers will not be invoked and the old method
+> > routines will not be running.  So we need an equivalent guarantee with
+> > regard to the pm_runtime_work pointer.  (Yes, we could use a better 
+> > name for that pointer.)
+> > 
+> > Which means the code in the patch isn't quite right, because it saves 
+> > the pm_runtime_work pointer before calling rpm_resume().  Maybe we 
+> > should avoid looking at the pointer until rpm_resume() returns.
 > 
-> Wouldn't it make more sense if the msleep was before reading the port
-> again? Otherwise there's no substantial dely between the first and
-> second times we read it.
+> Yes, we can do that.
+> 
+> Alternatively, we can set power.work_in_progress before calling
+> rpm_resume(dev, 0) (i.e. regard the resume as a part of the work) to make
+> the barrier wait for all of it to complete.
 
-Mm. I'm doing the same as the ACPI implementation - it may be that 
-reading GMUX_PORT_READ triggers the update of GMUX_PORT_WRITE? Hard to 
-know without the docs.
+Yep, that would work.  In fact, I did it that way in the proposed code 
+posted earlier in this thread.  (But that was just on general 
+principles, not because I had this particular race in mind.)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Alan Stern
+
