@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab2HMIEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:04:35 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49823 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab2HMIEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:04:33 -0400
-Message-ID: <5028B450.9080309@parallels.com>
-Date: Mon, 13 Aug 2012 12:01:20 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753321Ab2HMIFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:05:01 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63186 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752615Ab2HMIE6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:04:58 -0400
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <50254A0A.3080805@jp.fujitsu.com>
-In-Reply-To: <50254A0A.3080805@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344844219.4126.24.camel@mattotaupa>
+References: <1344823753-28780-1-git-send-email-chenhc@lemote.com>
+	<1344841259.4126.4.camel@mattotaupa>
+	<CAAhV-H5ZA0kC-0kNag-e35Oh9wYh9nZK3OY3GOS2hkhkSn1Jzg@mail.gmail.com>
+	<1344844219.4126.24.camel@mattotaupa>
+Date: Mon, 13 Aug 2012 16:04:56 +0800
+Message-ID: <CAAhV-H4mJJqirEVJ55N2ejuQXmht5-y-1_7j3gHMfAdvsM974w@mail.gmail.com>
+Subject: Re: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Paul Menzel <paulepanter@users.sourceforge.net>
+Cc: =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Huacai Chen <chenhc@lemote.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2012 09:51 PM, Kamezawa Hiroyuki wrote:
->> +		/*
->> +		 * Once enabled, can't be disabled. We could in theory disable
->> +		 * it if we haven't yet created any caches, or if we can shrink
->> +		 * them all to death. But it is not worth the trouble
->> +		 */
->>   		static_key_slow_inc(&memcg_kmem_enabled_key);
->> -		memcg->kmem_accounted = true;
->> +
->> +		if (!memcg->use_hierarchy)
->> +			goto out;
->> +
->> +		for_each_mem_cgroup_tree(iter, memcg) {
->> +			if (iter == memcg)
->> +				continue;
->> +			memcg_kmem_account_parent(iter);
->> +		}
-> 
-> Could you add an explanation comment ?
-> 
+On Mon, Aug 13, 2012 at 3:50 PM, Paul Menzel
+<paulepanter@users.sourceforge.net> wrote:
+> Dear Huacai,
+>
+>
+> Am Montag, den 13.08.2012, 15:16 +0800 schrieb Huacai Chen:
+>> On Mon, Aug 13, 2012 at 3:00 PM, Paul Menzel wrote:
+>
+>> > thanks for your patch.
+>> >
+>> > Firstly, is Chen your first or last name? If it is your first name, your
+>> > From address should be switched.
+>> Chen is may last name.
+>
+> I am sorry then.
+>
+>> > Am Montag, den 13.08.2012, 10:09 +0800 schrieb Huacai Chen:
+>> >> When SWIOTLB is configured, if without this patch kernel compilation
+>> >> fails.
+>> >
+>> > Secondly, could you please always paste part of the error message into
+>> > the commit message so that people hitting this problem and searching for
+>> > it on the WWW have a higher chance finding your patch.
+>> >
+>> OK, I'll paste error message.
+>>
+>> > Thirdly, do you know why this was not caught beforehand and compilation
+>> > worked before?
+>> Maybe radeon is mostly used on X86 and swiotlb.h is included
+>> indirectly on X86 platform. This patch is split from my MIPS patchset,
+>> on MIPS machines compilation always failed.
+>
+> Ah, I thought your patches had already been submitted.
+My MIPS patchset is under review (not accepted now), I think this drm
+patch is important and should be accept first, so sent it
+independently.
 
-Of course, Kame.
-Thanks
+>
+>> >> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>> >
+>> > Lastly, the addresses in your From line and Signed-off-by line disagree.
+>> > You can easily fix that, by adding
+>> My patch is generated by git format-patch and there is surely a From
+>> line in the beginning (from chenhc@lemote.com),
+>
+> It should be `From: Huacai Chen <chenhc@lemote.com>`.
+Yes, git format-patch generate `From: Huacai Chen <chenhc@lemote.com>`
 
+>
+>> but the mail is sent out by gmail, so I don't know how to make From
+>> line and Signed-off-by agree.
+>
+> Do you copy the content of the file created by `git format-patch` into
+> the Gmail Web compositor?
+>
+> If yes, just do not delete the `From` *and* `Date` lines from the
+> beginning as for example Alex Deucher is doing [1].
+No, I use git send-email to send the patch but use gmail's server
+(mail server of lemote.com is too weak). The original patch is begin
+with:
+-----
+>From 70e1e058da3d39c52b7dba3e8fa754e7ed41828c Mon Sep 17 00:00:00 2001
+From: Huacai Chen <chenhc@lemote.com>
+Date: Thu, 2 Aug 2012 17:02:59 +0800
+Subject: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
+
+When SWIOTLB is configured, if without this patch kernel compilation
+fails with error messages:
+----
+Do you means I need to copy the From line and paste it after the Subject line?
+
+>
+> […]
+>
+>
+> Thanks,
+>
+> Paul
+>
+>
+> [1] http://lists.freedesktop.org/archives/dri-devel/2012-July/025200.html
