@@ -1,123 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab2HMVVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:21:52 -0400
-Received: from mail-we0-f202.google.com ([74.125.82.202]:59487 "EHLO
-	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab2HMVV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:21:29 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-7-git-send-email-glommer@parallels.com>
-	<xr93ehnec8sl.fsf@gthelen.mtv.corp.google.com>
-	<5028D016.1030902@parallels.com>
-Date: Mon, 13 Aug 2012 14:21:19 -0700
-Message-ID: <xr93lihijxo0.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753319Ab2HMVX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:23:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752657Ab2HMVX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:23:26 -0400
+Message-ID: <1344893004.4683.136.camel@ul30vt.home>
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Mon, 13 Aug 2012 15:23:24 -0600
+In-Reply-To: <20120812093336.GC1421@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
+	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
+	 <1344540375.3441.228.camel@ul30vt.home> <20120812093336.GC1421@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13 2012, Glauber Costa wrote:
+On Sun, 2012-08-12 at 12:33 +0300, Michael S. Tsirkin wrote:
+> On Thu, Aug 09, 2012 at 01:26:15PM -0600, Alex Williamson wrote:
+> > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
+> > > On 08/06/2012 01:38 PM, Avi Kivity wrote:
+> > > 
+> > > > Regarding the implementation, instead of a linked list, would an array
+> > > > of counters parallel to the bitmap make it simpler?
+> > > 
+> > > Or even, replace the bitmap with an array of counters.
+> > 
+> > I'm not sure a counter array is what we're really after.  That gives us
+> > reference counting for the irq source IDs, but not the key->gsi lookup.
+> > It also highlights another issue, that we have a limited set of source
+> > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
+> > for the shared userspace ID and another for the PIT.  How happy are we
+> > going to be with a limit of 62 level interrupts in use at one time?
+> > 
+> > It's arguably a reasonable number since the most virtualization friendly
+> > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
+> > also very wasteful allocating an entire source ID for a single GSI
+> > within that source ID.  PCI supports interrupts A, B, C, and D, which,
+> > in the most optimal config, each go to different GSIs.  So we could
+> > theoretically be more efficient in our use and allocation of irq source
+> > IDs if we tracked use by the source ID, gsi pair.
+> > 
+> > That probably makes it less practical to replace anything at the top
+> > level with a counter array.  The key that we pass back is currently the
+> > actual source ID, but we don't specify what it is, so we could split it
+> > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
+> > an idr entry.
+> > 
+> > Michael, would the interface be more acceptable to you if we added
+> > separate ioctls to allocate and free some representation of an irq
+> > source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > for an irq source ID/gsi object which would then be passed as a
+> > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > representing the source id/gsi isn't magically freed on it's own.  This
+> > would also allow us to deassign/close one end and reconfigure it later.
+> > Thanks,
+> > 
+> > Alex
+> 
+> It's acceptable to me either way. I was only pointing out that as
+> designed, the interface looks simple at first but then you find out some
+> subtle limitations which are implementation driven. This gives
+> an overall feeling the abstraction is too low level.
+> 
+> If we compare to the existing irqfd, isn't the difference
+> simply that irqfd deasserts immediately ATM, while we
+> want to delay this until later?
+> 
+> If yes, then along the lines that you proposed, and combining with my
+> idea of tracking deasserts, how do you like the following:
+> 
+> /* Keep line asserted until guest has handled the interrupt. */
+> #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
+> /* Notify after line is deasserted. */
+> #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
+> 
+> 	struct kvm_irqfd {
+> 		__u32 fd;
+> 		__u32 gsi;
+> 		__u32 flags;
+> 		/* eventfd to notify when line is deasserted */
+> 		__u32 deassert_eventfd;
+> 		__u8  pad[16];
+> 	};
+> 
+> now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
+> effective for level interrupts.
+> 
+> Notes about lifetime of objects:
+> 	- closing deassert_eventfd does nothing (we can keep
+> 	  reference to it from irqfd so no need for
+>           complex polling/flushing scheme)
+> 	- closing irqfd or deasserting dis-associates
+> 	  deassert_eventfd automatically
+> 	- source id is internal to irqfd and goes away with it
+> 
+> it looks harder to misuse and fits what we want to do nicely,
+> and needs less code to implement.
 
->> 
->> Here's the dmesg splat.
->> 
->
-> Do you always get this report in the same way?
-> I managed to get a softirq inconsistency like yours, but the complaint
-> goes for a different lock.
+This is effectively what I meant when I suggested we either need to a)
+pull eoifd into irqfd or b) implement them as modular components.  I
+chose to implement b) because I think that non-irqfd related ack
+notification to userspace will be useful and a) does not provide that.
+So this interface enables exactly the use case for device assignment and
+no more.  I feel like this is the start of an ioctl that will be quickly
+deprecated, but if that's the direction we want to go, I'll write the
+code.  Thanks,
 
-Yes, I repeatedly get the same dmesg splat below.
+Alex
 
-Once I your 'execute the whole memcg freeing in rcu callback' patch,
-then the warnings are not printed.  I'll take a closer look at the patch
-soon.
-
->> [  335.550398] =================================
->> [  335.554739] [ INFO: inconsistent lock state ]
->> [  335.559091] 3.5.0-dbg-DEV #3 Tainted: G        W
->> [  335.563946] ---------------------------------
->> [  335.568290] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
->> [  335.574286] swapper/10/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
->> [  335.579508]  (&(&rtpz->lock)->rlock){+.?...}, at: [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
->> [  335.588525] {SOFTIRQ-ON-W} state was registered at:
->> [  335.593389]   [<ffffffff810cb073>] __lock_acquire+0x623/0x1a50
->> [  335.599200]   [<ffffffff810cca55>] lock_acquire+0x95/0x150
->> [  335.604670]   [<ffffffff81582531>] _raw_spin_lock+0x41/0x50
->> [  335.610232]   [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
->> [  335.616135]   [<ffffffff811822d5>] mem_cgroup_put+0x45/0x50
->> [  335.621696]   [<ffffffff81182302>] mem_cgroup_destroy+0x22/0x30
->> [  335.627592]   [<ffffffff810e093f>] cgroup_diput+0xbf/0x160
->> [  335.633062]   [<ffffffff811a07ef>] d_delete+0x12f/0x1a0
->> [  335.638276]   [<ffffffff8119671e>] vfs_rmdir+0x11e/0x140
->> [  335.643565]   [<ffffffff81199173>] do_rmdir+0x113/0x130
->> [  335.648773]   [<ffffffff8119a5e6>] sys_rmdir+0x16/0x20
->> [  335.653900]   [<ffffffff8158c74f>] cstar_dispatch+0x7/0x1f
->> [  335.659370] irq event stamp: 399732
->> [  335.662846] hardirqs last  enabled at (399732): [<ffffffff810e8e08>] res_counter_uncharge_until+0x68/0xa0
->> [  335.672383] hardirqs last disabled at (399731): [<ffffffff810e8dc8>] res_counter_uncharge_until+0x28/0xa0
->> [  335.681916] softirqs last  enabled at (399710): [<ffffffff81085dd3>] _local_bh_enable+0x13/0x20
->> [  335.690590] softirqs last disabled at (399711): [<ffffffff8158c48c>] call_softirq+0x1c/0x30
->> [  335.698914]
->> [  335.698914] other info that might help us debug this:
->> [  335.705415]  Possible unsafe locking scenario:
->> [  335.705415]
->> [  335.711317]        CPU0
->> [  335.713757]        ----
->> [  335.716198]   lock(&(&rtpz->lock)->rlock);
->> [  335.720282]   <Interrupt>
->> [  335.722896]     lock(&(&rtpz->lock)->rlock);
->> [  335.727153]
->> [  335.727153]  *** DEADLOCK ***
->> [  335.727153]
->> [  335.733055] no locks held by swapper/10/0.
->> [  335.737141]
->> [  335.737141] stack backtrace:
->> [  335.741483] Pid: 0, comm: swapper/10 Tainted: G        W    3.5.0-dbg-DEV #3
->> [  335.748510] Call Trace:
->> [  335.750952]  <IRQ>  [<ffffffff81579a27>] print_usage_bug+0x1fc/0x20d
->> [  335.757286]  [<ffffffff81058a9f>] ? save_stack_trace+0x2f/0x50
->> [  335.763098]  [<ffffffff810ca9ed>] mark_lock+0x29d/0x300
->> [  335.768309]  [<ffffffff810c9e10>] ? print_irq_inversion_bug.part.36+0x1f0/0x1f0
->> [  335.775599]  [<ffffffff810caffc>] __lock_acquire+0x5ac/0x1a50
->> [  335.781323]  [<ffffffff810cad34>] ? __lock_acquire+0x2e4/0x1a50
->> [  335.787224]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
->> [  335.793212]  [<ffffffff810cca55>] lock_acquire+0x95/0x150
->> [  335.798594]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
->> [  335.804581]  [<ffffffff810e8ddd>] ? res_counter_uncharge_until+0x3d/0xa0
->> [  335.811263]  [<ffffffff81582531>] _raw_spin_lock+0x41/0x50
->> [  335.816731]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
->> [  335.822724]  [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
->> [  335.828538]  [<ffffffff811822d5>] mem_cgroup_put+0x45/0x50
->> [  335.834002]  [<ffffffff811828a6>] __memcg_kmem_free_page+0xa6/0x110
->> [  335.840256]  [<ffffffff81138109>] free_accounted_pages+0x99/0xa0
->> [  335.846243]  [<ffffffff8107b09f>] free_task+0x3f/0x70
->> [  335.851278]  [<ffffffff8107b18c>] __put_task_struct+0xbc/0x130
->> [  335.857094]  [<ffffffff81081524>] delayed_put_task_struct+0x54/0xd0
->> [  335.863338]  [<ffffffff810fd354>] __rcu_process_callbacks+0x1e4/0x490
->> [  335.869757]  [<ffffffff810fd62f>] rcu_process_callbacks+0x2f/0x80
->> [  335.875835]  [<ffffffff810862f5>] __do_softirq+0xc5/0x270
->> [  335.881218]  [<ffffffff810c49b4>] ? clockevents_program_event+0x74/0x100
->> [  335.887895]  [<ffffffff810c5d94>] ? tick_program_event+0x24/0x30
->> [  335.893882]  [<ffffffff8158c48c>] call_softirq+0x1c/0x30
->> [  335.899179]  [<ffffffff8104cefd>] do_softirq+0x8d/0xc0
->> [  335.904301]  [<ffffffff810867de>] irq_exit+0xae/0xe0
->> [  335.909251]  [<ffffffff8158cc3e>] smp_apic_timer_interrupt+0x6e/0x99
->> [  335.915591]  [<ffffffff8158ba9c>] apic_timer_interrupt+0x6c/0x80
->> [  335.921583]  <EOI>  [<ffffffff810530e7>] ? default_idle+0x67/0x270
->> [  335.927741]  [<ffffffff810530e5>] ? default_idle+0x65/0x270
->> 
