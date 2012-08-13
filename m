@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab2HMUVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:21:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	id S1753748Ab2HMUVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:21:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab2HMUVi (ORCPT
+	with ESMTP id S1753692Ab2HMUVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:21:38 -0400
+	Mon, 13 Aug 2012 16:21:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Cross <ccross@android.com>, Barry Song <bs14@csr.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Ido Yariv <ido@wizery.com>,
-        Daniel Drake <dsd@laptop.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 22/82] ARM: 7477/1: vfp: Always save VFP state in vfp_pm_suspend on UP
-Date: Mon, 13 Aug 2012 13:18:58 -0700
-Message-Id: <20120813201748.383804581@linuxfoundation.org>
+        Stevie Trujillo <stevie.trujillo@gmail.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Subject: [ 07/82] lib/vsprintf.c: kptr_restrict: fix pK-error in SysRq show-all-timers(Q)
+Date: Mon, 13 Aug 2012 13:18:43 -0700
+Message-Id: <20120813201747.102087767@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -32,55 +30,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 24b35521b8ddf088531258f06f681bb7b227bf47 upstream.
+commit 3715c5309f6d175c3053672b73fd4f73be16fd07 upstream.
 
-vfp_pm_suspend should save the VFP state in suspend after
-any lazy context switch.  If it only saves when the VFP is enabled,
-the state can get lost when, on a UP system:
-  Thread 1 uses the VFP
-  Context switch occurs to thread 2, VFP is disabled but the
-     VFP context is not saved
-  Thread 2 initiates suspend
-  vfp_pm_suspend is called with the VFP disabled, and the unsaved
-     VFP context of Thread 1 in the registers
+When using ALT+SysRq+Q all the pointers are replaced with "pK-error" like
+this:
 
-Modify vfp_pm_suspend to save the VFP context whenever
-vfp_current_hw_state is not NULL.
+	[23153.208033]   .base:               pK-error
 
-Includes a fix from Ido Yariv <ido@wizery.com>, who pointed out that on
-SMP systems, the state pointer can be pointing to a freed task struct if
-a task exited on another cpu, fixed by using #ifndef CONFIG_SMP in the
-new if clause.
+with echo h > /proc/sysrq-trigger it works:
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Cc: Barry Song <bs14@csr.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ido Yariv <ido@wizery.com>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+	[23107.776363]   .base:       ffff88023e60d540
+
+The intent behind this behavior was to return "pK-error" in cases where
+the %pK format specifier was used in interrupt context, because the
+CAP_SYSLOG check wouldn't be meaningful.  Clearly this should only apply
+when kptr_restrict is actually enabled though.
+
+Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/vfp/vfpmodule.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ lib/vsprintf.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -457,6 +457,12 @@ static int vfp_pm_suspend(void)
- 
- 		/* disable, just in case */
- 		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
-+	} else if (vfp_current_hw_state[ti->cpu]) {
-+#ifndef CONFIG_SMP
-+		fmxr(FPEXC, fpexc | FPEXC_EN);
-+		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
-+		fmxr(FPEXC, fpexc);
-+#endif
- 	}
- 
- 	/* clear any information we had about last context state */
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1030,7 +1030,8 @@ char *pointer(const char *fmt, char *buf
+ 		 * %pK cannot be used in IRQ context because its test
+ 		 * for CAP_SYSLOG would be meaningless.
+ 		 */
+-		if (in_irq() || in_serving_softirq() || in_nmi()) {
++		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
++				      in_nmi())) {
+ 			if (spec.field_width == -1)
+ 				spec.field_width = default_width;
+ 			return string(buf, end, "pK-error", spec);
 
 
