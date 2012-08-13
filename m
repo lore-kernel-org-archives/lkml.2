@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2HMWEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:04:12 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:42647 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562Ab2HMWEK (ORCPT
+	id S1754563Ab2HMWEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:04:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58152 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab2HMWEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:04:10 -0400
+	Mon, 13 Aug 2012 18:04:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 18/44] random: Adjust the number of loops when initializing
-Date: Mon, 13 Aug 2012 15:02:25 -0700
-Message-Id: <20120813220143.745266544@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        "Theodore Tso" <tytso@mit.edu>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Matt Mackall <mpm@selenic.com>, Tony Luck <tony.luck@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 16/44] random: Use arch_get_random_int instead of cycle counter if avail
+Date: Mon, 13 Aug 2012 15:02:23 -0700
+Message-Id: <20120813220143.578443311@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -29,35 +34,66 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 2dac8e54f988ab58525505d7ef982493374433c3 upstream.
+commit cf833d0b9937874b50ef2867c4e8badfd64948ce upstream.
 
-When we are initializing using arch_get_random_long() we only need to
-loop enough times to touch all the bytes in the buffer; using
-poolwords for that does twice the number of operations necessary on a
-64-bit machine, since in the random number generator code "word" means
-32 bits.
+We still don't use rdrand in /dev/random, which just seems stupid. We
+accept the *cycle*counter* as a random input, but we don't accept
+rdrand? That's just broken.
 
+Sure, people can do things in user space (write to /dev/random, use
+rdrand in addition to /dev/random themselves etc etc), but that
+*still* seems to be a particularly stupid reason for saying "we
+shouldn't bother to try to do better in /dev/random".
+
+And even if somebody really doesn't trust rdrand as a source of random
+bytes, it seems singularly stupid to trust the cycle counter *more*.
+
+So I'd suggest the attached patch. I'm not going to even bother
+arguing that we should add more bits to the entropy estimate, because
+that's not the point - I don't care if /dev/random fills up slowly or
+not, I think it's just stupid to not use the bits we can get from
+rdrand and mix them into the strong randomness pool.
+
+Link: http://lkml.kernel.org/r/CA%2B55aFwn59N1=m651QAyTy-1gO1noGbK18zwKDwvwqnravA84A@mail.gmail.com
+Acked-by: "David S. Miller" <davem@davemloft.net>
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Link: http://lkml.kernel.org/r/1324589281-31931-1-git-send-email-tytso@mit.edu
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/random.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -975,7 +975,7 @@ static void init_std_data(struct entropy
+@@ -624,8 +624,8 @@ static struct timer_rand_state input_tim
+ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
+ {
+ 	struct {
+-		cycles_t cycles;
+ 		long jiffies;
++		unsigned cycles;
+ 		unsigned num;
+ 	} sample;
+ 	long delta, delta2, delta3;
+@@ -637,7 +637,11 @@ static void add_timer_randomness(struct
+ 		goto out;
  
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
--	for (i = r->poolinfo->poolwords; i; i--) {
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
- 		if (!arch_get_random_long(&flags))
- 			break;
- 		mix_pool_bytes(r, &flags, sizeof(flags));
+ 	sample.jiffies = jiffies;
+-	sample.cycles = get_cycles();
++
++	/* Use arch random value, fall back to cycles */
++	if (!arch_get_random_int(&sample.cycles))
++		sample.cycles = get_cycles();
++
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
+ 
 
 
