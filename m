@@ -1,159 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab2HMQx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:53:26 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:44608
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753059Ab2HMQxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:53:19 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 06/18] Tools: hv: Further refactor kvp_get_ip_address()
-Date: Mon, 13 Aug 2012 10:06:55 -0700
-Message-Id: <1344877627-21779-6-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1344877627-21779-1-git-send-email-kys@microsoft.com>
-References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
- <1344877627-21779-1-git-send-email-kys@microsoft.com>
+	id S1753560Ab2HMQyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:54:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33521 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab2HMQxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:53:25 -0400
+Date: Mon, 13 Aug 2012 09:53:06 -0700
+From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
+Message-ID: <tip-8f6189684eb4e85e6c593cd710693f09c944450a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
+In-Reply-To: <1344051854.6739.19.camel@marge.simpson.net>
+References: <1344051854.6739.19.camel@marge.simpson.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix migration thread runtime bogosity
+Git-Commit-ID: 8f6189684eb4e85e6c593cd710693f09c944450a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:53:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for making kvp_get_ip_address() more generic, factor out
-the code for handling IP addresses.
+Commit-ID:  8f6189684eb4e85e6c593cd710693f09c944450a
+Gitweb:     http://git.kernel.org/tip/8f6189684eb4e85e6c593cd710693f09c944450a
+Author:     Mike Galbraith <mgalbraith@suse.de>
+AuthorDate: Sat, 4 Aug 2012 05:44:14 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 13 Aug 2012 18:41:55 +0200
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: Olaf Hering <olaf@aepfle.de>
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+sched: Fix migration thread runtime bogosity
+
+Make stop scheduler class do the same accounting as other classes,
+
+Migration threads can be caught in the act while doing exec balancing,
+leading to the below due to use of unmaintained ->se.exec_start.  The
+load that triggered this particular instance was an apparently out of
+control heavily threaded application that does system monitoring in
+what equated to an exec bomb, with one of the VERY frequently migrated
+tasks being ps.
+
+%CPU   PID USER     CMD
+99.3    45 root     [migration/10]
+97.7    53 root     [migration/12]
+97.0    57 root     [migration/13]
+90.1    49 root     [migration/11]
+89.6    65 root     [migration/15]
+88.7    17 root     [migration/3]
+80.4    37 root     [migration/8]
+78.1    41 root     [migration/9]
+44.2    13 root     [migration/2]
+
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- tools/hv/hv_kvp_daemon.c |   94 ++++++++++++++++++++-------------------------
- 1 files changed, 42 insertions(+), 52 deletions(-)
+ kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 3af37f0..3dc989f 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -491,17 +491,50 @@ done:
- 	return;
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 7b386e8..da5eb5b 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+ 
+ 	return NULL;
+ }
+@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
+ 
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
  }
  
-+static int kvp_process_ip_address(void *addrp,
-+				int family, char *buffer,
-+				int length,  int *offset)
-+{
-+	struct sockaddr_in *addr;
-+	struct sockaddr_in6 *addr6;
-+	int addr_length;
-+	char tmp[50];
-+	const char *str;
-+
-+	if (family == AF_INET) {
-+		addr = (struct sockaddr_in *)addrp;
-+		str = inet_ntop(family, &addr->sin_addr, tmp, 50);
-+		addr_length = INET_ADDRSTRLEN;
-+	} else {
-+		addr6 = (struct sockaddr_in6 *)addrp;
-+		str = inet_ntop(family, &addr6->sin6_addr.s6_addr, tmp, 50);
-+		addr_length = INET6_ADDRSTRLEN;
-+	}
-+
-+	if ((length - *offset) < addr_length + 1)
-+		return 1;
-+	if (str == NULL) {
-+		strcpy(buffer, "inet_ntop failed\n");
-+		return 1;
-+	}
-+	if (*offset == 0)
-+		strcpy(buffer, tmp);
-+	else
-+		strcat(buffer, tmp);
-+	strcat(buffer, ";");
-+
-+	*offset += strlen(str) + 1;
-+	return 0;
-+}
-+
- static int
- kvp_get_ip_address(int family, char *if_name, int op,
- 		 void  *out_buffer, int length)
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+ 
+ static void set_curr_task_stop(struct rq *rq)
  {
- 	struct ifaddrs *ifap;
- 	struct ifaddrs *curp;
--	int ipv4_len = strlen("255.255.255.255") + 1;
--	int ipv6_len = strlen("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")+1;
- 	int offset = 0;
- 	const char *str;
--	char tmp[50];
- 	int error = 0;
- 	char *buffer;
- 	struct hv_kvp_ipaddr_value *ip_buffer;
-@@ -556,55 +589,12 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 			continue;
- 		}
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
  
--		if ((curp->ifa_addr->sa_family == AF_INET) &&
--			((family == AF_INET) || (family == 0))) {
--			struct sockaddr_in *addr =
--			(struct sockaddr_in *) curp->ifa_addr;
--
--			str = inet_ntop(AF_INET, &addr->sin_addr, tmp, 50);
--			if (str == NULL) {
--				strcpy(buffer, "inet_ntop failed\n");
--				error = 1;
--				goto getaddr_done;
--			}
--			if (offset == 0)
--				strcpy(buffer, tmp);
--			else
--				strcat(buffer, tmp);
--			strcat(buffer, ";");
--
--			offset += strlen(str) + 1;
--			if ((length - offset) < (ipv4_len + 1))
--				goto getaddr_done;
--
--		} else if ((family == AF_INET6) || (family == 0)) {
--
--			/*
--			 * We only support AF_INET and AF_INET6
--			 * and the list of addresses is separated by a ";".
--			 */
--			struct sockaddr_in6 *addr =
--				(struct sockaddr_in6 *) curp->ifa_addr;
--
--			str = inet_ntop(AF_INET6,
--					&addr->sin6_addr.s6_addr,
--					tmp, 50);
--			if (str == NULL) {
--				strcpy(buffer, "inet_ntop failed\n");
--				error = 1;
--				goto getaddr_done;
--			}
--			if (offset == 0)
--				strcpy(buffer, tmp);
--			else
--				strcat(buffer, tmp);
--			strcat(buffer, ";");
--			offset += strlen(str) + 1;
--			if ((length - offset) < (ipv6_len + 1))
--				goto getaddr_done;
--
--		}
--
-+		error = kvp_process_ip_address(curp->ifa_addr,
-+						curp->ifa_addr->sa_family,
-+						buffer,
-+						length, &offset);
-+		if (error)
-+			goto getaddr_done;
- 
- 		curp = curp->ifa_next;
- 	}
--- 
-1.7.4.1
-
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
