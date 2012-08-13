@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2HMTFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 15:05:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1644 "EHLO mx1.redhat.com"
+	id S1752762Ab2HMTH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 15:07:29 -0400
+Received: from shutemov.name ([176.9.204.213]:48032 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344Ab2HMTFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 15:05:18 -0400
-Date: Mon, 13 Aug 2012 16:04:21 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
-        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
-        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
-        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: [patch net-next 03/16] vlan: add link to upper device
-Message-ID: <20120813160421.77a74e4e@obelix.rh>
-In-Reply-To: <1344871635-1052-4-git-send-email-jiri@resnulli.us>
-References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
-	<1344871635-1052-4-git-send-email-jiri@resnulli.us>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752186Ab2HMTH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 15:07:28 -0400
+Date: Mon, 13 Aug 2012 22:07:43 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jan Beulich <JBeulich@suse.com>, Andi Kleen <ak@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Robert Richter <robert.richter@amd.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Alex Shi <alex.shu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
+        Tim Chen <tim.c.chen@linux.intel.com>, linuxppc-dev@lists.ozlabs.org,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2 4/6] x86: Add clear_page_nocache
+Message-ID: <20120813190743.GA10584@shutemov.name>
+References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1344524583-1096-5-git-send-email-kirill.shutemov@linux.intel.com>
+ <5023F1BC0200007800093EF0@nat28.tlf.novell.com>
+ <20120813114334.GA21855@otc-wbsnb-06>
+ <20120813170402.GB15530@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120813170402.GB15530@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012 17:27:02 +0200
-Jiri Pirko <jiri@resnulli.us> wrote:
-
-> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-> ---
->  net/8021q/vlan.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
+On Mon, Aug 13, 2012 at 07:04:02PM +0200, Borislav Petkov wrote:
+> On Mon, Aug 13, 2012 at 02:43:34PM +0300, Kirill A. Shutemov wrote:
+> > $ cat test.c
+> > #include <stdio.h>
+> > #include <sys/mman.h>
+> > 
+> > #define SIZE 1024*1024*1024
+> > 
+> > void clear_page_nocache_sse2(void *page) __attribute__((regparm(1)));
+> > 
+> > int main(int argc, char** argv)
+> > {
+> >         char *p;
+> >         unsigned long i, j;
+> > 
+> >         p = mmap(NULL, SIZE, PROT_WRITE|PROT_READ,
+> >                         MAP_PRIVATE|MAP_ANONYMOUS|MAP_POPULATE, -1, 0);
+> >         for(j = 0; j < 100; j++) {
+> >                 for(i = 0; i < SIZE; i += 4096) {
+> >                         clear_page_nocache_sse2(p + i);
+> >                 }
+> >         }
+> > 
+> >         return 0;
+> > }
+> > $ cat clear_page_nocache_unroll32.S
+> > .globl clear_page_nocache_sse2
+> > .align 4,0x90
+> > clear_page_nocache_sse2:
+> > .cfi_startproc
+> >         mov    %eax,%edx
+> >         xorl   %eax,%eax
+> >         movl   $4096/32,%ecx
+> >         .p2align 4
+> > .Lloop_sse2:
+> >         decl    %ecx
+> > #define PUT(x) movnti %eax,x*4(%edx)
+> >         PUT(0)
+> >         PUT(1)
+> >         PUT(2)
+> >         PUT(3)
+> >         PUT(4)
+> >         PUT(5)
+> >         PUT(6)
+> >         PUT(7)
+> > #undef PUT
+> >         lea     32(%edx),%edx
+> >         jnz     .Lloop_sse2
+> >         nop
+> >         ret
+> > .cfi_endproc
+> > .type clear_page_nocache_sse2, @function
+> > .size clear_page_nocache_sse2, .-clear_page_nocache_sse2
+> > $ cat clear_page_nocache_unroll64.S
+> > .globl clear_page_nocache_sse2
+> > .align 4,0x90
+> > clear_page_nocache_sse2:
+> > .cfi_startproc
+> >         mov    %eax,%edx
 > 
-> diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-> index 9096bcb..739665e 100644
-> --- a/net/8021q/vlan.c
-> +++ b/net/8021q/vlan.c
-> @@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
->  	 */
->  	unregister_netdevice_queue(dev, head);
->  
-> +	netdev_upper_dev_unlink(real_dev, dev);
-> +
->  	if (grp->nr_vlan_devs == 0)
->  		vlan_gvrp_uninit_applicant(real_dev);
->  
-> @@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
->  	if (err < 0)
->  		goto out_uninit_applicant;
->  
-> +	err = netdev_upper_dev_link(real_dev, dev);
-> +	if (err)
-> +		goto out_uninit_applicant;
-> +
->  	err = register_netdevice(dev);
->  	if (err < 0)
-> -		goto out_uninit_applicant;
-> +		goto out_upper_dev_unlink;
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-see below:
+> This must still be the 32-bit version becaue it segfaults here.
 
->  
->  	/* Account for reference in struct vlan_dev_priv */
->  	dev_hold(real_dev);
-> @@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
->  
->  	return 0;
->  
-> +upper_dev_unlink:
-^^^^^^^^^^^^^^^^^^^
-should be out_upper_dev_unlink:
+Yes, it's test for 32-bit version.
 
-fbl
-
-> +	netdev_upper_dev_unlink(real_dev, dev);
->  out_uninit_applicant:
->  	if (grp->nr_vlan_devs == 0)
->  		vlan_gvrp_uninit_applicant(real_dev);
-
+-- 
+ Kirill A. Shutemov
