@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab2HMWOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:14:06 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52447 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab2HMWEG (ORCPT
+	id S1754507Ab2HMWD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:03:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35533 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415Ab2HMWDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:04:06 -0400
+	Mon, 13 Aug 2012 18:03:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>,
-        Uros Bizjak <ubizjak@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 09/44] ARM: 7479/1: mm: avoid NULL dereference when flushing gate_vma with VIVT caches
-Date: Mon, 13 Aug 2012 15:02:16 -0700
-Message-Id: <20120813220142.973495981@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 14/44] random: Add support for architectural random hooks
+Date: Mon, 13 Aug 2012 15:02:21 -0700
+Message-Id: <20120813220143.399307850@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -31,56 +32,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit b74253f78400f9a4b42da84bb1de7540b88ce7c4 upstream.
+commit 63d77173266c1791f1553e9e8ccea65dc87c4485 upstream.
 
-The vivt_flush_cache_{range,page} functions check that the mm_struct
-of the VMA being flushed has been active on the current CPU before
-performing the cache maintenance.
+Add support for architecture-specific hooks into the kernel-directed
+random number generator interfaces.  This patchset does not use the
+architecture random number generator interfaces for the
+userspace-directed interfaces (/dev/random and /dev/urandom), thus
+eliminating the need to distinguish between them based on a pool
+pointer.
 
-The gate_vma has a NULL mm_struct pointer and, as such, will cause a
-kernel fault if we try to flush it with the above operations. This
-happens during ELF core dumps, which include the gate_vma as it may be
-useful for debugging purposes.
+Changes in version 3:
+- Moved the hooks from extract_entropy() to get_random_bytes().
+- Changes the hooks to inlines.
 
-This patch adds checks to the VIVT cache flushing functions so that VMAs
-with a NULL mm_struct are flushed unconditionally (the vectors page may
-be dirty if we use it to store the current TLS pointer).
-
-Reported-by: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
-Tested-by: Uros Bizjak <ubizjak@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/cacheflush.h |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/char/random.c  |   23 +++++++++++++++++++++--
+ include/linux/random.h |   13 +++++++++++++
+ 2 files changed, 34 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -215,7 +215,9 @@ static inline void vivt_flush_cache_mm(s
- static inline void
- vivt_flush_cache_range(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -932,7 +932,21 @@ static ssize_t extract_entropy_user(stru
+  */
+ void get_random_bytes(void *buf, int nbytes)
  {
--	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(vma->vm_mm)))
-+	struct mm_struct *mm = vma->vm_mm;
+-	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
++	char *p = buf;
 +
-+	if (!mm || cpumask_test_cpu(smp_processor_id(), mm_cpumask(mm)))
- 		__cpuc_flush_user_range(start & PAGE_MASK, PAGE_ALIGN(end),
- 					vma->vm_flags);
++	while (nbytes) {
++		unsigned long v;
++		int chunk = min(nbytes, (int)sizeof(unsigned long));
++
++		if (!arch_get_random_long(&v))
++			break;
++
++		memcpy(buf, &v, chunk);
++		p += chunk;
++		nbytes -= chunk;
++	}
++
++	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
  }
-@@ -223,7 +225,9 @@ vivt_flush_cache_range(struct vm_area_st
- static inline void
- vivt_flush_cache_page(struct vm_area_struct *vma, unsigned long user_addr, unsigned long pfn)
+ EXPORT_SYMBOL(get_random_bytes);
+ 
+@@ -1318,9 +1332,14 @@ late_initcall(random_int_secret_init);
+ DEFINE_PER_CPU(__u32 [MD5_DIGEST_WORDS], get_random_int_hash);
+ unsigned int get_random_int(void)
  {
--	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(vma->vm_mm))) {
-+	struct mm_struct *mm = vma->vm_mm;
+-	__u32 *hash = get_cpu_var(get_random_int_hash);
++	__u32 *hash;
+ 	unsigned int ret;
+ 
++	if (arch_get_random_int(&ret))
++		return ret;
 +
-+	if (!mm || cpumask_test_cpu(smp_processor_id(), mm_cpumask(mm))) {
- 		unsigned long addr = user_addr & PAGE_MASK;
- 		__cpuc_flush_user_range(addr, addr + PAGE_SIZE, vma->vm_flags);
- 	}
++	hash = get_cpu_var(get_random_int_hash);
++
+ 	hash[0] += current->pid + jiffies + get_cycles();
+ 	md5_transform(hash, random_int_secret);
+ 	ret = hash[0];
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -91,6 +91,19 @@ static inline void prandom32_seed(struct
+ 	state->s3 = __seed(i, 15);
+ }
+ 
++#ifdef CONFIG_ARCH_RANDOM
++# include <asm/archrandom.h>
++#else
++static inline int arch_get_random_long(unsigned long *v)
++{
++	return 0;
++}
++static inline int arch_get_random_int(unsigned int *v)
++{
++	return 0;
++}
++#endif
++
+ #endif /* __KERNEL___ */
+ 
+ #endif /* _LINUX_RANDOM_H */
 
 
