@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2HMShv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:37:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44867 "EHLO
+	id S1753361Ab2HMSnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:43:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45065 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535Ab2HMShf (ORCPT
+	with ESMTP id S1752543Ab2HMSht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:35 -0400
+	Mon, 13 Aug 2012 14:37:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/38] perf tools: Support for events bash completion
-Date: Mon, 13 Aug 2012 15:36:45 -0300
-Message-Id: <1344883039-13495-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 21/38] perf tools: Support for DWARF mode callchain
+Date: Mon, 13 Aug 2012 15:37:02 -0300
+Message-Id: <1344883039-13495-22-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -28,259 +35,259 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Add basic bash completion for the -e option in record, top and stat
-subcommands. Only hardware, software and tracepoint events are
-supported.
+This patch enables perf to use the DWARF unwind code.
 
-Breakpoints, raw events and events grouping completion need more
-thinking.
+It extends the perf record '-g' option with following arguments:
+  'fp'           - provides framepointer based user
+                   stack backtrace
+  'dwarf[,size]' - provides DWARF (libunwind) based user stack
+                   backtrace. The size specifies the size of the
+                   user stack dump. If omitted it is 8192 by default.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+If libunwind is found during the perf build, then the 'dwarf' argument
+becomes available for record command. The 'fp' stays as default option
+in any case.
+
+Examples: (perf compiled with libunwind)
+
+   perf record -g dwarf ls
+      - provides dwarf unwind with 8192 as stack dump size
+
+   perf record -g dwarf,4096 ls
+      - provides dwarf unwind with 4096 as stack dump size
+
+   perf record -g -- ls
+   perf record -g fp ls
+      - provides frame pointer unwind
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1344522713-27951-3-git-send-email-fweisbec@gmail.com
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1344345647-11536-13-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion     |    6 +++-
- tools/perf/builtin-list.c      |   14 ++++---
- tools/perf/util/parse-events.c |   70 +++++++++++++++++++++++++---------------
- tools/perf/util/parse-events.h |    7 ++--
- 4 files changed, 61 insertions(+), 36 deletions(-)
+ tools/perf/builtin-record.c |  114 ++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/perf.h           |    9 +++-
+ tools/perf/util/evsel.c     |   13 +++++-
+ 3 files changed, 132 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 9a31fa5..1958fa5 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -6,7 +6,7 @@ _perf()
- 	local cur cmd
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 4db6e1b..22dd05d 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,6 +31,15 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- 	COMPREPLY=()
--	_get_comp_words_by_ref cur
-+	_get_comp_words_by_ref cur prev
++#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
++
++#ifdef NO_LIBUNWIND_SUPPORT
++static char callchain_help[] = CALLCHAIN_HELP "[fp]";
++#else
++static unsigned long default_stack_dump_size = 8192;
++static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#endif
++
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -732,6 +741,106 @@ error:
+ 	return ret;
+ }
  
- 	cmd=${COMP_WORDS[0]}
- 
-@@ -14,6 +14,10 @@ _perf()
- 	if [ $COMP_CWORD -eq 1 ]; then
- 		cmds=$($cmd --list-cmds)
- 		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+	# List possible events for -e option
-+	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
-+		cmds=$($cmd list --raw-dump)
-+		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
- 	# Fall down to list regular files
- 	else
- 		_filedir
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 6313b6e..bdcff81 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -19,15 +19,15 @@ int cmd_list(int argc, const char **argv, const char *prefix __used)
- 	setup_pager();
- 
- 	if (argc == 1)
--		print_events(NULL);
-+		print_events(NULL, false);
- 	else {
- 		int i;
- 
- 		for (i = 1; i < argc; ++i) {
--			if (i > 1)
-+			if (i > 2)
- 				putchar('\n');
- 			if (strncmp(argv[i], "tracepoint", 10) == 0)
--				print_tracepoint_events(NULL, NULL);
-+				print_tracepoint_events(NULL, NULL, false);
- 			else if (strcmp(argv[i], "hw") == 0 ||
- 				 strcmp(argv[i], "hardware") == 0)
- 				print_events_type(PERF_TYPE_HARDWARE);
-@@ -36,13 +36,15 @@ int cmd_list(int argc, const char **argv, const char *prefix __used)
- 				print_events_type(PERF_TYPE_SOFTWARE);
- 			else if (strcmp(argv[i], "cache") == 0 ||
- 				 strcmp(argv[i], "hwcache") == 0)
--				print_hwcache_events(NULL);
-+				print_hwcache_events(NULL, false);
-+			else if (strcmp(argv[i], "--raw-dump") == 0)
-+				print_events(NULL, true);
- 			else {
- 				char *sep = strchr(argv[i], ':'), *s;
- 				int sep_idx;
- 
- 				if (sep == NULL) {
--					print_events(argv[i]);
-+					print_events(argv[i], false);
- 					continue;
- 				}
- 				sep_idx = sep - argv[i];
-@@ -51,7 +53,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __used)
- 					return -1;
- 
- 				s[sep_idx] = '\0';
--				print_tracepoint_events(s, s + sep_idx + 1);
-+				print_tracepoint_events(s, s + sep_idx + 1, false);
- 				free(s);
- 			}
- 		}
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 8bdfa3e..3ec4bfc 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -799,7 +799,8 @@ static const char * const event_type_descriptors[] = {
-  * Print the events from <debugfs_mount_point>/tracing/events
-  */
- 
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
-+void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+			     bool name_only)
- {
- 	DIR *sys_dir, *evt_dir;
- 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
-@@ -829,6 +830,11 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
- 			    !strglobmatch(evt_dirent.d_name, event_glob))
- 				continue;
- 
-+			if (name_only) {
-+				printf("%s:%s ", sys_dirent.d_name, evt_dirent.d_name);
-+				continue;
++#ifndef NO_LIBUNWIND_SUPPORT
++static int get_stack_size(char *str, unsigned long *_size)
++{
++	char *endptr;
++	unsigned long size;
++	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
++
++	size = strtoul(str, &endptr, 0);
++
++	do {
++		if (*endptr)
++			break;
++
++		size = round_up(size, sizeof(u64));
++		if (!size || size > max_size)
++			break;
++
++		*_size = size;
++		return 0;
++
++	} while (0);
++
++	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
++	       max_size, str);
++	return -1;
++}
++#endif /* !NO_LIBUNWIND_SUPPORT */
++
++static int
++parse_callchain_opt(const struct option *opt __used, const char *arg,
++		    int unset)
++{
++	struct perf_record *rec = (struct perf_record *)opt->value;
++	char *tok, *name, *saveptr = NULL;
++	char *buf;
++	int ret = -1;
++
++	/* --no-call-graph */
++	if (unset)
++		return 0;
++
++	/* We specified default option if none is provided. */
++	BUG_ON(!arg);
++
++	/* We need buffer that we know we can write to. */
++	buf = malloc(strlen(arg) + 1);
++	if (!buf)
++		return -ENOMEM;
++
++	strcpy(buf, arg);
++
++	tok = strtok_r((char *)buf, ",", &saveptr);
++	name = tok ? : (char *)buf;
++
++	do {
++		/* Framepointer style */
++		if (!strncmp(name, "fp", sizeof("fp"))) {
++			if (!strtok_r(NULL, ",", &saveptr)) {
++				rec->opts.call_graph = CALLCHAIN_FP;
++				ret = 0;
++			} else
++				pr_err("callchain: No more arguments "
++				       "needed for -g fp\n");
++			break;
++
++#ifndef NO_LIBUNWIND_SUPPORT
++		/* Dwarf style */
++		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
++			ret = 0;
++			rec->opts.call_graph = CALLCHAIN_DWARF;
++			rec->opts.stack_dump_size = default_stack_dump_size;
++
++			tok = strtok_r(NULL, ",", &saveptr);
++			if (tok) {
++				unsigned long size = 0;
++
++				ret = get_stack_size(tok, &size);
++				rec->opts.stack_dump_size = size;
 +			}
 +
- 			snprintf(evt_path, MAXPATHLEN, "%s:%s",
- 				 sys_dirent.d_name, evt_dirent.d_name);
- 			printf("  %-50s [%s]\n", evt_path,
-@@ -906,7 +912,7 @@ void print_events_type(u8 type)
- 		__print_events_type(type, event_symbols_hw, PERF_COUNT_HW_MAX);
- }
- 
--int print_hwcache_events(const char *event_glob)
-+int print_hwcache_events(const char *event_glob, bool name_only)
- {
- 	unsigned int type, op, i, printed = 0;
- 	char name[64];
-@@ -923,8 +929,11 @@ int print_hwcache_events(const char *event_glob)
- 				if (event_glob != NULL && !strglobmatch(name, event_glob))
- 					continue;
- 
--				printf("  %-50s [%s]\n", name,
--					event_type_descriptors[PERF_TYPE_HW_CACHE]);
-+				if (name_only)
-+					printf("%s ", name);
-+				else
-+					printf("  %-50s [%s]\n", name,
-+					       event_type_descriptors[PERF_TYPE_HW_CACHE]);
- 				++printed;
- 			}
- 		}
-@@ -934,7 +943,8 @@ int print_hwcache_events(const char *event_glob)
- }
- 
- static void print_symbol_events(const char *event_glob, unsigned type,
--				struct event_symbol *syms, unsigned max)
-+				struct event_symbol *syms, unsigned max,
-+				bool name_only)
- {
- 	unsigned i, printed = 0;
- 	char name[MAX_NAME_LEN];
-@@ -946,6 +956,11 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 		      (syms->alias && strglobmatch(syms->alias, event_glob))))
- 			continue;
- 
-+		if (name_only) {
-+			printf("%s ", syms->symbol);
-+			continue;
++			if (!ret)
++				pr_debug("callchain: stack dump size %d\n",
++					 rec->opts.stack_dump_size);
++#endif /* !NO_LIBUNWIND_SUPPORT */
++		} else {
++			pr_err("callchain: Unknown -g option "
++			       "value: %s\n", arg);
++			break;
 +		}
 +
- 		if (strlen(syms->alias))
- 			snprintf(name, MAX_NAME_LEN, "%s OR %s", syms->symbol, syms->alias);
- 		else
-@@ -963,39 +978,42 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- /*
-  * Print the help text for the event symbols:
-  */
--void print_events(const char *event_glob)
-+void print_events(const char *event_glob, bool name_only)
- {
--
--	printf("\n");
--	printf("List of pre-defined events (to be used in -e):\n");
-+	if (!name_only) {
-+		printf("\n");
-+		printf("List of pre-defined events (to be used in -e):\n");
-+	}
- 
- 	print_symbol_events(event_glob, PERF_TYPE_HARDWARE,
--			    event_symbols_hw, PERF_COUNT_HW_MAX);
-+			    event_symbols_hw, PERF_COUNT_HW_MAX, name_only);
- 
- 	print_symbol_events(event_glob, PERF_TYPE_SOFTWARE,
--			    event_symbols_sw, PERF_COUNT_SW_MAX);
-+			    event_symbols_sw, PERF_COUNT_SW_MAX, name_only);
- 
--	print_hwcache_events(event_glob);
-+	print_hwcache_events(event_glob, name_only);
- 
- 	if (event_glob != NULL)
- 		return;
- 
--	printf("\n");
--	printf("  %-50s [%s]\n",
--	       "rNNN",
--	       event_type_descriptors[PERF_TYPE_RAW]);
--	printf("  %-50s [%s]\n",
--	       "cpu/t1=v1[,t2=v2,t3 ...]/modifier",
--	       event_type_descriptors[PERF_TYPE_RAW]);
--	printf("   (see 'perf list --help' on how to encode it)\n");
--	printf("\n");
--
--	printf("  %-50s [%s]\n",
--			"mem:<addr>[:access]",
-+	if (!name_only) {
-+		printf("\n");
-+		printf("  %-50s [%s]\n",
-+		       "rNNN",
-+		       event_type_descriptors[PERF_TYPE_RAW]);
-+		printf("  %-50s [%s]\n",
-+		       "cpu/t1=v1[,t2=v2,t3 ...]/modifier",
-+		       event_type_descriptors[PERF_TYPE_RAW]);
-+		printf("   (see 'perf list --help' on how to encode it)\n");
-+		printf("\n");
++	} while (0);
 +
-+		printf("  %-50s [%s]\n",
-+		       "mem:<addr>[:access]",
- 			event_type_descriptors[PERF_TYPE_BREAKPOINT]);
--	printf("\n");
-+		printf("\n");
++	free(buf);
++
++	if (!ret)
++		pr_debug("callchain: type %d\n", rec->opts.call_graph);
++
++	return ret;
++}
++
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -803,8 +912,9 @@ const struct option record_options[] = {
+ 		     "number of mmap data pages"),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+-	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
+-		    "do call-graph (stack chain/backtrace) recording"),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode[,dump_size]",
++			     callchain_help, &parse_callchain_opt,
++			     "fp"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index f960ccb..87f4ec6 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
+ 
+ #include "util/target.h"
+ 
++enum perf_call_graph_mode {
++	CALLCHAIN_NONE,
++	CALLCHAIN_FP,
++	CALLCHAIN_DWARF
++};
++
+ struct perf_record_opts {
+ 	struct perf_target target;
+-	bool	     call_graph;
++	int	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+ 	bool	     no_delay;
+@@ -230,6 +236,7 @@ struct perf_record_opts {
+ 	u64          branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
++	u16	     stack_dump_size;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a2da682..9c54e8f 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -17,6 +17,8 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "../../../include/linux/hw_breakpoint.h"
++#include "../../include/linux/perf_event.h"
++#include "perf_regs.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -368,9 +370,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->mmap_data = track;
+ 	}
+ 
+-	if (opts->call_graph)
++	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
++		if (opts->call_graph == CALLCHAIN_DWARF) {
++			attr->sample_type |= PERF_SAMPLE_REGS_USER |
++					     PERF_SAMPLE_STACK_USER;
++			attr->sample_regs_user = PERF_REGS_MASK;
++			attr->sample_stack_user = opts->stack_dump_size;
++			attr->exclude_callchain_user = 1;
++		}
 +	}
++
+ 	if (perf_target__has_cpu(&opts->target))
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
  
--	print_tracepoint_events(NULL, NULL);
-+	print_tracepoint_events(NULL, NULL, name_only);
- }
- 
- int parse_events__is_hardcoded_term(struct parse_events__term *term)
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 163aad4..00416d7 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -96,10 +96,11 @@ void parse_events_update_lists(struct list_head *list_event,
- void parse_events_error(void *data, void *scanner, char const *msg);
- int parse_events__test(void);
- 
--void print_events(const char *event_glob);
-+void print_events(const char *event_glob, bool name_only);
- void print_events_type(u8 type);
--void print_tracepoint_events(const char *subsys_glob, const char *event_glob);
--int print_hwcache_events(const char *event_glob);
-+void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
-+			     bool name_only);
-+int print_hwcache_events(const char *event_glob, bool name_only);
- extern int is_valid_tracepoint(const char *event_string);
- 
- extern int valid_debugfs_mount(const char *debugfs);
 -- 
 1.7.1
 
