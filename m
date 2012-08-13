@@ -1,144 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2HMWhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:37:15 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:45559 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754059Ab2HMWhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:37:13 -0400
-Message-ID: <5029823A.9020207@xenotime.net>
-Date: Mon, 13 Aug 2012 15:39:54 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Thai Bui <blquythai@gmail.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
- DEBUG_INITCALL
-References: <1344891431-30869-1-git-send-email-blquythai@gmail.com> <20120813212151.GA15429@phenom.dumpdata.com> <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
-In-Reply-To: <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754157Ab2HMWlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:41:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab2HMWlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:41:09 -0400
+Message-ID: <1344897665.4683.179.camel@ul30vt.home>
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Mon, 13 Aug 2012 16:41:05 -0600
+In-Reply-To: <20120813220609.GA1931@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
+	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
+	 <1344540375.3441.228.camel@ul30vt.home> <50276B11.8020708@redhat.com>
+	 <1344893641.4683.146.camel@ul30vt.home> <20120813220609.GA1931@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 64.134.136.30 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 03:08 PM, Thai Bui wrote:
-> Hi all,
->
-> I am as part of a capstone group at Portland State University is working
-> to tinify the kernel as small as possible. The ultimate goal is to make
-> the kernel small enough to use on micro-controller (or under < 200k).
-> This patch is one of them, it saves 176 bytes on a minimal configuration
-> of the kernel (the bzImage file was reduced from 363264 bytes to 363264
-> bytes applying this patch).
->
-> Aside from the purpose of reducing the size of the kernel. We are also
-> trying to clean up the kernel by making Kconfig options to compile out
-> the stuffs that aren't used often.
+On Tue, 2012-08-14 at 01:06 +0300, Michael S. Tsirkin wrote:
+> On Mon, Aug 13, 2012 at 03:34:01PM -0600, Alex Williamson wrote:
+> > On Sun, 2012-08-12 at 11:36 +0300, Avi Kivity wrote:
+> > > On 08/09/2012 10:26 PM, Alex Williamson wrote:
+> > > > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
+> > > >> On 08/06/2012 01:38 PM, Avi Kivity wrote:
+> > > >> 
+> > > >> > Regarding the implementation, instead of a linked list, would an array
+> > > >> > of counters parallel to the bitmap make it simpler?
+> > > >> 
+> > > >> Or even, replace the bitmap with an array of counters.
+> > > > 
+> > > > I'm not sure a counter array is what we're really after.  That gives us
+> > > > reference counting for the irq source IDs, but not the key->gsi lookup.
+> > > 
+> > > You can look up the gsi while registering the eoifd, so it's accessible
+> > > as eoifd->gsi instead of eoifd->source->gsi.  The irqfd can go away
+> > > while the eoifd is still active, but is this a problem?
+> > 
+> > In my opinion, no, but Michael disagrees.
+> > 
+> > > > It also highlights another issue, that we have a limited set of source
+> > > > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
+> > > > for the shared userspace ID and another for the PIT.  How happy are we
+> > > > going to be with a limit of 62 level interrupts in use at one time?
+> > > 
+> > > When we start being unhappy we can increase that number.  On the other
+> > > hand more locks and lists makes me unhappy now.
+> > 
+> > Yep, good point.  My latest version removes the source ID object lock
+> > and list (and objects).  I still have a lock and list for the ack
+> > notification, but it's hard not to unless we combine them into one
+> > mega-irqfd ioctl as Michael suggests.
+> >
+> > > > It's arguably a reasonable number since the most virtualization friendly
+> > > > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
+> > > > also very wasteful allocating an entire source ID for a single GSI
+> > > > within that source ID.  PCI supports interrupts A, B, C, and D, which,
+> > > > in the most optimal config, each go to different GSIs.  So we could
+> > > > theoretically be more efficient in our use and allocation of irq source
+> > > > IDs if we tracked use by the source ID, gsi pair.
+> > > 
+> > > There are, in one userspace, just three gsis available for PCI links, so
+> > > you're compressing the source id space by 3.
+> > 
+> > I imagine there's a way to put each PCI interrupt pin on a GSI, but
+> > still only 4, not a great expansion of source ID space.  I like
+> > Michael's idea of re-using source IDs if we run out better.
+> > 
+> > > > That probably makes it less practical to replace anything at the top
+> > > > level with a counter array.  The key that we pass back is currently the
+> > > > actual source ID, but we don't specify what it is, so we could split it
+> > > > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
+> > > > an idr entry.
+> > > 
+> > > We can fix those kinds of problems by adding another layer of
+> > > indirection.  But I doubt they will be needed.  I don't see people
+> > > assigning 60 legacy devices to one guest.
+> > 
+> > Yep, we can ignore it for now and put it in the hands of userspace to
+> > re-use IDs if needed.
+> > 
+> > > > Michael, would the interface be more acceptable to you if we added
+> > > > separate ioctls to allocate and free some representation of an irq
+> > > > source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > > > for an irq source ID/gsi object which would then be passed as a
+> > > > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > > > representing the source id/gsi isn't magically freed on it's own.  This
+> > > > would also allow us to deassign/close one end and reconfigure it later.
+> > > > Thanks,
+> > > 
+> > > Another option is to push the responsibility for allocating IDs for the
+> > > association to userspace.  Let userspace both create the irqfd and the
+> > > eoifd with the same ID, the kernel matches them at registration time and
+> > > copies the gsi/sourceid from the first to the second eventfd.
+> > 
+> > Aside from the copying gsi/sourceid bit, you've just described my latest
+> > attempt at this series.  Specifying both a sourceid and gsi also allows
+> > userspace to make better use of the sourceid address space (use more
+> > than one gsi if userspace wants the complexity of managing them).
+> > Thanks,
+> > 
+> > Alex
+> 
+> Turns out per device source ID is a bug copied from existing
+> device assignment. I am amazed we did not notice before.
+> There we have small # of devices so it's not a problem but there's no
+> reason just not to have a source ID for all irqfds.
+> So the problem goes away, and there is no limit on # of level irqfds,
+> and no need to manage IDs in userspace at all.
+> You can still have cookies in userspace if you like but do not map them
+> to source IDs.
 
-IMO the kernel already has too many kconfig options.
+IMHO it's not a bug, it's an implementation decision.  They could be
+shared, but that doesn't make it wrong to not share them.  Given that we
+have 32 memory slots, the only way you could hit this would be to have a
+lot of really slow devices that don't direct-map any BARs.  A reason to
+not have the same source id for everything is that I think we can do ack
+notification filtering more easily using separate source ids (as is done
+in the first patch of the v8 series).  As the code is today, I agree,
+there's probably no advantage to using multiple source IDs.  Thanks,
 
-Also, personally I would not merge a patch that saves so little memory,
-especially on what I consider a very useful option.
-
-
-> On Mon, Aug 13, 2012 at 5:21 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com <mailto:konrad.wilk@oracle.com>> wrote:
->
->     On Mon, Aug 13, 2012 at 01:57:11PM -0700, Thai Bui wrote:
->      > Putting DEBUG_INITCALL config option to compile out the
->     command-line option
->      > "initcall_debug".
->
->     Can you explain the benfits of this please?
->      >
->      > Signed-off-by: Thai Bui <blquythai@gmail.com
->     <mailto:blquythai@gmail.com>>
->      > Reviewed-by: Josh Triplett <josh@joshtriplett.org
->     <mailto:josh@joshtriplett.org>>
->      > ---
->      >  Documentation/kernel-parameters.txt |    3 ++-
->      >  include/linux/init.h                |    4 ++++
->      >  init/main.c                         |    2 ++
->      >  lib/Kconfig.debug                   |    9 +++++++++
->      >  4 files changed, 17 insertions(+), 1 deletion(-)
->      >
->      > diff --git a/Documentation/kernel-parameters.txt
->     b/Documentation/kernel-parameters.txt
->      > index d99fd9c..3dbaf15 100644
->      > --- a/Documentation/kernel-parameters.txt
->      > +++ b/Documentation/kernel-parameters.txt
->      > @@ -1026,7 +1026,8 @@ bytes respectively. Such letter suffixes
->     can also be entirely omitted.
->      >
->      >       initcall_debug  [KNL] Trace initcalls as they are executed.
->       Useful
->      >                       for working out where the kernel is dying
->     during
->      > -                     startup.
->      > +                     startup. DEBUG_INITCALL needs to be enabled
->     in order
->      > +                     for this option to work.
->      >
->      >       initrd=         [BOOT] Specify the location of the initial
->     ramdisk
->      >
->      > diff --git a/include/linux/init.h b/include/linux/init.h
->      > index 6b95109..d2f31f1 100644
->      > --- a/include/linux/init.h
->      > +++ b/include/linux/init.h
->      > @@ -157,7 +157,11 @@ void prepare_namespace(void);
->      >
->      >  extern void (*late_time_init)(void);
->      >
->      > +#ifdef CONFIG_DEBUG_INITCALL
->      >  extern bool initcall_debug;
->      > +#else
->      > +static const bool initcall_debug = false;
->      > +#endif /* CONFIG_DEBUG_INITCALL */
->      >
->      >  #endif
->      >
->      > diff --git a/init/main.c b/init/main.c
->      > index ff49a6d..65837f7 100644
->      > --- a/init/main.c
->      > +++ b/init/main.c
->      > @@ -648,8 +648,10 @@ static void __init do_ctors(void)
->      >  #endif
->      >  }
->      >
->      > +#ifdef CONFIG_DEBUG_INITCALL
->      >  bool initcall_debug;
->      >  core_param(initcall_debug, initcall_debug, bool, 0644);
->      > +#endif /* CONFIG_DEBUG_INITCALL */
->      >
->      >  static char msgbuf[64];
->      >
->      > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
->      > index 8745ac7..424ac93 100644
->      > --- a/lib/Kconfig.debug
->      > +++ b/lib/Kconfig.debug
->      > @@ -769,6 +769,15 @@ config DEBUG_WRITECOUNT
->      >
->      >         If unsure, say N.
->      >
->      > +config DEBUG_INITCALL
->      > +     bool "Debug initcalls as they are executed"
->      > +     depends on DEBUG_KERNEL
->      > +     help
->      > +       Enable this for tracing initcalls during startup. Useful
->     for working
->      > +       out where the kernel is dying during startup.
->      > +
->      > +       If unsure, say N
->      > +
->      >  config DEBUG_MEMORY_INIT
->      >       bool "Debug memory initialisation" if EXPERT
->      >       default !EXPERT
->      > --
+Alex
 
