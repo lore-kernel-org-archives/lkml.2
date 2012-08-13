@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab2HMLjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 07:39:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20944 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab2HMLjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 07:39:54 -0400
-Subject: [PATCH v2] SUNRPC: check current nsproxy before set of node name on
-	client creation
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 13 Aug 2012 15:37:31 +0400
-Message-ID: <20120813113731.9629.31906.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1752078Ab2HMLkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 07:40:18 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:48158 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751665Ab2HMLkQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 07:40:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
+References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Mon, 13 Aug 2012 17:09:54 +0530
+Message-ID: <CAMQu2gwbG4XSBQvvbMJ8aKRy=LRG44dKv+feSo-mso_jju71oQ@mail.gmail.com>
+Subject: Re: [PATCHv2 0/4] Add device tree data for omap5
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
-1) rpc_clnt_set_nodename() prototype updated.
-2) fixed errors in comment.
+Sourav,
 
-When child reaper exits, it can destroy mount namespace it belongs to, and if
-there are NFS mounts inside, then it will try to umount them. But in this
-point current->nsproxy is set to NULL and all namespaces will be destroyed one
-by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
+On Mon, Aug 13, 2012 at 3:35 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
+>
+> The following patch series add i2c support for omap5.
+> As well as enable I2C based devices like pressure and temperature
+> through device tree. Also add onchip keypad dts data.
+>
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+> Sourav Poddar (4):
+>   arm/dts: omap5-evm: Add I2C support
+>   arm/dts: omap5-evm: Add tmp102 sensor support
+>   arm/dts: omap5-evm: Add keypad data
+>   arm/dts: omap5-evm: Add bmp085 sensor support
+>
+>  arch/arm/boot/dts/omap5-evm.dts |   30 +++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/omap5.dtsi    |   40
+> +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 70 insertions(+), 0 deletions(-)
+>
+The entire series looks fine to me.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- net/sunrpc/clnt.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 9a9676e..8fbcbc8 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
- 	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
- }
- 
--static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
-+static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
- {
-+	const char *nodename;
-+
-+	/*
-+	 * We have to protect against dying child reaper, which has released
-+	 * its nsproxy already and is trying to destroy mount namespace.
-+	 */
-+	if (current->nsproxy == NULL)
-+		return;
-+
-+	nodename = utsname()->nodename;
- 	clnt->cl_nodelen = strlen(nodename);
- 	if (clnt->cl_nodelen > UNX_MAXNODENAME)
- 		clnt->cl_nodelen = UNX_MAXNODENAME;
-@@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
- 	}
- 
- 	/* save the nodename */
--	rpc_clnt_set_nodename(clnt, utsname()->nodename);
-+	rpc_clnt_set_nodename(clnt);
- 	rpc_register_client(clnt);
- 	return clnt;
- 
-@@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
- 	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
- 	if (err != 0)
- 		goto out_no_path;
--	rpc_clnt_set_nodename(new, utsname()->nodename);
-+	rpc_clnt_set_nodename(new);
- 	if (new->cl_auth)
- 		atomic_inc(&new->cl_auth->au_count);
- 	atomic_inc(&clnt->cl_count);
-
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
