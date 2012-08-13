@@ -1,62 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2HMV6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:58:35 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40503 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab2HMV6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:58:33 -0400
-Date: Mon, 13 Aug 2012 14:58:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/5] x86: Only direct map addresses that are marked as
- E820_RAM
-Message-ID: <20120813215829.GA25632@google.com>
-References: <1344894424-4434-1-git-send-email-jacob.shin@amd.com>
- <1344894424-4434-2-git-send-email-jacob.shin@amd.com>
+	id S1754054Ab2HMV7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:59:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60490 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752896Ab2HMV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:59:02 -0400
+Date: Tue, 14 Aug 2012 01:00:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120813220004.GC15639@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204320.21081.32333.stgit@bling.home>
+ <501F99A8.9050006@redhat.com>
+ <501F9E99.9010109@redhat.com>
+ <501F9F27.708@redhat.com>
+ <1344540375.3441.228.camel@ul30vt.home>
+ <20120812093336.GC1421@redhat.com>
+ <1344893004.4683.136.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344894424-4434-2-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344893004.4683.136.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Aug 13, 2012 at 03:23:24PM -0600, Alex Williamson wrote:
+> On Sun, 2012-08-12 at 12:33 +0300, Michael S. Tsirkin wrote:
+> > On Thu, Aug 09, 2012 at 01:26:15PM -0600, Alex Williamson wrote:
+> > > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
+> > > > On 08/06/2012 01:38 PM, Avi Kivity wrote:
+> > > > 
+> > > > > Regarding the implementation, instead of a linked list, would an array
+> > > > > of counters parallel to the bitmap make it simpler?
+> > > > 
+> > > > Or even, replace the bitmap with an array of counters.
+> > > 
+> > > I'm not sure a counter array is what we're really after.  That gives us
+> > > reference counting for the irq source IDs, but not the key->gsi lookup.
+> > > It also highlights another issue, that we have a limited set of source
+> > > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
+> > > for the shared userspace ID and another for the PIT.  How happy are we
+> > > going to be with a limit of 62 level interrupts in use at one time?
+> > > 
+> > > It's arguably a reasonable number since the most virtualization friendly
+> > > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
+> > > also very wasteful allocating an entire source ID for a single GSI
+> > > within that source ID.  PCI supports interrupts A, B, C, and D, which,
+> > > in the most optimal config, each go to different GSIs.  So we could
+> > > theoretically be more efficient in our use and allocation of irq source
+> > > IDs if we tracked use by the source ID, gsi pair.
+> > > 
+> > > That probably makes it less practical to replace anything at the top
+> > > level with a counter array.  The key that we pass back is currently the
+> > > actual source ID, but we don't specify what it is, so we could split it
+> > > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
+> > > an idr entry.
+> > > 
+> > > Michael, would the interface be more acceptable to you if we added
+> > > separate ioctls to allocate and free some representation of an irq
+> > > source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > > for an irq source ID/gsi object which would then be passed as a
+> > > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > > representing the source id/gsi isn't magically freed on it's own.  This
+> > > would also allow us to deassign/close one end and reconfigure it later.
+> > > Thanks,
+> > > 
+> > > Alex
+> > 
+> > It's acceptable to me either way. I was only pointing out that as
+> > designed, the interface looks simple at first but then you find out some
+> > subtle limitations which are implementation driven. This gives
+> > an overall feeling the abstraction is too low level.
+> > 
+> > If we compare to the existing irqfd, isn't the difference
+> > simply that irqfd deasserts immediately ATM, while we
+> > want to delay this until later?
+> > 
+> > If yes, then along the lines that you proposed, and combining with my
+> > idea of tracking deasserts, how do you like the following:
+> > 
+> > /* Keep line asserted until guest has handled the interrupt. */
+> > #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
+> > /* Notify after line is deasserted. */
+> > #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
+> > 
+> > 	struct kvm_irqfd {
+> > 		__u32 fd;
+> > 		__u32 gsi;
+> > 		__u32 flags;
+> > 		/* eventfd to notify when line is deasserted */
+> > 		__u32 deassert_eventfd;
+> > 		__u8  pad[16];
+> > 	};
+> > 
+> > now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
+> > effective for level interrupts.
+> > 
+> > Notes about lifetime of objects:
+> > 	- closing deassert_eventfd does nothing (we can keep
+> > 	  reference to it from irqfd so no need for
+> >           complex polling/flushing scheme)
+> > 	- closing irqfd or deasserting dis-associates
+> > 	  deassert_eventfd automatically
+> > 	- source id is internal to irqfd and goes away with it
+> > 
+> > it looks harder to misuse and fits what we want to do nicely,
+> > and needs less code to implement.
+> 
+> This is effectively what I meant when I suggested we either need to a)
+> pull eoifd into irqfd or b) implement them as modular components.  I
+> chose to implement b) because I think that non-irqfd related ack
+> notification to userspace will be useful and a) does not provide that.
+> So this interface enables exactly the use case for device assignment and
+> no more.  I feel like this is the start of an ioctl that will be quickly
+> deprecated, but if that's the direction we want to go, I'll write the
+> code.  Thanks,
+> 
+> Alex
 
-On Mon, Aug 13, 2012 at 04:47:00PM -0500, Jacob Shin wrote:
-> Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
-> and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
-> backed by actual DRAM. This is fine for holes under 4GB which are covered
-> by fixed and variable range MTRRs to be UC. However, we run into trouble
-> on higher memory addresses which cannot be covered by MTRRs.
+Sorry I wrote this before I knew we really do not need
+the deassert on ack at all, existing irqfd is fine for level.
 
-I presume one of the problems is the mysterious reboot on S4 resume?
-Please be a bit more detailed.  Let's say someone discovers a
-performance regression on an obscure machine, say, two years from now,
-which isn't too crazy given how enterprises roll.  Somebody bisects it
-to this commit.  Then what?  It's very difficult to assess whether the
-said "problem" is something which we should avoid at the cost of the
-regression or it was just something somebody thought might be a
-problem and created the patch assuming the change wouldn't affect
-anything.
-
-So, *please* explain what the problems are, preferably with
-LKML-References or links to bugzilla bugs if there are any.
-
-> This patch iterates through e820 and only direct maps ranges that are
-> marked as E820_RAM, and keeps track of those pfn ranges.
-
-Also, please mention the possibility of using smaller size memory
-mappings if e820 didn't align physical memory to GB boundary.
-
-Thanks.
 
 -- 
-tejun
+MST
