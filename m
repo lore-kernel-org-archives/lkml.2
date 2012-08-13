@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2HMSoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:44:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45056 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab2HMShr (ORCPT
+	id S1753321Ab2HMSoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:44:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49420 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab2HMShr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 14:37:47 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Arun Sharma <asharma@fb.com>,
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Arun Sharma <asharma@fb.com>,
         Benjamin Redelings <benjamin.redelings@nescent.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@elte.hu>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -22,29 +22,30 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/38] perf tools: Add interface to arch registers sets
-Date: Mon, 13 Aug 2012 15:36:58 -0300
-Message-Id: <1344883039-13495-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/38] perf: Factor __output_copy to be usable with specific copy function
+Date: Mon, 13 Aug 2012 15:36:53 -0300
+Message-Id: <1344883039-13495-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Adding header files to access unified API for arch registers.
+Adding a generic way to use __output_copy function with specific copy
+function via DEFINE_PERF_OUTPUT_COPY macro.
 
-  util/perf_regs.h - global perf_reg declarations
-  arch/x86/include/perf_regs.h - x86 arch specific
+Using this to add new __output_copy_user function, that provides output
+copy from user pointers. For x86 the copy_from_user_nmi function is used
+and __copy_from_user_inatomic for the rest of the architectures.
 
-Adding perf_reg_name function to obtain register name based on the reg
-ID value, and PERF_REGS_MASK macro with mask definition of all current
-arch registers (will be used in unwind patches).
+This new function will be used in user stack dump on sample, coming in
+next patches.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: "Frank Ch. Eigler" <fche@redhat.com>
@@ -53,8 +54,8 @@ Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -62,173 +63,140 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-9-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1344345647-11536-4-git-send-email-jolsa@redhat.com
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                     |   13 +++++-
- tools/perf/arch/x86/include/perf_regs.h |   80 +++++++++++++++++++++++++++++++
- tools/perf/util/perf_regs.h             |   14 +++++
- 3 files changed, 106 insertions(+), 1 deletions(-)
- create mode 100644 tools/perf/arch/x86/include/perf_regs.h
- create mode 100644 tools/perf/util/perf_regs.h
+ arch/x86/include/asm/perf_event.h |    2 +
+ include/linux/perf_event.h        |    2 +-
+ kernel/events/internal.h          |   62 ++++++++++++++++++++++++------------
+ kernel/events/ring_buffer.c       |    4 +-
+ 4 files changed, 46 insertions(+), 24 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index de6aa8c..27ae84b 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -55,13 +55,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- 				  -e s/sh[234].*/sh/ )
-+NO_PERF_REGS := 1
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index cb4e43b..4fabcdf 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -262,4 +262,6 @@ static inline void perf_check_microcode(void) { }
+  static inline void amd_pmu_disable_virt(void) { }
+ #endif
  
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
--        ARCH := x86
-+	ARCH := x86
-+	NO_PERF_REGS := 0
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -74,6 +76,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_CFLAGS := -DARCH_X86_64
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
-+	NO_PERF_REGS := 0
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -326,6 +329,7 @@ LIB_H += $(TRACE_EVENT_DIR)event-parse.h
- LIB_H += util/target.h
- LIB_H += util/rblist.h
- LIB_H += util/intlist.h
-+LIB_H += util/perf_regs.h
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -704,6 +708,13 @@ else
- 	endif
- endif
- 
-+ifeq ($(NO_PERF_REGS),0)
-+	ifeq ($(ARCH),x86)
-+		LIB_H += arch/x86/include/perf_regs.h
-+	endif
-+else
-+	BASIC_CFLAGS += -DNO_PERF_REGS
-+endif
- 
- ifdef NO_STRLCPY
- 	BASIC_CFLAGS += -DNO_STRLCPY
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-new file mode 100644
-index 0000000..46fc9f1
---- /dev/null
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -0,0 +1,80 @@
-+#ifndef ARCH_PERF_REGS_H
-+#define ARCH_PERF_REGS_H
++#define arch_perf_out_copy_user copy_from_user_nmi
 +
-+#include <stdlib.h>
-+#include "../../util/types.h"
-+#include "../../../../../arch/x86/include/asm/perf_regs.h"
+ #endif /* _ASM_X86_PERF_EVENT_H */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3d4d847..d41394a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1319,7 +1319,7 @@ static inline bool has_branch_stack(struct perf_event *event)
+ extern int perf_output_begin(struct perf_output_handle *handle,
+ 			     struct perf_event *event, unsigned int size);
+ extern void perf_output_end(struct perf_output_handle *handle);
+-extern void perf_output_copy(struct perf_output_handle *handle,
++extern unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 			     const void *buf, unsigned int len);
+ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index a096c19..7fd5408 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -2,6 +2,7 @@
+ #define _KERNEL_EVENTS_INTERNAL_H
+ 
+ #include <linux/hardirq.h>
++#include <linux/uaccess.h>
+ 
+ /* Buffer handling */
+ 
+@@ -76,30 +77,49 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
+ 	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
+ }
+ 
+-static inline void
+-__output_copy(struct perf_output_handle *handle,
+-		   const void *buf, unsigned int len)
++#define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
++static inline unsigned int						\
++func_name(struct perf_output_handle *handle,				\
++	  const void *buf, unsigned int len)				\
++{									\
++	unsigned long size, written;					\
++									\
++	do {								\
++		size = min_t(unsigned long, handle->size, len);		\
++									\
++		written = memcpy_func(handle->addr, buf, size);		\
++									\
++		len -= written;						\
++		handle->addr += written;				\
++		buf += written;						\
++		handle->size -= written;				\
++		if (!handle->size) {					\
++			struct ring_buffer *rb = handle->rb;		\
++									\
++			handle->page++;					\
++			handle->page &= rb->nr_pages - 1;		\
++			handle->addr = rb->data_pages[handle->page];	\
++			handle->size = PAGE_SIZE << page_order(rb);	\
++		}							\
++	} while (len && written == size);				\
++									\
++	return len;							\
++}
 +
-+#ifndef ARCH_X86_64
-+#define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
-+#else
-+#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
-+		       (1ULL << PERF_REG_X86_ES) | \
-+		       (1ULL << PERF_REG_X86_FS) | \
-+		       (1ULL << PERF_REG_X86_GS))
-+#define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
++static inline int memcpy_common(void *dst, const void *src, size_t n)
+ {
+-	do {
+-		unsigned long size = min_t(unsigned long, handle->size, len);
+-
+-		memcpy(handle->addr, buf, size);
+-
+-		len -= size;
+-		handle->addr += size;
+-		buf += size;
+-		handle->size -= size;
+-		if (!handle->size) {
+-			struct ring_buffer *rb = handle->rb;
+-
+-			handle->page++;
+-			handle->page &= rb->nr_pages - 1;
+-			handle->addr = rb->data_pages[handle->page];
+-			handle->size = PAGE_SIZE << page_order(rb);
+-		}
+-	} while (len);
++	memcpy(dst, src, n);
++	return n;
+ }
+ 
++DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
++
++#ifndef arch_perf_out_copy_user
++#define arch_perf_out_copy_user __copy_from_user_inatomic
 +#endif
-+#define PERF_REG_IP PERF_REG_X86_IP
-+#define PERF_REG_SP PERF_REG_X86_SP
 +
-+static inline const char *perf_reg_name(int id)
-+{
-+	switch (id) {
-+	case PERF_REG_X86_AX:
-+		return "AX";
-+	case PERF_REG_X86_BX:
-+		return "BX";
-+	case PERF_REG_X86_CX:
-+		return "CX";
-+	case PERF_REG_X86_DX:
-+		return "DX";
-+	case PERF_REG_X86_SI:
-+		return "SI";
-+	case PERF_REG_X86_DI:
-+		return "DI";
-+	case PERF_REG_X86_BP:
-+		return "BP";
-+	case PERF_REG_X86_SP:
-+		return "SP";
-+	case PERF_REG_X86_IP:
-+		return "IP";
-+	case PERF_REG_X86_FLAGS:
-+		return "FLAGS";
-+	case PERF_REG_X86_CS:
-+		return "CS";
-+	case PERF_REG_X86_SS:
-+		return "SS";
-+	case PERF_REG_X86_DS:
-+		return "DS";
-+	case PERF_REG_X86_ES:
-+		return "ES";
-+	case PERF_REG_X86_FS:
-+		return "FS";
-+	case PERF_REG_X86_GS:
-+		return "GS";
-+#ifdef ARCH_X86_64
-+	case PERF_REG_X86_R8:
-+		return "R8";
-+	case PERF_REG_X86_R9:
-+		return "R9";
-+	case PERF_REG_X86_R10:
-+		return "R10";
-+	case PERF_REG_X86_R11:
-+		return "R11";
-+	case PERF_REG_X86_R12:
-+		return "R12";
-+	case PERF_REG_X86_R13:
-+		return "R13";
-+	case PERF_REG_X86_R14:
-+		return "R14";
-+	case PERF_REG_X86_R15:
-+		return "R15";
-+#endif /* ARCH_X86_64 */
-+	default:
-+		return NULL;
-+	}
++DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
 +
-+	return NULL;
-+}
-+
-+#endif /* ARCH_PERF_REGS_H */
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-new file mode 100644
-index 0000000..9bd6c4e
---- /dev/null
-+++ b/tools/perf/util/perf_regs.h
-@@ -0,0 +1,14 @@
-+#ifndef __PERF_REGS_H
-+#define __PERF_REGS_H
-+
-+#ifndef NO_PERF_REGS
-+#include <perf_regs.h>
-+#else
-+#define PERF_REGS_MASK	0
-+
-+static inline const char *perf_reg_name(int id __used)
-+{
-+	return NULL;
-+}
-+#endif /* NO_PERF_REGS */
-+#endif /* __PERF_REGS_H */
+ /* Callchain handling */
+ extern struct perf_callchain_entry *
+ perf_callchain(struct perf_event *event, struct pt_regs *regs);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 6ddaba4..b4c2ad3 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -182,10 +182,10 @@ out:
+ 	return -ENOSPC;
+ }
+ 
+-void perf_output_copy(struct perf_output_handle *handle,
++unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 		      const void *buf, unsigned int len)
+ {
+-	__output_copy(handle, buf, len);
++	return __output_copy(handle, buf, len);
+ }
+ 
+ void perf_output_end(struct perf_output_handle *handle)
 -- 
 1.7.1
 
