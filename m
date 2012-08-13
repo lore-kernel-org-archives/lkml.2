@@ -1,125 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab2HMWKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754714Ab2HMWFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:05:08 -0400
-Date: Tue, 14 Aug 2012 01:06:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120813220609.GA1931@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
- <20120724204320.21081.32333.stgit@bling.home>
- <501F99A8.9050006@redhat.com>
- <501F9E99.9010109@redhat.com>
- <501F9F27.708@redhat.com>
- <1344540375.3441.228.camel@ul30vt.home>
- <50276B11.8020708@redhat.com>
- <1344893641.4683.146.camel@ul30vt.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344893641.4683.146.camel@ul30vt.home>
+	id S1755186Ab2HMWLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:11:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35533 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab2HMWFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:05:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Theodore Tso" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [ 31/44] random: remove rand_initialize_irq()
+Date: Mon, 13 Aug 2012 15:02:38 -0700
+Message-Id: <20120813220144.896927076@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
+References: <20120813220142.113186818@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 03:34:01PM -0600, Alex Williamson wrote:
-> On Sun, 2012-08-12 at 11:36 +0300, Avi Kivity wrote:
-> > On 08/09/2012 10:26 PM, Alex Williamson wrote:
-> > > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
-> > >> On 08/06/2012 01:38 PM, Avi Kivity wrote:
-> > >> 
-> > >> > Regarding the implementation, instead of a linked list, would an array
-> > >> > of counters parallel to the bitmap make it simpler?
-> > >> 
-> > >> Or even, replace the bitmap with an array of counters.
-> > > 
-> > > I'm not sure a counter array is what we're really after.  That gives us
-> > > reference counting for the irq source IDs, but not the key->gsi lookup.
-> > 
-> > You can look up the gsi while registering the eoifd, so it's accessible
-> > as eoifd->gsi instead of eoifd->source->gsi.  The irqfd can go away
-> > while the eoifd is still active, but is this a problem?
-> 
-> In my opinion, no, but Michael disagrees.
-> 
-> > > It also highlights another issue, that we have a limited set of source
-> > > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
-> > > for the shared userspace ID and another for the PIT.  How happy are we
-> > > going to be with a limit of 62 level interrupts in use at one time?
-> > 
-> > When we start being unhappy we can increase that number.  On the other
-> > hand more locks and lists makes me unhappy now.
-> 
-> Yep, good point.  My latest version removes the source ID object lock
-> and list (and objects).  I still have a lock and list for the ack
-> notification, but it's hard not to unless we combine them into one
-> mega-irqfd ioctl as Michael suggests.
->
-> > > It's arguably a reasonable number since the most virtualization friendly
-> > > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
-> > > also very wasteful allocating an entire source ID for a single GSI
-> > > within that source ID.  PCI supports interrupts A, B, C, and D, which,
-> > > in the most optimal config, each go to different GSIs.  So we could
-> > > theoretically be more efficient in our use and allocation of irq source
-> > > IDs if we tracked use by the source ID, gsi pair.
-> > 
-> > There are, in one userspace, just three gsis available for PCI links, so
-> > you're compressing the source id space by 3.
-> 
-> I imagine there's a way to put each PCI interrupt pin on a GSI, but
-> still only 4, not a great expansion of source ID space.  I like
-> Michael's idea of re-using source IDs if we run out better.
-> 
-> > > That probably makes it less practical to replace anything at the top
-> > > level with a counter array.  The key that we pass back is currently the
-> > > actual source ID, but we don't specify what it is, so we could split it
-> > > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
-> > > an idr entry.
-> > 
-> > We can fix those kinds of problems by adding another layer of
-> > indirection.  But I doubt they will be needed.  I don't see people
-> > assigning 60 legacy devices to one guest.
-> 
-> Yep, we can ignore it for now and put it in the hands of userspace to
-> re-use IDs if needed.
-> 
-> > > Michael, would the interface be more acceptable to you if we added
-> > > separate ioctls to allocate and free some representation of an irq
-> > > source ID, gsi pair?  For instance, an ioctl might return an idr entry
-> > > for an irq source ID/gsi object which would then be passed as a
-> > > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
-> > > representing the source id/gsi isn't magically freed on it's own.  This
-> > > would also allow us to deassign/close one end and reconfigure it later.
-> > > Thanks,
-> > 
-> > Another option is to push the responsibility for allocating IDs for the
-> > association to userspace.  Let userspace both create the irqfd and the
-> > eoifd with the same ID, the kernel matches them at registration time and
-> > copies the gsi/sourceid from the first to the second eventfd.
-> 
-> Aside from the copying gsi/sourceid bit, you've just described my latest
-> attempt at this series.  Specifying both a sourceid and gsi also allows
-> userspace to make better use of the sourceid address space (use more
-> than one gsi if userspace wants the complexity of managing them).
-> Thanks,
-> 
-> Alex
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Turns out per device source ID is a bug copied from existing
-device assignment. I am amazed we did not notice before.
-There we have small # of devices so it's not a problem but there's no
-reason just not to have a source ID for all irqfds.
-So the problem goes away, and there is no limit on # of level irqfds,
-and no need to manage IDs in userspace at all.
-You can still have cookies in userspace if you like but do not map them
-to source IDs.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
--- 
-MST
+------------------
+
+From: Theodore Ts'o <tytso@mit.edu>
+
+commit c5857ccf293968348e5eb4ebedc68074de3dcda6 upstream.
+
+With the new interrupt sampling system, we are no longer using the
+timer_rand_state structure in the irq descriptor, so we can stop
+initializing it now.
+
+[ Merged in fixes from Sedat to find some last missing references to
+  rand_initialize_irq() ]
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/ia64/kernel/irq_ia64.c |    1 
+ drivers/char/random.c       |   55 --------------------------------------------
+ drivers/mfd/ab3100-core.c   |    3 --
+ drivers/mfd/ab3550-core.c   |    2 -
+ include/linux/irqdesc.h     |    1 
+ include/linux/random.h      |    2 -
+ kernel/irq/manage.c         |   17 -------------
+ 7 files changed, 81 deletions(-)
+
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -23,7 +23,6 @@
+ #include <linux/ioport.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/ptrace.h>
+-#include <linux/random.h>	/* for rand_initialize_irq() */
+ #include <linux/signal.h>
+ #include <linux/smp.h>
+ #include <linux/threads.h>
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -634,43 +634,6 @@ struct timer_rand_state {
+ 	unsigned dont_count_entropy:1;
+ };
+ 
+-#ifndef CONFIG_GENERIC_HARDIRQS
+-
+-static struct timer_rand_state *irq_timer_state[NR_IRQS];
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	return irq_timer_state[irq];
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	irq_timer_state[irq] = state;
+-}
+-
+-#else
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	return desc->timer_rand_state;
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	desc->timer_rand_state = state;
+-}
+-#endif
+-
+ /*
+  * Add device- or boot-specific data to the input and nonblocking
+  * pools to help initialize them to unique values.
+@@ -1133,24 +1096,6 @@ static int rand_initialize(void)
+ }
+ module_init(rand_initialize);
+ 
+-void rand_initialize_irq(int irq)
+-{
+-	struct timer_rand_state *state;
+-
+-	state = get_timer_rand_state(irq);
+-
+-	if (state)
+-		return;
+-
+-	/*
+-	 * If kzalloc returns null, we just won't use that entropy
+-	 * source.
+-	 */
+-	state = kzalloc(sizeof(struct timer_rand_state), GFP_KERNEL);
+-	if (state)
+-		set_timer_rand_state(irq, state);
+-}
+-
+ #ifdef CONFIG_BLOCK
+ void rand_initialize_disk(struct gendisk *disk)
+ {
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -936,9 +936,6 @@ static int __devinit ab3100_probe(struct
+ 
+ 	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
+ 				IRQF_ONESHOT, "ab3100-core", ab3100);
+-	/* This real unpredictable IRQ is of course sampled for entropy */
+-	rand_initialize_irq(client->irq);
+-
+ 	if (err)
+ 		goto exit_no_irq;
+ 
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -1309,8 +1309,6 @@ static int __init ab3550_probe(struct i2
+ 
+ 	err = request_threaded_irq(client->irq, NULL, ab3550_irq_handler,
+ 		IRQF_ONESHOT, "ab3550-core", ab);
+-	/* This real unpredictable IRQ is of course sampled for entropy */
+-	rand_initialize_irq(client->irq);
+ 
+ 	if (err)
+ 		goto exit_no_irq;
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -38,7 +38,6 @@ struct timer_rand_state;
+  */
+ struct irq_desc {
+ 	struct irq_data		irq_data;
+-	struct timer_rand_state *timer_rand_state;
+ 	unsigned int __percpu	*kstat_irqs;
+ 	irq_flow_handler_t	handle_irq;
+ #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -48,8 +48,6 @@ struct rnd_state {
+ 
+ #ifdef __KERNEL__
+ 
+-extern void rand_initialize_irq(int irq);
+-
+ extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -886,22 +886,6 @@ __setup_irq(unsigned int irq, struct irq
+ 
+ 	if (desc->irq_data.chip == &no_irq_chip)
+ 		return -ENOSYS;
+-	/*
+-	 * Some drivers like serial.c use request_irq() heavily,
+-	 * so we have to be careful not to interfere with a
+-	 * running system.
+-	 */
+-	if (new->flags & IRQF_SAMPLE_RANDOM) {
+-		/*
+-		 * This function might sleep, we want to call it first,
+-		 * outside of the atomic block.
+-		 * Yes, this might clear the entropy pool if the wrong
+-		 * driver is attempted to be loaded, without actually
+-		 * installing a new handler, but is this really a problem,
+-		 * only the sysadmin is able to do this.
+-		 */
+-		rand_initialize_irq(irq);
+-	}
+ 
+ 	/*
+ 	 * Check whether the interrupt nests into another interrupt
+@@ -1325,7 +1309,6 @@ EXPORT_SYMBOL(free_irq);
+  *	Flags:
+  *
+  *	IRQF_SHARED		Interrupt is shared
+- *	IRQF_SAMPLE_RANDOM	The interrupt can be used for entropy
+  *	IRQF_TRIGGER_*		Specify active edge(s) or level
+  *
+  */
+
+
