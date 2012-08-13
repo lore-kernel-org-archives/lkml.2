@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2HMREt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:04:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33674 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab2HMREr (ORCPT
+	id S1753678Ab2HMRFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:05:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55744 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2HMRE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:04:47 -0400
-Date: Mon, 13 Aug 2012 10:04:32 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-532b1858c5241bedfff5ab863d7cf012e8b81a6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <1344435364-18632-1-git-send-email-bp@amd64.org>
-References: <1344435364-18632-1-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix __sched_period comment
-Git-Commit-ID: 532b1858c5241bedfff5ab863d7cf012e8b81a6b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 13 Aug 2012 13:04:58 -0400
+Date: Mon, 13 Aug 2012 19:05:17 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jani Nikula <jani.nikula@intel.com>
+Cc: ionic@ionic.de, daniel@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] drm/i915: ensure i2c adapter is all set before
+ adding it
+Message-ID: <20120813170517.GE5248@phenom.ffwll.local>
+Mail-Followup-To: Jani Nikula <jani.nikula@intel.com>, ionic@ionic.de,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <cover.1344867962.git.jani.nikula@intel.com>
+ <b6dc8317cdc108b22f90453b3d6f7475a620d96c.1344867962.git.jani.nikula@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:04:37 -0700 (PDT)
+In-Reply-To: <b6dc8317cdc108b22f90453b3d6f7475a620d96c.1344867962.git.jani.nikula@intel.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  532b1858c5241bedfff5ab863d7cf012e8b81a6b
-Gitweb:     http://git.kernel.org/tip/532b1858c5241bedfff5ab863d7cf012e8b81a6b
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 8 Aug 2012 16:16:04 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 18:58:15 +0200
+On Mon, Aug 13, 2012 at 05:33:02PM +0300, Jani Nikula wrote:
+> i2c_add_adapter() may do i2c transfers on the bus to detect supported
+> devices. Therefore the adapter needs to be all set before adding it. This
+> was not the case for the bit-banging fallback, resulting in an oops if the
+> device detection GMBUS transfers timed out. Fix the issue by calling
+> i2c_add_adapter() only after intel_gpio_setup().
+> 
+> LKML-Reference: <5021F00B.7000503@ionic.de>
+> Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 
-sched: Fix __sched_period comment
-
-It should be sched_nr_latency so fix it before it annoys me more.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344435364-18632-1-git-send-email-bp@amd64.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched/fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c219bf8..99285a8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -597,7 +597,7 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
- /*
-  * The idea is to set a period in which each task runs once.
-  *
-- * When there are too many tasks (sysctl_sched_nr_latency) we have to stretch
-+ * When there are too many tasks (sched_nr_latency) we have to stretch
-  * this period because otherwise the slices get too small.
-  *
-  * p = (nr <= nl) ? l : l*nr/nl
+Applied to -fixes with Mihai's tested-by added, thanks for the patch.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
