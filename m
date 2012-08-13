@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2HMNd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:33:28 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41421 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab2HMNdZ (ORCPT
+	id S1751787Ab2HMNfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:35:13 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:50981 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2HMNfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:33:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120809123855.1ba0fffb@pyramind.ukuu.org.uk>
-References: <1344322471-3640-1-git-send-email-arun.murthy@stericsson.com>
-	<1344322471-3640-2-git-send-email-arun.murthy@stericsson.com>
-	<20120807183809.GC26990@kroah.com>
-	<F45880696056844FA6A73F415B568C695B0E796A03@EXDCVYMBSTM006.EQ1STM.local>
-	<20120808133748.GA14459@kroah.com>
-	<F45880696056844FA6A73F415B568C695B0E797048@EXDCVYMBSTM006.EQ1STM.local>
-	<20120809123855.1ba0fffb@pyramind.ukuu.org.uk>
-Date: Mon, 13 Aug 2012 15:33:24 +0200
-Message-ID: <CACRpkdZXZur4QgkDrCbo1zyyEod1qoCb_2QXg_Syai2XAMMUrg@mail.gmail.com>
-Subject: Re: [PATCHv2 1/4] modem_shm: Add Modem Access Framework
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>
-Cc: Arun MURTHY <arun.murthy@stericsson.com>,
+	Mon, 13 Aug 2012 09:35:11 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Mon, 13 Aug 2012 09:35:10 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RFC: mutex: hung tasks on SMP platforms with
+ asm-generic/mutex-xchg.h
+In-reply-to: <1344845704.31459.11.camel@twins>
+Message-id: <alpine.LFD.2.02.1208130931530.5231@xanadu.home>
+References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
+ <20120809144953.GC18486@mudshark.cambridge.arm.com>
+ <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
+ <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
+ <1344845704.31459.11.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 1:38 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Maybe tty can do this, but want to have all modem related  separately.
->> There are many such hardware and many drivers coming up in near future.
->
-> tty can't do all this. We have similar things with stuff like CAIF. Modem
-> has gone from pretending to be a serial port (tty) to appearing as a
-> smart multi-function controller.
+On Mon, 13 Aug 2012, Peter Zijlstra wrote:
 
-I second this, I plead guilty to suggesting to use "modem_shm"
-as a layer below because things like CAIF and Phonet are just
-growing and growing.
+> OK, I like this.. Thanks guys! Will will you send a final and complete
+> patch?
 
-Sure, many of them can emulate AT commands, but that is
-not their native tongue, and increasingly any AT command parser
-is constrained to userspace which in turn constructs the actually
-intended IPC command sequency for doing ATDT555784629568.
+Here it is:
 
-These modems are not talking anything resembling a line
-discipline, they have their own binary protocol and above are
-protocols like CAIF and Phonet talking to the modem, including
-IPC to processes running on the other sides, with states.
+--- >8
 
-Sjur is currently working on a future platform where we'll attempt
-to bring things closer to existing Linux frameworks using virtio
-rings and rpmesg also on the modem side, but the modems Arun
-are working on are already deployed with this type of firmware
-talking some other IPC lingo.
+Date: Fri, 10 Aug 2012 15:22:09 +0100
+From: Will Deacon <will.deacon@arm.com>
+Subject: [PATCH] mutex: place lock in contended state after fastpath_lock failure
 
-Yours,
-Linus Walleij
+ARM recently moved to asm-generic/mutex-xchg.h for its mutex
+implementation after the previous implementation was found to be missing
+some crucial memory barriers. However, this has revealed some problems
+running hackbench on SMP platforms due to the way in which the
+MUTEX_SPIN_ON_OWNER code operates.
+
+The symptoms are that a bunch of hackbench tasks are left waiting on an
+unlocked mutex and therefore never get woken up to claim it. This boils
+down to the following sequence of events:
+
+        Task A        Task B        Task C        Lock value
+0                                                     1
+1       lock()                                        0
+2                     lock()                          0
+3                     spin(A)                         0
+4       unlock()                                      1
+5                                   lock()            0
+6                     cmpxchg(1,0)                    0
+7                     contended()                    -1
+8       lock()                                        0
+9       spin(C)                                       0
+10                                  unlock()          1
+11      cmpxchg(1,0)                                  0
+12      unlock()                                      1
+
+At this point, the lock is unlocked, but Task B is in an uninterruptible
+sleep with nobody to wake it up.
+
+This patch fixes the problem by ensuring we put the lock into the
+contended state if we fail to acquire it on the fastpath, ensuring that
+any blocked waiters are woken up when the mutex is released.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Mason <chris.mason@fusionio.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+---
+
+ include/asm-generic/mutex-xchg.h |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
+index 580a6d3..c04e0db 100644
+--- a/include/asm-generic/mutex-xchg.h
++++ b/include/asm-generic/mutex-xchg.h
+@@ -26,7 +26,13 @@ static inline void
+ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+-		fail_fn(count);
++		/*
++		 * We failed to acquire the lock, so mark it contended
++		 * to ensure that any waiting tasks are woken up by the
++		 * unlock slow path.
++		 */
++		if (likely(atomic_xchg(count, -1) != 1))
++			fail_fn(count);
+ }
+ 
+ /**
+@@ -43,7 +49,8 @@ static inline int
+ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+-		return fail_fn(count);
++		if (likely(atomic_xchg(count, -1) != 1))
++			return fail_fn(count);
+ 	return 0;
+ }
+ 
