@@ -1,292 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab2HMSnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:43:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45065 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab2HMSht (ORCPT
+	id S1753276Ab2HMSnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:43:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49421 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab2HMSht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 14:37:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Hansen <dave@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Matt Hellsley <matthltc@us.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 21/38] perf tools: Support for DWARF mode callchain
-Date: Mon, 13 Aug 2012 15:37:02 -0300
-Message-Id: <1344883039-13495-22-git-send-email-acme@infradead.org>
+Subject: [PATCH 35/38] perf symbols: Factor want_symtab out of dso__load_sym()
+Date: Mon, 13 Aug 2012 15:37:16 -0300
+Message-Id: <1344883039-13495-36-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-This patch enables perf to use the DWARF unwind code.
+Only one callsite of dso__load_sym() uses the want_symtab functionality,
+so place the logic at the callsite instead of within dso__load_sym().
 
-It extends the perf record '-g' option with following arguments:
-  'fp'           - provides framepointer based user
-                   stack backtrace
-  'dwarf[,size]' - provides DWARF (libunwind) based user stack
-                   backtrace. The size specifies the size of the
-                   user stack dump. If omitted it is 8192 by default.
+This sets us up for removal of want_symtab completely once we keep
+multiple elf handles (within symsrc's) around.
 
-If libunwind is found during the perf build, then the 'dwarf' argument
-becomes available for record command. The 'fp' stays as default option
-in any case.
+Setup for the later patch
 
-Examples: (perf compiled with libunwind)
+"perf symbols: Use both runtime and debug images"
 
-   perf record -g dwarf ls
-      - provides dwarf unwind with 8192 as stack dump size
-
-   perf record -g dwarf,4096 ls
-      - provides dwarf unwind with 4096 as stack dump size
-
-   perf record -g -- ls
-   perf record -g fp ls
-      - provides frame pointer unwind
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: David Hansen <dave@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Hellsley <matthltc@us.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-13-git-send-email-jolsa@redhat.com
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1344637382-22789-15-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |  114 ++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/perf.h           |    9 +++-
- tools/perf/util/evsel.c     |   13 +++++-
- 3 files changed, 132 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol-elf.c     |   21 ++++++++++-----------
+ tools/perf/util/symbol-minimal.c |    8 ++++++--
+ tools/perf/util/symbol.c         |   10 +++++++---
+ tools/perf/util/symbol.h         |    3 ++-
+ 4 files changed, 25 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4db6e1b..22dd05d 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,15 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
-+#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
-+
-+#ifdef NO_LIBUNWIND_SUPPORT
-+static char callchain_help[] = CALLCHAIN_HELP "[fp]";
-+#else
-+static unsigned long default_stack_dump_size = 8192;
-+static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
-+#endif
-+
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
-@@ -732,6 +741,106 @@ error:
- 	return ret;
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 5915947..492ebec 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -525,6 +525,10 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
+ 	return 0;
  }
  
-+#ifndef NO_LIBUNWIND_SUPPORT
-+static int get_stack_size(char *str, unsigned long *_size)
++bool symsrc__has_symtab(struct symsrc *ss)
 +{
-+	char *endptr;
-+	unsigned long size;
-+	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
-+
-+	size = strtoul(str, &endptr, 0);
-+
-+	do {
-+		if (*endptr)
-+			break;
-+
-+		size = round_up(size, sizeof(u64));
-+		if (!size || size > max_size)
-+			break;
-+
-+		*_size = size;
-+		return 0;
-+
-+	} while (0);
-+
-+	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
-+	       max_size, str);
-+	return -1;
++	return ss->symtab != NULL;
 +}
-+#endif /* !NO_LIBUNWIND_SUPPORT */
-+
-+static int
-+parse_callchain_opt(const struct option *opt __used, const char *arg,
-+		    int unset)
-+{
-+	struct perf_record *rec = (struct perf_record *)opt->value;
-+	char *tok, *name, *saveptr = NULL;
-+	char *buf;
-+	int ret = -1;
-+
-+	/* --no-call-graph */
-+	if (unset)
-+		return 0;
-+
-+	/* We specified default option if none is provided. */
-+	BUG_ON(!arg);
-+
-+	/* We need buffer that we know we can write to. */
-+	buf = malloc(strlen(arg) + 1);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	strcpy(buf, arg);
-+
-+	tok = strtok_r((char *)buf, ",", &saveptr);
-+	name = tok ? : (char *)buf;
-+
-+	do {
-+		/* Framepointer style */
-+		if (!strncmp(name, "fp", sizeof("fp"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				rec->opts.call_graph = CALLCHAIN_FP;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+				       "needed for -g fp\n");
-+			break;
-+
-+#ifndef NO_LIBUNWIND_SUPPORT
-+		/* Dwarf style */
-+		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
-+			ret = 0;
-+			rec->opts.call_graph = CALLCHAIN_DWARF;
-+			rec->opts.stack_dump_size = default_stack_dump_size;
-+
-+			tok = strtok_r(NULL, ",", &saveptr);
-+			if (tok) {
-+				unsigned long size = 0;
-+
-+				ret = get_stack_size(tok, &size);
-+				rec->opts.stack_dump_size = size;
-+			}
-+
-+			if (!ret)
-+				pr_debug("callchain: stack dump size %d\n",
-+					 rec->opts.stack_dump_size);
-+#endif /* !NO_LIBUNWIND_SUPPORT */
-+		} else {
-+			pr_err("callchain: Unknown -g option "
-+			       "value: %s\n", arg);
-+			break;
-+		}
-+
-+	} while (0);
-+
-+	free(buf);
-+
-+	if (!ret)
-+		pr_debug("callchain: type %d\n", rec->opts.call_graph);
-+
-+	return ret;
-+}
-+
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -803,8 +912,9 @@ const struct option record_options[] = {
- 		     "number of mmap data pages"),
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
--	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
--		    "do call-graph (stack chain/backtrace) recording"),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode[,dump_size]",
-+			     callchain_help, &parse_callchain_opt,
-+			     "fp"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..87f4ec6 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
  
- #include "util/target.h"
+ void symsrc__destroy(struct symsrc *ss)
+ {
+@@ -616,7 +620,7 @@ out_close:
+ }
  
-+enum perf_call_graph_mode {
-+	CALLCHAIN_NONE,
-+	CALLCHAIN_FP,
-+	CALLCHAIN_DWARF
-+};
-+
- struct perf_record_opts {
- 	struct perf_target target;
--	bool	     call_graph;
-+	int	     call_graph;
- 	bool	     group;
- 	bool	     inherit_stat;
- 	bool	     no_delay;
-@@ -230,6 +236,7 @@ struct perf_record_opts {
- 	u64          branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
-+	u16	     stack_dump_size;
- };
+ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+-		  symbol_filter_t filter, int kmodule, int want_symtab)
++		  symbol_filter_t filter, int kmodule)
+ {
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+ 	struct map *curr_map = map;
+@@ -636,21 +640,16 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
  
- #endif
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a2da682..9c54e8f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -17,6 +17,8 @@
- #include "thread_map.h"
- #include "target.h"
- #include "../../../include/linux/hw_breakpoint.h"
-+#include "../../include/linux/perf_event.h"
-+#include "perf_regs.h"
+ 	dso->symtab_type = ss->type;
  
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -368,9 +370,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 		attr->mmap_data = track;
- 	}
- 
--	if (opts->call_graph)
-+	if (opts->call_graph) {
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
-+		if (opts->call_graph == CALLCHAIN_DWARF) {
-+			attr->sample_type |= PERF_SAMPLE_REGS_USER |
-+					     PERF_SAMPLE_STACK_USER;
-+			attr->sample_regs_user = PERF_REGS_MASK;
-+			attr->sample_stack_user = opts->stack_dump_size;
-+			attr->exclude_callchain_user = 1;
-+		}
++	if (!ss->symtab) {
++		ss->symtab  = ss->dynsym;
++		ss->symshdr = ss->dynshdr;
 +	}
 +
- 	if (perf_target__has_cpu(&opts->target))
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 	elf = ss->elf;
+ 	ehdr = ss->ehdr;
+ 	sec = ss->symtab;
+ 	shdr = ss->symshdr;
+ 
+-	if (sec == NULL) {
+-		if (want_symtab)
+-			goto out_elf_end;
+-
+-		sec  = ss->dynsym;
+-		shdr = ss->dynshdr;
+-		if (sec == NULL)
+-			goto out_elf_end;
+-	}
+-
+ 	opdsec = ss->opdsec;
+ 	opdshdr = ss->opdshdr;
+ 	opdidx  = ss->opdidx;
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index cc580c0..11c2c60 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -260,6 +260,11 @@ out_close:
+ 	return -1;
+ }
+ 
++bool symsrc__has_symtab(struct symsrc *ss __used)
++{
++	return false;
++}
++
+ void symsrc__destroy(struct symsrc *ss)
+ {
+ 	free(ss->name);
+@@ -275,8 +280,7 @@ int dso__synthesize_plt_symbols(struct dso *dso __used,
+ }
+ 
+ int dso__load_sym(struct dso *dso, struct map *map __used, struct symsrc *ss,
+-		  symbol_filter_t filter __used, int kmodule __used,
+-		  int want_symtab __used)
++		  symbol_filter_t filter __used, int kmodule __used)
+ {
+ 	unsigned char *build_id[BUILD_ID_SIZE];
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index f8a3068..8e7d74f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1089,8 +1089,12 @@ restart:
+ 		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
+ 			continue;
+ 
+-		ret = dso__load_sym(dso, map, &ss, filter, 0,
+-				    want_symtab);
++		if (want_symtab && !symsrc__has_symtab(&ss)) {
++			symsrc__destroy(&ss);
++			continue;
++		}
++
++		ret = dso__load_sym(dso, map, &ss, filter, 0);
+ 
+ 		/*
+ 		 * Some people seem to have debuginfo files _WITHOUT_ debug
+@@ -1376,7 +1380,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
+ 		return -1;
+ 
+-	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
++	err = dso__load_sym(dso, map, &ss, filter, 0);
+ 	symsrc__destroy(&ss);
+ 
+ 	if (err > 0) {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2981513..fa9f6b1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -252,6 +252,7 @@ struct symsrc {
+ void symsrc__destroy(struct symsrc *ss);
+ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 		 enum dso_binary_type type);
++bool symsrc__has_symtab(struct symsrc *ss);
+ 
+ #define DSO__SWAP(dso, type, val)			\
+ ({							\
+@@ -369,7 +370,7 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    u8 *data, ssize_t size);
+ int dso__test_data(void);
+ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+-		  symbol_filter_t filter, int kmodule, int want_symtab);
++		  symbol_filter_t filter, int kmodule);
+ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
+ 				struct map *map, symbol_filter_t filter);
  
 -- 
 1.7.1
