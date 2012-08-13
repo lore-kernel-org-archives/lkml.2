@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab2HMP15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 11:27:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64718 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab2HMP1x (ORCPT
+	id S1753212Ab2HMP2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 11:28:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43254 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135Ab2HMP16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 11:27:53 -0400
+	Mon, 13 Aug 2012 11:27:58 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next 12/16] nes: remove usage of dev->master
-Date: Mon, 13 Aug 2012 17:27:11 +0200
-Message-Id: <1344871635-1052-13-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next 14/16] net: remove no longer used netdev_set_bond_master() and netdev_set_master()
+Date: Mon, 13 Aug 2012 17:27:13 +0200
+Message-Id: <1344871635-1052-15-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
 References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
@@ -32,58 +32,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/infiniband/hw/nes/nes.c    |    8 +++++---
- drivers/infiniband/hw/nes/nes_cm.c |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ include/linux/netdevice.h |    6 +----
+ net/core/dev.c            |   63 ---------------------------------------------
+ 2 files changed, 1 insertion(+), 68 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
-index 7140199..e58e9af 100644
---- a/drivers/infiniband/hw/nes/nes.c
-+++ b/drivers/infiniband/hw/nes/nes.c
-@@ -140,6 +140,7 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 	struct net_device *event_netdev = ifa->ifa_dev->dev;
- 	struct nes_device *nesdev;
- 	struct net_device *netdev;
-+	struct net_device *upper_dev;
- 	struct nes_vnic *nesvnic;
- 	unsigned int is_bonded;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index e7a07f8..757f627 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -886,8 +886,7 @@ struct netdev_fcoe_hbainfo {
+  *	flow_id is a flow ID to be passed to rps_may_expire_flow() later.
+  *	Return the filter ID on success, or a negative error code.
+  *
+- *	Slave management functions (for bridge, bonding, etc). User should
+- *	call netdev_set_master() to set dev->master properly.
++ *	Slave management functions (for bridge, bonding, etc).
+  * int (*ndo_add_slave)(struct net_device *dev, struct net_device *slave_dev);
+  *	Called to make another netdev an underling.
+  *
+@@ -2625,9 +2624,6 @@ extern int netdev_unique_upper_dev_link(struct net_device *dev,
+ 					struct net_device *upper_dev);
+ extern void netdev_upper_dev_unlink(struct net_device *dev,
+ 				    struct net_device *upper_dev);
+-extern int		netdev_set_master(struct net_device *dev, struct net_device *master);
+-extern int netdev_set_bond_master(struct net_device *dev,
+-				  struct net_device *master);
+ extern int skb_checksum_help(struct sk_buff *skb);
+ extern struct sk_buff *skb_gso_segment(struct sk_buff *skb,
+ 	netdev_features_t features);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 68db1ac..c0f9adb 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4648,69 +4648,6 @@ void netdev_upper_dev_unlink(struct net_device *dev,
+ }
+ EXPORT_SYMBOL(netdev_upper_dev_unlink);
  
-@@ -150,8 +151,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 				nesdev, nesdev->netdev[0]->name);
- 		netdev = nesdev->netdev[0];
- 		nesvnic = netdev_priv(netdev);
-+		upper_dev = netdev_unique_upper_dev_get(netdev);
- 		is_bonded = netif_is_bond_slave(netdev) &&
--			    (netdev->master == event_netdev);
-+			    (upper_dev == event_netdev);
- 		if ((netdev == event_netdev) || is_bonded) {
- 			if (nesvnic->rdma_enabled == 0) {
- 				nes_debug(NES_DBG_NETDEV, "Returning without processing event for %s since"
-@@ -184,9 +186,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 					/* fall through */
- 				case NETDEV_CHANGEADDR:
- 					/* Add the address to the IP table */
--					if (netdev->master)
-+					if (upper_dev)
- 						nesvnic->local_ipaddr =
--							((struct in_device *)netdev->master->ip_ptr)->ifa_list->ifa_address;
-+							((struct in_device *)upper_dev->ip_ptr)->ifa_list->ifa_address;
- 					else
- 						nesvnic->local_ipaddr = ifa->ifa_address;
- 
-diff --git a/drivers/infiniband/hw/nes/nes_cm.c b/drivers/infiniband/hw/nes/nes_cm.c
-index 020e95c..15e6340 100644
---- a/drivers/infiniband/hw/nes/nes_cm.c
-+++ b/drivers/infiniband/hw/nes/nes_cm.c
-@@ -1352,7 +1352,7 @@ static int nes_addr_resolve_neigh(struct nes_vnic *nesvnic, u32 dst_ip, int arpi
- 	}
- 
- 	if (netif_is_bond_slave(nesvnic->netdev))
--		netdev = nesvnic->netdev->master;
-+		netdev = netdev_unique_upper_dev_get(nesvnic->netdev);
- 	else
- 		netdev = nesvnic->netdev;
- 
+-/**
+- *	netdev_set_master	-	set up master pointer
+- *	@slave: slave device
+- *	@master: new master device
+- *
+- *	Changes the master device of the slave. Pass %NULL to break the
+- *	bonding. The caller must hold the RTNL semaphore. On a failure
+- *	a negative errno code is returned. On success the reference counts
+- *	are adjusted and the function returns zero.
+- */
+-int netdev_set_master(struct net_device *slave, struct net_device *master)
+-{
+-	struct net_device *old = slave->master;
+-	int err;
+-
+-	ASSERT_RTNL();
+-
+-	if (master) {
+-		if (old)
+-			return -EBUSY;
+-		err = netdev_unique_upper_dev_link(slave, master);
+-		if (err)
+-			return err;
+-	}
+-
+-	slave->master = master;
+-
+-	if (old)
+-		netdev_upper_dev_unlink(slave, master);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(netdev_set_master);
+-
+-/**
+- *	netdev_set_bond_master	-	set up bonding master/slave pair
+- *	@slave: slave device
+- *	@master: new master device
+- *
+- *	Changes the master device of the slave. Pass %NULL to break the
+- *	bonding. The caller must hold the RTNL semaphore. On a failure
+- *	a negative errno code is returned. On success %RTM_NEWLINK is sent
+- *	to the routing socket and the function returns zero.
+- */
+-int netdev_set_bond_master(struct net_device *slave, struct net_device *master)
+-{
+-	int err;
+-
+-	ASSERT_RTNL();
+-
+-	err = netdev_set_master(slave, master);
+-	if (err)
+-		return err;
+-	if (master)
+-		slave->flags |= IFF_SLAVE;
+-	else
+-		slave->flags &= ~IFF_SLAVE;
+-
+-	rtmsg_ifinfo(RTM_NEWLINK, slave, IFF_SLAVE);
+-	return 0;
+-}
+-EXPORT_SYMBOL(netdev_set_bond_master);
+-
+ static void dev_change_rx_flags(struct net_device *dev, int flags)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
 -- 
 1.7.10.4
 
