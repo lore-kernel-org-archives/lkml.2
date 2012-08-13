@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2HMWDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:03:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58152 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab2HMWD2 (ORCPT
+	id S1754138Ab2HMWDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:03:37 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57384 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754282Ab2HMWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:03:28 -0400
+	Mon, 13 Aug 2012 18:03:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Capper <steve.capper@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 08/44] ARM: 7478/1: errata: extend workaround for erratum #720789
-Date: Mon, 13 Aug 2012 15:02:15 -0700
-Message-Id: <20120813220142.883750463@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 01/44] [IA64] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Mon, 13 Aug 2012 15:02:08 -0700
+Message-Id: <20120813220142.255546922@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -30,59 +29,68 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 5a783cbc48367cfc7b65afc75430953dfe60098f upstream.
+commit a119365586b0130dfea06457f584953e0ff6481d upstream.
 
-Commit cdf357f1 ("ARM: 6299/1: errata: TLBIASIDIS and TLBIMVAIS
-operations can broadcast a faulty ASID") replaced by-ASID TLB flushing
-operations with all-ASID variants to workaround A9 erratum #720789.
+The following build error occured during a ia64 build with
+swap-over-NFS patches applied.
 
-This patch extends the workaround to include the tlb_range operations,
-which were overlooked by the original patch.
+net/core/sock.c:274:36: error: initializer element is not constant
+net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+net/core/sock.c:274:36: error: initializer element is not constant
 
-Tested-by: Steve Capper <steve.capper@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This is identical to a parisc build error. Fengguang Wu, Mel Gorman
+and James Bottomley did all the legwork to track the root cause of
+the problem. This fix and entire commit log is shamelessly copied
+from them with one extra detail to change a dubious runtime use of
+ATOMIC_INIT() to atomic_set() in drivers/char/mspec.c
+
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
+
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/tlb-v7.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/ia64/include/asm/atomic.h |    4 ++--
+ drivers/char/mspec.c           |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mm/tlb-v7.S
-+++ b/arch/arm/mm/tlb-v7.S
-@@ -38,11 +38,19 @@ ENTRY(v7wbi_flush_user_tlb_range)
- 	dsb
- 	mov	r0, r0, lsr #PAGE_SHIFT		@ align address
- 	mov	r1, r1, lsr #PAGE_SHIFT
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	mov	r3, #0
-+#else
- 	asid	r3, r3				@ mask ASID
-+#endif
- 	orr	r0, r3, r0, lsl #PAGE_SHIFT	@ Create initial MVA
- 	mov	r1, r1, lsl #PAGE_SHIFT
- 1:
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(mcr	p15, 0, r0, c8, c3, 3)	@ TLB invalidate U MVA all ASID (shareable)
-+#else
- 	ALT_SMP(mcr	p15, 0, r0, c8, c3, 1)	@ TLB invalidate U MVA (shareable)
-+#endif
- 	ALT_UP(mcr	p15, 0, r0, c8, c7, 1)	@ TLB invalidate U MVA
+--- a/arch/ia64/include/asm/atomic.h
++++ b/arch/ia64/include/asm/atomic.h
+@@ -18,8 +18,8 @@
+ #include <asm/system.h>
  
- 	add	r0, r0, #PAGE_SZ
-@@ -70,7 +78,11 @@ ENTRY(v7wbi_flush_kern_tlb_range)
- 	mov	r0, r0, lsl #PAGE_SHIFT
- 	mov	r1, r1, lsl #PAGE_SHIFT
- 1:
-+#ifdef CONFIG_ARM_ERRATA_720789
-+	ALT_SMP(mcr	p15, 0, r0, c8, c3, 3)	@ TLB invalidate U MVA all ASID (shareable)
-+#else
- 	ALT_SMP(mcr	p15, 0, r0, c8, c3, 1)	@ TLB invalidate U MVA (shareable)
-+#endif
- 	ALT_UP(mcr	p15, 0, r0, c8, c7, 1)	@ TLB invalidate U MVA
- 	add	r0, r0, #PAGE_SZ
- 	cmp	r0, r1
+ 
+-#define ATOMIC_INIT(i)		((atomic_t) { (i) })
+-#define ATOMIC64_INIT(i)	((atomic64_t) { (i) })
++#define ATOMIC_INIT(i)		{ (i) }
++#define ATOMIC64_INIT(i)	{ (i) }
+ 
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
+--- a/drivers/char/mspec.c
++++ b/drivers/char/mspec.c
+@@ -284,7 +284,7 @@ mspec_mmap(struct file *file, struct vm_
+ 	vdata->flags = flags;
+ 	vdata->type = type;
+ 	spin_lock_init(&vdata->lock);
+-	vdata->refcnt = ATOMIC_INIT(1);
++	atomic_set(&vdata->refcnt, 1);
+ 	vma->vm_private_data = vdata;
+ 
+ 	vma->vm_flags |= (VM_IO | VM_RESERVED | VM_PFNMAP | VM_DONTEXPAND);
 
 
