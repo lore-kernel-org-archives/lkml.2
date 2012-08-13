@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2HMSpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:45:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45050 "EHLO
+	id S1753540Ab2HMSqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:46:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45001 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab2HMShq (ORCPT
+	with ESMTP id S1752758Ab2HMShm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:46 -0400
+	Mon, 13 Aug 2012 14:37:42 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Hansen <dave@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Matt Hellsley <matthltc@us.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/38] perf: Add ability to attach user stack dump to sample
-Date: Mon, 13 Aug 2012 15:36:55 -0300
-Message-Id: <1344883039-13495-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 33/38] perf symbols: Set symtab_type in dso__load_sym
+Date: Mon, 13 Aug 2012 15:37:14 -0300
+Message-Id: <1344883039-13495-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -35,358 +29,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Introducing PERF_SAMPLE_STACK_USER sample type bit to trigger the dump
-of the user level stack on sample. The size of the dump is specified by
-sample_stack_user value.
+In certain cases, dso__load requires dso->symbol_type to be set prior to
+calling it. With the introduction of symsrc*, the symtab_type is now
+stored in a symsrc which is then passed to dso__load_sym().
 
-Being able to dump parts of the user stack, starting from the stack
-pointer, will be useful to make a post mortem dwarf CFI based stack
-unwinding.
+Change dso__load_sym() to use the symtab_type from them symsrc (setting
+dso->symtab_type as well).
 
-Added HAVE_PERF_USER_STACK_DUMP config option to determine if the
-architecture provides user stack dump on perf event samples.  This needs
-access to the user stack pointer which is not unified across
-architectures. Enabling this for x86 architecture.
+Setup for later patch
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+"perf symbols: Use both runtime and debug images"
+
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: David Hansen <dave@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Hellsley <matthltc@us.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-6-git-send-email-jolsa@redhat.com
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1344637382-22789-13-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/Kconfig               |    7 ++
- arch/x86/Kconfig           |    1 +
- include/linux/perf_event.h |   18 +++++-
- kernel/events/core.c       |  150 +++++++++++++++++++++++++++++++++++++++++++-
- kernel/events/internal.h   |   16 +++++
- 5 files changed, 190 insertions(+), 2 deletions(-)
+ tools/perf/util/symbol-elf.c |    2 ++
+ tools/perf/util/symbol.c     |   13 +++++++------
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 68d827b..2a83a3f 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -228,6 +228,13 @@ config HAVE_PERF_REGS
- 	  Support selective register dumps for perf events. This includes
- 	  bit-mapping of each registers and a unique architecture id.
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 6974b2a..3a9c38a 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -645,6 +645,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	int nr = 0;
+ 	size_t opdidx = 0;
  
-+config HAVE_PERF_USER_STACK_DUMP
-+	bool
-+	help
-+	  Support user stack dumps for perf event samples. This needs
-+	  access to the user stack pointer which is not unified across
-+	  architectures.
++	dso->symtab_type = ss->type;
 +
- config HAVE_ARCH_JUMP_LABEL
- 	bool
+ 	elf = ss->elf;
+ 	ehdr = ss->ehdr;
+ 	sec = ss->symtab;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index afec3f0..2b3495a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1079,14 +1079,14 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ restart:
+ 	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
  
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 3fab6ec..a2d19ee 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -61,6 +61,7 @@ config X86
- 	select PERF_EVENTS
- 	select HAVE_PERF_EVENTS_NMI
- 	select HAVE_PERF_REGS
-+	select HAVE_PERF_USER_STACK_DUMP
- 	select ANON_INODES
- 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
- 	select HAVE_CMPXCHG_LOCAL if !M386
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8a73f75..d1d25f6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -131,8 +131,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_RAW				= 1U << 10,
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
-+	PERF_SAMPLE_STACK_USER			= 1U << 13,
+-		dso->symtab_type = binary_type_symtab[i];
++		enum dso_binary_type symtab_type = binary_type_symtab[i];
  
--	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
+-		if (dso__binary_type_file(dso, dso->symtab_type,
++		if (dso__binary_type_file(dso, symtab_type,
+ 					  root_dir, name, PATH_MAX))
+ 			continue;
  
- /*
-@@ -205,6 +206,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
- #define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
-+#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
+ 		/* Name is now the name of the next image to try */
+-		if (symsrc__init(&ss, dso, name, dso->symtab_type) < 0)
++		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
+ 			continue;
  
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -289,6 +291,14 @@ struct perf_event_attr {
- 	 * See asm/perf_regs.h for details.
- 	 */
- 	__u64	sample_regs_user;
-+
-+	/*
-+	 * Defines size of the user stack to dump on samples.
-+	 */
-+	__u32	sample_stack_user;
-+
-+	/* Align to u64. */
-+	__u32	__reserved_2;
- };
+ 		ret = dso__load_sym(dso, map, &ss, filter, 0,
+@@ -1361,16 +1361,17 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	int err = -1;
+ 	struct symsrc ss;
+ 	char symfs_vmlinux[PATH_MAX];
++	enum dso_binary_type symtab_type;
  
- /*
-@@ -568,6 +578,10 @@ enum perf_event_type {
- 	 *
- 	 * 	{ u64			abi; # enum perf_sample_regs_abi
- 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
-+	 *
-+	 * 	{ u64			size;
-+	 * 	  char			data[size];
-+	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -1160,6 +1174,7 @@ struct perf_sample_data {
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
-+	u64				stack_user_size;
- };
+ 	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s%s",
+ 		 symbol_conf.symfs, vmlinux);
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1172,6 +1187,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->period = period;
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
-+	data->stack_user_size = 0;
- }
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+-		dso->symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
++		symtab_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
+ 	else
+-		dso->symtab_type = DSO_BINARY_TYPE__VMLINUX;
++		symtab_type = DSO_BINARY_TYPE__VMLINUX;
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d3ce975..2ba8904 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -36,6 +36,7 @@
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/mm_types.h>
+-	if (symsrc__init(&ss, dso, symfs_vmlinux, dso->symtab_type))
++	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
+ 		return -1;
  
- #include "internal.h"
- 
-@@ -3787,6 +3788,101 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
- 	}
- }
- 
-+/*
-+ * Get remaining task size from user stack pointer.
-+ *
-+ * It'd be better to take stack vma map and limit this more
-+ * precisly, but there's no way to get it safely under interrupt,
-+ * so using TASK_SIZE as limit.
-+ */
-+static u64 perf_ustack_task_size(struct pt_regs *regs)
-+{
-+	unsigned long addr = perf_user_stack_pointer(regs);
-+
-+	if (!addr || addr >= TASK_SIZE)
-+		return 0;
-+
-+	return TASK_SIZE - addr;
-+}
-+
-+static u16
-+perf_sample_ustack_size(u16 stack_size, u16 header_size,
-+			struct pt_regs *regs)
-+{
-+	u64 task_size;
-+
-+	/* No regs, no stack pointer, no dump. */
-+	if (!regs)
-+		return 0;
-+
-+	/*
-+	 * Check if we fit in with the requested stack size into the:
-+	 * - TASK_SIZE
-+	 *   If we don't, we limit the size to the TASK_SIZE.
-+	 *
-+	 * - remaining sample size
-+	 *   If we don't, we customize the stack size to
-+	 *   fit in to the remaining sample size.
-+	 */
-+
-+	task_size  = min((u64) USHRT_MAX, perf_ustack_task_size(regs));
-+	stack_size = min(stack_size, (u16) task_size);
-+
-+	/* Current header size plus static size and dynamic size. */
-+	header_size += 2 * sizeof(u64);
-+
-+	/* Do we fit in with the current stack dump size? */
-+	if ((u16) (header_size + stack_size) < header_size) {
-+		/*
-+		 * If we overflow the maximum size for the sample,
-+		 * we customize the stack dump size to fit in.
-+		 */
-+		stack_size = USHRT_MAX - header_size - sizeof(u64);
-+		stack_size = round_up(stack_size, sizeof(u64));
-+	}
-+
-+	return stack_size;
-+}
-+
-+static void
-+perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
-+			  struct pt_regs *regs)
-+{
-+	/* Case of a kernel thread, nothing to dump */
-+	if (!regs) {
-+		u64 size = 0;
-+		perf_output_put(handle, size);
-+	} else {
-+		unsigned long sp;
-+		unsigned int rem;
-+		u64 dyn_size;
-+
-+		/*
-+		 * We dump:
-+		 * static size
-+		 *   - the size requested by user or the best one we can fit
-+		 *     in to the sample max size
-+		 * data
-+		 *   - user stack dump data
-+		 * dynamic size
-+		 *   - the actual dumped size
-+		 */
-+
-+		/* Static size. */
-+		perf_output_put(handle, dump_size);
-+
-+		/* Data. */
-+		sp = perf_user_stack_pointer(regs);
-+		rem = __output_copy_user(handle, (void *) sp, dump_size);
-+		dyn_size = dump_size - rem;
-+
-+		perf_output_skip(handle, rem);
-+
-+		/* Dynamic size. */
-+		perf_output_put(handle, dyn_size);
-+	}
-+}
-+
- static void __perf_event_header__init_id(struct perf_event_header *header,
- 					 struct perf_sample_data *data,
- 					 struct perf_event *event)
-@@ -4064,6 +4160,11 @@ void perf_output_sample(struct perf_output_handle *handle,
- 						mask);
- 		}
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_STACK_USER)
-+		perf_output_sample_ustack(handle,
-+					  data->stack_user_size,
-+					  data->regs_user.regs);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4129,6 +4230,35 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
-+		/*
-+		 * Either we need PERF_SAMPLE_STACK_USER bit to be allways
-+		 * processed as the last one or have additional check added
-+		 * in case new sample type is added, because we could eat
-+		 * up the rest of the sample size.
-+		 */
-+		struct perf_regs_user *uregs = &data->regs_user;
-+		u16 stack_size = event->attr.sample_stack_user;
-+		u16 size = sizeof(u64);
-+
-+		if (!uregs->abi)
-+			perf_sample_regs_user(uregs, regs);
-+
-+		stack_size = perf_sample_ustack_size(stack_size, header->size,
-+						     uregs->regs);
-+
-+		/*
-+		 * If there is something to dump, add space for the dump
-+		 * itself and for the field that tells the dynamic size,
-+		 * which is how many have been actually dumped.
-+		 */
-+		if (stack_size)
-+			size += sizeof(u64) + stack_size;
-+
-+		data->stack_user_size = stack_size;
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -6205,8 +6335,26 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 		}
- 	}
- 
--	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
-+	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
- 		ret = perf_reg_validate(attr->sample_regs_user);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	if (attr->sample_type & PERF_SAMPLE_STACK_USER) {
-+		if (!arch_perf_have_user_stack_dump())
-+			return -ENOSYS;
-+
-+		/*
-+		 * We have __u32 type for the size, but so far
-+		 * we can only use __u16 as maximum due to the
-+		 * __u16 sample size limit.
-+		 */
-+		if (attr->sample_stack_user >= USHRT_MAX)
-+			ret = -EINVAL;
-+		else if (!IS_ALIGNED(attr->sample_stack_user, sizeof(u64)))
-+			ret = -EINVAL;
-+	}
- 
- out:
- 	return ret;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ce7bdfc..d56a64c 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -158,4 +158,20 @@ static inline void put_recursion_context(int *recursion, int rctx)
- 	recursion[rctx]--;
- }
- 
-+#ifdef CONFIG_HAVE_PERF_USER_STACK_DUMP
-+static inline bool arch_perf_have_user_stack_dump(void)
-+{
-+	return true;
-+}
-+
-+#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
-+#else
-+static inline bool arch_perf_have_user_stack_dump(void)
-+{
-+	return false;
-+}
-+
-+#define perf_user_stack_pointer(regs) 0
-+#endif /* CONFIG_HAVE_PERF_USER_STACK_DUMP */
-+
- #endif /* _KERNEL_EVENTS_INTERNAL_H */
+ 	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
 -- 
 1.7.1
 
