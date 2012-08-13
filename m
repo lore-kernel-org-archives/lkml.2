@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab2HMKRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:17:45 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:38678 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2HMKRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:17:44 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Aug 2012 06:17:44 EDT
-Message-ID: <5028D2B0.4010800@ce.jp.nec.com>
-Date: Mon, 13 Aug 2012 19:10:56 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 2/3] HWPOISON: undo memory error handling for dirty pagecache
-References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1344634913-13681-3-git-send-email-n-horiguchi@ah.jp.nec.com> <m2a9y2cpj7.fsf@firstfloor.org>
-In-Reply-To: <m2a9y2cpj7.fsf@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751762Ab2HMKSU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:18:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53370 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751256Ab2HMKST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:18:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
+   d="asc'?scan'208";a="179926848"
+Message-ID: <1344853376.3393.8.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 6/6] ARM: imx: gpmi-nand depends on mxs-dma
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Dirk Behme <dirk.behme@de.bosch.com>, Arnd Bergmann <arnd@arndb.de>,
+        Shawn Guo <shawn.guo@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Aug 2012 13:22:56 +0300
+In-Reply-To: <CAOMZO5BtStkEWGRWi7LcVT_DK0C2WnjPiCOh2ZriVzrP+1NW3g@mail.gmail.com>
+References: <1344430493-5304-1-git-send-email-arnd@arndb.de>
+	 <1344430493-5304-7-git-send-email-arnd@arndb.de>
+	 <CAOMZO5CZ7mJd89cN_S0KBS74mc5qTzvrfRbmHVX3nmEakx19ow@mail.gmail.com>
+	 <50226409.1060800@de.bosch.com>
+	 <CAOMZO5BtStkEWGRWi7LcVT_DK0C2WnjPiCOh2ZriVzrP+1NW3g@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZsxSYGVbELspLa7J07ed"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/12 08:09, Andi Kleen wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
->> Current memory error handling on dirty pagecache has a bug that user
->> processes who use corrupted pages via read() or write() can't be aware
->> of the memory error and result in discarding dirty data silently.
->>
->> The following patch is to improve handling/reporting memory errors on
->> this case, but as a short term solution I suggest that we should undo
->> the present error handling code and just leave errors for such cases
->> (which expect the 2nd MCE to panic the system) to ensure data consistency.
-> 
-> Not sure that's the right approach. It's not worse than any other IO 
-> errors isn't it? 
 
-IMO, it's worse in certain cases.  For example, producer-consumer type
-program which uses file as a temporary storage.
-Current memory-failure.c drops produced data from dirty pagecache
-and allows reader to consume old or empty data from disk (silently!),
-that's what I think HWPOISON should prevent.
+--=-ZsxSYGVbELspLa7J07ed
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Similar thing could happen theoretically with disk I/O errors,
-though, practically those errors are often persistent and reader will
-likely get errors again instead of bad data.
-Also, ext3/ext4 has an option to panic when an error is detected,
-for people who want to avoid corruption on intermittent errors.
+On Wed, 2012-08-08 at 10:18 -0300, Fabio Estevam wrote:
+> On Wed, Aug 8, 2012 at 10:05 AM, Dirk Behme <dirk.behme@de.bosch.com> wro=
+te:
+>=20
+> > Yes. But it seems it's not handled there? I'm trying since ~2 weeks to =
+get
+> > something like your patch applied to get the broken mainline fixed, but
+> > unfortunately without success so far.
+>=20
+> Let's try once again.
+>=20
+> Artem,
+>=20
+> Could https://patchwork.kernel.org/patch/1236551/ be applied?
 
--- 
-Jun'ichi Nomura, NEC Corporation
+I will get to that. I was busy and also having vacation, so I have a
+huge back-log, sorry.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ZsxSYGVbELspLa7J07ed
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQKNWAAAoJECmIfjd9wqK0WSAP/0Pvf3t3gMSHTGsrEwA5kEA1
+LuhlA9nr+oPTdLQAaOQrRUzNr+ONhFOtxGaaO1r3XwEcziYurnGwoy+3Lq/djZPr
+sDZAaeQf1DBuM/cRrPIOOvl4e6S2wKqrHRgHSiOPBOPyR655CnJ5chtIr8Ig8p3q
+CEp8xxwKQ1t7DJRyKdOi5lWfs37iOV1Omr4iqghqrfnuiXlqtQKPYQzzERzepA7g
+jHyEYNVywc/4hQARkdtynxnsQIwBkTaSMQJE6MGoYj1POZZjSf+xvESy4yuTQ3Sc
+gxc5QijFbN0xy5yuoiM4m58CIRikdyVX7jNgPp5ADGz47h9S+xp5MNQyIxSTFcH0
+A2I/KrOcQgg1Eky3EMs7QNhSl2QeAx8YY3WyNTwYHOQErD6k3v9tp2JUJdQ53gr4
+LHJbgZ5ZtIUDBhlS836AIGXcmVfbM2kJb5hCBzh5C7gQ5X7TSkAWiiGOq+bOi+8E
+ju3wsKoqREx4d6eeWxFnC2sWpq70LjFNsXw8Wu39HlX7NkEO7qbQtzUHWF539bK+
+CfD132z+ErjuFHNiN1ds20yCyE1eiQ/PlefYRpLyo0EAdIRxTSXyMhA3v40mueAg
+7aW5tNR2we65uAvQuyYmtXFTsS41FXDWTzfmytirskD/D7oRhdggJ1E77wVuGmxK
+qgkVxN5drnEvBkHlPvF2
+=6uIK
+-----END PGP SIGNATURE-----
+
+--=-ZsxSYGVbELspLa7J07ed--
 
