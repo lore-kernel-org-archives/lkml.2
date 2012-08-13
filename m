@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab2HMJOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 05:14:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58684 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750925Ab2HMJOL (ORCPT
+	id S1751338Ab2HMJPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 05:15:19 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33912
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834Ab2HMJPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 05:14:11 -0400
-Date: Mon, 13 Aug 2012 10:13:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
-Message-ID: <20120813091349.GA19113@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
- <20120809144953.GC18486@mudshark.cambridge.arm.com>
- <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
- <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
- <1344845704.31459.11.camel@twins>
+	Mon, 13 Aug 2012 05:15:17 -0400
+Date: Mon, 13 Aug 2012 05:15:17 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: XFS status update for July 2012
+Message-ID: <20120813091517.GA27609@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344845704.31459.11.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+July saw the release of Linux 3.5, which included an average sized XFS
+update:
 
-On Mon, Aug 13, 2012 at 09:15:04AM +0100, Peter Zijlstra wrote:
-> On Thu, 2012-08-09 at 12:57 -0400, Nicolas Pitre wrote:
-> > 
-> > In other words, I think this should look like this:
-> > 
-> > diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
-> > index 580a6d35c7..44a66c99c8 100644
-> > --- a/include/asm-generic/mutex-xchg.h
-> > +++ b/include/asm-generic/mutex-xchg.h
-> > @@ -25,8 +25,11 @@
-> >  static inline void
-> >  __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
-> >  {
-> > -       if (unlikely(atomic_xchg(count, 0) != 1))
-> > -               fail_fn(count);
-> > +       if (unlikely(atomic_xchg(count, 0) != 1)) {
-> > +               /* Mark lock contention explicitly */
-> > +               if (likely(atomic_xchg(count, -1) != 1))
-> > +                       fail_fn(count);
-> > +       }
-> >  } 
-> 
-> OK, I like this.. Thanks guys! Will will you send a final and complete
-> patch?
+    81 files changed, 2633 insertions(+), 3004 deletions(-)
 
-I sent one out on Friday but somehow managed to drop you from CC -- sorry
-about that:
+Noteworthy updates in Linux 3.5 include the removal of the xfsbufd
+background thread which writes metadata buffers, background processing
+of CIL flushes and thus lower average latency for metadata heavy
+workloads, as well a a reduction of lock hold times and frequency during
+reads and writes.  The large XFS update for the Linux 3.6 merge window
+did not get merged yet by the end of July, but will bring better support
+for large directory block sizes, a faster inode allocator and a large
+amount of bug fixes in different areas of the code.  Development on the list
+has been fairly busy on the patchsets to support group and project quotas
+at the same time, as well as improved SEEK_HOLE/SEEK_DATA support but
+otherwise mostly limited to bug fixes and smaller cleanups.
 
-  http://thread.gmane.org/gmane.linux.kernel/1341305
-
-Cheers,
-
-Will
+Userpace development has been rather slow with a single fix for xfs_db
+and another single fix in xfstests.
