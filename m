@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2HMWP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:15:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43626 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab2HMWPV (ORCPT
+	id S1754824Ab2HMWPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:15:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48802 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab2HMWPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:15:21 -0400
+	Mon, 13 Aug 2012 18:15:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg Pearson <greg.pearson@hp.com>, Khalid Aziz <khalid.aziz@hp.com>
-Subject: [ 07/65] pcdp: use early_ioremap/early_iounmap to access pcdp table
-Date: Mon, 13 Aug 2012 15:13:51 -0700
-Message-Id: <20120813221415.605457920@linuxfoundation.org>
+        Luis Henriques <luis.henriques@canonical.com>,
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 06/65] media: ene_ir: Fix driver initialisation
+Date: Mon, 13 Aug 2012 15:13:50 -0700
+Message-Id: <20120813221415.522734922@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,70 +31,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Greg Pearson <greg.pearson@hp.com>
+From: Luis Henriques <luis.henriques@canonical.com>
 
-commit 6c4088ac3a4d82779903433bcd5f048c58fb1aca upstream.
+commit b31b021988fed9e3741a46918f14ba9b063811db upstream.
 
-efi_setup_pcdp_console() is called during boot to parse the HCDP/PCDP
-EFI system table and setup an early console for printk output.  The
-routine uses ioremap/iounmap to setup access to the HCDP/PCDP table
-information.
+commit 9ef449c6b31bb6a8e6dedc24de475a3b8c79be20 ("[media] rc: Postpone ISR
+registration") fixed an early ISR registration on several drivers.  It did
+however also introduced a bug by moving the invocation of pnp_port_start()
+to the end of the probe function.
 
-The call to ioremap is happening early in the boot process which leads
-to a panic on x86_64 systems:
+This patch fixes this issue by moving the invocation of pnp_port_start() to
+an earlier stage in the probe function.
 
-    panic+0x01ca
-    do_exit+0x043c
-    oops_end+0x00a7
-    no_context+0x0119
-    __bad_area_nosemaphore+0x0138
-    bad_area_nosemaphore+0x000e
-    do_page_fault+0x0321
-    page_fault+0x0020
-    reserve_memtype+0x02a1
-    __ioremap_caller+0x0123
-    ioremap_nocache+0x0012
-    efi_setup_pcdp_console+0x002b
-    setup_arch+0x03a9
-    start_kernel+0x00d4
-    x86_64_start_reservations+0x012c
-    x86_64_start_kernel+0x00fe
-
-This replaces the calls to ioremap/iounmap in efi_setup_pcdp_console()
-with calls to early_ioremap/early_iounmap which can be called during
-early boot.
-
-This patch was tested on an x86_64 prototype system which uses the
-HCDP/PCDP table for early console setup.
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-Acked-by: Khalid Aziz <khalid.aziz@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Cc: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/pcdp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/rc/ene_ir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/firmware/pcdp.c
-+++ b/drivers/firmware/pcdp.c
-@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
- 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
- 		return -ENODEV;
+--- a/drivers/media/rc/ene_ir.c
++++ b/drivers/media/rc/ene_ir.c
+@@ -1018,6 +1018,8 @@ static int ene_probe(struct pnp_dev *pnp
  
--	pcdp = ioremap(efi.hcdp, 4096);
-+	pcdp = early_ioremap(efi.hcdp, 4096);
- 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
+ 	spin_lock_init(&dev->hw_lock);
  
- 	if (strstr(cmdline, "console=hcdp")) {
-@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
- 	}
++	dev->hw_io = pnp_port_start(pnp_dev, 0);
++
+ 	pnp_set_drvdata(pnp_dev, dev);
+ 	dev->pnp_dev = pnp_dev;
  
- out:
--	iounmap(pcdp);
-+	early_iounmap(pcdp, 4096);
- 	return rc;
- }
+@@ -1072,7 +1074,6 @@ static int ene_probe(struct pnp_dev *pnp
+ 
+ 	/* claim the resources */
+ 	error = -EBUSY;
+-	dev->hw_io = pnp_port_start(pnp_dev, 0);
+ 	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
+ 		dev->hw_io = -1;
+ 		dev->irq = -1;
 
 
