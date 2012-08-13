@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2HMVBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:01:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35574 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab2HMVBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:01:51 -0400
-Message-ID: <50296B34.8090502@zytor.com>
-Date: Mon, 13 Aug 2012 14:01:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754034Ab2HMVE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:04:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54537 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2HMVE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:04:56 -0400
+Date: Mon, 13 Aug 2012 16:04:44 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+Subject: Re: [PATCH 2/2] apple_gmux: Add support for newer hardware
+Message-ID: <20120813210444.GJ24088@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg@redhat.com>,
+	linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+	Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+References: <1344889232-3907-1-git-send-email-mjg@redhat.com>
+ <1344889232-3907-2-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-To: David Cullen <David.Cullen@koe-americas.com>
-CC: Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
- during make distclean
-References: <502957D5.1070800@koe-americas.com> <502965BE.3070406@zytor.com> <502969FA.6010907@koe-americas.com>
-In-Reply-To: <502969FA.6010907@koe-americas.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344889232-3907-2-git-send-email-mjg@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 01:56 PM, David Cullen wrote:
->>
->> That sounds like a bug in xargs...
->>
-> 
-> In my specific case, qemu-arm-static calls xargs (In fact, in my
-> cross chroot, qemu-arm-static is used to run every user mode process).
-> 
-> Do you mean that qemu-arm-static is exposing a latent defect in xargs?
-> 
-> Does qemu-arm-static steal some of the command line space that would
-> normally be available for xargs? If so, how would xargs figure out
-> this was happening and handle the problem?
-> 
+On Mon, Aug 13, 2012 at 04:20:32PM -0400, Matthew Garrett wrote:
+> +static int gmux_index_wait_ready(struct apple_gmux_data *gmux_data)
+> +{
+> +	int i = 200;
+> +	u8 gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
+> +
+> +	while (i && (gwr & 0x01)) {
+> +		inb(gmux_data->iostart + GMUX_PORT_READ);
+> +		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
+> +		msleep(100);
 
-I have no idea.  Perhaps strace can help you see what is happening, I
-don't know.  More likely it is qemu-arm-static that is broken and it is
-trying to enforce the old 128K limit that we used to have before 2.6.23.
- This could cause a mismatch between what sysconf(_SC_ARG_MAX) returns
-and what the actual limit is.
+Wouldn't it make more sense if the msleep was before reading the port
+again? Otherwise there's no substantial dely between the first and
+second times we read it.
 
-Anyway, even more so the reason to reject this patch.
+> +static int gmux_index_wait_complete(struct apple_gmux_data *gmux_data)
+> +{
+> +	int i = 200;
+> +	u8 gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
+> +
+> +	while (i && (gwr & 0x01)) {
+> +		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
+> +		msleep(100);
 
-	-hpa
+Likewise.
+
