@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2HMOgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:36:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58689 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2HMOgR (ORCPT
+	id S1752162Ab2HMOgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:36:24 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:38176 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751276Ab2HMOgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:36:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [GIT PULL] gpio fixes for v3.6-rc1
-Date: Mon, 13 Aug 2012 14:36:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Shawn Guo <shawn.guo@linaro.org>, Daniel Mack <zonque@gmail.com>,
-        Axel Lin <axel.lin@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        Sean Paul <seanpaul@chromium.org>, Julia Lawall <Julia.Lawall@lip6.fr>
-References: <CACRpkdaixT=Zn69x9_b9G2nQFm4cu2S5Uo23ww909MJFH2yWwQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaixT=Zn69x9_b9G2nQFm4cu2S5Uo23ww909MJFH2yWwQ@mail.gmail.com>
+	Mon, 13 Aug 2012 10:36:21 -0400
+Date: Mon, 13 Aug 2012 17:32:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: NeilBrown <neilb@suse.de>
+Cc: balbi@ti.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Infinite looping in omap2430.c USB driver
+Message-ID: <20120813143233.GJ14781@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <20120707083949.2cf91eeb@notabene.brown>
+ <20120809111549.GT12174@arwen.pp.htv.fi>
+ <20120813123453.4cba14ca@notabene.brown>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208131436.11122.arnd@arndb.de>
-X-Provags-ID: V02:K0:wveRG/HjD8vOJutcMZGbylNeaw5Vrqx5f7z4WXqhGhl
- xca+cxhcy9HtWQDbCzmVYQeh+wOsGLEfhXK/tGnIq5QaSxYhTO
- 4c07yqWuTktJ9m+U0ckKzhAUkscf/eXoCVLGzB70SZSizB0nyH
- kCtJLVvcfcLVcu8vLOHALlkY6rzSxbbCOU+FPxtWgSzsh02rHG
- L5SttMw+PJ9lxNpDcu6urRn3BPFDNn+b4RGxRDdt7mCTzLltQW
- TddWtexo13XQ7cbfvxNUY4Jj91TMiLTCzac7hyw4BSTUl4hD5P
- eVtio0AEpsq57Wuv253F5O7NBYARWao/Gxs1kRrRc3nNiO9Rv0
- jOGw6nnGVo1z2HcT6kp0=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+Hr//EUsa8//ouuB"
+Content-Disposition: inline
+In-Reply-To: <20120813123453.4cba14ca@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 August 2012, Linus Walleij wrote:
-> Daniel Mack (1):
->       GPIO: gpio-pxa: fix devicetree functions
-> 
 
-Unfortunately, this one caused a build regression, see the fix below.
-I also wonder why pxa_irq_domain_ops isn't static.
+--+Hr//EUsa8//ouuB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+Hi,
 
-8<----
-GPIO: gpio-pxa: fix building without CONFIG_OF
+On Mon, Aug 13, 2012 at 12:34:53PM +1000, NeilBrown wrote:
+> On Thu, 9 Aug 2012 14:15:51 +0300 Felipe Balbi <balbi@ti.com> wrote:
+>=20
+>=20
+> > hehe, that's nasty. Please send a patch converting to a try count and a
+> > udelay_range(), or something.
+> >=20
+>=20
+> how's this?
+>=20
+> Thanks,
+> NeilBrown
+>=20
+>=20
+> From: NeilBrown <neilb@suse.de>
+> Date: Mon, 13 Aug 2012 12:32:58 +1000
+> Subject: [PATCH] omap2430: don't loop indefinitely in interrupt.
+>=20
+> When called during resume_irqs, omap2430_musb_set_vbus() is run with
+> interrupts disabled,  In that case 'jiffies' never changes so the loop
+> can loop forever.
+>=20
+> So impose a maximum loop count and add an 'mdelay' to ensure we wait
+> a reasonable amount of time for bit to be cleared.
+>=20
+> This fixes a hang on resume.
+>=20
+> Signed-of-by: NeilBrown <neilb@suse.de>
+>=20
+> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+> index c7785e8..8a93381 100644
+> --- a/drivers/usb/musb/omap2430.c
+> +++ b/drivers/usb/musb/omap2430.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/err.h>
+> +#include <linux/delay.h>
+> =20
+>  #include "musb_core.h"
+>  #include "omap2430.h"
+> @@ -145,6 +146,7 @@ static void omap2430_musb_set_vbus(struct musb *musb,=
+ int is_on)
+> =20
+>  	if (is_on) {
+>  		if (musb->xceiv->state =3D=3D OTG_STATE_A_IDLE) {
+> +			int loops =3D 100;
+>  			/* start the session */
+>  			devctl |=3D MUSB_DEVCTL_SESSION;
+>  			musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+> @@ -154,9 +156,11 @@ static void omap2430_musb_set_vbus(struct musb *musb=
+, int is_on)
+>  			 */
+>  			while (musb_readb(musb->mregs, MUSB_DEVCTL) & 0x80) {
+> =20
+> +				mdelay(5);
 
-Patch 7212157267 "GPIO: gpio-pxa: fix devicetree functions" added an
-"xlate" function pointer to the irq_domain_ops, but this function
-is nor declared or defined anywhere when CONFIG_OF is disabled, causing
-the build error:
+I would prefer udelay_range() as it will let scheduler group timers.
+Something like:
 
-drivers/gpio/gpio-pxa.c:532:11: error: 'irq_domain_xlate_twocell' undeclared here (not in a function)
+udelay_range(3000, 5000);
 
-Extending the DT-only code section to cover the irq_domain_ops
-and the pxa_gpio_dt_ids solves this problem and makes it clearer
-which code is actually used without DT.
+should do, I gues...
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+--=20
+balbi
 
-diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
-index 793767b0..9cac88a 100644
---- a/drivers/gpio/gpio-pxa.c
-+++ b/drivers/gpio/gpio-pxa.c
-@@ -512,6 +512,7 @@ static int pxa_gpio_nums(void)
- 	return count;
- }
- 
-+#ifdef CONFIG_OF
- static struct of_device_id pxa_gpio_dt_ids[] = {
- 	{ .compatible = "mrvl,pxa-gpio" },
- 	{ .compatible = "mrvl,mmp-gpio", .data = (void *)MMP_GPIO },
-@@ -532,7 +533,6 @@ const struct irq_domain_ops pxa_irq_domain_ops = {
- 	.xlate	= irq_domain_xlate_twocell,
- };
- 
--#ifdef CONFIG_OF
- static int __devinit pxa_gpio_probe_dt(struct platform_device *pdev)
- {
- 	int ret, nr_banks, nr_gpios, irq_base;
-@@ -679,7 +679,7 @@ static struct platform_driver pxa_gpio_driver = {
- 	.probe		= pxa_gpio_probe,
- 	.driver		= {
- 		.name	= "pxa-gpio",
--		.of_match_table = pxa_gpio_dt_ids,
-+		.of_match_table = of_match_ptr(pxa_gpio_dt_ids),
- 	},
- };
- 
+--+Hr//EUsa8//ouuB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQKRAAAAoJEIaOsuA1yqREYkYP/3eO3fpTDiSZv5iLdR2jmj9O
+1Q1Fp0ry7ZhDdqeQfGNprnYKfSRQB9YR7hbjvpZNOAmLxCiC4qV9jNDC0bSmYeov
+d9fP0+MR4/iyvMU+unzd6iRAnDaTrfh3FkTmln/fkrC4SUmfPh+JWT1vU+x7M/qg
+Lla4KUQCAaMQCNaJLxknMTFcfA3L5ytt1kgNPpjWUVStfZXofn8MIgXdXJ/aPhDR
+WQ6K9BuPYr/L5waE3eftU6jo4m5LhiDCWmm8HEsQbnOuDZ/g1RVUVOswvVW/O7/k
+PnYnHroOk3ZeG3DtvoP14yNqx5QB2faDLPuyqyG9f+i1bfrPinaoStndGwZlRrmg
+3hhBCWZEzGImZQI4n96qlFWlKhGBy4CmSBjVhplHsFZ8u8VV1HLg2MLz+VhZ5ExZ
+qkDWY42X6Uf9B24OzzizqA3CvcTqzFKPm3+d5hMuO2rfxp/r/15lIayxmIIikXRa
+mLLsCcTgL1bSsUbzN7ZKYc9u5ikwYNVGUxWuJBy0S4dIgOfXxwJAQKPXJkp7ITdT
+ADkF/gvbveYccZgdhksYD8AIBFmKy0GIwcXxYHiZDDokjt67Tf9CQw0nTR8brFum
+52aO4WpATwbkOqcM3aA7/xr+g7yG8gcw/iYXRvLl0AAjBn2SHZWzcfIoUxHEuKWM
+BuuwcjdpOf/C+CFzHKzw
+=vOt8
+-----END PGP SIGNATURE-----
+
+--+Hr//EUsa8//ouuB--
