@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab2HMFwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 01:52:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50275 "EHLO
+	id S1752617Ab2HMFwd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 01:52:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50287 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab2HMFwO (ORCPT
+	with ESMTP id S1751532Ab2HMFwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 01:52:14 -0400
+	Mon, 13 Aug 2012 01:52:30 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-leds@vger.kernel.org, arnd.bergmann@linaro.org,
         nicolas.pitre@linaro.org, olof@lixom.net
-Subject: [PATCH 03/18] ARM: mach-realview and mach-versatile: retire custom LED code
-Date: Mon, 13 Aug 2012 13:51:27 +0800
-Message-Id: <1344837102-11850-4-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 05/18] ARM: mach-shark: retire custom LED code
+Date: Mon, 13 Aug 2012 13:51:29 +0800
+Message-Id: <1344837102-11850-6-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
 References: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
@@ -22,287 +22,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces the custom LED trigger code in mach-realview with
-some overarching platform code for the plat-versatile family that
-will lock down LEDs 2 thru 5 for CPU activity indication. The
-day we have 8 core ARM systems the plat-versatile code will have
-to become more elaborate.
+The CPU activity LED is now handled by the trigger in the leds
+subsystem, retire this old CONFIG_LEDS-based code.
 
-Tested on RealView PB11MPCore by invoking four different CPU
-hogs (yes > /dev/null&) and see the LEDs go on one at a time.
-They all go off as the hogs are killed. Tested on the PB1176
-as well - just one activity led (led 2) goes on and off with
-CPU activity.
-
-(bryan.wu@canonical.com: use ledtrig-cpu instead of ledtrig-arm-cpu)
-
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- arch/arm/mach-realview/core.c            | 39 --------------------------------
- arch/arm/mach-realview/core.h            |  2 --
- arch/arm/mach-realview/realview_eb.c     |  5 ----
- arch/arm/mach-realview/realview_pb1176.c |  5 ----
- arch/arm/mach-realview/realview_pb11mp.c |  5 ----
- arch/arm/mach-realview/realview_pba8.c   |  5 ----
- arch/arm/mach-realview/realview_pbx.c    |  5 ----
- arch/arm/mach-versatile/core.c           |  5 ----
- arch/arm/plat-versatile/Kconfig          |  4 +++-
- arch/arm/plat-versatile/leds.c           |  8 +++----
- 10 files changed, 7 insertions(+), 76 deletions(-)
+ arch/arm/mach-shark/Makefile |   4 +-
+ arch/arm/mach-shark/core.c   |   1 -
+ arch/arm/mach-shark/leds.c   | 220 +++++++++++++++++--------------------------
+ 3 files changed, 87 insertions(+), 138 deletions(-)
 
-diff --git a/arch/arm/mach-realview/core.c b/arch/arm/mach-realview/core.c
-index 45868bb..d22dee9 100644
---- a/arch/arm/mach-realview/core.c
-+++ b/arch/arm/mach-realview/core.c
-@@ -35,7 +35,6 @@
+diff --git a/arch/arm/mach-shark/Makefile b/arch/arm/mach-shark/Makefile
+index 45be9b0..2965718 100644
+--- a/arch/arm/mach-shark/Makefile
++++ b/arch/arm/mach-shark/Makefile
+@@ -4,9 +4,7 @@
  
- #include <mach/hardware.h>
- #include <asm/irq.h>
--#include <asm/leds.h>
+ # Object file lists.
+ 
+-obj-y			:= core.o dma.o irq.o pci.o
++obj-y			:= core.o dma.o irq.o pci.o leds.o
+ obj-m			:=
+ obj-n			:=
+ obj-			:=
+-
+-obj-$(CONFIG_LEDS)	+= leds.o
+diff --git a/arch/arm/mach-shark/core.c b/arch/arm/mach-shark/core.c
+index 2704bcd..c709979 100644
+--- a/arch/arm/mach-shark/core.c
++++ b/arch/arm/mach-shark/core.c
+@@ -13,7 +13,6 @@
+ 
+ #include <asm/setup.h>
  #include <asm/mach-types.h>
- #include <asm/hardware/arm_timer.h>
- #include <asm/hardware/icst.h>
-@@ -436,44 +435,6 @@ struct clcd_board clcd_plat_data = {
- 	.remove		= versatile_clcd_remove_dma,
- };
+-#include <asm/leds.h>
+ #include <asm/param.h>
+ #include <asm/system_misc.h>
  
--#ifdef CONFIG_LEDS
--#define VA_LEDS_BASE (__io_address(REALVIEW_SYS_BASE) + REALVIEW_SYS_LED_OFFSET)
--
--void realview_leds_event(led_event_t ledevt)
--{
+diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
+index 2560907..081c778 100644
+--- a/arch/arm/mach-shark/leds.c
++++ b/arch/arm/mach-shark/leds.c
+@@ -1,165 +1,117 @@
+ /*
+- * arch/arm/mach-shark/leds.c
+- * by Alexander Schulz
+- *
+- * derived from:
+- * arch/arm/kernel/leds-footbridge.c
+- * Copyright (C) 1998-1999 Russell King
+- *
+  * DIGITAL Shark LED control routines.
+  *
+- * The leds use is as follows:
+- *  - Green front - toggles state every 50 timer interrupts
+- *  - Amber front - Unused, this is a dual color led (Amber/Green)
+- *  - Amber back  - On if system is not idle
++ * Driver for the 3 user LEDs found on the Shark
++ * Based on Versatile and RealView machine LED code
+  *
+- * Changelog:
++ * License terms: GNU General Public License (GPL) version 2
++ * Author: Bryan Wu <bryan.wu@canonical.com>
+  */
+ #include <linux/kernel.h>
+-#include <linux/module.h>
+ #include <linux/init.h>
+-#include <linux/spinlock.h>
+-#include <linux/ioport.h>
+ #include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
+ 
+-#include <asm/leds.h>
++#include <asm/mach-types.h>
+ 
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
++#if defined(CONFIG_NEW_LEDS) && defined(CONFIG_LEDS_CLASS)
++struct shark_led {
++	struct led_classdev cdev;
++	u8 mask;
++};
+ 
+-#define SEQUOIA_LED_GREEN       (1<<6)
+-#define SEQUOIA_LED_AMBER       (1<<5)
+-#define SEQUOIA_LED_BACK        (1<<7)
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} shark_leds[] = {
++	{ "shark:amber0", "default-on", },	/* Bit 5 */
++	{ "shark:green", "heartbeat", },	/* Bit 6 */
++	{ "shark:amber1", "cpu0" },		/* Bit 7 */
++};
++
++static u16 led_reg_read(void)
++{
++	outw(0x09, 0x24);
++	return inw(0x26);
++}
+ 
+-static char led_state;
+-static short hw_led_state;
+-static short saved_state;
++static void led_reg_write(u16 value)
++{
++	outw(0x09, 0x24);
++	outw(value, 0x26);
++}
+ 
+-static DEFINE_RAW_SPINLOCK(leds_lock);
++static void shark_led_set(struct led_classdev *cdev,
++			      enum led_brightness b)
++{
++	struct shark_led *led = container_of(cdev,
++						 struct shark_led, cdev);
++	u16 reg = led_reg_read();
+ 
+-short sequoia_read(int addr) {
+-  outw(addr,0x24);
+-  return inw(0x26);
+-}
++	if (b != LED_OFF)
++		reg |= led->mask;
++	else
++		reg &= ~led->mask;
+ 
+-void sequoia_write(short value,short addr) {
+-  outw(addr,0x24);
+-  outw(value,0x26);
++	led_reg_write(reg);
+ }
+ 
+-static void sequoia_leds_event(led_event_t evt)
++static enum led_brightness shark_led_get(struct led_classdev *cdev)
+ {
 -	unsigned long flags;
--	u32 val;
--	u32 led = 1 << smp_processor_id();
 -
--	local_irq_save(flags);
--	val = readl(VA_LEDS_BASE);
--
--	switch (ledevt) {
--	case led_idle_start:
--		val = val & ~led;
+-	raw_spin_lock_irqsave(&leds_lock, flags);
++	struct shark_led *led = container_of(cdev,
++						 struct shark_led, cdev);
++	u16 reg = led_reg_read();
+ 
+-	hw_led_state = sequoia_read(0x09);
++	return (reg & led->mask) ? LED_FULL : LED_OFF;
++}
+ 
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-#ifdef CONFIG_LEDS_CPU
+-		hw_led_state |= SEQUOIA_LED_BACK;
+-#else
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-#endif
+-		led_state |= LED_STATE_ENABLED;
 -		break;
 -
--	case led_idle_end:
--		val = val | led;
+-	case led_stop:
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-		led_state &= ~LED_STATE_ENABLED;
 -		break;
 -
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		saved_state = hw_led_state;
+-		hw_led_state &= ~SEQUOIA_LED_BACK;
+-		hw_led_state |= SEQUOIA_LED_GREEN;
+-		hw_led_state |= SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = saved_state;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
 -	case led_timer:
--		val = val ^ REALVIEW_SYS_LED7;
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= SEQUOIA_LED_GREEN;
+-		break;
+-#endif
++static int __init shark_leds_init(void)
++{
++	int i;
++	u16 reg;
+ 
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~SEQUOIA_LED_BACK;
+-		break;
++	if (!machine_is_shark())
++		return -ENODEV;
+ 
+-	case led_idle_end:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= SEQUOIA_LED_BACK;
+-		break;
+-#endif
++	for (i = 0; i < ARRAY_SIZE(shark_leds); i++) {
++		struct shark_led *led;
+ 
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_GREEN;
 -		break;
 -
--	case led_halted:
--		val = 0;
+-	case led_green_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_GREEN;
+-		break;
+-
+-	case led_amber_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_amber_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_AMBER;
+-		break;
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= SEQUOIA_LED_BACK;
+-		break;
+-
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~SEQUOIA_LED_BACK;
 -		break;
 -
 -	default:
 -		break;
 -	}
--
--	writel(val, VA_LEDS_BASE);
--	local_irq_restore(flags);
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
+ 
+-	if  (led_state & LED_STATE_ENABLED)
+-		sequoia_write(hw_led_state,0x09);
++		led->cdev.name = shark_leds[i].name;
++		led->cdev.brightness_set = shark_led_set;
++		led->cdev.brightness_get = shark_led_get;
++		led->cdev.default_trigger = shark_leds[i].trigger;
+ 
+-	raw_spin_unlock_irqrestore(&leds_lock, flags);
 -}
--#endif	/* CONFIG_LEDS */
--
- /*
-  * Where is the timer (VA)?
-  */
-diff --git a/arch/arm/mach-realview/core.h b/arch/arm/mach-realview/core.h
-index f8f2c0a..f2141ae 100644
---- a/arch/arm/mach-realview/core.h
-+++ b/arch/arm/mach-realview/core.h
-@@ -26,7 +26,6 @@
- #include <linux/io.h>
++		/* Count in 5 bits offset */
++		led->mask = BIT(i + 5);
  
- #include <asm/setup.h>
--#include <asm/leds.h>
+-static int __init leds_init(void)
+-{
+-	extern void (*leds_event)(led_event_t);
+-	short temp;
+-	
+-	leds_event = sequoia_leds_event;
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
  
- #define APB_DEVICE(name, busid, base, plat)			\
- static AMBA_APB_DEVICE(name, busid, 0, REALVIEW_##base##_BASE, base##_IRQ, plat)
-@@ -47,7 +46,6 @@ extern void __iomem *timer1_va_base;
- extern void __iomem *timer2_va_base;
- extern void __iomem *timer3_va_base;
- 
--extern void realview_leds_event(led_event_t ledevt);
- extern void realview_timer_init(unsigned int timer_irq);
- extern int realview_flash_register(struct resource *res, u32 num);
- extern int realview_eth_register(const char *name, struct resource *res);
-diff --git a/arch/arm/mach-realview/realview_eb.c b/arch/arm/mach-realview/realview_eb.c
-index baf382c..21661ad 100644
---- a/arch/arm/mach-realview/realview_eb.c
-+++ b/arch/arm/mach-realview/realview_eb.c
-@@ -30,7 +30,6 @@
- 
- #include <mach/hardware.h>
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- #include <asm/pmu.h>
- #include <asm/pgtable.h>
-@@ -462,10 +461,6 @@ static void __init realview_eb_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = realview_leds_event;
--#endif
+ 	/* Make LEDs independent of power-state */
+-	request_region(0x24,4,"sequoia");
+-	temp = sequoia_read(0x09);
+-	temp |= 1<<10;
+-	sequoia_write(temp,0x09);
+-	leds_event(led_start);
++	request_region(0x24, 4, "led_reg");
++	reg = led_reg_read();
++	reg |= 1 << 10;
++	led_reg_write(reg);
++
+ 	return 0;
  }
  
- MACHINE_START(REALVIEW_EB, "ARM-RealView EB")
-diff --git a/arch/arm/mach-realview/realview_pb1176.c b/arch/arm/mach-realview/realview_pb1176.c
-index b1d7caf..c0ff882 100644
---- a/arch/arm/mach-realview/realview_pb1176.c
-+++ b/arch/arm/mach-realview/realview_pb1176.c
-@@ -32,7 +32,6 @@
- 
- #include <mach/hardware.h>
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- #include <asm/pmu.h>
- #include <asm/pgtable.h>
-@@ -375,10 +374,6 @@ static void __init realview_pb1176_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = realview_leds_event;
--#endif
- }
- 
- MACHINE_START(REALVIEW_PB1176, "ARM-RealView PB1176")
-diff --git a/arch/arm/mach-realview/realview_pb11mp.c b/arch/arm/mach-realview/realview_pb11mp.c
-index a98c536..30779ae 100644
---- a/arch/arm/mach-realview/realview_pb11mp.c
-+++ b/arch/arm/mach-realview/realview_pb11mp.c
-@@ -30,7 +30,6 @@
- 
- #include <mach/hardware.h>
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- #include <asm/pmu.h>
- #include <asm/pgtable.h>
-@@ -357,10 +356,6 @@ static void __init realview_pb11mp_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = realview_leds_event;
--#endif
- }
- 
- MACHINE_START(REALVIEW_PB11MP, "ARM-RealView PB11MPCore")
-diff --git a/arch/arm/mach-realview/realview_pba8.c b/arch/arm/mach-realview/realview_pba8.c
-index 5965017..081cd72 100644
---- a/arch/arm/mach-realview/realview_pba8.c
-+++ b/arch/arm/mach-realview/realview_pba8.c
-@@ -29,7 +29,6 @@
- #include <linux/io.h>
- 
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- #include <asm/pmu.h>
- #include <asm/pgtable.h>
-@@ -299,10 +298,6 @@ static void __init realview_pba8_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = realview_leds_event;
--#endif
- }
- 
- MACHINE_START(REALVIEW_PBA8, "ARM-RealView PB-A8")
-diff --git a/arch/arm/mach-realview/realview_pbx.c b/arch/arm/mach-realview/realview_pbx.c
-index 3f2f605..1ce62b9 100644
---- a/arch/arm/mach-realview/realview_pbx.c
-+++ b/arch/arm/mach-realview/realview_pbx.c
-@@ -28,7 +28,6 @@
- #include <linux/io.h>
- 
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- #include <asm/pmu.h>
- #include <asm/smp_twd.h>
-@@ -394,10 +393,6 @@ static void __init realview_pbx_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = realview_leds_event;
--#endif
- }
- 
- MACHINE_START(REALVIEW_PBX, "ARM-RealView PBX")
-diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
-index cd8ea35..855ca02 100644
---- a/arch/arm/mach-versatile/core.c
-+++ b/arch/arm/mach-versatile/core.c
-@@ -37,7 +37,6 @@
- #include <linux/mtd/physmap.h>
- 
- #include <asm/irq.h>
--#include <asm/leds.h>
- #include <asm/hardware/arm_timer.h>
- #include <asm/hardware/icst.h>
- #include <asm/hardware/vic.h>
-@@ -763,10 +762,6 @@ void __init versatile_init(void)
- 		struct amba_device *d = amba_devs[i];
- 		amba_device_register(d, &iomem_resource);
- 	}
--
--#ifdef CONFIG_LEDS
--	leds_event = versatile_leds_event;
--#endif
- }
- 
- /*
-diff --git a/arch/arm/plat-versatile/Kconfig b/arch/arm/plat-versatile/Kconfig
-index 81ee7cc..5c73e31 100644
---- a/arch/arm/plat-versatile/Kconfig
-+++ b/arch/arm/plat-versatile/Kconfig
-@@ -13,8 +13,10 @@ config PLAT_VERSATILE_FPGA_IRQ_NR
-        depends on PLAT_VERSATILE_FPGA_IRQ
- 
- config PLAT_VERSATILE_LEDS
--	def_bool y if LEDS_CLASS
-+	def_bool y if NEW_LEDS
- 	depends on ARCH_REALVIEW || ARCH_VERSATILE
-+	select LEDS_CLASS
-+	select LEDS_TRIGGER
- 
- config PLAT_VERSATILE_SCHED_CLOCK
- 	def_bool y
-diff --git a/arch/arm/plat-versatile/leds.c b/arch/arm/plat-versatile/leds.c
-index 3169fa5..d2490d0 100644
---- a/arch/arm/plat-versatile/leds.c
-+++ b/arch/arm/plat-versatile/leds.c
-@@ -37,10 +37,10 @@ static const struct {
- } versatile_leds[] = {
- 	{ "versatile:0", "heartbeat", },
- 	{ "versatile:1", "mmc0", },
--	{ "versatile:2", },
--	{ "versatile:3", },
--	{ "versatile:4", },
--	{ "versatile:5", },
-+	{ "versatile:2", "cpu0" },
-+	{ "versatile:3", "cpu1" },
-+	{ "versatile:4", "cpu2" },
-+	{ "versatile:5", "cpu3" },
- 	{ "versatile:6", },
- 	{ "versatile:7", },
- };
+-__initcall(leds_init);
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(shark_leds_init);
++#endif
 -- 
 1.7.11.4
 
