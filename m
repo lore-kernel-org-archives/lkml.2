@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2HMWRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:17:54 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab2HMWRv (ORCPT
+	id S1755662Ab2HMWR7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:17:59 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59678 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab2HMWRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:17:51 -0400
+	Mon, 13 Aug 2012 18:17:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tony Luck <tony.luck@intel.com>, Theodore Tso <tytso@mit.edu>
-Subject: [ 43/65] dmi: Feed DMI table to /dev/random driver
-Date: Mon, 13 Aug 2012 15:14:27 -0700
-Message-Id: <20120813221418.775428333@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        DJ Johnston <dj.johnston@intel.com>, Theodore Tso <tytso@mit.edu>
+Subject: [ 44/65] random: mix in architectural randomness in extract_buf()
+Date: Mon, 13 Aug 2012 15:14:28 -0700
+Message-Id: <20120813221418.876238023@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,39 +30,148 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit d114a33387472555188f142ed8e98acdb8181c6d upstream.
+commit d2e7c96af1e54b507ae2a6a7dd2baf588417a7e5 upstream.
 
-Send the entire DMI (SMBIOS) table to the /dev/random driver to
-help seed its pools.
+Mix in any architectural randomness in extract_buf() instead of
+xfer_secondary_buf().  This allows us to mix in more architectural
+randomness, and it also makes xfer_secondary_buf() faster, moving a
+tiny bit of additional CPU overhead to process which is extracting the
+randomness.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+[ Commit description modified by tytso to remove an extended
+  advertisement for the RDRAND instruction. ]
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: DJ Johnston <dj.johnston@intel.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/dmi_scan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/char/random.c |   56 ++++++++++++++++++++++++++++----------------------
+ 1 file changed, 32 insertions(+), 24 deletions(-)
 
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -6,6 +6,7 @@
- #include <linux/dmi.h>
- #include <linux/efi.h>
- #include <linux/bootmem.h>
-+#include <linux/random.h>
- #include <asm/dmi.h>
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -277,6 +277,8 @@
+ #define SEC_XFER_SIZE 512
+ #define EXTRACT_SIZE 10
+ 
++#define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
++
+ /*
+  * The minimum number of bits of entropy before we wake up a read on
+  * /dev/random.  Should be enough to do a significant reseed.
+@@ -813,11 +815,7 @@ static ssize_t extract_entropy(struct en
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+-	union {
+-		__u32	tmp[OUTPUT_POOL_WORDS];
+-		long	hwrand[4];
+-	} u;
+-	int	i;
++	__u32	tmp[OUTPUT_POOL_WORDS];
+ 
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -828,23 +826,17 @@ static void xfer_secondary_pool(struct e
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(u.tmp));
++		bytes = min_t(int, bytes, sizeof(tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, u.tmp, bytes,
++		bytes = extract_entropy(r->pull, tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, u.tmp, bytes, NULL);
++		mix_pool_bytes(r, tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
+-	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
+-	for (i = 0; i < 4; i++)
+-		if (arch_get_random_long(&u.hwrand[i]))
+-			break;
+-	if (i)
+-		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+ }
  
  /*
-@@ -111,6 +112,8 @@ static int __init dmi_walk_early(void (*
+@@ -901,15 +893,19 @@ static size_t account(struct entropy_sto
+ static void extract_buf(struct entropy_store *r, __u8 *out)
+ {
+ 	int i;
+-	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
++	union {
++		__u32 w[5];
++		unsigned long l[LONGS(EXTRACT_SIZE)];
++	} hash;
++	__u32 workspace[SHA_WORKSPACE_WORDS];
+ 	__u8 extract[64];
+ 	unsigned long flags;
  
- 	dmi_table(buf, dmi_len, dmi_num, decode, NULL);
+ 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
+-	sha_init(hash);
++	sha_init(hash.w);
+ 	spin_lock_irqsave(&r->lock, flags);
+ 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
+-		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
++		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
  
-+	add_device_randomness(buf, dmi_len);
+ 	/*
+ 	 * We mix the hash back into the pool to prevent backtracking
+@@ -920,14 +916,14 @@ static void extract_buf(struct entropy_s
+ 	 * brute-forcing the feedback as hard as brute-forcing the
+ 	 * hash.
+ 	 */
+-	__mix_pool_bytes(r, hash, sizeof(hash), extract);
++	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
+ 	spin_unlock_irqrestore(&r->lock, flags);
+ 
+ 	/*
+ 	 * To avoid duplicates, we atomically extract a portion of the
+ 	 * pool while mixing, and hash one final time.
+ 	 */
+-	sha_transform(hash, extract, workspace);
++	sha_transform(hash.w, extract, workspace);
+ 	memset(extract, 0, sizeof(extract));
+ 	memset(workspace, 0, sizeof(workspace));
+ 
+@@ -936,11 +932,23 @@ static void extract_buf(struct entropy_s
+ 	 * pattern, we fold it in half. Thus, we always feed back
+ 	 * twice as much data as we output.
+ 	 */
+-	hash[0] ^= hash[3];
+-	hash[1] ^= hash[4];
+-	hash[2] ^= rol32(hash[2], 16);
+-	memcpy(out, hash, EXTRACT_SIZE);
+-	memset(hash, 0, sizeof(hash));
++	hash.w[0] ^= hash.w[3];
++	hash.w[1] ^= hash.w[4];
++	hash.w[2] ^= rol32(hash.w[2], 16);
 +
- 	dmi_iounmap(buf, dmi_len);
- 	return 0;
++	/*
++	 * If we have a architectural hardware random number
++	 * generator, mix that in, too.
++	 */
++	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
++		unsigned long v;
++		if (!arch_get_random_long(&v))
++			break;
++		hash.l[i] ^= v;
++	}
++
++	memcpy(out, &hash, EXTRACT_SIZE);
++	memset(&hash, 0, sizeof(hash));
  }
+ 
+ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
 
 
