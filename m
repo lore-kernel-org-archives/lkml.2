@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab2HMQXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:23:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:37289 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752386Ab2HMQXE (ORCPT
+	id S1752664Ab2HMQYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:24:01 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:42171 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752386Ab2HMQYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:23:04 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1+zc4MGyPKzgzKBcMyL2zfx9JtTxYb0uhOn8kXaUn
-	Sal9ewxSm5PlDY
-From: Sven Joachim <svenjoac@gmx.de>
-To: Ben Skeggs <skeggsb@gmail.com>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        Aioanei Rares <krnl.list@gmail.com>,
-        "nouveau\@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Martin Nyhus <martin.nyhus@gmx.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [bisected] nouveau: "Failed to idle channel x" after resume
-References: <20120611231842.221bd738@europa> <20120705222429.43586868@europa>
-	<CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
-	<1344091275.4520.1.camel@maxim-laptop>
-	<1344285484.14543.0.camel@maxim-laptop>
-	<20120808053716.GA10092@turiel.bne.redhat.com>
-	<87lihpkjnu.fsf@turtle.gmx.de>
-	<20120808060841.GB10092@turiel.bne.redhat.com>
-	<87fw7xkiu6.fsf@turtle.gmx.de>
-Date: Mon, 13 Aug 2012 18:22:58 +0200
-In-Reply-To: <87fw7xkiu6.fsf@turtle.gmx.de> (Sven Joachim's message of "Wed,
-	08 Aug 2012 08:18:09 +0200")
-Message-ID: <87d32uzrq5.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 13 Aug 2012 12:24:00 -0400
+Date: Mon, 13 Aug 2012 12:23:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>, Ming Lei <tom.leiming@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH][Alternative][RFC] PM / Runtime: Introduce driver runtime
+ PM work routine
+In-Reply-To: <201208130021.44405.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1208131156390.15086-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-08 08:18 +0200, Sven Joachim wrote:
+On Mon, 13 Aug 2012, Rafael J. Wysocki wrote:
 
-> On 2012-08-08 08:08 +0200, Ben Skeggs wrote:
->
->> On Wed, Aug 08, 2012 at 08:00:21AM +0200, Sven Joachim wrote:
->>> Not for me on my GeForce 8500 GT, and I still cannot suspend more than
->>> once, subsequent attempts fail:
->>> 
->>> ,----
->>> | Aug 8 07:49:16 turtle kernel: [ 91.697068] nouveau W[
->>> | PGRAPH][0000:01:00.0][0x0200502d][ffff880037be1d40] parent failed
->>> | suspend, -16
->>> | Aug  8 07:49:16 turtle kernel: [   91.697078] nouveau  [     DRM][0000:01:00.0] resuming display...
->>> `----
->> Interesting.  Were there any messages prior to that?
->
-> Nothing interesting:
->
-> ,----
-> | Aug  8 07:49:16 turtle kernel: [   89.655362] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-> | Aug  8 07:49:16 turtle kernel: [   89.655367] nouveau  [     DRM][0000:01:00.0] suspending display...
-> | Aug  8 07:49:16 turtle kernel: [   89.696888] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
-> | Aug  8 07:49:16 turtle kernel: [   89.696909] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-> | Aug  8 07:49:16 turtle kernel: [   89.696913] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
-> `----
->
->> I guess the the fifo
->> code detected a timeout when trying to save the graphics context, I have
->> I have other patches in my tree (I'll push them soon, tied up with other
->> work atm) that might help here.
->
-> Thanks, I'll try them when they are available.
+> > Firstly, the patch doesn't do anything in the case where the device is
+> > already at full power.
+> 
+> This is intentional, because I'm not sure that the code to be run
+> if pm_runtime_get() returns 1 should always be pm_runtime_work().
+> 
+> For example, the driver may want to acquire a lock before running
+> pm_runtime_get() and execute that code under the lock.
 
-With current nouveau master ("drm/nouveau: fix find/replace bug in
-license header") suspending works again, thanks!  However, it is a bit
-slow, taking between two and five seconds:
+Your reason above makes sense, but the example isn't quite right.  If
+the driver wants to execute the callback under a lock then the callback
+has to take that lock -- this is necessary because of the async
+workqueue case.
 
-,----
-| Aug 13 18:17:56 turtle kernel: [  678.524814] PM: Syncing filesystems ... done.
-| Aug 13 18:18:09 turtle kernel: [  678.639202] Freezing user space processes ... (elapsed 0.01 seconds) done.
-| Aug 13 18:18:09 turtle kernel: [  678.649954] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-| Aug 13 18:18:09 turtle kernel: [  678.663298] Suspending console(s) (use no_console_suspend to debug)
-| Aug 13 18:18:09 turtle kernel: [  678.680884] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-| Aug 13 18:18:09 turtle kernel: [  678.681000] sd 0:0:0:0: [sda] Stopping disk
-| Aug 13 18:18:09 turtle kernel: [  678.695141] parport_pc 00:07: disabled
-| Aug 13 18:18:09 turtle kernel: [  678.695204] serial 00:06: disabled
-| Aug 13 18:18:09 turtle kernel: [  678.695209] serial 00:06: wake-up capability disabled by ACPI
-| Aug 13 18:18:09 turtle kernel: [  678.695235] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-| Aug 13 18:18:09 turtle kernel: [  678.695239] nouveau  [     DRM][0000:01:00.0] suspending display...
-| Aug 13 18:18:09 turtle kernel: [  678.742111] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
-| Aug 13 18:18:09 turtle kernel: [  678.742189] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-| Aug 13 18:18:09 turtle kernel: [  682.357319] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
-| Aug 13 18:18:09 turtle kernel: [  683.526646] PM: suspend of devices complete after 4863.181 msecs
-`----
+In other words, you're saying there may well be situations where the
+synchronous and async cases need to run slightly different code.  True 
+enough.
 
-With the 3.4.8 kernel, suspending takes little more than one second.
+> > Secondly, is it necessary for __pm_runtime_barrier() to wait for the 
+> > callback routine?
+> 
+> I believe so.  At least that's what is documented about __pm_runtime_barrier().
+> 
+> > More generally, does __pm_runtime_barrier() really 
+> > do what it's supposed to do?  What happens if it runs at the same time 
+> > as another thread is executing the pm_runtime_put(parent) call at the 
+> > end of rpm_resume(), or the rpm_resume(parent, 0) in the middle?
+> 
+> So these are two different situations.  When pm_runtime_put(parent) is
+> executed, the device has been resumed and no runtime PM code _for_ _the_
+> _device_ is running (although the trace_rpm_return_int() is at a wrong
+> place in my opinion).  The second one is more interesting, but it really
+> is equivalent to calling pm_runtime_resume() (in a different thread)
+> after __pm_runtime_barrier() has run.
 
-Cheers,
-       Sven
+__pm_runtime_barrier() has never made very strong guarantees about 
+runtime_resume callbacks.  But the kerneldoc does claim that any 
+pending callbacks will have been completed, and that claim evidently is 
+violated in the rpm_resume(parent,0) case.  Maybe the kerneldoc needs 
+to be changed, or maybe we need to fix the code.
+
+> > For instance, consider what happens in the "no_callbacks" case where
+> > the parent is already active.
+> 
+> The no_callbacks case is actually interesting, because I think that the
+> function should return 1 in that case.  Otherwise, the caller of
+> pm_runtime_get() may think that it has to wait for the device to resume,
+> which isn't the case.  So, this seems to need fixing now.
+
+Right.
+
+> Moreover, if power.no_callbacks is set, the RPM_SUSPENDING and RPM_RESUMING
+> status values are impossible, as far as I can say, so the entire "no callbacks"
+> section should be moved right after the check against RPM_ACTIVE.  The same
+> appears to apply to the analogous "no callbacks" check in rpm_suspend() (i.e.
+> it should be done earlier).
+
+I'm not so sure about that.  Basically we've got two conditions:
+
+	if (A) {
+		...
+	}
+	if (B) {
+		...
+	}
+
+where A and B can never both be true.  In this situation it doesn't 
+make much difference what order you do the tests.  We should use 
+whichever order is better for adding the RPM_RUN_WORK code.
+
+Alan Stern
+
