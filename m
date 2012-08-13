@@ -1,78 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab2HMILo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:11:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34671 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab2HMILl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:11:41 -0400
-Message-ID: <1344845488.31459.10.camel@twins>
-Subject: Re: rcu stalls seen with numasched_v2 patches applied.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: john stultz <johnstul@us.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Date: Mon, 13 Aug 2012 10:11:28 +0200
-In-Reply-To: <1344844273.31459.1.camel@twins>
-References: <20120807123305.GA7137@linux.vnet.ibm.com>
-	 <1344347568.27828.122.camel@twins>
-	 <20120807171859.GB3850@linux.vnet.ibm.com>
-	 <1344455938.16728.13.camel@laptop>
-	 <20120810162425.GD31805@linux.vnet.ibm.com>
-	 <1344844273.31459.1.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753412Ab2HMINz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:13:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53691 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab2HMINx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:13:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,758,1336374000"; 
+   d="scan'208";a="133535642"
+Date: Mon, 13 Aug 2012 11:16:17 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH] smb347_charger: fix battery status reporting logic for
+ charger faults
+Message-ID: <20120813081617.GA2649@intel.com>
+References: <1342792368-8346-1-git-send-email-ramakrishna.pallala@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342792368-8346-1-git-send-email-ramakrishna.pallala@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 09:51 +0200, Peter Zijlstra wrote:
-> On Fri, 2012-08-10 at 21:54 +0530, Srikar Dronamraju wrote:
+On Fri, Jul 20, 2012 at 07:22:48PM +0530, Ramakrishna Pallala wrote:
+> This patch checks for charger status register for determining the
+> battery charging status and reports Discharing/Charging/Not Charging/Full
+> accordingly.
 > 
-> > This change worked well on the 2 node machine 
-> > but on the 8 node machine it hangs with repeated messages
-> > 
-> > Pid: 60935, comm: numa01 Tainted: G        W    3.5.0-numasched_v2_020812+ #4
-> > Call Trace:
-> > <IRQ>  [<ffffffff810d32e2>] ? rcu_check_callback s+0x632/0x650
-> > [<ffffffff81061bb8>] ? update_process_times+0x48/0x90
-> > [<ffffffff810a2a4e>] ? tick_sched_timer+0x6e/0xe0
-> > [<ffffffff81079c85>] ? __run_hrtimer+0x75/0x1a0
-> > [<ffffffff810a29e0>] ? tick_setup_sched_timer+0x100/0x100
-> > [<ffffffff8107a036>] ? hrtimer_interrupt+0xf6/0x250
-> > [<ffffffff814f1379>] ? smp_apic_timer_interrupt+0x69/0x99
-> > [<ffffffff814f034a>] ? apic_timer_interrupt+0x6a/0x70
-> > <EOI>  [<ffffffff811082e3>] ? wait_on_page_bit+0x73/0x80
-> > [<ffffffff814e7992>] ? _raw_spin_lock+0x22/0x30
-> > [<ffffffff81131bf3>] ? handle_pte_fault+0x1b3/0xca0
-> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
-> > [<ffffffff8107a9a8>] ? up_read+0x18/0x30
-> > [<ffffffff814eb2be>] ? do_page_fault+0x13e/0x460
-> > [<ffffffff810137ba>] ? __switch_to+0x1aa/0x460
-> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
-> > [<ffffffff814e7de5>] ? page_fault+0x25/0x30
-> > { 3}  (t=62998 jiffies)
-> > 
+> This patch also adds the interrupt support for Safety Timer Expiration.
+> This interrupt is helpful in debugging the cause for charger fault.
 > 
-> If you run a -tip kernel without the numa patches, does that work?
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 
+Few nitpicks below, otherwise looks good to me.
 
-n/m, I found a total brain-fart in there.. does the below sort it?
+> ---
+>  drivers/power/smb347-charger.c |   96 +++++++++++++++++++++++++++++++++------
+>  1 files changed, 81 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
+> index 332dd01..b6a8c59 100644
+> --- a/drivers/power/smb347-charger.c
+> +++ b/drivers/power/smb347-charger.c
+> @@ -80,6 +80,7 @@
+>  #define CFG_FAULT_IRQ_DCIN_UV			BIT(2)
+>  #define CFG_STATUS_IRQ				0x0d
+>  #define CFG_STATUS_IRQ_TERMINATION_OR_TAPER	BIT(4)
+> +#define CFG_STATUS_IRQ_CHARGE_TIMEOUT		BIT(7)
+>  #define CFG_ADDRESS				0x0e
+>  
+>  /* Command registers */
+> @@ -96,6 +97,9 @@
+>  #define IRQSTAT_C_TERMINATION_STAT		BIT(0)
+>  #define IRQSTAT_C_TERMINATION_IRQ		BIT(1)
+>  #define IRQSTAT_C_TAPER_IRQ			BIT(3)
+> +#define IRQSTAT_D				0x38
+> +#define IRQSTAT_D_CHARGE_TIMEOUT_STAT		BIT(2)
+> +#define IRQSTAT_D_CHARGE_TIMEOUT_IRQ		BIT(3)
+>  #define IRQSTAT_E				0x39
+>  #define IRQSTAT_E_USBIN_UV_STAT			BIT(0)
+>  #define IRQSTAT_E_USBIN_UV_IRQ			BIT(1)
+> @@ -109,8 +113,10 @@
+>  #define STAT_B					0x3c
+>  #define STAT_C					0x3d
+>  #define STAT_C_CHG_ENABLED			BIT(0)
+> +#define STAT_C_HOLDOFF_STAT			BIT(3)
+>  #define STAT_C_CHG_MASK				0x06
+>  #define STAT_C_CHG_SHIFT			1
+> +#define STAT_C_CHG_TERM				BIT(5)
+>  #define STAT_C_CHARGER_ERROR			BIT(6)
+>  #define STAT_E					0x3f
+>  
+> @@ -701,7 +707,7 @@ fail:
+>  static irqreturn_t smb347_interrupt(int irq, void *data)
+>  {
+>  	struct smb347_charger *smb = data;
+> -	unsigned int stat_c, irqstat_e, irqstat_c;
+> +	unsigned int stat_c, irqstat_c, irqstat_d, irqstat_e;
+>  	bool handled = false;
+>  	int ret;
+>  
+> @@ -717,6 +723,12 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+>  		return IRQ_NONE;
+>  	}
+>  
+> +	ret = regmap_read(smb->regmap, IRQSTAT_D, &irqstat_d);
+> +	if (ret < 0) {
+> +		dev_warn(smb->dev, "reading IRQSTAT_D failed\n");
+> +		return IRQ_NONE;
+> +	}
+> +
+>  	ret = regmap_read(smb->regmap, IRQSTAT_E, &irqstat_e);
+>  	if (ret < 0) {
+>  		dev_warn(smb->dev, "reading IRQSTAT_E failed\n");
+> @@ -724,13 +736,11 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+>  	}
+>  
+>  	/*
+> -	 * If we get charger error we report the error back to user and
+> -	 * disable charging.
+> +	 * If we get charger error we report the error back to user.
+> +	 * If the error is recovered charging will resume again.
+>  	 */
+>  	if (stat_c & STAT_C_CHARGER_ERROR) {
+> -		dev_err(smb->dev, "error in charger, disabling charging\n");
+> -
+> -		smb347_charging_disable(smb);
+> +		dev_err(smb->dev, "charging stopped due to charger error\n");
+>  		power_supply_changed(&smb->battery);
+>  		handled = true;
+>  	}
+> @@ -743,6 +753,20 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
+>  	if (irqstat_c & (IRQSTAT_C_TERMINATION_IRQ | IRQSTAT_C_TAPER_IRQ)) {
+>  		if (irqstat_c & IRQSTAT_C_TERMINATION_STAT)
+>  			power_supply_changed(&smb->battery);
+> +		dev_dbg(smb->dev, "going to HW maintenance mode\n");
+> +		handled = true;
+> +	}
+> +
+> +	/*
+> +	 * If we got a charger timeout INT that means the charge
+> +	 * full is not detected with in charge timeout value.
+> +	 */
+> +	if (irqstat_d & IRQSTAT_D_CHARGE_TIMEOUT_IRQ) {
+> +		dev_dbg(smb->dev, "total Charge Timeout INT recieved\n");
 
----
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -917,7 +917,7 @@ void task_numa_work(struct callback_head
- 		t = p;
- 		do {
- 			sched_setnode(t, node);
--		} while ((t = next_thread(p)) != p);
-+		} while ((t = next_thread(t)) != p);
- 		rcu_read_unlock();
- 	}
- 
+received not recieved
 
+> +
+> +		if (irqstat_d & IRQSTAT_D_CHARGE_TIMEOUT_STAT)
+> +			dev_warn(smb->dev, "charging stopped due to timeout\n");
+> +		power_supply_changed(&smb->battery);
+>  		handled = true;
+>  	}
+>  
+> @@ -776,6 +800,7 @@ static int smb347_irq_set(struct smb347_charger *smb, bool enable)
+>  	 * Enable/disable interrupts for:
+>  	 *	- under voltage
+>  	 *	- termination current reached
+> +	 *	- charger timeout
+>  	 *	- charger error
+>  	 */
+>  	ret = regmap_update_bits(smb->regmap, CFG_FAULT_IRQ, 0xff,
+> @@ -784,7 +809,8 @@ static int smb347_irq_set(struct smb347_charger *smb, bool enable)
+>  		goto fail;
+>  
+>  	ret = regmap_update_bits(smb->regmap, CFG_STATUS_IRQ, 0xff,
+> -			enable ? CFG_STATUS_IRQ_TERMINATION_OR_TAPER : 0);
+> +			enable ? (CFG_STATUS_IRQ_TERMINATION_OR_TAPER |
+> +					CFG_STATUS_IRQ_CHARGE_TIMEOUT) : 0);
+>  	if (ret < 0)
+>  		goto fail;
+>  
+> @@ -988,6 +1014,50 @@ static enum power_supply_property smb347_usb_properties[] = {
+>  	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+>  };
+>  
+> +static int smb347_get_charging_status(struct smb347_charger *smb)
+> +{
+> +	int ret, status;
+> +	unsigned int val;
+> +
+> +	if (!smb)
+> +		return -ENODEV;
+
+I don't think the above check is necessary.
+
+> +
+> +	if (!smb347_is_ps_online(smb))
+> +		return POWER_SUPPLY_STATUS_DISCHARGING;
+> +
+> +	ret = regmap_read(smb->regmap, STAT_C, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	if ((val & STAT_C_CHARGER_ERROR) ||
+> +		(val & STAT_C_HOLDOFF_STAT)) {
+> +		/* set to NOT CHARGING upon charger error
+> +		 * or charging has stopped.
+> +		 */
+
+Please use block comments defined in Documentation/CodingStyle.
+
+> +		status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+> +	} else {
+> +		if ((val & STAT_C_CHG_MASK) >> STAT_C_CHG_SHIFT) {
+> +			/* set to charging if battery is in pre-charge,
+> +			 * fast charge or taper charging mode.
+> +			 */
+
+ditto
+
+> +			status = POWER_SUPPLY_STATUS_CHARGING;
+> +		} else if (val & STAT_C_CHG_TERM) {
+> +			/* set the status to FULL if battery is not in pre
+> +			 * charge, fast charge or taper charging mode AND
+> +			 * charging is terminated at least once.
+> +			 */
+> +			status = POWER_SUPPLY_STATUS_FULL;
+> +		} else {
+> +			/* in this case no charger error or termination
+> +			 * occured but charging is not in progress!!!
+> +			 */
+
+ditto
+
+> +			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+> +		}
+> +	}
+> +
+> +	return status;
+> +}
+> +
+>  static int smb347_battery_get_property(struct power_supply *psy,
+>  				       enum power_supply_property prop,
+>  				       union power_supply_propval *val)
+> @@ -1003,14 +1073,10 @@ static int smb347_battery_get_property(struct power_supply *psy,
+>  
+>  	switch (prop) {
+>  	case POWER_SUPPLY_PROP_STATUS:
+> -		if (!smb347_is_ps_online(smb)) {
+> -			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
+> -			break;
+> -		}
+> -		if (smb347_charging_status(smb))
+> -			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+> -		else
+> -			val->intval = POWER_SUPPLY_STATUS_FULL;
+> +		ret = smb347_get_charging_status(smb);
+> +		if (ret < 0)
+> +			return ret;
+> +		val->intval = ret;
+>  		break;
+>  
+>  	case POWER_SUPPLY_PROP_CHARGE_TYPE:
+> -- 
+> 1.7.0.4
