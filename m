@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab2HMO3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:29:17 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:60102 "EHLO mail.x86-64.org"
+	id S1752134Ab2HMO3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:29:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10712 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab2HMO3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:29:16 -0400
-Date: Mon, 13 Aug 2012 16:29:09 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf: Let O= makes handle relative paths
-Message-ID: <20120813142909.GC18990@aftab.osrc.amd.com>
-References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
- <20120813132438.GA18990@aftab.osrc.amd.com>
- <1344867782.6935.119.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344867782.6935.119.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751772Ab2HMO3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 10:29:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
+   d="scan'208";a="207644901"
+From: Jani Nikula <jani.nikula@intel.com>
+To: ionic@ionic.de
+Cc: daniel@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, jani.nikula@intel.com
+Subject: [PATCH 1/1] drm/i915: ensure i2c adapter is all set before adding it
+Date: Mon, 13 Aug 2012 17:33:02 +0300
+Message-Id: <b6dc8317cdc108b22f90453b3d6f7475a620d96c.1344867962.git.jani.nikula@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1344867962.git.jani.nikula@intel.com>
+References: <50254887.6030209@ionic.de>
+ <cover.1344867962.git.jani.nikula@intel.com>
+In-Reply-To: <cover.1344867962.git.jani.nikula@intel.com>
+References: <cover.1344867962.git.jani.nikula@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 10:23:02AM -0400, Steven Rostedt wrote:
-> On Mon, 2012-08-13 at 15:24 +0200, Borislav Petkov wrote:
-> 
-> > So wouldn't it make sense to call this ABSOLUTE_O or so then?
-> 
-> That's just because you're russian, and are promoting Vodka! ;-)
-> 
-> 
-> Done...
-> 
-> ----------
-> 
-> When I did a compile of perf using a relative path for the output
-> directory, the build failed when it tried to compile libtraceevent. This
-> is because it continues to use the same relative path when the new
-> working directory is in a different path.
-> 
->     SUBDIR ../lib/traceevent/
-> /bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
-> Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
-> make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
-> 
-> 
-> Make the path used an absolute path when building perf with O=.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+i2c_add_adapter() may do i2c transfers on the bus to detect supported
+devices. Therefore the adapter needs to be all set before adding it. This
+was not the case for the bit-banging fallback, resulting in an oops if the
+device detection GMBUS transfers timed out. Fix the issue by calling
+i2c_add_adapter() only after intel_gpio_setup().
 
-Acked-by: The Russian Vodka Promoter.
+LKML-Reference: <5021F00B.7000503@ionic.de>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+---
+ drivers/gpu/drm/i915/intel_i2c.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-8-).
-
-Thanks and Na Zdorovia!
-
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index 1991a44..a23ba84f 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -486,9 +486,6 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 		bus->dev_priv = dev_priv;
+ 
+ 		bus->adapter.algo = &gmbus_algorithm;
+-		ret = i2c_add_adapter(&bus->adapter);
+-		if (ret)
+-			goto err;
+ 
+ 		/* By default use a conservative clock rate */
+ 		bus->reg0 = port | GMBUS_RATE_100KHZ;
+@@ -498,6 +495,10 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 			bus->force_bit = true;
+ 
+ 		intel_gpio_setup(bus, port);
++
++		ret = i2c_add_adapter(&bus->adapter);
++		if (ret)
++			goto err;
+ 	}
+ 
+ 	intel_i2c_reset(dev_priv->dev);
 -- 
-Regards/Gruss,
-Boris.
+1.7.9.5
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
