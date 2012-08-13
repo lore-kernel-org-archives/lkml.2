@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab2HMUrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:47:43 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab2HMUUO (ORCPT
+	id S1753139Ab2HMUUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:20:11 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:54585 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2HMUTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:20:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Asias He <asias@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: [ 02/82] virtio-blk: Reset device after blk_cleanup_queue()
-Date: Mon, 13 Aug 2012 13:18:38 -0700
-Message-Id: <20120813201746.665355912@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
-References: <20120813201746.448504360@linuxfoundation.org>
-User-Agent: quilt/0.60-20.5
+	Mon, 13 Aug 2012 16:19:53 -0400
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <netdev@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 13 Aug 2012 13:18:17 -0700
+Message-Id: <1344889115-21610-3-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
+References: <87ehnav9n5.fsf@xmission.com>
+ <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18Iodxf/O0j7pNormgBMZ4oAUXrl5HadgY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0002]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
+X-Spam-Combo: ;<netdev@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH 03/21] userns: Convert sock_i_uid to return a kuid_t
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Asias He <asias@redhat.com>
-
-commit 483001c765af6892b3fc3726576cb42f17d1d6b5 upstream.
-
-blk_cleanup_queue() will call blk_drian_queue() to drain all the
-requests before queue DEAD marking. If we reset the device before
-blk_cleanup_queue() the drain would fail.
-
-1) if the queue is stopped in do_virtblk_request() because device is
-full, the q->request_fn() will not be called.
-
-blk_drain_queue() {
-   while(true) {
-      ...
-      if (!list_empty(&q->queue_head))
-        __blk_run_queue(q) {
-	    if (queue is not stoped)
-		q->request_fn()
-	}
-      ...
-   }
-}
-
-Do no reset the device before blk_cleanup_queue() gives the chance to
-start the queue in interrupt handler blk_done().
-
-2) In commit b79d866c8b7014a51f611a64c40546109beaf24a, We abort requests
-dispatched to driver before blk_cleanup_queue(). There is a race if
-requests are dispatched to driver after the abort and before the queue
-DEAD mark. To fix this, instead of aborting the requests explicitly, we
-can just reset the device after after blk_cleanup_queue so that the
-device can complete all the requests before queue DEAD marking in the
-drain process.
-
-Signed-off-by: Asias He <asias@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- drivers/block/virtio_blk.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ include/net/sock.h |    2 +-
+ net/core/sock.c    |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -576,8 +576,6 @@ static void __devexit virtblk_remove(str
+diff --git a/include/net/sock.h b/include/net/sock.h
+index b373023..65c3d62 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1668,7 +1668,7 @@ static inline void sock_graft(struct sock *sk, struct socket *parent)
+ 	write_unlock_bh(&sk->sk_callback_lock);
+ }
+ 
+-extern int sock_i_uid(struct sock *sk);
++extern kuid_t sock_i_uid(struct sock *sk);
+ extern unsigned long sock_i_ino(struct sock *sk);
+ 
+ static inline struct dst_entry *
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 9c7fe4f..5c6a435 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1526,12 +1526,12 @@ void sock_edemux(struct sk_buff *skb)
+ }
+ EXPORT_SYMBOL(sock_edemux);
+ 
+-int sock_i_uid(struct sock *sk)
++kuid_t sock_i_uid(struct sock *sk)
  {
- 	struct virtio_blk *vblk = vdev->priv;
- 	int index = vblk->index;
--	struct virtblk_req *vbr;
--	unsigned long flags;
+-	int uid;
++	kuid_t uid;
  
- 	/* Prevent config work handler from accessing the device. */
- 	mutex_lock(&vblk->config_lock);
-@@ -585,21 +583,13 @@ static void __devexit virtblk_remove(str
- 	mutex_unlock(&vblk->config_lock);
- 
- 	del_gendisk(vblk->disk);
-+	blk_cleanup_queue(vblk->disk->queue);
- 
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
- 	flush_work(&vblk->config_work);
- 
--	/* Abort requests dispatched to driver. */
--	spin_lock_irqsave(&vblk->lock, flags);
--	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
--		__blk_end_request_all(vbr->req, -EIO);
--		mempool_free(vbr, vblk->pool);
--	}
--	spin_unlock_irqrestore(&vblk->lock, flags);
--
--	blk_cleanup_queue(vblk->disk->queue);
- 	put_disk(vblk->disk);
- 	mempool_destroy(vblk->pool);
- 	vdev->config->del_vqs(vdev);
-
+ 	read_lock_bh(&sk->sk_callback_lock);
+-	uid = sk->sk_socket ? SOCK_INODE(sk->sk_socket)->i_uid : 0;
++	uid = sk->sk_socket ? SOCK_INODE(sk->sk_socket)->i_uid : GLOBAL_ROOT_UID;
+ 	read_unlock_bh(&sk->sk_callback_lock);
+ 	return uid;
+ }
+-- 
+1.7.5.4
 
