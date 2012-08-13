@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab2HMSQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:16:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53904 "EHLO
+	id S1752655Ab2HMSQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:16:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53921 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2HMSQn (ORCPT
+	with ESMTP id S1752592Ab2HMSQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:16:43 -0400
+	Mon, 13 Aug 2012 14:16:53 -0400
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
         Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
         Vivek Goyal <vgoyal@redhat.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue on do_floppy_init error handling
-Date: Mon, 13 Aug 2012 15:16:24 -0300
-Message-Id: <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH v3 5/6] floppy: use disk_registered for checking if a drive is present
+Date: Mon, 13 Aug 2012 15:16:26 -0300
+Message-Id: <1344881787-6422-6-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
@@ -22,55 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
-put_disk() if add_disk() was never called"), if something fails in the
-add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
-that's wrong, since we may have succesfully done an add_disk on some of
-the drives previously in the loop, and in this case we would end up with
-an extra reference to the disks[dr]->queue.
+Simplify/cleanup code, replacing remaining checks for drives present
+using disk_registered array.
 
-Add a new global array to mark "registered" disks, and use that to check
-if we did an add_disk on one of the disks already. Using an array to
-track added disks also will help to simplify/cleanup code later, as
-suggested by Vivek Goyal.
-
-Cc: stable@vger.kernel.org
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/block/floppy.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/block/floppy.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 1e09e99..9272203 100644
+index 3eafe93..381b9c1 100644
 --- a/drivers/block/floppy.c
 +++ b/drivers/block/floppy.c
-@@ -409,6 +409,7 @@ static struct floppy_drive_struct drive_state[N_DRIVE];
- static struct floppy_write_errors write_errors[N_DRIVE];
- static struct timer_list motor_off_timer[N_DRIVE];
- static struct gendisk *disks[N_DRIVE];
-+static bool disk_registered[N_DRIVE];
- static struct block_device *opened_bdev[N_DRIVE];
- static DEFINE_MUTEX(open_lock);
- static struct floppy_raw_cmd *raw_cmd, default_raw_cmd;
-@@ -4305,6 +4306,7 @@ static int __init do_floppy_init(void)
- 		disks[drive]->flags |= GENHD_FL_REMOVABLE;
- 		disks[drive]->driverfs_dev = &floppy_device[drive].dev;
- 		add_disk(disks[drive]);
-+		disk_registered[drive] = true;
- 	}
+@@ -4114,9 +4114,7 @@ static struct platform_device floppy_device[N_DRIVE];
+ static struct kobject *floppy_find(dev_t dev, int *part, void *data)
+ {
+ 	int drive = (*part & 3) | ((*part & 0x80) >> 5);
+-	if (drive >= N_DRIVE ||
+-	    !(allowed_drive_mask & (1 << drive)) ||
+-	    fdc_state[FDC(drive)].version == FDC_NONE)
++	if (drive >= N_DRIVE || !disk_registered[drive])
+ 		return NULL;
+ 	if (((*part >> 2) & 0x1f) >= ARRAY_SIZE(floppy_type))
+ 		return NULL;
+@@ -4561,8 +4559,7 @@ static void __exit floppy_module_exit(void)
+ 	for (drive = 0; drive < N_DRIVE; drive++) {
+ 		del_timer_sync(&motor_off_timer[drive]);
  
- 	return 0;
-@@ -4328,7 +4330,8 @@ out_put_disk:
- 			 * put_disk() is not paired with add_disk() and
- 			 * will put queue reference one extra time. fix it.
- 			 */
--			disks[dr]->queue = NULL;
-+			if (!disk_registered[dr])
-+				disks[dr]->queue = NULL;
- 		}
- 		put_disk(disks[dr]);
- 	}
+-		if ((allowed_drive_mask & (1 << drive)) &&
+-		    fdc_state[FDC(drive)].version != FDC_NONE) {
++		if (disk_registered[drive]) {
+ 			del_gendisk(disks[drive]);
+ 			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
+ 			platform_device_unregister(&floppy_device[drive]);
+@@ -4573,8 +4570,7 @@ static void __exit floppy_module_exit(void)
+ 		 * These disks have not called add_disk().  Don't put down
+ 		 * queue reference in put_disk().
+ 		 */
+-		if (!(allowed_drive_mask & (1 << drive)) ||
+-		    fdc_state[FDC(drive)].version == FDC_NONE)
++		if (!disk_registered[drive])
+ 			disks[drive]->queue = NULL;
+ 
+ 		put_disk(disks[drive]);
 -- 
 1.7.9.5
 
