@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab2HMUcA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:32:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	id S1754664Ab2HMUYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:24:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab2HMUYW (ORCPT
+	with ESMTP id S1754636Ab2HMUYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:22 -0400
+	Mon, 13 Aug 2012 16:24:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        DJ Johnston <dj.johnston@intel.com>, Theodore Tso <tytso@mit.edu>
-Subject: [ 60/82] random: mix in architectural randomness in extract_buf()
-Date: Mon, 13 Aug 2012 13:19:36 -0700
-Message-Id: <20120813201751.728688254@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>, Tony Luck <tony.luck@intel.com>
+Subject: [ 58/82] random: Add comment to random_initialize()
+Date: Mon, 13 Aug 2012 13:19:34 -0700
+Message-Id: <20120813201751.548557872@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,148 +29,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit d2e7c96af1e54b507ae2a6a7dd2baf588417a7e5 upstream.
+commit cbc96b7594b5691d61eba2db8b2ea723645be9ca upstream.
 
-Mix in any architectural randomness in extract_buf() instead of
-xfer_secondary_buf().  This allows us to mix in more architectural
-randomness, and it also makes xfer_secondary_buf() faster, moving a
-tiny bit of additional CPU overhead to process which is extracting the
-randomness.
+Many platforms have per-machine instance data (serial numbers,
+asset tags, etc.) squirreled away in areas that are accessed
+during early system bringup. Mixing this data into the random
+pools has a very high value in providing better random data,
+so we should allow (and even encourage) architecture code to
+call add_device_randomness() from the setup_arch() paths.
 
-[ Commit description modified by tytso to remove an extended
-  advertisement for the RDRAND instruction. ]
+However, this limits our options for internal structure of
+the random driver since random_initialize() is not called
+until long after setup_arch().
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: DJ Johnston <dj.johnston@intel.com>
+Add a big fat comment to rand_initialize() spelling out
+this requirement.
+
+Suggested-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c |   56 ++++++++++++++++++++++++++++----------------------
- 1 file changed, 32 insertions(+), 24 deletions(-)
+ drivers/char/random.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -277,6 +277,8 @@
- #define SEC_XFER_SIZE 512
- #define EXTRACT_SIZE 10
- 
-+#define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
-+
- /*
-  * The minimum number of bits of entropy before we wake up a read on
-  * /dev/random.  Should be enough to do a significant reseed.
-@@ -813,11 +815,7 @@ static ssize_t extract_entropy(struct en
-  */
- static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
--	union {
--		__u32	tmp[OUTPUT_POOL_WORDS];
--		long	hwrand[4];
--	} u;
--	int	i;
-+	__u32	tmp[OUTPUT_POOL_WORDS];
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
- 	    r->entropy_count < r->poolinfo->POOLBITS) {
-@@ -828,23 +826,17 @@ static void xfer_secondary_pool(struct e
- 		/* pull at least as many as BYTES as wakeup BITS */
- 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
- 		/* but never more than the buffer size */
--		bytes = min_t(int, bytes, sizeof(u.tmp));
-+		bytes = min_t(int, bytes, sizeof(tmp));
- 
- 		DEBUG_ENT("going to reseed %s with %d bits "
- 			  "(%d of %d requested)\n",
- 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
- 
--		bytes = extract_entropy(r->pull, u.tmp, bytes,
-+		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, u.tmp, bytes, NULL);
-+		mix_pool_bytes(r, tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
--	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
--	for (i = 0; i < 4; i++)
--		if (arch_get_random_long(&u.hwrand[i]))
--			break;
--	if (i)
--		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+@@ -1087,6 +1087,16 @@ static void init_std_data(struct entropy
+ 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
  }
  
- /*
-@@ -901,15 +893,19 @@ static size_t account(struct entropy_sto
- static void extract_buf(struct entropy_store *r, __u8 *out)
++/*
++ * Note that setup_arch() may call add_device_randomness()
++ * long before we get here. This allows seeding of the pools
++ * with some platform dependent data very early in the boot
++ * process. But it limits our options here. We must use
++ * statically allocated structures that already have all
++ * initializations complete at compile time. We should also
++ * take care not to overwrite the precious per platform data
++ * we were given.
++ */
+ static int rand_initialize(void)
  {
- 	int i;
--	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
-+	union {
-+		__u32 w[5];
-+		unsigned long l[LONGS(EXTRACT_SIZE)];
-+	} hash;
-+	__u32 workspace[SHA_WORKSPACE_WORDS];
- 	__u8 extract[64];
- 	unsigned long flags;
- 
- 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
--	sha_init(hash);
-+	sha_init(hash.w);
- 	spin_lock_irqsave(&r->lock, flags);
- 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
--		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
-+		sha_transform(hash.w, (__u8 *)(r->pool + i), workspace);
- 
- 	/*
- 	 * We mix the hash back into the pool to prevent backtracking
-@@ -920,14 +916,14 @@ static void extract_buf(struct entropy_s
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	__mix_pool_bytes(r, hash, sizeof(hash), extract);
-+	__mix_pool_bytes(r, hash.w, sizeof(hash.w), extract);
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
- 	/*
- 	 * To avoid duplicates, we atomically extract a portion of the
- 	 * pool while mixing, and hash one final time.
- 	 */
--	sha_transform(hash, extract, workspace);
-+	sha_transform(hash.w, extract, workspace);
- 	memset(extract, 0, sizeof(extract));
- 	memset(workspace, 0, sizeof(workspace));
- 
-@@ -936,11 +932,23 @@ static void extract_buf(struct entropy_s
- 	 * pattern, we fold it in half. Thus, we always feed back
- 	 * twice as much data as we output.
- 	 */
--	hash[0] ^= hash[3];
--	hash[1] ^= hash[4];
--	hash[2] ^= rol32(hash[2], 16);
--	memcpy(out, hash, EXTRACT_SIZE);
--	memset(hash, 0, sizeof(hash));
-+	hash.w[0] ^= hash.w[3];
-+	hash.w[1] ^= hash.w[4];
-+	hash.w[2] ^= rol32(hash.w[2], 16);
-+
-+	/*
-+	 * If we have a architectural hardware random number
-+	 * generator, mix that in, too.
-+	 */
-+	for (i = 0; i < LONGS(EXTRACT_SIZE); i++) {
-+		unsigned long v;
-+		if (!arch_get_random_long(&v))
-+			break;
-+		hash.l[i] ^= v;
-+	}
-+
-+	memcpy(out, &hash, EXTRACT_SIZE);
-+	memset(&hash, 0, sizeof(hash));
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	init_std_data(&input_pool);
 
 
