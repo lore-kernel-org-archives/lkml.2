@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2HMUZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:25:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	id S1754941Ab2HMUZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:25:26 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911Ab2HMUZM (ORCPT
+	with ESMTP id S1753508Ab2HMUZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:25:12 -0400
+	Mon, 13 Aug 2012 16:25:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Ribeiro <drwyrm@gmail.com>
-Subject: [ 73/82] ARM: pxa: remove irq_to_gpio from ezx-pcap driver
-Date: Mon, 13 Aug 2012 13:19:49 -0700
-Message-Id: <20120813201752.845650717@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 75/82] printk: Fix calculation of length used to discard records
+Date: Mon, 13 Aug 2012 13:19:51 -0700
+Message-Id: <20120813201753.013023496@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -32,53 +29,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 59ee93a528b94ef4e81a08db252b0326feff171f upstream.
+commit e3756477aec028427fec767957c0d4b6cfb87208 upstream.
 
-The irq_to_gpio function was removed from the pxa platform
-in linux-3.2, and this driver has been broken since.
+While tracking down a weird buffer overflow issue in a program that
+looked to be sane, I started double checking the length returned by
+syslog(SYSLOG_ACTION_READ_ALL, ...) to make sure it wasn't overflowing
+the buffer.
 
-There is actually no in-tree user of this driver that adds
-this platform device, but the driver can and does get enabled
-on some platforms.
+Sure enough, it was.  I saw this in strace:
 
-Without this patch, building ezx_defconfig results in:
+  11339 syslog(SYSLOG_ACTION_READ_ALL, "<5>[244017.708129] REISERFS (dev"..., 8192) = 8279
 
-drivers/mfd/ezx-pcap.c: In function 'pcap_isr_work':
-drivers/mfd/ezx-pcap.c:205:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+It turns out that the loops that calculate how much space the entries
+will take when they're copied don't include the newlines and prefixes
+that will be included in the final output since prev flags is passed as
+zero.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Daniel Ribeiro <drwyrm@gmail.com>
+This patch properly accounts for it and fixes the overflow.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/ezx-pcap.c       |    2 +-
- include/linux/mfd/ezx-pcap.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ kernel/printk.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/mfd/ezx-pcap.c
-+++ b/drivers/mfd/ezx-pcap.c
-@@ -202,7 +202,7 @@ static void pcap_isr_work(struct work_st
- 		}
- 		local_irq_enable();
- 		ezx_pcap_write(pcap, PCAP_REG_MSR, pcap->msr);
--	} while (gpio_get_value(irq_to_gpio(pcap->spi->irq)));
-+	} while (gpio_get_value(pdata->gpio));
- }
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -999,6 +999,7 @@ static int syslog_print_all(char __user
+ 			struct log *msg = log_from_idx(idx);
  
- static void pcap_irq_handler(unsigned int irq, struct irq_desc *desc)
---- a/include/linux/mfd/ezx-pcap.h
-+++ b/include/linux/mfd/ezx-pcap.h
-@@ -16,6 +16,7 @@ struct pcap_subdev {
- struct pcap_platform_data {
- 	unsigned int irq_base;
- 	unsigned int config;
-+	int gpio;
- 	void (*init) (void *);	/* board specific init */
- 	int num_subdevs;
- 	struct pcap_subdev *subdevs;
+ 			len += msg_print_text(msg, prev, true, NULL, 0);
++			prev = msg->flags;
+ 			idx = log_next(idx);
+ 			seq++;
+ 		}
+@@ -1011,6 +1012,7 @@ static int syslog_print_all(char __user
+ 			struct log *msg = log_from_idx(idx);
+ 
+ 			len -= msg_print_text(msg, prev, true, NULL, 0);
++			prev = msg->flags;
+ 			idx = log_next(idx);
+ 			seq++;
+ 		}
 
 
