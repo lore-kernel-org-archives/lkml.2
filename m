@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2HMP1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 11:27:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64718 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab2HMP1j (ORCPT
+	id S1753182Ab2HMPax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 11:30:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34330 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2HMP1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 11:27:39 -0400
+	Mon, 13 Aug 2012 11:27:42 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next 07/16] netpoll: remove usage of dev->master
-Date: Mon, 13 Aug 2012 17:27:06 +0200
-Message-Id: <1344871635-1052-8-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next 08/16] cxgb3: remove usage of dev->master
+Date: Mon, 13 Aug 2012 17:27:07 +0200
+Message-Id: <1344871635-1052-9-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
 References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
@@ -32,40 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- net/core/netpoll.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index b4c90e4..5c8e560 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -207,12 +207,16 @@ static void netpoll_poll_dev(struct net_device *dev)
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+index 2dbbcbb..28365db 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+@@ -182,14 +182,17 @@ static struct net_device *get_iff_from_mac(struct adapter *adapter,
+ 		struct net_device *dev = adapter->port[i];
  
- 	if (dev->flags & IFF_SLAVE) {
- 		if (dev->npinfo) {
--			struct net_device *bond_dev = dev->master;
-+			struct net_device *bond_dev;
- 			struct sk_buff *skb;
-+
+ 		if (!memcmp(dev->dev_addr, mac, ETH_ALEN)) {
 +			rcu_read_lock();
-+			bond_dev = netdev_unique_upper_dev_get_rcu(dev);
- 			while ((skb = skb_dequeue(&dev->npinfo->arp_tx))) {
- 				skb->dev = bond_dev;
- 				skb_queue_tail(&bond_dev->npinfo->arp_tx, skb);
+ 			if (vlan && vlan != VLAN_VID_MASK) {
+-				rcu_read_lock();
+ 				dev = __vlan_find_dev_deep(dev, vlan);
+-				rcu_read_unlock();
+ 			} else if (netif_is_bond_slave(dev)) {
+-				while (dev->master)
+-					dev = dev->master;
++				struct net_device *upper_dev;
++
++				while ((upper_dev =
++					netdev_unique_upper_dev_get_rcu(dev)))
++					dev = upper_dev;
  			}
 +			rcu_read_unlock();
+ 			return dev;
  		}
  	}
- 
-@@ -795,7 +799,7 @@ int netpoll_setup(struct netpoll *np)
- 		return -ENODEV;
- 	}
- 
--	if (ndev->master) {
-+	if (netdev_unique_upper_dev_get(ndev)) {
- 		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
- 		err = -EBUSY;
- 		goto put;
 -- 
 1.7.10.4
 
