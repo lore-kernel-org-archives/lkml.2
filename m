@@ -1,90 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab2HMWJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:09:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38550 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab2HMWJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:09:42 -0400
-Date: Mon, 13 Aug 2012 15:09:38 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net, martin.petersen@oracle.com
-Subject: Re: [PATCH v5 08/12] block: Introduce new bio_split()
-Message-ID: <20120813220938.GF9541@google.com>
-References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
- <1344290921-25154-9-git-send-email-koverstreet@google.com>
- <20120808230532.GH6983@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809013923.GH7262@moria.home.lan>
- <20120809072217.GH2845@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120809073334.GD9128@dhcp-172-18-216-138.mtv.corp.google.com>
- <20120809173217.GA6644@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1755139Ab2HMWJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:09:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754926Ab2HMWJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:09:13 -0400
+Date: Mon, 13 Aug 2012 17:59:32 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH repost] kvm: drop parameter validation
+Message-ID: <20120813205932.GA15395@amt.cnet>
+References: <20120813104358.GA16458@redhat.com>
+ <20120813143053.GC11194@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120809173217.GA6644@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120813143053.GC11194@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 10:32:17AM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Aug 09, 2012 at 03:33:34AM -0400, Kent Overstreet wrote:
-> > > If you think the active dropping is justified, please let the change
-> > > and justification clearly stated.  You're burying the active change in
-> > > two separate patches without even mentioning it or cc'ing people who
-> > > care about bio-integrity (Martin K. Petersen). 
+On Mon, Aug 13, 2012 at 05:30:53PM +0300, Gleb Natapov wrote:
+> On Mon, Aug 13, 2012 at 01:43:58PM +0300, Michael S. Tsirkin wrote:
+> > We validate irq pin number when routing is setup, so
+> > code handling illegal irq # in pic and ioapic on each injection
+> > is never called.
+> > Drop it.
 > > 
-> > Not intentionally, he isn't in MAINTAINERS so get_maintainers.pl missed
-> > it and it slipped by while I was looking for people to CC. Added him.
+> I would leave BUG_ON there for a while.
+
+Which BUG_ON?
+
 > 
-> git-log is your friend.  For one-off patches, doing it this way might
-> be okay.  Higher layer maintainer would be able to redirect it but if
-> you intend to change block layer APIs significantly as you try to do
-> in this patch series, you need to be *way* more diligent than you
-> currently are.  At least I feel risky about acking patches in this
-> series.
-
-Wasn't an excuse, just an explanation.
-
-> * Significant change is buried without explicitly mentioning it or
->   discussing its implications.
-
-You are entitled to your opinion, but it honestly didn't seem that
-significant to me considering there was no code for splitting multi page
-bio integrity stuff before. 
-
-> * The patchset makes block layer API changes which impact multiple
->   stacking and low level drivers which are not particularly known for
->   simplicity and robustness, but there's no mention of how the patches
->   are tested and/or why the patches would be safe (e.g. reviewed all
->   the users and tested certain code paths and am fairly sure all the
->   changes should be safe because xxx sort of deal).  When asked about
->   testing, not much seems to have been done.
-
-You picked a particularly obscure codepath. I have personally tested all
-of this code with both dm and md, and I spent quite a bit of time going
-over the dm code in particular to verify as best I could that the
-bio_clone() changes were safe.
-
-I should've said more before how the patch series as a whole was tested,
-but you hadn't asked either.
-
-> * Responses and iterations across patch postings aren't responsive or
->   reliable, making it worrisome what will happen when things go south
->   after this hits mainline.
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > Reposting, applies without changes to kvm/next.
+> > 
+> >  arch/x86/kvm/i8259.c | 16 +++++++---------
+> >  virt/kvm/ioapic.c    | 35 +++++++++++++++++------------------
+> >  2 files changed, 24 insertions(+), 27 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+> > index 1df8fb9..277ec0d 100644
+> > --- a/arch/x86/kvm/i8259.c
+> > +++ b/arch/x86/kvm/i8259.c
+> > @@ -190,17 +190,15 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+> >  
+> >  int kvm_pic_set_irq(struct kvm_pic *s, int irq, int irq_source_id, int level)
+> >  {
+> > -	int ret = -1;
+> > +	int ret, irq_level;
+> >  
+> >  	pic_lock(s);
+> > -	if (irq >= 0 && irq < PIC_NUM_PINS) {
+> > -		int irq_level = __kvm_irq_line_state(&s->irq_states[irq],
+> > -						     irq_source_id, level);
+> > -		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
+> > -		pic_update_irq(s);
+> > -		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> > -				      s->pics[irq >> 3].imr, ret == 0);
+> > -	}
+> > +	irq_level = __kvm_irq_line_state(&s->irq_states[irq],
+> > +					 irq_source_id, level);
+> > +	ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
+> > +	pic_update_irq(s);
+> > +	trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> > +			      s->pics[irq >> 3].imr, ret == 0);
+> >  	pic_unlock(s);
+> >  
+> >  	return ret;
+> > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> > index ef61d52..4d824c7 100644
+> > --- a/virt/kvm/ioapic.c
+> > +++ b/virt/kvm/ioapic.c
+> > @@ -197,28 +197,27 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+> >  	u32 old_irr;
+> >  	u32 mask = 1 << irq;
+> >  	union kvm_ioapic_redirect_entry entry;
+> > -	int ret = 1;
+> > +	int ret, irq_level;
+> >  
+> >  	spin_lock(&ioapic->lock);
+> >  	old_irr = ioapic->irr;
+> > -	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+> > -		int irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
+> > -						     irq_source_id, level);
+> > -		entry = ioapic->redirtbl[irq];
+> > -		irq_level ^= entry.fields.polarity;
+> > -		if (!irq_level)
+> > -			ioapic->irr &= ~mask;
+> > -		else {
+> > -			int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
+> > -			ioapic->irr |= mask;
+> > -			if ((edge && old_irr != ioapic->irr) ||
+> > -			    (!edge && !entry.fields.remote_irr))
+> > -				ret = ioapic_service(ioapic, irq);
+> > -			else
+> > -				ret = 0; /* report coalesced interrupt */
+> > -		}
+> > -		trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
+> > +	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
+> > +					 irq_source_id, level);
+> > +	entry = ioapic->redirtbl[irq];
+> > +	irq_level ^= entry.fields.polarity;
+> > +	if (!irq_level) {
+> > +		ioapic->irr &= ~mask;
+> > +		ret = 1;
+> > +	} else {
+> > +		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
+> > +		ioapic->irr |= mask;
+> > +		if ((edge && old_irr != ioapic->irr) ||
+> > +		    (!edge && !entry.fields.remote_irr))
+> > +			ret = ioapic_service(ioapic, irq);
+> > +		else
+> > +			ret = 0; /* report coalesced interrupt */
+> >  	}
+> > +	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
+> >  	spin_unlock(&ioapic->lock);
+> >  
+> >  	return ret;
+> > -- 
+> > MST
 > 
-> You're asking reviewers and maintainers to take a lot more risks than
-> they usually have to, which isn't a good way to make forward progress.
-
-This patch series does touch a lot, and I'm certainly very new at
-getting stuff into upstream. But I'm doing my best not to miss stuff,
-and I've been asking you for advice and working on my workflow. And a
-fair amount of the stuff in this patch series has been your ideas (it
-was originally much more minimal).
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
