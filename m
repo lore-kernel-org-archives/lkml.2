@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab2HMU4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:56:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab2HMU4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:56:20 -0400
-Date: Mon, 13 Aug 2012 17:40:21 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Alexander Graf <agraf@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>, KVM <kvm@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, X86 <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] Documentation : hypercalls
-Message-ID: <20120813204021.GA10099@amt.cnet>
-References: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
+	id S1754010Ab2HMU4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:56:30 -0400
+Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:45037 "EHLO
+	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753383Ab2HMU42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 16:56:28 -0400
+From: David Cullen <David.Cullen@koe-americas.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Michal Marek <mmarek@suse.cz>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
+ during make distclean
+Thread-Topic: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
+ during make distclean
+Thread-Index: AQHNeYtJ0vuHTHXr8kOIY+yAGwirYZdYdyAAgAAFDAA=
+Date: Mon, 13 Aug 2012 20:56:26 +0000
+Message-ID: <502969FA.6010907@koe-americas.com>
+References: <502957D5.1070800@koe-americas.com> <502965BE.3070406@zytor.com>
+In-Reply-To: <502965BE.3070406@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
+ Thunderbird/14.0
+x-originating-ip: [10.1.5.27]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <5CC3FF42B1C28E4B9C669AE2958B135C@koe-americas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120807073946.20169.72958.sendpatchset@codeblue.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7DKufKi011877
 
-On Tue, Aug 07, 2012 at 01:09:46PM +0530, Raghavendra K T wrote:
-> This is the hypercall documentation patch series
-> First patch covers KVM specific hypercall information.
+On 8/13/2012 4:38 PM, H. Peter Anvin wrote:
+> On 08/13/2012 12:39 PM, David Cullen wrote:
+>> When running "make distclean" in a cross chroot environment, the
+>> following messages are emitted:
+>>
+>>     [user@host:/home/work/linux]: make distclean
+>>     /usr/bin/xargs: rm: Argument list too long
+>>     make: *** [clean] Error 126
+>>
 > 
-> second patch is has typo fix for vmcall instruction
-> comment in kvm_para.h
+> That sounds like a bug in xargs...
 > 
-> Third patch includes a veryful documentation on PowerPC
-> hypercalls originally written by Alex
+> 	-hpa
 > 
-> Changes since initial post:
->  - Added hypercall ABI (Peter)
->  - made KVM_HC_VAPIC_POLL_IRQ active explicitly (Randy)
->  - Changed vmrun/vmmrun ==> vmcall/vmmcall (Marcelo)
->  - use Linux KVM hypercall instead of ABI  (Marcelo)
->  - correct PowerPC typo (Alex)
->  - Remove value field (Alex)
-> 
-> Raghavendra K T (2):
->  Documentation/kvm : Add documentation on hypercalls
->  Documentation/header : Correct vmrun to vmcall typo
-> 
-> Alexander Graf (1) :
->  Documentation/ppc: Add ppc hypercall documentation
-> 
->  Documentation/virtual/kvm/hypercalls.txt |   66 ++++++++++++++++++++++++++++++
->  Documentation/virtual/kvm/ppc-pv.txt     |   22 ++++++++++
->  arch/x86/include/asm/kvm_para.h          |    2 +-
->  3 files changed, 89 insertions(+), 1 deletions(-)
 
-Applied, thanks.
+In my specific case, qemu-arm-static calls xargs (In fact, in my
+cross chroot, qemu-arm-static is used to run every user mode process).
 
+Do you mean that qemu-arm-static is exposing a latent defect in xargs?
+
+Does qemu-arm-static steal some of the command line space that would
+normally be available for xargs? If so, how would xargs figure out
+this was happening and handle the problem?
+
+-- 
+Thank you,
+David Cullenÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
