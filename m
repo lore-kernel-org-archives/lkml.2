@@ -1,126 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2HMQsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:48:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241Ab2HMQsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:48:18 -0400
-Message-ID: <1344876495.4683.47.camel@ul30vt.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 13 Aug 2012 10:48:15 -0600
-In-Reply-To: <20120812074936.GA1421@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204320.21081.32333.stgit@bling.home>
-	 <20120729145452.GD14278@redhat.com> <1343665330.8073.108.camel@ul30vt>
-	 <20120731000100.GA17612@redhat.com> <1343694391.8073.227.camel@ul30vt>
-	 <20120731003636.GC17922@redhat.com> <1343697135.8073.245.camel@ul30vt>
-	 <1343848002.6698.38.camel@bling.home> <20120812074936.GA1421@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752721Ab2HMQt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:49:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33440 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab2HMQt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:49:56 -0400
+Date: Mon, 13 Aug 2012 09:49:33 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-aaarrzfpnaam7pqrekofu8a6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, pportant@redhat.com,
+        tglx@linutronix.de, lwoodman@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        pportant@redhat.com, lwoodman@redhat.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched, cgroup: Reduce rq->
+ lock hold times for large cgroup hierarchies
+Git-Commit-ID: a35b6466aabb051568b844e8c63f87a356d3d129
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:49:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-12 at 10:49 +0300, Michael S. Tsirkin wrote:
-> On Wed, Aug 01, 2012 at 01:06:42PM -0600, Alex Williamson wrote:
-> > On Mon, 2012-07-30 at 19:12 -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-31 at 03:36 +0300, Michael S. Tsirkin wrote:
-> > > > On Mon, Jul 30, 2012 at 06:26:31PM -0600, Alex Williamson wrote:
-> > > > > On Tue, 2012-07-31 at 03:01 +0300, Michael S. Tsirkin wrote:
-> > > > > > You keep saying this but it is still true: once irqfd
-> > > > > > is closed eoifd does not get any more interrupts.
-> > > > > 
-> > > > > How does that matter?
-> > > > 
-> > > > Well if it does not get events it is disabled.
-> > > > so you have one ifc disabling another, anyway.
-> > > 
-> > > And a level irqfd without an eoifd can never be de-asserted.  Either we
-> > > make modular components, assemble them to do useful work, and
-> > > disassemble them independently so they can be used by future interfaces
-> > > or we bundle eoifd as just an option of irqfd.  Which is it gonna be?
-> > 
-> > I don't think I've been successful at explaining my reasoning for making
-> > EOI notification a separate interface, so let me try again...
-> > 
-> > When kvm is not enabled, the qemu vfio driver still needs to know about
-> > EOIs to re-enable the physical interrupt.  Since the ioapic is emulated
-> > in qemu, we can setup a notifier for this and create abstraction to make
-> > it non-x86 specific, etc.  We just need to come up with a design and
-> > implement it.  But what happens when kvm is then enabled?  ioapic
-> > emulation moves to the kernel (assume kvm includes irqchip for this
-> > argument even though it doesn't for POWER), qemu no longer knows about
-> > EOIs, and the interface we just created to handle the non-kvm case stops
-> > working.  Is anyone going to accept adding a qemu EOI notification
-> > interface that only works when kvm is not enabled?
-> 
-> Yes, it's only a question of abstracting it at the right level.
-> 
-> For example, if as you suggest below kvm gives you an eventfd that
-> asserts an irq, laters automatically deasserts it and notifies another
-> eventfd, we can do exactly this in both tcg and kvm:
-> 
-> setup_level_irq(int gsi, int assert_eventfd, int deassert_eventfd)
-> 
-> Not advocating this interface but pointing out that to make
-> same abstraction to work in tcg and kvm, see what it does in
-> each of them first.
+Commit-ID:  a35b6466aabb051568b844e8c63f87a356d3d129
+Gitweb:     http://git.kernel.org/tip/a35b6466aabb051568b844e8c63f87a356d3d129
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 8 Aug 2012 21:46:40 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 13 Aug 2012 18:41:54 +0200
 
-The tcg model I was thinking of is that we continue to use qemu_set_irq
-to assert and de-assert the interrupt and add an eoi/ack notification
-mechanism, much like the ack notifier that already exists in kvm.  There
-doesn't seem to be much advantage to creating a new interrupt
-infrastructure in tcg that can trigger interrupts by eventfds, so I
-assume VFIO is always going to be responsible for the translation of an
-eventfd to an irq assertion, get some kind of notification through qemu,
-de-assert the interrupt and unmask the device.  With that model in mind,
-perhaps it makes more sense why I've been keeping the eoi/ack separate
-from irqfd.
+sched, cgroup: Reduce rq->lock hold times for large cgroup hierarchies
 
-> > I suspect we therefore need a notification mechanism between kvm and
-> > qemu to make it possible for that interface to continue working.
-> 
-> Even though no one is actually using it. IMHO, this is a maintainance
-> problem.
+Peter Portante reported that for large cgroup hierarchies (and or on
+large CPU counts) we get immense lock contention on rq->lock and stuff
+stops working properly.
 
-That's why I'm designing it the way I am.  VFIO will make use of it.  It
-will just be using the de-assert and notify mode vs a notify-only mode
-that tcg would use.  It would also be easy to add an option to vfio so
-that we could fully test both modes.
+His workload was a ton of processes, each in their own cgroup,
+everybody idling except for a sporadic wakeup once every so often.
 
-> > An
-> > eventfd also seems like the right mechanism there.  A simple
-> > modification to the proposed KVM_EOIFD here would allow it to trigger an
-> > eventfd when an EOI is written to a specific gsi on
-> > KVM_USERSPACE_IRQ_SOURCE_ID (define a flag and pass gsi in place of
-> > key).
-> > 
-> > The split proposed here does require some assembly, but KVM_EOIFD is
-> > re-usable as either a de-assert and notify mechanism tied to an irqfd or
-> > a notify-only mechanism allowing users of a qemu EOI notification
-> > infrastructure to continue working.  vfio doesn't necessarily need this
-> > middle ground, but can easily be used to test it.
-> > 
-> > The alternative is that we pull eoifd into KVM_IRQFD and invent some
-> > other new EOI interface for qemu.  That means we get EOIs tied to an
-> > irqfd via one path and other EOIs via another ioctl.  Personally that
-> > seems less desirable, but I'm willing to explore that route if
-> > necessary.  Thanks,
-> > 
-> > Alex
-> 
-> Maybe we should focus on the fact that we notify userspace that we
-> deasserted interrupt instead of EOI.
+It was found that:
 
-But will a tcg user want the de-assert?  I assume not.  The de-assert is
-an optimization to allow us to bypass evaluation in userspace.  In tcg
-we're already there.  Thanks,
+  schedule()
+    idle_balance()
+      load_balance()
+        local_irq_save()
+        double_rq_lock()
+        update_h_load()
+          walk_tg_tree(tg_load_down)
+            tg_load_down()
 
-Alex
+Results in an entire cgroup hierarchy walk under rq->lock for every
+new-idle balance and since new-idle balance isn't throttled this
+results in a lot of work while holding the rq->lock.
 
+This patch does two things, it removes the work from under rq->lock
+based on the good principle of race and pray which is widely employed
+in the load-balancer as a whole. And secondly it throttles the
+update_h_load() calculation to max once per jiffy.
+
+I considered excluding update_h_load() for new-idle balance
+all-together, but purely relying on regular balance passes to update
+this data might not work out under some rare circumstances where the
+new-idle busiest isn't the regular busiest for a while (unlikely, but
+a nightmare to debug if someone hits it and suffers).
+
+Cc: pjt@google.com
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Reported-by: Peter Portante <pportant@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-aaarrzfpnaam7pqrekofu8a6@git.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/fair.c  |   11 +++++++++--
+ kernel/sched/sched.h |    6 +++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d0cc03b..c219bf8 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3387,6 +3387,14 @@ static int tg_load_down(struct task_group *tg, void *data)
+ 
+ static void update_h_load(long cpu)
+ {
++	struct rq *rq = cpu_rq(cpu);
++	unsigned long now = jiffies;
++
++	if (rq->h_load_throttle == now)
++		return;
++
++	rq->h_load_throttle = now;
++
+ 	rcu_read_lock();
+ 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+ 	rcu_read_unlock();
+@@ -4293,11 +4301,10 @@ redo:
+ 		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
++		update_h_load(env.src_cpu);
+ more_balance:
+ 		local_irq_save(flags);
+ 		double_rq_lock(this_rq, busiest);
+-		if (!env.loop)
+-			update_h_load(env.src_cpu);
+ 
+ 		/*
+ 		 * cur_ld_moved - load moved in current iteration
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c35a1a7..531411b 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -374,7 +374,11 @@ struct rq {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
+-#endif
++#ifdef CONFIG_SMP
++	unsigned long h_load_throttle;
++#endif /* CONFIG_SMP */
++#endif /* CONFIG_FAIR_GROUP_SCHED */
++
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	struct list_head leaf_rt_rq_list;
+ #endif
