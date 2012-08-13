@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2HMWdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:33:42 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60437 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab2HMWDP (ORCPT
+	id S1754235Ab2HMWeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:34:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35533 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab2HMWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:03:15 -0400
+	Mon, 13 Aug 2012 18:03:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [ 05/44] mm: fix wrong argument of migrate_huge_pages() in soft_offline_huge_page()
-Date: Mon, 13 Aug 2012 15:02:12 -0700
-Message-Id: <20120813220142.605275555@linuxfoundation.org>
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Subject: [ 03/44] nilfs2: fix deadlock issue between chcp and thaw ioctls
+Date: Mon, 13 Aug 2012 15:02:10 -0700
+Message-Id: <20120813220142.436840284@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -31,55 +30,135 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Joonsoo Kim <js1304@gmail.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit dc32f63453f56d07a1073a697dcd843dd3098c09 upstream.
+commit 572d8b3945a31bee7c40d21556803e4807fd9141 upstream.
 
-Commit a6bc32b89922 ("mm: compaction: introduce sync-light migration for
-use by compaction") changed the declaration of migrate_pages() and
-migrate_huge_pages().
+An fs-thaw ioctl causes deadlock with a chcp or mkcp -s command:
 
-But it missed changing the argument of migrate_huge_pages() in
-soft_offline_huge_page().  In this case, we should call
-migrate_huge_pages() with MIGRATE_SYNC.
+ chcp            D ffff88013870f3d0     0  1325   1324 0x00000004
+ ...
+ Call Trace:
+   nilfs_transaction_begin+0x11c/0x1a0 [nilfs2]
+   wake_up_bit+0x20/0x20
+   copy_from_user+0x18/0x30 [nilfs2]
+   nilfs_ioctl_change_cpmode+0x7d/0xcf [nilfs2]
+   nilfs_ioctl+0x252/0x61a [nilfs2]
+   do_page_fault+0x311/0x34c
+   get_unmapped_area+0x132/0x14e
+   do_vfs_ioctl+0x44b/0x490
+   __set_task_blocked+0x5a/0x61
+   vm_mmap_pgoff+0x76/0x87
+   __set_current_blocked+0x30/0x4a
+   sys_ioctl+0x4b/0x6f
+   system_call_fastpath+0x16/0x1b
+ thaw            D ffff88013870d890     0  1352   1351 0x00000004
+ ...
+ Call Trace:
+   rwsem_down_failed_common+0xdb/0x10f
+   call_rwsem_down_write_failed+0x13/0x20
+   down_write+0x25/0x27
+   thaw_super+0x13/0x9e
+   do_vfs_ioctl+0x1f5/0x490
+   vm_mmap_pgoff+0x76/0x87
+   sys_ioctl+0x4b/0x6f
+   filp_close+0x64/0x6c
+   system_call_fastpath+0x16/0x1b
 
-Additionally, there is a mismatch between type the of argument and the
-function declaration for migrate_pages().
+where the thaw ioctl deadlocked at thaw_super() when called while chcp was
+waiting at nilfs_transaction_begin() called from
+nilfs_ioctl_change_cpmode().  This deadlock is 100% reproducible.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+This is because nilfs_ioctl_change_cpmode() first locks sb->s_umount in
+read mode and then waits for unfreezing in nilfs_transaction_begin(),
+whereas thaw_super() locks sb->s_umount in write mode.  The locking of
+sb->s_umount here was intended to make snapshot mounts and the downgrade
+of snapshots to checkpoints exclusive.
+
+This fixes the deadlock issue by replacing the sb->s_umount usage in
+nilfs_ioctl_change_cpmode() with a dedicated mutex which protects snapshot
+mounts.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nilfs2/ioctl.c     |    4 ++--
+ fs/nilfs2/super.c     |    3 +++
+ fs/nilfs2/the_nilfs.c |    1 +
+ fs/nilfs2/the_nilfs.h |    2 ++
+ 4 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1334,8 +1334,8 @@ static int soft_offline_huge_page(struct
- 	/* Keep page count to indicate a given hugepage is isolated. */
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -182,7 +182,7 @@ static int nilfs_ioctl_change_cpmode(str
+ 	if (copy_from_user(&cpmode, argp, sizeof(cpmode)))
+ 		goto out;
  
- 	list_add(&hpage->lru, &pagelist);
--	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
--				true);
-+	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, false,
-+				MIGRATE_SYNC);
- 	if (ret) {
- 		struct page *page1, *page2;
- 		list_for_each_entry_safe(page1, page2, &pagelist, lru)
-@@ -1464,7 +1464,7 @@ int soft_offline_page(struct page *page,
- 					    page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
--							0, MIGRATE_SYNC);
-+							false, MIGRATE_SYNC);
- 		if (ret) {
- 			putback_lru_pages(&pagelist);
- 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+-	down_read(&inode->i_sb->s_umount);
++	mutex_lock(&nilfs->ns_snapshot_mount_mutex);
+ 
+ 	nilfs_transaction_begin(inode->i_sb, &ti, 0);
+ 	ret = nilfs_cpfile_change_cpmode(
+@@ -192,7 +192,7 @@ static int nilfs_ioctl_change_cpmode(str
+ 	else
+ 		nilfs_transaction_commit(inode->i_sb); /* never fails */
+ 
+-	up_read(&inode->i_sb->s_umount);
++	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
+ out:
+ 	mnt_drop_write(filp->f_path.mnt);
+ 	return ret;
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -951,6 +951,8 @@ static int nilfs_attach_snapshot(struct
+ 	struct nilfs_root *root;
+ 	int ret;
+ 
++	mutex_lock(&nilfs->ns_snapshot_mount_mutex);
++
+ 	down_read(&nilfs->ns_segctor_sem);
+ 	ret = nilfs_cpfile_is_snapshot(nilfs->ns_cpfile, cno);
+ 	up_read(&nilfs->ns_segctor_sem);
+@@ -975,6 +977,7 @@ static int nilfs_attach_snapshot(struct
+ 	ret = nilfs_get_root_dentry(s, root, root_dentry);
+ 	nilfs_put_root(root);
+  out:
++	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
+ 	return ret;
+ }
+ 
+--- a/fs/nilfs2/the_nilfs.c
++++ b/fs/nilfs2/the_nilfs.c
+@@ -76,6 +76,7 @@ struct the_nilfs *alloc_nilfs(struct blo
+ 	nilfs->ns_bdev = bdev;
+ 	atomic_set(&nilfs->ns_ndirtyblks, 0);
+ 	init_rwsem(&nilfs->ns_sem);
++	mutex_init(&nilfs->ns_snapshot_mount_mutex);
+ 	INIT_LIST_HEAD(&nilfs->ns_dirty_files);
+ 	INIT_LIST_HEAD(&nilfs->ns_gc_inodes);
+ 	spin_lock_init(&nilfs->ns_inode_lock);
+--- a/fs/nilfs2/the_nilfs.h
++++ b/fs/nilfs2/the_nilfs.h
+@@ -47,6 +47,7 @@ enum {
+  * @ns_flags: flags
+  * @ns_bdev: block device
+  * @ns_sem: semaphore for shared states
++ * @ns_snapshot_mount_mutex: mutex to protect snapshot mounts
+  * @ns_sbh: buffer heads of on-disk super blocks
+  * @ns_sbp: pointers to super block data
+  * @ns_sbwtime: previous write time of super block
+@@ -99,6 +100,7 @@ struct the_nilfs {
+ 
+ 	struct block_device    *ns_bdev;
+ 	struct rw_semaphore	ns_sem;
++	struct mutex		ns_snapshot_mount_mutex;
+ 
+ 	/*
+ 	 * used for
 
 
