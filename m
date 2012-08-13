@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750975Ab2HMI55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:57:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41516 "EHLO mx2.suse.de"
+	id S1751145Ab2HMJF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 05:05:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20284 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab2HMI54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:57:56 -0400
-Date: Mon, 13 Aug 2012 09:57:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
-Message-ID: <20120813085749.GB4177@suse.de>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-8-git-send-email-glommer@parallels.com>
- <502545D2.80708@jp.fujitsu.com>
- <5028B4DA.6000507@parallels.com>
+	id S1750826Ab2HMJF1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 05:05:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,758,1336374000"; 
+   d="scan'208";a="179900842"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>, "hpa@zytor.com" <hpa@zytor.com>
+Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
+Thread-Topic: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
+Thread-Index: Ac15MsI6ncx2OLFBSBevzwjQUyIXXg==
+Date: Mon, 13 Aug 2012 09:05:23 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A13679F@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <5028B4DA.6000507@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 12:03:38PM +0400, Glauber Costa wrote:
-> On 08/10/2012 09:33 PM, Kamezawa Hiroyuki wrote:
-> > (2012/08/09 22:01), Glauber Costa wrote:
-> >> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
-> >> page allocator will call the corresponding memcg functions to validate
-> >> the allocation. Tasks in the root memcg can always proceed.
-> >>
-> >> To avoid adding markers to the page - and a kmem flag that would
-> >> necessarily follow, as much as doing page_cgroup lookups for no reason,
-> >> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
-> >> for telling the page allocator that this is such an allocation at
-> >> free_pages() time. This is done by the invocation of
-> >> __free_accounted_pages() and free_accounted_pages().
-> >>
-> >> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> >> CC: Christoph Lameter <cl@linux.com>
-> >> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> >> CC: Michal Hocko <mhocko@suse.cz>
-> >> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: Johannes Weiner <hannes@cmpxchg.org>
-> >> CC: Suleiman Souhlal <suleiman@google.com>
-> > 
-> > Ah, ok. free_accounted_page() seems good.
-> > 
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > I myself is okay with this. But...
-> > 
-> > Because you add a new hook to alloc_pages(), please get Ack from Mel
-> > before requesting merge.
-> > 
-> > Thanks,
-> > -Kame
-> 
-> Absolutely.
-> 
-> Mel, would you mind taking a look at this series and commenting on this?
-> 
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
 
-It'll take me a few days but I'll get around to it.
+Found the case that endless " <IRQ> " printing in dump_trace,
+and no real meaningful stack traces are output, so there should
+one rare case that possibly context->previous_esp = context or
+other cases.
 
+The endless " <IRQ> " is as below:
+...
+[   82.215244,0]  <IRQ>
+[   82.215399,0]  <IRQ>
+[   82.215554,0]  <IRQ>
+[   82.215710,0]  <IRQ>
+[   82.215865,0]  <IRQ>
+[   82.216022,0]  <IRQ>
+[   82.216178,0]  <IRQ>
+[   82.216333,0]  <IRQ>
+[   82.216488,0]  <IRQ>
+[   82.216643,0]  <IRQ>
+[   82.216798,0]  <IRQ>
+[   82.216953,0]  <IRQ>
+...
+
+This patch aim is:
+1/ Limiting the " <IRQ> " outputing, currently the max IRQ contexts
+is 2(softirq+harirq combination);
+2/ When the max IRQ contexts 2 is reached, print the context content
+to confirm;
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ arch/x86/kernel/dumpstack_32.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 1038a41..5387429 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -22,6 +22,7 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+                const struct stacktrace_ops *ops, void *data)
+ {
+        int graph = 0;
++       int dump_irq = 0;
+ 
+        if (!task)
+                task = current;
+@@ -47,8 +48,18 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+                stack = (unsigned long *)context->previous_esp;
+                if (!stack)
+                        break;
++
++               if (unlikely(dump_irq > 2)) {
++                       printk(KERN_WARNING "break multi-IRQ print,"
++                               "context=%08lx, stack=%08lx\n",
++                               (unsigned long)context,
++                               (unsigned long)stack);
++                       break;
++               }
++
+                if (ops->stack(data, "IRQ") < 0)
+                        break;
++               dump_irq++;
+                touch_nmi_watchdog();
+        }
+ }
 -- 
-Mel Gorman
-SUSE Labs
+1.7.0.4
