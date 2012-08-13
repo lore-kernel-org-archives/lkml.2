@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2HMWYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:24:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35526 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755697Ab2HMWSR (ORCPT
+	id S1755933Ab2HMWYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:24:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59678 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755672Ab2HMWSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:17 -0400
+	Mon, 13 Aug 2012 18:18:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 49/65] x86, microcode: Sanitize per-cpu microcode reloading interface
-Date: Mon, 13 Aug 2012 15:14:33 -0700
-Message-Id: <20120813221419.296425620@linuxfoundation.org>
+        "Lionel Vaux (iouri)" <lionel.vaux@free.fr>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 46/65] HID: add support for Cypress barcode scanner 04B4:ED81
+Date: Mon, 13 Aug 2012 15:14:30 -0700
+Message-Id: <20120813221419.048987776@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -32,89 +30,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Lionel Vaux <lionel.vaux@free.fr>
 
-commit c9fc3f778a6a215ace14ee556067c73982b6d40f upstream.
+commit 76c9d8fe2c7fc34ffc387d8022c5828d6ff9df48 upstream.
 
-Microcode reloading in a per-core manner is a very bad idea for both
-major x86 vendors. And the thing is, we have such interface with which
-we can end up with different microcode versions applied on different
-cores of an otherwise homogeneous wrt (family,model,stepping) system.
+Add yet another device to the list of Cypress barcode scanners
+needing the CP_RDESC_SWAPPED_MIN_MAX quirk.
 
-So turn off the possibility of doing that per core and allow it only
-system-wide.
-
-This is a minimal fix which we'd like to see in stable too thus the
-more-or-less arbitrary decision to allow system-wide reloading only on
-the BSP:
-
-$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-...
-
-and disable the interface on the other cores:
-
-$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
--bash: echo: write error: Invalid argument
-
-Also, allowing the reload only from one CPU (the BSP in
-that case) doesn't allow the reload procedure to degenerate
-into an O(n^2) deal when triggering reloads from all
-/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
-simultaneously.
-
-A more generic fix will follow.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Lionel Vaux (iouri) <lionel.vaux@free.fr>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-cypress.c |    2 ++
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 4 insertions(+)
 
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -298,19 +298,31 @@ static ssize_t reload_store(struct devic
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu = dev->id;
--	ssize_t ret = 0;
-+	int cpu;
-+	ssize_t ret = 0, tmp_ret;
-+
-+	/* allow reload only from the BSP */
-+	if (boot_cpu_data.cpu_index != dev->id)
-+		return -EINVAL;
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1410,6 +1410,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_4) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DRAGONRISE, 0x0006) },
+--- a/drivers/hid/hid-cypress.c
++++ b/drivers/hid/hid-cypress.c
+@@ -129,6 +129,8 @@ static const struct hid_device_id cp_dev
+ 		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_3),
+ 		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_4),
++		.driver_data = CP_RDESC_SWAPPED_MIN_MAX },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_MOUSE),
+ 		.driver_data = CP_2WHEEL_MOUSE_HACK },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -231,6 +231,7 @@
+ #define USB_DEVICE_ID_CYPRESS_BARCODE_1	0xde61
+ #define USB_DEVICE_ID_CYPRESS_BARCODE_2	0xde64
+ #define USB_DEVICE_ID_CYPRESS_BARCODE_3	0xbca1
++#define USB_DEVICE_ID_CYPRESS_BARCODE_4	0xed81
+ #define USB_DEVICE_ID_CYPRESS_TRUETOUCH	0xc001
  
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
- 
--	if (val == 1) {
--		get_online_cpus();
--		if (cpu_online(cpu))
--			ret = reload_for_cpu(cpu);
--		put_online_cpus();
-+	if (val != 1)
-+		return size;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		tmp_ret = reload_for_cpu(cpu);
-+		if (tmp_ret != 0)
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+
-+		/* save retval of the first encountered reload error */
-+		if (!ret)
-+			ret = tmp_ret;
- 	}
-+	put_online_cpus();
- 
- 	if (!ret)
- 		ret = size;
+ #define USB_VENDOR_ID_DEALEXTREAME	0x10c5
 
 
