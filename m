@@ -1,72 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab2HMSDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:03:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44225 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab2HMSDC (ORCPT
+	id S1752373Ab2HMSEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:04:47 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30483 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab2HMSEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:03:02 -0400
-Date: Mon, 13 Aug 2012 15:02:49 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf: Let O= makes handle relative paths
-Message-ID: <20120813180249.GB6840@infradead.org>
-References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
- <20120813132438.GA18990@aftab.osrc.amd.com>
- <1344867782.6935.119.camel@gandalf.stny.rr.com>
- <20120813142909.GC18990@aftab.osrc.amd.com>
+	Mon, 13 Aug 2012 14:04:46 -0400
+Date: Mon, 13 Aug 2012 13:54:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Huacai Chen <chenhuacai@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
+Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
+ memory (>4GB).
+Message-ID: <20120813175447.GB26088@phenom.dumpdata.com>
+References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
+ <1344677543-22591-10-git-send-email-chenhc@lemote.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120813142909.GC18990@aftab.osrc.amd.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1344677543-22591-10-git-send-email-chenhc@lemote.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 13, 2012 at 04:29:09PM +0200, Borislav Petkov escreveu:
-> On Mon, Aug 13, 2012 at 10:23:02AM -0400, Steven Rostedt wrote:
-> > On Mon, 2012-08-13 at 15:24 +0200, Borislav Petkov wrote:
-> > 
-> > > So wouldn't it make sense to call this ABSOLUTE_O or so then?
-> > 
-> > That's just because you're russian, and are promoting Vodka! ;-)
+> +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
+> +				dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+> +{
+> +	void *ret;
+> +
+> +	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
+> +		return ret;
+> +
+> +	/* ignore region specifiers */
+> +	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
+> +
+> +#ifdef CONFIG_ZONE_DMA
+> +	if (dev == NULL)
+> +		gfp |= __GFP_DMA;
 
-Before:
+When would this happen? dev == NULL?
 
-[acme@sandy linux]$ rm -rf ../build/perf
-[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
-/bin/sh: line 0: cd: /home/acme/git/build/perf/: No such file or directory
-make: Entering directory `/home/git/linux/tools/perf'
-../scripts/Makefile.include:9: *** output directory "/home/acme/git/build/perf/" does not exist.  Stop.
-make: Leaving directory `/home/git/linux/tools/perf'
-[acme@sandy linux]$
+> +	else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
+> +		gfp |= __GFP_DMA;
+> +	else
+> +#endif
+> +#ifdef CONFIG_ZONE_DMA32
+> +	if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+> +		gfp |= __GFP_DMA32;
+> +	else
 
-Now:
+Why the 'else'
+> +#endif
+> +	;
 
-[acme@sandy linux]$ rm -rf ../build/perf
-[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
-/bin/sh: line 0: cd: /home/acme/git/build/perf: No such file or directory
-make: Entering directory `/home/git/linux/tools/perf'
-    GEN perf-archive
-    GEN /home/git/linux/tools/perf/python/perf.so
-make[1]: Entering directory `/home/git/linux/tools/lib/traceevent'
-make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
-    * new build flags or cross compiler
-    CC /home/git/linux/tools/perf/perf.o
-    CC /home/git/linux/tools/perf/builtin-annotate.o
-    CC /home/git/linux/tools/perf/builtin-bench.o
-    CC /home/git/linux/tools/perf/bench/sched-messaging.o
-    CC /home/git/linux/tools/perf/bench/sched-pipe.o
+why?
+> +	gfp |= __GFP_NORETRY;
+> +
+> +	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
+> +	mb();
 
-I.e. it should stop if the O= provided directory is not there.
+Why the 'mb()' ? Can you just do
+	return swiotlb_alloc_coherent(...) 
 
-Can you fix this? Avoid vodka while doing it :-P
+> +	return ret;
+> +}
+> +
+> +static void loongson_dma_free_coherent(struct device *dev, size_t size,
+> +				void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
+> +{
+> +	int order = get_order(size);
+> +
+> +	if (dma_release_from_coherent(dev, order, vaddr))
+> +		return;
+> +
+> +	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+> +}
+> +
+> +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
+> +				unsigned long offset, size_t size,
+> +				enum dma_data_direction dir,
+> +				struct dma_attrs *attrs)
+> +{
+> +	dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
+> +					dir, attrs);
+> +	mb();
 
-- Arnaldo
+Please do 'return swiotlb_map_page(..)'..
+
+But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
+?
+
+
+> +	return daddr;
+> +}
+> +
+> +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
+> +				int nents, enum dma_data_direction dir,
+> +				struct dma_attrs *attrs)
+> +{
+> +	int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
+> +	mb();
+> +
+> +	return r;
+> +}
+> +
+> +static void loongson_dma_sync_single_for_device(struct device *dev,
+> +				dma_addr_t dma_handle, size_t size,
+> +				enum dma_data_direction dir)
+> +{
+> +	swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
+> +	mb();
+> +}
+> +
+> +static void loongson_dma_sync_sg_for_device(struct device *dev,
+> +				struct scatterlist *sg, int nents,
+> +				enum dma_data_direction dir)
+> +{
+> +	swiotlb_sync_sg_for_device(dev, sg, nents, dir);
+> +	mb();
+> +}
+> +
+
+I am not really sure why you have these extra functions, when you could
+just modify the dma_ops to point to the swiotlb ones
+
+> +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	return (paddr < 0x10000000) ?
+> +			(paddr | 0x0000000080000000) : paddr;
+> +}
+> +
+> +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
+> +{
+> +	return (daddr < 0x90000000 && daddr >= 0x80000000) ?
+> +			(daddr & 0x0fffffff) : daddr;
+> +}
+> +
+> +struct loongson_dma_map_ops {
+> +	struct dma_map_ops dma_map_ops;
+> +	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
+> +	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
+> +};
+> +
+> +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+> +					struct loongson_dma_map_ops, dma_map_ops);
+> +
+> +	return ops->phys_to_dma(dev, paddr);
+> +}
+> +
+> +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+> +{
+> +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+> +					struct loongson_dma_map_ops, dma_map_ops);
+> +
+> +	return ops->dma_to_phys(dev, daddr);
+> +}
+> +
+> +static int loongson_dma_set_mask(struct device *dev, u64 mask)
+> +{
+> +	/* Loongson doesn't support DMA above 32-bit */
+> +	if (mask > DMA_BIT_MASK(32))
+> +		return -EIO;
+> +
+> +	*dev->dma_mask = mask;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
+> +	.dma_map_ops = {
+> +		.alloc = loongson_dma_alloc_coherent,
+> +		.free = loongson_dma_free_coherent,
+> +		.map_page = loongson_dma_map_page,
+
+But why not 'swiotlb_map_page'?
+
+> +		.unmap_page = swiotlb_unmap_page,
+> +		.map_sg = loongson_dma_map_sg,
+> +		.unmap_sg = swiotlb_unmap_sg_attrs,
+> +		.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
+> +		.sync_single_for_device = loongson_dma_sync_single_for_device,
+> +		.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
+> +		.sync_sg_for_device = loongson_dma_sync_sg_for_device,
+> +		.mapping_error = swiotlb_dma_mapping_error,
+> +		.dma_supported = swiotlb_dma_supported,
+> +		.set_dma_mask = loongson_dma_set_mask
+> +	},
+> +	.phys_to_dma = loongson_unity_phys_to_dma,
+> +	.dma_to_phys = loongson_unity_dma_to_phys
+
+Why do you need these? I am not seeing it being used here by any external code?
+
+> +};
+> +
+> +void __init plat_swiotlb_setup(void)
+> +{
+> +	swiotlb_init(1);
+> +	mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
+> +}
+> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+> index 3fab204..122f4f8 100644
+> --- a/arch/mips/mm/dma-default.c
+> +++ b/arch/mips/mm/dma-default.c
+> @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
+>  	       current_cpu_type() == CPU_R12000);
+>  }
+>  
+> +static inline int cpu_is_noncoherent_loongson(struct device *dev)
+> +{
+> +	return !plat_device_is_coherent(dev) &&
+> +			(current_cpu_type() == CPU_LOONGSON2 ||
+> +			 current_cpu_type() == CPU_LOONGSON3);
+> +}
+> +
+>  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+>  {
+>  	gfp_t dma_flag;
+> @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
+>  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+>  	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+>  {
+> -	if (cpu_is_noncoherent_r10000(dev))
+> +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>  		__dma_sync(dma_addr_to_page(dev, dma_addr),
+>  			   dma_addr & ~PAGE_MASK, size, direction);
+>  
+> @@ -260,7 +267,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+>  static void mips_dma_sync_single_for_cpu(struct device *dev,
+>  	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+>  {
+> -	if (cpu_is_noncoherent_r10000(dev))
+> +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>  		__dma_sync(dma_addr_to_page(dev, dma_handle),
+>  			   dma_handle & ~PAGE_MASK, size, direction);
+>  }
+> @@ -281,7 +288,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+>  
+>  	/* Make sure that gcc doesn't leave the empty loop body.  */
+>  	for (i = 0; i < nelems; i++, sg++) {
+> -		if (cpu_is_noncoherent_r10000(dev))
+> +		if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>  			__dma_sync(sg_page(sg), sg->offset, sg->length,
+>  				   direction);
+>  	}
+> -- 
+> 1.7.7.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
