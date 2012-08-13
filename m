@@ -1,303 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2HMNUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:20:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57175 "EHLO mx2.suse.de"
+	id S1752227Ab2HMNUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:20:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab2HMNUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:20:00 -0400
-Date: Mon, 13 Aug 2012 15:19:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Mark Salter <msalter@redhat.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Jonas Bonn <jonas@southpole.se>, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] cross-arch: don't corrupt personality flags upon
- exec()
-In-Reply-To: <alpine.LNX.2.00.1208031143320.29827@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1208131518520.29827@pobox.suse.cz>
-References: <alpine.LNX.2.00.1208031143320.29827@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751673Ab2HMNU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:20:29 -0400
+Date: Mon, 13 Aug 2012 15:16:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
+        gdb-patches@sourceware.org
+Subject: Re: [RFC 5/5] uprobes: add global breakpoints
+Message-ID: <20120813131623.GA5269@redhat.com>
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <20120808131457.GA5309@redhat.com> <20120809171802.GB27835@linutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120809171802.GB27835@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012, Jiri Kosina wrote:
+On 08/09, Sebastian Andrzej Siewior wrote:
+>
+> * Oleg Nesterov | 2012-08-08 15:14:57 [+0200]:
+>
+> >> What I miss right now is an interface to tell the user/gdb that there is a
+> >> program that hit a global breakpoint and is waiting for further instructions.
+> >> A "tail -f trace" does not work and may contain also a lot of other
+> >> informations. I've been thinking about a poll()able file which returns pids of
+> >> tasks which are put on hold. Other suggestions?
+> >
+> >Honestly, I am not sure this is that useful...
+>
+> How would you notify gdb that there is a new task that hit a breakpoint?
+> Or learn yourself?
 
-> Historically, the top three bytes of personality have been used for things 
-> such as ADDR_NO_RANDOMIZE, which made sense only for specific 
-> architectures.
-> 
-> We now, however, have a flag there that is general no matter the 
-> architecture (UNAME26); generally we have to be careful to preserve the 
-> personality flags across exec().
-> 
-> This patch tries to fix all architectures that forcefully overwrite
-> personality flags during exec() (ppc32 and s390 have been fixed recently 
-> by commits f9783ec86 and 59e4c3a2f in a similar way already).
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
-> 
-> Untested, as I don't own the hardware.
+But why do we need this?
 
-Ping, Acks, Nacks, anyone?
+OK, you do not need to convince me, I try to never argue with
+new features.
 
-Andrew, if noone has any objections, I guess this should perhaps go 
-through -mm.
+However, I certainly dislike TASK_TRACED in uprobe_wait_traced().
+And sleeping in ->handler() is not fair to other consumers.
 
-Thanks.
+And I do not think you should modify ptrace_attach() at all.
+gdb/user can wakeup the task after PTRACE_ATTACH itself.
 
-> 
->  arch/avr32/include/asm/elf.h      |    3 ++-
->  arch/blackfin/include/asm/elf.h   |    3 ++-
->  arch/c6x/include/asm/elf.h        |    3 ++-
->  arch/cris/include/asm/elf.h       |    3 ++-
->  arch/frv/include/asm/elf.h        |    3 ++-
->  arch/h8300/include/asm/elf.h      |    3 ++-
->  arch/hexagon/include/asm/elf.h    |    3 ++-
->  arch/m32r/include/asm/elf.h       |    3 ++-
->  arch/m68k/include/asm/elf.h       |    3 ++-
->  arch/microblaze/include/asm/elf.h |    3 ++-
->  arch/mn10300/include/asm/elf.h    |    3 ++-
->  arch/openrisc/include/asm/elf.h   |    3 ++-
->  arch/score/include/asm/elf.h      |    2 +-
->  arch/sh/include/asm/elf.h         |    3 ++-
->  arch/sparc/include/asm/elf_32.h   |    3 ++-
->  arch/xtensa/include/asm/elf.h     |    3 ++-
->  16 files changed, 31 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/avr32/include/asm/elf.h b/arch/avr32/include/asm/elf.h
-> index 3b3159b..e2c3287 100644
-> --- a/arch/avr32/include/asm/elf.h
-> +++ b/arch/avr32/include/asm/elf.h
-> @@ -102,6 +102,7 @@ typedef struct user_fpu_struct elf_fpregset_t;
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX_32BIT)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX_32BIT | (current->personality & (~PER_MASK)))
->  
->  #endif /* __ASM_AVR32_ELF_H */
-> diff --git a/arch/blackfin/include/asm/elf.h b/arch/blackfin/include/asm/elf.h
-> index e6c6812..14bc98f 100644
-> --- a/arch/blackfin/include/asm/elf.h
-> +++ b/arch/blackfin/include/asm/elf.h
-> @@ -132,6 +132,7 @@ do {											\
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif
-> diff --git a/arch/c6x/include/asm/elf.h b/arch/c6x/include/asm/elf.h
-> index f4552db..32b9971 100644
-> --- a/arch/c6x/include/asm/elf.h
-> +++ b/arch/c6x/include/asm/elf.h
-> @@ -77,7 +77,8 @@ do {								\
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  /* C6X specific section types */
->  #define SHT_C6000_UNWIND	0x70000001
-> diff --git a/arch/cris/include/asm/elf.h b/arch/cris/include/asm/elf.h
-> index 8a3d8e2..8182f2d 100644
-> --- a/arch/cris/include/asm/elf.h
-> +++ b/arch/cris/include/asm/elf.h
-> @@ -86,6 +86,7 @@ typedef unsigned long elf_fpregset_t;
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif
-> diff --git a/arch/frv/include/asm/elf.h b/arch/frv/include/asm/elf.h
-> index c381980..9ccbc80 100644
-> --- a/arch/frv/include/asm/elf.h
-> +++ b/arch/frv/include/asm/elf.h
-> @@ -137,6 +137,7 @@ do {											\
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif
-> diff --git a/arch/h8300/include/asm/elf.h b/arch/h8300/include/asm/elf.h
-> index c24fa25..41193c3 100644
-> --- a/arch/h8300/include/asm/elf.h
-> +++ b/arch/h8300/include/asm/elf.h
-> @@ -54,7 +54,8 @@ typedef unsigned long elf_fpregset_t;
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #define R_H8_NONE       0
->  #define R_H8_DIR32      1
-> diff --git a/arch/hexagon/include/asm/elf.h b/arch/hexagon/include/asm/elf.h
-> index 37976a0..82b4996 100644
-> --- a/arch/hexagon/include/asm/elf.h
-> +++ b/arch/hexagon/include/asm/elf.h
-> @@ -217,7 +217,8 @@ do {					\
->  #define ELF_PLATFORM  (NULL)
->  
->  #ifdef __KERNEL__
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  #endif
->  
->  #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
-> diff --git a/arch/m32r/include/asm/elf.h b/arch/m32r/include/asm/elf.h
-> index b8da7d0..7089616 100644
-> --- a/arch/m32r/include/asm/elf.h
-> +++ b/arch/m32r/include/asm/elf.h
-> @@ -128,6 +128,7 @@ typedef elf_fpreg_t elf_fpregset_t;
->     intent than poking at uname or /proc/cpuinfo.  */
->  #define ELF_PLATFORM	(NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif  /* _ASM_M32R__ELF_H */
-> diff --git a/arch/m68k/include/asm/elf.h b/arch/m68k/include/asm/elf.h
-> index e9b7cda..f83c1d0 100644
-> --- a/arch/m68k/include/asm/elf.h
-> +++ b/arch/m68k/include/asm/elf.h
-> @@ -113,6 +113,7 @@ typedef struct user_m68kfp_struct elf_fpregset_t;
->  
->  #define ELF_PLATFORM  (NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif
-> diff --git a/arch/microblaze/include/asm/elf.h b/arch/microblaze/include/asm/elf.h
-> index 834849f..640ddd4 100644
-> --- a/arch/microblaze/include/asm/elf.h
-> +++ b/arch/microblaze/include/asm/elf.h
-> @@ -116,7 +116,8 @@ do {							\
->  } while (0)
->  
->  #ifdef __KERNEL__
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX_32BIT)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX_32BIT | (current->personality & (~PER_MASK)))
->  #endif
->  
->  #endif /* __uClinux__ */
-> diff --git a/arch/mn10300/include/asm/elf.h b/arch/mn10300/include/asm/elf.h
-> index 8157c92..4ebd6b3 100644
-> --- a/arch/mn10300/include/asm/elf.h
-> +++ b/arch/mn10300/include/asm/elf.h
-> @@ -151,7 +151,8 @@ do {						\
->  #define ELF_PLATFORM  (NULL)
->  
->  #ifdef __KERNEL__
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  #endif
->  
->  #endif /* _ASM_ELF_H */
-> diff --git a/arch/openrisc/include/asm/elf.h b/arch/openrisc/include/asm/elf.h
-> index a8fe2c5..225a7ff 100644
-> --- a/arch/openrisc/include/asm/elf.h
-> +++ b/arch/openrisc/include/asm/elf.h
-> @@ -110,7 +110,8 @@ extern void dump_elf_thread(elf_greg_t *dest, struct pt_regs *pt);
->  
->  #define ELF_PLATFORM	(NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif /* __KERNEL__ */
->  #endif
-> diff --git a/arch/score/include/asm/elf.h b/arch/score/include/asm/elf.h
-> index f478ce9..5d566c7 100644
-> --- a/arch/score/include/asm/elf.h
-> +++ b/arch/score/include/asm/elf.h
-> @@ -54,7 +54,7 @@ typedef elf_fpreg_t	elf_fpregset_t;
->  
->  #define SET_PERSONALITY(ex)					\
->  do {								\
-> -	set_personality(PER_LINUX);				\
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
->  } while (0)
->  
->  struct task_struct;
-> diff --git a/arch/sh/include/asm/elf.h b/arch/sh/include/asm/elf.h
-> index f38112b..37924af 100644
-> --- a/arch/sh/include/asm/elf.h
-> +++ b/arch/sh/include/asm/elf.h
-> @@ -183,7 +183,8 @@ do {									\
->  } while (0)
->  #endif
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX_32BIT)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX_32BIT | (current->personality & (~PER_MASK)))
->  
->  #ifdef CONFIG_VSYSCALL
->  /* vDSO has arch_setup_additional_pages */
-> diff --git a/arch/sparc/include/asm/elf_32.h b/arch/sparc/include/asm/elf_32.h
-> index 2d4d755..ac74a2c 100644
-> --- a/arch/sparc/include/asm/elf_32.h
-> +++ b/arch/sparc/include/asm/elf_32.h
-> @@ -128,6 +128,7 @@ typedef struct {
->  
->  #define ELF_PLATFORM	(NULL)
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
->  
->  #endif /* !(__ASMSPARC_ELF_H) */
-> diff --git a/arch/xtensa/include/asm/elf.h b/arch/xtensa/include/asm/elf.h
-> index 6e65ead..5293312 100644
-> --- a/arch/xtensa/include/asm/elf.h
-> +++ b/arch/xtensa/include/asm/elf.h
-> @@ -189,7 +189,8 @@ typedef struct {
->  #endif
->  } elf_xtregs_t;
->  
-> -#define SET_PERSONALITY(ex) set_personality(PER_LINUX_32BIT)
-> +#define SET_PERSONALITY(ex) \
-> +	set_personality(PER_LINUX_32BIT | (current->personality & (~PER_MASK)))
->  
->  struct task_struct;
+Oleg.
 
--- 
-Jiri Kosina
-SUSE Labs
