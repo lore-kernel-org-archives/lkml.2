@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab2HMKsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:48:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48114 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab2HMKsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:48:04 -0400
-Date: Mon, 13 Aug 2012 11:47:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad@darnok.org,
-        Ian.Campbell@eu.citrix.com, David Miller <davem@davemloft.net>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] netvm: check for page == NULL when propogating the
- skb->pfmemalloc flag
-Message-ID: <20120813104745.GE4177@suse.de>
-References: <20120807085554.GF29814@suse.de>
- <20120808.155046.820543563969484712.davem@davemloft.net>
- <20120813102604.GC4177@suse.de>
+	id S1751649Ab2HMKxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:53:05 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32891 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2HMKxD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:53:03 -0400
+Date: Mon, 13 Aug 2012 11:52:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] ARM: rpc: Fix building RiscPC
+Message-ID: <20120813105245.GE18957@n2100.arm.linux.org.uk>
+References: <1344461278-28245-1-git-send-email-arnd@arndb.de> <1344461278-28245-10-git-send-email-arnd@arndb.de> <20120809074754.GP18957@n2100.arm.linux.org.uk> <201208101103.58808.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120813102604.GC4177@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201208101103.58808.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending to correct Jeremy's address.
-
-On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
-> From: Mel Gorman <mgorman@suse.de>
-> Date: Tue, 7 Aug 2012 09:55:55 +0100
-> 
-> > Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
-> > for the following bug triggered by a xen network driver
->  ...
-> > The problem is that the xenfront driver is passing a NULL page to
-> > __skb_fill_page_desc() which was unexpected. This patch checks that
-> > there is a page before dereferencing.
+On Fri, Aug 10, 2012 at 11:03:58AM +0000, Arnd Bergmann wrote:
+> On Thursday 09 August 2012, Russell King - ARM Linux wrote:
+> > On Wed, Aug 08, 2012 at 11:27:57PM +0200, Arnd Bergmann wrote:
+> > > ARMv3 support was removed in 357c9c1f07 "ARM: Remove support for ARMv3
+> > > ARM610 and ARM710 CPUs", which explicitly left parts of the CPU32v3
+> > > support in place for building RiscPC. However, this does not actually
+> > > build in my test setup.
+> > > 
+> > > This is probably not the right solution, but maybe someone has a better
+> > > idea for how to deal with this.
 > > 
-> > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > This isn't the right solution.  The RiscPC bus does not support half-word
+> > load/stores, so we must continue to build that target for the 32v3
+> > architecture (which is why I carefully left that stuff behind.)
+> > 
+> > The mistake is in what I did with arch/arm/lib - the armv3 code in there
+> > needs to be resurected instead.
 > 
-> That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
-> It's the only driver passing NULL here.
-> 
-> That whole song and dance figuring out what to do with the head
-> fragment page, depending upon whether the length is greater than the
-> RX_COPY_THRESHOLD, is completely unnecessary.
-> 
-> Just use something like a call to __pskb_pull_tail(skb, len) and all
-> that other crap around that area can simply be deleted.
+> Ok, I'll drop my patch from the series then and wait for you to
+> fix this properly.
 
-I looked at this for a while but I did not see how __pskb_pull_tail()
-could be used sensibly but I'm simily not familiar with writing network
-device drivers or Xen.
-
-This messing with RX_COPY_THRESHOLD seems to be related to how the frontend
-and backend communicate (maybe some fixed limitation of the xenbus). The
-existing code looks like it is trying to take the fragments received and
-pass them straight to the backend without copying by passing the fragments
-to the backend without copying. I worry that if I try converting this to
-__pskb_pull_tail() that it would either hit the limitation of xenbus or
-introduce copying where it is not wanted.
-
-I'm going to have to punt this to Jeremy and the other Xen folk as I'm not
-sure what the original intention was and I don't have a Xen setup anywhere
-to test any patch. Jeremy, xen folk? 
-
-
--- 
-Mel Gorman
-SUSE Labs
+I've just reverted the arch/arm/lib part of
+357c9c1f07d4546bc3fbc0fd1044d96b114d14ed (ARM: Remove support for ARMv3
+ARM610 and ARM710 CPUs) so when I push my fixes branch this should resolve
+your build error.
