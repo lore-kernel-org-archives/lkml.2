@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab2HMS6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:58:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53232 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab2HMS6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:58:21 -0400
-Date: Mon, 13 Aug 2012 20:58:17 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 0/3] arm-soc updates
-Message-ID: <20120813185817.GA17342@pengutronix.de>
-References: <1344625575-27560-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344625575-27560-1-git-send-email-arnd@arndb.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 20:56:37 up 51 days, 10:08, 30 users,  load average: 0.41, 0.79,
- 0.77
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752952Ab2HMTFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 15:05:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752344Ab2HMTFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 15:05:18 -0400
+Date: Mon, 13 Aug 2012 16:04:21 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
+        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
+        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
+        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Subject: Re: [patch net-next 03/16] vlan: add link to upper device
+Message-ID: <20120813160421.77a74e4e@obelix.rh>
+In-Reply-To: <1344871635-1052-4-git-send-email-jiri@resnulli.us>
+References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
+	<1344871635-1052-4-git-send-email-jiri@resnulli.us>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, 13 Aug 2012 17:27:02 +0200
+Jiri Pirko <jiri@resnulli.us> wrote:
 
-On Fri, Aug 10, 2012 at 09:06:12PM +0200, Arnd Bergmann wrote:
-> Hi Linus,
+> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+> ---
+>  net/8021q/vlan.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
 > 
-> Here are three pull requests for you to consider for the next -rc.
+> diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+> index 9096bcb..739665e 100644
+> --- a/net/8021q/vlan.c
+> +++ b/net/8021q/vlan.c
+> @@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+>  	 */
+>  	unregister_netdevice_queue(dev, head);
+>  
+> +	netdev_upper_dev_unlink(real_dev, dev);
+> +
+>  	if (grp->nr_vlan_devs == 0)
+>  		vlan_gvrp_uninit_applicant(real_dev);
+>  
+> @@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
+>  	if (err < 0)
+>  		goto out_uninit_applicant;
+>  
+> +	err = netdev_upper_dev_link(real_dev, dev);
+> +	if (err)
+> +		goto out_uninit_applicant;
+> +
+>  	err = register_netdevice(dev);
+>  	if (err < 0)
+> -		goto out_uninit_applicant;
+> +		goto out_upper_dev_unlink;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+see below:
 
-How do you send multiple pull requests? Is there some git foo available
-or do you do this manually?
+>  
+>  	/* Account for reference in struct vlan_dev_priv */
+>  	dev_hold(real_dev);
+> @@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
+>  
+>  	return 0;
+>  
+> +upper_dev_unlink:
+^^^^^^^^^^^^^^^^^^^
+should be out_upper_dev_unlink:
 
-Sascha
+fbl
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> +	netdev_upper_dev_unlink(real_dev, dev);
+>  out_uninit_applicant:
+>  	if (grp->nr_vlan_devs == 0)
+>  		vlan_gvrp_uninit_applicant(real_dev);
+
