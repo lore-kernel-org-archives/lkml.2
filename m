@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab2HMWSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59678 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab2HMWSZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 51/65] target: Add range checking to UNMAP emulation
-Date: Mon, 13 Aug 2012 15:14:35 -0700
-Message-Id: <20120813221419.464505322@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
-References: <20120813221414.965154048@linuxfoundation.org>
-User-Agent: quilt/0.60-20.5
+	id S1755830Ab2HMWSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36943 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755762Ab2HMWSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:18:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 3/3] PM / Domains: Add operations related to cpuidle using domain names
+Date: Tue, 14 Aug 2012 00:23:49 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+References: <201208140019.19288.rjw@sisk.pl>
+In-Reply-To: <201208140019.19288.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208140023.49263.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Make it possible to use domain names in operations connecting cpuidle
+to and disconnecting it from a PM domain.  This is useful on
+platforms where PM domain objects are organized in such a way that
+the names of the domains are easier to use than the addresses of
+those objects.
 
-------------------
-
-From: Roland Dreier <roland@purestorage.com>
-
-commit 2594e29865c291db162313187612cd9f14538f33 upstream.
-
-When processing an UNMAP command, we need to make sure that the number
-of blocks we're asked to UNMAP does not exceed our reported maximum
-number of blocks per UNMAP, and that the range of blocks we're
-unmapping doesn't go past the end of the device.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: adjust filename, context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/target/target_core_cdb.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/base/power/domain.c |   19 +++++++++++++++++++
+ include/linux/pm_domain.h   |   10 ++++++++++
+ 2 files changed, 29 insertions(+)
 
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -1053,6 +1053,18 @@ int target_emulate_unmap(struct se_task
- 		pr_debug("UNMAP: Using lba: %llu and range: %u\n",
- 				 (unsigned long long)lba, range);
+Index: linux/drivers/base/power/domain.c
+===================================================================
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -1888,6 +1888,16 @@ int pm_genpd_attach_cpuidle(struct gener
+ }
  
-+		if (range > dev->se_sub_dev->se_dev_attrib.max_unmap_lba_count) {
-+			cmd->scsi_sense_reason = TCM_INVALID_PARAMETER_LIST;
-+			ret = -EINVAL;
-+			goto err;
-+		}
+ /**
++ * pm_genpd_name_attach_cpuidle - Find PM domain and connect cpuidle to it.
++ * @name: Name of the domain to connect to cpuidle.
++ * @state: cpuidle state this domain can manipulate.
++ */
++int pm_genpd_name_attach_cpuidle(const char *name, int state)
++{
++	return pm_genpd_attach_cpuidle(pm_genpd_lookup_name(name), state);
++}
 +
-+		if (lba + range > dev->transport->get_blocks(dev) + 1) {
-+			cmd->scsi_sense_reason = TCM_ADDRESS_OUT_OF_RANGE;
-+			ret = -EINVAL;
-+			goto err;
-+		}
++/**
+  * pm_genpd_detach_cpuidle - Remove the cpuidle connection from a PM domain.
+  * @genpd: PM domain to remove the cpuidle connection from.
+  *
+@@ -1925,6 +1935,15 @@ int pm_genpd_detach_cpuidle(struct gener
+ 	return ret;
+ }
+ 
++/**
++ * pm_genpd_name_detach_cpuidle - Find PM domain and disconnect cpuidle from it.
++ * @name: Name of the domain to disconnect cpuidle from.
++ */
++int pm_genpd_name_detach_cpuidle(const char *name)
++{
++	return pm_genpd_detach_cpuidle(pm_genpd_lookup_name(name));
++}
 +
- 		ret = dev->transport->do_discard(dev, lba, range);
- 		if (ret < 0) {
- 			pr_err("blkdev_issue_discard() failed: %d\n",
-
+ /* Default device callbacks for generic PM domains. */
+ 
+ /**
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -156,7 +156,9 @@ extern int pm_genpd_add_callbacks(struct
+ 				  struct gpd_timing_data *td);
+ extern int __pm_genpd_remove_callbacks(struct device *dev, bool clear_td);
+ extern int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state);
++extern int pm_genpd_name_attach_cpuidle(const char *name, int state);
+ extern int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd);
++extern int pm_genpd_name_detach_cpuidle(const char *name);
+ extern void pm_genpd_init(struct generic_pm_domain *genpd,
+ 			  struct dev_power_governor *gov, bool is_off);
+ 
+@@ -229,10 +231,18 @@ static inline int pm_genpd_attach_cpuidl
+ {
+ 	return -ENOSYS;
+ }
++static inline int pm_genpd_name_attach_cpuidle(const char *name, int state)
++{
++	return -ENOSYS;
++}
+ static inline int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd)
+ {
+ 	return -ENOSYS;
+ }
++static inline int pm_genpd_name_detach_cpuidle(const char *name)
++{
++	return -ENOSYS;
++}
+ static inline void pm_genpd_init(struct generic_pm_domain *genpd,
+ 				 struct dev_power_governor *gov, bool is_off)
+ {
 
