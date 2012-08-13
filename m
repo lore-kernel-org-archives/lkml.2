@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab2HMOnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:43:49 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:53789 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab2HMOns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:43:48 -0400
-From: Ilya Shchepetkov <shchepetkov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] net: Fix incorrect comment in netif_tx_stop_queue()
-Date: Mon, 13 Aug 2012 18:43:34 +0400
-Message-Id: <1344869014-7110-1-git-send-email-shchepetkov@ispras.ru>
-X-Mailer: git-send-email 1.7.7
+	id S1752000Ab2HMOpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:45:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33420 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab2HMOpp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 10:45:45 -0400
+Message-ID: <1344869129.31459.33.camel@twins>
+Subject: Re: RFC: mutex: hung tasks on SMP platforms with
+ asm-generic/mutex-xchg.h
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 13 Aug 2012 16:45:29 +0200
+In-Reply-To: <20120813141156.GC20537@mudshark.cambridge.arm.com>
+References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
+	 <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
+	 <20120809144953.GC18486@mudshark.cambridge.arm.com>
+	 <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
+	 <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
+	 <1344845704.31459.11.camel@twins>
+	 <alpine.LFD.2.02.1208130931530.5231@xanadu.home>
+	 <1344866717.31459.32.camel@twins>
+	 <20120813141156.GC20537@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netif_stop_queue() can be called before register_netdev() because now
-TX queues are allocated inside alloc_netdev_mqs().
+On Mon, 2012-08-13 at 15:11 +0100, Will Deacon wrote:
+> 
+> > Will you carry this through the ARM tree or do you want me/Ingo to take
+> > it?
+> 
+> Please can you guys take it? The move to mutex-dec can go through the ARM
+> tree but it's probably best if you take the core change. 
 
-(since ed9af2e839c06c18f721da2c768fbb444c4a10e5 commit)
-
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Ilya Shchepetkov <shchepetkov@ispras.ru>
----
- include/linux/netdevice.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index a9db4f3..a94fbbd 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1860,7 +1860,7 @@ static inline void netif_tx_wake_all_queues(struct net_device *dev)
- static inline void netif_tx_stop_queue(struct netdev_queue *dev_queue)
- {
- 	if (WARN_ON(!dev_queue)) {
--		pr_info("netif_stop_queue() cannot be called before register_netdev()\n");
-+		pr_info("dev_queue is null\n");
- 		return;
- 	}
- 	set_bit(__QUEUE_STATE_DRV_XOFF, &dev_queue->state);
--- 
-1.7.7
-
+OK, done. Thanks!
