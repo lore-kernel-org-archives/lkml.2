@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab2HMHub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 03:50:31 -0400
-Received: from mail.gw90.de ([188.40.100.199]:58977 "EHLO mail.gw90.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab2HMHua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 03:50:30 -0400
-Message-ID: <1344844219.4126.24.camel@mattotaupa>
-Subject: Re: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Huacai Chen <chenhuacai@gmail.com>
-Cc: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Huacai Chen <chenhc@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
-Date: Mon, 13 Aug 2012 09:50:19 +0200
-In-Reply-To: <CAAhV-H5ZA0kC-0kNag-e35Oh9wYh9nZK3OY3GOS2hkhkSn1Jzg@mail.gmail.com>
-References: <1344823753-28780-1-git-send-email-chenhc@lemote.com>
-	 <1344841259.4126.4.camel@mattotaupa>
-	 <CAAhV-H5ZA0kC-0kNag-e35Oh9wYh9nZK3OY3GOS2hkhkSn1Jzg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-T4wP3A8qz30o0j9etNiI"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1752799Ab2HMHvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 03:51:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47695 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2HMHvX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 03:51:23 -0400
+Message-ID: <1344844273.31459.1.camel@twins>
+Subject: Re: rcu stalls seen with numasched_v2 patches applied.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: john stultz <johnstul@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 13 Aug 2012 09:51:13 +0200
+In-Reply-To: <20120810162425.GD31805@linux.vnet.ibm.com>
+References: <20120807123305.GA7137@linux.vnet.ibm.com>
+	 <1344347568.27828.122.camel@twins>
+	 <20120807171859.GB3850@linux.vnet.ibm.com>
+	 <1344455938.16728.13.camel@laptop>
+	 <20120810162425.GD31805@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-08-10 at 21:54 +0530, Srikar Dronamraju wrote:
 
---=-T4wP3A8qz30o0j9etNiI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> This change worked well on the 2 node machine 
+> but on the 8 node machine it hangs with repeated messages
+> 
+> Pid: 60935, comm: numa01 Tainted: G        W    3.5.0-numasched_v2_020812+ #4
+> Call Trace:
+> <IRQ>  [<ffffffff810d32e2>] ? rcu_check_callback s+0x632/0x650
+> [<ffffffff81061bb8>] ? update_process_times+0x48/0x90
+> [<ffffffff810a2a4e>] ? tick_sched_timer+0x6e/0xe0
+> [<ffffffff81079c85>] ? __run_hrtimer+0x75/0x1a0
+> [<ffffffff810a29e0>] ? tick_setup_sched_timer+0x100/0x100
+> [<ffffffff8107a036>] ? hrtimer_interrupt+0xf6/0x250
+> [<ffffffff814f1379>] ? smp_apic_timer_interrupt+0x69/0x99
+> [<ffffffff814f034a>] ? apic_timer_interrupt+0x6a/0x70
+> <EOI>  [<ffffffff811082e3>] ? wait_on_page_bit+0x73/0x80
+> [<ffffffff814e7992>] ? _raw_spin_lock+0x22/0x30
+> [<ffffffff81131bf3>] ? handle_pte_fault+0x1b3/0xca0
+> [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
+> [<ffffffff8107a9a8>] ? up_read+0x18/0x30
+> [<ffffffff814eb2be>] ? do_page_fault+0x13e/0x460
+> [<ffffffff810137ba>] ? __switch_to+0x1aa/0x460
+> [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
+> [<ffffffff814e7de5>] ? page_fault+0x25/0x30
+> { 3}  (t=62998 jiffies)
+> 
 
-Dear Huacai,
-
-
-Am Montag, den 13.08.2012, 15:16 +0800 schrieb Huacai Chen:
-> On Mon, Aug 13, 2012 at 3:00 PM, Paul Menzel wrote:
-
-> > thanks for your patch.
-> >
-> > Firstly, is Chen your first or last name? If it is your first name, you=
-r
-> > From address should be switched.
-> Chen is may last name.
-
-I am sorry then.
-
-> > Am Montag, den 13.08.2012, 10:09 +0800 schrieb Huacai Chen:
-> >> When SWIOTLB is configured, if without this patch kernel compilation
-> >> fails.
-> >
-> > Secondly, could you please always paste part of the error message into
-> > the commit message so that people hitting this problem and searching fo=
-r
-> > it on the WWW have a higher chance finding your patch.
-> >
-> OK, I'll paste error message.
->=20
-> > Thirdly, do you know why this was not caught beforehand and compilation
-> > worked before?
-> Maybe radeon is mostly used on X86 and swiotlb.h is included
-> indirectly on X86 platform. This patch is split from my MIPS patchset,
-> on MIPS machines compilation always failed.
-
-Ah, I thought your patches had already been submitted.
-
-> >> Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> >
-> > Lastly, the addresses in your From line and Signed-off-by line disagree=
-.
-> > You can easily fix that, by adding
-> My patch is generated by git format-patch and there is surely a From
-> line in the beginning (from chenhc@lemote.com),
-
-It should be `From: Huacai Chen <chenhc@lemote.com>`.
-
-> but the mail is sent out by gmail, so I don't know how to make From
-> line and Signed-off-by agree.
-
-Do you copy the content of the file created by `git format-patch` into
-the Gmail Web compositor?
-
-If yes, just do not delete the `From` *and* `Date` lines from the
-beginning as for example Alex Deucher is doing [1].
-
-[=E2=80=A6]
-
-
-Thanks,
-
-Paul
-
-
-[1] http://lists.freedesktop.org/archives/dri-devel/2012-July/025200.html
-
---=-T4wP3A8qz30o0j9etNiI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlAosbsACgkQPX1aK2wOHVjmPACfWUl29xSCKkGyWo70uITrQ/FR
-k0IAnijKeFTHeJ5EurRtIH7VtFVVYn+p
-=gLX0
------END PGP SIGNATURE-----
-
---=-T4wP3A8qz30o0j9etNiI--
-
+If you run a -tip kernel without the numa patches, does that work?
