@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2HMWSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:46 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53985 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab2HMWSn (ORCPT
+	id S1755851Ab2HMWSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47188 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab2HMWSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:43 -0400
+	Mon, 13 Aug 2012 18:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
-        Wolfgang Denk <wd@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 55/65] ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
-Date: Mon, 13 Aug 2012 15:14:39 -0700
-Message-Id: <20120813221419.826041066@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 54/65] target: Check number of unmap descriptors against our limit
+Date: Mon, 13 Aug 2012 15:14:38 -0700
+Message-Id: <20120813221419.739183105@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -30,49 +31,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 3bed491c8d28329e34f8a31e3fe64d03f3a350f1 upstream.
+commit 7409a6657aebf8be74c21d0eded80709b27275cb upstream.
 
-The CONFIG_DEFAULT_MMAP_MIN_ADDR was set to 65536 in mxs_defconfig,
-this caused severe breakage of userland applications since the upper
-limit for ARM is 32768. By default CONFIG_DEFAULT_MMAP_MIN_ADDR is
-set to 4096 and can also be changed via /proc/sys/vm/mmap_min_addr
-if needed.
+Fail UNMAP commands that have more than our reported limit on unmap
+descriptors.
 
-Quoting Russell King [1]:
-
-"4096 is also fine for ARM too. There's not much point in having
-defconfigs change it - that would just be pure noise in the config
-files."
-
-the CONFIG_DEFAULT_MMAP_MIN_ADDR can be removed from the defconfig
-altogether.
-
-This problem was introduced by commit cde7c41 (ARM: configs: add
-defconfig for mach-mxs).
-
-[1] http://marc.info/?l=linux-arm-kernel&m=134401593807820&w=2
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Wolfgang Denk <wd@denx.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/configs/mxs_defconfig |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/target/target_core_cdb.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/arm/configs/mxs_defconfig
-+++ b/arch/arm/configs/mxs_defconfig
-@@ -32,7 +32,6 @@ CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_PREEMPT_VOLUNTARY=y
- CONFIG_AEABI=y
--CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
- CONFIG_AUTO_ZRELADDR=y
- CONFIG_FPE_NWFPE=y
- CONFIG_NET=y
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -1041,6 +1041,11 @@ int target_emulate_unmap(struct se_task
+ 	bd_dl = get_unaligned_be16(&buf[2]);
+ 
+ 	size = min(size - 8, bd_dl);
++	if (size / 16 > dev->se_sub_dev->se_dev_attrib.max_unmap_block_desc_count) {
++		cmd->scsi_sense_reason = TCM_INVALID_PARAMETER_LIST;
++		ret = -EINVAL;
++		goto err;
++	}
+ 
+ 	/* First UNMAP block descriptor starts at 8 byte offset */
+ 	ptr = &buf[8];
 
 
