@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2HMUVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:21:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	id S1753835Ab2HMUVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:21:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab2HMUVA (ORCPT
+	with ESMTP id S1753764Ab2HMUVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:21:00 -0400
+	Mon, 13 Aug 2012 16:21:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        "Hadli, Manjunath" <manjunath.hadli@ti.com>,
-        Federico Vaga <federico.vaga@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 14/82] media: videobuf-dma-contig: restore buffer mapping for uncached bufers
-Date: Mon, 13 Aug 2012 13:18:50 -0700
-Message-Id: <20120813201747.678069874@linuxfoundation.org>
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [ 18/82] mm: fix wrong argument of migrate_huge_pages() in soft_offline_huge_page()
+Date: Mon, 13 Aug 2012 13:18:54 -0700
+Message-Id: <20120813201748.035417521@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -33,93 +31,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Lad, Prabhakar" <prabhakar.lad@ti.com>
+From: Joonsoo Kim <js1304@gmail.com>
 
-commit 4099040eaaa4fe543c4e915b8cab51b1d843edee upstream.
+commit dc32f63453f56d07a1073a697dcd843dd3098c09 upstream.
 
-from commit a8f3c203e19b702fa5e8e83a9b6fb3c5a6d1cce4
-restore the mapping scheme for uncached buffers,
-which was changed in a common scheme for cached and uncached.
-This apparently was wrong, and was probably intended only for cached buffers.
-the fix fixes the crash observed while mapping uncached buffers.
+Commit a6bc32b89922 ("mm: compaction: introduce sync-light migration for
+use by compaction") changed the declaration of migrate_pages() and
+migrate_huge_pages().
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Hadli, Manjunath <manjunath.hadli@ti.com>
-Acked-by: Federico Vaga <federico.vaga@gmail.com>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+But it missed changing the argument of migrate_huge_pages() in
+soft_offline_huge_page().  In this case, we should call
+migrate_huge_pages() with MIGRATE_SYNC.
+
+Additionally, there is a mismatch between type the of argument and the
+function declaration for migrate_pages().
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/videobuf-dma-contig.c |   53 ++++++++++++++++++------------
- 1 file changed, 32 insertions(+), 21 deletions(-)
+ mm/memory-failure.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/video/videobuf-dma-contig.c
-+++ b/drivers/media/video/videobuf-dma-contig.c
-@@ -359,32 +359,43 @@ static int __videobuf_mmap_mapper(struct
- 	size = vma->vm_end - vma->vm_start;
- 	size = (size < mem->size) ? size : mem->size;
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1433,8 +1433,8 @@ static int soft_offline_huge_page(struct
+ 	/* Keep page count to indicate a given hugepage is isolated. */
  
--	if (!mem->cached)
-+	if (!mem->cached) {
- 		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
--
--	pos = (unsigned long)mem->vaddr;
--
--	while (size > 0) {
--		page = virt_to_page((void *)pos);
--		if (NULL == page) {
--			dev_err(q->dev, "mmap: virt_to_page failed\n");
--			__videobuf_dc_free(q->dev, mem);
--			goto error;
--		}
--		retval = vm_insert_page(vma, start, page);
-+		retval = remap_pfn_range(vma, vma->vm_start,
-+			 mem->dma_handle >> PAGE_SHIFT,
-+				 size, vma->vm_page_prot);
- 		if (retval) {
--			dev_err(q->dev, "mmap: insert failed with error %d\n",
--				retval);
--			__videobuf_dc_free(q->dev, mem);
-+			dev_err(q->dev, "mmap: remap failed with error %d. ",
-+								retval);
-+			dma_free_coherent(q->dev, mem->size,
-+					mem->vaddr, mem->dma_handle);
- 			goto error;
- 		}
--		start += PAGE_SIZE;
--		pos += PAGE_SIZE;
-+	} else {
-+		pos = (unsigned long)mem->vaddr;
-+
-+		while (size > 0) {
-+			page = virt_to_page((void *)pos);
-+			if (NULL == page) {
-+				dev_err(q->dev, "mmap: virt_to_page failed\n");
-+				__videobuf_dc_free(q->dev, mem);
-+				goto error;
-+			}
-+			retval = vm_insert_page(vma, start, page);
-+			if (retval) {
-+				dev_err(q->dev, "mmap: insert failed with error %d\n",
-+					retval);
-+				__videobuf_dc_free(q->dev, mem);
-+				goto error;
-+			}
-+			start += PAGE_SIZE;
-+			pos += PAGE_SIZE;
- 
--		if (size > PAGE_SIZE)
--			size -= PAGE_SIZE;
--		else
--			size = 0;
-+			if (size > PAGE_SIZE)
-+				size -= PAGE_SIZE;
-+			else
-+				size = 0;
-+		}
- 	}
- 
- 	vma->vm_ops = &videobuf_vm_ops;
+ 	list_add(&hpage->lru, &pagelist);
+-	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
+-				true);
++	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, false,
++				MIGRATE_SYNC);
+ 	if (ret) {
+ 		struct page *page1, *page2;
+ 		list_for_each_entry_safe(page1, page2, &pagelist, lru)
+@@ -1563,7 +1563,7 @@ int soft_offline_page(struct page *page,
+ 					    page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+-							0, MIGRATE_SYNC);
++							false, MIGRATE_SYNC);
+ 		if (ret) {
+ 			putback_lru_pages(&pagelist);
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
 
 
