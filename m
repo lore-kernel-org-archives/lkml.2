@@ -1,129 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2HMRDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:03:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41309 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633Ab2HMRDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:03:51 -0400
-Date: Mon, 13 Aug 2012 19:04:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Andi Kleen <ak@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Robert Richter <robert.richter@amd.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Alex Shi <alex.shu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mips@linux-mips.org,
-        Tim Chen <tim.c.chen@linux.intel.com>, linuxppc-dev@lists.ozlabs.org,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v2 4/6] x86: Add clear_page_nocache
-Message-ID: <20120813170402.GB15530@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-	Jan Beulich <JBeulich@suse.com>, Andi Kleen <ak@linux.intel.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Robert Richter <robert.richter@amd.com>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	Hugh Dickins <hughd@google.com>, Alex Shi <alex.shu@intel.com>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, x86@kernel.org,
-	linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-mips@linux-mips.org, Tim Chen <tim.c.chen@linux.intel.com>,
-	linuxppc-dev@lists.ozlabs.org,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Ingo Molnar <mingo@redhat.com>, Mel Gorman <mgorman@suse.de>,
-	linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-	sparclinux@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1344524583-1096-5-git-send-email-kirill.shutemov@linux.intel.com>
- <5023F1BC0200007800093EF0@nat28.tlf.novell.com>
- <20120813114334.GA21855@otc-wbsnb-06>
+	id S1753552Ab2HMREV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:04:21 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:57506 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751171Ab2HMRET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 13:04:19 -0400
+Message-ID: <1344877451.2733.26.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [patch net-next 01/16] net: introduce upper device lists
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jiri Pirko <jiri@resnulli.us>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <edumazet@google.com>,
+        <faisal.latif@intel.com>, <roland@kernel.org>, <sean.hefty@intel.com>,
+        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
+        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
+        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
+        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
+        <linux390@de.ibm.com>, <shemminger@vyatta.com>, <therbert@google.com>,
+        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
+        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
+        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
+        <fbl@redhat.com>
+Date: Mon, 13 Aug 2012 18:04:11 +0100
+In-Reply-To: <1344871635-1052-2-git-send-email-jiri@resnulli.us>
+References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
+	 <1344871635-1052-2-git-send-email-jiri@resnulli.us>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120813114334.GA21855@otc-wbsnb-06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 02:43:34PM +0300, Kirill A. Shutemov wrote:
-> $ cat test.c
-> #include <stdio.h>
-> #include <sys/mman.h>
+On Mon, 2012-08-13 at 17:27 +0200, Jiri Pirko wrote:
+> This lists are supposed to serve for storing pointers to all upper devices.
+> Eventually it will replace dev->master pointer which is used for
+> bonding, bridge, team but it cannot be used for vlan, macvlan where
+> there might be multiple "masters" present.
 > 
-> #define SIZE 1024*1024*1024
+> New upper device list resolves this limitation. Also, the information
+> stored in lists is used for preventing looping setups like
+> "bond->somethingelse->samebond"
 > 
-> void clear_page_nocache_sse2(void *page) __attribute__((regparm(1)));
+> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+[...]
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -4425,6 +4425,229 @@ static int __init dev_proc_init(void)
+>  #endif	/* CONFIG_PROC_FS */
+>  
 > 
-> int main(int argc, char** argv)
-> {
->         char *p;
->         unsigned long i, j;
-> 
->         p = mmap(NULL, SIZE, PROT_WRITE|PROT_READ,
->                         MAP_PRIVATE|MAP_ANONYMOUS|MAP_POPULATE, -1, 0);
->         for(j = 0; j < 100; j++) {
->                 for(i = 0; i < SIZE; i += 4096) {
->                         clear_page_nocache_sse2(p + i);
->                 }
->         }
-> 
->         return 0;
-> }
-> $ cat clear_page_nocache_unroll32.S
-> .globl clear_page_nocache_sse2
-> .align 4,0x90
-> clear_page_nocache_sse2:
-> .cfi_startproc
->         mov    %eax,%edx
->         xorl   %eax,%eax
->         movl   $4096/32,%ecx
->         .p2align 4
-> .Lloop_sse2:
->         decl    %ecx
-> #define PUT(x) movnti %eax,x*4(%edx)
->         PUT(0)
->         PUT(1)
->         PUT(2)
->         PUT(3)
->         PUT(4)
->         PUT(5)
->         PUT(6)
->         PUT(7)
-> #undef PUT
->         lea     32(%edx),%edx
->         jnz     .Lloop_sse2
->         nop
->         ret
-> .cfi_endproc
-> .type clear_page_nocache_sse2, @function
-> .size clear_page_nocache_sse2, .-clear_page_nocache_sse2
-> $ cat clear_page_nocache_unroll64.S
-> .globl clear_page_nocache_sse2
-> .align 4,0x90
-> clear_page_nocache_sse2:
-> .cfi_startproc
->         mov    %eax,%edx
+> +struct netdev_upper {
+> +	struct net_device *dev;
+> +	bool unique;
 
-This must still be the 32-bit version becaue it segfaults here. Here's
-why:
+This needs a better name.  It doesn't really have anything to do with
+uniqueness and doesn't ensure exclusivity.  I think that it would be
+fine to keep the 'master' term.
 
-mmap above gives a ptr which, on 64-bit, is larger than 32-bit, i.e. it
-looks like 0x7fffxxxxx000, i.e. starting from top of userspace.
+> +	struct list_head list;
+> +	struct rcu_head rcu;
+> +};
+[...]
+> +static int __netdev_upper_dev_link(struct net_device *dev,
+> +				   struct net_device *upper_dev, bool unique)
+> +{
+> +	struct netdev_upper *upper;
+> +
+> +	ASSERT_RTNL();
+> +
+> +	if (dev == upper_dev)
+> +		return -EBUSY;
+> +	/*
+> +	 * To prevent loops, check if dev is not upper device to upper_dev.
+> +	 */
+> +	if (__netdev_has_upper_dev(upper_dev, dev, true))
+> +		return -EBUSY;
+> +
+> +	if (__netdev_find_upper(dev, upper_dev))
+> +		return -EEXIST;
+> +
+> +	if (unique && netdev_unique_upper_dev_get(dev))
+> +		return -EBUSY;
+> +
+> +	upper = kmalloc(sizeof(*upper), GFP_KERNEL);
+> +	if (!upper)
+> +		return -ENOMEM;
+> +
+> +	upper->dev = upper_dev;
+> +	upper->unique = unique;
+> +
+> +	/*
+> +	 * Ensure that unique upper link is always the first item in the list.
+> +	 */
+> +	if (unique)
+> +		list_add_rcu(&upper->list, &dev->upper_dev_list);
+> +	else
+> +		list_add_tail_rcu(&upper->list, &dev->upper_dev_list);
+> +	dev_hold(upper_dev);
 
-Now, the mov above truncates that ptr and the thing segfaults.
+This behaviour (calling dev_hold()) matches netdev_set_master().  But
+it's oddly asymmetric: generally the administrator can remove either the
+upper device or the lower device (rtnl_link_ops or unbinding a physical
+device) and the upper device driver must then unlink itself from the
+lower device (using a notifier to catch lower device removal).
 
-Doing s/edx/rdx/g fixes it though.
+If the upper device driver fails to unlink when the upper device is
+unregistered, then this extra reference causes netdev_wait_allrefs() to
+hang... is that the intent?  Or should there be a more explicit counter
+and check on unregistration, e.g. WARN_ON(dev->num_lower_devs != 0)?
 
-Thanks.
+If it fails to unlink when the lower device is removed, this warning in
+rollback_registered_many() may be triggered:
+
+		/* Notifier chain MUST detach us from master device. */
+		WARN_ON(dev->master);
+
+I think that needs to become WARN_ON(netdev_has_upper_dev(dev)).
+
+> +	return 0;
+> +}
+[...] 
 
 -- 
-Regards/Gruss,
-Boris.
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
