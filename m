@@ -1,100 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab2HMXwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 19:52:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60300 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab2HMXww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 19:52:52 -0400
-Date: Tue, 14 Aug 2012 09:52:40 +1000
-From: NeilBrown <neilb@suse.de>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: Re: [PATCH] md/linear: rcu_dereference outside read-lock section
-Message-ID: <20120814095240.66d30903@notabene.brown>
-In-Reply-To: <1344892092-13686-1-git-send-email-yefremov.denis@gmail.com>
-References: <1344892092-13686-1-git-send-email-yefremov.denis@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/sZu7htboQz06eJPgrKJALLD"; protocol="application/pgp-signature"
+	id S1755261Ab2HMX4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 19:56:54 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:63821 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab2HMX4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 19:56:52 -0400
+Subject: mmotm 2012-08-13-16-55 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Mon, 13 Aug 2012 16:56:50 -0700
+Message-Id: <20120813235651.00A13100047@wpzn3.hot.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/sZu7htboQz06eJPgrKJALLD
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The mm-of-the-moment snapshot 2012-08-13-16-55 has been uploaded to
 
-On Tue, 14 Aug 2012 01:08:12 +0400 Denis Efremov <yefremov.denis@gmail.com>
-wrote:
+   http://www.ozlabs.org/~akpm/mmotm/
 
-> According to the comment in linear_stop function
-> rcu_dereference in linear_start and linear_stop functions
-> occurs under reconfig_mutex. The patch represents this
-> agreement in code and prevents lockdep complaint.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org)
->=20
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-> ---
->  drivers/md/linear.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-> index fa211d8..093f3e4 100644
-> --- a/drivers/md/linear.c
-> +++ b/drivers/md/linear.c
-> @@ -244,7 +244,8 @@ static int linear_add(struct mddev *mddev, struct md_=
-rdev *rdev)
->  	if (!newconf)
->  		return -ENOMEM;
-> =20
-> -	oldconf =3D rcu_dereference(mddev->private);
-> +	oldconf =3D rcu_dereference_protected(mddev->private,
-> +					    lockdep_is_held(&mddev->reconfig_mutex));
->  	mddev->raid_disks++;
->  	rcu_assign_pointer(mddev->private, newconf);
->  	md_set_array_sectors(mddev, linear_size(mddev, 0, 0));
-> @@ -256,7 +257,9 @@ static int linear_add(struct mddev *mddev, struct md_=
-rdev *rdev)
-> =20
->  static int linear_stop (struct mddev *mddev)
->  {
-> -	struct linear_conf *conf =3D mddev->private;
-> +	struct linear_conf *conf =3D
-> +		rcu_dereference_protected(mddev->private,
-> +					  lockdep_is_held(&mddev->reconfig_mutex));
-> =20
->  	/*
->  	 * We do not require rcu protection here since
+mmotm-readme.txt says
+
+README for mm-of-the-moment:
+
+http://www.ozlabs.org/~akpm/mmotm/
+
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
+
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at https://github.com/mstsxfx/memcg-devel.git by Michal Hocko. 
+It contains the patches which are between the "#NEXT_PATCHES_START mm" and
+"#NEXT_PATCHES_END" markers, from the series file,
+http://www.ozlabs.org/~akpm/mmotm/series.
 
 
-Applied, thanks.
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
 
-NeilBrown
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
 
---Sig_/sZu7htboQz06eJPgrKJALLD
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+To develop on top of mmotm git:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+  $ git remote add mmotm git://git.cmpxchg.org/linux-mmotm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
 
-iQIVAwUBUCmTSDnsnt1WYoG5AQIzxg//awAi/Ha1S9wqEs0Tg5BI/bGRssRYPPeA
-3SM7LdMQmsvSiOMcaZTdsFvhwYzNgRqIjjf4bjGFrmZAfmQo+ZXeneV1UAu3wMtR
-WV343jxzBfYlVS8j84r5zqEYVcRa11OmmoXYV46StFB5HNgt1BJBZp4kaQeQ5jTH
-Ho2cmevt2nxPTUYZzyn4CZgmwF9Ur08ciFytiPf6cmBsNtW1DTdcp/4MCbSUTPM2
-1D2squvYkE9t2MNR9JPJxVztgccc2URaPPgjp2nRgHQ2zGmRvMLDe6UTFk6InxXN
-0xjk2E1uKj1pgexb6ZhB0tt0Nahpa4jfXY61n9eU00W/DuiYFKED7cooCxDZRGn7
-H8YR1mfkZFxCNClBmwWhlWaNGb9Li3fwtUEI4sqxwWs8ixFSr9IrnaZvKgOjlYNh
-xpihqkUuYSIIcJDakFZXWH5JUNcarJ82QiAHtp4cYP/XUMlo+zkYpcIqMYdYW4Ez
-vEug9t0FCJlyHJuGaf38ydsnTplzun3l/yIGSbD0zmaV83reoCboY+260AT6uTrK
-n8FC2wLItCOBNhbAj1bMrU8JeVrjYlmjic2SusdSSMPVRDrMBzJ20LfCT9sZGVRE
-3W2slStdhWpadGkokWRuBZK/uu+4IwC5QPx7Kc3psr7lLPTFyPZmJPt01nnBsXE8
-uazkzZYs6ks=
-=yde4
------END PGP SIGNATURE-----
+To rebase a branch with older patches to a new mmotm release:
 
---Sig_/sZu7htboQz06eJPgrKJALLD--
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.6-rc1:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  linux-next.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+* cs5535-clockevt-typo-its-mfgpt-not-mfpgt.patch
+* mm-change-nr_ptes-bug_on-to-warn_on.patch
+* documentation-update-mount-option-in-filesystem-vfattxt.patch
+* cciss-fix-incorrect-scsi-status-reporting.patch
+* acpi_memhotplugc-fix-memory-leak-when-memory-device-is-unbound-from-the-module-acpi_memhotplug.patch
+* acpi_memhotplugc-free-memory-device-if-acpi_memory_enable_device-failed.patch
+* acpi_memhotplugc-remove-memory-info-from-list-before-freeing-it.patch
+* acpi_memhotplugc-dont-allow-to-eject-the-memory-device-if-it-is-being-used.patch
+* acpi_memhotplugc-bind-the-memory-device-when-the-driver-is-being-loaded.patch
+* acpi_memhotplugc-auto-bind-the-memory-device-which-is-hotplugged-before-the-driver-is-loaded.patch
+* arch-x86-platform-iris-irisc-register-a-platform-device-and-a-platform-driver.patch
+* arch-x86-include-asm-spinlockh-fix-comment.patch
+* mn10300-only-add-mmem-funcs-to-kbuild_cflags-if-gcc-supports-it.patch
+* dma-dmaengine-lower-the-priority-of-failed-to-get-dma-channel-message.patch
+* pcmcia-move-unbind-rebind-into-dev_pm_opscomplete.patch
+* ppc-e500_tlb-memset-clears-nothing.patch
+  cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
+* timeconstpl-remove-deprecated-defined-array.patch
+* time-dont-inline-export_symbol-functions.patch
+* thermal-add-generic-cpufreq-cooling-implementation.patch
+* hwmon-exynos4-move-thermal-sensor-driver-to-driver-thermal-directory.patch
+* thermal-exynos5-add-exynos5-thermal-sensor-driver-support.patch
+* thermal-exynos-register-the-tmu-sensor-with-the-kernel-thermal-layer.patch
+* arm-exynos-add-thermal-sensor-driver-platform-data-support.patch
+* ocfs2-use-find_last_bit.patch
+* ocfs2-use-bitmap_weight.patch
+* drivers-scsi-atp870uc-fix-bad-use-of-udelay.patch
+* vfs-increment-iversion-when-a-file-is-truncated.patch
+* fs-push-rcu_barrier-from-deactivate_locked_super-to-filesystems.patch
+* mm-slab-remove-duplicate-check.patch
+* slab-do-not-call-compound_head-in-page_get_cache.patch
+* mm-slab_commonc-fix-warning.patch
+  mm.patch
+* mm-remove-__gfp_no_kswapd.patch
+* remove-__gfp_no_kswapd-fixes.patch
+* remove-__gfp_no_kswapd-fixes-fix.patch
+* x86-pat-remove-the-dependency-on-vm_pgoff-in-track-untrack-pfn-vma-routines.patch
+* x86-pat-separate-the-pfn-attribute-tracking-for-remap_pfn_range-and-vm_insert_pfn.patch
+* x86-pat-separate-the-pfn-attribute-tracking-for-remap_pfn_range-and-vm_insert_pfn-fix.patch
+* mm-x86-pat-rework-linear-pfn-mmap-tracking.patch
+* mm-introduce-arch-specific-vma-flag-vm_arch_1.patch
+* mm-kill-vma-flag-vm_insertpage.patch
+* mm-kill-vma-flag-vm_can_nonlinear.patch
+* mm-use-mm-exe_file-instead-of-first-vm_executable-vma-vm_file.patch
+* mm-kill-vma-flag-vm_executable-and-mm-num_exe_file_vmas.patch
+* mm-prepare-vm_dontdump-for-using-in-drivers.patch
+* mm-kill-vma-flag-vm_reserved-and-mm-reserved_vm-counter.patch
+* mm-kill-vma-flag-vm_reserved-and-mm-reserved_vm-counter-fix.patch
+* frv-kill-used-but-uninitialized-variable.patch
+* ipc-mqueue-remove-unnecessary-rb_init_node-calls.patch
+* rbtree-reference-documentation-rbtreetxt-for-usage-instructions.patch
+* rbtree-empty-nodes-have-no-color.patch
+* rbtree-empty-nodes-have-no-color-fix.patch
+* rbtree-fix-incorrect-rbtree-node-insertion-in-fs-proc-proc_sysctlc.patch
+* rbtree-move-some-implementation-details-from-rbtreeh-to-rbtreec.patch
+* rbtree-move-some-implementation-details-from-rbtreeh-to-rbtreec-fix.patch
+* rbtree-performance-and-correctness-test.patch
+* rbtree-performance-and-correctness-test-fix.patch
+* rbtree-break-out-of-rb_insert_color-loop-after-tree-rotation.patch
+* rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary.patch
+* rbtree-low-level-optimizations-in-rb_insert_color.patch
+* rbtree-adjust-node-color-in-__rb_erase_color-only-when-necessary.patch
+* rbtree-optimize-case-selection-logic-in-__rb_erase_color.patch
+* rbtree-low-level-optimizations-in-__rb_erase_color.patch
+* rbtree-coding-style-adjustments.patch
+* rbtree-rb_erase-updates-and-comments.patch
+* rbtree-optimize-fetching-of-sibling-node.patch
+* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid.patch
+* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid-fix.patch
+* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists.patch
+* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists-checkpatch-fixes.patch
+* fat-exportfs-move-nfs-support-code.patch
+* fat-exportfs-fix-dentry-reconnection.patch
+* ipc-semc-alternatives-to-preempt_disable.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  mutex-subsystem-synchro-test-module.patch
+  mutex-subsystem-synchro-test-module-fix.patch
+  slab-leaks3-default-y.patch
+  put_bh-debug.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  prio_tree-debugging-patch.patch
+  single_open-seq_release-leak-diagnostics.patch
+  add-a-refcount-check-in-dput.patch
