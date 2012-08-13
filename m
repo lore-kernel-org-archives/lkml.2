@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2HMQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:58:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab2HMQ6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:58:36 -0400
-Date: Mon, 13 Aug 2012 19:59:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120813165938.GA19139@redhat.com>
-References: <20120724204320.21081.32333.stgit@bling.home>
- <20120729145452.GD14278@redhat.com>
- <1343665330.8073.108.camel@ul30vt>
- <20120731000100.GA17612@redhat.com>
- <1343694391.8073.227.camel@ul30vt>
- <20120731003636.GC17922@redhat.com>
- <1343697135.8073.245.camel@ul30vt>
- <1343848002.6698.38.camel@bling.home>
- <20120812074936.GA1421@redhat.com>
- <1344876495.4683.47.camel@ul30vt.home>
+	id S1753431Ab2HMQ6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:58:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33602 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab2HMQ6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:58:47 -0400
+Date: Mon, 13 Aug 2012 09:58:32 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <1344435364-18632-1-git-send-email-bp@amd64.org>
+References: <1344435364-18632-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix __sched_period comment
+Git-Commit-ID: 0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1344876495.4683.47.camel@ul30vt.home>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:58:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 10:48:15AM -0600, Alex Williamson wrote:
-> On Sun, 2012-08-12 at 10:49 +0300, Michael S. Tsirkin wrote:
-> > On Wed, Aug 01, 2012 at 01:06:42PM -0600, Alex Williamson wrote:
-> > > On Mon, 2012-07-30 at 19:12 -0600, Alex Williamson wrote:
-> > > > On Tue, 2012-07-31 at 03:36 +0300, Michael S. Tsirkin wrote:
-> > > > > On Mon, Jul 30, 2012 at 06:26:31PM -0600, Alex Williamson wrote:
-> > > > > > On Tue, 2012-07-31 at 03:01 +0300, Michael S. Tsirkin wrote:
-> > > > > > > You keep saying this but it is still true: once irqfd
-> > > > > > > is closed eoifd does not get any more interrupts.
-> > > > > > 
-> > > > > > How does that matter?
-> > > > > 
-> > > > > Well if it does not get events it is disabled.
-> > > > > so you have one ifc disabling another, anyway.
-> > > > 
-> > > > And a level irqfd without an eoifd can never be de-asserted.  Either we
-> > > > make modular components, assemble them to do useful work, and
-> > > > disassemble them independently so they can be used by future interfaces
-> > > > or we bundle eoifd as just an option of irqfd.  Which is it gonna be?
-> > > 
-> > > I don't think I've been successful at explaining my reasoning for making
-> > > EOI notification a separate interface, so let me try again...
-> > > 
-> > > When kvm is not enabled, the qemu vfio driver still needs to know about
-> > > EOIs to re-enable the physical interrupt.  Since the ioapic is emulated
-> > > in qemu, we can setup a notifier for this and create abstraction to make
-> > > it non-x86 specific, etc.  We just need to come up with a design and
-> > > implement it.  But what happens when kvm is then enabled?  ioapic
-> > > emulation moves to the kernel (assume kvm includes irqchip for this
-> > > argument even though it doesn't for POWER), qemu no longer knows about
-> > > EOIs, and the interface we just created to handle the non-kvm case stops
-> > > working.  Is anyone going to accept adding a qemu EOI notification
-> > > interface that only works when kvm is not enabled?
-> > 
-> > Yes, it's only a question of abstracting it at the right level.
-> > 
-> > For example, if as you suggest below kvm gives you an eventfd that
-> > asserts an irq, laters automatically deasserts it and notifies another
-> > eventfd, we can do exactly this in both tcg and kvm:
-> > 
-> > setup_level_irq(int gsi, int assert_eventfd, int deassert_eventfd)
-> > 
-> > Not advocating this interface but pointing out that to make
-> > same abstraction to work in tcg and kvm, see what it does in
-> > each of them first.
-> 
-> The tcg model I was thinking of is that we continue to use qemu_set_irq
-> to assert and de-assert the interrupt and add an eoi/ack notification
-> mechanism, much like the ack notifier that already exists in kvm.  There
-> doesn't seem to be much advantage to creating a new interrupt
-> infrastructure in tcg that can trigger interrupts by eventfds, so I
-> assume VFIO is always going to be responsible for the translation of an
-> eventfd to an irq assertion, get some kind of notification through qemu,
-> de-assert the interrupt and unmask the device.  With that model in mind,
-> perhaps it makes more sense why I've been keeping the eoi/ack separate
-> from irqfd.
-> 
-> > > I suspect we therefore need a notification mechanism between kvm and
-> > > qemu to make it possible for that interface to continue working.
-> > 
-> > Even though no one is actually using it. IMHO, this is a maintainance
-> > problem.
-> 
-> That's why I'm designing it the way I am.  VFIO will make use of it.  It
-> will just be using the de-assert and notify mode vs a notify-only mode
-> that tcg would use.  It would also be easy to add an option to vfio so
-> that we could fully test both modes.
-> 
-> > > An
-> > > eventfd also seems like the right mechanism there.  A simple
-> > > modification to the proposed KVM_EOIFD here would allow it to trigger an
-> > > eventfd when an EOI is written to a specific gsi on
-> > > KVM_USERSPACE_IRQ_SOURCE_ID (define a flag and pass gsi in place of
-> > > key).
-> > > 
-> > > The split proposed here does require some assembly, but KVM_EOIFD is
-> > > re-usable as either a de-assert and notify mechanism tied to an irqfd or
-> > > a notify-only mechanism allowing users of a qemu EOI notification
-> > > infrastructure to continue working.  vfio doesn't necessarily need this
-> > > middle ground, but can easily be used to test it.
-> > > 
-> > > The alternative is that we pull eoifd into KVM_IRQFD and invent some
-> > > other new EOI interface for qemu.  That means we get EOIs tied to an
-> > > irqfd via one path and other EOIs via another ioctl.  Personally that
-> > > seems less desirable, but I'm willing to explore that route if
-> > > necessary.  Thanks,
-> > > 
-> > > Alex
-> > 
-> > Maybe we should focus on the fact that we notify userspace that we
-> > deasserted interrupt instead of EOI.
-> 
-> But will a tcg user want the de-assert?  I assume not.  The de-assert is
-> an optimization to allow us to bypass evaluation in userspace.  In tcg
-> we're already there.  Thanks,
-> 
-> Alex
+Commit-ID:  0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
+Gitweb:     http://git.kernel.org/tip/0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 8 Aug 2012 16:16:04 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 13 Aug 2012 18:51:59 +0200
 
-Look what I am saying forget tcg and APIs. Build a kernel interface that
-makes sense. Then in qemu look at kvm and tcg and build abstraction for
-it.  Building kernel interface so you can make nice abstractions in tcg
-is backwards.
+sched: Fix __sched_period comment
 
--- 
-MST
+It should be sched_nr_latency so fix it before it annoys me more.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344435364-18632-1-git-send-email-bp@amd64.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d0cc03b..67ac0b1 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -597,7 +597,7 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
+ /*
+  * The idea is to set a period in which each task runs once.
+  *
+- * When there are too many tasks (sysctl_sched_nr_latency) we have to stretch
++ * When there are too many tasks (sched_nr_latency) we have to stretch
+  * this period because otherwise the slices get too small.
+  *
+  * p = (nr <= nl) ? l : l*nr/nl
