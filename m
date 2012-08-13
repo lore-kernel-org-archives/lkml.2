@@ -1,134 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2HMREV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:04:21 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:57506 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751171Ab2HMRET (ORCPT
+	id S1753625Ab2HMREt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:04:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33674 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab2HMREr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:04:19 -0400
-Message-ID: <1344877451.2733.26.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [patch net-next 01/16] net: introduce upper device lists
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jiri Pirko <jiri@resnulli.us>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <edumazet@google.com>,
-        <faisal.latif@intel.com>, <roland@kernel.org>, <sean.hefty@intel.com>,
-        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
-        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
-        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
-        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
-        <linux390@de.ibm.com>, <shemminger@vyatta.com>, <therbert@google.com>,
-        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
-        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
-        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
-        <fbl@redhat.com>
-Date: Mon, 13 Aug 2012 18:04:11 +0100
-In-Reply-To: <1344871635-1052-2-git-send-email-jiri@resnulli.us>
-References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
-	 <1344871635-1052-2-git-send-email-jiri@resnulli.us>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Aug 2012 13:04:47 -0400
+Date: Mon, 13 Aug 2012 10:04:32 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-532b1858c5241bedfff5ab863d7cf012e8b81a6b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <1344435364-18632-1-git-send-email-bp@amd64.org>
+References: <1344435364-18632-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix __sched_period comment
+Git-Commit-ID: 532b1858c5241bedfff5ab863d7cf012e8b81a6b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:04:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 17:27 +0200, Jiri Pirko wrote:
-> This lists are supposed to serve for storing pointers to all upper devices.
-> Eventually it will replace dev->master pointer which is used for
-> bonding, bridge, team but it cannot be used for vlan, macvlan where
-> there might be multiple "masters" present.
-> 
-> New upper device list resolves this limitation. Also, the information
-> stored in lists is used for preventing looping setups like
-> "bond->somethingelse->samebond"
-> 
-> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-[...]
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -4425,6 +4425,229 @@ static int __init dev_proc_init(void)
->  #endif	/* CONFIG_PROC_FS */
->  
-> 
-> +struct netdev_upper {
-> +	struct net_device *dev;
-> +	bool unique;
+Commit-ID:  532b1858c5241bedfff5ab863d7cf012e8b81a6b
+Gitweb:     http://git.kernel.org/tip/532b1858c5241bedfff5ab863d7cf012e8b81a6b
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 8 Aug 2012 16:16:04 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 13 Aug 2012 18:58:15 +0200
 
-This needs a better name.  It doesn't really have anything to do with
-uniqueness and doesn't ensure exclusivity.  I think that it would be
-fine to keep the 'master' term.
+sched: Fix __sched_period comment
 
-> +	struct list_head list;
-> +	struct rcu_head rcu;
-> +};
-[...]
-> +static int __netdev_upper_dev_link(struct net_device *dev,
-> +				   struct net_device *upper_dev, bool unique)
-> +{
-> +	struct netdev_upper *upper;
-> +
-> +	ASSERT_RTNL();
-> +
-> +	if (dev == upper_dev)
-> +		return -EBUSY;
-> +	/*
-> +	 * To prevent loops, check if dev is not upper device to upper_dev.
-> +	 */
-> +	if (__netdev_has_upper_dev(upper_dev, dev, true))
-> +		return -EBUSY;
-> +
-> +	if (__netdev_find_upper(dev, upper_dev))
-> +		return -EEXIST;
-> +
-> +	if (unique && netdev_unique_upper_dev_get(dev))
-> +		return -EBUSY;
-> +
-> +	upper = kmalloc(sizeof(*upper), GFP_KERNEL);
-> +	if (!upper)
-> +		return -ENOMEM;
-> +
-> +	upper->dev = upper_dev;
-> +	upper->unique = unique;
-> +
-> +	/*
-> +	 * Ensure that unique upper link is always the first item in the list.
-> +	 */
-> +	if (unique)
-> +		list_add_rcu(&upper->list, &dev->upper_dev_list);
-> +	else
-> +		list_add_tail_rcu(&upper->list, &dev->upper_dev_list);
-> +	dev_hold(upper_dev);
+It should be sched_nr_latency so fix it before it annoys me more.
 
-This behaviour (calling dev_hold()) matches netdev_set_master().  But
-it's oddly asymmetric: generally the administrator can remove either the
-upper device or the lower device (rtnl_link_ops or unbinding a physical
-device) and the upper device driver must then unlink itself from the
-lower device (using a notifier to catch lower device removal).
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344435364-18632-1-git-send-email-bp@amd64.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If the upper device driver fails to unlink when the upper device is
-unregistered, then this extra reference causes netdev_wait_allrefs() to
-hang... is that the intent?  Or should there be a more explicit counter
-and check on unregistration, e.g. WARN_ON(dev->num_lower_devs != 0)?
-
-If it fails to unlink when the lower device is removed, this warning in
-rollback_registered_many() may be triggered:
-
-		/* Notifier chain MUST detach us from master device. */
-		WARN_ON(dev->master);
-
-I think that needs to become WARN_ON(netdev_has_upper_dev(dev)).
-
-> +	return 0;
-> +}
-[...] 
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c219bf8..99285a8 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -597,7 +597,7 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
+ /*
+  * The idea is to set a period in which each task runs once.
+  *
+- * When there are too many tasks (sysctl_sched_nr_latency) we have to stretch
++ * When there are too many tasks (sched_nr_latency) we have to stretch
+  * this period because otherwise the slices get too small.
+  *
+  * p = (nr <= nl) ? l : l*nr/nl
