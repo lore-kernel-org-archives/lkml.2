@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab2HMN3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:29:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46429 "EHLO mx1.redhat.com"
+	id S1752365Ab2HMNdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:33:23 -0400
+Received: from canardo.mork.no ([148.122.252.1]:55504 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab2HMN3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:29:06 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1344015839-21800-15-git-send-email-tj@kernel.org>
-References: <1344015839-21800-15-git-send-email-tj@kernel.org> <1344015839-21800-1-git-send-email-tj@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
-        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
-        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
-        tomi.valkeinen@ti.com, Jens Axboe <axboe@kernel.dk>,
-        Jiri Kosina <jkosina@suse.cz>, David Airlie <airlied@linux.ie>,
-        Roland Dreier <roland@kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Len Brown <len.brown@intel.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH 14/14] workqueue: use mod_delayed_work() instead of cancel + queue
-Date: Mon, 13 Aug 2012 14:27:57 +0100
-Message-ID: <8393.1344864477@warthog.procyon.org.uk>
+	id S1751401Ab2HMNdW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:33:22 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
+Organization: m
+References: <87fw8mlv7e.fsf@nemi.mork.no>
+	<1342771388-24389-1-git-send-email-bjorn@mork.no>
+	<20120720152650.GA5201@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20120720160953.GA5802@kroah.com> <87fw7rhrpv.fsf@nemi.mork.no>
+	<426367E2313C2449837CD2DE46E7EAF9236BF42E@SN2PRD0310MB382.namprd03.prod.outlook.com>
+Date: Mon, 13 Aug 2012 15:33:05 +0200
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9236BF42E@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	(KY Srinivasan's message of "Mon, 13 Aug 2012 13:04:35 +0000")
+Message-ID: <877gt2j4ry.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> wrote:
+KY Srinivasan <kys@microsoft.com> writes:
 
-> Convert delayed_work users doing cancel_delayed_work() followed by
-> queue_delayed_work() to mod_delayed_work().
-> 
-> Most conversions are straight-forward.  Ones worth mentioning are,
-> 
-> * drivers/edac/edac_mc.c: edac_mc_workq_setup() converted to always
->   use mod_delayed_work() and cancel loop in
->   edac_mc_reset_delay_period() is dropped.
-> 
-> * drivers/platform/x86/thinkpad_acpi.c: No need to remember whether
->   watchdog is active or not.  @fan_watchdog_active and related code
->   dropped.
-> 
-> * drivers/power/charger-manager.c: Seemingly a lot of
->   delayed_work_pending() abuse going on here.
->   [delayed_]work_pending() are unsynchronized and racy when used like
->   this.  I converted one instance in fullbatt_handler().  Please
->   conver the rest so that it invokes workqueue APIs for the intended
->   target state rather than trying to game work item pending state
->   transitions.  e.g. if timer should be modified - call
->   mod_delayed_work(), canceled - call cancel_delayed_work[_sync]().
-> 
-> * drivers/thermal/thermal_sys.c: thermal_zone_device_set_polling()
->   simplified.  Note that round_jiffies() calls in this function are
->   meaningless.  round_jiffies() work on absolute jiffies not delta
->   delay used by delayed_work.
-> 
-> v2: Tomi pointed out that __cancel_delayed_work() users can't be
->     safely converted to mod_delayed_work().  They could be calling it
->     from irq context and if that happens while delayed_work_timer_fn()
->     is running, it could deadlock.  __cancel_delayed_work() users are
->     dropped.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> In the interim, I have submitted a patch that conforms to the MSFT guidelines
+> for generating guest IDs for non-MSFT operating systems on Hyper-V.
 
-Acked-by: David Howells <dhowells@redhat.com>
+Oh, sorry.  I missed that.  Found it now.  Thanks
+
+Including distro info in a driver interface looks a bit weird to me, but
+I don't really care as long as the previous static value goes away.
+
+
+Bjørn
