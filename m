@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab2HMUWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:22:48 -0400
+	id S1754273Ab2HMUWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:22:52 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab2HMUWo (ORCPT
+	with ESMTP id S1754238Ab2HMUWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:22:44 -0400
+	Mon, 13 Aug 2012 16:22:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [ 36/82] sh: Fix up recursive fault in oops with unset TTB.
-Date: Mon, 13 Aug 2012 13:19:12 -0700
-Message-Id: <20120813201749.592000233@linuxfoundation.org>
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: [ 37/82] ore: Fix out-of-bounds access in _ios_obj()
+Date: Mon, 13 Aug 2012 13:19:13 -0700
+Message-Id: <20120813201749.679771101@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -29,42 +29,73 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Paul Mundt <lethal@linux-sh.org>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 90eed7d87b748f9c0d11b9bad64a4c41e31b78c4 upstream.
+commit 9e62bb4458ad2cf28bd701aa5fab380b846db326 upstream.
 
-Presently the oops code looks for the pgd either from the mm context or
-the cached TTB value. There are presently cases where the TTB can be
-unset or otherwise cleared by hardware, which we weren't handling,
-resulting in recursive faults on the NULL pgd. In these cases we can
-simply reload from swapper_pg_dir and continue on as normal.
+_ios_obj() is accessed by group_index not device_table index.
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+The oc->comps array is only a group_full of devices at a time
+it is not like ore_comp_dev() which is indexed by a global
+device_table index.
+
+This did not BUG until now because exofs only uses a single
+COMP for all devices. But with other FSs like PanFS this is
+not true.
+
+This bug was only in the write_path, all other users were
+using it correctly
+
+[This is a bug since 3.2 Kernel]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/mm/fault.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/exofs/ore.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/arch/sh/mm/fault.c
-+++ b/arch/sh/mm/fault.c
-@@ -58,11 +58,15 @@ static void show_pte(struct mm_struct *m
- {
- 	pgd_t *pgd;
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -837,11 +837,11 @@ static int _write_mirror(struct ore_io_s
+ 				bio->bi_rw |= REQ_WRITE;
+ 			}
  
--	if (mm)
-+	if (mm) {
- 		pgd = mm->pgd;
--	else
-+	} else {
- 		pgd = get_TTB();
+-			osd_req_write(or, _ios_obj(ios, dev), per_dev->offset,
+-				      bio, per_dev->length);
++			osd_req_write(or, _ios_obj(ios, cur_comp),
++				      per_dev->offset, bio, per_dev->length);
+ 			ORE_DBGMSG("write(0x%llx) offset=0x%llx "
+ 				      "length=0x%llx dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     _LLU(per_dev->offset),
+ 				     _LLU(per_dev->length), dev);
+ 		} else if (ios->kern_buff) {
+@@ -853,20 +853,20 @@ static int _write_mirror(struct ore_io_s
+ 			       (ios->si.unit_off + ios->length >
+ 				ios->layout->stripe_unit));
  
-+		if (unlikely(!pgd))
-+			pgd = swapper_pg_dir;
-+	}
-+
- 	printk(KERN_ALERT "pgd = %p\n", pgd);
- 	pgd += pgd_index(addr);
- 	printk(KERN_ALERT "[%08lx] *pgd=%0*Lx", addr,
+-			ret = osd_req_write_kern(or, _ios_obj(ios, per_dev->dev),
++			ret = osd_req_write_kern(or, _ios_obj(ios, cur_comp),
+ 						 per_dev->offset,
+ 						 ios->kern_buff, ios->length);
+ 			if (unlikely(ret))
+ 				goto out;
+ 			ORE_DBGMSG2("write_kern(0x%llx) offset=0x%llx "
+ 				      "length=0x%llx dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     _LLU(per_dev->offset),
+ 				     _LLU(ios->length), per_dev->dev);
+ 		} else {
+-			osd_req_set_attributes(or, _ios_obj(ios, dev));
++			osd_req_set_attributes(or, _ios_obj(ios, cur_comp));
+ 			ORE_DBGMSG2("obj(0x%llx) set_attributes=%d dev=%d\n",
+-				     _LLU(_ios_obj(ios, dev)->id),
++				     _LLU(_ios_obj(ios, cur_comp)->id),
+ 				     ios->out_attr_len, dev);
+ 		}
+ 
 
 
