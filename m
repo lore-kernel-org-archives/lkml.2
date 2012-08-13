@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab2HMRiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:38:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47293 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861Ab2HMRiv (ORCPT
+	id S1752078Ab2HMRkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:40:00 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51139 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab2HMRj7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:38:51 -0400
-Date: Mon, 13 Aug 2012 18:38:47 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] efikamx: reintroduce Genesi Efika MX Smarttop via device
- tree
-Message-ID: <20120813173847.GH13446@opensource.wolfsonmicro.com>
-References: <1344375978-29981-1-git-send-email-matt@genesi-usa.com>
- <20120809101947.GA8474@sirena.org.uk>
- <CAKGA1bkwMvDW7nMWxUbNm3_0ZTR2+uKs8UL_HuisJe7cd8POBA@mail.gmail.com>
+	Mon, 13 Aug 2012 13:39:59 -0400
+Message-ID: <50293BE9.3010408@parallels.com>
+Date: Mon, 13 Aug 2012 21:39:53 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKGA1bkwMvDW7nMWxUbNm3_0ZTR2+uKs8UL_HuisJe7cd8POBA@mail.gmail.com>
-X-Cookie: Blow it out your ear.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Pavel Emelianov <xemul@parallels.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified root
+References: <20120810125701.7115.71612.stgit@localhost.localdomain> <50254FA6.3060806@zytor.com> <20120810192628.79a34d28@pyramind.ukuu.org.uk> <20120810191149.GA17985@fieldses.org> <20120810202818.06236f46@pyramind.ukuu.org.uk> <50259494.8060304@zytor.com> <5025FA5A.4090403@parallels.com> <50263ECC.4060501@parallels.com> <20120813164730.GB2497@fieldses.org>
+In-Reply-To: <20120813164730.GB2497@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 10:42:58AM -0500, Matt Sealey wrote:
-> On Thu, Aug 9, 2012 at 5:19 AM, Mark Brown
+13.08.2012 20:47, J. Bruce Fields пишет:
+> On Sat, Aug 11, 2012 at 03:15:24PM +0400, Stanislav Kinsbursky wrote:
+>> 11.08.2012 10:23, Pavel Emelyanov пишет:
+>>> On 08/11/2012 03:09 AM, H. Peter Anvin wrote:
+>>>> On 08/10/2012 12:28 PM, Alan Cox wrote:
+>>>>> Explicitly for Linux yes - this is not generally true of the AF_UNIX
+>>>>> socket domain and even the permissions aspect isn't guaranteed to be
+>>>>> supported on some BSD environments !
+>>>> Yes, but let's worry about what the Linux behavior should be.
+>>>>
+>>>>> The name is however just a proxy for the socket itself. You don't even
+>>>>> get a device node in the usual sense or the same inode in the file system
+>>>>> space.
+>>>> No, but it is looked up the same way any other inode is (the difference
+>>>> between FIFOs and sockets is that sockets have separate connections,
+>>>> which is also why open() on sockets would be nice.)
+>>>>
+>>>> However, there is a fundamental difference between AF_UNIX sockets and
+>>>> open(), and that is how the pathname is delivered.  It thus would make
+>>>> more sense to provide the openat()-like information in struct
+>>>> sockaddr_un, but that may be very hard to do in a sensible way.  In that
+>>>> sense it perhaps would be cleaner to be able to do an open[at]() on the
+>>>> socket node with O_PATH (perhaps there should be an O_SOCKET option,
+>>>> even?) and pass the resulting file descriptor to bind() or connect().
+>>> I vote for this (openat + O_WHATEVER on a unix socket) as well. It will
+>>> help us in checkpoint-restore, making handling of overmounted/unlinked
+>>> sockets much cleaner.
+>> I have to notice, that it's not enough and doesn't solve the issue.
+>> There should be some way how to connect/bind already existent unix
+>> socket (from kernel, at least), because socket can be created in
+>> user space.
+>> And this way (sock operation or whatever) have to provide an ability
+>> to lookup UNIX socket starting from specified root to support
+>> containers.
+> I don't understand--the rpcbind sockets are created by the kernel.  What
+> am I missing?
 
-> > This and many of your other regulators have voltage ranges specified but
-> > no consumers which doesn't make sense.  It looks awfully like you've
-> > just typed in the maximum range supported by the regulator which is most
-> > likely broken.
+Kernel preform connect to rpcbind socket (i.e. user-space binds it), 
+doesn't it?
 
-> Okay I have a question about this; some of the regulators (SW1
-> especially) are obviously consumed by the CPU core complex so that
-> when DVFS gives us a hint we can clock down and reduce voltage. How on
-> earth do we implement that?
+>
+> --b.
 
-> We can drop the maximum range to be better for the CPU (1.3V is too
-> high, I think this is legacy from when we may have had a sorted 1GHz
-> MX51 coming out) but I can't find any source for where this is hooked
-> in.
-
-DVFS doesn't use the device model in Linux (yet!) so there's no device
-node and it's all a bit messy.  Shawn Guo is working on some generic DT
-bindings for it which should solve that problem but for now in the
-specific case of CPU bindings it's OK to not have an consumer, it's
-understandable what's going on there.
