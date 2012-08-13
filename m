@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2HMWak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:30:40 -0400
+	id S1754633Ab2HMWPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:15:10 -0400
 Received: from mail-gg0-f174.google.com ([209.85.161.174]:43711 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab2HMWPi (ORCPT
+	with ESMTP id S1754442Ab2HMWPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:15:38 -0400
+	Mon, 13 Aug 2012 18:15:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Cross <ccross@android.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 11/65] ARM: 7476/1: vfp: only clear vfp state for current cpu in vfp_pm_suspend
-Date: Mon, 13 Aug 2012 15:13:55 -0700
-Message-Id: <20120813221415.958628929@linuxfoundation.org>
+        Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [ 02/65] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
+Date: Mon, 13 Aug 2012 15:13:46 -0700
+Message-Id: <20120813221415.185167851@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -30,33 +29,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit a84b895a2348f0dbff31b71ddf954f70a6cde368 upstream.
+commit 63a78bb1051b240417daad3a3fa9c1bb10646dca upstream.
 
-vfp_pm_suspend runs on each cpu, only clear the hardware state
-pointer for the current cpu.  Prevents a possible crash if one
-cpu clears the hw state pointer when another cpu has already
-checked if it is valid.
+According to responses from the BIOS team, ASUS_WMI_METHODID_DSTS2
+(0x53545344) will be used as future DSTS ID. In addition, calling
+asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL) returns
+ASUS_WMI_UNSUPPORTED_METHOD in new ASUS laptop PCs. This patch fixes
+no DSTS ID will be assigned in this case.
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/vfp/vfpmodule.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/platform/x86/asus-wmi.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -460,7 +460,7 @@ static int vfp_pm_suspend(void)
- 	}
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1467,14 +1467,9 @@ static int asus_wmi_platform_init(struct
+ 	 */
+ 	if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS, 0, 0, NULL))
+ 		asus->dsts_id = ASUS_WMI_METHODID_DSTS;
+-	else if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL))
++	else
+ 		asus->dsts_id = ASUS_WMI_METHODID_DSTS2;
  
- 	/* clear any information we had about last context state */
--	memset(vfp_current_hw_state, 0, sizeof(vfp_current_hw_state));
-+	vfp_current_hw_state[ti->cpu] = NULL;
- 
- 	return 0;
- }
+-	if (!asus->dsts_id) {
+-		pr_err("Can't find DSTS");
+-		return -ENODEV;
+-	}
+-
+ 	/* CWAP allow to define the behavior of the Fn+F2 key,
+ 	 * this method doesn't seems to be present on Eee PCs */
+ 	if (asus->driver->quirks->wapf >= 0)
 
 
