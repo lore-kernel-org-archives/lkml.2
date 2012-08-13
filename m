@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2HMRbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:31:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50772 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab2HMRb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:31:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,761,1336374000"; 
-   d="scan'208";a="199902652"
-Message-ID: <502939EA.80907@intel.com>
-Date: Mon, 13 Aug 2012 10:31:22 -0700
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753625Ab2HMRbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:31:48 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34909 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab2HMRbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 13:31:45 -0400
+Date: Mon, 13 Aug 2012 19:31:41 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
+        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
+        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
+        fbl@redhat.com
+Subject: Re: [patch net-next 15/16] net: remove usage of dev->master
+Message-ID: <20120813173141.GB1808@minipsycho.orion>
+References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
+ <1344871635-1052-16-git-send-email-jiri@resnulli.us>
+ <1344878131.2733.28.camel@bwh-desktop.uk.solarflarecom.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: Re: [flame^Wreview] net: netprio_cgroup: rework update socket logic
-References: <20120813015348.GZ23464@ZenIV.linux.org.uk> <502896C5.7080303@intel.com> <50289D7F.3070402@intel.com> <20120813121827.GB23464@ZenIV.linux.org.uk> <50293224.90803@intel.com> <20120813170109.GD23464@ZenIV.linux.org.uk>
-In-Reply-To: <20120813170109.GD23464@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344878131.2733.28.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2012 10:01 AM, Al Viro wrote:
-> On Mon, Aug 13, 2012 at 09:58:12AM -0700, John Fastabend wrote:
->> [...]
->>
->>> HOWEVER, it still doesn't address more fundamental problem - somebody
->>> creating a socket and passing it to you in SCM_RIGHTS datagram will
->>> leave you with a socket you can do IO on, still tagged according to who
->>> had created it.
->>>
->>> AFAICS, the whole point of that exercise was to allow third-party changing
->>> the priorities of traffic on sockets already created by a process we now
->>> move to a different cgroup.  Consider e.g. this:
->>
->> Correct that is the point of the exercise.
->>
->> To fix this specific case we could add a call to sock_update_netprioidx
->> in scm_recv to set the sk_cgrp_prioidx value.
+Mon, Aug 13, 2012 at 07:15:31PM CEST, bhutchings@solarflare.com wrote:
+>On Mon, 2012-08-13 at 17:27 +0200, Jiri Pirko wrote:
+>> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+>> ---
+>>  net/core/dev.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/net/core/dev.c b/net/core/dev.c
+>> index c0f9adb..8977404 100644
+>> --- a/net/core/dev.c
+>> +++ b/net/core/dev.c
+>> @@ -5461,8 +5461,8 @@ static void rollback_registered_many(struct list_head *head)
+>>  		if (dev->netdev_ops->ndo_uninit)
+>>  			dev->netdev_ops->ndo_uninit(dev);
+>>  
+>> -		/* Notifier chain MUST detach us from master device. */
+>> -		WARN_ON(dev->master);
+>> +		/* Notifier chain MUST detach us all upper devices. */
+>> +		WARN_ON(netdev_has_any_upper_dev(dev));
+>>  
+>>  		/* Remove entries from kobject tree */
+>>  		netdev_unregister_kobject(dev);
 >
-> On every received descriptor, that is?  Eeek...
->
+>I think this should be folded into patch 1, since that already ensures
+>that any master device is included in the upper device list.
 
-We are already iterating through the files in scm_detach_fds called from
-scm_recv(). This would be an extra (file->f_op == &socket_file_ops)
-check here and then the sock update.
+Right, I will squash it into patch 1
+
+>
+>Ben.
+>
+>-- 
+>Ben Hutchings, Staff Engineer, Solarflare
+>Not speaking for my employer; that's the marketing department's job.
+>They asked us to note that Solarflare product names are trademarked.
+>
