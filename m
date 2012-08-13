@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab2HMWF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:05:28 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60176 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab2HMWFY (ORCPT
+	id S1755018Ab2HMWFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:05:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55547 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab2HMWFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:05:24 -0400
+	Mon, 13 Aug 2012 18:05:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 36/44] x86, microcode: Sanitize per-cpu microcode reloading interface
-Date: Mon, 13 Aug 2012 15:02:43 -0700
-Message-Id: <20120813220145.337264645@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        Wolfgang Denk <wd@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 38/44] ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
+Date: Mon, 13 Aug 2012 15:02:45 -0700
+Message-Id: <20120813220145.516295476@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -32,89 +30,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Marek Vasut <marex@denx.de>
 
-commit c9fc3f778a6a215ace14ee556067c73982b6d40f upstream.
+commit 3bed491c8d28329e34f8a31e3fe64d03f3a350f1 upstream.
 
-Microcode reloading in a per-core manner is a very bad idea for both
-major x86 vendors. And the thing is, we have such interface with which
-we can end up with different microcode versions applied on different
-cores of an otherwise homogeneous wrt (family,model,stepping) system.
+The CONFIG_DEFAULT_MMAP_MIN_ADDR was set to 65536 in mxs_defconfig,
+this caused severe breakage of userland applications since the upper
+limit for ARM is 32768. By default CONFIG_DEFAULT_MMAP_MIN_ADDR is
+set to 4096 and can also be changed via /proc/sys/vm/mmap_min_addr
+if needed.
 
-So turn off the possibility of doing that per core and allow it only
-system-wide.
+Quoting Russell King [1]:
 
-This is a minimal fix which we'd like to see in stable too thus the
-more-or-less arbitrary decision to allow system-wide reloading only on
-the BSP:
+"4096 is also fine for ARM too. There's not much point in having
+defconfigs change it - that would just be pure noise in the config
+files."
 
-$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-...
+the CONFIG_DEFAULT_MMAP_MIN_ADDR can be removed from the defconfig
+altogether.
 
-and disable the interface on the other cores:
+This problem was introduced by commit cde7c41 (ARM: configs: add
+defconfig for mach-mxs).
 
-$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
--bash: echo: write error: Invalid argument
+[1] http://marc.info/?l=linux-arm-kernel&m=134401593807820&w=2
 
-Also, allowing the reload only from one CPU (the BSP in
-that case) doesn't allow the reload procedure to degenerate
-into an O(n^2) deal when triggering reloads from all
-/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
-simultaneously.
-
-A more generic fix will follow.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Wolfgang Denk <wd@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ arch/arm/configs/mxs_defconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -297,19 +297,31 @@ static ssize_t reload_store(struct sys_d
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu = dev->id;
--	ssize_t ret = 0;
-+	int cpu;
-+	ssize_t ret = 0, tmp_ret;
-+
-+	/* allow reload only from the BSP */
-+	if (boot_cpu_data.cpu_index != dev->id)
-+		return -EINVAL;
- 
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
- 
--	if (val == 1) {
--		get_online_cpus();
--		if (cpu_online(cpu))
--			ret = reload_for_cpu(cpu);
--		put_online_cpus();
-+	if (val != 1)
-+		return size;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		tmp_ret = reload_for_cpu(cpu);
-+		if (tmp_ret != 0)
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+
-+		/* save retval of the first encountered reload error */
-+		if (!ret)
-+			ret = tmp_ret;
- 	}
-+	put_online_cpus();
- 
- 	if (!ret)
- 		ret = size;
+--- a/arch/arm/configs/mxs_defconfig
++++ b/arch/arm/configs/mxs_defconfig
+@@ -29,7 +29,6 @@ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_PREEMPT_VOLUNTARY=y
+ CONFIG_AEABI=y
+-CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
+ CONFIG_AUTO_ZRELADDR=y
+ CONFIG_FPE_NWFPE=y
+ CONFIG_NET=y
 
 
