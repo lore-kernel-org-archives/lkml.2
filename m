@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab2HMRnE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:43:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46645 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab2HMRnC (ORCPT
+	id S1752018Ab2HMRnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:43:31 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36866 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab2HMRn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:43:02 -0400
-Message-ID: <50293CA1.80900@wwwdotorg.org>
-Date: Mon, 13 Aug 2012 11:42:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 13 Aug 2012 13:43:29 -0400
 MIME-Version: 1.0
-To: broonie@opensource.wolfsonmicro.com
-CC: Laxman Dewangan <ldewangan@nvidia.com>, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH V3] regulator: tps6586x: add support for SYS rail
-References: <1344152518-29378-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1344152518-29378-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5a1pre
+In-Reply-To: <20120813170303.GF9180@google.com>
+References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
+	<1344874672-6257-2-git-send-email-js1304@gmail.com>
+	<20120813163219.GA9180@google.com>
+	<CAAmzW4NfPAVQnmD0vG71Ahz_=gmV7CQBNABpnEHFU7YBsYJOyQ@mail.gmail.com>
+	<20120813170303.GF9180@google.com>
+Date: Tue, 14 Aug 2012 02:43:28 +0900
+Message-ID: <CAAmzW4Nfzq6i-KHky2qb1Qzgg1psVVEAME_mkzLfUWYGBXjH_Q@mail.gmail.com>
+Subject: Re: [PATCH 2/5] workqueue: change value of lcpu in queue_delayed_work_on()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 01:41 AM, Laxman Dewangan wrote:
-> Device have SYS rail which is always ON. It is system
-> power bus. LDO5 and LDO_RTC get powered through this rail
-> internally. Add support for this rail and make the
-> LDO5/LDO_RTC input supply to "sys".
-> Update document accordingly.
+>> And, do u mean  @cpu is WORK_CPU_UNBOUND?
+>
+> @cpu could be WORK_CPU_UNBOUND at that point.  The timer will be added
+> to local CPU but @work->data would be pointing to WORK_CPU_UNBOUND,
+> again triggering the condition.  Given that @cpu being
+> WORK_CPU_UNBOUND is far more common than an actual CPU number, the
+> patch would actually increase spurious nrt lookups.  The right thing
+> to do is probably setting cpu to raw_smp_processor_id() beforehand.
 
-Mark,
+I got your point.
+Thanks for kind illustration.
 
-This patch appears to have been applied correctly as b93fffb in your
-tree, but your for-next branch merge commit f110340 appears to have
-dropped the following two hunks:
+Following is a alternative implementation for this.
+I thinks this is too rare case, so it doesn't help in any real workload.
+But how do you thinks?
 
-> diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
-> index d156e1b..ec527d9 100644
-> --- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
-> +++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
-> @@ -8,7 +8,8 @@ Required properties:
->  - gpio-controller: mark the device as a GPIO controller
->  - regulators: list of regulators provided by this controller, must have
->    property "regulator-compatible" to match their hardware counterparts:
-> -  sm[0-2], ldo[0-9] and ldo_rtc
-> +  sys, sm[0-2], ldo[0-9] and ldo_rtc
-> +- sys-supply: The input supply for SYS.
->  - sm0-supply: The input supply for the SM0.
->  - sm1-supply: The input supply for the SM1.
->  - sm2-supply: The input supply for the SM2.
-> @@ -30,6 +34,7 @@ Example:
->  		#gpio-cells = <2>;
->  		gpio-controller;
->  
-> +		sys-supply = <&some_reg>;
->  		sm0-supply = <&some_reg>;
->  		sm1-supply = <&some_reg>;
->  		sm2-supply = <&some_reg>;
+@@ -1156,7 +1156,9 @@ int queue_delayed_work_on(int cpu, struct
+workqueue_struct *wq,
+                if (!(wq->flags & WQ_UNBOUND)) {
+                        struct global_cwq *gcwq = get_work_gcwq(work);
 
+-                       if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
++                       if (!gcwq)
++                               lcpu = cpu;
++                       else if (gcwq->cpu != WORK_CPU_UNBOUND)
+                                lcpu = gcwq->cpu;
+                        else
+                                lcpu = raw_smp_processor_id();
