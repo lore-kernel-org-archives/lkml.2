@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2HMMdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 08:33:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:36502 "EHLO relay.sw.ru"
+	id S1752633Ab2HMMdv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 08:33:51 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:46081 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab2HMMdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 08:33:17 -0400
-Subject: [PATCH v4 9/9] test: IPC message queue migration test
+	id S1752446Ab2HMMdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 08:33:49 -0400
+Subject: [PATCH v4 0/9] IPC: checkpoint/restore in userspace enhancements
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, arnd@arndb.de,
@@ -14,10 +14,8 @@ Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, arnd@arndb.de,
         yeohc@au1.ibm.com, linux-security-module@vger.kernel.org,
         kosaki.motohiro@jp.fujitsu.com, hpa@zytor.com, casey@schaufler-ca.com,
         eparis@parisplace.org, devel@openvz.org
-Date: Mon, 13 Aug 2012 16:32:22 +0400
-Message-ID: <20120813123221.5581.66540.stgit@localhost6.localdomain6>
-In-Reply-To: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
-References: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
+Date: Mon, 13 Aug 2012 16:31:30 +0400
+Message-ID: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,167 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This test is a part of CRIU development test suit.
----
- tools/testing/selftests/ipc/msgque.c |  151 ++++++++++++++++++++++++++++++++++
- 1 files changed, 151 insertions(+), 0 deletions(-)
- create mode 100644 tools/testing/selftests/ipc/msgque.c
+v4:
+1) If MSG_COPY flag is specified, then "mtype" is not a type, but message
+number to copy.
+2) MSG_SET_COPY logic for sys_msgctl() was removed.
 
-diff --git a/tools/testing/selftests/ipc/msgque.c b/tools/testing/selftests/ipc/msgque.c
-new file mode 100644
-index 0000000..c101e25
---- /dev/null
-+++ b/tools/testing/selftests/ipc/msgque.c
-@@ -0,0 +1,151 @@
-+#define _GNU_SOURCE
-+#include <sched.h>
-+
-+#include <stdio.h>
-+#include <string.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <sys/types.h>
-+#include <sys/wait.h>
-+#include <sys/sem.h>
-+#include <sys/ipc.h>
-+#include <sys/msg.h>
-+#include <signal.h>
-+#include <errno.h>
-+
-+#include "zdtmtst.h"
-+
-+const char *test_doc="Tests sysv5 msg queues support by user space checkpointing";
-+const char *test_author="Stanislav Kinsbursky <skinsbursky@openvz.org>";
-+
-+struct msg1 {
-+	long mtype;
-+	char mtext[20];
-+};
-+#define TEST_STRING "Test sysv5 msg"
-+#define MSG_TYPE 1
-+
-+#define ANOTHER_TEST_STRING "Yet another test sysv5 msg"
-+#define ANOTHER_MSG_TYPE 26538
-+
-+static int test_fn(int argc, char **argv)
-+{
-+	key_t key;
-+	int msg, pid;
-+	struct msg1 msgbuf;
-+	int chret;
-+
-+	key = ftok(argv[0], 822155650);
-+	if (key == -1) {
-+		err("Can't make key");
-+		exit(1);
-+	}
-+
-+	pid = test_fork();
-+	if (pid < 0) {
-+		err("Can't fork");
-+		exit(1);
-+	}
-+
-+	msg = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
-+	if (msg == -1) {
-+		msg = msgget(key, 0666);
-+		if (msg == -1) {
-+			err("Can't get queue");
-+			goto err_kill;
-+		}
-+	}
-+
-+	if (pid == 0) {
-+		/*
-+		 * Here is the place where test sleeps and waits for signal.
-+		 * This place is used for suspend/restore test.
-+		 */
-+		test_waitsig();
-+
-+		if (msgrcv(msg, &msgbuf, sizeof(TEST_STRING), MSG_TYPE, IPC_NOWAIT) == -1) {
-+			fail("Child: msgrcv failed (%m)");
-+			return -errno;
-+		}
-+
-+		if (strncmp(TEST_STRING, msgbuf.mtext, sizeof(TEST_STRING))) {
-+			fail("Child: the source and received strings aren't equal");
-+			return -errno;
-+		}
-+		test_msg("Child: received %s\n", msgbuf.mtext);
-+
-+		msgbuf.mtype = ANOTHER_MSG_TYPE;
-+		memcpy(msgbuf.mtext, ANOTHER_TEST_STRING, sizeof(ANOTHER_TEST_STRING));
-+		if (msgsnd(msg, &msgbuf, sizeof(ANOTHER_TEST_STRING), IPC_NOWAIT) != 0) {
-+			fail("Child: msgsnd failed (%m)");
-+			return -errno;
-+		};
-+		pass();
-+		return 0;
-+	} else {
-+		msgbuf.mtype = MSG_TYPE;
-+		memcpy(msgbuf.mtext, TEST_STRING, sizeof(TEST_STRING));
-+		if (msgsnd(msg, &msgbuf, sizeof(TEST_STRING), IPC_NOWAIT) != 0) {
-+			fail("Parent: msgsnd failed (%m)");
-+			goto err_kill;
-+		};
-+
-+		msgbuf.mtype = ANOTHER_MSG_TYPE;
-+		memcpy(msgbuf.mtext, ANOTHER_TEST_STRING, sizeof(ANOTHER_TEST_STRING));
-+		if (msgsnd(msg, &msgbuf, sizeof(ANOTHER_TEST_STRING), IPC_NOWAIT) != 0) {
-+			fail("child: msgsnd (2) failed (%m)");
-+			return -errno;
-+		};
-+
-+		test_daemon();
-+		test_waitsig();
-+
-+		kill(pid, SIGTERM);
-+
-+		wait(&chret);
-+		chret = WEXITSTATUS(chret);
-+		if (chret) {
-+			fail("Parent: child exited with non-zero code %d (%s)\n",
-+			     chret, strerror(chret));
-+			goto out;
-+		}
-+
-+		if (msgrcv(msg, &msgbuf, sizeof(ANOTHER_TEST_STRING), ANOTHER_MSG_TYPE, IPC_NOWAIT) == -1) {
-+			fail("Parent: msgrcv failed (%m)");
-+			goto err;
-+		}
-+
-+		if (strncmp(ANOTHER_TEST_STRING, msgbuf.mtext, sizeof(ANOTHER_TEST_STRING))) {
-+			fail("Parent: the source and received strings aren't equal");
-+			goto err;
-+		}
-+		test_msg("Parent: received %s\n", msgbuf.mtext);
-+
-+		pass();
-+	}
-+
-+out:
-+	if (msgctl(msg, IPC_RMID, 0)) {
-+		fail("Failed to destroy message queue: %d\n", -errno);
-+		return -errno;
-+	}
-+	return chret;
-+
-+err_kill:
-+	kill(pid, SIGKILL);
-+	wait(NULL);
-+err:
-+	chret = -errno;
-+	goto out;
-+}
-+
-+int main(int argc, char **argv)
-+{
-+#ifdef NEW_IPC_NS
-+	test_init_ns(argc, argv, CLONE_NEWIPC, test_fn);
-+#else
-+	test_init(argc, argv);
-+	test_fn();
-+#endif
-+	return 0;
-+}
+v3:
+1) Copy messages to user-space under spinlock was replaced by allocation of
+dummy message before queue lock and then copy of desired message to the dummy
+one instead of unlinking it from queue list.
+I.e. the message queue copy logic was changed: messages can be retrived one by
+one (instead of receiving of the whole list at once).
+
+This patch set is aimed to provide additional functionality for all IPC objects,
+which is required for migration of these objects by user-space
+checkpoint/restore utils (CRIU).
+
+The main problem here was impossibility to set up object id. This patch set
+solves the problem in two steps:
+1) Makes it possible to create new object (shared memory, semaphores set or
+messages queue) with ID, equal to passed key.
+2) Makes it possible to change existent object key.
+
+Another problem was to peek messages from queues without deleting them.
+This was achived by introducing of new MSG_COPY flag for sys_msgrcv() and
+MSG_SET_COPY command for sys_msgctl() (which can be used to select message
+number to copy).
+
+The following series implements...
+
+---
+
+Stanislav Kinsbursky (9):
+      ipc: remove forced assignment of selected message
+      ipc: "use key as id" functionality for resource get system call introduced
+      ipc: segment key change helper introduced
+      ipc: add new SHM_SET command for sys_shmctl() call
+      ipc: add new MSG_SET command for sys_msgctl() call
+      ipc: add new SEM_SET command for sys_semctl() call
+      IPC: message queue receive cleanup
+      IPC: message queue copy feature introduced
+      test: IPC message queue migration test
+
+
+ arch/tile/kernel/compat.c            |   29 +++++++
+ include/linux/compat.h               |    2 
+ include/linux/ipc.h                  |    1 
+ include/linux/msg.h                  |    7 +-
+ include/linux/sem.h                  |    1 
+ include/linux/shm.h                  |    1 
+ ipc/compat.c                         |   42 ++++++---
+ ipc/msg.c                            |  110 +++++++++++++++++++------
+ ipc/msgutil.c                        |   38 +++++++++
+ ipc/sem.c                            |   11 ++
+ ipc/shm.c                            |   14 +++
+ ipc/util.c                           |   59 ++++++++++++-
+ ipc/util.h                           |    4 +
+ security/selinux/hooks.c             |    3 +
+ security/smack/smack_lsm.c           |    3 +
+ tools/testing/selftests/ipc/msgque.c |  151 ++++++++++++++++++++++++++++++++++
+ 16 files changed, 424 insertions(+), 52 deletions(-)
+ create mode 100644 tools/testing/selftests/ipc/msgque.c
 
