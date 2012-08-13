@@ -1,131 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2HMUeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:34:13 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:56669 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab2HMUYQ (ORCPT
+	id S1754639Ab2HMUYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:24:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab2HMUYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:16 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 13 Aug 2012 13:18:28 -0700
-Message-Id: <1344889115-21610-14-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX180rtvdTs7Bj9pcnGdQuLNJ7lTsrdscASo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1316]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 14/21] userns: nfnetlink_log: Report socket uids in the log sockets user namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:24:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Theodore Tso" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [ 57/82] random: remove rand_initialize_irq()
+Date: Mon, 13 Aug 2012 13:19:33 -0700
+Message-Id: <20120813201751.462729393@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-At logging instance creation capture the peer netlink socket's user
-namespace. Use the captured peer user namespace when reporting socket
-uids to the peer.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-The peer socket's user namespace is guaranateed to be valid until the user
-closes the netlink socket.  nfnetlink_log removes instances during the final
-close of a socket.  __build_packet_message does not get called after an
-instance is destroyed.   Therefore it is safe to let the peer netlink socket
-take care of the user namespace reference counting for us.
+------------------
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+From: Theodore Ts'o <tytso@mit.edu>
+
+commit c5857ccf293968348e5eb4ebedc68074de3dcda6 upstream.
+
+With the new interrupt sampling system, we are no longer using the
+timer_rand_state structure in the irq descriptor, so we can stop
+initializing it now.
+
+[ Merged in fixes from Sedat to find some last missing references to
+  rand_initialize_irq() ]
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- init/Kconfig                  |    1 -
- net/netfilter/nfnetlink_log.c |   14 ++++++++++----
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ arch/ia64/kernel/irq_ia64.c |    1 
+ drivers/char/random.c       |   55 --------------------------------------------
+ drivers/mfd/ab3100-core.c   |    3 --
+ include/linux/irqdesc.h     |    1 
+ include/linux/random.h      |    2 -
+ kernel/irq/manage.c         |   17 -------------
+ 6 files changed, 79 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 07435e0..2660b31 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -947,7 +947,6 @@ config UIDGID_CONVERTED
- 	depends on NETFILTER_XT_MATCH_OWNER = n
- 	depends on NETFILTER_XT_MATCH_RECENT = n
- 	depends on NETFILTER_XT_TARGET_LOG = n
--	depends on NETFILTER_NETLINK_LOG = n
- 	depends on AF_RXRPC = n
- 	depends on NET_KEY = n
- 	depends on DNS_RESOLVER = n
-diff --git a/net/netfilter/nfnetlink_log.c b/net/netfilter/nfnetlink_log.c
-index 169ab59..4142aac 100644
---- a/net/netfilter/nfnetlink_log.c
-+++ b/net/netfilter/nfnetlink_log.c
-@@ -55,6 +55,7 @@ struct nfulnl_instance {
- 	unsigned int qlen;		/* number of nlmsgs in skb */
- 	struct sk_buff *skb;		/* pre-allocatd skb */
- 	struct timer_list timer;
-+	struct user_namespace *peer_user_ns;	/* User namespace of the peer process */
- 	int peer_pid;			/* PID of the peer process */
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -23,7 +23,6 @@
+ #include <linux/ioport.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/ptrace.h>
+-#include <linux/random.h>	/* for rand_initialize_irq() */
+ #include <linux/signal.h>
+ #include <linux/smp.h>
+ #include <linux/threads.h>
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -634,43 +634,6 @@ struct timer_rand_state {
+ 	unsigned dont_count_entropy:1;
+ };
  
- 	/* configurable parameters */
-@@ -132,7 +133,7 @@ instance_put(struct nfulnl_instance *inst)
- static void nfulnl_timer(unsigned long data);
+-#ifndef CONFIG_GENERIC_HARDIRQS
+-
+-static struct timer_rand_state *irq_timer_state[NR_IRQS];
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	return irq_timer_state[irq];
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	irq_timer_state[irq] = state;
+-}
+-
+-#else
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	return desc->timer_rand_state;
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	desc->timer_rand_state = state;
+-}
+-#endif
+-
+ /*
+  * Add device- or boot-specific data to the input and nonblocking
+  * pools to help initialize them to unique values.
+@@ -1133,24 +1096,6 @@ static int rand_initialize(void)
+ }
+ module_init(rand_initialize);
  
- static struct nfulnl_instance *
--instance_create(u_int16_t group_num, int pid)
-+instance_create(u_int16_t group_num, int pid, struct user_namespace *user_ns)
+-void rand_initialize_irq(int irq)
+-{
+-	struct timer_rand_state *state;
+-
+-	state = get_timer_rand_state(irq);
+-
+-	if (state)
+-		return;
+-
+-	/*
+-	 * If kzalloc returns null, we just won't use that entropy
+-	 * source.
+-	 */
+-	state = kzalloc(sizeof(struct timer_rand_state), GFP_KERNEL);
+-	if (state)
+-		set_timer_rand_state(irq, state);
+-}
+-
+ #ifdef CONFIG_BLOCK
+ void rand_initialize_disk(struct gendisk *disk)
  {
- 	struct nfulnl_instance *inst;
- 	int err;
-@@ -162,6 +163,7 @@ instance_create(u_int16_t group_num, int pid)
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -931,9 +931,6 @@ static int __devinit ab3100_probe(struct
  
- 	setup_timer(&inst->timer, nfulnl_timer, (unsigned long)inst);
+ 	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
+ 				IRQF_ONESHOT, "ab3100-core", ab3100);
+-	/* This real unpredictable IRQ is of course sampled for entropy */
+-	rand_initialize_irq(client->irq);
+-
+ 	if (err)
+ 		goto exit_no_irq;
  
-+	inst->peer_user_ns = user_ns;
- 	inst->peer_pid = pid;
- 	inst->group_num = group_num;
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -39,7 +39,6 @@ struct module;
+  */
+ struct irq_desc {
+ 	struct irq_data		irq_data;
+-	struct timer_rand_state *timer_rand_state;
+ 	unsigned int __percpu	*kstat_irqs;
+ 	irq_flow_handler_t	handle_irq;
+ #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -48,8 +48,6 @@ struct rnd_state {
  
-@@ -503,8 +505,11 @@ __build_packet_message(struct nfulnl_instance *inst,
- 		read_lock_bh(&skb->sk->sk_callback_lock);
- 		if (skb->sk->sk_socket && skb->sk->sk_socket->file) {
- 			struct file *file = skb->sk->sk_socket->file;
--			__be32 uid = htonl(file->f_cred->fsuid);
--			__be32 gid = htonl(file->f_cred->fsgid);
-+			__be32 uid = htonl(from_kuid_munged(inst->peer_user_ns,
-+							    file->f_cred->fsuid));
-+			__be32 gid = htonl(from_kgid_munged(inst->peer_user_ns,
-+							    file->f_cred->fsgid));
-+			/* need to unlock here since NLA_PUT may goto */
- 			read_unlock_bh(&skb->sk->sk_callback_lock);
- 			if (nla_put_be32(inst->skb, NFULA_UID, uid) ||
- 			    nla_put_be32(inst->skb, NFULA_GID, gid))
-@@ -783,7 +788,8 @@ nfulnl_recv_config(struct sock *ctnl, struct sk_buff *skb,
- 			}
+ #ifdef __KERNEL__
  
- 			inst = instance_create(group_num,
--					       NETLINK_CB(skb).pid);
-+					       NETLINK_CB(skb).pid,
-+					       sk_user_ns(NETLINK_CB(skb).ssk));
- 			if (IS_ERR(inst)) {
- 				ret = PTR_ERR(inst);
- 				goto out;
--- 
-1.7.5.4
+-extern void rand_initialize_irq(int irq);
+-
+ extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -893,22 +893,6 @@ __setup_irq(unsigned int irq, struct irq
+ 		return -ENOSYS;
+ 	if (!try_module_get(desc->owner))
+ 		return -ENODEV;
+-	/*
+-	 * Some drivers like serial.c use request_irq() heavily,
+-	 * so we have to be careful not to interfere with a
+-	 * running system.
+-	 */
+-	if (new->flags & IRQF_SAMPLE_RANDOM) {
+-		/*
+-		 * This function might sleep, we want to call it first,
+-		 * outside of the atomic block.
+-		 * Yes, this might clear the entropy pool if the wrong
+-		 * driver is attempted to be loaded, without actually
+-		 * installing a new handler, but is this really a problem,
+-		 * only the sysadmin is able to do this.
+-		 */
+-		rand_initialize_irq(irq);
+-	}
+ 
+ 	/*
+ 	 * Check whether the interrupt nests into another interrupt
+@@ -1354,7 +1338,6 @@ EXPORT_SYMBOL(free_irq);
+  *	Flags:
+  *
+  *	IRQF_SHARED		Interrupt is shared
+- *	IRQF_SAMPLE_RANDOM	The interrupt can be used for entropy
+  *	IRQF_TRIGGER_*		Specify active edge(s) or level
+  *
+  */
+
 
