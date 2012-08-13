@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab2HMUYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:24:50 -0400
+	id S1754865Ab2HMUYy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:24:54 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab2HMUYm (ORCPT
+	with ESMTP id S1754848Ab2HMUYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:42 -0400
+	Mon, 13 Aug 2012 16:24:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [ 56/82] mfd: wm831x: Feed the device UUID into device_add_randomness()
-Date: Mon, 13 Aug 2012 13:19:32 -0700
-Message-Id: <20120813201751.378006349@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 67/82] target: Fix possible integer underflow in UNMAP emulation
+Date: Mon, 13 Aug 2012 13:19:43 -0700
+Message-Id: <20120813201752.331185916@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,51 +31,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 27130f0cc3ab97560384da437e4621fc4e94f21c upstream.
+commit b7fc7f3777582dea85156a821d78a522a0c083aa upstream.
 
-wm831x devices contain a unique ID value. Feed this into the newly added
-device_add_randomness() to add some per device seed data to the pool.
+It's possible for an initiator to send us an UNMAP command with a
+descriptor that is less than 8 bytes; in that case it's really bad for
+us to set an unsigned int to that value, subtract 8 from it, and then
+use that as a limit for our loop (since the value will wrap around to
+a huge positive value).
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Fix this by making size be signed and only looping if size >= 16 (ie
+if we have at least a full descriptor available).
+
+Also remove offset as an obfuscated name for the constant 8.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: adjust filename, context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mfd/wm831x-otp.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/target/target_core_cdb.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/drivers/mfd/wm831x-otp.c
-+++ b/drivers/mfd/wm831x-otp.c
-@@ -18,6 +18,7 @@
- #include <linux/bcd.h>
- #include <linux/delay.h>
- #include <linux/mfd/core.h>
-+#include <linux/random.h>
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -1014,9 +1014,10 @@ int target_emulate_unmap(struct se_cmd *
+ 	struct se_device *dev = cmd->se_dev;
+ 	unsigned char *buf, *ptr = NULL;
+ 	sector_t lba;
+-	unsigned int size = cmd->data_length, range;
+-	int ret = 0, offset;
+-	unsigned short dl, bd_dl;
++	int size = cmd->data_length;
++	u32 range;
++	int ret = 0;
++	int dl, bd_dl;
  
- #include <linux/mfd/wm831x/core.h>
- #include <linux/mfd/wm831x/otp.h>
-@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm83
+ 	if (!dev->transport->do_discard) {
+ 		pr_err("UNMAP emulation not supported for: %s\n",
+@@ -1025,20 +1026,19 @@ int target_emulate_unmap(struct se_cmd *
+ 		return -ENOSYS;
+ 	}
  
- int wm831x_otp_init(struct wm831x *wm831x)
- {
-+	char uuid[WM831X_UNIQUE_ID_LEN];
- 	int ret;
+-	/* First UNMAP block descriptor starts at 8 byte offset */
+-	offset = 8;
+-	size -= 8;
+-
+ 	buf = transport_kmap_data_sg(cmd);
  
- 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
-@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831
- 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
- 			ret);
+ 	dl = get_unaligned_be16(&buf[0]);
+ 	bd_dl = get_unaligned_be16(&buf[2]);
  
-+	ret = wm831x_unique_id_read(wm831x, uuid);
-+	if (ret == 0)
-+		add_device_randomness(uuid, sizeof(uuid));
-+	else
-+		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
+-	ptr = &buf[offset];
+-	pr_debug("UNMAP: Sub: %s Using dl: %hu bd_dl: %hu size: %hu"
++	size = min(size - 8, bd_dl);
 +
- 	return ret;
- }
++	/* First UNMAP block descriptor starts at 8 byte offset */
++	ptr = &buf[8];
++	pr_debug("UNMAP: Sub: %s Using dl: %u bd_dl: %u size: %u"
+ 		" ptr: %p\n", dev->transport->name, dl, bd_dl, size, ptr);
  
+-	while (size) {
++	while (size >= 16) {
+ 		lba = get_unaligned_be64(&ptr[0]);
+ 		range = get_unaligned_be32(&ptr[8]);
+ 		pr_debug("UNMAP: Using lba: %llu and range: %u\n",
 
 
