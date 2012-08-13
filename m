@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab2HMMcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 08:32:22 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19677 "EHLO relay.sw.ru"
+	id S1752374Ab2HMMcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 08:32:31 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2264 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab2HMMcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 08:32:20 -0400
-Subject: [PATCH v4 2/9] ipc: "use key as id" functionality for resource get
- system call introduced
+	id S1752326Ab2HMMc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 08:32:29 -0400
+Subject: [PATCH v4 3/9] ipc: segment key change helper introduced
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, arnd@arndb.de,
@@ -15,8 +14,8 @@ Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, arnd@arndb.de,
         yeohc@au1.ibm.com, linux-security-module@vger.kernel.org,
         kosaki.motohiro@jp.fujitsu.com, hpa@zytor.com, casey@schaufler-ca.com,
         eparis@parisplace.org, devel@openvz.org
-Date: Mon, 13 Aug 2012 16:31:42 +0400
-Message-ID: <20120813123142.5581.69968.stgit@localhost6.localdomain6>
+Date: Mon, 13 Aug 2012 16:31:48 +0400
+Message-ID: <20120813123147.5581.29205.stgit@localhost6.localdomain6>
 In-Reply-To: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
 References: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -27,107 +26,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces new IPC resource get request flag IPC_PRESET, which
-should be interpreted as a request to try to allocate IPC slot with number,
-starting from value resented by key. IOW, kernel will try
-allocate new segment in specified slot. If slot is not emply, them -EEXIST
-returned.
+This patch introduces existent segment key changing infrastructure.
+New function ipc_update_key() can be used change segment key, cuid, cgid
+values. It checks for that new key is not used (except IPC_PRIVATE) prior to
+set it on existent.
+To make this possible, added copying of this fields from user-space in
+__get_compat_ipc_perm() and __get_compat_ipc64_perm() functions. Also segment
+search by key and lock were splitted into different functions, because
+ipc_update_key() doesn't need to lock the segment during check that new key is
+not used.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- include/linux/ipc.h |    1 +
- ipc/msg.c           |    1 +
- ipc/sem.c           |    1 +
- ipc/shm.c           |    1 +
- ipc/util.c          |    8 +++++++-
- ipc/util.h          |    1 +
- 6 files changed, 12 insertions(+), 1 deletions(-)
+ ipc/compat.c |    6 ++++++
+ ipc/util.c   |   51 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ ipc/util.h   |    2 ++
+ 3 files changed, 56 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/ipc.h b/include/linux/ipc.h
-index 30e8161..d7e5632 100644
---- a/include/linux/ipc.h
-+++ b/include/linux/ipc.h
-@@ -24,6 +24,7 @@ struct ipc_perm
- #define IPC_CREAT  00001000   /* create if key is nonexistent */
- #define IPC_EXCL   00002000   /* fail if key exists */
- #define IPC_NOWAIT 00004000   /* return error on wait */
-+#define IPC_PRESET 00040000   /* use key as id */
+diff --git a/ipc/compat.c b/ipc/compat.c
+index a6df704..aa88515 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -144,6 +144,9 @@ static inline int __get_compat_ipc64_perm(struct ipc64_perm *p64,
+ 	err  = __get_user(p64->uid, &up64->uid);
+ 	err |= __get_user(p64->gid, &up64->gid);
+ 	err |= __get_user(p64->mode, &up64->mode);
++	err |= __get_user(p64->cuid, &up64->cuid);
++	err |= __get_user(p64->cgid, &up64->cgid);
++	err |= __get_user(p64->key, &up64->key);
+ 	return err;
+ }
  
- /* these fields are used by the DIPC package so the kernel as standard
-    should avoid using them if possible */
-diff --git a/ipc/msg.c b/ipc/msg.c
-index f3bfbb8..70939a0 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -190,6 +190,7 @@ static int newque(struct ipc_namespace *ns, struct ipc_params *params)
+@@ -155,6 +158,9 @@ static inline int __get_compat_ipc_perm(struct ipc64_perm *p,
+ 	err  = __get_user(p->uid, &up->uid);
+ 	err |= __get_user(p->gid, &up->gid);
+ 	err |= __get_user(p->mode, &up->mode);
++	err |= __get_user(p->cuid, &up->cuid);
++	err |= __get_user(p->cgid, &up->cgid);
++	err |= __get_user(p->key, &up->key);
+ 	return err;
+ }
  
- 	msq->q_perm.mode = msgflg & S_IRWXUGO;
- 	msq->q_perm.key = key;
-+	msq->q_perm.id = (msgflg & IPC_PRESET) ? key : 0;
- 
- 	msq->q_perm.security = NULL;
- 	retval = security_msg_queue_alloc(msq);
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 5215a81..845c912 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -306,6 +306,7 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
- 
- 	sma->sem_perm.mode = (semflg & S_IRWXUGO);
- 	sma->sem_perm.key = key;
-+	sma->sem_perm.id = (semflg & IPC_PRESET) ? key : 0;
- 
- 	sma->sem_perm.security = NULL;
- 	retval = security_sem_alloc(sma);
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 41c1285..d4c0a9e 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -480,6 +480,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 
- 	shp->shm_perm.key = key;
- 	shp->shm_perm.mode = (shmflg & S_IRWXUGO);
-+	shp->shm_perm.id = (shmflg & IPC_PRESET) ? key : 0;
- 	shp->mlock_user = NULL;
- 
- 	shp->shm_perm.security = NULL;
 diff --git a/ipc/util.c b/ipc/util.c
-index 75261a3..ac9c6a9 100644
+index ac9c6a9..d1e2f25 100644
 --- a/ipc/util.c
 +++ b/ipc/util.c
-@@ -264,7 +264,8 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
- 	rcu_read_lock();
- 	spin_lock(&new->lock);
+@@ -173,7 +173,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
+  *	@key: The key to find
+  *	
+  *	Requires ipc_ids.rw_mutex locked.
+- *	Returns the LOCKED pointer to the ipc structure if found or NULL
++ *	Returns the UNLOCKED pointer to the ipc structure if found or NULL
+  *	if not.
+  *	If key is found ipc points to the owning ipc structure
+  */
+@@ -195,7 +195,6 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
+ 			continue;
+ 		}
  
--	err = idr_get_new(&ids->ipcs_idr, new, &id);
-+	err = idr_get_new_above(&ids->ipcs_idr, new,
-+				ipcid_to_idx(new->id), &id);
- 	if (err) {
- 		spin_unlock(&new->lock);
- 		rcu_read_unlock();
-@@ -277,6 +278,11 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
- 	new->cuid = new->uid = euid;
- 	new->gid = new->cgid = egid;
+-		ipc_lock_by_ptr(ipc);
+ 		return ipc;
+ 	}
  
-+	if (new->id && ipcid_to_idx(new->id) == id) {
-+		new->seq = ipcid_to_seq(new->id);
-+		return id;
-+	}
+@@ -203,6 +202,27 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
+ }
+ 
+ /**
++ *	ipc_findkey_locked	-	find and lock a key in an ipc identifier set
++ *	@ids: Identifier set
++ *	@key: The key to find
++ *
++ *	Requires ipc_ids.rw_mutex locked.
++ *	Returns the LOCKED pointer to the ipc structure if found or NULL
++ *	if not.
++ *	If key is found ipc points to the owning ipc structure
++ */
 +
- 	new->seq = ids->seq++;
- 	if(ids->seq > ids->seq_max)
- 		ids->seq = 0;
++static struct kern_ipc_perm *ipc_findkey_locked(struct ipc_ids *ids, key_t key)
++{
++	struct kern_ipc_perm *ipc;
++
++	ipc = ipc_findkey(ids, key);
++	if (ipc)
++		ipc_lock_by_ptr(ipc);
++	return ipc;
++}
++
++/**
+  *	ipc_get_maxid 	-	get the last assigned id
+  *	@ids: IPC identifier set
+  *
+@@ -382,7 +402,7 @@ retry:
+ 	 * a new entry + read locks are not "upgradable"
+ 	 */
+ 	down_write(&ids->rw_mutex);
+-	ipcp = ipc_findkey(ids, params->key);
++	ipcp = ipc_findkey_locked(ids, params->key);
+ 	if (ipcp == NULL) {
+ 		/* key not used */
+ 		if (!(flg & IPC_CREAT))
+@@ -749,6 +769,31 @@ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+ }
+ 
+ /**
++ * ipc_update_key - update the key of an IPC.
++ * @in:  the permission given as input.
++ * @out: the permission of the ipc to set.
++ *
++ * Common routine called by sys_shmctl(), sys_semctl(). sys_msgctl().
++ */
++int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
++		    struct kern_ipc_perm *out)
++{
++
++	if (in->key && out->key != in->key) {
++		/*
++		 * Check for existent segment with the same key.
++		 * Note: ipc_ids.rw_mutex is taken for write already.
++		 */
++		if (ipc_findkey(ids, in->key))
++			return -EEXIST;
++	}
++	out->cuid = in->cuid;
++	out->cgid = in->cgid;
++	out->key = in->key;
++	return 0;
++}
++
++/**
+  * ipc_update_perm - update the permissions of an IPC.
+  * @in:  the permission given as input.
+  * @out: the permission of the ipc to set.
 diff --git a/ipc/util.h b/ipc/util.h
-index 6f5c20b..5f04b02 100644
+index 5f04b02..2bc6a9a 100644
 --- a/ipc/util.h
 +++ b/ipc/util.h
-@@ -92,6 +92,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
- #define IPC_SHM_IDS	2
+@@ -126,6 +126,8 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
  
- #define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
-+#define ipcid_to_seq(id) ((id) / SEQ_MULTIPLIER)
- 
- /* must be called with ids->rw_mutex acquired for writing */
- int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int);
+ void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
+ void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
++int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
++		   struct kern_ipc_perm *out);
+ void ipc_update_perm(struct ipc64_perm *in, struct kern_ipc_perm *out);
+ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 				      struct ipc_ids *ids, int id, int cmd,
 
