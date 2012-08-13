@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2HMVX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:23:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab2HMVX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:23:26 -0400
-Message-ID: <1344893004.4683.136.camel@ul30vt.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 13 Aug 2012 15:23:24 -0600
-In-Reply-To: <20120812093336.GC1421@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
-	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
-	 <1344540375.3441.228.camel@ul30vt.home> <20120812093336.GC1421@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753287Ab2HMVbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:31:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19735 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab2HMVbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:31:34 -0400
+Date: Mon, 13 Aug 2012 17:21:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thai Bui <blquythai@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
+ DEBUG_INITCALL
+Message-ID: <20120813212151.GA15429@phenom.dumpdata.com>
+References: <n>
+ <1344891431-30869-1-git-send-email-blquythai@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-12 at 12:33 +0300, Michael S. Tsirkin wrote:
-> On Thu, Aug 09, 2012 at 01:26:15PM -0600, Alex Williamson wrote:
-> > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
-> > > On 08/06/2012 01:38 PM, Avi Kivity wrote:
-> > > 
-> > > > Regarding the implementation, instead of a linked list, would an array
-> > > > of counters parallel to the bitmap make it simpler?
-> > > 
-> > > Or even, replace the bitmap with an array of counters.
-> > 
-> > I'm not sure a counter array is what we're really after.  That gives us
-> > reference counting for the irq source IDs, but not the key->gsi lookup.
-> > It also highlights another issue, that we have a limited set of source
-> > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
-> > for the shared userspace ID and another for the PIT.  How happy are we
-> > going to be with a limit of 62 level interrupts in use at one time?
-> > 
-> > It's arguably a reasonable number since the most virtualization friendly
-> > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
-> > also very wasteful allocating an entire source ID for a single GSI
-> > within that source ID.  PCI supports interrupts A, B, C, and D, which,
-> > in the most optimal config, each go to different GSIs.  So we could
-> > theoretically be more efficient in our use and allocation of irq source
-> > IDs if we tracked use by the source ID, gsi pair.
-> > 
-> > That probably makes it less practical to replace anything at the top
-> > level with a counter array.  The key that we pass back is currently the
-> > actual source ID, but we don't specify what it is, so we could split it
-> > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
-> > an idr entry.
-> > 
-> > Michael, would the interface be more acceptable to you if we added
-> > separate ioctls to allocate and free some representation of an irq
-> > source ID, gsi pair?  For instance, an ioctl might return an idr entry
-> > for an irq source ID/gsi object which would then be passed as a
-> > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
-> > representing the source id/gsi isn't magically freed on it's own.  This
-> > would also allow us to deassign/close one end and reconfigure it later.
-> > Thanks,
-> > 
-> > Alex
-> 
-> It's acceptable to me either way. I was only pointing out that as
-> designed, the interface looks simple at first but then you find out some
-> subtle limitations which are implementation driven. This gives
-> an overall feeling the abstraction is too low level.
-> 
-> If we compare to the existing irqfd, isn't the difference
-> simply that irqfd deasserts immediately ATM, while we
-> want to delay this until later?
-> 
-> If yes, then along the lines that you proposed, and combining with my
-> idea of tracking deasserts, how do you like the following:
-> 
-> /* Keep line asserted until guest has handled the interrupt. */
-> #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
-> /* Notify after line is deasserted. */
-> #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
-> 
-> 	struct kvm_irqfd {
-> 		__u32 fd;
-> 		__u32 gsi;
-> 		__u32 flags;
-> 		/* eventfd to notify when line is deasserted */
-> 		__u32 deassert_eventfd;
-> 		__u8  pad[16];
-> 	};
-> 
-> now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
-> effective for level interrupts.
-> 
-> Notes about lifetime of objects:
-> 	- closing deassert_eventfd does nothing (we can keep
-> 	  reference to it from irqfd so no need for
->           complex polling/flushing scheme)
-> 	- closing irqfd or deasserting dis-associates
-> 	  deassert_eventfd automatically
-> 	- source id is internal to irqfd and goes away with it
-> 
-> it looks harder to misuse and fits what we want to do nicely,
-> and needs less code to implement.
+On Mon, Aug 13, 2012 at 01:57:11PM -0700, Thai Bui wrote:
+> Putting DEBUG_INITCALL config option to compile out the command-line option
+> "initcall_debug".
 
-This is effectively what I meant when I suggested we either need to a)
-pull eoifd into irqfd or b) implement them as modular components.  I
-chose to implement b) because I think that non-irqfd related ack
-notification to userspace will be useful and a) does not provide that.
-So this interface enables exactly the use case for device assignment and
-no more.  I feel like this is the start of an ioctl that will be quickly
-deprecated, but if that's the direction we want to go, I'll write the
-code.  Thanks,
-
-Alex
-
+Can you explain the benfits of this please?
+> 
+> Signed-off-by: Thai Bui <blquythai@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  Documentation/kernel-parameters.txt |    3 ++-
+>  include/linux/init.h                |    4 ++++
+>  init/main.c                         |    2 ++
+>  lib/Kconfig.debug                   |    9 +++++++++
+>  4 files changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index d99fd9c..3dbaf15 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1026,7 +1026,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
+>  			for working out where the kernel is dying during
+> -			startup.
+> +			startup. DEBUG_INITCALL needs to be enabled in order
+> +			for this option to work.
+>  
+>  	initrd=		[BOOT] Specify the location of the initial ramdisk
+>  
+> diff --git a/include/linux/init.h b/include/linux/init.h
+> index 6b95109..d2f31f1 100644
+> --- a/include/linux/init.h
+> +++ b/include/linux/init.h
+> @@ -157,7 +157,11 @@ void prepare_namespace(void);
+>  
+>  extern void (*late_time_init)(void);
+>  
+> +#ifdef CONFIG_DEBUG_INITCALL
+>  extern bool initcall_debug;
+> +#else
+> +static const bool initcall_debug = false;
+> +#endif /* CONFIG_DEBUG_INITCALL */
+>  
+>  #endif
+>    
+> diff --git a/init/main.c b/init/main.c
+> index ff49a6d..65837f7 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -648,8 +648,10 @@ static void __init do_ctors(void)
+>  #endif
+>  }
+>  
+> +#ifdef CONFIG_DEBUG_INITCALL
+>  bool initcall_debug;
+>  core_param(initcall_debug, initcall_debug, bool, 0644);
+> +#endif /* CONFIG_DEBUG_INITCALL */
+>  
+>  static char msgbuf[64];
+>  
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 8745ac7..424ac93 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -769,6 +769,15 @@ config DEBUG_WRITECOUNT
+>  
+>  	  If unsure, say N.
+>  
+> +config DEBUG_INITCALL
+> +	bool "Debug initcalls as they are executed"
+> +	depends on DEBUG_KERNEL
+> +	help
+> +	  Enable this for tracing initcalls during startup. Useful for working
+> +	  out where the kernel is dying during startup.
+> +
+> +	  If unsure, say N
+> +
+>  config DEBUG_MEMORY_INIT
+>  	bool "Debug memory initialisation" if EXPERT
+>  	default !EXPERT
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
