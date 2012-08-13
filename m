@@ -1,98 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab2HMVN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:13:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57712 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab2HMVN4 (ORCPT
+	id S1753273Ab2HMVVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:21:52 -0400
+Received: from mail-we0-f202.google.com ([74.125.82.202]:59487 "EHLO
+	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab2HMVV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:13:56 -0400
+	Mon, 13 Aug 2012 17:21:29 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+	<1344517279-30646-7-git-send-email-glommer@parallels.com>
+	<xr93ehnec8sl.fsf@gthelen.mtv.corp.google.com>
+	<5028D016.1030902@parallels.com>
+Date: Mon, 13 Aug 2012 14:21:19 -0700
+Message-ID: <xr93lihijxo0.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <20120813185817.GA17342@pengutronix.de>
-References: <1344625575-27560-1-git-send-email-arnd@arndb.de>
-	<20120813185817.GA17342@pengutronix.de>
-Date: Mon, 13 Aug 2012 14:13:55 -0700
-Message-ID: <CAOesGMjcSw1vUJ8nn4TakrRxEonryc=Oo-uhRxML=HwJpZQ8hQ@mail.gmail.com>
-Subject: Re: [GIT PULL 0/3] arm-soc updates
-From: Olof Johansson <olof@lixom.net>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 11:58 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> Hi Arnd,
+On Mon, Aug 13 2012, Glauber Costa wrote:
+
+>> 
+>> Here's the dmesg splat.
+>> 
 >
-> On Fri, Aug 10, 2012 at 09:06:12PM +0200, Arnd Bergmann wrote:
->> Hi Linus,
->>
->> Here are three pull requests for you to consider for the next -rc.
->
-> How do you send multiple pull requests? Is there some git foo available
-> or do you do this manually?
+> Do you always get this report in the same way?
+> I managed to get a softirq inconsistency like yours, but the complaint
+> goes for a different lock.
 
-For truly trivial multi-branch pulls, I just generate each
-individually. For the merge windows we tend to have several branches
-touching the same files, so diffstats would be harder to compare that
-way.
+Yes, I repeatedly get the same dmesg splat below.
 
-So, this is my workflow. I think Arnd's is quite similar since my
-script is based on an early version of what I got from him:
+Once I your 'execute the whole memcg freeing in rcu callback' patch,
+then the warnings are not printed.  I'll take a closer look at the patch
+soon.
 
-* Start a dummy branch based on latest upstream version
-* For each branch to pull:
-  - Merge in the branch to make sure you document/resolve conflicts
-  - Generate pull request email (save to file)
-  - Push resolved branch (if you want to provide that)
-* Edit the saved pull requests to modify the x/y fields
-* Send them (with git send-mail --annotate for cover letter)
-
-
-I have a script that generates the pull-request email in a format that
-git send-email accepts (i.e. it has a From/Subject header). It's not
-very pretty, but for reference I included a copy below.
-
-
-#!/bin/sh
-
-# Usage: my-request-pull <tagname>, run from a branch that is checked out
-# with the branch you wish to request pulled merged in as the top commit.
-
-echo "From: $(git config --get user.name) <$(git config --get user.email)>"
-echo -n Subject: [GIT PULL x/y]\
-git tag -n20 -l $1 | sed -e 's:^[-a-z0-9]* *::g'
-
-echo
-echo "----------------------------------------------------------------"
-echo
-
-SHA=$(git log --pretty=oneline -1 HEAD~ | cut -d' ' -f 1)
-DESC=$(git log --pretty=oneline -1 HEAD~ | cut -d' ' -f 1 --complement)
-
-echo "The following changes since commit $SHA:"
-echo
-echo "  $DESC"
-echo
-echo "are available in the git repository at:"
-echo
-echo "  git://EDIT_YOUR_URL_IN_HERE tags/$1"
-echo
-
-SHA=$(git log --pretty=oneline -1 $1 | cut -d' ' -f 1)
-DESC=$(git log --pretty=oneline -1 $1 | cut -d' ' -f 1 --complement)
-
-echo "for you to fetch changes up to $SHA:"
-echo
-echo "  $DESC"
-echo
-echo "----------------------------------------------------------------"
-echo
-
-git shortlog HEAD~..$1
-echo
-git diff -M --stat=75 --summary HEAD~ | cat
+>> [  335.550398] =================================
+>> [  335.554739] [ INFO: inconsistent lock state ]
+>> [  335.559091] 3.5.0-dbg-DEV #3 Tainted: G        W
+>> [  335.563946] ---------------------------------
+>> [  335.568290] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+>> [  335.574286] swapper/10/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+>> [  335.579508]  (&(&rtpz->lock)->rlock){+.?...}, at: [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
+>> [  335.588525] {SOFTIRQ-ON-W} state was registered at:
+>> [  335.593389]   [<ffffffff810cb073>] __lock_acquire+0x623/0x1a50
+>> [  335.599200]   [<ffffffff810cca55>] lock_acquire+0x95/0x150
+>> [  335.604670]   [<ffffffff81582531>] _raw_spin_lock+0x41/0x50
+>> [  335.610232]   [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
+>> [  335.616135]   [<ffffffff811822d5>] mem_cgroup_put+0x45/0x50
+>> [  335.621696]   [<ffffffff81182302>] mem_cgroup_destroy+0x22/0x30
+>> [  335.627592]   [<ffffffff810e093f>] cgroup_diput+0xbf/0x160
+>> [  335.633062]   [<ffffffff811a07ef>] d_delete+0x12f/0x1a0
+>> [  335.638276]   [<ffffffff8119671e>] vfs_rmdir+0x11e/0x140
+>> [  335.643565]   [<ffffffff81199173>] do_rmdir+0x113/0x130
+>> [  335.648773]   [<ffffffff8119a5e6>] sys_rmdir+0x16/0x20
+>> [  335.653900]   [<ffffffff8158c74f>] cstar_dispatch+0x7/0x1f
+>> [  335.659370] irq event stamp: 399732
+>> [  335.662846] hardirqs last  enabled at (399732): [<ffffffff810e8e08>] res_counter_uncharge_until+0x68/0xa0
+>> [  335.672383] hardirqs last disabled at (399731): [<ffffffff810e8dc8>] res_counter_uncharge_until+0x28/0xa0
+>> [  335.681916] softirqs last  enabled at (399710): [<ffffffff81085dd3>] _local_bh_enable+0x13/0x20
+>> [  335.690590] softirqs last disabled at (399711): [<ffffffff8158c48c>] call_softirq+0x1c/0x30
+>> [  335.698914]
+>> [  335.698914] other info that might help us debug this:
+>> [  335.705415]  Possible unsafe locking scenario:
+>> [  335.705415]
+>> [  335.711317]        CPU0
+>> [  335.713757]        ----
+>> [  335.716198]   lock(&(&rtpz->lock)->rlock);
+>> [  335.720282]   <Interrupt>
+>> [  335.722896]     lock(&(&rtpz->lock)->rlock);
+>> [  335.727153]
+>> [  335.727153]  *** DEADLOCK ***
+>> [  335.727153]
+>> [  335.733055] no locks held by swapper/10/0.
+>> [  335.737141]
+>> [  335.737141] stack backtrace:
+>> [  335.741483] Pid: 0, comm: swapper/10 Tainted: G        W    3.5.0-dbg-DEV #3
+>> [  335.748510] Call Trace:
+>> [  335.750952]  <IRQ>  [<ffffffff81579a27>] print_usage_bug+0x1fc/0x20d
+>> [  335.757286]  [<ffffffff81058a9f>] ? save_stack_trace+0x2f/0x50
+>> [  335.763098]  [<ffffffff810ca9ed>] mark_lock+0x29d/0x300
+>> [  335.768309]  [<ffffffff810c9e10>] ? print_irq_inversion_bug.part.36+0x1f0/0x1f0
+>> [  335.775599]  [<ffffffff810caffc>] __lock_acquire+0x5ac/0x1a50
+>> [  335.781323]  [<ffffffff810cad34>] ? __lock_acquire+0x2e4/0x1a50
+>> [  335.787224]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
+>> [  335.793212]  [<ffffffff810cca55>] lock_acquire+0x95/0x150
+>> [  335.798594]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
+>> [  335.804581]  [<ffffffff810e8ddd>] ? res_counter_uncharge_until+0x3d/0xa0
+>> [  335.811263]  [<ffffffff81582531>] _raw_spin_lock+0x41/0x50
+>> [  335.816731]  [<ffffffff8118216d>] ? __mem_cgroup_free+0x8d/0x1b0
+>> [  335.822724]  [<ffffffff8118216d>] __mem_cgroup_free+0x8d/0x1b0
+>> [  335.828538]  [<ffffffff811822d5>] mem_cgroup_put+0x45/0x50
+>> [  335.834002]  [<ffffffff811828a6>] __memcg_kmem_free_page+0xa6/0x110
+>> [  335.840256]  [<ffffffff81138109>] free_accounted_pages+0x99/0xa0
+>> [  335.846243]  [<ffffffff8107b09f>] free_task+0x3f/0x70
+>> [  335.851278]  [<ffffffff8107b18c>] __put_task_struct+0xbc/0x130
+>> [  335.857094]  [<ffffffff81081524>] delayed_put_task_struct+0x54/0xd0
+>> [  335.863338]  [<ffffffff810fd354>] __rcu_process_callbacks+0x1e4/0x490
+>> [  335.869757]  [<ffffffff810fd62f>] rcu_process_callbacks+0x2f/0x80
+>> [  335.875835]  [<ffffffff810862f5>] __do_softirq+0xc5/0x270
+>> [  335.881218]  [<ffffffff810c49b4>] ? clockevents_program_event+0x74/0x100
+>> [  335.887895]  [<ffffffff810c5d94>] ? tick_program_event+0x24/0x30
+>> [  335.893882]  [<ffffffff8158c48c>] call_softirq+0x1c/0x30
+>> [  335.899179]  [<ffffffff8104cefd>] do_softirq+0x8d/0xc0
+>> [  335.904301]  [<ffffffff810867de>] irq_exit+0xae/0xe0
+>> [  335.909251]  [<ffffffff8158cc3e>] smp_apic_timer_interrupt+0x6e/0x99
+>> [  335.915591]  [<ffffffff8158ba9c>] apic_timer_interrupt+0x6c/0x80
+>> [  335.921583]  <EOI>  [<ffffffff810530e7>] ? default_idle+0x67/0x270
+>> [  335.927741]  [<ffffffff810530e5>] ? default_idle+0x65/0x270
+>> 
