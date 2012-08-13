@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2HMUpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:45:21 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:54817 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374Ab2HMUUX (ORCPT
+	id S1753516Ab2HMUpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:45:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab2HMUUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:20:23 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 13 Aug 2012 13:18:23 -0700
-Message-Id: <1344889115-21610-9-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/gQdg8egHS65GG33o4kHPJwGXzD/ZdWqg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0128]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 09/21] pidns: Export free_pid_ns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:20:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 04/82] [IA64] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop the casts
+Date: Mon, 13 Aug 2012 13:18:40 -0700
+Message-Id: <20120813201746.837504083@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-There is a least one modular user so export free_pid_ns so modules can
-capture and use the pid namespace on the very rare occasion when it
-makes sense.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+------------------
+
+From: Tony Luck <tony.luck@intel.com>
+
+commit a119365586b0130dfea06457f584953e0ff6481d upstream.
+
+The following build error occured during a ia64 build with
+swap-over-NFS patches applied.
+
+net/core/sock.c:274:36: error: initializer element is not constant
+net/core/sock.c:274:36: error: (near initialization for 'memalloc_socks')
+net/core/sock.c:274:36: error: initializer element is not constant
+
+This is identical to a parisc build error. Fengguang Wu, Mel Gorman
+and James Bottomley did all the legwork to track the root cause of
+the problem. This fix and entire commit log is shamelessly copied
+from them with one extra detail to change a dubious runtime use of
+ATOMIC_INIT() to atomic_set() in drivers/char/mspec.c
+
+Dave Anglin says:
+> Here is the line in sock.i:
+>
+> struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> ((atomic_t) { (0) }) });
+
+The above line contains two compound literals.  It also uses a designated
+initializer to initialize the field enabled.  A compound literal is not a
+constant expression.
+
+The location of the above statement isn't fully clear, but if a compound
+literal occurs outside the body of a function, the initializer list must
+consist of constant expressions.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/pid_namespace.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/ia64/include/asm/atomic.h |    4 ++--
+ drivers/char/mspec.c           |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index b3c7fd5..baa528d 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -16,6 +16,7 @@
- #include <linux/slab.h>
- #include <linux/proc_fs.h>
- #include <linux/reboot.h>
-+#include <linux/export.h>
+--- a/arch/ia64/include/asm/atomic.h
++++ b/arch/ia64/include/asm/atomic.h
+@@ -17,8 +17,8 @@
+ #include <asm/intrinsics.h>
  
- #define BITS_PER_PAGE		(PAGE_SIZE*8)
  
-@@ -144,6 +145,7 @@ void free_pid_ns(struct kref *kref)
- 	if (parent != NULL)
- 		put_pid_ns(parent);
- }
-+EXPORT_SYMBOL_GPL(free_pid_ns);
+-#define ATOMIC_INIT(i)		((atomic_t) { (i) })
+-#define ATOMIC64_INIT(i)	((atomic64_t) { (i) })
++#define ATOMIC_INIT(i)		{ (i) }
++#define ATOMIC64_INIT(i)	{ (i) }
  
- void zap_pid_ns_processes(struct pid_namespace *pid_ns)
- {
--- 
-1.7.5.4
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
+--- a/drivers/char/mspec.c
++++ b/drivers/char/mspec.c
+@@ -283,7 +283,7 @@ mspec_mmap(struct file *file, struct vm_
+ 	vdata->flags = flags;
+ 	vdata->type = type;
+ 	spin_lock_init(&vdata->lock);
+-	vdata->refcnt = ATOMIC_INIT(1);
++	atomic_set(&vdata->refcnt, 1);
+ 	vma->vm_private_data = vdata;
+ 
+ 	vma->vm_flags |= (VM_IO | VM_RESERVED | VM_PFNMAP | VM_DONTEXPAND);
+
 
