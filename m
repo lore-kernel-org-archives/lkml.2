@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2HMU25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:28:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	id S1754887Ab2HMU3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:29:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2HMUZH (ORCPT
+	with ESMTP id S1754875Ab2HMUY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:25:07 -0400
+	Mon, 13 Aug 2012 16:24:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
-        Wolfgang Denk <wd@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 71/82] ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
-Date: Mon, 13 Aug 2012 13:19:47 -0700
-Message-Id: <20120813201752.668657573@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [ 69/82] ARM: clk-imx31: Fix the keypad clock name
+Date: Mon, 13 Aug 2012 13:19:45 -0700
+Message-Id: <20120813201752.507990490@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,49 +30,33 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 3bed491c8d28329e34f8a31e3fe64d03f3a350f1 upstream.
+commit 8cc7a2b9f75355f60922db4adf27742ba7f2f6bc upstream.
 
-The CONFIG_DEFAULT_MMAP_MIN_ADDR was set to 65536 in mxs_defconfig,
-this caused severe breakage of userland applications since the upper
-limit for ARM is 32768. By default CONFIG_DEFAULT_MMAP_MIN_ADDR is
-set to 4096 and can also be changed via /proc/sys/vm/mmap_min_addr
-if needed.
+Fix the keypad clock name, in order to fix the following error:
 
-Quoting Russell King [1]:
+imx-keypad imx-keypad: failed to get keypad clock
+imx-keypad: probe of imx-keypad failed with error -2
 
-"4096 is also fine for ARM too. There's not much point in having
-defconfigs change it - that would just be pure noise in the config
-files."
-
-the CONFIG_DEFAULT_MMAP_MIN_ADDR can be removed from the defconfig
-altogether.
-
-This problem was introduced by commit cde7c41 (ARM: configs: add
-defconfig for mach-mxs).
-
-[1] http://marc.info/?l=linux-arm-kernel&m=134401593807820&w=2
-
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Wolfgang Denk <wd@denx.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/mxs_defconfig |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-imx/clk-imx31.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/configs/mxs_defconfig
-+++ b/arch/arm/configs/mxs_defconfig
-@@ -33,7 +33,6 @@ CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_PREEMPT_VOLUNTARY=y
- CONFIG_AEABI=y
--CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
- CONFIG_AUTO_ZRELADDR=y
- CONFIG_FPE_NWFPE=y
- CONFIG_NET=y
+--- a/arch/arm/mach-imx/clk-imx31.c
++++ b/arch/arm/mach-imx/clk-imx31.c
+@@ -129,7 +129,7 @@ int __init mx31_clocks_init(unsigned lon
+ 	clk_register_clkdev(clk[nfc], NULL, "mxc_nand.0");
+ 	clk_register_clkdev(clk[ipu_gate], NULL, "ipu-core");
+ 	clk_register_clkdev(clk[ipu_gate], NULL, "mx3_sdc_fb");
+-	clk_register_clkdev(clk[kpp_gate], "kpp", NULL);
++	clk_register_clkdev(clk[kpp_gate], NULL, "imx-keypad");
+ 	clk_register_clkdev(clk[usb_div_post], "per", "mxc-ehci.0");
+ 	clk_register_clkdev(clk[usb_gate], "ahb", "mxc-ehci.0");
+ 	clk_register_clkdev(clk[ipg], "ipg", "mxc-ehci.0");
 
 
