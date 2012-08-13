@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab2HMWFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:05:44 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42231 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab2HMWFk (ORCPT
+	id S1755150Ab2HMWGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:06:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61572 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754994Ab2HMWF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:05:40 -0400
+	Mon, 13 Aug 2012 18:05:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Drake <dsd@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 40/44] cfg80211: process pending events when unregistering net device
-Date: Mon, 13 Aug 2012 15:02:47 -0700
-Message-Id: <20120813220145.677447709@linuxfoundation.org>
+Subject: [ 44/44] rt61pci: fix NULL pointer dereference in config_lna_gain
+Date: Mon, 13 Aug 2012 15:02:51 -0700
+Message-Id: <20120813220146.021820736@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -31,65 +30,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 1f6fc43e621167492ed4b7f3b4269c584c3d6ccc upstream.
+commit deee0214def5d8a32b8112f11d9c2b1696e9c0cb upstream.
 
-libertas currently calls cfg80211_disconnected() when it is being
-brought down. This causes an event to be allocated, but since the
-wdev is already removed from the rdev by the time that the event
-processing work executes, the event is never processed or freed.
-http://article.gmane.org/gmane.linux.kernel.wireless.general/95666
+We can not pass NULL libconf->conf->channel to rt61pci_config() as it
+is dereferenced unconditionally in rt61pci_config_lna_gain() subroutine.
 
-Fix this leak, and other possible situations, by processing the event
-queue when a device is being unregistered. Thanks to Johannes Berg for
-the suggestion.
+Resolves:
+https://bugzilla.kernel.org/show_bug.cgi?id=44361
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Reported-and-tested-by: <dolohow@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/core.c |    5 +++++
- net/wireless/core.h |    1 +
- net/wireless/util.c |    2 +-
- 3 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt61pci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/wireless/core.c
-+++ b/net/wireless/core.c
-@@ -959,6 +959,11 @@ static int cfg80211_netdev_notifier_call
- 		 */
- 		synchronize_rcu();
- 		INIT_LIST_HEAD(&wdev->list);
-+		/*
-+		 * Ensure that all events have been processed and
-+		 * freed.
-+		 */
-+		cfg80211_process_wdev_events(wdev);
- 		break;
- 	case NETDEV_PRE_UP:
- 		if (!(wdev->wiphy->interface_modes & BIT(wdev->iftype)))
---- a/net/wireless/core.h
-+++ b/net/wireless/core.h
-@@ -426,6 +426,7 @@ int cfg80211_change_iface(struct cfg8021
- 			  struct net_device *dev, enum nl80211_iftype ntype,
- 			  u32 *flags, struct vif_params *params);
- void cfg80211_process_rdev_events(struct cfg80211_registered_device *rdev);
-+void cfg80211_process_wdev_events(struct wireless_dev *wdev);
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2254,8 +2254,7 @@ static void rt61pci_txdone(struct rt2x00
  
- int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
- 				  struct wireless_dev *wdev,
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -719,7 +719,7 @@ void cfg80211_upload_connect_keys(struct
- 	wdev->connect_keys = NULL;
- }
- 
--static void cfg80211_process_wdev_events(struct wireless_dev *wdev)
-+void cfg80211_process_wdev_events(struct wireless_dev *wdev)
+ static void rt61pci_wakeup(struct rt2x00_dev *rt2x00dev)
  {
- 	struct cfg80211_event *ev;
- 	unsigned long flags;
+-	struct ieee80211_conf conf = { .flags = 0 };
+-	struct rt2x00lib_conf libconf = { .conf = &conf };
++	struct rt2x00lib_conf libconf = { .conf = &rt2x00dev->hw->conf };
+ 
+ 	rt61pci_config(rt2x00dev, &libconf, IEEE80211_CONF_CHANGE_PS);
+ }
 
 
