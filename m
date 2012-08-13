@@ -1,283 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab2HMWxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:53:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14058 "EHLO mx1.redhat.com"
+	id S1754549Ab2HMW7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:59:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18190 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135Ab2HMWxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:53:05 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Bernhard Froemel <froemel@vmars.tuwien.ac.at>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH V2 2/2] apple_gmux: Add support for newer hardware
-Date: Mon, 13 Aug 2012 18:52:49 -0400
-Message-Id: <1344898369-4944-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1344898369-4944-1-git-send-email-mjg@redhat.com>
-References: <1344898369-4944-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1753739Ab2HMW7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:59:04 -0400
+Date: Tue, 14 Aug 2012 02:00:06 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120813230005.GA2015@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204320.21081.32333.stgit@bling.home>
+ <501F99A8.9050006@redhat.com>
+ <501F9E99.9010109@redhat.com>
+ <501F9F27.708@redhat.com>
+ <1344540375.3441.228.camel@ul30vt.home>
+ <50276B11.8020708@redhat.com>
+ <1344893641.4683.146.camel@ul30vt.home>
+ <20120813220609.GA1931@redhat.com>
+ <1344897665.4683.179.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344897665.4683.179.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New gmux devices have a different method for accessing the registers.
-Update the driver to cope. Incorporates feedback from Bernhard Froemel.
+On Mon, Aug 13, 2012 at 04:41:05PM -0600, Alex Williamson wrote:
+> On Tue, 2012-08-14 at 01:06 +0300, Michael S. Tsirkin wrote:
+> > On Mon, Aug 13, 2012 at 03:34:01PM -0600, Alex Williamson wrote:
+> > > On Sun, 2012-08-12 at 11:36 +0300, Avi Kivity wrote:
+> > > > On 08/09/2012 10:26 PM, Alex Williamson wrote:
+> > > > > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
+> > > > >> On 08/06/2012 01:38 PM, Avi Kivity wrote:
+> > > > >> 
+> > > > >> > Regarding the implementation, instead of a linked list, would an array
+> > > > >> > of counters parallel to the bitmap make it simpler?
+> > > > >> 
+> > > > >> Or even, replace the bitmap with an array of counters.
+> > > > > 
+> > > > > I'm not sure a counter array is what we're really after.  That gives us
+> > > > > reference counting for the irq source IDs, but not the key->gsi lookup.
+> > > > 
+> > > > You can look up the gsi while registering the eoifd, so it's accessible
+> > > > as eoifd->gsi instead of eoifd->source->gsi.  The irqfd can go away
+> > > > while the eoifd is still active, but is this a problem?
+> > > 
+> > > In my opinion, no, but Michael disagrees.
+> > > 
+> > > > > It also highlights another issue, that we have a limited set of source
+> > > > > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
+> > > > > for the shared userspace ID and another for the PIT.  How happy are we
+> > > > > going to be with a limit of 62 level interrupts in use at one time?
+> > > > 
+> > > > When we start being unhappy we can increase that number.  On the other
+> > > > hand more locks and lists makes me unhappy now.
+> > > 
+> > > Yep, good point.  My latest version removes the source ID object lock
+> > > and list (and objects).  I still have a lock and list for the ack
+> > > notification, but it's hard not to unless we combine them into one
+> > > mega-irqfd ioctl as Michael suggests.
+> > >
+> > > > > It's arguably a reasonable number since the most virtualization friendly
+> > > > > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
+> > > > > also very wasteful allocating an entire source ID for a single GSI
+> > > > > within that source ID.  PCI supports interrupts A, B, C, and D, which,
+> > > > > in the most optimal config, each go to different GSIs.  So we could
+> > > > > theoretically be more efficient in our use and allocation of irq source
+> > > > > IDs if we tracked use by the source ID, gsi pair.
+> > > > 
+> > > > There are, in one userspace, just three gsis available for PCI links, so
+> > > > you're compressing the source id space by 3.
+> > > 
+> > > I imagine there's a way to put each PCI interrupt pin on a GSI, but
+> > > still only 4, not a great expansion of source ID space.  I like
+> > > Michael's idea of re-using source IDs if we run out better.
+> > > 
+> > > > > That probably makes it less practical to replace anything at the top
+> > > > > level with a counter array.  The key that we pass back is currently the
+> > > > > actual source ID, but we don't specify what it is, so we could split it
+> > > > > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
+> > > > > an idr entry.
+> > > > 
+> > > > We can fix those kinds of problems by adding another layer of
+> > > > indirection.  But I doubt they will be needed.  I don't see people
+> > > > assigning 60 legacy devices to one guest.
+> > > 
+> > > Yep, we can ignore it for now and put it in the hands of userspace to
+> > > re-use IDs if needed.
+> > > 
+> > > > > Michael, would the interface be more acceptable to you if we added
+> > > > > separate ioctls to allocate and free some representation of an irq
+> > > > > source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > > > > for an irq source ID/gsi object which would then be passed as a
+> > > > > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > > > > representing the source id/gsi isn't magically freed on it's own.  This
+> > > > > would also allow us to deassign/close one end and reconfigure it later.
+> > > > > Thanks,
+> > > > 
+> > > > Another option is to push the responsibility for allocating IDs for the
+> > > > association to userspace.  Let userspace both create the irqfd and the
+> > > > eoifd with the same ID, the kernel matches them at registration time and
+> > > > copies the gsi/sourceid from the first to the second eventfd.
+> > > 
+> > > Aside from the copying gsi/sourceid bit, you've just described my latest
+> > > attempt at this series.  Specifying both a sourceid and gsi also allows
+> > > userspace to make better use of the sourceid address space (use more
+> > > than one gsi if userspace wants the complexity of managing them).
+> > > Thanks,
+> > > 
+> > > Alex
+> > 
+> > Turns out per device source ID is a bug copied from existing
+> > device assignment. I am amazed we did not notice before.
+> > There we have small # of devices so it's not a problem but there's no
+> > reason just not to have a source ID for all irqfds.
+> > So the problem goes away, and there is no limit on # of level irqfds,
+> > and no need to manage IDs in userspace at all.
+> > You can still have cookies in userspace if you like but do not map them
+> > to source IDs.
+> 
+> IMHO it's not a bug, it's an implementation decision.  They could be
+> shared, but that doesn't make it wrong to not share them.  Given that we
+> have 32 memory slots, the only way you could hit this would be to have a
+> lot of really slow devices that don't direct-map any BARs.  A reason to
+> not have the same source id for everything is that I think we can do ack
+> notification filtering more easily using separate source ids (as is done
+> in the first patch of the v8 series).
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-Cc: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/apple-gmux.c | 179 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 165 insertions(+), 14 deletions(-)
+Just a thought: can filtering read and clear the irqfd counter?
 
-diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-index c9db5072..612b6f6 100644
---- a/drivers/platform/x86/apple-gmux.c
-+++ b/drivers/platform/x86/apple-gmux.c
-@@ -18,12 +18,15 @@
- #include <linux/pnp.h>
- #include <linux/apple_bl.h>
- #include <linux/slab.h>
-+#include <linux/delay.h>
- #include <acpi/video.h>
- #include <asm/io.h>
- 
- struct apple_gmux_data {
- 	unsigned long iostart;
- 	unsigned long iolen;
-+	bool indexed;
-+	struct mutex index_lock;
- 
- 	struct backlight_device *bdev;
- };
-@@ -45,6 +48,9 @@ struct apple_gmux_data {
- #define GMUX_PORT_DISCRETE_POWER	0x50
- #define GMUX_PORT_MAX_BRIGHTNESS	0x70
- #define GMUX_PORT_BRIGHTNESS		0x74
-+#define GMUX_PORT_VALUE			0xc2
-+#define GMUX_PORT_READ			0xd0
-+#define GMUX_PORT_WRITE			0xd4
- 
- #define GMUX_MIN_IO_LEN			(GMUX_PORT_BRIGHTNESS + 4)
- 
-@@ -59,24 +65,24 @@ struct apple_gmux_data {
- #define GMUX_BRIGHTNESS_MASK		0x00ffffff
- #define GMUX_MAX_BRIGHTNESS		GMUX_BRIGHTNESS_MASK
- 
--static inline u8 gmux_read8(struct apple_gmux_data *gmux_data, int port)
-+static u8 gmux_pio_read8(struct apple_gmux_data *gmux_data, int port)
- {
- 	return inb(gmux_data->iostart + port);
- }
- 
--static inline void gmux_write8(struct apple_gmux_data *gmux_data, int port,
-+static void gmux_pio_write8(struct apple_gmux_data *gmux_data, int port,
- 			       u8 val)
- {
- 	outb(val, gmux_data->iostart + port);
- }
- 
--static inline u32 gmux_read32(struct apple_gmux_data *gmux_data, int port)
-+static u32 gmux_pio_read32(struct apple_gmux_data *gmux_data, int port)
- {
- 	return inl(gmux_data->iostart + port);
- }
- 
--static inline u32 gmux_write32(struct apple_gmux_data *gmux_data, int port,
--			       u32 val)
-+static void gmux_pio_write32(struct apple_gmux_data *gmux_data, int port,
-+			     u32 val)
- {
- 	int i;
- 	u8 tmpval;
-@@ -87,6 +93,144 @@ static inline u32 gmux_write32(struct apple_gmux_data *gmux_data, int port,
- 	}
- }
- 
-+static int gmux_index_wait_ready(struct apple_gmux_data *gmux_data)
-+{
-+	int i = 200;
-+	u8 gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
-+
-+	while (i && (gwr & 0x01)) {
-+		inb(gmux_data->iostart + GMUX_PORT_READ);
-+		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
-+		msleep(100);
-+		i--;
-+	}
-+
-+	return !!i;
-+}
-+
-+static int gmux_index_wait_complete(struct apple_gmux_data *gmux_data)
-+{
-+	int i = 200;
-+	u8 gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
-+
-+	while (i && (gwr & 0x01)) {
-+		gwr = inb(gmux_data->iostart + GMUX_PORT_WRITE);
-+		msleep(100);
-+		i--;
-+	}
-+
-+	if (gwr & 0x01)
-+		inb(gmux_data->iostart + GMUX_PORT_READ);
-+
-+	return !!i;
-+}
-+
-+static u8 gmux_index_read8(struct apple_gmux_data *gmux_data, int port)
-+{
-+	u8 val;
-+
-+	mutex_lock(&gmux_data->index_lock);
-+	outb((port & 0xff), gmux_data->iostart + GMUX_PORT_READ);
-+	gmux_index_wait_ready(gmux_data);
-+	val = inb(gmux_data->iostart + GMUX_PORT_VALUE);
-+	mutex_unlock(&gmux_data->index_lock);
-+
-+	return val;
-+}
-+
-+static void gmux_index_write8(struct apple_gmux_data *gmux_data, int port,
-+			      u8 val)
-+{
-+	mutex_lock(&gmux_data->index_lock);
-+	outb(val, gmux_data->iostart + GMUX_PORT_VALUE);
-+	gmux_index_wait_ready(gmux_data);
-+	outb(port & 0xff, gmux_data->iostart + GMUX_PORT_WRITE);
-+	gmux_index_wait_complete(gmux_data);
-+	mutex_unlock(&gmux_data->index_lock);
-+}
-+
-+static u32 gmux_index_read32(struct apple_gmux_data *gmux_data, int port)
-+{
-+	u32 val;
-+
-+	mutex_lock(&gmux_data->index_lock);
-+	outb((port & 0xff), gmux_data->iostart + GMUX_PORT_READ);
-+	gmux_index_wait_ready(gmux_data);
-+	val = inl(gmux_data->iostart + GMUX_PORT_VALUE);
-+	mutex_unlock(&gmux_data->index_lock);
-+
-+	return val;
-+}
-+
-+static void gmux_index_write32(struct apple_gmux_data *gmux_data, int port,
-+			       u32 val)
-+{
-+	int i;
-+	u8 tmpval;
-+
-+	mutex_lock(&gmux_data->index_lock);
-+
-+	for (i = 0; i < 4; i++) {
-+		tmpval = (val >> (i * 8)) & 0xff;
-+		outb(tmpval, gmux_data->iostart + GMUX_PORT_VALUE + i);
-+	}
-+
-+	gmux_index_wait_ready(gmux_data);
-+	outb(port & 0xff, gmux_data->iostart + GMUX_PORT_WRITE);
-+	gmux_index_wait_complete(gmux_data);
-+	mutex_unlock(&gmux_data->index_lock);
-+}
-+
-+static u8 gmux_read8(struct apple_gmux_data *gmux_data, int port)
-+{
-+	if (gmux_data->indexed)
-+		return gmux_index_read8(gmux_data, port);
-+	else
-+		return gmux_pio_read8(gmux_data, port);
-+}
-+
-+static void gmux_write8(struct apple_gmux_data *gmux_data, int port, u8 val)
-+{
-+	if (gmux_data->indexed)
-+		gmux_index_write8(gmux_data, port, val);
-+	else
-+		gmux_pio_write8(gmux_data, port, val);
-+}
-+
-+static u32 gmux_read32(struct apple_gmux_data *gmux_data, int port)
-+{
-+	if (gmux_data->indexed)
-+		return gmux_index_read32(gmux_data, port);
-+	else
-+		return gmux_pio_read32(gmux_data, port);
-+}
-+
-+static void gmux_write32(struct apple_gmux_data *gmux_data, int port,
-+			     u32 val)
-+{
-+	if (gmux_data->indexed)
-+		gmux_index_write32(gmux_data, port, val);
-+	else
-+		gmux_pio_write32(gmux_data, port, val);
-+}
-+
-+static bool gmux_is_indexed(struct apple_gmux_data *gmux_data)
-+{
-+	u16 val;
-+
-+	outb(0xaa, gmux_data->iostart + 0xcc);
-+	outb(0x55, gmux_data->iostart + 0xcd);
-+	outb(0x00, gmux_data->iostart + 0xce);
-+
-+	val = inb(gmux_data->iostart + 0xcc) |
-+		(inb(gmux_data->iostart + 0xcd) << 8);
-+
-+	if (val == 0x55aa)
-+		return true;
-+
-+	return false;
-+}
-+
- static int gmux_get_brightness(struct backlight_device *bd)
- {
- 	struct apple_gmux_data *gmux_data = bl_get_data(bd);
-@@ -150,22 +294,29 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
- 	}
- 
- 	/*
--	 * On some machines the gmux is in ACPI even thought the machine
--	 * doesn't really have a gmux. Check for invalid version information
--	 * to detect this.
-+	 * Invalid version information may indicate either that the gmux
-+	 * device isn't present or that it's a new one that uses indexed
-+	 * io
- 	 */
-+
- 	ver_major = gmux_read8(gmux_data, GMUX_PORT_VERSION_MAJOR);
- 	ver_minor = gmux_read8(gmux_data, GMUX_PORT_VERSION_MINOR);
- 	ver_release = gmux_read8(gmux_data, GMUX_PORT_VERSION_RELEASE);
- 	if (ver_major == 0xff && ver_minor == 0xff && ver_release == 0xff) {
--		pr_info("gmux device not present\n");
--		ret = -ENODEV;
--		goto err_release;
-+		if (gmux_is_indexed(gmux_data)) {
-+			mutex_init(&gmux_data->index_lock);
-+			gmux_data->indexed = true;
-+		} else {
-+			pr_info("gmux device not present\n");
-+			ret = -ENODEV;
-+			goto err_release;
-+		}
-+		pr_info("Found indexed gmux\n");
-+	} else {
-+		pr_info("Found gmux version %d.%d.%d\n", ver_major, ver_minor,
-+			ver_release);
- 	}
- 
--	pr_info("Found gmux version %d.%d.%d\n", ver_major, ver_minor,
--		ver_release);
--
- 	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = gmux_read32(gmux_data, GMUX_PORT_MAX_BRIGHTNESS);
+>  As the code is today, I agree,
+> there's probably no advantage to using multiple source IDs.  Thanks,
+> 
+> Alex
+
+I think one point worth addressing is, Gleb wanted
+to get eoifd without irqfd at all and that works for
+timer interrupt.
+
 -- 
-1.7.11.2
-
+MST
