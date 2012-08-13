@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab2HMNjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:39:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49570 "EHLO mga11.intel.com"
+	id S1752612Ab2HMNjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:39:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3789 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086Ab2HMNjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:39:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
-   d="scan'208";a="199729066"
-Date: Mon, 13 Aug 2012 21:39:10 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, kernel-janitors@vger.kernel.org,
-        Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
+	id S1752553Ab2HMNjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:39:37 -0400
+Date: Mon, 13 Aug 2012 15:35:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [userns:userns-always-map-user-v45 80/99] fs/namespace.c:2290:1:
- error: unknown type name 'atomic64_t'
-Message-ID: <20120813133910.GA30532@localhost>
-References: <20120812145023.GA17077@localhost>
- <87k3x3z3de.fsf@xmission.com>
+Subject: [PATCH v2 2/2] [PATCH] ptrace: partly fix
+	set_task_blockstep()->update_debugctlmsr() logic
+Message-ID: <20120813133544.GA6736@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87k3x3z3de.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120813133508.GA6703@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 11:56:45PM -0700, Eric W. Biederman wrote:
-> Fengguang Wu <fengguang.wu@intel.com> writes:
-> 
-> > Hi Geert,
-> >
-> > This is the build error I get, on Eric's userns tree.
-> >
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git userns-always-map-user-v45
-> > head:   38a0b1b84f5f613ff4e01fffda27f87d4cb2b649
-> > commit: 5ea9fc30545b658380d4794340227fe821b83701 [80/99] vfs: Add setns support for the mount namespace
-> > config: m68k-m5475evb_defconfig (attached as .config)
-> >
-> > All related error/warning messages:
-> >
-> > fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
-> > fs/namespace.c:2290:1: error: implicit declaration of function 'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
-> > fs/namespace.c:2290:1: error: initializer element is not constant
-> > fs/namespace.c: In function 'alloc_mnt_ns':
-> > fs/namespace.c:2299:2: error: implicit declaration of function 'atomic64_add_return' [-Werror=implicit-function-declaration]
-> > cc1: some warnings being treated as errors
-> 
-> Fengguang is m68k the only place you are seeing build failures?
+Afaics the usage of update_debugctlmsr() and TIF_BLOCKSTEP in
+step.c was always very wrong.
 
-Yes.
+1. update_debugctlmsr() was simply unneeded. The child sleeps
+   TASK_TRACED, __switch_to_xtra(next_p => child) should notice
+   TIF_BLOCKSTEP and set/clear DEBUGCTLMSR_BTF after resume if
+   needed.
 
-> Exactly how I get a 64bit counter in that code path is not terribly
-> important.  I picked an atomic64_t because it looked simple and cheap.
+2. It is wrong. The state of DEBUGCTLMSR_BTF bit in CPU register
+   should always match the state of current's TIF_BLOCKSTEP bit.
 
-Fair enough. As long as it's not in hot code path, it definitely helps
-to use simple solutions.
+3. Even get_debugctlmsr() + update_debugctlmsr() itself does not
+   look right. Irq can change other bits in MSR_IA32_DEBUGCTLMSR
+   register or the caller can be preempted in between.
 
-> If this is limited to a couple of m68k sub-arches I will let you guys
-> finish fixing this up so people can depend on atomic64_t being
-> available.  Otherwise it probably makes sense to go to with a different
-> abstraction.
+4. It is not safe to play with TIF_BLOCKSTEP if task != current.
+   DEBUGCTLMSR_BTF and TIF_BLOCKSTEP should always match each
+   other if the task is running. The tracee is stopped but it
+   can be SIGKILL'ed right before set/clear_tsk_thread_flag().
 
-I'd suggest to fix it in m68k and make atomic64_t generally available.
+However, now that uprobes uses user_enable_single_step(current)
+we can't simply remove update_debugctlmsr(). So this patch adds
+the additional "task == current" check and disables irqs to avoid
+the race with interrupts/preemption.
 
-Thanks,
-Fengguang
+Unfortunately this patch doesn't solve the last problem, we need
+another fix. Probably we should teach ptrace_stop() to set/clear
+single/block stepping after resume.
+
+And afaics there is yet another problem: perf can play with
+MSR_IA32_DEBUGCTLMSR from nmi, this obviously means that even
+__switch_to_xtra() has problems.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/step.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
+index 7a51498..f89cdc6 100644
+--- a/arch/x86/kernel/step.c
++++ b/arch/x86/kernel/step.c
+@@ -161,6 +161,16 @@ static void set_task_blockstep(struct task_struct *task, bool on)
+ {
+ 	unsigned long debugctl;
+ 
++	/*
++	 * Ensure irq/preemption can't change debugctl in between.
++	 * Note also that both TIF_BLOCKSTEP and debugctl should
++	 * be changed atomically wrt preemption.
++	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
++	 * wrong if task != current, SIGKILL can wakeup the stopped
++	 * tracee and set/clear can play with the running task, this
++	 * can confuse the next __switch_to_xtra().
++	 */
++	local_irq_disable();
+ 	debugctl = get_debugctlmsr();
+ 	if (on) {
+ 		debugctl |= DEBUGCTLMSR_BTF;
+@@ -169,7 +179,9 @@ static void set_task_blockstep(struct task_struct *task, bool on)
+ 		debugctl &= ~DEBUGCTLMSR_BTF;
+ 		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
+ 	}
+-	update_debugctlmsr(debugctl);
++	if (task == current)
++		update_debugctlmsr(debugctl);
++	local_irq_enable();
+ }
+ 
+ /*
+-- 
+1.5.5.1
+
