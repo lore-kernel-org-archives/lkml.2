@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab2HNAXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 20:23:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:51556 "EHLO ozlabs.org"
+	id S1754218Ab2HNAXG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 20:23:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:42934 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab2HNAXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753813Ab2HNAXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 20:23:04 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, Jonas Gorski <jonas.gorski@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH] MIPS: fix module.c build for 32 bit
-In-Reply-To: <31154.1344872382@warthog.procyon.org.uk>
-References: <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to balloon pages
+In-Reply-To: <20120813084123.GF14081@redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com> <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com> <20120813084123.GF14081@redhat.com>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 14 Aug 2012 09:42:31 +0930
-Message-ID: <87d32us55c.fsf@rustcorp.com.au>
+Date: Tue, 14 Aug 2012 09:29:49 +0930
+Message-ID: <87lihis5qi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012 16:39:42 +0100, David Howells <dhowells@redhat.com> wrote:
+On Mon, 13 Aug 2012 11:41:23 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Fri, Aug 10, 2012 at 02:55:15PM -0300, Rafael Aquini wrote:
+> > +/*
+> > + * Populate balloon_mapping->a_ops->freepage method to help compaction on
+> > + * re-inserting an isolated page into the balloon page list.
+> > + */
+> > +void virtballoon_putbackpage(struct page *page)
+> > +{
+> > +	spin_lock(&pages_lock);
+> > +	list_add(&page->lru, &vb_ptr->pages);
+> > +	spin_unlock(&pages_lock);
 > 
-> Hi Rusty,
-> 
-> I've fixed up my patch for ARM and pulled Jonas's patch on top of that.  Do
-> you want me to merge them together?
+> Could the following race trigger:
+> migration happens while module unloading is in progress,
+> module goes away between here and when the function
+> returns, then code for this function gets overwritten?
+> If yes we need locking external to module to prevent this.
+> Maybe add a spinlock to struct address_space?
 
-Yep, thanks.  And might as well sent them straight to Linus; since
-linux-next didn't catch this, there's little point baking them there if
-we have some acks.
+The balloon module cannot be unloaded until it has leaked all its pages,
+so I think this is safe:
 
-If he misses it, I'll grab them.
+        static void remove_common(struct virtio_balloon *vb)
+        {
+        	/* There might be pages left in the balloon: free them. */
+        	while (vb->num_pages)
+        		leak_balloon(vb, vb->num_pages);
 
-Thanks,
+Cheers,
 Rusty.
