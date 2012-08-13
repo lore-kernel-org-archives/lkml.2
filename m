@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2HMWRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:17:50 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53985 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab2HMWRr (ORCPT
+	id S1755638Ab2HMWRy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:17:54 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab2HMWRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:17:47 -0400
+	Mon, 13 Aug 2012 18:17:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg KH <greg@kroah.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 33/65] usb: feed USB device information to the /dev/random driver
-Date: Mon, 13 Aug 2012 15:14:17 -0700
-Message-Id: <20120813221417.877565220@linuxfoundation.org>
+        Tony Luck <tony.luck@intel.com>, Theodore Tso <tytso@mit.edu>
+Subject: [ 43/65] dmi: Feed DMI table to /dev/random driver
+Date: Mon, 13 Aug 2012 15:14:27 -0700
+Message-Id: <20120813221418.775428333@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,46 +29,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Tony Luck <tony.luck@intel.com>
 
-commit b04b3156a20d395a7faa8eed98698d1e17a36000 upstream.
+commit d114a33387472555188f142ed8e98acdb8181c6d upstream.
 
-Send the USB device's serial, product, and manufacturer strings to the
-/dev/random driver to help seed its pools.
+Send the entire DMI (SMBIOS) table to the /dev/random driver to
+help seed its pools.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Greg KH <greg@kroah.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/firmware/dmi_scan.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -24,6 +24,7 @@
- #include <linux/kthread.h>
- #include <linux/mutex.h>
- #include <linux/freezer.h>
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -6,6 +6,7 @@
+ #include <linux/dmi.h>
+ #include <linux/efi.h>
+ #include <linux/bootmem.h>
 +#include <linux/random.h>
+ #include <asm/dmi.h>
  
- #include <asm/uaccess.h>
- #include <asm/byteorder.h>
-@@ -1951,6 +1952,14 @@ int usb_new_device(struct usb_device *ud
- 	/* Tell the world! */
- 	announce_device(udev);
+ /*
+@@ -111,6 +112,8 @@ static int __init dmi_walk_early(void (*
  
-+	if (udev->serial)
-+		add_device_randomness(udev->serial, strlen(udev->serial));
-+	if (udev->product)
-+		add_device_randomness(udev->product, strlen(udev->product));
-+	if (udev->manufacturer)
-+		add_device_randomness(udev->manufacturer,
-+				      strlen(udev->manufacturer));
+ 	dmi_table(buf, dmi_len, dmi_num, decode, NULL);
+ 
++	add_device_randomness(buf, dmi_len);
 +
- 	device_enable_async_suspend(&udev->dev);
- 
- 	/*
+ 	dmi_iounmap(buf, dmi_len);
+ 	return 0;
+ }
 
 
