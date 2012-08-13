@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab2HMNjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:39:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6936 "EHLO mx1.redhat.com"
+	id S1752326Ab2HMNjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:39:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49570 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab2HMNjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:39:20 -0400
-Date: Mon, 13 Aug 2012 15:35:40 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	id S1752086Ab2HMNjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:39:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
+   d="scan'208";a="199729066"
+Date: Mon, 13 Aug 2012 21:39:10 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, kernel-janitors@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] ptrace: introduce set_task_blockstep() helper
-Message-ID: <20120813133540.GA6729@redhat.com>
+Subject: Re: [userns:userns-always-map-user-v45 80/99] fs/namespace.c:2290:1:
+ error: unknown type name 'atomic64_t'
+Message-ID: <20120813133910.GA30532@localhost>
+References: <20120812145023.GA17077@localhost>
+ <87k3x3z3de.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120813133508.GA6703@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <87k3x3z3de.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, preparation for the next fix and for uprobes
-single-step fixes.
+On Sun, Aug 12, 2012 at 11:56:45PM -0700, Eric W. Biederman wrote:
+> Fengguang Wu <fengguang.wu@intel.com> writes:
+> 
+> > Hi Geert,
+> >
+> > This is the build error I get, on Eric's userns tree.
+> >
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git userns-always-map-user-v45
+> > head:   38a0b1b84f5f613ff4e01fffda27f87d4cb2b649
+> > commit: 5ea9fc30545b658380d4794340227fe821b83701 [80/99] vfs: Add setns support for the mount namespace
+> > config: m68k-m5475evb_defconfig (attached as .config)
+> >
+> > All related error/warning messages:
+> >
+> > fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
+> > fs/namespace.c:2290:1: error: implicit declaration of function 'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
+> > fs/namespace.c:2290:1: error: initializer element is not constant
+> > fs/namespace.c: In function 'alloc_mnt_ns':
+> > fs/namespace.c:2299:2: error: implicit declaration of function 'atomic64_add_return' [-Werror=implicit-function-declaration]
+> > cc1: some warnings being treated as errors
+> 
+> Fengguang is m68k the only place you are seeing build failures?
 
-Move the code playing with TIF_BLOCKSTEP/DEBUGCTLMSR_BTF into the
-new helper, set_task_blockstep().
+Yes.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/step.c |   41 +++++++++++++++++++++--------------------
- 1 files changed, 21 insertions(+), 20 deletions(-)
+> Exactly how I get a 64bit counter in that code path is not terribly
+> important.  I picked an atomic64_t because it looked simple and cheap.
 
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index c346d11..7a51498 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -157,6 +157,21 @@ static int enable_single_step(struct task_struct *child)
- 	return 1;
- }
- 
-+static void set_task_blockstep(struct task_struct *task, bool on)
-+{
-+	unsigned long debugctl;
-+
-+	debugctl = get_debugctlmsr();
-+	if (on) {
-+		debugctl |= DEBUGCTLMSR_BTF;
-+		set_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	} else {
-+		debugctl &= ~DEBUGCTLMSR_BTF;
-+		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	}
-+	update_debugctlmsr(debugctl);
-+}
-+
- /*
-  * Enable single or block step.
-  */
-@@ -169,19 +184,10 @@ static void enable_step(struct task_struct *child, bool block)
- 	 * So no one should try to use debugger block stepping in a program
- 	 * that uses user-mode single stepping itself.
- 	 */
--	if (enable_single_step(child) && block) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl |= DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (enable_single_step(child) && block)
-+		set_task_blockstep(child, true);
-+	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
- }
- 
- void user_enable_single_step(struct task_struct *child)
-@@ -199,13 +205,8 @@ void user_disable_single_step(struct task_struct *child)
- 	/*
- 	 * Make sure block stepping (BTF) is disabled.
- 	 */
--	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
- 
- 	/* Always clear TIF_SINGLESTEP... */
- 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
--- 
-1.5.5.1
+Fair enough. As long as it's not in hot code path, it definitely helps
+to use simple solutions.
 
+> If this is limited to a couple of m68k sub-arches I will let you guys
+> finish fixing this up so people can depend on atomic64_t being
+> available.  Otherwise it probably makes sense to go to with a different
+> abstraction.
+
+I'd suggest to fix it in m68k and make atomic64_t generally available.
+
+Thanks,
+Fengguang
