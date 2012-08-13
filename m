@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2HMU3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:29:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	id S1754917Ab2HMU3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:29:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875Ab2HMUY7 (ORCPT
+	with ESMTP id S1754825Ab2HMUYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:59 -0400
+	Mon, 13 Aug 2012 16:24:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 69/82] ARM: clk-imx31: Fix the keypad clock name
-Date: Mon, 13 Aug 2012 13:19:45 -0700
-Message-Id: <20120813201752.507990490@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 66/82] target: Fix reading of data length fields for UNMAP commands
+Date: Mon, 13 Aug 2012 13:19:42 -0700
+Message-Id: <20120813201752.245293564@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,33 +31,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 8cc7a2b9f75355f60922db4adf27742ba7f2f6bc upstream.
+commit 1a5fa4576ec8a462313c7516b31d7453481ddbe8 upstream.
 
-Fix the keypad clock name, in order to fix the following error:
+The UNMAP DATA LENGTH and UNMAP BLOCK DESCRIPTOR DATA LENGTH fields
+are in the unmap descriptor (the payload transferred to our data out
+buffer), not in the CDB itself.  Read them from the correct place in
+target_emulated_unmap.
 
-imx-keypad imx-keypad: failed to get keypad clock
-imx-keypad: probe of imx-keypad failed with error -2
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: adjust filename, context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-imx/clk-imx31.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_cdb.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-imx/clk-imx31.c
-+++ b/arch/arm/mach-imx/clk-imx31.c
-@@ -129,7 +129,7 @@ int __init mx31_clocks_init(unsigned lon
- 	clk_register_clkdev(clk[nfc], NULL, "mxc_nand.0");
- 	clk_register_clkdev(clk[ipu_gate], NULL, "ipu-core");
- 	clk_register_clkdev(clk[ipu_gate], NULL, "mx3_sdc_fb");
--	clk_register_clkdev(clk[kpp_gate], "kpp", NULL);
-+	clk_register_clkdev(clk[kpp_gate], NULL, "imx-keypad");
- 	clk_register_clkdev(clk[usb_div_post], "per", "mxc-ehci.0");
- 	clk_register_clkdev(clk[usb_gate], "ahb", "mxc-ehci.0");
- 	clk_register_clkdev(clk[ipg], "ipg", "mxc-ehci.0");
+--- a/drivers/target/target_core_cdb.c
++++ b/drivers/target/target_core_cdb.c
+@@ -1013,7 +1013,6 @@ int target_emulate_unmap(struct se_cmd *
+ {
+ 	struct se_device *dev = cmd->se_dev;
+ 	unsigned char *buf, *ptr = NULL;
+-	unsigned char *cdb = &cmd->t_task_cdb[0];
+ 	sector_t lba;
+ 	unsigned int size = cmd->data_length, range;
+ 	int ret = 0, offset;
+@@ -1029,11 +1028,12 @@ int target_emulate_unmap(struct se_cmd *
+ 	/* First UNMAP block descriptor starts at 8 byte offset */
+ 	offset = 8;
+ 	size -= 8;
+-	dl = get_unaligned_be16(&cdb[0]);
+-	bd_dl = get_unaligned_be16(&cdb[2]);
+ 
+ 	buf = transport_kmap_data_sg(cmd);
+ 
++	dl = get_unaligned_be16(&buf[0]);
++	bd_dl = get_unaligned_be16(&buf[2]);
++
+ 	ptr = &buf[offset];
+ 	pr_debug("UNMAP: Sub: %s Using dl: %hu bd_dl: %hu size: %hu"
+ 		" ptr: %p\n", dev->transport->name, dl, bd_dl, size, ptr);
 
 
