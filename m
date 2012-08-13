@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab2HMUUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:20:11 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:54585 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2HMUTx (ORCPT
+	id S1753716Ab2HMUsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:48:23 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34520 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab2HMUUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:19:53 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 13 Aug 2012 13:18:17 -0700
-Message-Id: <1344889115-21610-3-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18Iodxf/O0j7pNormgBMZ4oAUXrl5HadgY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0002]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 03/21] userns: Convert sock_i_uid to return a kuid_t
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:20:10 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: [ 01/82] virtio-blk: Call del_gendisk() before disable guest kick
+Date: Mon, 13 Aug 2012 13:18:37 -0700
+Message-Id: <20120813201746.577719372@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+3.5-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Asias He <asias@redhat.com>
+
+commit 02e2b124943648fba0a2ccee5c3656a5653e0151 upstream.
+
+del_gendisk() might not return due to failing to remove the
+/sys/block/vda/serial sysfs entry when another thread (udev) is
+trying to read it.
+
+virtblk_remove()
+  vdev->config->reset() : guest will not kick us through interrupt
+    del_gendisk()
+      device_del()
+        kobject_del(): got stuck, sysfs entry ref count non zero
+
+sysfs_open_file(): user space process read /sys/block/vda/serial
+   sysfs_get_active() : got sysfs entry ref count
+      dev_attr_show()
+        virtblk_serial_show()
+           blk_execute_rq() : got stuck, interrupt is disabled
+                              request cannot be finished
+
+This patch fixes it by calling del_gendisk() before we disable guest's
+interrupt so that the request sent in virtblk_serial_show() will be
+finished and del_gendisk() will success.
+
+This fixes another race in hot-unplug process.
+
+It is save to call del_gendisk(vblk->disk) before
+flush_work(&vblk->config_work) which might access vblk->disk, because
+vblk->disk is not freed until put_disk(vblk->disk).
+
+Signed-off-by: Asias He <asias@redhat.com>
+Cc: virtualization@lists.linux-foundation.org
+Cc: kvm@vger.kernel.org
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/net/sock.h |    2 +-
- net/core/sock.c    |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/virtio_blk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index b373023..65c3d62 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1668,7 +1668,7 @@ static inline void sock_graft(struct sock *sk, struct socket *parent)
- 	write_unlock_bh(&sk->sk_callback_lock);
- }
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -584,13 +584,13 @@ static void __devexit virtblk_remove(str
+ 	vblk->config_enable = false;
+ 	mutex_unlock(&vblk->config_lock);
  
--extern int sock_i_uid(struct sock *sk);
-+extern kuid_t sock_i_uid(struct sock *sk);
- extern unsigned long sock_i_ino(struct sock *sk);
++	del_gendisk(vblk->disk);
++
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
  
- static inline struct dst_entry *
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 9c7fe4f..5c6a435 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1526,12 +1526,12 @@ void sock_edemux(struct sk_buff *skb)
- }
- EXPORT_SYMBOL(sock_edemux);
+ 	flush_work(&vblk->config_work);
  
--int sock_i_uid(struct sock *sk)
-+kuid_t sock_i_uid(struct sock *sk)
- {
--	int uid;
-+	kuid_t uid;
- 
- 	read_lock_bh(&sk->sk_callback_lock);
--	uid = sk->sk_socket ? SOCK_INODE(sk->sk_socket)->i_uid : 0;
-+	uid = sk->sk_socket ? SOCK_INODE(sk->sk_socket)->i_uid : GLOBAL_ROOT_UID;
- 	read_unlock_bh(&sk->sk_callback_lock);
- 	return uid;
- }
--- 
-1.7.5.4
+-	del_gendisk(vblk->disk);
+-
+ 	/* Abort requests dispatched to driver. */
+ 	spin_lock_irqsave(&vblk->lock, flags);
+ 	while ((vbr = virtqueue_detach_unused_buf(vblk->vq))) {
+
 
