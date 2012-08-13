@@ -1,147 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab2HMQon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:44:43 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44702 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab2HMQom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:44:42 -0400
+	id S1752690Ab2HMQrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:47:47 -0400
+Received: from fieldses.org ([174.143.236.118]:32942 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241Ab2HMQrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:47:45 -0400
+Date: Mon, 13 Aug 2012 12:47:30 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [RFC PATCH 0/2] net: connect to UNIX sockets from specified
+ root
+Message-ID: <20120813164730.GB2497@fieldses.org>
+References: <20120810125701.7115.71612.stgit@localhost.localdomain>
+ <50254FA6.3060806@zytor.com>
+ <20120810192628.79a34d28@pyramind.ukuu.org.uk>
+ <20120810191149.GA17985@fieldses.org>
+ <20120810202818.06236f46@pyramind.ukuu.org.uk>
+ <50259494.8060304@zytor.com>
+ <5025FA5A.4090403@parallels.com>
+ <50263ECC.4060501@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CAP9ODKrGHaDoDKvdvdyej0TN59Qu8LUfNujV8RA5T1bHC2i5ZA@mail.gmail.com>
-References: <CAP9ODKrSSEs+8t+TsMAwK3ncuTma9HJH=UndDYJ-zmyEgCXU4Q@mail.gmail.com>
-	<CAP9ODKrGHaDoDKvdvdyej0TN59Qu8LUfNujV8RA5T1bHC2i5ZA@mail.gmail.com>
-Date: Mon, 13 Aug 2012 13:44:41 -0300
-X-Google-Sender-Auth: EQ9rJ2IIpo_SShgrNrsXTa-MAJA
-Message-ID: <CAP9ODKpPfHCmqPBCOqB1N-Hg2tbYjzHkqMyAu=XQTciJhd4R9w@mail.gmail.com>
-Subject: Re: Boot freeze after/during PCI initialization
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=e89a8ff1c8b40220e604c72869b4
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50263ECC.4060501@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8ff1c8b40220e604c72869b4
-Content-Type: text/plain; charset=ISO-8859-1
+On Sat, Aug 11, 2012 at 03:15:24PM +0400, Stanislav Kinsbursky wrote:
+> 11.08.2012 10:23, Pavel Emelyanov пишет:
+> >On 08/11/2012 03:09 AM, H. Peter Anvin wrote:
+> >>On 08/10/2012 12:28 PM, Alan Cox wrote:
+> >>>Explicitly for Linux yes - this is not generally true of the AF_UNIX
+> >>>socket domain and even the permissions aspect isn't guaranteed to be
+> >>>supported on some BSD environments !
+> >>Yes, but let's worry about what the Linux behavior should be.
+> >>
+> >>>The name is however just a proxy for the socket itself. You don't even
+> >>>get a device node in the usual sense or the same inode in the file system
+> >>>space.
+> >>
+> >>No, but it is looked up the same way any other inode is (the difference
+> >>between FIFOs and sockets is that sockets have separate connections,
+> >>which is also why open() on sockets would be nice.)
+> >>
+> >>However, there is a fundamental difference between AF_UNIX sockets and
+> >>open(), and that is how the pathname is delivered.  It thus would make
+> >>more sense to provide the openat()-like information in struct
+> >>sockaddr_un, but that may be very hard to do in a sensible way.  In that
+> >>sense it perhaps would be cleaner to be able to do an open[at]() on the
+> >>socket node with O_PATH (perhaps there should be an O_SOCKET option,
+> >>even?) and pass the resulting file descriptor to bind() or connect().
+> >I vote for this (openat + O_WHATEVER on a unix socket) as well. It will
+> >help us in checkpoint-restore, making handling of overmounted/unlinked
+> >sockets much cleaner.
+> 
+> I have to notice, that it's not enough and doesn't solve the issue.
+> There should be some way how to connect/bind already existent unix
+> socket (from kernel, at least), because socket can be created in
+> user space.
+> And this way (sock operation or whatever) have to provide an ability
+> to lookup UNIX socket starting from specified root to support
+> containers.
 
-On Mon, Aug 13, 2012 at 10:36 AM, Otavio Salvador
-<otavio@ossystems.com.br> wrote:
-> On Thu, Aug 9, 2012 at 5:00 PM, Otavio Salvador <otavio@ossystems.com.br> wrote:
->> Hello,
->>
->> One of machines we have freeze during initialization from time to time:
->>
->> freeze at: http://download.ossystems.com.br/~otavio/geode-freeze.jpg
->> works at: http://download.ossystems.com.br/~otavio/geode-working-dmesg.txt
->>
->> This happens with 3.4 and 3.5 kernel and seems to not happen with 3.0.
->>
->> Any clue what might be causing it?
->
-> This seems to be the bug: https://bugzilla.kernel.org/show_bug.cgi?id=13941
->
-> It seems no progress has been done in properly identify the cause of
-> it (or the progress is not reported on the bug itself).
+I don't understand--the rpcbind sockets are created by the kernel.  What
+am I missing?
 
-Checking closely the bug it is not the same issue. I am attaching the
-dmidecode output on the machine.
-
--- 
-Otavio Salvador                             O.S. Systems
-E-mail: otavio@ossystems.com.br  http://www.ossystems.com.br
-Mobile: +55 53 9981-7854              http://projetos.ossystems.com.br
-
---e89a8ff1c8b40220e604c72869b4
-Content-Type: text/plain; charset=US-ASCII; name="dmidecode-mt-1000.txt"
-Content-Disposition: attachment; filename="dmidecode-mt-1000.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h5tspbtn0
-
-IyBkbWlkZWNvZGUgMi45ClNNQklPUyAyLjMgcHJlc2VudC4KMTUgc3RydWN0dXJlcyBvY2N1cHlp
-bmcgOTcwIGJ5dGVzLgpUYWJsZSBhdCAweDAwMEUwMDUwLgoKSGFuZGxlIDB4MDAwMCwgRE1JIHR5
-cGUgMCwgMjAgYnl0ZXMKQklPUyBJbmZvcm1hdGlvbgoJVmVuZG9yOiBHZW5lcmFsIFNvZnR3YXJl
-LCBJbmMuCglWZXJzaW9uOiBFbWJlZGRlZCBCSU9TKFIpIHcvU3Ryb25nRnJhbWUoVE0pIFRlY2hu
-b2xvZ3kgKDAwMSkKCVJlbGVhc2UgRGF0ZTogMDkvMTUvMjAwOQoJQWRkcmVzczogMHhFMDAwMAoJ
-UnVudGltZSBTaXplOiAxMjgga0IKCVJPTSBTaXplOiA1MTIga0IKCUNoYXJhY3RlcmlzdGljczoK
-CQlJU0EgaXMgc3VwcG9ydGVkCgkJUENJIGlzIHN1cHBvcnRlZAoJCUFQTSBpcyBzdXBwb3J0ZWQK
-CQlCSU9TIGlzIHVwZ3JhZGVhYmxlCgkJQklPUyBzaGFkb3dpbmcgaXMgYWxsb3dlZAoJCUJvb3Qg
-ZnJvbSBDRCBpcyBzdXBwb3J0ZWQKCQlTZWxlY3RhYmxlIGJvb3QgaXMgc3VwcG9ydGVkCgkJQklP
-UyBST00gaXMgc29ja2V0ZWQKCQlQcmludCBzY3JlZW4gc2VydmljZSBpcyBzdXBwb3J0ZWQgKGlu
-dCA1aCkKCQk4MDQyIGtleWJvYXJkIHNlcnZpY2VzIGFyZSBzdXBwb3J0ZWQgKGludCA5aCkKCQlT
-ZXJpYWwgc2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDE0aCkKCQlQcmludGVyIHNlcnZpY2Vz
-IGFyZSBzdXBwb3J0ZWQgKGludCAxN2gpCgkJQ0dBL21vbm8gdmlkZW8gc2VydmljZXMgYXJlIHN1
-cHBvcnRlZCAoaW50IDEwaCkKCQlBQ1BJIGlzIHN1cHBvcnRlZAoJCUFHUCBpcyBzdXBwb3J0ZWQK
-CkhhbmRsZSAweDAwMDEsIERNSSB0eXBlIDEsIDI1IGJ5dGVzClN5c3RlbSBJbmZvcm1hdGlvbgoJ
-TWFudWZhY3R1cmVyOiBVcm1ldCBEYXJ1bWEKCVByb2R1Y3QgTmFtZTogTVQxMDAwIExYCglWZXJz
-aW9uOiBObyBTeXN0ZW0gVmVyc2lvbgoJU2VyaWFsIE51bWJlcjogTm8gU3lzdGVtIFNlcmlhbCBO
-dW1iZXIKCVVVSUQ6IE5vdCBTZXR0YWJsZQoJV2FrZS11cCBUeXBlOiBVbmtub3duCgpIYW5kbGUg
-MHgwMDAyLCBETUkgdHlwZSAyLCA4IGJ5dGVzCkJhc2UgQm9hcmQgSW5mb3JtYXRpb24KCU1hbnVm
-YWN0dXJlcjogVXJtZXQgRGFydW1hCglQcm9kdWN0IE5hbWU6IE1UMTAwMCBMWAoJVmVyc2lvbjog
-Qm9hcmQgUmV2aXNpb24gQgoJU2VyaWFsIE51bWJlcjogTm8gQm9hcmQgU2VyaWFsIE51bWJlcgoK
-SGFuZGxlIDB4MDAwMywgRE1JIHR5cGUgMywgMTcgYnl0ZXMKQ2hhc3NpcyBJbmZvcm1hdGlvbgoJ
-TWFudWZhY3R1cmVyOiBObyBFbmNsb3N1cmUgTWFudWZhY3R1cmVyCglUeXBlOiBPdGhlcgoJTG9j
-azogTm90IFByZXNlbnQKCVZlcnNpb246IE5vIEVuY2xvc3VyZSBWZXJzaW9uCglTZXJpYWwgTnVt
-YmVyOiBObyBFbmNsb3N1cmUgU2VyaWFsIE51bWJlcgoJQXNzZXQgVGFnOiBObyBFbmNsb3N1cmUg
-QXNzZXQgVGFnCglCb290LXVwIFN0YXRlOiBVbmtub3duCglQb3dlciBTdXBwbHkgU3RhdGU6IFVu
-a25vd24KCVRoZXJtYWwgU3RhdGU6IFVua25vd24KCVNlY3VyaXR5IFN0YXR1czogVW5rbm93bgoJ
-T0VNIEluZm9ybWF0aW9uOiAweDAwMDAwMDAwCgpIYW5kbGUgMHgwMDA0LCBETUkgdHlwZSA0LCAz
-NSBieXRlcwpQcm9jZXNzb3IgSW5mb3JtYXRpb24KCVNvY2tldCBEZXNpZ25hdGlvbjogTm8gU29j
-a2V0CglUeXBlOiBDZW50cmFsIFByb2Nlc3NvcgoJRmFtaWx5OiBPdGhlcgoJTWFudWZhY3R1cmVy
-OiBBTUQgQ29ycG9yYXRpb24KCUlEOiBBMiAwNSAwMCAwMCAzRCBBOSA4OCAwMAoJVmVyc2lvbjog
-R2VvZGUgR1gzIFByb2Nlc3NvcgoJVm9sdGFnZTogNS4wIFYKCUV4dGVybmFsIENsb2NrOiAzMyBN
-SHoKCU1heCBTcGVlZDogVW5rbm93bgoJQ3VycmVudCBTcGVlZDogVW5rbm93bgoJU3RhdHVzOiBQ
-b3B1bGF0ZWQsIEVuYWJsZWQKCVVwZ3JhZGU6IFVua25vd24KCUwxIENhY2hlIEhhbmRsZTogMHgw
-MDlGCglMMiBDYWNoZSBIYW5kbGU6IDB4MDBBMAoJTDMgQ2FjaGUgSGFuZGxlOiAweDAwOUUKCVNl
-cmlhbCBOdW1iZXI6IE5vIFNlcmlhbCMKCUFzc2V0IFRhZzogTm8gQXNzZXQgVGFnCglQYXJ0IE51
-bWJlcjogTm8gUGFydCMKCkhhbmRsZSAweDAwOUYsIERNSSB0eXBlIDcsIDE5IGJ5dGVzCkNhY2hl
-IEluZm9ybWF0aW9uCglTb2NrZXQgRGVzaWduYXRpb246IFByb2Nlc3NvciBMMSBDYWNoZQoJQ29u
-ZmlndXJhdGlvbjogRW5hYmxlZCwgTm90IFNvY2tldGVkLCBMZXZlbCAxCglPcGVyYXRpb25hbCBN
-b2RlOiBXcml0ZSBCYWNrCglMb2NhdGlvbjogSW50ZXJuYWwKCUluc3RhbGxlZCBTaXplOiAzMiBL
-QgoJTWF4aW11bSBTaXplOiAzMiBLQgoJU3VwcG9ydGVkIFNSQU0gVHlwZXM6CgkJVW5rbm93bgoJ
-SW5zdGFsbGVkIFNSQU0gVHlwZTogVW5rbm93bgoJU3BlZWQ6IFVua25vd24KCUVycm9yIENvcnJl
-Y3Rpb24gVHlwZTogVW5rbm93bgoJU3lzdGVtIFR5cGU6IFVua25vd24KCUFzc29jaWF0aXZpdHk6
-IFVua25vd24KCkhhbmRsZSAweDAwQTAsIERNSSB0eXBlIDcsIDE5IGJ5dGVzCkNhY2hlIEluZm9y
-bWF0aW9uCglTb2NrZXQgRGVzaWduYXRpb246IFByb2Nlc3NvciBMMiBDYWNoZQoJQ29uZmlndXJh
-dGlvbjogRW5hYmxlZCwgTm90IFNvY2tldGVkLCBMZXZlbCAyCglPcGVyYXRpb25hbCBNb2RlOiBX
-cml0ZSBCYWNrCglMb2NhdGlvbjogSW50ZXJuYWwKCUluc3RhbGxlZCBTaXplOiA1MTIgS0IKCU1h
-eGltdW0gU2l6ZTogNTEyIEtCCglTdXBwb3J0ZWQgU1JBTSBUeXBlczoKCQlVbmtub3duCglJbnN0
-YWxsZWQgU1JBTSBUeXBlOiBVbmtub3duCglTcGVlZDogVW5rbm93bgoJRXJyb3IgQ29ycmVjdGlv
-biBUeXBlOiBVbmtub3duCglTeXN0ZW0gVHlwZTogVW5rbm93bgoJQXNzb2NpYXRpdml0eTogVW5r
-bm93bgoKSGFuZGxlIDB4MDBCRiwgRE1JIHR5cGUgMTYsIDE1IGJ5dGVzClBoeXNpY2FsIE1lbW9y
-eSBBcnJheQoJTG9jYXRpb246IFN5c3RlbSBCb2FyZCBPciBNb3RoZXJib2FyZAoJVXNlOiBTeXN0
-ZW0gTWVtb3J5CglFcnJvciBDb3JyZWN0aW9uIFR5cGU6IE90aGVyCglNYXhpbXVtIENhcGFjaXR5
-OiAxNzM5MiBrQgoJRXJyb3IgSW5mb3JtYXRpb24gSGFuZGxlOiBOb3QgUHJvdmlkZWQKCU51bWJl
-ciBPZiBEZXZpY2VzOiAyCgpIYW5kbGUgMHgwMERGLCBETUkgdHlwZSAxNywgMjcgYnl0ZXMKTWVt
-b3J5IERldmljZQoJQXJyYXkgSGFuZGxlOiAweDAwQkYKCUVycm9yIEluZm9ybWF0aW9uIEhhbmRs
-ZTogTm90IFByb3ZpZGVkCglUb3RhbCBXaWR0aDogVW5rbm93bgoJRGF0YSBXaWR0aDogVW5rbm93
-bgoJU2l6ZTogVW5rbm93bgoJRm9ybSBGYWN0b3I6IFVua25vd24KCVNldDogVW5rbm93bgoJTG9j
-YXRvcjogTm8gRGV2aWNlIExvY2F0aW9uCglCYW5rIExvY2F0b3I6IE5vIEJhbmsKCVR5cGU6IFVu
-a25vd24KCVR5cGUgRGV0YWlsOiBVbmtub3duCglTcGVlZDogVW5rbm93bgoJTWFudWZhY3R1cmVy
-OiBObyBEZXZpY2UgTWFudWZhY3R1cmVyCglTZXJpYWwgTnVtYmVyOiBObyBEZXZpY2UgU2VyaWFs
-IE51bWJlcgoJQXNzZXQgVGFnOiBObyBEZXZpY2UgQXNzZXQgVGFnCglQYXJ0IE51bWJlcjogTm8g
-RGV2aWNlIFBhcnQgTnVtYmVyCgpIYW5kbGUgMHgwMEUwLCBETUkgdHlwZSAxNywgMjcgYnl0ZXMK
-TWVtb3J5IERldmljZQoJQXJyYXkgSGFuZGxlOiAweDAwQkYKCUVycm9yIEluZm9ybWF0aW9uIEhh
-bmRsZTogTm90IFByb3ZpZGVkCglUb3RhbCBXaWR0aDogVW5rbm93bgoJRGF0YSBXaWR0aDogVW5r
-bm93bgoJU2l6ZTogVW5rbm93bgoJRm9ybSBGYWN0b3I6IFVua25vd24KCVNldDogVW5rbm93bgoJ
-TG9jYXRvcjogTm8gRGV2aWNlIExvY2F0aW9uCglCYW5rIExvY2F0b3I6IE5vIEJhbmsKCVR5cGU6
-IFVua25vd24KCVR5cGUgRGV0YWlsOiBVbmtub3duCglTcGVlZDogVW5rbm93bgoJTWFudWZhY3R1
-cmVyOiBObyBEZXZpY2UgTWFudWZhY3R1cmVyCglTZXJpYWwgTnVtYmVyOiBObyBEZXZpY2UgU2Vy
-aWFsIE51bWJlcgoJQXNzZXQgVGFnOiBObyBEZXZpY2UgQXNzZXQgVGFnCglQYXJ0IE51bWJlcjog
-Tm8gRGV2aWNlIFBhcnQgTnVtYmVyCgpIYW5kbGUgMHgwMEZGLCBETUkgdHlwZSAxOSwgMTUgYnl0
-ZXMKTWVtb3J5IEFycmF5IE1hcHBlZCBBZGRyZXNzCglTdGFydGluZyBBZGRyZXNzOiAweDAwMDAw
-MDAwMDAwCglFbmRpbmcgQWRkcmVzczogMHgwMDQzRjAwMDNGRgoJUmFuZ2UgU2l6ZTogMTc4MDk0
-MDkga0IKCVBoeXNpY2FsIEFycmF5IEhhbmRsZTogMHgwMEJGCglQYXJ0aXRpb24gV2lkdGg6IDAK
-CkhhbmRsZSAweDAwMDUsIERNSSB0eXBlIDIwLCAxOSBieXRlcwpNZW1vcnkgRGV2aWNlIE1hcHBl
-ZCBBZGRyZXNzCglTdGFydGluZyBBZGRyZXNzOiAweDAwMDAwMDAwMDAwCglFbmRpbmcgQWRkcmVz
-czogMHgwMDAwMDAwMDNGRgoJUmFuZ2UgU2l6ZTogMSBrQgoJUGh5c2ljYWwgRGV2aWNlIEhhbmRs
-ZTogMHgwMERGCglNZW1vcnkgQXJyYXkgTWFwcGVkIEFkZHJlc3MgSGFuZGxlOiAweDAwRkYKCVBh
-cnRpdGlvbiBSb3cgUG9zaXRpb246IDEKCkhhbmRsZSAweDAwMDYsIERNSSB0eXBlIDIwLCAxOSBi
-eXRlcwpNZW1vcnkgRGV2aWNlIE1hcHBlZCBBZGRyZXNzCglTdGFydGluZyBBZGRyZXNzOiAweDAw
-MDAwMDAwMDAwCglFbmRpbmcgQWRkcmVzczogMHgwMDAwMDAwMDNGRgoJUmFuZ2UgU2l6ZTogMSBr
-QgoJUGh5c2ljYWwgRGV2aWNlIEhhbmRsZTogMHgwMEUwCglNZW1vcnkgQXJyYXkgTWFwcGVkIEFk
-ZHJlc3MgSGFuZGxlOiAweDAwRkYKCVBhcnRpdGlvbiBSb3cgUG9zaXRpb246IDEKCkhhbmRsZSAw
-eDAwMDcsIERNSSB0eXBlIDMyLCAyMCBieXRlcwpTeXN0ZW0gQm9vdCBJbmZvcm1hdGlvbgoJU3Rh
-dHVzOiBObyBlcnJvcnMgZGV0ZWN0ZWQKCkhhbmRsZSAweDAwMDgsIERNSSB0eXBlIDEyNywgNCBi
-eXRlcwpFbmQgT2YgVGFibGUKCg==
---e89a8ff1c8b40220e604c72869b4--
+--b.
