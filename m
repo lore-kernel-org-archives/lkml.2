@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab2HMU4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:56:30 -0400
-Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:45037 "EHLO
-	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753383Ab2HMU42 (ORCPT
+	id S1753953Ab2HMU5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:57:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37903 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab2HMU5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:56:28 -0400
-From: David Cullen <David.Cullen@koe-americas.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
- during make distclean
-Thread-Topic: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
- during make distclean
-Thread-Index: AQHNeYtJ0vuHTHXr8kOIY+yAGwirYZdYdyAAgAAFDAA=
-Date: Mon, 13 Aug 2012 20:56:26 +0000
-Message-ID: <502969FA.6010907@koe-americas.com>
-References: <502957D5.1070800@koe-americas.com> <502965BE.3070406@zytor.com>
-In-Reply-To: <502965BE.3070406@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-x-originating-ip: [10.1.5.27]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5CC3FF42B1C28E4B9C669AE2958B135C@koe-americas.com>
-MIME-Version: 1.0
+	Mon, 13 Aug 2012 16:57:33 -0400
+From: Thai Bui <blquythai@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thai Bui <blquythai@gmail.com>
+Subject: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option DEBUG_INITCALL
+Date: Mon, 13 Aug 2012 13:57:11 -0700
+Message-Id: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7DKufKi011877
 
-On 8/13/2012 4:38 PM, H. Peter Anvin wrote:
-> On 08/13/2012 12:39 PM, David Cullen wrote:
->> When running "make distclean" in a cross chroot environment, the
->> following messages are emitted:
->>
->>     [user@host:/home/work/linux]: make distclean
->>     /usr/bin/xargs: rm: Argument list too long
->>     make: *** [clean] Error 126
->>
-> 
-> That sounds like a bug in xargs...
-> 
-> 	-hpa
-> 
+Putting DEBUG_INITCALL config option to compile out the command-line option
+"initcall_debug".
 
-In my specific case, qemu-arm-static calls xargs (In fact, in my
-cross chroot, qemu-arm-static is used to run every user mode process).
+Signed-off-by: Thai Bui <blquythai@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ Documentation/kernel-parameters.txt |    3 ++-
+ include/linux/init.h                |    4 ++++
+ init/main.c                         |    2 ++
+ lib/Kconfig.debug                   |    9 +++++++++
+ 4 files changed, 17 insertions(+), 1 deletion(-)
 
-Do you mean that qemu-arm-static is exposing a latent defect in xargs?
-
-Does qemu-arm-static steal some of the command line space that would
-normally be available for xargs? If so, how would xargs figure out
-this was happening and handle the problem?
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index d99fd9c..3dbaf15 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1026,7 +1026,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
+ 			for working out where the kernel is dying during
+-			startup.
++			startup. DEBUG_INITCALL needs to be enabled in order
++			for this option to work.
+ 
+ 	initrd=		[BOOT] Specify the location of the initial ramdisk
+ 
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 6b95109..d2f31f1 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -157,7 +157,11 @@ void prepare_namespace(void);
+ 
+ extern void (*late_time_init)(void);
+ 
++#ifdef CONFIG_DEBUG_INITCALL
+ extern bool initcall_debug;
++#else
++static const bool initcall_debug = false;
++#endif /* CONFIG_DEBUG_INITCALL */
+ 
+ #endif
+   
+diff --git a/init/main.c b/init/main.c
+index ff49a6d..65837f7 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -648,8 +648,10 @@ static void __init do_ctors(void)
+ #endif
+ }
+ 
++#ifdef CONFIG_DEBUG_INITCALL
+ bool initcall_debug;
+ core_param(initcall_debug, initcall_debug, bool, 0644);
++#endif /* CONFIG_DEBUG_INITCALL */
+ 
+ static char msgbuf[64];
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 8745ac7..424ac93 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -769,6 +769,15 @@ config DEBUG_WRITECOUNT
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_INITCALL
++	bool "Debug initcalls as they are executed"
++	depends on DEBUG_KERNEL
++	help
++	  Enable this for tracing initcalls during startup. Useful for working
++	  out where the kernel is dying during startup.
++
++	  If unsure, say N
++
+ config DEBUG_MEMORY_INIT
+ 	bool "Debug memory initialisation" if EXPERT
+ 	default !EXPERT
 -- 
-Thank you,
-David CullenˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.9.5
+
