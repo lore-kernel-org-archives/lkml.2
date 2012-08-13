@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2HMWTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:19:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46692 "EHLO
+	id S1755984Ab2HMWTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:19:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61337 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab2HMWTI (ORCPT
+	with ESMTP id S1755953Ab2HMWTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:19:08 -0400
+	Mon, 13 Aug 2012 18:19:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 61/65] iwlwifi: disable greenfield transmissions as a workaround
-Date: Mon, 13 Aug 2012 15:14:45 -0700
-Message-Id: <20120813221420.378571191@linuxfoundation.org>
+        Fabio Futigami <ffutigam@redhat.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [ 62/65] e1000e: NIC goes up and immediately goes down
+Date: Mon, 13 Aug 2012 15:14:46 -0700
+Message-Id: <20120813221420.464716780@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -32,49 +33,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Tushar Dave <tushar.n.dave@intel.com>
 
-commit 50e2a30cf6fcaeb2d27360ba614dd169a10041c5 upstream.
+commit b7ec70be01a87f2c85df3ae11046e74f9b67e323 upstream.
 
-There's a bug that causes the rate scaling to get stuck
-when it has to use single-stream rates with a peer that
-can do GF and SGI; the two are incompatible so we can't
-use them together, but that causes the algorithm to not
-work at all, it always rejects updates.
+Found that commit d478eb44 was a bad commit.
+If the link partner is transmitting codeword (even if NULL codeword),
+then the RXCW.C bit will be set so check for RXCW.CW is unnecessary.
+Ref: RH BZ 840642
 
-Disable greenfield for now to prevent that problem.
-
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Tested-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Fabio Futigami <ffutigam@redhat.com>
+Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
+CC: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/intel/e1000e/82571.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -709,11 +709,14 @@ static int rs_toggle_antenna(u32 valid_a
-  */
- static bool rs_use_green(struct ieee80211_sta *sta)
- {
--	struct iwl_station_priv *sta_priv = (void *)sta->drv_priv;
--	struct iwl_rxon_context *ctx = sta_priv->ctx;
--
--	return (sta->ht_cap.cap & IEEE80211_HT_CAP_GRN_FLD) &&
--		!(ctx->ht.non_gf_sta_present);
-+	/*
-+	 * There's a bug somewhere in this code that causes the
-+	 * scaling to get stuck because GF+SGI can't be combined
-+	 * in SISO rates. Until we find that bug, disable GF, it
-+	 * has only limited benefit and we still interoperate with
-+	 * GF APs since we can always receive GF transmissions.
-+	 */
-+	return false;
- }
- 
- /**
+--- a/drivers/net/ethernet/intel/e1000e/82571.c
++++ b/drivers/net/ethernet/intel/e1000e/82571.c
+@@ -1582,10 +1582,8 @@ static s32 e1000_check_for_serdes_link_8
+ 			 * auto-negotiation in the TXCW register and disable
+ 			 * forced link in the Device Control register in an
+ 			 * attempt to auto-negotiate with our link partner.
+-			 * If the partner code word is null, stop forcing
+-			 * and restart auto negotiation.
+ 			 */
+-			if ((rxcw & E1000_RXCW_C) || !(rxcw & E1000_RXCW_CW))  {
++			if (rxcw & E1000_RXCW_C) {
+ 				/* Enable autoneg, and unforce link up */
+ 				ew32(TXCW, mac->txcw);
+ 				ew32(CTRL, (ctrl & ~E1000_CTRL_SLU));
 
 
