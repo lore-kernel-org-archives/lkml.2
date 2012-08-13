@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab2HMRNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:13:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33788 "EHLO
+	id S1753445Ab2HMRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:14:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33801 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab2HMRNe (ORCPT
+	with ESMTP id S1752664Ab2HMRO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:13:34 -0400
-Date: Mon, 13 Aug 2012 10:13:17 -0700
-From: tip-bot for Gleb Natapov <gleb@redhat.com>
-Message-ID: <tip-26a4f3c08de49c1437a7b7f97693cf22d8c31656@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <20120809085234.GI3341@redhat.com>
-References: <20120809085234.GI3341@redhat.com>
+	Mon, 13 Aug 2012 13:14:26 -0400
+Date: Mon, 13 Aug 2012 10:14:12 -0700
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-f03542a7019c600163ac4441d8a826c92c1bd510@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, alex.shi@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, alex.shi@intel.com
+In-Reply-To: <5028F431.6000306@intel.com>
+References: <5028F431.6000306@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: disable PEBS on a guest entry.
-Git-Commit-ID: 26a4f3c08de49c1437a7b7f97693cf22d8c31656
+Subject: [tip:sched/core] sched:
+  recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
+Git-Commit-ID: f03542a7019c600163ac4441d8a826c92c1bd510
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,53 +28,143 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:13:23 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:14:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26a4f3c08de49c1437a7b7f97693cf22d8c31656
-Gitweb:     http://git.kernel.org/tip/26a4f3c08de49c1437a7b7f97693cf22d8c31656
-Author:     Gleb Natapov <gleb@redhat.com>
-AuthorDate: Thu, 9 Aug 2012 11:52:34 +0300
+Commit-ID:  f03542a7019c600163ac4441d8a826c92c1bd510
+Gitweb:     http://git.kernel.org/tip/f03542a7019c600163ac4441d8a826c92c1bd510
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Thu, 26 Jul 2012 08:55:34 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 19:01:04 +0200
+CommitDate: Mon, 13 Aug 2012 19:02:05 +0200
 
-perf/x86: disable PEBS on a guest entry.
+sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
 
-If PMU counter has PEBS enabled it is not enough to disable counter
-on a guest entry since PEBS memory write can overshoot guest entry
-and corrupt guest memory. Disabling PEBS during guest entry solves
-the problem.
+Since power saving code was removed from sched now, the implement
+code is out of service in this function, and even pollute other logical.
+like, 'want_sd' never has chance to be set '0', that remove the effect
+of SD_WAKE_AFFINE here.
 
-Tested-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+So, clean up the obsolete code, includes SD_PREFER_LOCAL.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120809085234.GI3341@redhat.com
+Link: http://lkml.kernel.org/r/5028F431.6000306@intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ include/linux/sched.h    |    1 -
+ include/linux/topology.h |    2 --
+ kernel/sched/core.c      |    1 -
+ kernel/sched/fair.c      |   34 +++-------------------------------
+ 4 files changed, 3 insertions(+), 35 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 3823669..7f2739e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1522,8 +1522,16 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
- 	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
- 	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
- 	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
-+	/*
-+	 * If PMU counter has PEBS enabled it is not enough to disable counter
-+	 * on a guest entry since PEBS memory write can overshoot guest entry
-+	 * and corrupt guest memory. Disabling PEBS solves the problem.
-+	 */
-+	arr[1].msr = MSR_IA32_PEBS_ENABLE;
-+	arr[1].host = cpuc->pebs_enabled;
-+	arr[1].guest = 0;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b8c8664..f3eebc1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -860,7 +860,6 @@ enum cpu_idle_type {
+ #define SD_BALANCE_FORK		0x0008	/* Balance on fork, clone */
+ #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
+ #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
+-#define SD_PREFER_LOCAL		0x0040  /* Prefer to keep tasks local to this domain */
+ #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
+ #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
+ #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index fec12d6..d3cf0d6 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -129,7 +129,6 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_BALANCE_FORK			\
+ 				| 0*SD_BALANCE_WAKE			\
+ 				| 1*SD_WAKE_AFFINE			\
+-				| 0*SD_PREFER_LOCAL			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+@@ -160,7 +159,6 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_BALANCE_FORK			\
+ 				| 0*SD_BALANCE_WAKE			\
+ 				| 1*SD_WAKE_AFFINE			\
+-				| 0*SD_PREFER_LOCAL			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c9a3655..4376c9f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6622,7 +6622,6 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
+ 					| 0*SD_BALANCE_FORK
+ 					| 0*SD_BALANCE_WAKE
+ 					| 0*SD_WAKE_AFFINE
+-					| 0*SD_PREFER_LOCAL
+ 					| 0*SD_SHARE_CPUPOWER
+ 					| 0*SD_SHARE_PKG_RESOURCES
+ 					| 1*SD_SERIALIZE
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 287bfac..01d3eda 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2686,7 +2686,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+ 	int want_affine = 0;
+-	int want_sd = 1;
+ 	int sync = wake_flags & WF_SYNC;
  
--	*nr = 1;
-+	*nr = 2;
- 	return arr;
- }
+ 	if (p->nr_cpus_allowed == 1)
+@@ -2704,48 +2703,21 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 			continue;
  
+ 		/*
+-		 * If power savings logic is enabled for a domain, see if we
+-		 * are not overloaded, if so, don't balance wider.
+-		 */
+-		if (tmp->flags & (SD_PREFER_LOCAL)) {
+-			unsigned long power = 0;
+-			unsigned long nr_running = 0;
+-			unsigned long capacity;
+-			int i;
+-
+-			for_each_cpu(i, sched_domain_span(tmp)) {
+-				power += power_of(i);
+-				nr_running += cpu_rq(i)->cfs.nr_running;
+-			}
+-
+-			capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
+-
+-			if (nr_running < capacity)
+-				want_sd = 0;
+-		}
+-
+-		/*
+ 		 * If both cpu and prev_cpu are part of this domain,
+ 		 * cpu is a valid SD_WAKE_AFFINE target.
+ 		 */
+ 		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
+ 		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
+ 			affine_sd = tmp;
+-			want_affine = 0;
+-		}
+-
+-		if (!want_sd && !want_affine)
+ 			break;
++		}
+ 
+-		if (!(tmp->flags & sd_flag))
+-			continue;
+-
+-		if (want_sd)
++		if (tmp->flags & sd_flag)
+ 			sd = tmp;
+ 	}
+ 
+ 	if (affine_sd) {
+-		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
++		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+ 			prev_cpu = cpu;
+ 
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
