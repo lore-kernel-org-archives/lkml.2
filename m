@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab2HMWEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:04:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33116 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2HMWEe (ORCPT
+	id S1754765Ab2HMWEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:04:46 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57384 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab2HMWEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:04:34 -0400
+	Mon, 13 Aug 2012 18:04:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>, David Miller <davem@davemloft.net>
-Subject: [ 24/44] net: feed /dev/random with the MAC address when registering a device
-Date: Mon, 13 Aug 2012 15:02:31 -0700
-Message-Id: <20120813220144.254312872@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 26/44] random: add new get_random_bytes_arch() function
+Date: Mon, 13 Aug 2012 15:02:33 -0700
+Message-Id: <20120813220144.435932681@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -31,53 +31,110 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 7bf2357524408b97fec58344caf7397f8140c3fd upstream.
+commit c2557a303ab6712bb6e09447df828c557c710ac9 upstream.
+
+Create a new function, get_random_bytes_arch() which will use the
+architecture-specific hardware random number generator if it is
+present.  Change get_random_bytes() to not use the HW RNG, even if it
+is avaiable.
+
+The reason for this is that the hw random number generator is fast (if
+it is present), but it requires that we trust the hardware
+manufacturer to have not put in a back door.  (For example, an
+increasing counter encrypted by an AES key known to the NSA.)
+
+It's unlikely that Intel (for example) was paid off by the US
+Government to do this, but it's impossible for them to prove otherwise
+  --- especially since Bull Mountain is documented to use AES as a
+whitener.  Hence, the output of an evil, trojan-horse version of
+RDRAND is statistically indistinguishable from an RDRAND implemented
+to the specifications claimed by Intel.  Short of using a tunnelling
+electronic microscope to reverse engineer an Ivy Bridge chip and
+disassembling and analyzing the CPU microcode, there's no way for us
+to tell for sure.
+
+Since users of get_random_bytes() in the Linux kernel need to be able
+to support hardware systems where the HW RNG is not present, most
+time-sensitive users of this interface have already created their own
+cryptographic RNG interface which uses get_random_bytes() as a seed.
+So it's much better to use the HW RNG to improve the existing random
+number generator, by mixing in any entropy returned by the HW RNG into
+/dev/random's entropy pool, but to always _use_ /dev/random's entropy
+pool.
+
+This way we get almost of the benefits of the HW RNG without any
+potential liabilities.  The only benefits we forgo is the
+speed/performance enhancements --- and generic kernel code can't
+depend on depend on get_random_bytes() having the speed of a HW RNG
+anyway.
+
+For those places that really want access to the arch-specific HW RNG,
+if it is available, we provide get_random_bytes_arch().
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: David Miller <davem@davemloft.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/dev.c       |    3 +++
- net/core/rtnetlink.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/char/random.c  |   27 +++++++++++++++++++++++----
+ include/linux/random.h |    1 +
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1163,6 +1163,7 @@ static int __dev_open(struct net_device
- 		net_dmaengine_get();
- 		dev_set_rx_mode(dev);
- 		dev_activate(dev);
-+		add_device_randomness(dev->dev_addr, dev->addr_len);
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1038,11 +1038,28 @@ static ssize_t extract_entropy_user(stru
+ 
+ /*
+  * This function is the exported kernel interface.  It returns some
+- * number of good random numbers, suitable for seeding TCP sequence
+- * numbers, etc.
++ * number of good random numbers, suitable for key generation, seeding
++ * TCP sequence numbers, etc.  It does not use the hw random number
++ * generator, if available; use get_random_bytes_arch() for that.
+  */
+ void get_random_bytes(void *buf, int nbytes)
+ {
++	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
++}
++EXPORT_SYMBOL(get_random_bytes);
++
++/*
++ * This function will use the architecture-specific hardware random
++ * number generator if it is available.  The arch-specific hw RNG will
++ * almost certainly be faster than what we can do in software, but it
++ * is impossible to verify that it is implemented securely (as
++ * opposed, to, say, the AES encryption of a sequence number using a
++ * key known by the NSA).  So it's useful if we need the speed, but
++ * only if we're willing to trust the hardware manufacturer not to
++ * have put in a back door.
++ */
++void get_random_bytes_arch(void *buf, int nbytes)
++{
+ 	char *p = buf;
+ 
+ 	while (nbytes) {
+@@ -1057,9 +1074,11 @@ void get_random_bytes(void *buf, int nby
+ 		nbytes -= chunk;
  	}
  
- 	return ret;
-@@ -4730,6 +4731,7 @@ int dev_set_mac_address(struct net_devic
- 	err = ops->ndo_set_mac_address(dev, sa);
- 	if (!err)
- 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
-+	add_device_randomness(dev->dev_addr, dev->addr_len);
- 	return err;
+-	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
++	if (nbytes)
++		extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
  }
- EXPORT_SYMBOL(dev_set_mac_address);
-@@ -5507,6 +5509,7 @@ int register_netdevice(struct net_device
- 	dev_init_scheduler(dev);
- 	dev_hold(dev);
- 	list_netdevice(dev);
-+	add_device_randomness(dev->dev_addr, dev->addr_len);
+-EXPORT_SYMBOL(get_random_bytes);
++EXPORT_SYMBOL(get_random_bytes_arch);
++
  
- 	/* Notify protocols, that a new device appeared. */
- 	ret = call_netdevice_notifiers(NETDEV_REGISTER, dev);
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1304,6 +1304,7 @@ static int do_setlink(struct net_device
- 			goto errout;
- 		send_addr_notify = 1;
- 		modified = 1;
-+		add_device_randomness(dev->dev_addr, dev->addr_len);
- 	}
+ /*
+  * init_std_data - initialize pool with system data
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -56,6 +56,7 @@ extern void add_input_randomness(unsigne
+ extern void add_interrupt_randomness(int irq, int irq_flags);
  
- 	if (tb[IFLA_MTU]) {
+ extern void get_random_bytes(void *buf, int nbytes);
++extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
+ 
+ #ifndef MODULE
 
 
