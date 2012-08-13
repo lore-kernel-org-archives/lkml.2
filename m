@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab2HMWRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:17:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35526 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab2HMWRi (ORCPT
+	id S1755618Ab2HMWRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:17:50 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53985 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab2HMWRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:17:38 -0400
+	Mon, 13 Aug 2012 18:17:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: [ 40/65] mfd: wm831x: Feed the device UUID into device_add_randomness()
-Date: Mon, 13 Aug 2012 15:14:24 -0700
-Message-Id: <20120813221418.516379015@linuxfoundation.org>
+        Greg KH <greg@kroah.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 33/65] usb: feed USB device information to the /dev/random driver
+Date: Mon, 13 Aug 2012 15:14:17 -0700
+Message-Id: <20120813221417.877565220@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -30,51 +29,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 27130f0cc3ab97560384da437e4621fc4e94f21c upstream.
+commit b04b3156a20d395a7faa8eed98698d1e17a36000 upstream.
 
-wm831x devices contain a unique ID value. Feed this into the newly added
-device_add_randomness() to add some per device seed data to the pool.
+Send the USB device's serial, product, and manufacturer strings to the
+/dev/random driver to help seed its pools.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Greg KH <greg@kroah.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/wm831x-otp.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/core/hub.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/mfd/wm831x-otp.c
-+++ b/drivers/mfd/wm831x-otp.c
-@@ -18,6 +18,7 @@
- #include <linux/bcd.h>
- #include <linux/delay.h>
- #include <linux/mfd/core.h>
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -24,6 +24,7 @@
+ #include <linux/kthread.h>
+ #include <linux/mutex.h>
+ #include <linux/freezer.h>
 +#include <linux/random.h>
  
- #include <linux/mfd/wm831x/core.h>
- #include <linux/mfd/wm831x/otp.h>
-@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm83
+ #include <asm/uaccess.h>
+ #include <asm/byteorder.h>
+@@ -1951,6 +1952,14 @@ int usb_new_device(struct usb_device *ud
+ 	/* Tell the world! */
+ 	announce_device(udev);
  
- int wm831x_otp_init(struct wm831x *wm831x)
- {
-+	char uuid[WM831X_UNIQUE_ID_LEN];
- 	int ret;
- 
- 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
-@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831
- 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
- 			ret);
- 
-+	ret = wm831x_unique_id_read(wm831x, uuid);
-+	if (ret == 0)
-+		add_device_randomness(uuid, sizeof(uuid));
-+	else
-+		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
++	if (udev->serial)
++		add_device_randomness(udev->serial, strlen(udev->serial));
++	if (udev->product)
++		add_device_randomness(udev->product, strlen(udev->product));
++	if (udev->manufacturer)
++		add_device_randomness(udev->manufacturer,
++				      strlen(udev->manufacturer));
 +
- 	return ret;
- }
+ 	device_enable_async_suspend(&udev->dev);
  
+ 	/*
 
 
