@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab2HMNYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:24:39 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62541 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2HMNYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:24:37 -0400
+	id S1752560Ab2HMNYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:24:46 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:59814 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab2HMNYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:24:44 -0400
+Date: Mon, 13 Aug 2012 15:24:38 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "borislav.petkov" <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+Message-ID: <20120813132438.GA18990@aftab.osrc.amd.com>
+References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Date: Mon, 13 Aug 2012 21:24:36 +0800
-Message-ID: <CAJd=RBCJL+oPRZMNNmtwSWH6CM1fiUNh=X+Leuk25Lyd3uKB5Q@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb: do not use vma_hugecache_offset for vma_prio_tree_foreach
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344864055.6935.117.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 9:09 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Mon 13-08-12 20:10:41, Hillf Danton wrote:
->> On Sun, Aug 12, 2012 at 5:31 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> > From d07b88a70ee1dbcc96502c48cde878931e7deb38 Mon Sep 17 00:00:00 2001
->> > From: Michal Hocko <mhocko@suse.cz>
->> > Date: Fri, 10 Aug 2012 15:03:07 +0200
->> > Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
->> >  vma_prio_tree_foreach
->> >
->> > 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
->> > from vma) fixed pgoff calculation but it has replaced it by
->> > vma_hugecache_offset which is not approapriate for offsets used for
->> > vma_prio_tree_foreach because that one expects index in page units
->> > rather than in huge_page_shift.
->>
->>
->> What if another case of vma_prio_tree_foreach in try_to_unmap_file
->> is correct?
->
-> That one is surely correct (linear_page_index converts the page offset).
+On Mon, Aug 13, 2012 at 09:20:55AM -0400, Steven Rostedt wrote:
+> When I did a compile of perf using a relative path for the output
+> directory, the build failed when it tried to compile libtraceevent. This
+> is because it continues to use the same relative path when the new
+> working directory is in a different path.
+> 
+>     SUBDIR ../lib/traceevent/
+> /bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
+> Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
+> make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
+> 
+> 
+> Make the path used an absolute path when building perf with O=.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+> index bde8521..9e3e31e 100644
+> --- a/tools/scripts/Makefile.include
+> +++ b/tools/scripts/Makefile.include
+> @@ -1,6 +1,7 @@
+>  ifeq ("$(origin O)", "command line")
+> -	OUTPUT := $(O)/
+> -	COMMAND_O := O=$(O)
+> +	RAW_O := $(shell cd $(O) ; pwd)
+> +	OUTPUT := $(RAW_O)/
+> +	COMMAND_O := O=$(RAW_O)
 
-But linear_page_index is not used in this patch, why?
+So wouldn't it make sense to call this ABSOLUTE_O or so then?
 
-> Anyway do you actually have any _real_ objection to the patch?
+Thanks.
 
-I will sign ack only after I see your answers to my questions.
-Feel free to info me if you are unlikely to answer questions, Michal.
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
