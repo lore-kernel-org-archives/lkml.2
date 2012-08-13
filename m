@@ -1,34 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2HMOpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:45:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33420 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab2HMOpp convert rfc822-to-8bit (ORCPT
+	id S1751910Ab2HMOrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:47:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41009 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab2HMOrQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:45:45 -0400
-Message-ID: <1344869129.31459.33.camel@twins>
-Subject: Re: RFC: mutex: hung tasks on SMP platforms with
- asm-generic/mutex-xchg.h
+	Mon, 13 Aug 2012 10:47:16 -0400
+Message-ID: <1344869225.31459.34.camel@twins>
+Subject: Re: [RFC][PATCH 4/4] perf/events: Use helper functions in event
+ assignment to shrink macro size
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Chris Mason <chris.mason@fusionio.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 13 Aug 2012 16:45:29 +0200
-In-Reply-To: <20120813141156.GC20537@mudshark.cambridge.arm.com>
-References: <20120807115647.GA12828@mudshark.cambridge.arm.com>
-	 <alpine.LFD.2.02.1208090029460.5231@xanadu.home>
-	 <20120809144953.GC18486@mudshark.cambridge.arm.com>
-	 <alpine.LFD.2.02.1208091201380.5231@xanadu.home>
-	 <alpine.LFD.2.02.1208091243080.5231@xanadu.home>
-	 <1344845704.31459.11.camel@twins>
-	 <alpine.LFD.2.02.1208130931530.5231@xanadu.home>
-	 <1344866717.31459.32.camel@twins>
-	 <20120813141156.GC20537@mudshark.cambridge.arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 13 Aug 2012 16:47:05 +0200
+In-Reply-To: <1344868844.6935.121.camel@gandalf.stny.rr.com>
+References: <20120810034302.758092203@goodmis.org>
+	 <20120810034708.589220175@goodmis.org> <1344845024.31459.9.camel@twins>
+	 <1344863027.6935.111.camel@gandalf.stny.rr.com>
+	 <1344865977.31459.26.camel@twins>
+	 <1344868844.6935.121.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -37,12 +30,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 15:11 +0100, Will Deacon wrote:
+On Mon, 2012-08-13 at 10:40 -0400, Steven Rostedt wrote:
+> > Yeah.. I think you're referring to the {u,k}probes open-coded nonsense?
+> > Should we make those use these new helpers you created as well?
 > 
-> > Will you carry this through the ARM tree or do you want me/Ingo to take
-> > it?
-> 
-> Please can you guys take it? The move to mutex-dec can go through the ARM
-> tree but it's probably best if you take the core change. 
+> They may not need it. The helpers I created were for the macros that are
+> created by all TRACE_EVENT() instances. If the uprobes and kprobes only
+> have a single instance, then they probably don't need the helpers. But
+> they still call the perf_trace_buf_submit(), which can can probably be
+> cleaned up. 
 
-OK, done. Thanks!
+Right, I realize that. I was just thinking it might be good to keep all
+(3?) copies similar. Also avoiding two sets of wrappers seems like a
+good idea.
+
