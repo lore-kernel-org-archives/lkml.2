@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2HMMbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 08:31:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51596 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750916Ab2HMMbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 08:31:34 -0400
-Date: Mon, 13 Aug 2012 13:31:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 2/6] regulator: ab3100: Remove get_voltage implementation
- for regulator_ops_fixed
-Message-ID: <20120813123132.GD13446@opensource.wolfsonmicro.com>
-References: <1344562353.2996.1.camel@phoenix>
- <1344562424.2996.2.camel@phoenix>
+	id S1752170Ab2HMMcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 08:32:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20786 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981Ab2HMMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 08:32:19 -0400
+Subject: [PATCH v4 1/9] ipc: remove forced assignment of selected message
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: manfred@colorfullife.com, a.p.zijlstra@chello.nl, arnd@arndb.de,
+        hughd@google.com, linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
+        yeohc@au1.ibm.com, linux-security-module@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, hpa@zytor.com, casey@schaufler-ca.com,
+        eparis@parisplace.org, devel@openvz.org
+Date: Mon, 13 Aug 2012 16:31:37 +0400
+Message-ID: <20120813123137.5581.71540.stgit@localhost6.localdomain6>
+In-Reply-To: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
+References: <20120813122835.5581.70057.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344562424.2996.2.camel@phoenix>
-X-Cookie: Blow it out your ear.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 09:33:44AM +0800, Axel Lin wrote:
-> This is not required after commit f7df20ec
-> "regulator: core: Use list_voltage() to read single voltage regulators"
+This is a cleanup patch. The assignment is redundant.
+---
+ ipc/msg.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-applied 2-6.
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 7385de2..f3bfbb8 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -787,7 +787,6 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+ 			    !security_msg_queue_msgrcv(msq, walk_msg, current,
+ 						       msgtyp, mode)) {
+ 
+-				msg = walk_msg;
+ 				if (mode == SEARCH_LESSEQUAL &&
+ 						walk_msg->m_type != 1) {
+ 					msg = walk_msg;
+
