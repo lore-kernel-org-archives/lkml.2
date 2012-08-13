@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab2HMWTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:19:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61337 "EHLO
+	id S1755999Ab2HMWT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:19:28 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46692 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab2HMWTN (ORCPT
+	with ESMTP id S1755882Ab2HMWTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:19:13 -0400
+	Mon, 13 Aug 2012 18:19:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Fabio Futigami <ffutigam@redhat.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [ 62/65] e1000e: NIC goes up and immediately goes down
-Date: Mon, 13 Aug 2012 15:14:46 -0700
-Message-Id: <20120813221420.464716780@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 65/65] rt61pci: fix NULL pointer dereference in config_lna_gain
+Date: Mon, 13 Aug 2012 15:14:49 -0700
+Message-Id: <20120813221420.723284909@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -33,39 +30,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tushar Dave <tushar.n.dave@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b7ec70be01a87f2c85df3ae11046e74f9b67e323 upstream.
+commit deee0214def5d8a32b8112f11d9c2b1696e9c0cb upstream.
 
-Found that commit d478eb44 was a bad commit.
-If the link partner is transmitting codeword (even if NULL codeword),
-then the RXCW.C bit will be set so check for RXCW.CW is unnecessary.
-Ref: RH BZ 840642
+We can not pass NULL libconf->conf->channel to rt61pci_config() as it
+is dereferenced unconditionally in rt61pci_config_lna_gain() subroutine.
 
-Reported-by: Fabio Futigami <ffutigam@redhat.com>
-Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
-CC: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Resolves:
+https://bugzilla.kernel.org/show_bug.cgi?id=44361
+
+Reported-and-tested-by: <dolohow@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/82571.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt61pci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/e1000e/82571.c
-+++ b/drivers/net/ethernet/intel/e1000e/82571.c
-@@ -1582,10 +1582,8 @@ static s32 e1000_check_for_serdes_link_8
- 			 * auto-negotiation in the TXCW register and disable
- 			 * forced link in the Device Control register in an
- 			 * attempt to auto-negotiate with our link partner.
--			 * If the partner code word is null, stop forcing
--			 * and restart auto negotiation.
- 			 */
--			if ((rxcw & E1000_RXCW_C) || !(rxcw & E1000_RXCW_CW))  {
-+			if (rxcw & E1000_RXCW_C) {
- 				/* Enable autoneg, and unforce link up */
- 				ew32(TXCW, mac->txcw);
- 				ew32(CTRL, (ctrl & ~E1000_CTRL_SLU));
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2243,8 +2243,7 @@ static void rt61pci_txdone(struct rt2x00
+ 
+ static void rt61pci_wakeup(struct rt2x00_dev *rt2x00dev)
+ {
+-	struct ieee80211_conf conf = { .flags = 0 };
+-	struct rt2x00lib_conf libconf = { .conf = &conf };
++	struct rt2x00lib_conf libconf = { .conf = &rt2x00dev->hw->conf };
+ 
+ 	rt61pci_config(rt2x00dev, &libconf, IEEE80211_CONF_CHANGE_PS);
+ }
 
 
