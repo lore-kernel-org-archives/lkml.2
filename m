@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2HMUVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:21:12 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	id S1753865Ab2HMUV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:21:28 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab2HMUVF (ORCPT
+	with ESMTP id S1753764Ab2HMUVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:21:05 -0400
+	Mon, 13 Aug 2012 16:21:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stevie Trujillo <stevie.trujillo@gmail.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Subject: [ 07/82] lib/vsprintf.c: kptr_restrict: fix pK-error in SysRq show-all-timers(Q)
-Date: Mon, 13 Aug 2012 13:18:43 -0700
-Message-Id: <20120813201747.102087767@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 19/82] ARM: 7466/1: disable interrupt before spinning endlessly
+Date: Mon, 13 Aug 2012 13:18:55 -0700
+Message-Id: <20120813201748.120836533@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,45 +30,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 3715c5309f6d175c3053672b73fd4f73be16fd07 upstream.
+commit 98bd8b96b26db3399a48202318dca4aaa2515355 upstream.
 
-When using ALT+SysRq+Q all the pointers are replaced with "pK-error" like
-this:
+The CPU will endlessly spin at the end of machine_halt and
+machine_restart calls.  However, this will lead to a soft lockup
+warning after about 20 seconds, if CONFIG_LOCKUP_DETECTOR is enabled,
+as system timer is still alive.
 
-	[23153.208033]   .base:               pK-error
+Disable interrupt before going to spin endlessly, so that the lockup
+warning will never be seen.
 
-with echo h > /proc/sysrq-trigger it works:
-
-	[23107.776363]   .base:       ffff88023e60d540
-
-The intent behind this behavior was to return "pK-error" in cases where
-the %pK format specifier was used in interrupt context, because the
-CAP_SYSLOG check wouldn't be meaningful.  Clearly this should only apply
-when kptr_restrict is actually enabled though.
-
-Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/vsprintf.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/kernel/process.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1030,7 +1030,8 @@ char *pointer(const char *fmt, char *buf
- 		 * %pK cannot be used in IRQ context because its test
- 		 * for CAP_SYSLOG would be meaningless.
- 		 */
--		if (in_irq() || in_serving_softirq() || in_nmi()) {
-+		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
-+				      in_nmi())) {
- 			if (spec.field_width == -1)
- 				spec.field_width = default_width;
- 			return string(buf, end, "pK-error", spec);
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -247,6 +247,7 @@ void machine_shutdown(void)
+ void machine_halt(void)
+ {
+ 	machine_shutdown();
++	local_irq_disable();
+ 	while (1);
+ }
+ 
+@@ -268,6 +269,7 @@ void machine_restart(char *cmd)
+ 
+ 	/* Whoops - the platform was unable to reboot. Tell the user! */
+ 	printk("Reboot failed -- System halted\n");
++	local_irq_disable();
+ 	while (1);
+ }
+ 
 
 
