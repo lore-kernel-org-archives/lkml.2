@@ -1,165 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab2HMUUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:20:24 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:21536
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753318Ab2HMUUT (ORCPT
+	id S1753549Ab2HMUUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:20:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab2HMUUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:20:19 -0400
-X-IronPort-AV: E=Sophos;i="4.77,761,1336341600"; 
-   d="scan'208";a="153006056"
-Date: Mon, 13 Aug 2012 22:20:16 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
- devm_clk_get
-In-Reply-To: <50295A43.30305@redhat.com>
-Message-ID: <alpine.DEB.2.02.1208132219060.2355@localhost6.localdomain6>
-References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien> <50295A43.30305@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Mon, 13 Aug 2012 16:20:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Karsten Keil <keil@b1-systems.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/82] mISDN: Bugfix only few bytes are transfered on a connection
+Date: Mon, 13 Aug 2012 13:18:46 -0700
+Message-Id: <20120813201747.341043888@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Using devm_kzalloc simplifies the code and ensures that the use of
-devm_request_irq is safe.  When kzalloc and kfree were used, the interrupt
-could be triggered after the handler's data argument had been freed.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-This also introduces some missing initializations of the return variable
-ret, and uses devm_request_and_ioremap instead of the combination of
-devm_request_mem_region and devm_ioremap.
+------------------
 
-The problem of a free after a devm_request_irq was found using the
-following semantic match (http://coccinelle.lip6.fr/)
+From: Karsten Keil <keil@b1-systems.de>
 
-// <smpl>
-@r exists@
-expression e1,e2,x,a,b,c,d;
-identifier free;
-position p1,p2;
-@@
+commit b41a9a66f67817f8acd85bd650e012a14da39faa upstream.
 
-   devm_request_irq@p1(e1,e2,...,x)
-   ... when any
-       when != e2 = a
-       when != x = b
-   if (...) {
-     ... when != e2 = c
-         when != x = d
-     free@p2(...,x,...);
-     ...
-     return ...;
-   }
-// </smpl>
+The test for the fillempty condition was wrong in one place.
+Changed the variable to the right boolean type.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Karsten Keil <keil@b1-systems.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-v3: due to a conflict with another patch
+ drivers/isdn/hardware/mISDN/avmfritz.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-  drivers/media/video/mx2_emmaprp.c |   31 ++++++++++++-------------------
-  1 file changed, 12 insertions(+), 19 deletions(-)
+--- a/drivers/isdn/hardware/mISDN/avmfritz.c
++++ b/drivers/isdn/hardware/mISDN/avmfritz.c
+@@ -449,7 +449,8 @@ hdlc_fill_fifo(struct bchannel *bch)
+ {
+ 	struct fritzcard *fc = bch->hw;
+ 	struct hdlc_hw *hdlc;
+-	int count, fs, cnt = 0, idx, fillempty = 0;
++	int count, fs, cnt = 0, idx;
++	bool fillempty = false;
+ 	u8 *p;
+ 	u32 *ptr, val, addr;
+ 
+@@ -462,7 +463,7 @@ hdlc_fill_fifo(struct bchannel *bch)
+ 			return;
+ 		count = fs;
+ 		p = bch->fill;
+-		fillempty = 1;
++		fillempty = true;
+ 	} else {
+ 		count = bch->tx_skb->len - bch->tx_idx;
+ 		if (count <= 0)
+@@ -477,7 +478,7 @@ hdlc_fill_fifo(struct bchannel *bch)
+ 			hdlc->ctrl.sr.cmd |= HDLC_CMD_XME;
+ 	}
+ 	ptr = (u32 *)p;
+-	if (fillempty) {
++	if (!fillempty) {
+ 		pr_debug("%s.B%d: %d/%d/%d", fc->name, bch->nr, count,
+ 			 bch->tx_idx, bch->tx_skb->len);
+ 		bch->tx_idx += count;
 
-diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
-index 2810015..dab380a 100644
---- a/drivers/media/video/mx2_emmaprp.c
-+++ b/drivers/media/video/mx2_emmaprp.c
-@@ -896,7 +896,7 @@ static int emmaprp_probe(struct platform_device *pdev)
-  	int irq_emma;
-  	int ret;
-
--	pcdev = kzalloc(sizeof *pcdev, GFP_KERNEL);
-+	pcdev = devm_kzalloc(&pdev->dev, sizeof(*pcdev), GFP_KERNEL);
-  	if (!pcdev)
-  		return -ENOMEM;
-
-@@ -904,27 +904,24 @@ static int emmaprp_probe(struct platform_device *pdev)
-
-  	pcdev->clk_emma_ipg = devm_clk_get(&pdev->dev, "ipg");
-  	if (IS_ERR(pcdev->clk_emma_ipg)) {
--		ret = PTR_ERR(pcdev->clk_emma_ipg);
--		goto free_dev;
-+		return PTR_ERR(pcdev->clk_emma_ipg);
-  	}
-
-  	pcdev->clk_emma_ahb = devm_clk_get(&pdev->dev, "ahb");
-  	if (IS_ERR(pcdev->clk_emma_ipg)) {
--		ret = PTR_ERR(pcdev->clk_emma_ahb);
--		goto free_dev;
-+		return PTR_ERR(pcdev->clk_emma_ahb);
-  	}
-
-  	irq_emma = platform_get_irq(pdev, 0);
-  	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  	if (irq_emma < 0 || res_emma == NULL) {
-  		dev_err(&pdev->dev, "Missing platform resources data\n");
--		ret = -ENODEV;
--		goto free_dev;
-+		return -ENODEV;
-  	}
-
-  	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
-  	if (ret)
--		goto free_dev;
-+		return ret;
-
-  	mutex_init(&pcdev->dev_mutex);
-
-@@ -946,21 +943,20 @@ static int emmaprp_probe(struct platform_device *pdev)
-
-  	platform_set_drvdata(pdev, pcdev);
-
--	if (devm_request_mem_region(&pdev->dev, res_emma->start,
--	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
--		goto rel_vdev;
--
--	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
--					resource_size(res_emma));
--	if (!pcdev->base_emma)
-+	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
-+	if (!pcdev->base_emma) {
-+		ret = -ENXIO;
-  		goto rel_vdev;
-+	}
-
-  	pcdev->irq_emma = irq_emma;
-  	pcdev->res_emma = res_emma;
-
-  	if (devm_request_irq(&pdev->dev, pcdev->irq_emma, emmaprp_irq,
--			     0, MEM2MEM_NAME, pcdev) < 0)
-+			     0, MEM2MEM_NAME, pcdev) < 0) {
-+		ret = -ENODEV;
-  		goto rel_vdev;
-+	}
-
-  	pcdev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
-  	if (IS_ERR(pcdev->alloc_ctx)) {
-@@ -993,8 +989,6 @@ rel_vdev:
-  	video_device_release(vfd);
-  unreg_dev:
-  	v4l2_device_unregister(&pcdev->v4l2_dev);
--free_dev:
--	kfree(pcdev);
-
-  	return ret;
-  }
-@@ -1009,7 +1003,6 @@ static int emmaprp_remove(struct platform_device *pdev)
-  	v4l2_m2m_release(pcdev->m2m_dev);
-  	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
-  	v4l2_device_unregister(&pcdev->v4l2_dev);
--	kfree(pcdev);
-
-  	return 0;
-  }
 
