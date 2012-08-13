@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab2HMWSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:38 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36943 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755762Ab2HMWSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 3/3] PM / Domains: Add operations related to cpuidle using domain names
-Date: Tue, 14 Aug 2012 00:23:49 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-References: <201208140019.19288.rjw@sisk.pl>
-In-Reply-To: <201208140019.19288.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208140023.49263.rjw@sisk.pl>
+	id S1755871Ab2HMWSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:46 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53985 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854Ab2HMWSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:18:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        Wolfgang Denk <wd@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 55/65] ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
+Date: Mon, 13 Aug 2012 15:14:39 -0700
+Message-Id: <20120813221419.826041066@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
+References: <20120813221414.965154048@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Make it possible to use domain names in operations connecting cpuidle
-to and disconnecting it from a PM domain.  This is useful on
-platforms where PM domain objects are organized in such a way that
-the names of the domains are easier to use than the addresses of
-those objects.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+------------------
+
+From: Marek Vasut <marex@denx.de>
+
+commit 3bed491c8d28329e34f8a31e3fe64d03f3a350f1 upstream.
+
+The CONFIG_DEFAULT_MMAP_MIN_ADDR was set to 65536 in mxs_defconfig,
+this caused severe breakage of userland applications since the upper
+limit for ARM is 32768. By default CONFIG_DEFAULT_MMAP_MIN_ADDR is
+set to 4096 and can also be changed via /proc/sys/vm/mmap_min_addr
+if needed.
+
+Quoting Russell King [1]:
+
+"4096 is also fine for ARM too. There's not much point in having
+defconfigs change it - that would just be pure noise in the config
+files."
+
+the CONFIG_DEFAULT_MMAP_MIN_ADDR can be removed from the defconfig
+altogether.
+
+This problem was introduced by commit cde7c41 (ARM: configs: add
+defconfig for mach-mxs).
+
+[1] http://marc.info/?l=linux-arm-kernel&m=134401593807820&w=2
+
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Wolfgang Denk <wd@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/base/power/domain.c |   19 +++++++++++++++++++
- include/linux/pm_domain.h   |   10 ++++++++++
- 2 files changed, 29 insertions(+)
+ arch/arm/configs/mxs_defconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -1888,6 +1888,16 @@ int pm_genpd_attach_cpuidle(struct gener
- }
- 
- /**
-+ * pm_genpd_name_attach_cpuidle - Find PM domain and connect cpuidle to it.
-+ * @name: Name of the domain to connect to cpuidle.
-+ * @state: cpuidle state this domain can manipulate.
-+ */
-+int pm_genpd_name_attach_cpuidle(const char *name, int state)
-+{
-+	return pm_genpd_attach_cpuidle(pm_genpd_lookup_name(name), state);
-+}
-+
-+/**
-  * pm_genpd_detach_cpuidle - Remove the cpuidle connection from a PM domain.
-  * @genpd: PM domain to remove the cpuidle connection from.
-  *
-@@ -1925,6 +1935,15 @@ int pm_genpd_detach_cpuidle(struct gener
- 	return ret;
- }
- 
-+/**
-+ * pm_genpd_name_detach_cpuidle - Find PM domain and disconnect cpuidle from it.
-+ * @name: Name of the domain to disconnect cpuidle from.
-+ */
-+int pm_genpd_name_detach_cpuidle(const char *name)
-+{
-+	return pm_genpd_detach_cpuidle(pm_genpd_lookup_name(name));
-+}
-+
- /* Default device callbacks for generic PM domains. */
- 
- /**
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -156,7 +156,9 @@ extern int pm_genpd_add_callbacks(struct
- 				  struct gpd_timing_data *td);
- extern int __pm_genpd_remove_callbacks(struct device *dev, bool clear_td);
- extern int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state);
-+extern int pm_genpd_name_attach_cpuidle(const char *name, int state);
- extern int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd);
-+extern int pm_genpd_name_detach_cpuidle(const char *name);
- extern void pm_genpd_init(struct generic_pm_domain *genpd,
- 			  struct dev_power_governor *gov, bool is_off);
- 
-@@ -229,10 +231,18 @@ static inline int pm_genpd_attach_cpuidl
- {
- 	return -ENOSYS;
- }
-+static inline int pm_genpd_name_attach_cpuidle(const char *name, int state)
-+{
-+	return -ENOSYS;
-+}
- static inline int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd)
- {
- 	return -ENOSYS;
- }
-+static inline int pm_genpd_name_detach_cpuidle(const char *name)
-+{
-+	return -ENOSYS;
-+}
- static inline void pm_genpd_init(struct generic_pm_domain *genpd,
- 				 struct dev_power_governor *gov, bool is_off)
- {
+--- a/arch/arm/configs/mxs_defconfig
++++ b/arch/arm/configs/mxs_defconfig
+@@ -32,7 +32,6 @@ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_PREEMPT_VOLUNTARY=y
+ CONFIG_AEABI=y
+-CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
+ CONFIG_AUTO_ZRELADDR=y
+ CONFIG_FPE_NWFPE=y
+ CONFIG_NET=y
+
 
