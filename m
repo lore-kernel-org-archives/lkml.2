@@ -1,114 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2HMTtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 15:49:42 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65464 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab2HMTtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 15:49:41 -0400
-Message-ID: <1344887375.7580.2.camel@maxim-laptop>
-Subject: Re: [bisected] nouveau: "Failed to idle channel x" after resume
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Ben Skeggs <skeggsb@gmail.com>, Aioanei Rares <krnl.list@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Martin Nyhus <martin.nyhus@gmx.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
-Date: Mon, 13 Aug 2012 22:49:35 +0300
-In-Reply-To: <87d32uzrq5.fsf@turtle.gmx.de>
-References: <20120611231842.221bd738@europa>
-	 <20120705222429.43586868@europa>
-	 <CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
-	 <1344091275.4520.1.camel@maxim-laptop>
-	 <1344285484.14543.0.camel@maxim-laptop>
-	 <20120808053716.GA10092@turiel.bne.redhat.com>
-	 <87lihpkjnu.fsf@turtle.gmx.de>
-	 <20120808060841.GB10092@turiel.bne.redhat.com>
-	 <87fw7xkiu6.fsf@turtle.gmx.de> <87d32uzrq5.fsf@turtle.gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752907Ab2HMTty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 15:49:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752567Ab2HMTtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 15:49:52 -0400
+Message-ID: <50295A43.30305@redhat.com>
+Date: Mon, 13 Aug 2012 16:49:23 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien>
+In-Reply-To: <alpine.DEB.2.02.1208101558100.2011@hadrien>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 18:22 +0200, Sven Joachim wrote: 
-> On 2012-08-08 08:18 +0200, Sven Joachim wrote:
+Em 10-08-2012 10:59, Julia Lawall escreveu:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> > On 2012-08-08 08:08 +0200, Ben Skeggs wrote:
-> >
-> >> On Wed, Aug 08, 2012 at 08:00:21AM +0200, Sven Joachim wrote:
-> >>> Not for me on my GeForce 8500 GT, and I still cannot suspend more than
-> >>> once, subsequent attempts fail:
-> >>> 
-> >>> ,----
-> >>> | Aug 8 07:49:16 turtle kernel: [ 91.697068] nouveau W[
-> >>> | PGRAPH][0000:01:00.0][0x0200502d][ffff880037be1d40] parent failed
-> >>> | suspend, -16
-> >>> | Aug  8 07:49:16 turtle kernel: [   91.697078] nouveau  [     DRM][0000:01:00.0] resuming display...
-> >>> `----
-> >> Interesting.  Were there any messages prior to that?
-> >
-> > Nothing interesting:
-> >
-> > ,----
-> > | Aug  8 07:49:16 turtle kernel: [   89.655362] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-> > | Aug  8 07:49:16 turtle kernel: [   89.655367] nouveau  [     DRM][0000:01:00.0] suspending display...
-> > | Aug  8 07:49:16 turtle kernel: [   89.696888] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
-> > | Aug  8 07:49:16 turtle kernel: [   89.696909] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-> > | Aug  8 07:49:16 turtle kernel: [   89.696913] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
-> > `----
-> >
-> >> I guess the the fifo
-> >> code detected a timeout when trying to save the graphics context, I have
-> >> I have other patches in my tree (I'll push them soon, tied up with other
-> >> work atm) that might help here.
-> >
-> > Thanks, I'll try them when they are available.
+> Using devm_kzalloc and devm_clk_get simplifies the code and ensures that
+> the use of devm_request_irq is safe.  When kzalloc and kfree were used, the
+> interrupt could be triggered after the handler's data argument had been
+> freed.
 > 
-> With current nouveau master ("drm/nouveau: fix find/replace bug in
-> license header") suspending works again, thanks!  However, it is a bit
-> slow, taking between two and five seconds:
+> Add missing return code initializations in the error handling code for
+> devm_request_and_ioremap and devm_request_irq.
 > 
-> ,----
-> | Aug 13 18:17:56 turtle kernel: [  678.524814] PM: Syncing filesystems ... done.
-> | Aug 13 18:18:09 turtle kernel: [  678.639202] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> | Aug 13 18:18:09 turtle kernel: [  678.649954] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> | Aug 13 18:18:09 turtle kernel: [  678.663298] Suspending console(s) (use no_console_suspend to debug)
-> | Aug 13 18:18:09 turtle kernel: [  678.680884] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-> | Aug 13 18:18:09 turtle kernel: [  678.681000] sd 0:0:0:0: [sda] Stopping disk
-> | Aug 13 18:18:09 turtle kernel: [  678.695141] parport_pc 00:07: disabled
-> | Aug 13 18:18:09 turtle kernel: [  678.695204] serial 00:06: disabled
-> | Aug 13 18:18:09 turtle kernel: [  678.695209] serial 00:06: wake-up capability disabled by ACPI
-> | Aug 13 18:18:09 turtle kernel: [  678.695235] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-> | Aug 13 18:18:09 turtle kernel: [  678.695239] nouveau  [     DRM][0000:01:00.0] suspending display...
-> | Aug 13 18:18:09 turtle kernel: [  678.742111] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
-> | Aug 13 18:18:09 turtle kernel: [  678.742189] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-> | Aug 13 18:18:09 turtle kernel: [  682.357319] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
-> | Aug 13 18:18:09 turtle kernel: [  683.526646] PM: suspend of devices complete after 4863.181 msecs
-> `----
-> 
-> With the 3.4.8 kernel, suspending takes little more than one second.
-> 
-> Cheers,
->        Sven
-I confirm exactly the same thing.
+> The problem of a free after a devm_request_irq was found using the
+> following semantic match (http://coccinelle.lip6.fr/)
 
-Here suspend takes more that 10 seconds:
+Hi Julia,
 
-[ 2165.363878] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-[ 2165.363885] nouveau  [     DRM][0000:01:00.0] suspending display...
-[ 2165.475791] sd 0:0:0:0: [sda] Stopping disk
-[ 2166.396877] nouveau  [     DRM][0000:01:00.0] unpinning
-framebuffer(s)...
-[ 2166.396926] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-[ 2174.809084] nouveau  [     DRM][0000:01:00.0] suspending client
-object trees...
-[ 2177.950222] nouveau 0000:01:00.0: power state changed by ACPI to D3
+This patch doesn't apply anymore, likely due to this changeset:
 
+commit 33eb46a7c2bdd10f9a761390ce1bf51169ff537a
+Author: Javier Martin <javier.martin@vista-silicon.com>
+Date:   Mon Jul 30 04:37:30 2012 -0300
 
-Best regards,
-Maxim Levitsky
+    [media] media: i.MX27: Fix mx2_emmaprp mem2mem driver clocks
+    
+    This driver wasn't converted to the new clock framework
+    (e038ed50a4a767add205094c035b6943e7b30140).
+    
+    Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
+index 5f8a6f5..728cac3 100644
+--- a/drivers/media/video/mx2_emmaprp.c
++++ b/drivers/media/video/mx2_emmaprp.c
+@@ -209,7 +209,7 @@ struct emmaprp_dev {
+ 
+ 	int			irq_emma;
+ 	void __iomem		*base_emma;
+-	struct clk		*clk_emma;
++	struct clk		*clk_emma_ahb, *clk_emma_ipg;
+ 	struct resource		*res_emma;
+ 
+ 	struct v4l2_m2m_dev	*m2m_dev;
+@@ -804,7 +804,8 @@ static int emmaprp_open(struct file *file)
+ 		return ret;
+ 	}
+ 
+-	clk_enable(pcdev->clk_emma);
++	clk_prepare_enable(pcdev->clk_emma_ipg);
++	clk_prepare_enable(pcdev->clk_emma_ahb);
+ 	ctx->q_data[V4L2_M2M_SRC].fmt = &formats[1];
+ 	ctx->q_data[V4L2_M2M_DST].fmt = &formats[0];
+ 
+@@ -820,7 +821,8 @@ static int emmaprp_release(struct file *file)
+ 
+ 	dprintk(pcdev, "Releasing instance %p\n", ctx);
+ 
+-	clk_disable(pcdev->clk_emma);
++	clk_disable_unprepare(pcdev->clk_emma_ahb);
++	clk_disable_unprepare(pcdev->clk_emma_ipg);
+ 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
+ 	kfree(ctx);
+ 
+@@ -880,9 +882,15 @@ static int emmaprp_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&pcdev->irqlock);
+ 
+-	pcdev->clk_emma = clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(pcdev->clk_emma)) {
+-		ret = PTR_ERR(pcdev->clk_emma);
++	pcdev->clk_emma_ipg = devm_clk_get(&pdev->dev, "ipg");
++	if (IS_ERR(pcdev->clk_emma_ipg)) {
++		ret = PTR_ERR(pcdev->clk_emma_ipg);
++		goto free_dev;
++	}
++
++	pcdev->clk_emma_ahb = devm_clk_get(&pdev->dev, "ahb");
++	if (IS_ERR(pcdev->clk_emma_ipg)) {
++		ret = PTR_ERR(pcdev->clk_emma_ahb);
+ 		goto free_dev;
+ 	}
+ 
+@@ -891,12 +899,12 @@ static int emmaprp_probe(struct platform_device *pdev)
+ 	if (irq_emma < 0 || res_emma == NULL) {
+ 		dev_err(&pdev->dev, "Missing platform resources data\n");
+ 		ret = -ENODEV;
+-		goto free_clk;
++		goto free_dev;
+ 	}
+ 
+ 	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
+ 	if (ret)
+-		goto free_clk;
++		goto free_dev;
+ 
+ 	mutex_init(&pcdev->dev_mutex);
+ 
+@@ -969,8 +977,6 @@ rel_vdev:
+ 	video_device_release(vfd);
+ unreg_dev:
+ 	v4l2_device_unregister(&pcdev->v4l2_dev);
+-free_clk:
+-	clk_put(pcdev->clk_emma);
+ free_dev:
+ 	kfree(pcdev);
+ 
+@@ -987,7 +993,6 @@ static int emmaprp_remove(struct platform_device *pdev)
+ 	v4l2_m2m_release(pcdev->m2m_dev);
+ 	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
+ 	v4l2_device_unregister(&pcdev->v4l2_dev);
+-	clk_put(pcdev->clk_emma);
+ 	kfree(pcdev);
+ 
+ 	return 0;
 
