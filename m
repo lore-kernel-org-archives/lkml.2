@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2HMUW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:22:28 -0400
+	id S1754216Ab2HMUWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:22:42 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab2HMUWW (ORCPT
+	with ESMTP id S1754160Ab2HMUWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:22:22 -0400
+	Mon, 13 Aug 2012 16:22:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 32/82] mm: mmu_notifier: fix freed page still mapped in secondary MMU
-Date: Mon, 13 Aug 2012 13:19:08 -0700
-Message-Id: <20120813201749.249667615@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 35/82] block: uninitialized ioc->nr_tasks triggers WARN_ON
+Date: Mon, 13 Aug 2012 13:19:11 -0700
+Message-Id: <20120813201749.507154525@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -32,134 +30,90 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Olof Johansson <olof@lixom.net>
 
-commit 3ad3d901bbcfb15a5e4690e55350db0899095a68 upstream.
+commit 4638a83e8615de9c16c39dfed234951d0f468cf1 upstream.
 
-mmu_notifier_release() is called when the process is exiting.  It will
-delete all the mmu notifiers.  But at this time the page belonging to the
-process is still present in page tables and is present on the LRU list, so
-this race will happen:
+Hi,
 
-      CPU 0                 CPU 1
-mmu_notifier_release:    try_to_unmap:
-   hlist_del_init_rcu(&mn->hlist);
-                            ptep_clear_flush_notify:
-                                  mmu nofifler not found
-                            free page  !!!!!!
-                            /*
-                             * At the point, the page has been
-                             * freed, but it is still mapped in
-                             * the secondary MMU.
-                             */
+I'm using the old-fashioned 'dump' backup tool, and I noticed that it spews the
+below warning as of 3.5-rc1 and later (3.4 is fine):
 
-  mn->ops->release(mn, mm);
+[   10.886893] ------------[ cut here ]------------
+[   10.886904] WARNING: at include/linux/iocontext.h:140 copy_process+0x1488/0x1560()
+[   10.886905] Hardware name: Bochs
+[   10.886906] Modules linked in:
+[   10.886908] Pid: 2430, comm: dump Not tainted 3.5.0-rc7+ #27
+[   10.886908] Call Trace:
+[   10.886911]  [<ffffffff8107ce8a>] warn_slowpath_common+0x7a/0xb0
+[   10.886912]  [<ffffffff8107ced5>] warn_slowpath_null+0x15/0x20
+[   10.886913]  [<ffffffff8107c088>] copy_process+0x1488/0x1560
+[   10.886914]  [<ffffffff8107c244>] do_fork+0xb4/0x340
+[   10.886918]  [<ffffffff8108effa>] ? recalc_sigpending+0x1a/0x50
+[   10.886919]  [<ffffffff8108f6b2>] ? __set_task_blocked+0x32/0x80
+[   10.886920]  [<ffffffff81091afa>] ? __set_current_blocked+0x3a/0x60
+[   10.886923]  [<ffffffff81051db3>] sys_clone+0x23/0x30
+[   10.886925]  [<ffffffff8179bd73>] stub_clone+0x13/0x20
+[   10.886927]  [<ffffffff8179baa2>] ? system_call_fastpath+0x16/0x1b
+[   10.886928] ---[ end trace 32a14af7ee6a590b ]---
 
-Then the box is not stable and sometimes we can get this bug:
+Reproducing is easy, I can hit it on a KVM system with a very basic
+config (x86_64 make defconfig + enable the drivers needed). To hit it,
+just install dump (on debian/ubuntu, not sure what the package might be
+called on Fedora), and:
 
-[  738.075923] BUG: Bad page state in process migrate-perf  pfn:03bec
-[  738.075931] page:ffffea00000efb00 count:0 mapcount:0 mapping:          (null) index:0x8076
-[  738.075936] page flags: 0x20000000000014(referenced|dirty)
+dump -o -f /tmp/foo /
 
-The same issue is present in mmu_notifier_unregister().
+You'll see the warning in dmesg once it forks off the I/O process and
+starts dumping filesystem contents.
 
-We can call ->release before deleting the notifier to ensure the page has
-been unmapped from the secondary MMU before it is freed.
+I bisected it down to the following commit:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+commit f6e8d01bee036460e03bd4f6a79d014f98ba712e
+Author: Tejun Heo <tj@kernel.org>
+Date:   Mon Mar 5 13:15:26 2012 -0800
+
+    block: add io_context->active_ref
+
+    Currently ioc->nr_tasks is used to decide two things - whether an ioc
+    is done issuing IOs and whether it's shared by multiple tasks.  This
+    patch separate out the first into ioc->active_ref, which is acquired
+    and released using {get|put}_io_context_active() respectively.
+
+    This will be used to associate bio's with a given task.  This patch
+    doesn't introduce any visible behavior change.
+
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Cc: Vivek Goyal <vgoyal@redhat.com>
+    Signed-off-by: Jens Axboe <axboe@kernel.dk>
+
+It seems like the init of ioc->nr_tasks was removed in that patch,
+so it starts out at 0 instead of 1.
+
+Tejun, is the right thing here to add back the init, or should something else
+be done?
+
+The below patch removes the warning, but I haven't done any more extensive
+testing on it.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmu_notifier.c |   45 +++++++++++++++++++++++----------------------
- 1 file changed, 23 insertions(+), 22 deletions(-)
+ block/blk-ioc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -33,6 +33,24 @@
- void __mmu_notifier_release(struct mm_struct *mm)
- {
- 	struct mmu_notifier *mn;
-+	struct hlist_node *n;
-+
-+	/*
-+	 * RCU here will block mmu_notifier_unregister until
-+	 * ->release returns.
-+	 */
-+	rcu_read_lock();
-+	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
-+		/*
-+		 * if ->release runs before mmu_notifier_unregister it
-+		 * must be handled as it's the only way for the driver
-+		 * to flush all existing sptes and stop the driver
-+		 * from establishing any more sptes before all the
-+		 * pages in the mm are freed.
-+		 */
-+		if (mn->ops->release)
-+			mn->ops->release(mn, mm);
-+	rcu_read_unlock();
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -244,6 +244,7 @@ int create_task_io_context(struct task_s
  
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
-@@ -46,23 +64,6 @@ void __mmu_notifier_release(struct mm_st
- 		 * mmu_notifier_unregister to return.
- 		 */
- 		hlist_del_init_rcu(&mn->hlist);
--		/*
--		 * RCU here will block mmu_notifier_unregister until
--		 * ->release returns.
--		 */
--		rcu_read_lock();
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--		/*
--		 * if ->release runs before mmu_notifier_unregister it
--		 * must be handled as it's the only way for the driver
--		 * to flush all existing sptes and stop the driver
--		 * from establishing any more sptes before all the
--		 * pages in the mm are freed.
--		 */
--		if (mn->ops->release)
--			mn->ops->release(mn, mm);
--		rcu_read_unlock();
--		spin_lock(&mm->mmu_notifier_mm->lock);
- 	}
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
- 
-@@ -284,16 +285,13 @@ void mmu_notifier_unregister(struct mmu_
- {
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
- 
--	spin_lock(&mm->mmu_notifier_mm->lock);
- 	if (!hlist_unhashed(&mn->hlist)) {
--		hlist_del_rcu(&mn->hlist);
--
- 		/*
- 		 * RCU here will force exit_mmap to wait ->release to finish
- 		 * before freeing the pages.
- 		 */
- 		rcu_read_lock();
--		spin_unlock(&mm->mmu_notifier_mm->lock);
-+
- 		/*
- 		 * exit_mmap will block in mmu_notifier_release to
- 		 * guarantee ->release is called before freeing the
-@@ -302,8 +300,11 @@ void mmu_notifier_unregister(struct mmu_
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
- 		rcu_read_unlock();
--	} else
-+
-+		spin_lock(&mm->mmu_notifier_mm->lock);
-+		hlist_del_rcu(&mn->hlist);
- 		spin_unlock(&mm->mmu_notifier_mm->lock);
-+	}
- 
- 	/*
- 	 * Wait any running method to finish, of course including
+ 	/* initialize */
+ 	atomic_long_set(&ioc->refcount, 1);
++	atomic_set(&ioc->nr_tasks, 1);
+ 	atomic_set(&ioc->active_ref, 1);
+ 	spin_lock_init(&ioc->lock);
+ 	INIT_RADIX_TREE(&ioc->icq_tree, GFP_ATOMIC | __GFP_HIGH);
 
 
