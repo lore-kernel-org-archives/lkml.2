@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2HMUYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:24:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	id S1754610Ab2HMUYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:24:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab2HMUX5 (ORCPT
+	with ESMTP id S1754591Ab2HMUYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:23:57 -0400
+	Mon, 13 Aug 2012 16:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Mackall <mpm@selenic.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 54/82] MAINTAINERS: Theodore Tso is taking over the random driver
-Date: Mon, 13 Aug 2012 13:19:30 -0700
-Message-Id: <20120813201751.197386859@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [ 55/82] rtc: wm831x: Feed the write counter into device_add_randomness()
+Date: Mon, 13 Aug 2012 13:19:31 -0700
+Message-Id: <20120813201751.285650047@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -29,31 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 330e0a01d54c2b8606c56816f99af6ebc58ec92c upstream.
+commit 9dccf55f4cb011a7552a8a2749a580662f5ed8ed upstream.
 
-Matt Mackall stepped down as the /dev/random driver maintainer last
-year, so Theodore Ts'o is taking back the /dev/random driver.
+The tamper evident features of the RTC include the "write counter" which
+is a pseudo-random number regenerated whenever we set the RTC. Since this
+value is unpredictable it should provide some useful seeding to the random
+number generator.
 
-Cc: Matt Mackall <mpm@selenic.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Only do this on boot since the goal is to seed the pool rather than add
+useful entropy.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5635,7 +5635,7 @@ F:	Documentation/blockdev/ramdisk.txt
- F:	drivers/block/brd.c
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -24,7 +24,7 @@
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+-
++#include <linux/random.h>
  
- RANDOM NUMBER DRIVER
--M:	Matt Mackall <mpm@selenic.com>
-+M:	Theodore Ts'o" <tytso@mit.edu>
- S:	Maintained
- F:	drivers/char/random.c
+ /*
+  * R16416 (0x4020) - RTC Write Counter
+@@ -96,6 +96,26 @@ struct wm831x_rtc {
+ 	unsigned int alarm_enabled:1;
+ };
  
++static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
++{
++	int ret;
++	u16 reg;
++
++	/*
++	 * The write counter contains a pseudo-random number which is
++	 * regenerated every time we set the RTC so it should be a
++	 * useful per-system source of entropy.
++	 */
++	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
++	if (ret >= 0) {
++		reg = ret;
++		add_device_randomness(&reg, sizeof(reg));
++	} else {
++		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
++			 ret);
++	}
++}
++
+ /*
+  * Read current time and date in RTC
+  */
+@@ -431,6 +451,8 @@ static int wm831x_rtc_probe(struct platf
+ 			alm_irq, ret);
+ 	}
+ 
++	wm831x_rtc_add_randomness(wm831x);
++
+ 	return 0;
+ 
+ err:
 
 
