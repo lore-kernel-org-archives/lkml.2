@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2HMMDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 08:03:10 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:50855 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2HMMDH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:16:1>);
-	Mon, 13 Aug 2012 08:03:07 -0400
-Message-Id: <502909110200007800094719@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 13 Aug 2012 13:02:57 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: "Andy Lutomirski" <luto@amacapital.net>,
-        "Robert Richter" <robert.richter@amd.com>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Hugh Dickins" <hughd@google.com>, "Alex Shi" <alex.shu@intel.com>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, <x86@kernel.org>,
-        <linux-mm@kvack.org>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-mips@linux-mips.org>, "Andi Kleen" <ak@linux.intel.com>,
-        "Tim Chen" <tim.c.chen@linux.intel.com>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Andrea Arcangeli" <aarcange@redhat.com>,
-        "Ingo Molnar" <mingo@redhat.com>, "Mel Gorman" <mgorman@suse.de>,
-        <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <sparclinux@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v2 4/6] x86: Add clear_page_nocache
-References: <1344524583-1096-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1344524583-1096-5-git-send-email-kirill.shutemov@linux.intel.com>
- <5023F1BC0200007800093EF0@nat28.tlf.novell.com>
- <20120813114334.GA21855@otc-wbsnb-06>
-In-Reply-To: <20120813114334.GA21855@otc-wbsnb-06>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752110Ab2HMMKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 08:10:43 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54124 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2HMMKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 08:10:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120812093110.GB18057@dhcp22.suse.cz>
+References: <20120810094825.GA1440@dhcp22.suse.cz>
+	<CAJd=RBDA3pLYDpryxafx6dLoy7Fk8PmY-EFkXCkuJTB2ywfsjA@mail.gmail.com>
+	<20120810122730.GA1425@dhcp22.suse.cz>
+	<CAJd=RBAvCd-QcyN9N4xWEiLeVqRypzCzbADvD1qTziRVCHjd4Q@mail.gmail.com>
+	<20120810125102.GB1425@dhcp22.suse.cz>
+	<CAJd=RBB8Yuk1FEQxTUbEEeD96oqnO26VojetuDgRo=JxOfnadw@mail.gmail.com>
+	<20120810131643.GC1425@dhcp22.suse.cz>
+	<CAJd=RBDtnF6eoTmDu4HOBGfHnWnxNsXEzArR51+-XhzFCwOmOQ@mail.gmail.com>
+	<20120810134811.GD1425@dhcp22.suse.cz>
+	<CAJd=RBDUJXOHKbes0KE1aQ7tJCYBr04+=-bCbs8xT9wJ-CtrTw@mail.gmail.com>
+	<20120812093110.GB18057@dhcp22.suse.cz>
+Date: Mon, 13 Aug 2012 20:10:41 +0800
+Message-ID: <CAJd=RBAyOZk1qF05seXBS2D-nk9evA5UAWQFpr0wpqk9d+i+Dw@mail.gmail.com>
+Subject: Re: [patch] hugetlb: correct page offset index for sharing pmd
+From: Hillf Danton <dhillf@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 13.08.12 at 13:43, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> On Thu, Aug 09, 2012 at 04:22:04PM +0100, Jan Beulich wrote:
->> >>> On 09.08.12 at 17:03, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>  wrote:
-> 
-> ...
-> 
->> > ---
->> >  arch/x86/include/asm/page.h          |    2 ++
->> >  arch/x86/include/asm/string_32.h     |    5 +++++
->> >  arch/x86/include/asm/string_64.h     |    5 +++++
->> >  arch/x86/lib/Makefile                |    1 +
->> >  arch/x86/lib/clear_page_nocache_32.S |   30 ++++++++++++++++++++++++++++++
->> >  arch/x86/lib/clear_page_nocache_64.S |   29 +++++++++++++++++++++++++++++
->> 
->> Couldn't this more reasonably go into clear_page_{32,64}.S?
-> 
-> We don't have clear_page_32.S.
+On Sun, Aug 12, 2012 at 5:31 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> From d07b88a70ee1dbcc96502c48cde878931e7deb38 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Fri, 10 Aug 2012 15:03:07 +0200
+> Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for
+>  vma_prio_tree_foreach
+>
+> 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
+> from vma) fixed pgoff calculation but it has replaced it by
+> vma_hugecache_offset which is not approapriate for offsets used for
+> vma_prio_tree_foreach because that one expects index in page units
+> rather than in huge_page_shift.
 
-Sure, but you're introducing a file anyway. Fold the new code into
-the existing file for 64-bit, and create a new, similarly named one
-for 32-bit.
 
->> >+	xorl   %eax,%eax
->> >+	movl   $4096/64,%ecx
->> >+	.p2align 4
->> >+.Lloop:
->> >+	decl	%ecx
->> >+#define PUT(x) movnti %eax,x*8(%edi) ; movnti %eax,x*8+4(%edi)
->> 
->> Is doing twice as much unrolling as on 64-bit really worth it?
-> 
-> Moving 64 bytes per cycle is faster on Sandy Bridge, but slower on
-> Westmere. Any preference? ;)
+What if another case of vma_prio_tree_foreach in try_to_unmap_file
+is correct?
 
-If it's not a clear win, I'd favor the 8-stores-per-cycle variant,
-matching x86-64.
 
-Jan
-
+> Using vma_hugecache_offset is not incorrect because the pgoff will fit
+> into the same vmas but it is confusing so the standard PAGE_SHIFT based
+> index calculation is used instead.
+>
+> Cc: Hillf Danton <dhillf@gmail.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/hugetlb.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index c39e4be..a74ea31 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+>          * from page cache lookup which is in HPAGE_SIZE units.
+>          */
+>         address = address & huge_page_mask(h);
+> -       pgoff = vma_hugecache_offset(h, vma, address);
+> +       pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
+> +                       vma->vm_pgoff;
+>         mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+>
+>         /*
+> --
+> 1.7.10.4
+>
+>
+> --
+> Michal Hocko
+> SUSE Labs
