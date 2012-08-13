@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2HMOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:37:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48115 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab2HMOhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:37:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
-   d="scan'208";a="185749916"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>, George Spelvin <linux@horizon.com>
-Cc: ben@bwidawsk.net, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] v3.5 Oops in i2c_algo_bit.c:bit_xfer+0x23/0x870: i915 or i2c?
-In-Reply-To: <20120813141513.GC5248@phenom.ffwll.local>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <e6945e875aa0667550285cd5da6d473f@bwidawsk.net> <20120813034922.24517.qmail@science.horizon.com> <20120813141513.GC5248@phenom.ffwll.local>
-User-Agent: Notmuch/0.13.2+113~gc6f17a0 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 13 Aug 2012 17:40:55 +0300
-Message-ID: <878vdietxk.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752071Ab2HMOkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:40:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19218 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab2HMOkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 10:40:46 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=GWnlZwk_GPcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=gQgWxiXoT4LK9aoVdZ4A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344868844.6935.121.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 4/4] perf/events: Use helper functions in event
+ assignment to shrink macro size
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 13 Aug 2012 10:40:44 -0400
+In-Reply-To: <1344865977.31459.26.camel@twins>
+References: <20120810034302.758092203@goodmis.org>
+	 <20120810034708.589220175@goodmis.org> <1344845024.31459.9.camel@twins>
+	 <1344863027.6935.111.camel@gandalf.stny.rr.com>
+	 <1344865977.31459.26.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Sun, Aug 12, 2012 at 11:49:22PM -0400, George Spelvin wrote:
->> (Bringing this back to the mailing lists after a bit of uninteresting private
->> conversation.)
->> 
->> > Honestly, I think we need a way to force disable gmbus with a module 
->> > parameter or something anyway. It's not the first time gmbus has been 
->> > implicated with an issue. Maybe it even exists already, but I couldn't 
->> > find this. So if you confirm that fixes the problem for you on the ml, 
->> > at least maybe such a patch will be the result.
->> >
->> > If you feel it's a software bug (which I agree it seems likely), a
->> > bisect is always much appreciated. Personally, I'll usually step back
->> > major releases until something works, or I hit 3.2ish. Even knowing it
->> > never worked through 3.2 is helpful.
->> 
->> It's a friend's machine, which I normally only have remote access to,
->> so it's a bit pf a pain, but I can manage.  I just thought a basic
->> i3 motherboard was so common I couldn't possibly be the only one with
->> this problem.
->> 
->> Here's the 3.2 dmesg showing the fallback working, but this is an
->> Ubuntu-patched kernel (linux-image-3.2.0-29-generic) that may be a fair
->> distance from stock:
->
-> One thing of interest would be the exact .config you use to build the
-> kernel and the output of lsmod (after the kernel crashed). I guess the
-> issue is with the combination of drivers you have (i2c_detect in the
-> calltrace calls back into other registered i2c drivers ...).
+On Mon, 2012-08-13 at 15:52 +0200, Peter Zijlstra wrote:
 
-Hi all, this smells a bit like [1], don't you think?
+> > Looking at the history of perf_trace_buf_submit(), it use to be more
+> > than one function call. But when you inlined
+> > perf_swevent_put_recursion_context(), it became just a one2one mapping.
+> 
+> Right.
 
-George, can you check the patch I just sent to (hopefully) fix that
-issue? Thanks.
+OK, this should go as a separate change.
+
+> 
+> > I'm assuming that we want to convert all calls to
+> > perf_trace_buf_submit()s into perf_tp_event()?
+> 
+> Yeah.. I think you're referring to the {u,k}probes open-coded nonsense?
+> Should we make those use these new helpers you created as well?
+
+They may not need it. The helpers I created were for the macros that are
+created by all TRACE_EVENT() instances. If the uprobes and kprobes only
+have a single instance, then they probably don't need the helpers. But
+they still call the perf_trace_buf_submit(), which can can probably be
+cleaned up.
+
+-- Steve
 
 
-BR,
-Jani.
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1339794
