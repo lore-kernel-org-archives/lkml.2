@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2HMNUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:20:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab2HMNU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:20:29 -0400
-Date: Mon, 13 Aug 2012 15:16:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
-        gdb-patches@sourceware.org
-Subject: Re: [RFC 5/5] uprobes: add global breakpoints
-Message-ID: <20120813131623.GA5269@redhat.com>
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <20120808131457.GA5309@redhat.com> <20120809171802.GB27835@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809171802.GB27835@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752349Ab2HMNU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:20:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24855 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab2HMNU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:20:57 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=cAb9eJqnuzwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=BBA8QeeZVDejlJKZE6gA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344864055.6935.117.camel@gandalf.stny.rr.com>
+Subject: [PATCH] perf: Let O= makes handle relative paths
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "borislav.petkov" <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Date: Mon, 13 Aug 2012 09:20:55 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09, Sebastian Andrzej Siewior wrote:
->
-> * Oleg Nesterov | 2012-08-08 15:14:57 [+0200]:
->
-> >> What I miss right now is an interface to tell the user/gdb that there is a
-> >> program that hit a global breakpoint and is waiting for further instructions.
-> >> A "tail -f trace" does not work and may contain also a lot of other
-> >> informations. I've been thinking about a poll()able file which returns pids of
-> >> tasks which are put on hold. Other suggestions?
-> >
-> >Honestly, I am not sure this is that useful...
->
-> How would you notify gdb that there is a new task that hit a breakpoint?
-> Or learn yourself?
+When I did a compile of perf using a relative path for the output
+directory, the build failed when it tried to compile libtraceevent. This
+is because it continues to use the same relative path when the new
+working directory is in a different path.
 
-But why do we need this?
+    SUBDIR ../lib/traceevent/
+/bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
+Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
+make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
 
-OK, you do not need to convince me, I try to never argue with
-new features.
 
-However, I certainly dislike TASK_TRACED in uprobe_wait_traced().
-And sleeping in ->handler() is not fair to other consumers.
+Make the path used an absolute path when building perf with O=.
 
-And I do not think you should modify ptrace_attach() at all.
-gdb/user can wakeup the task after PTRACE_ATTACH itself.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Oleg.
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index bde8521..9e3e31e 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -1,6 +1,7 @@
+ ifeq ("$(origin O)", "command line")
+-	OUTPUT := $(O)/
+-	COMMAND_O := O=$(O)
++	RAW_O := $(shell cd $(O) ; pwd)
++	OUTPUT := $(RAW_O)/
++	COMMAND_O := O=$(RAW_O)
+ endif
+ 
+ ifneq ($(OUTPUT),)
+
 
