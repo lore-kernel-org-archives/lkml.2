@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab2HMUV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:21:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	id S1753892Ab2HMUmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:42:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab2HMUVw (ORCPT
+	with ESMTP id S1753678Ab2HMUVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:21:52 -0400
+	Mon, 13 Aug 2012 16:21:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 25/82] ARM: 7480/1: only call smp_send_stop() on SMP
-Date: Mon, 13 Aug 2012 13:19:01 -0700
-Message-Id: <20120813201748.640045106@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [ 16/82] memcg: prevent OOM with too many dirty pages
+Date: Mon, 13 Aug 2012 13:18:52 -0700
+Message-Id: <20120813201747.856572538@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,116 +34,182 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Javier Martinez Canillas <javier@dowhile0.org>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit c5dff4ffd327088d85035bec535b7d0c9ea03151 upstream.
+commit e62e384e9da8d9a0c599795464a7e76fd490931c upstream.
 
-On reboot or poweroff (machine_shutdown()) a call to smp_send_stop() is
-made (to stop the others CPU's) when CONFIG_SMP=y.
+The current implementation of dirty pages throttling is not memcg aware
+which makes it easy to have memcg LRUs full of dirty pages.  Without
+throttling, these LRUs can be scanned faster than the rate of writeback,
+leading to memcg OOM conditions when the hard limit is small.
 
-arch/arm/kernel/process.c:
+This patch fixes the problem by throttling the allocating process
+(possibly a writer) during the hard limit reclaim by waiting on
+PageReclaim pages.  We are waiting only for PageReclaim pages because
+those are the pages that made one full round over LRU and that means that
+the writeback is much slower than scanning.
 
-void machine_shutdown(void)
-{
- #ifdef CONFIG_SMP
-       smp_send_stop();
- #endif
-}
+The solution is far from being ideal - long term solution is memcg aware
+dirty throttling - but it is meant to be a band aid until we have a real
+fix.  We are seeing this happening during nightly backups which are placed
+into containers to prevent from eviction of the real working set.
 
-smp_send_stop() calls the function pointer smp_cross_call(), which is set
-on the smp_init_cpus() function for OMAP processors.
+The change affects only memcg reclaim and only when we encounter
+PageReclaim pages which is a signal that the reclaim doesn't catch up on
+with the writers so somebody should be throttled.  This could be
+potentially unfair because it could be somebody else from the group who
+gets throttled on behalf of the writer but as writers need to allocate as
+well and they allocate in higher rate the probability that only innocent
+processes would be penalized is not that high.
 
-arch/arm/mach-omap2/omap-smp.c:
+I have tested this change by a simple dd copying /dev/zero to tmpfs or
+ext3 running under small memcg (1G copy under 5M, 60M, 300M and 2G
+containers) and dd got killed by OOM killer every time.  With the patch I
+could run the dd with the same size under 5M controller without any OOM.
+The issue is more visible with slower devices for output.
 
-void __init smp_init_cpus(void)
-{
-...
-	set_smp_cross_call(gic_raise_softirq);
-...
-}
+* With the patch
+================
+* tmpfs size=2G
+---------------
+$ vim cgroup_cache_oom_test.sh
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 30.4049 s, 34.5 MB/s
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 31.4561 s, 33.3 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 20.4618 s, 51.2 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 1.42172 s, 738 MB/s
 
-But the ARM setup_arch() function only calls smp_init_cpus()
-if CONFIG_SMP=y && is_smp().
+* ext3
+------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 27.9547 s, 37.5 MB/s
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 30.3221 s, 34.6 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 24.5764 s, 42.7 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 3.35828 s, 312 MB/s
 
-arm/kernel/setup.c:
+* Without the patch
+===================
+* tmpfs size=2G
+---------------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+./cgroup_cache_oom_test.sh: line 46:  4668 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 25.4989 s, 41.1 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 24.3928 s, 43.0 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 1.49797 s, 700 MB/s
 
-void __init setup_arch(char **cmdline_p)
-{
-...
- #ifdef CONFIG_SMP
-	if (is_smp())
-		smp_init_cpus();
- #endif
-...
-}
+* ext3
+------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+./cgroup_cache_oom_test.sh: line 46:  4689 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+./cgroup_cache_oom_test.sh: line 46:  4692 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 20.248 s, 51.8 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 2.85201 s, 368 MB/s
 
-Newer OMAP CPU's are SMP machines so omap2plus_defconfig sets
-CONFIG_SMP=y. Unfortunately on an OMAP UP machine is_smp()
-returns false and smp_init_cpus() is never called and the
-smp_cross_call() function remains NULL.
-
-If the machine is rebooted or powered off, smp_send_stop() will
-be called (since CONFIG_SMP=y) leading to the following error:
-
-[   42.815551] Restarting system.
-[   42.819030] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[   42.827667] pgd = d7a74000
-[   42.830566] [00000000] *pgd=96ce7831, *pte=00000000, *ppte=00000000
-[   42.837249] Internal error: Oops: 80000007 [#1] SMP ARM
-[   42.842773] Modules linked in:
-[   42.846008] CPU: 0    Not tainted  (3.5.0-rc3-next-20120622-00002-g62e87ba-dirty #44)
-[   42.854278] PC is at 0x0
-[   42.856994] LR is at smp_send_stop+0x4c/0xe4
-[   42.861511] pc : [<00000000>]    lr : [<c00183a4>]    psr: 60000013
-[   42.861511] sp : d6c85e70  ip : 00000000  fp : 00000000
-[   42.873626] r10: 00000000  r9 : d6c84000  r8 : 00000002
-[   42.879150] r7 : c07235a0  r6 : c06dd2d0  r5 : 000f4241  r4 : d6c85e74
-[   42.886047] r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : d6c85e74
-[   42.892944] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   42.900482] Control: 10c5387d  Table: 97a74019  DAC: 00000015
-[   42.906555] Process reboot (pid: 1166, stack limit = 0xd6c842f8)
-[   42.912902] Stack: (0xd6c85e70 to 0xd6c86000)
-[   42.917510] 5e60:                                     c07235a0 00000000 00000000 d6c84000
-[   42.926177] 5e80: 01234567 c00143d0 4321fedc c00511bc d6c85ebc 00000168 00000460 00000000
-[   42.934814] 5ea0: c1017950 a0000013 c1017900 d8014390 d7ec3858 c0498e48 c1017950 00000000
-[   42.943481] 5ec0: d6ddde10 d6c85f78 00000003 00000000 d6ddde10 d6c84000 00000000 00000000
-[   42.952117] 5ee0: 00000002 00000000 00000000 c0088c88 00000002 00000000 00000000 c00f4b90
-[   42.960784] 5f00: 00000000 d6c85ebc d8014390 d7e311c8 60000013 00000103 00000002 d6c84000
-[   42.969421] 5f20: c00f3274 d6e00a00 00000001 60000013 d6c84000 00000000 00000000 c00895d4
-[   42.978057] 5f40: 00000002 d8007c80 d781f000 c00f6150 d8010cc0 c00f3274 d781f000 d6c84000
-[   42.986694] 5f60: c0013020 d6e00a00 00000001 20000010 0001257c ef000000 00000000 c00895d4
-[   42.995361] 5f80: 00000002 00000001 00000003 00000000 00000001 00000003 00000000 00000058
-[   43.003997] 5fa0: c00130c8 c0012f00 00000001 00000003 fee1dead 28121969 01234567 00000002
-[   43.012634] 5fc0: 00000001 00000003 00000000 00000058 00012584 0001257c 00000001 00000000
-[   43.021270] 5fe0: 000124bc bec5cc6c 00008f9c 4a2f7c40 20000010 fee1dead 00000000 00000000
-[   43.029968] [<c00183a4>] (smp_send_stop+0x4c/0xe4) from [<c00143d0>] (machine_restart+0xc/0x4c)
-[   43.039154] [<c00143d0>] (machine_restart+0xc/0x4c) from [<c00511bc>] (sys_reboot+0x144/0x1f0)
-[   43.048278] [<c00511bc>] (sys_reboot+0x144/0x1f0) from [<c0012f00>] (ret_fast_syscall+0x0/0x3c)
-[   43.057464] Code: bad PC value
-[   43.060760] ---[ end trace c3988d1dd0b8f0fb ]---
-
-Add a check so smp_cross_call() is only called when there is more than one CPU on-line.
-
-Signed-off-by: Javier Martinez Canillas <javier at dowhile0.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[akpm@linux-foundation.org: tweak changelog, reordered the test to optimize for CONFIG_CGROUP_MEM_RES_CTLR=n]
+[hughd@google.com: fix deadlock with loop driver]
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ying Han <yinghan@google.com>
+Cc: Greg Thelen <gthelen@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/smp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/vmscan.c |   23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -563,7 +563,8 @@ void smp_send_stop(void)
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -720,9 +720,26 @@ static unsigned long shrink_page_list(st
+ 			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
  
- 	cpumask_copy(&mask, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), &mask);
--	smp_cross_call(&mask, IPI_CPU_STOP);
-+	if (!cpumask_empty(&mask))
-+		smp_cross_call(&mask, IPI_CPU_STOP);
+ 		if (PageWriteback(page)) {
+-			nr_writeback++;
+-			unlock_page(page);
+-			goto keep;
++			/*
++			 * memcg doesn't have any dirty pages throttling so we
++			 * could easily OOM just because too many pages are in
++			 * writeback from reclaim and there is nothing else to
++			 * reclaim.
++			 *
++			 * Check may_enter_fs, certainly because a loop driver
++			 * thread might enter reclaim, and deadlock if it waits
++			 * on a page for which it is needed to do the write
++			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
++			 * but more thought would probably show more reasons.
++			 */
++			if (!global_reclaim(sc) && PageReclaim(page) &&
++					may_enter_fs)
++				wait_on_page_writeback(page);
++			else {
++				nr_writeback++;
++				unlock_page(page);
++				goto keep;
++			}
+ 		}
  
- 	/* Wait up to one second for other CPUs to stop */
- 	timeout = USEC_PER_SEC;
+ 		references = page_check_references(page, sc);
 
 
