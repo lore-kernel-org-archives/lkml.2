@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab2HMOAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:00:51 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48254 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2HMOAu (ORCPT
+	id S1752655Ab2HMOFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:05:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46675 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab2HMOFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:00:50 -0400
+	Mon, 13 Aug 2012 10:05:16 -0400
+Date: Mon, 13 Aug 2012 18:02:32 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spock@gentoo.org
+Subject: [PATCH] video:uvesafb: check the return value of kzalloc
+Message-ID: <20120813100232.GA16363@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, spock@gentoo.org
 MIME-Version: 1.0
-In-Reply-To: <1344610378-12117-1-git-send-email-richard.genoud@gmail.com>
-References: <1344610378-12117-1-git-send-email-richard.genoud@gmail.com>
-Date: Mon, 13 Aug 2012 16:00:49 +0200
-Message-ID: <CACRpkdaWiwM+iZ8fZMxxnKT5zgYnci6AP172vt991NNw6gJSKg@mail.gmail.com>
-Subject: Re: [PATCH] Pinctrl header: trivial: declare struct device
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 10, 2012 at 4:52 PM, Richard Genoud
-<richard.genoud@gmail.com> wrote:
 
-> As struct device is used as a function argument, it should at least be
-> declared (device.h is not included).
->
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Michal maybe forgot it merely, we should add code
+to check the return value of kzalloc to make the
+code more robust.
 
-Applied.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/video/uvesafb.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks,
-Linus Walleij
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index b0e2a42..2f8f82d 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -659,6 +659,8 @@ static int __devinit uvesafb_vbe_getedid(struct uvesafb_ktask *task,
+ 	task->t.flags = TF_BUF_RET | TF_BUF_ESDI;
+ 	task->t.buf_len = EDID_LENGTH;
+ 	task->buf = kzalloc(EDID_LENGTH, GFP_KERNEL);
++	if (!task->buf)
++		return -ENOMEM;
+ 
+ 	err = uvesafb_exec(task);
+ 
+-- 
+1.7.11.1.116.g8228a23
