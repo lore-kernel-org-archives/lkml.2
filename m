@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2HMIQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:16:31 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:46778 "EHLO
+	id S1753496Ab2HMISQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:18:16 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:46786 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2HMIQ3 (ORCPT
+	with ESMTP id S1752967Ab2HMISP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:16:29 -0400
+	Mon, 13 Aug 2012 04:18:15 -0400
 From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
+To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
         Jiri Slaby <jslaby@suse.cz>
 Subject: [PATCH] TTY: mxser, fix invalid module_parm permissions
-Date: Mon, 13 Aug 2012 10:16:17 +0200
-Message-Id: <1344845777-16809-1-git-send-email-jslaby@suse.cz>
+Date: Mon, 13 Aug 2012 10:18:09 +0200
+Message-Id: <1344845889-16895-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <5028AB81.8040801@suse.cz>
 References: <5028AB81.8040801@suse.cz>
@@ -27,6 +27,9 @@ is much more safer.
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Reported-by: Rusty Russell <rusty@ozlabs.org>
 ---
+
+Sorry for multiple copies (if any).
+
  drivers/tty/mxser.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
