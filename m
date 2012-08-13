@@ -1,83 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab2HMK2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:28:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36537 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab2HMK2N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:28:13 -0400
-Message-ID: <1344853682.31459.20.camel@twins>
-Subject: Re: [BUG] perf: sharing of cpuctx between core and ibs PMU causes
- problems
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>, mingo@elte.hu
-Date: Mon, 13 Aug 2012 12:28:02 +0200
-In-Reply-To: <CABPqkBRzyrmL_yiKnYWU4qaSZXbD=JJVnm5py4PUcgAYvT=hcA@mail.gmail.com>
-References: <CABPqkBRWLcP_9WOL_VvucnY7A2AcpzuvsUt4_ZUgYMREo-65dA@mail.gmail.com>
-	 <50235ED0.5010107@intel.com>
-	 <CABPqkBT-pvmhyOHfMXs7dXsJXpEVmaSST1xFFHzCu4CDBf7baw@mail.gmail.com>
-	 <1344535707.20277.20.camel@twins>
-	 <CABPqkBRzyrmL_yiKnYWU4qaSZXbD=JJVnm5py4PUcgAYvT=hcA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1751821Ab2HMKdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:33:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38637 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab2HMKdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:33:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,759,1336374000"; 
+   d="scan'208";a="180314556"
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH 2/2] vfs: replace bdevname(bdev, b) with bdev->bd_name
+Date: Mon, 13 Aug 2012 18:34:00 +0800
+Message-Id: <1344854040-15334-2-git-send-email-yuanhan.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1344854040-15334-1-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1344854040-15334-1-git-send-email-yuanhan.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since we embeded block device name into struct block_device, we don't
+need call a function bdevname() to get the name any more.
 
-OK,.. so the AMD IBS PMUs actually have perf_invalid_context.
+Here this patch replace all the code using bdevname() in vfs layer to
+bdev->bd_name.
 
-Lemme have a proper look...
+This patch servers as an example of using embeded block device name.
+It makes the code a little cleaner and a bit smaller stack usage. If
+this change is OK to you, I will file more patches to apply this change
+to all other codes.
 
-
-Weirdness.. perf_pmu_register() will allocate a pmu->pmu_cpu_context for
-each PMU. find_pmu_context() even special cases the perf_invalid_context
-to return NULL to force the allocation instead of sharing it.
-
-So both IBS PMUs should have their own cpuctx.
-
-
-
-In any case, I was talking about something like the below.. I hate
-growing the per-task ctx array with two entries, esp. since we'll mostly
-add two NULL pointer checks on every perf operation for everybody not
-using IBS.
-
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 ---
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -436,7 +436,7 @@ static void perf_ibs_read(struct perf_ev
+ fs/buffer.c |   27 ++++++++-------------------
+ fs/super.c  |    4 +---
+ 2 files changed, 9 insertions(+), 22 deletions(-)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 9f6d2e4..79cec42 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -105,9 +105,8 @@ static int quiet_error(struct buffer_head *bh)
  
- static struct perf_ibs perf_ibs_fetch = {
- 	.pmu = {
--		.task_ctx_nr	= perf_invalid_context,
-+		.task_ctx_nr	= perf_hw2_context,
+ static void buffer_io_error(struct buffer_head *bh)
+ {
+-	char b[BDEVNAME_SIZE];
+ 	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
+-			bdevname(bh->b_bdev, b),
++			bh->b_bdev->bd_name,
+ 			(unsigned long long)bh->b_blocknr);
+ }
  
- 		.event_init	= perf_ibs_init,
- 		.add		= perf_ibs_add,
-@@ -459,7 +459,7 @@ static struct perf_ibs perf_ibs_fetch =
+@@ -143,16 +142,13 @@ EXPORT_SYMBOL(end_buffer_read_sync);
  
- static struct perf_ibs perf_ibs_op = {
- 	.pmu = {
--		.task_ctx_nr	= perf_invalid_context,
-+		.task_ctx_nr	= perf_hw3_context,
+ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
+ {
+-	char b[BDEVNAME_SIZE];
+-
+ 	if (uptodate) {
+ 		set_buffer_uptodate(bh);
+ 	} else {
+ 		if (!quiet_error(bh)) {
+ 			buffer_io_error(bh);
+-			printk(KERN_WARNING "lost page write due to "
+-					"I/O error on %s\n",
+-				       bdevname(bh->b_bdev, b));
++			printk(KERN_WARNING "lost page write due to I/O error "
++					    "on %s\n", bh->b_bdev->bd_name);
+ 		}
+ 		set_buffer_write_io_error(bh);
+ 		clear_buffer_uptodate(bh);
+@@ -212,15 +208,13 @@ __find_get_block_slow(struct block_device *bdev, sector_t block)
+ 	 * elsewhere, don't buffer_error if we had some unmapped buffers
+ 	 */
+ 	if (all_mapped) {
+-		char b[BDEVNAME_SIZE];
+-
+ 		printk("__find_get_block_slow() failed. "
+ 			"block=%llu, b_blocknr=%llu\n",
+ 			(unsigned long long)block,
+ 			(unsigned long long)bh->b_blocknr);
+ 		printk("b_state=0x%08lx, b_size=%zu\n",
+ 			bh->b_state, bh->b_size);
+-		printk("device %s blocksize: %d\n", bdevname(bdev, b),
++		printk("device %s blocksize: %d\n", bdev->bd_name,
+ 			1 << bd_inode->i_blkbits);
+ 	}
+ out_unlock:
+@@ -319,7 +313,6 @@ still_busy:
+  */
+ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
+ {
+-	char b[BDEVNAME_SIZE];
+ 	unsigned long flags;
+ 	struct buffer_head *first;
+ 	struct buffer_head *tmp;
+@@ -333,9 +326,8 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
+ 	} else {
+ 		if (!quiet_error(bh)) {
+ 			buffer_io_error(bh);
+-			printk(KERN_WARNING "lost page write due to "
+-					"I/O error on %s\n",
+-			       bdevname(bh->b_bdev, b));
++			printk(KERN_WARNING "lost page write due to I/O error "
++					    "on %s\n", bh->b_bdev->bd_name);
+ 		}
+ 		set_bit(AS_EIO, &page->mapping->flags);
+ 		set_buffer_write_io_error(bh);
+@@ -513,10 +505,9 @@ repeat:
  
- 		.event_init	= perf_ibs_init,
- 		.add		= perf_ibs_add,
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1237,6 +1237,8 @@ enum perf_event_task_context {
- 	perf_invalid_context = -1,
- 	perf_hw_context = 0,
- 	perf_sw_context,
-+	perf_hw2_context, /* AMD IBS (fetch) */
-+	perf_hw3_context, /* AMD IBS (ops)   */
- 	perf_nr_task_contexts,
- };
+ static void do_thaw_one(struct super_block *sb, void *unused)
+ {
+-	char b[BDEVNAME_SIZE];
+ 	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
+ 		printk(KERN_WARNING "Emergency Thaw on %s\n",
+-		       bdevname(sb->s_bdev, b));
++		       sb->s_bdev->bd_name);
+ }
  
+ static void do_thaw_all(struct work_struct *work)
+@@ -1015,12 +1006,10 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+ 	 * pagecache index.  (this comparison is done using sector_t types).
+ 	 */
+ 	if (unlikely(index != block >> sizebits)) {
+-		char b[BDEVNAME_SIZE];
+-
+ 		printk(KERN_ERR "%s: requested out-of-range block %llu for "
+ 			"device %s\n",
+ 			__func__, (unsigned long long)block,
+-			bdevname(bdev, b));
++			bdev->bd_name);
+ 		return -EIO;
+ 	}
+ 	block = index << sizebits;
+diff --git a/fs/super.c b/fs/super.c
+index 0902cfa..1b9c2fd 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1029,10 +1029,8 @@ struct dentry *mount_bdev(struct file_system_type *fs_type,
+ 		blkdev_put(bdev, mode);
+ 		down_write(&s->s_umount);
+ 	} else {
+-		char b[BDEVNAME_SIZE];
+-
+ 		s->s_mode = mode;
+-		strlcpy(s->s_id, bdevname(bdev, b), sizeof(s->s_id));
++		strlcpy(s->s_id, bdev->bd_name, sizeof(s->s_id));
+ 		sb_set_blocksize(s, block_size(bdev));
+ 		error = fill_super(s, data, flags & MS_SILENT ? 1 : 0);
+ 		if (error) {
+-- 
+1.7.7.6
 
