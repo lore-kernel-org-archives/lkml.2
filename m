@@ -1,261 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2HMSEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:04:47 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30483 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab2HMSEq (ORCPT
+	id S1751938Ab2HMSLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:11:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34900 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2HMSLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:04:46 -0400
-Date: Mon, 13 Aug 2012 13:54:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Huacai Chen <chenhuacai@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
-Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
- memory (>4GB).
-Message-ID: <20120813175447.GB26088@phenom.dumpdata.com>
-References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
- <1344677543-22591-10-git-send-email-chenhc@lemote.com>
+	Mon, 13 Aug 2012 14:11:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344677543-22591-10-git-send-email-chenhc@lemote.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1344632282.9131.5.camel@lenny>
+References: <1344632282.9131.5.camel@lenny>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 13 Aug 2012 11:10:46 -0700
+Message-ID: <CALCETrVOcNxfiAm0QDUjqhn=yx5LTPEKBJw8To-AcOTM3d1UcQ@mail.gmail.com>
+Subject: Re: linux-user-chroot 2012.2
+To: Colin Walters <walters@verbum.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
-> +				dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
-> +{
-> +	void *ret;
-> +
-> +	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
-> +		return ret;
-> +
-> +	/* ignore region specifiers */
-> +	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
-> +
-> +#ifdef CONFIG_ZONE_DMA
-> +	if (dev == NULL)
-> +		gfp |= __GFP_DMA;
+On Fri, Aug 10, 2012 at 1:58 PM, Colin Walters <walters@verbum.org> wrote:
+> Hi,
+>
+> This is the release of linux-user-chroot 2012.2.  The major change now
+> is that it makes use of Andy's new PR_SET_NO_NEW_PRIVS.  This doesn't
+> close any security hole I'm aware of - our previous use of the MS_NOSUID
+> bind mount over / should work - but, belt and suspenders as they say.
+>
+> The code:
+> http://git.gnome.org/browse/linux-user-chroot/commit/?id=515c714471d0b5923f6633ef44a2270b23656ee9
+>
+> As for how linux-user-chroot and PR_SET_NO_NEW_PRIVS relate, see this
+> thread:
+> http://thread.gmane.org/gmane.linux.kernel.lsm/15339
+>
+> Summary
+> -------
+>
+> This tool allows regular (non-root) users to call chroot(2), create
+> Linux bind mounts, and use some Linux container features.  It's
+> primarily intended for use by build systems.
 
-When would this happen? dev == NULL?
+Nifty.
 
-> +	else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
-> +		gfp |= __GFP_DMA;
-> +	else
-> +#endif
-> +#ifdef CONFIG_ZONE_DMA32
-> +	if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
-> +		gfp |= __GFP_DMA32;
-> +	else
+One of these days, I intend to resurrect my unprivileged chroot kernel
+patches.  My current thought is to add a new syscall weak_chroot,
+which should have these properties:
 
-Why the 'else'
-> +#endif
-> +	;
+1. Can't be used unless no_new_privs is set or you have CAP_SYS_ADMIN.
+2. Can't be used if fs->users > 1 (to avoid a trivial no_new_privs bypass).
+3. Can't be used to break out of chroot jail.
 
-why?
-> +	gfp |= __GFP_NORETRY;
-> +
-> +	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
-> +	mb();
+The interface might be:
 
-Why the 'mb()' ? Can you just do
-	return swiotlb_alloc_coherent(...) 
+weak_chroot_at(int fd, const char *path, int flags)
 
-> +	return ret;
-> +}
-> +
-> +static void loongson_dma_free_coherent(struct device *dev, size_t size,
-> +				void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
-> +{
-> +	int order = get_order(size);
-> +
-> +	if (dma_release_from_coherent(dev, order, vaddr))
-> +		return;
-> +
-> +	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-> +}
-> +
-> +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
-> +				unsigned long offset, size_t size,
-> +				enum dma_data_direction dir,
-> +				struct dma_attrs *attrs)
-> +{
-> +	dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
-> +					dir, attrs);
-> +	mb();
+Sets fs->weak_root to path, as seen from fd, according to flags.
+Works if (no_new_privs && fs->users == 1) || capable(CAP_SYS_ADMIN).
 
-Please do 'return swiotlb_map_page(..)'..
+Modify chroot to change fs->weak_root and fs->root.  Further modify
+the path walking code so that / sees weak_root instead of root and so
+that .. will not traverse root or weak_root.
 
-But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
-?
+I'm somewhat tempted to add a flag to weak_chroot_at to break out of
+weak_root jail to prevent people from thinking that it's a security
+feature.  I'm not sure about that, though.
 
-
-> +	return daddr;
-> +}
-> +
-> +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
-> +				int nents, enum dma_data_direction dir,
-> +				struct dma_attrs *attrs)
-> +{
-> +	int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
-> +	mb();
-> +
-> +	return r;
-> +}
-> +
-> +static void loongson_dma_sync_single_for_device(struct device *dev,
-> +				dma_addr_t dma_handle, size_t size,
-> +				enum dma_data_direction dir)
-> +{
-> +	swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
-> +	mb();
-> +}
-> +
-> +static void loongson_dma_sync_sg_for_device(struct device *dev,
-> +				struct scatterlist *sg, int nents,
-> +				enum dma_data_direction dir)
-> +{
-> +	swiotlb_sync_sg_for_device(dev, sg, nents, dir);
-> +	mb();
-> +}
-> +
-
-I am not really sure why you have these extra functions, when you could
-just modify the dma_ops to point to the swiotlb ones
-
-> +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
-> +{
-> +	return (paddr < 0x10000000) ?
-> +			(paddr | 0x0000000080000000) : paddr;
-> +}
-> +
-> +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
-> +{
-> +	return (daddr < 0x90000000 && daddr >= 0x80000000) ?
-> +			(daddr & 0x0fffffff) : daddr;
-> +}
-> +
-> +struct loongson_dma_map_ops {
-> +	struct dma_map_ops dma_map_ops;
-> +	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
-> +	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
-> +};
-> +
-> +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> +{
-> +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-> +					struct loongson_dma_map_ops, dma_map_ops);
-> +
-> +	return ops->phys_to_dma(dev, paddr);
-> +}
-> +
-> +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
-> +{
-> +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-> +					struct loongson_dma_map_ops, dma_map_ops);
-> +
-> +	return ops->dma_to_phys(dev, daddr);
-> +}
-> +
-> +static int loongson_dma_set_mask(struct device *dev, u64 mask)
-> +{
-> +	/* Loongson doesn't support DMA above 32-bit */
-> +	if (mask > DMA_BIT_MASK(32))
-> +		return -EIO;
-> +
-> +	*dev->dma_mask = mask;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
-> +	.dma_map_ops = {
-> +		.alloc = loongson_dma_alloc_coherent,
-> +		.free = loongson_dma_free_coherent,
-> +		.map_page = loongson_dma_map_page,
-
-But why not 'swiotlb_map_page'?
-
-> +		.unmap_page = swiotlb_unmap_page,
-> +		.map_sg = loongson_dma_map_sg,
-> +		.unmap_sg = swiotlb_unmap_sg_attrs,
-> +		.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
-> +		.sync_single_for_device = loongson_dma_sync_single_for_device,
-> +		.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
-> +		.sync_sg_for_device = loongson_dma_sync_sg_for_device,
-> +		.mapping_error = swiotlb_dma_mapping_error,
-> +		.dma_supported = swiotlb_dma_supported,
-> +		.set_dma_mask = loongson_dma_set_mask
-> +	},
-> +	.phys_to_dma = loongson_unity_phys_to_dma,
-> +	.dma_to_phys = loongson_unity_dma_to_phys
-
-Why do you need these? I am not seeing it being used here by any external code?
-
-> +};
-> +
-> +void __init plat_swiotlb_setup(void)
-> +{
-> +	swiotlb_init(1);
-> +	mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
-> +}
-> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-> index 3fab204..122f4f8 100644
-> --- a/arch/mips/mm/dma-default.c
-> +++ b/arch/mips/mm/dma-default.c
-> @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
->  	       current_cpu_type() == CPU_R12000);
->  }
->  
-> +static inline int cpu_is_noncoherent_loongson(struct device *dev)
-> +{
-> +	return !plat_device_is_coherent(dev) &&
-> +			(current_cpu_type() == CPU_LOONGSON2 ||
-> +			 current_cpu_type() == CPU_LOONGSON3);
-> +}
-> +
->  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
->  {
->  	gfp_t dma_flag;
-> @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
->  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
->  	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
->  {
-> -	if (cpu_is_noncoherent_r10000(dev))
-> +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
->  		__dma_sync(dma_addr_to_page(dev, dma_addr),
->  			   dma_addr & ~PAGE_MASK, size, direction);
->  
-> @@ -260,7 +267,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
->  static void mips_dma_sync_single_for_cpu(struct device *dev,
->  	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
->  {
-> -	if (cpu_is_noncoherent_r10000(dev))
-> +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
->  		__dma_sync(dma_addr_to_page(dev, dma_handle),
->  			   dma_handle & ~PAGE_MASK, size, direction);
->  }
-> @@ -281,7 +288,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
->  
->  	/* Make sure that gcc doesn't leave the empty loop body.  */
->  	for (i = 0; i < nelems; i++, sg++) {
-> -		if (cpu_is_noncoherent_r10000(dev))
-> +		if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
->  			__dma_sync(sg_page(sg), sg->offset, sg->length,
->  				   direction);
->  	}
-> -- 
-> 1.7.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Andy
