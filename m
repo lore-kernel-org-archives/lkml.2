@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab2HMN2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:28:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8834 "EHLO mx1.redhat.com"
+	id S1752492Ab2HMN3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:29:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab2HMN2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:28:43 -0400
-Date: Mon, 13 Aug 2012 15:24:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH v2 2/5] x86/uprobes: implement x86 specific
-	arch_uprobe_*_step
-Message-ID: <20120813132443.GB5269@redhat.com>
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-3-git-send-email-bigeasy@linutronix.de> <20120808125709.GA4504@redhat.com> <50226700.9000606@linutronix.de> <20120808145345.GA8171@redhat.com> <20120809044356.GA3163@in.ibm.com> <20120809170953.GA27835@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809170953.GA27835@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751763Ab2HMN3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:29:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1344015839-21800-15-git-send-email-tj@kernel.org>
+References: <1344015839-21800-15-git-send-email-tj@kernel.org> <1344015839-21800-1-git-send-email-tj@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        padovan@profusion.mobi, marcel@holtmann.org, peterz@infradead.org,
+        mingo@redhat.com, davem@davemloft.net, dougthompson@xmission.com,
+        ibm-acpi@hmh.eng.br, cbou@mail.ru, rui.zhang@intel.com,
+        tomi.valkeinen@ti.com, Jens Axboe <axboe@kernel.dk>,
+        Jiri Kosina <jkosina@suse.cz>, David Airlie <airlied@linux.ie>,
+        Roland Dreier <roland@kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Len Brown <len.brown@intel.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH 14/14] workqueue: use mod_delayed_work() instead of cancel + queue
+Date: Mon, 13 Aug 2012 14:27:57 +0100
+Message-ID: <8393.1344864477@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09, Sebastian Andrzej Siewior wrote:
->
-> v1..v2: re-use auprobe->fixups for fixups
+Tejun Heo <tj@kernel.org> wrote:
 
-Yes, but
+> Convert delayed_work users doing cancel_delayed_work() followed by
+> queue_delayed_work() to mod_delayed_work().
+> 
+> Most conversions are straight-forward.  Ones worth mentioning are,
+> 
+> * drivers/edac/edac_mc.c: edac_mc_workq_setup() converted to always
+>   use mod_delayed_work() and cancel loop in
+>   edac_mc_reset_delay_period() is dropped.
+> 
+> * drivers/platform/x86/thinkpad_acpi.c: No need to remember whether
+>   watchdog is active or not.  @fan_watchdog_active and related code
+>   dropped.
+> 
+> * drivers/power/charger-manager.c: Seemingly a lot of
+>   delayed_work_pending() abuse going on here.
+>   [delayed_]work_pending() are unsynchronized and racy when used like
+>   this.  I converted one instance in fullbatt_handler().  Please
+>   conver the rest so that it invokes workqueue APIs for the intended
+>   target state rather than trying to game work item pending state
+>   transitions.  e.g. if timer should be modified - call
+>   mod_delayed_work(), canceled - call cancel_delayed_work[_sync]().
+> 
+> * drivers/thermal/thermal_sys.c: thermal_zone_device_set_polling()
+>   simplified.  Note that round_jiffies() calls in this function are
+>   meaningless.  round_jiffies() work on absolute jiffies not delta
+>   delay used by delayed_work.
+> 
+> v2: Tomi pointed out that __cancel_delayed_work() users can't be
+>     safely converted to mod_delayed_work().  They could be calling it
+>     from irq context and if that happens while delayed_work_timer_fn()
+>     is running, it could deadlock.  __cancel_delayed_work() users are
+>     dropped.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
 
-> @@ -46,6 +46,8 @@ struct arch_uprobe_task {
->  #ifdef CONFIG_X86_64
->  	unsigned long			saved_scratch_register;
->  #endif
-> +#define UPROBE_CLEAR_TF			(1 << 0)
-> +	unsigned int			restore_flags;
->  };
-
-this patch still adds restore_flags into arch_uprobe_task.
-
->  static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
->  {
-> -	bool fix_ip = true, fix_call = false;	/* defaults */
-> +	bool fix_ip = true, fix_call = false, fix_tf = false;	/* defaults */
->  	int reg;
->  
->  	insn_get_opcode(insn);	/* should be a nop */
->  
->  	switch (OPCODE1(insn)) {
-> +	case 0x9d:
-> +		/* popf */
-> +		fix_tf = true;
-> +		break;
->  	case 0xc3:		/* ret/lret */
->  	case 0xcb:
->  	case 0xc2:
-> @@ -277,6 +284,8 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
->  		auprobe->fixups |= UPROBE_FIX_IP;
->  	if (fix_call)
->  		auprobe->fixups |= UPROBE_FIX_CALL;
-> +	if (fix_tf)
-> +		auprobe->fixups |= UPROBE_TF_CHANGES;
->  }
-
-I won't insist, but do we really need fix_tf? "case 0x9d" could simply
-add UPROBE_TF_CHANGES.
-
-Oleg.
-
+Acked-by: David Howells <dhowells@redhat.com>
