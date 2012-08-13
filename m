@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2HMLsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 07:48:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab2HMLsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 07:48:38 -0400
-Date: Mon, 13 Aug 2012 13:48:21 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] sched: fix divide by zero at {thread_group,task}_times
-Message-ID: <20120813114820.GA2834@redhat.com>
-References: <20120808092714.GA3580@redhat.com>
- <1344455404.2440.35.camel@marge.simpson.net>
- <1344456500.16728.15.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344456500.16728.15.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751690Ab2HML7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 07:59:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34180 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2HML7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 07:59:43 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] mfd: Fix typo in mfd
+Date: Mon, 13 Aug 2012 21:00:25 +0900
+Message-Id: <1344859225-25616-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc2.9.ge5acacf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 08, 2012 at 10:08:20PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-08-08 at 21:50 +0200, Mike Galbraith wrote:
-> > 32bit built do_div()
-> > and div64_u64() both sucked equally compared to 64bit 
-> 
-> /me peeks at div64_u64 fallback implementation and sees why, it still
-> does a single div, it does some neat fls tricks.
-> 
-> Ok, no point in avoiding this then.. 
-> 
-> I did the below little edit, no point in mixing the old and new
-> primitives.. those __force things annoy me, but I guess otherwise we'll
-> upset sparse.
+Correct spelling typo in drivers/mfd
 
-Yeah, __force is needed for sparse, since we marked cputime_t with 
-__nocast (by commit 648616343cdbe904c585a6c12e323d3b3c72e46f, which btw
-looks like very nice cleanup at whole).
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/mfd/ab8500-gpadc.c        | 2 +-
+ drivers/mfd/rc5t583.c             | 2 +-
+ drivers/mfd/rdc321x-southbridge.c | 2 +-
+ drivers/mfd/tps65911-comparator.c | 2 +-
+ include/linux/mfd/max8998.h       | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
-> Index: linux-2.6/kernel/sched/core.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched/core.c
-> +++ linux-2.6/kernel/sched/core.c
-> @@ -3149,7 +3149,7 @@ static cputime_t scale_utime(cputime_t u
->  	temp *= (__force u64) utime;
->  
->  	if (sizeof(cputime_t) == 4)
-> -		do_div(temp, (__force u32) total);
-> +		temp = div_u64(temp, (__force u32) total);
->  	else
->  		temp = div64_u64(temp, (__force u64) total);
+diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+index 866f959..29d72a2 100644
+--- a/drivers/mfd/ab8500-gpadc.c
++++ b/drivers/mfd/ab8500-gpadc.c
+@@ -342,7 +342,7 @@ int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel)
+ 
+ 		 /*
+ 		  * Delay might be needed for ABB8500 cut 3.0, if not, remove
+-		  * when hardware will be availible
++		  * when hardware will be available
+ 		  */
+ 			msleep(1);
+ 			break;
+diff --git a/drivers/mfd/rc5t583.c b/drivers/mfd/rc5t583.c
+index cdc1df7..da15101 100644
+--- a/drivers/mfd/rc5t583.c
++++ b/drivers/mfd/rc5t583.c
+@@ -281,7 +281,7 @@ static int __devinit rc5t583_i2c_probe(struct i2c_client *i2c,
+ 
+ 	if (i2c->irq) {
+ 		ret = rc5t583_irq_init(rc5t583, i2c->irq, pdata->irq_base);
+-		/* Still continue with waring if irq init fails */
++		/* Still continue with warning, if irq init fails */
+ 		if (ret)
+ 			dev_warn(&i2c->dev, "IRQ init failed: %d\n", ret);
+ 		else
+diff --git a/drivers/mfd/rdc321x-southbridge.c b/drivers/mfd/rdc321x-southbridge.c
+index 685d61e..7b46d66 100644
+--- a/drivers/mfd/rdc321x-southbridge.c
++++ b/drivers/mfd/rdc321x-southbridge.c
+@@ -1,5 +1,5 @@
+ /*
+- * RDC321x MFD southbrige driver
++ * RDC321x MFD southbridge driver
+  *
+  * Copyright (C) 2007-2010 Florian Fainelli <florian@openwrt.org>
+  * Copyright (C) 2010 Bernhard Loos <bernhardloos@googlemail.com>
+diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
+index 5a62e6b..0b6e361 100644
+--- a/drivers/mfd/tps65911-comparator.c
++++ b/drivers/mfd/tps65911-comparator.c
+@@ -136,7 +136,7 @@ static __devinit int tps65911_comparator_probe(struct platform_device *pdev)
+ 
+ 	ret = comp_threshold_set(tps65910, COMP2, pdata->vmbch2_threshold);
+ 	if (ret < 0) {
+-		dev_err(&pdev->dev, "cannot set COMP2 theshold\n");
++		dev_err(&pdev->dev, "cannot set COMP2 threshold\n");
+ 		return ret;
+ 	}
+ 
+diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
+index f4f0dfa..6823548 100644
+--- a/include/linux/mfd/max8998.h
++++ b/include/linux/mfd/max8998.h
+@@ -67,7 +67,7 @@ struct max8998_regulator_data {
+ /**
+  * struct max8998_board - packages regulator init data
+  * @regulators: array of defined regulators
+- * @num_regulators: number of regultors used
++ * @num_regulators: number of regulators used
+  * @irq_base: base IRQ number for max8998, required for IRQs
+  * @ono: power onoff IRQ number for max8998
+  * @buck_voltage_lock: Do NOT change the values of the following six
+-- 
+1.7.12.rc2.9.ge5acacf
 
-Is this or will be queued (I do not see it queued anywhere)? Or should
-I repost with above change?
-
-Thanks
-Stanislaw
