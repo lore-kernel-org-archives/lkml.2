@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab2HMNBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:01:21 -0400
-Received: from canardo.mork.no ([148.122.252.1]:55054 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab2HMNBU convert rfc822-to-8bit (ORCPT
+	id S1751787Ab2HMNC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:02:56 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40435 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab2HMNCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:01:20 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: KY Srinivasan <kys@microsoft.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
-Organization: m
-References: <87fw8mlv7e.fsf@nemi.mork.no>
-	<1342771388-24389-1-git-send-email-bjorn@mork.no>
-	<20120720152650.GA5201@kroah.com>
-	<426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	<20120720160953.GA5802@kroah.com>
-Date: Mon, 13 Aug 2012 15:00:28 +0200
-In-Reply-To: <20120720160953.GA5802@kroah.com> (Greg KH's message of "Fri, 20
-	Jul 2012 09:09:53 -0700")
-Message-ID: <87fw7rhrpv.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Mon, 13 Aug 2012 09:02:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5028CDED.2020307@samsung.com>
+References: <5028CDED.2020307@samsung.com>
+Date: Mon, 13 Aug 2012 22:02:53 +0900
+Message-ID: <CAKYAXd--Ta1xL2uMEsArmpsg99x+B21ScJOQAty=RFWWCQ6M2w@mail.gmail.com>
+Subject: Re: [PATCH] mmc: card: Skip secure option for MoviNAND.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: IAN CHEN <ian.cy.chen@samsung.com>
+Cc: cjb@laptop.org, adrian.hunter@intel.com, subhashj@codeaurora.org,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, d.j.shin@samsung.com,
+        jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
+        jh80.chung@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> writes:
-> On Fri, Jul 20, 2012 at 04:02:44PM +0000, KY Srinivasan wrote:
->> > On Fri, Jul 20, 2012 at 10:03:08AM +0200, Bjørn Mork wrote:
->> >
->> > > +/* Linux vendor ID allocated by Microsoft */
->> > > +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
->> > > +
->> > > +/* Creating a guest ID conforming to the encoding recommended by
->> > > + * Microsoft, with variant and build fixed to 0
->> > 
->> > We could use the kernel build number here as well, if we really wanted
->> > it, right?
+Hi. Ian.
 
-Yes, we could.  I just didn't see any value it that. Why would you want
-your hypervisor to care about some arbitrary build number?
+known issue ? Would you explain more ?
 
-But it can of course be added if anyone needs it.
+Thanks.
 
->> > Otherwise, I like this patch, KY, any objection to me taking it?
->> 
->> Greg,
->> 
->> If it is ok with you can we wait a couple of days. I am pushing to get information
->> back from folks within MSFT. I am hoping  we can fix this issue soon.
+2012/8/13 IAN CHEN <ian.cy.chen@samsung.com>:
+> From 5c60eb8be04c7440d6e33b8f72ea2046a3657ac4 Mon Sep 17 00:00:00 2001
+> From: ian.cy.chen <ian.cy.chen@samsung.com>
+> Date: Mon, 13 Aug 2012 10:53:55 +0900
+> Subject: [PATCH] mmc: card: Skip secure option for MoviNAND.
 >
-> Ok, I'll hold on to it for a week or so.
-
-Not to nag or anything like that, but ... It's been a week or so now,
-hasn't it? :-)
-
-
-Bjørn
+> For several MoviNAND, there are some known issue with secure option.
+> For these specific MoviNAND device, we skip secure option.
+>
+> Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+> ---
+>  drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
+>  include/linux/mmc/card.h |    1 +
+>  2 files changed, 24 insertions(+), 1 deletions(-)
+>
