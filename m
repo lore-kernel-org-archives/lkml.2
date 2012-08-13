@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2HMImz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:42:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34364 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab2HMImx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:42:53 -0400
-Date: Mon, 13 Aug 2012 10:42:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC PATCH 0/4] ftrace: Add use of -mfentry for x86_64
-Message-ID: <20120813084245.GA3417@gmail.com>
-References: <20120807193845.146666357@goodmis.org>
- <5021795A.6030902@zytor.com>
+	id S1750975Ab2HMI55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:57:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41516 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab2HMI54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:57:56 -0400
+Date: Mon, 13 Aug 2012 09:57:49 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
+Message-ID: <20120813085749.GB4177@suse.de>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-8-git-send-email-glommer@parallels.com>
+ <502545D2.80708@jp.fujitsu.com>
+ <5028B4DA.6000507@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <5021795A.6030902@zytor.com>
+In-Reply-To: <5028B4DA.6000507@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 08/07/2012 12:38 PM, Steven Rostedt wrote:
-> >
-> >This is an RFC patch set that makes gcc use the -mfentry option with
-> >-pg. This will set the ftrace 'hook' to the beginning of the function
-> >and also remove the requirement that -pg enables frame pointers.
-> >
-> >This has a couple of benefits (and probably more).
-> >
-> >1) removal of the frame pointer requirement makes for smaller and faster code.
-> >
-> >2) Having the function trace hook at the beginning of the function instead
-> >  of after the frame is set up, gives the function tracing callbacks access
-> >  to the parameters. This means that kprobes can take advantage of this.
-> >  When a kprobe is set on top of a ftrace hook (nop), it will automatically
-> >  use the function tracing callback. This makes it into an 'optimized' probe
-> >  as there's no need to hit a breakpoint and trigger the probe that way.
-> >  The function tracing code can do the work for it. Note, optimized probes
-> >  are only allowed with !PREEMPT, but a ftrace optimize probe is allowed
-> >  in any context (another benefit).
-> >
-> >This only implements fentry for x86_64.
-> >
+On Mon, Aug 13, 2012 at 12:03:38PM +0400, Glauber Costa wrote:
+> On 08/10/2012 09:33 PM, Kamezawa Hiroyuki wrote:
+> > (2012/08/09 22:01), Glauber Costa wrote:
+> >> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
+> >> page allocator will call the corresponding memcg functions to validate
+> >> the allocation. Tasks in the root memcg can always proceed.
+> >>
+> >> To avoid adding markers to the page - and a kmem flag that would
+> >> necessarily follow, as much as doing page_cgroup lookups for no reason,
+> >> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+> >> for telling the page allocator that this is such an allocation at
+> >> free_pages() time. This is done by the invocation of
+> >> __free_accounted_pages() and free_accounted_pages().
+> >>
+> >> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> >> CC: Christoph Lameter <cl@linux.com>
+> >> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> >> CC: Michal Hocko <mhocko@suse.cz>
+> >> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> CC: Johannes Weiner <hannes@cmpxchg.org>
+> >> CC: Suleiman Souhlal <suleiman@google.com>
+> > 
+> > Ah, ok. free_accounted_page() seems good.
+> > 
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > I myself is okay with this. But...
+> > 
+> > Because you add a new hook to alloc_pages(), please get Ack from Mel
+> > before requesting merge.
+> > 
+> > Thanks,
+> > -Kame
 > 
-> Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+> Absolutely.
+> 
+> Mel, would you mind taking a look at this series and commenting on this?
+> 
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+It'll take me a few days but I'll get around to it.
 
-Nice feature!
-
-Thanks,
-
-	Ingo
+-- 
+Mel Gorman
+SUSE Labs
