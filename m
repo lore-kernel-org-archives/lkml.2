@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab2HMW2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:28:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61785 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab2HMWQ0 (ORCPT
+	id S1755313Ab2HMW3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:29:34 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab2HMWQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:16:26 -0400
+	Mon, 13 Aug 2012 18:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 22/65] md/raid1: dont abort a resync on the first badblock.
-Date: Mon, 13 Aug 2012 15:14:06 -0700
-Message-Id: <20120813221416.919463165@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 09/65] ARM: 7466/1: disable interrupt before spinning endlessly
+Date: Mon, 13 Aug 2012 15:13:53 -0700
+Message-Id: <20120813221415.787951896@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,46 +30,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit b7219ccb33aa0df9949a60c68b5e9f712615e56f upstream.
+commit 98bd8b96b26db3399a48202318dca4aaa2515355 upstream.
 
-If a resync of a RAID1 array with 2 devices finds a known bad block
-one device it will neither read from, or write to, that device for
-this block offset.
-So there will be one read_target (The other device) and zero write
-targets.
-This condition causes md/raid1 to abort the resync assuming that it
-has finished - without known bad blocks this would be true.
+The CPU will endlessly spin at the end of machine_halt and
+machine_restart calls.  However, this will lead to a soft lockup
+warning after about 20 seconds, if CONFIG_LOCKUP_DETECTOR is enabled,
+as system timer is still alive.
 
-When there are no write targets because of the presence of bad blocks
-we should only skip over the area covered by the bad block.
-RAID10 already gets this right, raid1 doesn't.  Or didn't.
+Disable interrupt before going to spin endlessly, so that the lockup
+warning will never be seen.
 
-As this can cause a 'sync' to abort early and appear to have succeeded
-it could lead to some data corruption, so it suitable for -stable.
-
-Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/kernel/process.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2429,7 +2429,10 @@ static sector_t sync_request(struct mdde
- 		/* There is nowhere to write, so all non-sync
- 		 * drives must be failed - so we are finished
- 		 */
--		sector_t rv = max_sector - sector_nr;
-+		sector_t rv;
-+		if (min_bad > 0)
-+			max_sector = sector_nr + min_bad;
-+		rv = max_sector - sector_nr;
- 		*skipped = 1;
- 		put_buf(r1_bio);
- 		return rv;
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -267,6 +267,7 @@ void machine_shutdown(void)
+ void machine_halt(void)
+ {
+ 	machine_shutdown();
++	local_irq_disable();
+ 	while (1);
+ }
+ 
+@@ -288,6 +289,7 @@ void machine_restart(char *cmd)
+ 
+ 	/* Whoops - the platform was unable to reboot. Tell the user! */
+ 	printk("Reboot failed -- System halted\n");
++	local_irq_disable();
+ 	while (1);
+ }
+ 
 
 
