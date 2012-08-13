@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab2HMLhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 07:37:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39798 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2HMLhU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 07:37:20 -0400
-Message-ID: <5028E6E2.2070608@parallels.com>
-Date: Mon, 13 Aug 2012 15:37:06 +0400
+	id S1751971Ab2HMLjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 07:39:55 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20944 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab2HMLjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 07:39:54 -0400
+Subject: [PATCH v2] SUNRPC: check current nsproxy before set of node name on
+	client creation
+To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 13 Aug 2012 15:37:31 +0400
+Message-ID: <20120813113731.9629.31906.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@poochiereds.net>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] SUNRPC: check current nsproxy before set of node name
- on client creation
-References: <20120813112156.8459.54793.stgit@localhost.localdomain> <20120813073505.7870ef21@corrin.poochiereds.net>
-In-Reply-To: <20120813073505.7870ef21@corrin.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Jeff. Will fix.
+v2:
+1) rpc_clnt_set_nodename() prototype updated.
+2) fixed errors in comment.
 
-13.08.2012 15:35, Jeff Layton пишет:
-> On Mon, 13 Aug 2012 15:21:56 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->
->> When child reaper exits, it can destroy mount namespace it belong to, and if
->> there are NFS mounts inside, then it will try to umount them. But in this
->> point current->nsproxy is set to NULL and all namespaces will be destroyed one
->> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
->>
->> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->> ---
->>   net/sunrpc/clnt.c |   14 ++++++++++++--
->>   1 files changed, 12 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->> index 9a9676e..28ac940 100644
->> --- a/net/sunrpc/clnt.c
->> +++ b/net/sunrpc/clnt.c
->> @@ -279,6 +279,16 @@ void rpc_clients_notifier_unregister(void)
->>
->>   static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
->
-> Don't you need to change the prototype of the function here too?
->
->>   {
->> +	const char *nodename;
->> +
->> +	/*
->> +	 * We have to protect against dying chilp reaper, which has released
->
-> 	nit: "dying child reaper" ?
->
->> +	 * it's nsproxy already and is trying to destroy mount namespace.
->
-> 	nit: "its"
->
->> +	 */
->> +	if (current->nsproxy == NULL)
->> +		return;
->> +
->> +	nodename = utsname()->nodename;
->>   	clnt->cl_nodelen = strlen(nodename);
->>   	if (clnt->cl_nodelen > UNX_MAXNODENAME)
->>   		clnt->cl_nodelen = UNX_MAXNODENAME;
->> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
->>   	}
->>
->>   	/* save the nodename */
->> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
->> +	rpc_clnt_set_nodename(clnt);
->>   	rpc_register_client(clnt);
->>   	return clnt;
->>
->> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
->>   	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
->>   	if (err != 0)
->>   		goto out_no_path;
->> -	rpc_clnt_set_nodename(new, utsname()->nodename);
->> +	rpc_clnt_set_nodename(new);
->>   	if (new->cl_auth)
->>   		atomic_inc(&new->cl_auth->au_count);
->>   	atomic_inc(&clnt->cl_count);
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+When child reaper exits, it can destroy mount namespace it belongs to, and if
+there are NFS mounts inside, then it will try to umount them. But in this
+point current->nsproxy is set to NULL and all namespaces will be destroyed one
+by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
 
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ net/sunrpc/clnt.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
--- 
-Best regards,
-Stanislav Kinsbursky
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 9a9676e..8fbcbc8 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -277,8 +277,18 @@ void rpc_clients_notifier_unregister(void)
+ 	return rpc_pipefs_notifier_unregister(&rpc_clients_block);
+ }
+ 
+-static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
++static void rpc_clnt_set_nodename(struct rpc_clnt *clnt)
+ {
++	const char *nodename;
++
++	/*
++	 * We have to protect against dying child reaper, which has released
++	 * its nsproxy already and is trying to destroy mount namespace.
++	 */
++	if (current->nsproxy == NULL)
++		return;
++
++	nodename = utsname()->nodename;
+ 	clnt->cl_nodelen = strlen(nodename);
+ 	if (clnt->cl_nodelen > UNX_MAXNODENAME)
+ 		clnt->cl_nodelen = UNX_MAXNODENAME;
+@@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+ 	}
+ 
+ 	/* save the nodename */
+-	rpc_clnt_set_nodename(clnt, utsname()->nodename);
++	rpc_clnt_set_nodename(clnt);
+ 	rpc_register_client(clnt);
+ 	return clnt;
+ 
+@@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
+ 	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
+ 	if (err != 0)
+ 		goto out_no_path;
+-	rpc_clnt_set_nodename(new, utsname()->nodename);
++	rpc_clnt_set_nodename(new);
+ 	if (new->cl_auth)
+ 		atomic_inc(&new->cl_auth->au_count);
+ 	atomic_inc(&clnt->cl_count);
+
