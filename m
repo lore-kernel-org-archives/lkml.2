@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab2HMWDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:03:00 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60437 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab2HMWC6 (ORCPT
+	id S1754169Ab2HMWhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:37:15 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:45559 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754059Ab2HMWhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:02:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 00/44] 3.0.41-stable review
-Date: Mon, 13 Aug 2012 15:02:07 -0700
-Message-Id: <20120813220142.113186818@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-User-Agent: quilt/0.60-20.5
+	Mon, 13 Aug 2012 18:37:13 -0400
+Message-ID: <5029823A.9020207@xenotime.net>
+Date: Mon, 13 Aug 2012 15:39:54 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Thai Bui <blquythai@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
+ DEBUG_INITCALL
+References: <1344891431-30869-1-git-send-email-blquythai@gmail.com> <20120813212151.GA15429@phenom.dumpdata.com> <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
+In-Reply-To: <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 64.134.136.30 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On 08/13/2012 03:08 PM, Thai Bui wrote:
+> Hi all,
+>
+> I am as part of a capstone group at Portland State University is working
+> to tinify the kernel as small as possible. The ultimate goal is to make
+> the kernel small enough to use on micro-controller (or under < 200k).
+> This patch is one of them, it saves 176 bytes on a minimal configuration
+> of the kernel (the bzImage file was reduced from 363264 bytes to 363264
+> bytes applying this patch).
+>
+> Aside from the purpose of reducing the size of the kernel. We are also
+> trying to clean up the kernel by making Kconfig options to compile out
+> the stuffs that aren't used often.
 
-This is the start of the stable review cycle for the 3.0.41 release.
-There are 44 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+IMO the kernel already has too many kconfig options.
 
-Responses should be made by Wed Aug 15 22:01:40 UTC 2012.
-Anything received after that time might be too late.
+Also, personally I would not merge a patch that saves so little memory,
+especially on what I consider a very useful option.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.41-rc1.gz
-and the diffstat can be found below.
 
-thanks,
-
-greg k-h
-
--------------
- MAINTAINERS                           |    2 +-
- Makefile                              |    4 +-
- arch/arm/configs/mxs_defconfig        |    1 -
- arch/arm/include/asm/cacheflush.h     |    8 +-
- arch/arm/include/asm/mutex.h          |  119 +----------
- arch/arm/mm/tlb-v7.S                  |   12 ++
- arch/arm/vfp/vfpmodule.c              |    6 +
- arch/ia64/include/asm/atomic.h        |    4 +-
- arch/ia64/kernel/irq_ia64.c           |    1 -
- arch/x86/kernel/alternative.c         |    2 +-
- arch/x86/kernel/microcode_core.c      |   31 ++-
- drivers/char/mspec.c                  |    2 +-
- drivers/char/random.c                 |  374 ++++++++++++++++++++++-----------
- drivers/firmware/dmi_scan.c           |    3 +
- drivers/firmware/pcdp.c               |    4 +-
- drivers/input/tablet/wacom_wac.c      |    2 +-
- drivers/mfd/ab3100-core.c             |    5 -
- drivers/mfd/ab3550-core.c             |    2 -
- drivers/mfd/ezx-pcap.c                |    2 +-
- drivers/mfd/wm831x-otp.c              |    8 +
- drivers/net/e1000e/82571.c            |    4 +-
- drivers/net/wireless/rt2x00/rt61pci.c |    3 +-
- drivers/rtc/rtc-wm831x.c              |   24 ++-
- drivers/usb/core/hub.c                |    9 +
- fs/nilfs2/ioctl.c                     |    4 +-
- fs/nilfs2/super.c                     |    3 +
- fs/nilfs2/the_nilfs.c                 |    1 +
- fs/nilfs2/the_nilfs.h                 |    2 +
- include/linux/irqdesc.h               |    1 -
- include/linux/mfd/ezx-pcap.h          |    1 +
- include/linux/random.h                |   19 +-
- include/trace/events/random.h         |  134 ++++++++++++
- kernel/irq/handle.c                   |    7 +-
- kernel/irq/manage.c                   |   17 --
- mm/hugetlb.c                          |   25 ++-
- mm/memory-failure.c                   |    6 +-
- mm/mmu_notifier.c                     |   45 ++--
- net/core/dev.c                        |    3 +
- net/core/rtnetlink.c                  |    1 +
- net/mac80211/mesh.c                   |    1 +
- net/sunrpc/rpcb_clnt.c                |    4 +-
- net/wireless/core.c                   |    5 +
- net/wireless/core.h                   |    1 +
- net/wireless/util.c                   |    5 +-
- sound/pci/hda/patch_conexant.c        |    1 -
- 45 files changed, 589 insertions(+), 329 deletions(-)
-
+> On Mon, Aug 13, 2012 at 5:21 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com <mailto:konrad.wilk@oracle.com>> wrote:
+>
+>     On Mon, Aug 13, 2012 at 01:57:11PM -0700, Thai Bui wrote:
+>      > Putting DEBUG_INITCALL config option to compile out the
+>     command-line option
+>      > "initcall_debug".
+>
+>     Can you explain the benfits of this please?
+>      >
+>      > Signed-off-by: Thai Bui <blquythai@gmail.com
+>     <mailto:blquythai@gmail.com>>
+>      > Reviewed-by: Josh Triplett <josh@joshtriplett.org
+>     <mailto:josh@joshtriplett.org>>
+>      > ---
+>      >  Documentation/kernel-parameters.txt |    3 ++-
+>      >  include/linux/init.h                |    4 ++++
+>      >  init/main.c                         |    2 ++
+>      >  lib/Kconfig.debug                   |    9 +++++++++
+>      >  4 files changed, 17 insertions(+), 1 deletion(-)
+>      >
+>      > diff --git a/Documentation/kernel-parameters.txt
+>     b/Documentation/kernel-parameters.txt
+>      > index d99fd9c..3dbaf15 100644
+>      > --- a/Documentation/kernel-parameters.txt
+>      > +++ b/Documentation/kernel-parameters.txt
+>      > @@ -1026,7 +1026,8 @@ bytes respectively. Such letter suffixes
+>     can also be entirely omitted.
+>      >
+>      >       initcall_debug  [KNL] Trace initcalls as they are executed.
+>       Useful
+>      >                       for working out where the kernel is dying
+>     during
+>      > -                     startup.
+>      > +                     startup. DEBUG_INITCALL needs to be enabled
+>     in order
+>      > +                     for this option to work.
+>      >
+>      >       initrd=         [BOOT] Specify the location of the initial
+>     ramdisk
+>      >
+>      > diff --git a/include/linux/init.h b/include/linux/init.h
+>      > index 6b95109..d2f31f1 100644
+>      > --- a/include/linux/init.h
+>      > +++ b/include/linux/init.h
+>      > @@ -157,7 +157,11 @@ void prepare_namespace(void);
+>      >
+>      >  extern void (*late_time_init)(void);
+>      >
+>      > +#ifdef CONFIG_DEBUG_INITCALL
+>      >  extern bool initcall_debug;
+>      > +#else
+>      > +static const bool initcall_debug = false;
+>      > +#endif /* CONFIG_DEBUG_INITCALL */
+>      >
+>      >  #endif
+>      >
+>      > diff --git a/init/main.c b/init/main.c
+>      > index ff49a6d..65837f7 100644
+>      > --- a/init/main.c
+>      > +++ b/init/main.c
+>      > @@ -648,8 +648,10 @@ static void __init do_ctors(void)
+>      >  #endif
+>      >  }
+>      >
+>      > +#ifdef CONFIG_DEBUG_INITCALL
+>      >  bool initcall_debug;
+>      >  core_param(initcall_debug, initcall_debug, bool, 0644);
+>      > +#endif /* CONFIG_DEBUG_INITCALL */
+>      >
+>      >  static char msgbuf[64];
+>      >
+>      > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+>      > index 8745ac7..424ac93 100644
+>      > --- a/lib/Kconfig.debug
+>      > +++ b/lib/Kconfig.debug
+>      > @@ -769,6 +769,15 @@ config DEBUG_WRITECOUNT
+>      >
+>      >         If unsure, say N.
+>      >
+>      > +config DEBUG_INITCALL
+>      > +     bool "Debug initcalls as they are executed"
+>      > +     depends on DEBUG_KERNEL
+>      > +     help
+>      > +       Enable this for tracing initcalls during startup. Useful
+>     for working
+>      > +       out where the kernel is dying during startup.
+>      > +
+>      > +       If unsure, say N
+>      > +
+>      >  config DEBUG_MEMORY_INIT
+>      >       bool "Debug memory initialisation" if EXPERT
+>      >       default !EXPERT
+>      > --
 
