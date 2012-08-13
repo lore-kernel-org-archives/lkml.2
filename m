@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab2HMQ6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:58:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33602 "EHLO
+	id S1753301Ab2HMQ7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:59:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33618 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab2HMQ6r (ORCPT
+	with ESMTP id S1752758Ab2HMQ7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:58:47 -0400
-Date: Mon, 13 Aug 2012 09:58:32 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249@git.kernel.org>
+	Mon, 13 Aug 2012 12:59:42 -0400
+Date: Mon, 13 Aug 2012 09:59:27 -0700
+From: tip-bot for Pekka Enberg <penberg@kernel.org>
+Message-ID: <tip-7cbcdf58442fe7bf477d549be92329e22e64b146@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
+        a.p.zijlstra@chello.nl, penberg@kernel.org, rdunlap@xenotime.net,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <1344435364-18632-1-git-send-email-bp@amd64.org>
-References: <1344435364-18632-1-git-send-email-bp@amd64.org>
+        a.p.zijlstra@chello.nl, penberg@kernel.org, tglx@linutronix.de,
+        rdunlap@xenotime.net
+In-Reply-To: <1344070187-2420-1-git-send-email-penberg@kernel.org>
+References: <1344070187-2420-1-git-send-email-penberg@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix __sched_period comment
-Git-Commit-ID: 0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
+Subject: [tip:sched/core] sched: Document schedule() entry points
+Git-Commit-ID: 7cbcdf58442fe7bf477d549be92329e22e64b146
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,40 +29,76 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:58:37 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:59:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
-Gitweb:     http://git.kernel.org/tip/0bb6eb6e40c9d8728a32a6f6d3e9d795df1ca249
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 8 Aug 2012 16:16:04 +0200
+Commit-ID:  7cbcdf58442fe7bf477d549be92329e22e64b146
+Gitweb:     http://git.kernel.org/tip/7cbcdf58442fe7bf477d549be92329e22e64b146
+Author:     Pekka Enberg <penberg@kernel.org>
+AuthorDate: Sat, 4 Aug 2012 11:49:47 +0300
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 13 Aug 2012 18:51:59 +0200
 
-sched: Fix __sched_period comment
+sched: Document schedule() entry points
 
-It should be sched_nr_latency so fix it before it annoys me more.
+This patch adds a comment on top of the schedule() function to explain
+to scheduler newbies how the main scheduler function is entered.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Explained-by: Ingo Molnar <mingo@kernel.org>
+Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344435364-18632-1-git-send-email-bp@amd64.org
+Link: http://lkml.kernel.org/r/1344070187-2420-1-git-send-email-penberg@kernel.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d0cc03b..67ac0b1 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -597,7 +597,7 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 82ad284..a1f71f9 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3361,6 +3361,40 @@ pick_next_task(struct rq *rq)
+ 
  /*
-  * The idea is to set a period in which each task runs once.
-  *
-- * When there are too many tasks (sysctl_sched_nr_latency) we have to stretch
-+ * When there are too many tasks (sched_nr_latency) we have to stretch
-  * this period because otherwise the slices get too small.
-  *
-  * p = (nr <= nl) ? l : l*nr/nl
+  * __schedule() is the main scheduler function.
++ *
++ * The main means of driving the scheduler and thus entering this function are:
++ *
++ *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
++ *
++ *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
++ *      paths. For example, see arch/x86/entry_64.S.
++ *
++ *      To drive preemption between tasks, the scheduler sets the flag in timer
++ *      interrupt handler scheduler_tick().
++ *
++ *   3. Wakeups don't really cause entry into schedule(). They add a
++ *      task to the run-queue and that's it.
++ *
++ *      Now, if the new task added to the run-queue preempts the current
++ *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
++ *      called on the nearest possible occasion:
++ *
++ *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
++ *
++ *         - in syscall or exception context, at the next outmost
++ *           preempt_enable(). (this might be as soon as the wake_up()'s
++ *           spin_unlock()!)
++ *
++ *         - in IRQ context, return from interrupt-handler to
++ *           preemptible context
++ *
++ *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
++ *         then at the next:
++ *
++ *          - cond_resched() call
++ *          - explicit schedule() call
++ *          - return from syscall or exception to user-space
++ *          - return from interrupt-handler to user-space
+  */
+ static void __sched __schedule(void)
+ {
