@@ -1,132 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2HMIWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:22:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63486 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab2HMIW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:22:29 -0400
+	id S1753448Ab2HMIZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:25:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab2HMIZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:25:37 -0400
+Date: Mon, 13 Aug 2012 11:26:19 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120813082619.GE14081@redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hlihjw7a2.wl%tiwai@suse.de>
-References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
-	<1344677543-22591-15-git-send-email-chenhc@lemote.com>
-	<s5hlihjw7a2.wl%tiwai@suse.de>
-Date: Mon, 13 Aug 2012 16:22:27 +0800
-Message-ID: <CAAhV-H6DoZ2qCAO=vZiCLXLmxv4-CLZtWRtEvWhuR6im2r3PDg@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH V5 14/18] ALSA: HDA: Make hda sound card
- usable for Loongson.
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        alsa-devel@alsa-project.org, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Hua Yan <yanh@lemote.com>, Fuxin Zhang <zhangfx@lemote.com>,
-        linux-kernel@vger.kernel.org, Hongliang Tao <taohl@lemote.com>,
-        Jie Chen <chenj@lemote.com>, Huacai Chen <chenhc@lemote.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I will improve the code.
+On Fri, Aug 10, 2012 at 02:55:14PM -0300, Rafael Aquini wrote:
+> Memory fragmentation introduced by ballooning might reduce significantly
+> the number of 2MB contiguous memory blocks that can be used within a guest,
+> thus imposing performance penalties associated with the reduced number of
+> transparent huge pages that could be used by the guest workload.
+> 
+> This patch introduces the helper functions as well as the necessary changes
+> to teach compaction and migration bits how to cope with pages which are
+> part of a guest memory balloon, in order to make them movable by memory
+> compaction procedures.
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  include/linux/mm.h |  17 ++++++++
+>  mm/compaction.c    | 125 +++++++++++++++++++++++++++++++++++++++++++++--------
+>  mm/migrate.c       |  30 ++++++++++++-
+>  3 files changed, 152 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 311be90..56cc553 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1662,5 +1662,22 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+>  static inline bool page_is_guard(struct page *page) { return false; }
+>  #endif /* CONFIG_DEBUG_PAGEALLOC */
+>  
+> +#if (defined(CONFIG_VIRTIO_BALLOON) || \
+> +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
+> +extern bool isolate_balloon_page(struct page *);
+> +extern void putback_balloon_page(struct page *);
+> +extern struct address_space *balloon_mapping;
+> +
+> +static inline bool movable_balloon_page(struct page *page)
+> +{
+> +	return (page->mapping && page->mapping == balloon_mapping);
 
-On Mon, Aug 13, 2012 at 4:00 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Sat, 11 Aug 2012 17:32:19 +0800,
-> Huacai Chen wrote:
->>
->> Lemote A1004(Laptop) and A1205(All-In-One) use Conexant's hda codec,
->> this patch modify patch_conexant.c to add Lemote specific code.
->>
->> Signed-off-by: Jie Chen <chenj@lemote.com>
->> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> Signed-off-by: Hongliang Tao <taohl@lemote.com>
->> Signed-off-by: Hua Yan <yanh@lemote.com>
->> Cc: alsa-devel@alsa-project.org
->> ---
->>  include/linux/pci_ids.h        |    2 ++
->>  sound/pci/hda/patch_conexant.c |   24 ++++++++++++++++++++++++
->>  2 files changed, 26 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
->> index fc35260..b28270e 100644
->> --- a/include/linux/pci_ids.h
->> +++ b/include/linux/pci_ids.h
->> @@ -2918,3 +2918,5 @@
->>  #define PCI_DEVICE_ID_XEN_PLATFORM   0x0001
->>
->>  #define PCI_VENDOR_ID_OCZ            0x1b85
->> +
->> +#define PCI_VENDOR_ID_LEMOTE         0x1c06
->> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
->> index 1436118..b7de368 100644
->> --- a/sound/pci/hda/patch_conexant.c
->> +++ b/sound/pci/hda/patch_conexant.c
->> @@ -4414,6 +4414,8 @@ static const struct hda_codec_ops cx_auto_patch_ops = {
->>  enum {
->>       CXT_PINCFG_LENOVO_X200,
->>       CXT_PINCFG_LENOVO_TP410,
->> +     CXT_PINCFG_LEMOTE_A1004,
->> +     CXT_PINCFG_LEMOTE_A1205,
->>       CXT_FIXUP_STEREO_DMIC,
->>  };
->>
->> @@ -4441,6 +4443,18 @@ static const struct hda_pintbl cxt_pincfg_lenovo_tp410[] = {
->>       {}
->>  };
->>
->> +/* Lemote A1004/A1205 with cxt5066 */
->> +static const struct hda_pintbl cxt_pincfg_lemote[] = {
->> +     { 0x1a, 0x90a10020 }, /* Internal mic */
->> +     { 0x1b, 0x03a11020 }, /* External mic */
->> +     { 0x1d, 0x400101f0 }, /* Not used */
->> +     { 0x1e, 0x40a701f0 }, /* Not used */
->> +     { 0x20, 0x404501f0 }, /* Not used */
->> +     { 0x22, 0x404401f0 }, /* Not used */
->> +     { 0x23, 0x40a701f0 }, /* Not used */
->> +     {}
->> +};
->> +
->>  static const struct hda_fixup cxt_fixups[] = {
->>       [CXT_PINCFG_LENOVO_X200] = {
->>               .type = HDA_FIXUP_PINS,
->> @@ -4450,6 +4464,14 @@ static const struct hda_fixup cxt_fixups[] = {
->>               .type = HDA_FIXUP_PINS,
->>               .v.pins = cxt_pincfg_lenovo_tp410,
->>       },
->> +     [CXT_PINCFG_LEMOTE_A1004] = {
->> +             .type = HDA_FIXUP_PINS,
->> +             .v.pins = cxt_pincfg_lemote,
->> +     },
->> +     [CXT_PINCFG_LEMOTE_A1205] = {
->> +             .type = HDA_FIXUP_PINS,
->> +             .v.pins = cxt_pincfg_lemote,
->> +     },
->
-> Well, if both point to the same pin configuration, there is no merit
-> to create two distinct fixup types.
-> Just create CXT_PINCFG_LEMOTE_A1X05, then pass it in your both device
-> entries.
->
->
->>       [CXT_FIXUP_STEREO_DMIC] = {
->>               .type = HDA_FIXUP_FUNC,
->>               .v.func = cxt_fixup_stereo_dmic,
->> @@ -4467,6 +4489,8 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
->>       SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
->>       SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
->>       SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
->> +     SND_PCI_QUIRK(PCI_VENDOR_ID_LEMOTE, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004),
->> +     SND_PCI_QUIRK(PCI_VENDOR_ID_LEMOTE, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205),
->>       SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
->>       SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
->
-> Don't put entries suddenly in the middle of others.
-> As you can see, the list is sorted in the order of id numbers.
->
-> Also, in this case, we prefer having numbers over PCI_* literals.
-> It's easier to check through the table in the end.
->
->
-> thanks,
->
-> Takashi
+I am guessing this needs smp_read_barrier_depends, and maybe
+ACCESS_ONCE ...
+
+> +}
+> +
+> +#else
+> +static inline bool isolate_balloon_page(struct page *page) { return false; }
+> +static inline void putback_balloon_page(struct page *page) { return false; }
+> +static inline bool movable_balloon_page(struct page *page) { return false; }
+> +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && CONFIG_COMPACTION */
+> +
+
+This does mean that only one type of balloon is useable at a time.
+I wonder whether using a flag in address_space structure instead
+is possible ...
+
+>  #endif /* __KERNEL__ */
+>  #endif /* _LINUX_MM_H */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index e78cb96..e4e871b 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/backing-dev.h>
+>  #include <linux/sysctl.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/export.h>
+>  #include "internal.h"
+>  
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> @@ -21,6 +22,84 @@
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/compaction.h>
+>  
+> +#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
+> +/*
+> + * Balloon pages special page->mapping.
+> + * Users must properly allocate and initialize an instance of balloon_mapping,
+> + * and set it as the page->mapping for balloon enlisted page instances.
+> + * There is no need on utilizing struct address_space locking schemes for
+> + * balloon_mapping as, once it gets initialized at balloon driver, it will
+> + * remain just like a static reference that helps us on identifying a guest
+> + * ballooned page by its mapping, as well as it will keep the 'a_ops' callback
+> + * pointers to the functions that will execute the balloon page mobility tasks.
+> + *
+> + * address_space_operations necessary methods for ballooned pages:
+> + *   .migratepage    - used to perform balloon's page migration (as is)
+> + *   .invalidatepage - used to isolate a page from balloon's page list
+> + *   .freepage       - used to reinsert an isolated page to balloon's page list
+> + */
+> +struct address_space *balloon_mapping;
+> +EXPORT_SYMBOL_GPL(balloon_mapping);
+> +
+> +static inline void __isolate_balloon_page(struct page *page)
+> +{
+> +	page->mapping->a_ops->invalidatepage(page, 0);
+> +}
+> +
+> +static inline void __putback_balloon_page(struct page *page)
+> +{
+> +	page->mapping->a_ops->freepage(page);
+> +}
+> +
+> +/* __isolate_lru_page() counterpart for a ballooned page */
+> +bool isolate_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!movable_balloon_page(page)))
+
+Looks like this actually can happen if the page is leaked
+between previous movable_balloon_page and here.
+
+> +		return false;
+> +
+> +	if (likely(get_page_unless_zero(page))) {
+> +		/*
+> +		 * As balloon pages are not isolated from LRU lists, concurrent
+> +		 * compaction threads can race against page migration functions
+> +		 * move_to_new_page() & __unmap_and_move().
+> +		 * In order to avoid having an already isolated balloon page
+> +		 * being (wrongly) re-isolated while it is under migration,
+> +		 * lets be sure we have the page lock before proceeding with
+> +		 * the balloon page isolation steps.
+> +		 */
+> +		if (likely(trylock_page(page))) {
+> +			/*
+> +			 * A ballooned page, by default, has just one refcount.
+> +			 * Prevent concurrent compaction threads from isolating
+> +			 * an already isolated balloon page.
+> +			 */
+> +			if (movable_balloon_page(page) &&
+> +			    (page_count(page) == 2)) {
+> +				__isolate_balloon_page(page);
+> +				unlock_page(page);
+> +				return true;
+> +			}
+> +			unlock_page(page);
+> +		}
+> +		/* Drop refcount taken for this already isolated page */
+> +		put_page(page);
+> +	}
+> +	return false;
+> +}
+> +
+> +/* putback_lru_page() counterpart for a ballooned page */
+> +void putback_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!movable_balloon_page(page)))
+> +		return;
+> +
+> +	lock_page(page);
+> +	__putback_balloon_page(page);
+> +	put_page(page);
+> +	unlock_page(page);
+> +}
+> +#endif /* CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE */
+> +
+>  static unsigned long release_freepages(struct list_head *freelist)
+>  {
+>  	struct page *page, *next;
+> @@ -312,32 +391,40 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			continue;
+>  		}
+>  
+> -		if (!PageLRU(page))
+> -			continue;
+> -
+>  		/*
+> -		 * PageLRU is set, and lru_lock excludes isolation,
+> -		 * splitting and collapsing (collapsing has already
+> -		 * happened if PageLRU is set).
+> +		 * It is possible to migrate LRU pages and balloon pages.
+> +		 * Skip any other type of page.
+>  		 */
+> -		if (PageTransHuge(page)) {
+> -			low_pfn += (1 << compound_order(page)) - 1;
+> -			continue;
+> -		}
+> +		if (PageLRU(page)) {
+> +			/*
+> +			 * PageLRU is set, and lru_lock excludes isolation,
+> +			 * splitting and collapsing (collapsing has already
+> +			 * happened if PageLRU is set).
+> +			 */
+> +			if (PageTransHuge(page)) {
+> +				low_pfn += (1 << compound_order(page)) - 1;
+> +				continue;
+> +			}
+>  
+> -		if (!cc->sync)
+> -			mode |= ISOLATE_ASYNC_MIGRATE;
+> +			if (!cc->sync)
+> +				mode |= ISOLATE_ASYNC_MIGRATE;
+>  
+> -		lruvec = mem_cgroup_page_lruvec(page, zone);
+> +			lruvec = mem_cgroup_page_lruvec(page, zone);
+>  
+> -		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, mode) != 0)
+> -			continue;
+> +			/* Try isolate the page */
+> +			if (__isolate_lru_page(page, mode) != 0)
+> +				continue;
+> +
+> +			VM_BUG_ON(PageTransCompound(page));
+>  
+> -		VM_BUG_ON(PageTransCompound(page));
+> +			/* Successfully isolated */
+> +			del_page_from_lru_list(page, lruvec, page_lru(page));
+> +		} else if (unlikely(movable_balloon_page(page))) {
+> +			if (!isolate_balloon_page(page))
+> +				continue;
+> +		} else
+> +			continue;
+>  
+> -		/* Successfully isolated */
+> -		del_page_from_lru_list(page, lruvec, page_lru(page));
+>  		list_add(&page->lru, migratelist);
+>  		cc->nr_migratepages++;
+>  		nr_isolated++;
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 77ed2d7..80f22bb 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -79,7 +79,10 @@ void putback_lru_pages(struct list_head *l)
+>  		list_del(&page->lru);
+>  		dec_zone_page_state(page, NR_ISOLATED_ANON +
+>  				page_is_file_cache(page));
+> -		putback_lru_page(page);
+> +		if (unlikely(movable_balloon_page(page)))
+> +			putback_balloon_page(page);
+> +		else
+> +			putback_lru_page(page);
+>  	}
+>  }
+>  
+> @@ -778,6 +781,17 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+>  		}
+>  	}
+>  
+> +	if (unlikely(movable_balloon_page(page))) {
+> +		/*
+> +		 * A ballooned page does not need any special attention from
+> +		 * physical to virtual reverse mapping procedures.
+> +		 * Skip any attempt to unmap PTEs or to remap swap cache,
+> +		 * in order to avoid burning cycles at rmap level.
+> +		 */
+> +		remap_swapcache = 0;
+> +		goto skip_unmap;
+> +	}
+> +
+>  	/*
+>  	 * Corner case handling:
+>  	 * 1. When a new swap-cache page is read into, it is added to the LRU
+> @@ -846,6 +860,20 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+>  			goto out;
+>  
+>  	rc = __unmap_and_move(page, newpage, force, offlining, mode);
+> +
+> +	if (unlikely(movable_balloon_page(newpage))) {
+> +		/*
+> +		 * A ballooned page has been migrated already. Now, it is the
+> +		 * time to wrap-up counters, handle the old page back to Buddy
+> +		 * and return.
+> +		 */
+> +		list_del(&page->lru);
+> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +				    page_is_file_cache(page));
+> +		put_page(page);
+> +		__free_page(page);
+> +		return rc;
+> +	}
+>  out:
+>  	if (rc != -EAGAIN) {
+>  		/*
+> -- 
+> 1.7.11.2
