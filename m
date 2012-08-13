@@ -1,138 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2HMUYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:24:34 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:53797 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab2HMUYU (ORCPT
+	id S1754793Ab2HMUaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:30:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab2HMUYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:20 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Date: Mon, 13 Aug 2012 13:18:33 -0700
-Message-Id: <1344889115-21610-19-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+f/lPueVEmdbiSNL68sUA5VFSXylGTrrI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0671]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 19/21] userns: xt_owner: Add basic user namespace support.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:24:34 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Cyrus Lien <cyrus.lien@canonical.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 63/82] HID: add ASUS AIO keyboard model AK1D
+Date: Mon, 13 Aug 2012 13:19:39 -0700
+Message-Id: <20120813201751.977156956@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-- Only allow adding matches from the initial user namespace
-- Add the appropriate conversion functions to handle matches
-  against sockets in other user namespaces.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Cc: Jan Engelhardt <jengelh@medozas.de>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+------------------
+
+From: Cyrus Lien <cyrus.lien@canonical.com>
+
+commit 2d8767bb421574dfcf48e4be0751ce7d8f73d5d7 upstream.
+
+Add Asus All-In-One PC keyboard model AK1D.
+
+BugLink: https://bugs.launchpad.net/bugs/1027789
+
+Signed-off-by: Cyrus Lien <cyrus.lien@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- init/Kconfig             |    1 -
- net/netfilter/xt_owner.c |   30 ++++++++++++++++++++++++------
- 2 files changed, 24 insertions(+), 7 deletions(-)
+ drivers/hid/hid-chicony.c |    1 +
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 3 insertions(+)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 40f5020..76ffca9 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -943,7 +943,6 @@ config UIDGID_CONVERTED
+--- a/drivers/hid/hid-chicony.c
++++ b/drivers/hid/hid-chicony.c
+@@ -60,6 +60,7 @@ static int ch_input_mapping(struct hid_d
+ static const struct hid_device_id ch_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ch_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1521,6 +1521,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS, USB_DEVICE_ID_CYPRESS_BARCODE_2) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -208,6 +208,7 @@
+ #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
+ #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
+ #define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
++#define USB_DEVICE_ID_CHICONY_AK1D	0x1125
  
- 	# Networking
- 	depends on NET_9P = n
--	depends on NETFILTER_XT_MATCH_OWNER = n
- 	depends on AF_RXRPC = n
- 	depends on NET_KEY = n
- 	depends on DNS_RESOLVER = n
-diff --git a/net/netfilter/xt_owner.c b/net/netfilter/xt_owner.c
-index 772d738..ca2e577 100644
---- a/net/netfilter/xt_owner.c
-+++ b/net/netfilter/xt_owner.c
-@@ -17,6 +17,17 @@
- #include <linux/netfilter/x_tables.h>
- #include <linux/netfilter/xt_owner.h>
- 
-+static int owner_check(const struct xt_mtchk_param *par)
-+{
-+	struct xt_owner_match_info *info = par->matchinfo;
-+
-+	/* For now only allow adding matches from the initial user namespace */
-+	if ((info->match & (XT_OWNER_UID|XT_OWNER_GID)) &&
-+	    (current_user_ns() != &init_user_ns))
-+		return -EINVAL;
-+	return 0;
-+}
-+
- static bool
- owner_mt(const struct sk_buff *skb, struct xt_action_param *par)
- {
-@@ -37,17 +48,23 @@ owner_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 		return ((info->match ^ info->invert) &
- 		       (XT_OWNER_UID | XT_OWNER_GID)) == 0;
- 
--	if (info->match & XT_OWNER_UID)
--		if ((filp->f_cred->fsuid >= info->uid_min &&
--		    filp->f_cred->fsuid <= info->uid_max) ^
-+	if (info->match & XT_OWNER_UID) {
-+		kuid_t uid_min = make_kuid(&init_user_ns, info->uid_min);
-+		kuid_t uid_max = make_kuid(&init_user_ns, info->uid_max);
-+		if ((uid_gte(filp->f_cred->fsuid, uid_min) &&
-+		     uid_lte(filp->f_cred->fsuid, uid_max)) ^
- 		    !(info->invert & XT_OWNER_UID))
- 			return false;
-+	}
- 
--	if (info->match & XT_OWNER_GID)
--		if ((filp->f_cred->fsgid >= info->gid_min &&
--		    filp->f_cred->fsgid <= info->gid_max) ^
-+	if (info->match & XT_OWNER_GID) {
-+		kgid_t gid_min = make_kgid(&init_user_ns, info->gid_min);
-+		kgid_t gid_max = make_kgid(&init_user_ns, info->gid_max);
-+		if ((gid_gte(filp->f_cred->fsgid, gid_min) &&
-+		     gid_lte(filp->f_cred->fsgid, gid_max)) ^
- 		    !(info->invert & XT_OWNER_GID))
- 			return false;
-+	}
- 
- 	return true;
- }
-@@ -56,6 +73,7 @@ static struct xt_match owner_mt_reg __read_mostly = {
- 	.name       = "owner",
- 	.revision   = 1,
- 	.family     = NFPROTO_UNSPEC,
-+	.checkentry = owner_check,
- 	.match      = owner_mt,
- 	.matchsize  = sizeof(struct xt_owner_match_info),
- 	.hooks      = (1 << NF_INET_LOCAL_OUT) |
--- 
-1.7.5.4
+ #define USB_VENDOR_ID_CHUNGHWAT		0x2247
+ #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
+
 
