@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2HMH1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 03:27:34 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13441 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab2HMH1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 03:27:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 13 Aug 2012 00:22:09 -0700
-Message-ID: <5028AC47.8080108@nvidia.com>
-Date: Mon, 13 Aug 2012 12:57:03 +0530
-From: Bitan Biswas <bbiswas@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752719Ab2HMHeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 03:34:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41155 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751702Ab2HMHeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 03:34:44 -0400
+Date: Mon, 13 Aug 2012 09:34:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 5/5] x86: Move enabling of PSE and PGE out of
+ init_memory_mapping
+Message-ID: <20120813073440.GC16654@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
+	Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
+ <1344547389-4599-6-git-send-email-jacob.shin@amd.com>
+ <20120811200133.GG2874@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [lm-sensors] hwmon : raw reading -> temperature conversion
-References: <50251826.9020303@nvidia.com> <20120810184326.GA4625@roeck-us.net>
-In-Reply-To: <20120810184326.GA4625@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120811200133.GG2874@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Hi Tejun,
 
-  Thank you for the guidance.
+On Sat, Aug 11, 2012 at 01:01:33PM -0700, Tejun Heo wrote:
+> Shouldn't this happen before init_memory_mapping() is called multiple
+> times?
 
->>
->> But looking at the hwmon linux documentation, seems the sensor
->> kernel drivers should report only raw readings.
->> The raw readings can be converted into required output,
->> e.g. temperature in this case, by respective user space implementation.
->>
-> "raw" means the value as reported to the sensor. For example, for an ADC, the
-> raw value means the voltage in mV as seen on the sensor's input pins. This
-> voltage is the voltage to be reported. Converting it to a "real" voltage as,
-> typically, determined by a set of voltage divider resistors should be done in
-> user space.
->
-> For temperature sensors this is a bit more tricky. Presumably you get readings
-> from a thermistor or similar. The hwmon subsystem includes a driver for NTC
-> thermistors; maybe you can get some ideas from it. Maybe you can even use
-> it and/or extend it to support your hardware.
+It does.
 
-The sensor is Tegra3 integrated thermal sensor. It is not a thermistor, 
-but gives a counter reading. The expressions to convert the counter to 
-temperature use characterization data and certain initialization 
-parameters. I looked at the NTC thermistor driver. The expressions I 
-need to use to convert counter value to temperature would need floating 
-point arguments.
+Those CR4 flags are set before the loop which calls init_memory_mapping().
 
->
->> However because of my driver clients being in kernel space, I am
->> thinking of doing fixed point calculations in the sensor driver
->> and get the temperature corresponding to raw sensor readings.
->>
->> Please let me know if this a correct approach?
->>
-> Question is really what chip you are using, and how exactly your hardware looks
-> like. Do you use a generic ADC ? If so, is it already supported in the kernel ?
-> How are the thermistor readings converted and reported to SW ?
+> Also, there seem to be other stuff which need to be moved out.
 
-I think this is somewhat like an ADC but I need to implement the 
-expressions to convert the counter readings to temperature. Using fixed 
-point approximations instead of the floating point operands, the 
-expressions can be implemented in kernel. The expressions to be used for 
-calculation are specific to chip and I could not find a existing driver 
-that could support this sensor.
+Which are those pls?
 
-  There are expressions that can convert the counter readings to 
-temperature and vice-versa.
-1) SW could call the driver callbacks and get the temperature.
-2) SW could also request temperature thresholds to be configured for 
-thermal monitoring.
+Thanks.
 
-The software that may need to use the temperature are some other kernel 
-drivers.
-
-Is it not allowed to implement the counter raw readings to temperature 
-in the hwmon sensor driver?
-
-
->
-> Thanks,
-> Guenter
->
-
+-- 
+Regards/Gruss,
+    Boris.
