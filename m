@@ -1,322 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2HMShx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:37:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49363 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556Ab2HMShg (ORCPT
+	id S1752816Ab2HMSmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:42:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45071 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab2HMShx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:36 -0400
+	Mon, 13 Aug 2012 14:37:53 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/38] perf symbols: Implement poor man's ELF parser
-Date: Mon, 13 Aug 2012 15:36:50 -0300
-Message-Id: <1344883039-13495-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/38] perf: Add ability to attach user level registers dump to sample
+Date: Mon, 13 Aug 2012 15:36:52 -0300
+Message-Id: <1344883039-13495-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Implement a minimal elf parser for getting build-id.  It assumes that
-required elf.h header is provided by libc header on the system and the
-parser only looks for PT_NOTE program header to check build-id.
+Introducing PERF_SAMPLE_REGS_USER sample type bit to trigger the dump of
+user level registers on sample. Registers we want to dump are specified
+by sample_regs_user bitmask.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Only user level registers are dumped at the moment. Meaning the register
+values of the user space context as it was before the user entered the
+kernel for whatever reason (syscall, irq, exception, or a PMI happening
+in userspace).
+
+The layout of the sample_regs_user bitmap is described in
+asm/perf_regs.h for archs that support register dump.
+
+This is going to be useful to bring Dwarf CFI based stack unwinding on
+top of samples.
+
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+[ Dump registers ABI specification. ]
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Stephane Eranian <eranian@google.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344228082-15569-5-git-send-email-namhyung@kernel.org
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1344345647-11536-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-minimal.c |  242 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 235 insertions(+), 7 deletions(-)
+ arch/x86/kernel/perf_regs.c |   15 ++++++++++
+ include/linux/perf_event.h  |   35 +++++++++++++++++++++--
+ include/linux/perf_regs.h   |    6 ++++
+ kernel/events/core.c        |   66 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 119 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 416ecf3..bd8720b 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,15 +1,71 @@
- #include "symbol.h"
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+index 3d69235..c5a3e5c 100644
+--- a/arch/x86/kernel/perf_regs.c
++++ b/arch/x86/kernel/perf_regs.c
+@@ -1,5 +1,7 @@
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/perf_event.h>
+ #include <linux/bug.h>
+ #include <linux/stddef.h>
+ #include <asm/perf_regs.h>
+@@ -71,6 +73,11 @@ int perf_reg_validate(u64 mask)
  
-+#include <elf.h>
-+#include <stdio.h>
-+#include <fcntl.h>
-+#include <string.h>
-+#include <byteswap.h>
-+#include <sys/stat.h>
+ 	return 0;
+ }
++
++u64 perf_reg_abi(struct task_struct *task)
++{
++	return PERF_SAMPLE_REGS_ABI_32;
++}
+ #else /* CONFIG_X86_64 */
+ #define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
+ 		       (1ULL << PERF_REG_X86_ES) | \
+@@ -87,4 +94,12 @@ int perf_reg_validate(u64 mask)
  
--int filename__read_build_id(const char *filename __used, void *bf __used,
--			    size_t size __used)
+ 	return 0;
+ }
 +
-+static bool check_need_swap(int file_endian)
- {
--	return -1;
-+	const int data = 1;
-+	u8 *check = (u8 *)&data;
-+	int host_endian;
-+
-+	if (check[0] == 1)
-+		host_endian = ELFDATA2LSB;
++u64 perf_reg_abi(struct task_struct *task)
++{
++	if (test_tsk_thread_flag(task, TIF_IA32))
++		return PERF_SAMPLE_REGS_ABI_32;
 +	else
-+		host_endian = ELFDATA2MSB;
-+
-+	return host_endian != file_endian;
- }
++		return PERF_SAMPLE_REGS_ABI_64;
++}
+ #endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 7602ccb..3d4d847 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -130,8 +130,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
++	PERF_SAMPLE_REGS_USER			= 1U << 12,
  
--int sysfs__read_build_id(const char *filename __used, void *build_id __used,
--			 size_t size __used)
-+#define NOTE_ALIGN(sz) (((sz) + 3) & ~3)
-+
-+#define NT_GNU_BUILD_ID	3
-+
-+static int read_build_id(void *note_data, size_t note_len, void *bf,
-+			 size_t size, bool need_swap)
- {
-+	struct {
-+		u32 n_namesz;
-+		u32 n_descsz;
-+		u32 n_type;
-+	} *nhdr;
-+	void *ptr;
-+
-+	ptr = note_data;
-+	while (ptr < (note_data + note_len)) {
-+		const char *name;
-+		size_t namesz, descsz;
-+
-+		nhdr = ptr;
-+		if (need_swap) {
-+			nhdr->n_namesz = bswap_32(nhdr->n_namesz);
-+			nhdr->n_descsz = bswap_32(nhdr->n_descsz);
-+			nhdr->n_type = bswap_32(nhdr->n_type);
-+		}
-+
-+		namesz = NOTE_ALIGN(nhdr->n_namesz);
-+		descsz = NOTE_ALIGN(nhdr->n_descsz);
-+
-+		ptr += sizeof(*nhdr);
-+		name = ptr;
-+		ptr += namesz;
-+		if (nhdr->n_type == NT_GNU_BUILD_ID &&
-+		    nhdr->n_namesz == sizeof("GNU")) {
-+			if (memcmp(name, "GNU", sizeof("GNU")) == 0) {
-+				size_t sz = min(size, descsz);
-+				memcpy(bf, ptr, sz);
-+				memset(bf + sz, 0, size - sz);
-+				return 0;
-+			}
-+		}
-+		ptr += descsz;
-+	}
-+
- 	return -1;
- }
+-	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+ };
  
-@@ -19,6 +75,172 @@ int filename__read_debuglink(const char *filename __used,
- 	return -1;
- }
+ /*
+@@ -163,6 +164,15 @@ enum perf_branch_sample_type {
+ 	 PERF_SAMPLE_BRANCH_HV)
  
-+/*
-+ * Just try PT_NOTE header otherwise fails
+ /*
++ * Values to determine ABI of the registers dump.
 + */
-+int filename__read_build_id(const char *filename, void *bf, size_t size)
-+{
-+	FILE *fp;
-+	int ret = -1;
-+	bool need_swap = false;
-+	u8 e_ident[EI_NIDENT];
-+	size_t buf_size;
-+	void *buf;
-+	int i;
++enum perf_sample_regs_abi {
++	PERF_SAMPLE_REGS_ABI_NONE	= 0,
++	PERF_SAMPLE_REGS_ABI_32		= 1,
++	PERF_SAMPLE_REGS_ABI_64		= 2,
++};
 +
-+	fp = fopen(filename, "r");
-+	if (fp == NULL)
-+		return -1;
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+@@ -194,6 +204,7 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+ #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
++#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
+ 
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -271,7 +282,13 @@ struct perf_event_attr {
+ 		__u64		bp_len;
+ 		__u64		config2; /* extension of config1 */
+ 	};
+-	__u64	branch_sample_type; /* enum branch_sample_type */
++	__u64	branch_sample_type; /* enum perf_branch_sample_type */
 +
-+	if (fread(e_ident, sizeof(e_ident), 1, fp) != 1)
-+		goto out;
++	/*
++	 * Defines set of user regs to dump on samples.
++	 * See asm/perf_regs.h for details.
++	 */
++	__u64	sample_regs_user;
+ };
+ 
+ /*
+@@ -548,6 +565,9 @@ enum perf_event_type {
+ 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
+ 	 *
+ 	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
++	 *
++	 * 	{ u64			abi; # enum perf_sample_regs_abi
++	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -609,6 +629,7 @@ struct perf_guest_info_callbacks {
+ #include <linux/static_key.h>
+ #include <linux/atomic.h>
+ #include <linux/sysfs.h>
++#include <linux/perf_regs.h>
+ #include <asm/local.h>
+ 
+ struct perf_callchain_entry {
+@@ -654,6 +675,11 @@ struct perf_branch_stack {
+ 	struct perf_branch_entry	entries[0];
+ };
+ 
++struct perf_regs_user {
++	__u64		abi;
++	struct pt_regs	*regs;
++};
 +
-+	if (memcmp(e_ident, ELFMAG, SELFMAG) ||
-+	    e_ident[EI_VERSION] != EV_CURRENT)
-+		goto out;
-+
-+	need_swap = check_need_swap(e_ident[EI_DATA]);
-+
-+	/* for simplicity */
-+	fseek(fp, 0, SEEK_SET);
-+
-+	if (e_ident[EI_CLASS] == ELFCLASS32) {
-+		Elf32_Ehdr ehdr;
-+		Elf32_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_32(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_32(phdr->p_offset);
-+				phdr->p_filesz = bswap_32(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
-+	} else {
-+		Elf64_Ehdr ehdr;
-+		Elf64_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_64(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_64(phdr->p_offset);
-+				phdr->p_filesz = bswap_64(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
-+	}
-+out_free:
-+	free(buf);
-+out:
-+	fclose(fp);
-+	return ret;
-+}
-+
-+int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
-+{
-+	int fd;
-+	int ret = -1;
-+	struct stat stbuf;
-+	size_t buf_size;
-+	void *buf;
-+
-+	fd = open(filename, O_RDONLY);
-+	if (fd < 0)
-+		return -1;
-+
-+	if (fstat(fd, &stbuf) < 0)
-+		goto out;
-+
-+	buf_size = stbuf.st_size;
-+	buf = malloc(buf_size);
-+	if (buf == NULL)
-+		goto out;
-+
-+	if (read(fd, buf, buf_size) != (ssize_t) buf_size)
-+		goto out_free;
-+
-+	ret = read_build_id(buf, buf_size, build_id, size, false);
-+out_free:
-+	free(buf);
-+out:
-+	close(fd);
-+	return ret;
-+}
-+
- int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 				struct map *map __used,
- 				symbol_filter_t filter __used)
-@@ -26,11 +248,17 @@ int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 	return 0;
+ struct task_struct;
+ 
+ /*
+@@ -1133,6 +1159,7 @@ struct perf_sample_data {
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
++	struct perf_regs_user		regs_user;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -1142,7 +1169,9 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->addr = addr;
+ 	data->raw  = NULL;
+ 	data->br_stack = NULL;
+-	data->period	= period;
++	data->period = period;
++	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
++	data->regs_user.regs = NULL;
  }
  
--int dso__load_sym(struct dso *dso __used, struct map *map __used,
--		  const char *name __used, int fd __used,
-+int dso__load_sym(struct dso *dso, struct map *map __used,
-+		  const char *name, int fd __used,
- 		  symbol_filter_t filter __used, int kmodule __used,
- 		  int want_symtab __used)
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+index a2f1a98..3c73d5f 100644
+--- a/include/linux/perf_regs.h
++++ b/include/linux/perf_regs.h
+@@ -5,6 +5,7 @@
+ #include <asm/perf_regs.h>
+ u64 perf_reg_value(struct pt_regs *regs, int idx);
+ int perf_reg_validate(u64 mask);
++u64 perf_reg_abi(struct task_struct *task);
+ #else
+ static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
  {
-+	unsigned char *build_id[BUILD_ID_SIZE];
-+
-+	if (filename__read_build_id(name, build_id, BUILD_ID_SIZE) > 0) {
-+		dso__set_build_id(dso, build_id);
-+		return 1;
-+	}
- 	return 0;
+@@ -15,5 +16,10 @@ static inline int perf_reg_validate(u64 mask)
+ {
+ 	return mask ? -ENOSYS : 0;
  }
++
++static inline u64 perf_reg_abi(struct task_struct *task)
++{
++	return PERF_SAMPLE_REGS_ABI_NONE;
++}
+ #endif /* CONFIG_HAVE_PERF_REGS */
+ #endif /* _LINUX_PERF_REGS_H */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b7935fc..d3ce975 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3756,6 +3756,37 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
+ }
+ EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+ 
++static void
++perf_output_sample_regs(struct perf_output_handle *handle,
++			struct pt_regs *regs, u64 mask)
++{
++	int bit;
++
++	for_each_set_bit(bit, (const unsigned long *) &mask,
++			 sizeof(mask) * BITS_PER_BYTE) {
++		u64 val;
++
++		val = perf_reg_value(regs, bit);
++		perf_output_put(handle, val);
++	}
++}
++
++static void perf_sample_regs_user(struct perf_regs_user *regs_user,
++				  struct pt_regs *regs)
++{
++	if (!user_mode(regs)) {
++		if (current->mm)
++			regs = task_pt_regs(current);
++		else
++			regs = NULL;
++	}
++
++	if (regs) {
++		regs_user->regs = regs;
++		regs_user->abi  = perf_reg_abi(current);
++	}
++}
++
+ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 					 struct perf_sample_data *data,
+ 					 struct perf_event *event)
+@@ -4016,6 +4047,23 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, nr);
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_REGS_USER) {
++		u64 abi = data->regs_user.abi;
++
++		/*
++		 * If there are no regs to dump, notice it through
++		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
++		 */
++		perf_output_put(handle, abi);
++
++		if (abi) {
++			u64 mask = event->attr.sample_regs_user;
++			perf_output_sample_regs(handle,
++						data->regs_user.regs,
++						mask);
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4067,6 +4115,20 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		}
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_REGS_USER) {
++		/* regs dump ABI info */
++		int size = sizeof(u64);
++
++		perf_sample_regs_user(&data->regs_user, regs);
++
++		if (data->regs_user.regs) {
++			u64 mask = event->attr.sample_regs_user;
++			size += hweight64(mask) * sizeof(u64);
++		}
++
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6142,6 +6204,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			attr->branch_sample_type = mask;
+ 		}
+ 	}
++
++	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
++		ret = perf_reg_validate(attr->sample_regs_user);
++
+ out:
+ 	return ret;
  
 -- 
 1.7.1
