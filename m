@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab2HMUW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:22:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	id S1754298Ab2HMUWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:22:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab2HMUW4 (ORCPT
+	with ESMTP id S1754247Ab2HMUWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:22:56 -0400
+	Mon, 13 Aug 2012 16:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 40/82] mac80211: cancel mesh path timer
-Date: Mon, 13 Aug 2012 13:19:16 -0700
-Message-Id: <20120813201749.947528566@linuxfoundation.org>
+        Feng Tang <feng.tang@intel.com>, Thomas Renninger <trenn@suse.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 38/82] ACPI processor: Fix tick_broadcast_mask online/offline regression
+Date: Mon, 13 Aug 2012 13:19:14 -0700
+Message-Id: <20120813201749.764341331@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -29,30 +32,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Feng Tang <feng.tang@intel.com>
 
-commit dd4c9260e7f23f2e951cbfb2726e468c6d30306c upstream.
+commit b7db60f45d74497c723dc7ae1370cf0b37dfb0d8 upstream.
 
-The mesh path timer needs to be canceled when
-leaving the mesh as otherwise it could fire
-after the interface has been removed already.
+In commit 99b725084 "ACPI processor hotplug: Delay acpi_processor_start()
+call for hotplugged cores", acpi_processor_hotplug(pr) was wrongly replaced
+by acpi_processor_cst_has_changed() inside the acpi_cpu_soft_notify(). This
+patch will restore it back, fixing the tick_broadcast_mask regression:
+	https://lkml.org/lkml/2012/7/30/169
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reviewed-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mesh.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/processor_driver.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/mesh.c
-+++ b/net/mac80211/mesh.c
-@@ -621,6 +621,7 @@ void ieee80211_stop_mesh(struct ieee8021
- 
- 	del_timer_sync(&sdata->u.mesh.housekeeping_timer);
- 	del_timer_sync(&sdata->u.mesh.mesh_path_root_timer);
-+	del_timer_sync(&sdata->u.mesh.mesh_path_timer);
- 	/*
- 	 * If the timer fired while we waited for it, it will have
- 	 * requeued the work. Now the work will be running again
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -442,7 +442,7 @@ static int acpi_cpu_soft_notify(struct n
+ 		/* Normal CPU soft online event */
+ 		} else {
+ 			acpi_processor_ppc_has_changed(pr, 0);
+-			acpi_processor_cst_has_changed(pr);
++			acpi_processor_hotplug(pr);
+ 			acpi_processor_reevaluate_tstate(pr, action);
+ 			acpi_processor_tstate_has_changed(pr);
+ 		}
 
 
