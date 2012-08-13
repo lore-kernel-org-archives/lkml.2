@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2HMVs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:48:26 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:35556
+	id S1753855Ab2HMVsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:48:24 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:56669
 	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753361Ab2HMVr2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753874Ab2HMVr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 17:47:28 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M8PR6X-01-KI3-02
+X-WSS-ID: 0M8PR6X-01-KI1-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: X86-ML <x86@kernel.org>
@@ -19,9 +19,9 @@ CC: LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
         Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 4/5] x86: Fixup code testing if a pfn is direct mapped
-Date: Mon, 13 Aug 2012 16:47:03 -0500
-Message-ID: <1344894424-4434-5-git-send-email-jacob.shin@amd.com>
+Subject: [PATCH 2/5] x86: find_early_table_space based on memory ranges that are being mapped
+Date: Mon, 13 Aug 2012 16:47:01 -0500
+Message-ID: <1344894424-4434-3-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1344894424-4434-1-git-send-email-jacob.shin@amd.com>
 References: <1344894424-4434-1-git-send-email-jacob.shin@amd.com>
@@ -32,60 +32,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
-[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
-pfn_mapped ranges instead.
+Current logic finds enough space to cover number of tables from 0 to end.
+Instead, we only need to find enough space to cover from mr[0].start to
+mr[nr_range].end.
 
 Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/kernel/cpu/amd.c   |    6 +-----
- arch/x86/platform/efi/efi.c |    8 ++++----
- 2 files changed, 5 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c |   62 +++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9d92e19..554ccfc 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -677,11 +677,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 */
- 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
- 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
--			if ((tseg>>PMD_SHIFT) <
--				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
--				((tseg>>PMD_SHIFT) <
--				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
--				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
-+			if (pfn_is_mapped(tseg))
- 				set_memory_4k((unsigned long)__va(tseg), 1);
- 		}
- 	}
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 2dc29f5..4810ab3 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -754,7 +754,7 @@ void __init efi_enter_virtual_mode(void)
- 	efi_memory_desc_t *md, *prev_md = NULL;
- 	efi_status_t status;
- 	unsigned long size;
--	u64 end, systab, addr, npages, end_pfn;
-+	u64 end, systab, addr, npages, start_pfn, end_pfn;
- 	void *p, *va, *new_memmap = NULL;
- 	int count = 0;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index e0e6990..df8baaa 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -35,40 +35,48 @@ struct map_range {
+ 	unsigned page_size_mask;
+ };
  
-@@ -805,10 +805,10 @@ void __init efi_enter_virtual_mode(void)
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
+-static void __init find_early_table_space(struct map_range *mr, unsigned long end,
+-					  int use_pse, int use_gbpages)
++/*
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ {
+-	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
+ 	phys_addr_t base;
  
-+		start_pfn = PFN_DOWN(md->phys_addr);
- 		end_pfn = PFN_UP(end);
--		if (end_pfn <= max_low_pfn_mapped
--		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped))
+-	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+-
+-	if (use_gbpages) {
+-		unsigned long extra;
+-
+-		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+-		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-	} else
+-		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
+ 
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+-	if (use_pse) {
+-		unsigned long extra;
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
+ 
+-		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+ #ifdef CONFIG_X86_32
+-		extra += PMD_SIZE;
++			extra += PMD_SIZE;
+ #endif
+-		/* The first 2/4M doesn't use large pages. */
+-		if (mr->start < PMD_SIZE)
+-			extra += mr->end - mr->start;
+-
+-		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	} else
+-		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
++			/* The first 2/4M doesn't use large pages. */
++			if (mr[i].start < PMD_SIZE)
++				extra += range;
 +
-+		if (pfn_range_is_mapped(start_pfn, end_pfn))
- 			va = __va(md->phys_addr);
- 		else
- 			va = efi_ioremap(md->phys_addr, size, md->type);
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
++	}
+ 
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+@@ -86,7 +94,7 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
+ 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 
+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
+-		end - 1, pgt_buf_start << PAGE_SHIFT,
++		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+ }
+ 
+@@ -267,7 +275,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
++		find_early_table_space(mr, nr_range);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 -- 
 1.7.9.5
 
