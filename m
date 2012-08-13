@@ -1,419 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2HMQCR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:02:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61756 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab2HMQCP (ORCPT
+	id S1752370Ab2HMQOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:14:08 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:52329 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab2HMQOF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:02:15 -0400
-Message-ID: <50292501.9070101@googlemail.com>
-Date: Mon, 13 Aug 2012 18:02:09 +0200
-From: Stefan Beller <stefanbeller@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 13 Aug 2012 12:14:05 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120813133910.GA30532@localhost>
+References: <20120812145023.GA17077@localhost> <87k3x3z3de.fsf@xmission.com> <20120813133910.GA30532@localhost>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Rob Landley <rob@landley.net>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Junio C Hamano <gitster@pobox.com>, stefanbeller@googlemail.com
-Subject: [PATCH v2] Rewrite Documentation/SubmittingPatches.
-References: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>	<CAFtxgO5=oANwXJ34rkKjWFiOxgB1hvEDToZXt=9w5gKoVOsOBw@mail.gmail.com>	<CALbm-EY-4iQy3HYi4bYdLVsLyr+iDecTUsVt43+_Nf9v_rkTyw@mail.gmail.com>	<50032F24.8050903@landley.net> <CALbm-EbZg+BtW+BTokA2Xz+P1DSt3-WR+xV5DB_GrieLqR27NA@mail.gmail.com> <50042DDD.6050008@xenotime.net>
-In-Reply-To: <50042DDD.6050008@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 13 Aug 2012 09:13:09 -0700
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, kernel-janitors@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <63f9e712-3cd1-4020-9df6-8fb8d9c3f1ec@email.android.com>
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19BwcMxm31I5i1mp7wv6R6e/KQtvYXBP8c=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	*  1.0 XMGappySubj_02 Gappier still
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0496]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Fengguang Wu <fengguang.wu@intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [userns:userns-always-map-user-v45 80/99] fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates the documentation on how to create patches and send
-these to the kernel mailing list.
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-The documentation before was written in times before git was there,
-so the crafting of the patch needed to be done manually by diff -up
-in the right directory.
+>On Sun, Aug 12, 2012 at 11:56:45PM -0700, Eric W. Biederman wrote:
+>> Fengguang Wu <fengguang.wu@intel.com> writes:
+>> 
+>> > Hi Geert,
+>> >
+>> > This is the build error I get, on Eric's userns tree.
+>> >
+>> > tree:  
+>git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git
+>userns-always-map-user-v45
+>> > head:   38a0b1b84f5f613ff4e01fffda27f87d4cb2b649
+>> > commit: 5ea9fc30545b658380d4794340227fe821b83701 [80/99] vfs: Add
+>setns support for the mount namespace
+>> > config: m68k-m5475evb_defconfig (attached as .config)
+>> >
+>> > All related error/warning messages:
+>> >
+>> > fs/namespace.c:2290:1: error: unknown type name 'atomic64_t'
+>> > fs/namespace.c:2290:1: error: implicit declaration of function
+>'ATOMIC64_INIT' [-Werror=implicit-function-declaration]
+>> > fs/namespace.c:2290:1: error: initializer element is not constant
+>> > fs/namespace.c: In function 'alloc_mnt_ns':
+>> > fs/namespace.c:2299:2: error: implicit declaration of function
+>'atomic64_add_return' [-Werror=implicit-function-declaration]
+>> > cc1: some warnings being treated as errors
+>> 
+>> Fengguang is m68k the only place you are seeing build failures?
+>
+>Yes.
+>
+>> Exactly how I get a 64bit counter in that code path is not terribly
+>> important.  I picked an atomic64_t because it looked simple and
+>cheap.
+>
+>Fair enough. As long as it's not in hot code path, it definitely helps
+>to use simple solutions.
+>
+>> If this is limited to a couple of m68k sub-arches I will let you guys
+>> finish fixing this up so people can depend on atomic64_t being
+>> available.  Otherwise it probably makes sense to go to with a
+>different
+>> abstraction.
+>
+>I'd suggest to fix it in m68k and make atomic64_t generally available.
 
-This patch aims at simplifying the patch sending process, without
-breaking the output results.
+Fengguang in your testing on any architechtures is atomic64_t missing on anything except some m68k subarchtechtures?
 
-A discussion can be found at
-https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
-
-Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
-Acked-by: Jeff Garzik jgarzik@pobox.com
----
- Documentation/SubmittingPatches | 197 +++++++++++++++++++++++++---------------
- 1 file changed, 122 insertions(+), 75 deletions(-)
-
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index c379a2a..8b9fc21 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -20,57 +20,26 @@ Documentation/SubmittingDrivers.
- SECTION 1 - CREATING AND SENDING YOUR CHANGE
- --------------------------------------------
- 
-+If you don't have access to git for whatever reason and would like to
-+submit a patch, you can use the diff tool. Replace step 1 and 5 by
-+step 18.
- 
- 
--1) "diff -up"
-+1) Using git
- ------------
- 
--Use "diff -up" or "diff -uprN" to create patches.
-+Use the distributed version control git to commit your changes
-+into your local git repository.
- 
--All changes to the Linux kernel occur in the form of patches, as
--generated by diff(1).  When creating your patch, make sure to create it
--in "unified diff" format, as supplied by the '-u' argument to diff(1).
--Also, please use the '-p' argument which shows which C function each
--change is in - that makes the resultant diff a lot easier to read.
--Patches should be based in the root kernel source directory,
--not in any lower subdirectory.
--
--To create a patch for a single file, it is often sufficient to do:
--
--	SRCTREE= linux-2.6
--	MYFILE=  drivers/net/mydriver.c
--
--	cd $SRCTREE
--	cp $MYFILE $MYFILE.orig
--	vi $MYFILE	# make your change
--	cd ..
--	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
--
--To create a patch for multiple files, you should unpack a "vanilla",
--or unmodified kernel source tree, and generate a diff against your
--own source tree.  For example:
--
--	MYSRC= /devel/linux-2.6
--
--	tar xvfz linux-2.6.12.tar.gz
--	mv linux-2.6.12 linux-2.6.12-vanilla
--	diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
--		linux-2.6.12-vanilla $MYSRC > /tmp/patch
--
--"dontdiff" is a list of files which are generated by the kernel during
--the build process, and should be ignored in any diff(1)-generated
--patch.  The "dontdiff" file is included in the kernel tree in
--2.6.12 and later.  For earlier kernel versions, you can get it
--from <http://www.xenotime.net/linux/doc/dontdiff>.
--
--Make sure your patch does not include any extra files which do not
--belong in a patch submission.  Make sure to review your patch -after-
--generated it with diff(1), to ensure accuracy.
-+Make sure your commits do not include any extra files which do not
-+belong in a commit submission.  Make sure to review your commits with
-+a git viewer of your choice such as gitk, to ensure accuracy.
- 
- If your changes produce a lot of deltas, you may want to look into
- splitting them into individual patches which modify things in
- logical stages.  This will facilitate easier reviewing by other
- kernel developers, very important if you want your patch accepted.
-+
- There are a number of scripts which can aid in this:
- 
- Quilt:
-@@ -83,7 +52,7 @@ tool (see above).
- 
- 
- 
--2) Describe your changes.
-+2) A detour on "How to use git": Describe your changes.
- 
- Describe the technical detail of the change(s) your patch includes.
- 
-@@ -91,10 +60,6 @@ Be as specific as possible.  The WORST descriptions possible include
- things like "update driver X", "bug fix for driver X", or "this patch
- includes updates for subsystem X.  Please apply."
- 
--The maintainer will thank you if you write your patch description in a
--form which can be easily pulled into Linux's source code management
--system, git, as a "commit log".  See #15, below.
--
- If your description starts to get long, that's a sign that you probably
- need to split up your patch.  See #3, next.
- 
-@@ -111,33 +76,34 @@ If the patch fixes a logged bug entry, refer to that bug entry by
- number and URL.
- 
- 
--3) Separate your changes.
-+
-+3) A detour on "How to use git": Separate your changes.
- 
- Separate _logical changes_ into a single patch file.
- 
- For example, if your changes include both bug fixes and performance
- enhancements for a single driver, separate those changes into two
--or more patches.  If your changes include an API update, and a new
--driver which uses that new API, separate those into two patches.
-+or more commits.  If your changes include an API update, and a new
-+driver which uses that new API, separate those into two commits.
- 
- On the other hand, if you make a single change to numerous files,
--group those changes into a single patch.  Thus a single logical change
--is contained within a single patch.
-+group those changes into a single commit.  Thus a single logical change
-+is contained within a single commit.
- 
--If one patch depends on another patch in order for a change to be
--complete, that is OK.  Simply note "this patch depends on patch X"
--in your patch description.
-+If one commit depends on another commit in order for a change to be
-+complete, that is OK.  Simply note "this commit depends on commit X"
-+in your commit description.
- 
--If you cannot condense your patch set into a smaller set of patches,
-+If you cannot condense your commit set into a smaller set of commits,
- then only post say 15 or so at a time and wait for review and integration.
- 
- 
- 
- 4) Style check your changes.
- 
--Check your patch for basic style violations, details of which can be
-+Check your commit for basic style violations, details of which can be
- found in Documentation/CodingStyle.  Failure to do so simply wastes
--the reviewers time and will get your patch rejected, probably
-+the reviewers time and will get your commit rejected, probably
- without even being read.
- 
- At a minimum you should check your patches with the patch style
-@@ -146,7 +112,41 @@ be able to justify all violations that remain in your patch.
- 
- 
- 
--5) Select e-mail destination.
-+5) "git format-patch"
-+
-+Now you need to prepare your patches for e-mail submission.
-+Use "git format-patch origin" to extract all commits which have been applied,
-+but are not yet in the origin repository.
-+Alternatively use "git format-patch -20" to extract the last 20 patches from your
-+git repository. They will be be saved in textfiles named
-+
-+    0001-Introduce-new-Feature.patch
-+    0002-Improve-Documentation.patch
-+
-+The first lines of such a file might look like
-+
-+1   From d39e331c30cb563fd152f484f7ca1d14dc98d57e Mon Sep 17 00:00:00 2001
-+2   From: Stefan Beller <stefanbeller@googlemail.com>
-+3   Date: Fri, 13 Jul 2012 12:55:54 +0200
-+4   Subject: [PATCH] Rewrite Documentation/SubmittingPatches.
-+5
-+6   This updates the documentation on how to create patches and send
-+7   these to the kernel mailing list.
-+8   ...
-+
-+Take the body of these files starting from line 6 as your email body and
-+as email subject choose the subject as in line 4.
-+In this example case the subject would be
-+    [PATCH] Rewrite Documentation/SubmittingPatches.
-+
-+For further formatting of the email,
-+see #8 (No MIME, no links, no compression, no attachments.  Just plain text.)
-+
-+Read the manpages of "git format-patch".
-+Specially the options "--cover-letter" and "--subject-prefix='PATCH v4'"
-+come handy.
-+
-+6) Select e-mail destination.
- 
- Look through the MAINTAINERS file and the source code, and determine
- if your change applies to a specific subsystem of the kernel, with
-@@ -163,9 +163,9 @@ Do not send more than 15 patches at once to the vger mailing lists!!!
- 
- 
- Linus Torvalds is the final arbiter of all changes accepted into the
--Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>. 
-+Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>.
- He gets a lot of e-mail, so typically you should do your best to -avoid-
--sending him e-mail. 
-+sending him e-mail.
- 
- Patches which are bug fixes, are "obvious" changes, or similarly
- require little discussion should be sent or CC'd to Linus.  Patches
-@@ -175,7 +175,7 @@ discussed should the patch then be submitted to Linus.
- 
- 
- 
--6) Select your CC (e-mail carbon copy) list.
-+7) Select your CC (e-mail carbon copy) list.
- 
- Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
- 
-@@ -216,7 +216,7 @@ Trivial patches must qualify for one of the following rules:
- 
- 
- 
--7) No MIME, no links, no compression, no attachments.  Just plain text.
-+8) No MIME, no links, no compression, no attachments.  Just plain text.
- 
- Linus and other kernel developers need to be able to read and comment
- on the changes you are submitting.  It is important for a kernel
-@@ -239,9 +239,9 @@ you to re-send them using MIME.
- See Documentation/email-clients.txt for hints about configuring
- your e-mail client so that it sends your patches untouched.
- 
--8) E-mail size.
-+9) E-mail size.
- 
--When sending patches to Linus, always follow step #7.
-+When sending patches to Linus, always follow step #8.
- 
- Large changes are not appropriate for mailing lists, and some
- maintainers.  If your patch, uncompressed, exceeds 300 kB in size,
-@@ -250,7 +250,7 @@ server, and provide instead a URL (link) pointing to your patch.
- 
- 
- 
--9) Name your kernel version.
-+10) Name your kernel version.
- 
- It is important to note, either in the subject line or in the patch
- description, the kernel version to which this patch applies.
-@@ -260,7 +260,7 @@ Linus will not apply it.
- 
- 
- 
--10) Don't get discouraged.  Re-submit.
-+11) Don't get discouraged.  Re-submit.
- 
- After you have submitted your change, be patient and wait.  If Linus
- likes your change and applies it, it will appear in the next version
-@@ -276,8 +276,8 @@ That's the nature of the system.  If he drops your patch, it could be
- due to
- * Your patch did not apply cleanly to the latest kernel version.
- * Your patch was not sufficiently discussed on linux-kernel.
--* A style issue (see section 2).
--* An e-mail formatting issue (re-read this section).
-+* A style issue (see section #2, #3, #4).
-+* An e-mail formatting issue (re-read this section or section #8).
- * A technical problem with your change.
- * He gets tons of e-mail, and yours got lost in the shuffle.
- * You are being annoying.
-@@ -286,7 +286,7 @@ When in doubt, solicit comments on linux-kernel mailing list.
- 
- 
- 
--11) Include PATCH in the subject
-+12) Include PATCH in the subject
- 
- Due to high e-mail traffic to Linus, and to linux-kernel, it is common
- convention to prefix your subject line with [PATCH].  This lets Linus
-@@ -295,7 +295,7 @@ e-mail discussions.
- 
- 
- 
--12) Sign your work
-+13) Sign your work
- 
- To improve tracking of who did what, especially with patches that can
- percolate to their final resting place in the kernel through several
-@@ -341,7 +341,7 @@ using your real name (sorry, no pseudonyms or anonymous contributions.)
- 
- Some people also put extra tags at the end.  They'll just be ignored for
- now, but you can do this to mark internal company procedures or just
--point out some special detail about the sign-off. 
-+point out some special detail about the sign-off.
- 
- If you are a subsystem or branch maintainer, sometimes you need to slightly
- modify patches you receive in order to merge them, because the code is not
-@@ -390,7 +390,7 @@ tracking your trees, and to people trying to trouble-shoot bugs in your
- tree.
- 
- 
--13) When to use Acked-by: and Cc:
-+14) When to use Acked-by: and Cc:
- 
- The Signed-off-by: tag indicates that the signer was involved in the
- development of the patch, or that he/she was in the patch's delivery path.
-@@ -421,7 +421,7 @@ person it names.  This tag documents that potentially interested parties
- have been included in the discussion
- 
- 
--14) Using Reported-by:, Tested-by: and Reviewed-by:
-+15) Using Reported-by:, Tested-by: and Reviewed-by:
- 
- If this patch fixes a problem reported by somebody else, consider adding a
- Reported-by: tag to credit the reporter for their contribution.  Please
-@@ -470,7 +470,7 @@ understand the subject area and to perform thorough reviews, will normally
- increase the likelihood of your patch getting into the kernel.
- 
- 
--15) The canonical patch format
-+16) The canonical patch format
- 
- The canonical patch subject line is:
- 
-@@ -584,7 +584,7 @@ See more details on the proper patch format in the following
- references.
- 
- 
--16) Sending "git pull" requests  (from Linus emails)
-+17) Sending "git pull" requests  (from Linus emails)
- 
- Please write the git repo address and branch name alone on the same line
- so that I can't even by mistake pull from the wrong branch, and so
-@@ -612,6 +612,53 @@ new/deleted or renamed files.
- With rename detection, the statistics are rather different [...]
- because git will notice that a fair number of the changes are renames.
- 
-+
-+18) Not using git? Another solution to send patches.
-+
-+A commit to the Linux kernel can also be prepared via the diff tool.
-+Replace step 1 (commit into git) and step 5 ("git format-patch")
-+by this one. The advice as given in 2 (Describe your changes.) and
-+3 (Separate your changes.) also apply when making patches without git.
-+
-+When creating your patch, make sure to create it
-+in "unified diff" format, as supplied by the '-u' argument to diff(1).
-+Also, please use the '-p' argument which shows which C function each
-+change is in - that makes the resultant diff a lot easier to read.
-+Patches should be based in the root kernel source directory,
-+not in any lower subdirectory.
-+
-+To create a patch for a single file, it is often sufficient to do:
-+
-+	SRCTREE= linux-2.6
-+	MYFILE=  drivers/net/mydriver.c
-+
-+	cd $SRCTREE
-+	cp $MYFILE $MYFILE.orig
-+	vi $MYFILE	# make your change
-+	cd ..
-+	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
-+
-+To create a patch for multiple files, you should unpack a "vanilla",
-+or unmodified kernel source tree, and generate a diff against your
-+own source tree.  For example:
-+
-+	MYSRC= /devel/linux-2.6
-+
-+	tar xvfz linux-2.6.12.tar.gz
-+	mv linux-2.6.12 linux-2.6.12-vanilla
-+	diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
-+		linux-2.6.12-vanilla $MYSRC > /tmp/patch
-+
-+"dontdiff" is a list of files which are generated by the kernel during
-+the build process, and should be ignored in any diff(1)-generated
-+patch.  The "dontdiff" file is included in the kernel tree in
-+2.6.12 and later.  For earlier kernel versions, you can get it
-+from <http://www.xenotime.net/linux/doc/dontdiff>.
-+
-+Make sure your patch does not include any extra files which do not
-+belong in a patch submission.  Make sure to review your patch -after-
-+generated it with diff(1), to ensure accuracy.
-+
- -----------------------------------
- SECTION 2 - HINTS, TIPS, AND TRICKS
- -----------------------------------
--- 
-1.7.12.rc0
-
+Eric
 
