@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab2HMWEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:04:51 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56083 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab2HMWEq (ORCPT
+	id S1754860Ab2HMWFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:05:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61572 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab2HMWE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:04:46 -0400
+	Mon, 13 Aug 2012 18:04:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 27/44] random: add tracepoints for easier debugging and verification
-Date: Mon, 13 Aug 2012 15:02:34 -0700
-Message-Id: <20120813220144.527654508@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [ 30/44] mfd: wm831x: Feed the device UUID into device_add_randomness()
+Date: Mon, 13 Aug 2012 15:02:37 -0700
+Message-Id: <20120813220144.799381802@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -29,243 +30,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 00ce1db1a634746040ace24c09a4e3a7949a3145 upstream.
+commit 27130f0cc3ab97560384da437e4621fc4e94f21c upstream.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+wm831x devices contain a unique ID value. Feed this into the newly added
+device_add_randomness() to add some per device seed data to the pool.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c         |   26 ++++++--
- include/trace/events/random.h |  134 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 156 insertions(+), 4 deletions(-)
+ drivers/mfd/wm831x-otp.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -266,6 +266,9 @@
- #include <asm/irq_regs.h>
- #include <asm/io.h>
+--- a/drivers/mfd/wm831x-otp.c
++++ b/drivers/mfd/wm831x-otp.c
+@@ -18,6 +18,7 @@
+ #include <linux/bcd.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/random.h>
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/random.h>
-+
- /*
-  * Configuration information
-  */
-@@ -478,8 +481,8 @@ static __u32 const twist_table[8] = {
-  * it's cheap to do so and helps slightly in the expected case where
-  * the entropy is concentrated in the low-order bits.
-  */
--static void __mix_pool_bytes(struct entropy_store *r, const void *in,
--			     int nbytes, __u8 out[64])
-+static void _mix_pool_bytes(struct entropy_store *r, const void *in,
-+			    int nbytes, __u8 out[64])
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/otp.h>
+@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm83
+ 
+ int wm831x_otp_init(struct wm831x *wm831x)
  {
- 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
- 	int input_rotate;
-@@ -531,13 +534,21 @@ static void __mix_pool_bytes(struct entr
- 			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
++	char uuid[WM831X_UNIQUE_ID_LEN];
+ 	int ret;
+ 
+ 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
+@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831
+ 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
+ 			ret);
+ 
++	ret = wm831x_unique_id_read(wm831x, uuid);
++	if (ret == 0)
++		add_device_randomness(uuid, sizeof(uuid));
++	else
++		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
++
+ 	return ret;
  }
  
--static void mix_pool_bytes(struct entropy_store *r, const void *in,
-+static void __mix_pool_bytes(struct entropy_store *r, const void *in,
- 			     int nbytes, __u8 out[64])
- {
-+	trace_mix_pool_bytes_nolock(r->name, nbytes, _RET_IP_);
-+	_mix_pool_bytes(r, in, nbytes, out);
-+}
-+
-+static void mix_pool_bytes(struct entropy_store *r, const void *in,
-+			   int nbytes, __u8 out[64])
-+{
- 	unsigned long flags;
- 
-+	trace_mix_pool_bytes(r->name, nbytes, _RET_IP_);
- 	spin_lock_irqsave(&r->lock, flags);
--	__mix_pool_bytes(r, in, nbytes, out);
-+	_mix_pool_bytes(r, in, nbytes, out);
- 	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
-@@ -585,6 +596,7 @@ static void credit_entropy_bits(struct e
- retry:
- 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 	entropy_count += nbits;
-+
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
-@@ -599,6 +611,9 @@ retry:
- 			r->initialized = 1;
- 	}
- 
-+	trace_credit_entropy_bits(r->name, nbits, entropy_count,
-+				  r->entropy_total, _RET_IP_);
-+
- 	/* should we wake readers? */
- 	if (r == &input_pool && entropy_count >= random_read_wakeup_thresh) {
- 		wake_up_interruptible(&random_read_wait);
-@@ -971,6 +986,7 @@ static ssize_t extract_entropy(struct en
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
- 
-+	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
- 
-@@ -1005,6 +1021,7 @@ static ssize_t extract_entropy_user(stru
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
- 
-+	trace_extract_entropy_user(r->name, nbytes, r->entropy_count, _RET_IP_);
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, 0, 0);
- 
-@@ -1062,6 +1079,7 @@ void get_random_bytes_arch(void *buf, in
- {
- 	char *p = buf;
- 
-+	trace_get_random_bytes(nbytes, _RET_IP_);
- 	while (nbytes) {
- 		unsigned long v;
- 		int chunk = min(nbytes, (int)sizeof(unsigned long));
---- /dev/null
-+++ b/include/trace/events/random.h
-@@ -0,0 +1,134 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM random
-+
-+#if !defined(_TRACE_RANDOM_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_RANDOM_H
-+
-+#include <linux/writeback.h>
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(random__mix_pool_bytes,
-+	TP_PROTO(const char *pool_name, int bytes, unsigned long IP),
-+
-+	TP_ARGS(pool_name, bytes, IP),
-+
-+	TP_STRUCT__entry(
-+		__field( const char *,	pool_name		)
-+		__field(	  int,	bytes			)
-+		__field(unsigned long,	IP			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pool_name	= pool_name;
-+		__entry->bytes		= bytes;
-+		__entry->IP		= IP;
-+	),
-+
-+	TP_printk("%s pool: bytes %d caller %pF",
-+		  __entry->pool_name, __entry->bytes, (void *)__entry->IP)
-+);
-+
-+DEFINE_EVENT(random__mix_pool_bytes, mix_pool_bytes,
-+	TP_PROTO(const char *pool_name, int bytes, unsigned long IP),
-+
-+	TP_ARGS(pool_name, bytes, IP)
-+);
-+
-+DEFINE_EVENT(random__mix_pool_bytes, mix_pool_bytes_nolock,
-+	TP_PROTO(const char *pool_name, int bytes, unsigned long IP),
-+
-+	TP_ARGS(pool_name, bytes, IP)
-+);
-+
-+TRACE_EVENT(credit_entropy_bits,
-+	TP_PROTO(const char *pool_name, int bits, int entropy_count,
-+		 int entropy_total, unsigned long IP),
-+
-+	TP_ARGS(pool_name, bits, entropy_count, entropy_total, IP),
-+
-+	TP_STRUCT__entry(
-+		__field( const char *,	pool_name		)
-+		__field(	  int,	bits			)
-+		__field(	  int,	entropy_count		)
-+		__field(	  int,	entropy_total		)
-+		__field(unsigned long,	IP			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pool_name	= pool_name;
-+		__entry->bits		= bits;
-+		__entry->entropy_count	= entropy_count;
-+		__entry->entropy_total	= entropy_total;
-+		__entry->IP		= IP;
-+	),
-+
-+	TP_printk("%s pool: bits %d entropy_count %d entropy_total %d "
-+		  "caller %pF", __entry->pool_name, __entry->bits,
-+		  __entry->entropy_count, __entry->entropy_total,
-+		  (void *)__entry->IP)
-+);
-+
-+TRACE_EVENT(get_random_bytes,
-+	TP_PROTO(int nbytes, unsigned long IP),
-+
-+	TP_ARGS(nbytes, IP),
-+
-+	TP_STRUCT__entry(
-+		__field(	  int,	nbytes			)
-+		__field(unsigned long,	IP			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->nbytes		= nbytes;
-+		__entry->IP		= IP;
-+	),
-+
-+	TP_printk("nbytes %d caller %pF", __entry->nbytes, (void *)__entry->IP)
-+);
-+
-+DECLARE_EVENT_CLASS(random__extract_entropy,
-+	TP_PROTO(const char *pool_name, int nbytes, int entropy_count,
-+		 unsigned long IP),
-+
-+	TP_ARGS(pool_name, nbytes, entropy_count, IP),
-+
-+	TP_STRUCT__entry(
-+		__field( const char *,	pool_name		)
-+		__field(	  int,	nbytes			)
-+		__field(	  int,	entropy_count		)
-+		__field(unsigned long,	IP			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pool_name	= pool_name;
-+		__entry->nbytes		= nbytes;
-+		__entry->entropy_count	= entropy_count;
-+		__entry->IP		= IP;
-+	),
-+
-+	TP_printk("%s pool: nbytes %d entropy_count %d caller %pF",
-+		  __entry->pool_name, __entry->nbytes, __entry->entropy_count,
-+		  (void *)__entry->IP)
-+);
-+
-+
-+DEFINE_EVENT(random__extract_entropy, extract_entropy,
-+	TP_PROTO(const char *pool_name, int nbytes, int entropy_count,
-+		 unsigned long IP),
-+
-+	TP_ARGS(pool_name, nbytes, entropy_count, IP)
-+);
-+
-+DEFINE_EVENT(random__extract_entropy, extract_entropy_user,
-+	TP_PROTO(const char *pool_name, int nbytes, int entropy_count,
-+		 unsigned long IP),
-+
-+	TP_ARGS(pool_name, nbytes, entropy_count, IP)
-+);
-+
-+
-+
-+#endif /* _TRACE_RANDOM_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
 
 
