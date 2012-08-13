@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2HMP1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 11:27:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59946 "EHLO
+	id S1752938Ab2HMP1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 11:27:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43254 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2HMP1g (ORCPT
+	with ESMTP id S1752893Ab2HMP1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 11:27:36 -0400
+	Mon, 13 Aug 2012 11:27:45 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next 06/16] bridge: remove usage of netdev_set_master()
-Date: Mon, 13 Aug 2012 17:27:05 +0200
-Message-Id: <1344871635-1052-7-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next 09/16] qlcnic: guard __vlan_find_dev_deep() by rcu_read_lock
+Date: Mon, 13 Aug 2012 17:27:08 +0200
+Message-Id: <1344871635-1052-10-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
 References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
@@ -30,42 +30,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+rcu_read_lock was missing here
+
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- net/bridge/br_if.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index e1144e1..5933900 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -148,7 +148,7 @@ static void del_nbp(struct net_bridge_port *p)
- 	netdev_rx_handler_unregister(dev);
- 	synchronize_net();
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 212c121..9eadf17 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -4425,12 +4425,14 @@ qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
  
--	netdev_set_master(dev, NULL);
-+	netdev_upper_dev_unlink(dev, br->dev);
+ 	qlcnic_config_indev_addr(adapter, netdev, event);
  
- 	br_multicast_del_port(p);
++	rcu_read_lock();
+ 	for_each_set_bit(vid, adapter->vlans, VLAN_N_VID) {
+ 		dev = __vlan_find_dev_deep(netdev, vid);
+ 		if (!dev)
+ 			continue;
+ 		qlcnic_config_indev_addr(adapter, dev, event);
+ 	}
++	rcu_read_unlock();
+ }
  
-@@ -364,7 +364,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
- 	if (br_netpoll_info(br) && ((err = br_netpoll_enable(p))))
- 		goto err3;
- 
--	err = netdev_set_master(dev, br->dev);
-+	err = netdev_unique_upper_dev_link(dev, br->dev);
- 	if (err)
- 		goto err3;
- 
-@@ -403,7 +403,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
- 	return 0;
- 
- err4:
--	netdev_set_master(dev, NULL);
-+	netdev_upper_dev_unlink(dev, br->dev);
- err3:
- 	sysfs_remove_link(br->ifobj, p->dev->name);
- err2:
+ static int qlcnic_netdev_event(struct notifier_block *this,
 -- 
 1.7.10.4
 
