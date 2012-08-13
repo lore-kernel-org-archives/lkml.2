@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab2HMRMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:12:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33776 "EHLO
+	id S1753516Ab2HMRNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:13:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33788 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab2HMRMg (ORCPT
+	with ESMTP id S1752848Ab2HMRNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:12:36 -0400
-Date: Mon, 13 Aug 2012 10:12:22 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-cb37af77124e8532e6ae3f9ca332593ba423b5f8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1344229882-3907-3-git-send-email-zheng.z.yan@intel.com>
-References: <1344229882-3907-3-git-send-email-zheng.z.yan@intel.com>
+	Mon, 13 Aug 2012 13:13:34 -0400
+Date: Mon, 13 Aug 2012 10:13:17 -0700
+From: tip-bot for Gleb Natapov <gleb@redhat.com>
+Message-ID: <tip-26a4f3c08de49c1437a7b7f97693cf22d8c31656@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, gleb@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <20120809085234.GI3341@redhat.com>
+References: <20120809085234.GI3341@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: Add Intel Westmere-EX uncore support
-Git-Commit-ID: cb37af77124e8532e6ae3f9ca332593ba423b5f8
+Subject: [tip:perf/urgent] perf/x86: disable PEBS on a guest entry.
+Git-Commit-ID: 26a4f3c08de49c1437a7b7f97693cf22d8c31656
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,256 +29,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:12:28 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:13:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb37af77124e8532e6ae3f9ca332593ba423b5f8
-Gitweb:     http://git.kernel.org/tip/cb37af77124e8532e6ae3f9ca332593ba423b5f8
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Mon, 6 Aug 2012 13:11:22 +0800
+Commit-ID:  26a4f3c08de49c1437a7b7f97693cf22d8c31656
+Gitweb:     http://git.kernel.org/tip/26a4f3c08de49c1437a7b7f97693cf22d8c31656
+Author:     Gleb Natapov <gleb@redhat.com>
+AuthorDate: Thu, 9 Aug 2012 11:52:34 +0300
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 13 Aug 2012 19:01:04 +0200
 
-perf/x86: Add Intel Westmere-EX uncore support
+perf/x86: disable PEBS on a guest entry.
 
-The Westmere-EX uncore is similar to the Nehalem-EX uncore. The
-differences are:
- - Westmere-EX uncore has 10 instances of Cbox. The MSRs for Cbox8
-   and Cbox9 in the Westmere-EX aren't contiguous with Cbox 0~7.
- - The fvid field in the ZDP_CTL_FVC register in the Mbox is
-   different. It's 5 bits in the Nehalem-EX, 6 bits in the
-   Westmere-EX.
+If PMU counter has PEBS enabled it is not enough to disable counter
+on a guest entry since PEBS memory write can overshoot guest entry
+and corrupt guest memory. Disabling PEBS during guest entry solves
+the problem.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344229882-3907-3-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/20120809085234.GI3341@redhat.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   56 +++++++++++++++++++++----
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   45 +++++++++-----------
- 2 files changed, 68 insertions(+), 33 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 84434e2..0a55710 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -901,16 +901,21 @@ static struct attribute_group nhmex_uncore_cbox_format_group = {
- 	.attrs = nhmex_uncore_cbox_formats_attr,
- };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 3823669..7f2739e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1522,8 +1522,16 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
+ 	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+ 	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
+ 	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
++	/*
++	 * If PMU counter has PEBS enabled it is not enough to disable counter
++	 * on a guest entry since PEBS memory write can overshoot guest entry
++	 * and corrupt guest memory. Disabling PEBS solves the problem.
++	 */
++	arr[1].msr = MSR_IA32_PEBS_ENABLE;
++	arr[1].host = cpuc->pebs_enabled;
++	arr[1].guest = 0;
  
-+/* msr offset for each instance of cbox */
-+static unsigned nhmex_cbox_msr_offsets[] = {
-+	0x0, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0, 0x240, 0x2c0,
-+};
-+
- static struct intel_uncore_type nhmex_uncore_cbox = {
- 	.name			= "cbox",
- 	.num_counters		= 6,
--	.num_boxes		= 8,
-+	.num_boxes		= 10,
- 	.perf_ctr_bits		= 48,
- 	.event_ctl		= NHMEX_C0_MSR_PMON_EV_SEL0,
- 	.perf_ctr		= NHMEX_C0_MSR_PMON_CTR0,
- 	.event_mask		= NHMEX_PMON_RAW_EVENT_MASK,
- 	.box_ctl		= NHMEX_C0_MSR_PMON_GLOBAL_CTL,
--	.msr_offset		= NHMEX_C_MSR_OFFSET,
-+	.msr_offsets		= nhmex_cbox_msr_offsets,
- 	.pair_ctr_ctl		= 1,
- 	.ops			= &nhmex_uncore_ops,
- 	.format_group		= &nhmex_uncore_cbox_format_group
-@@ -1138,6 +1143,9 @@ static struct extra_reg nhmex_uncore_mbox_extra_regs[] = {
- 	EVENT_EXTRA_END
- };
- 
-+/* Nehalem-EX or Westmere-EX ? */
-+bool uncore_nhmex;
-+
- static bool nhmex_mbox_get_shared_reg(struct intel_uncore_box *box, int idx, u64 config)
- {
- 	struct intel_uncore_extra_reg *er;
-@@ -1167,18 +1175,29 @@ static bool nhmex_mbox_get_shared_reg(struct intel_uncore_box *box, int idx, u64
- 		return false;
- 
- 	/* mask of the shared fields */
--	mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK;
-+	if (uncore_nhmex)
-+		mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK;
-+	else
-+		mask = WSMEX_M_PMON_ZDP_CTL_FVC_MASK;
- 	er = &box->shared_regs[EXTRA_REG_NHMEX_M_ZDP_CTL_FVC];
- 
- 	raw_spin_lock_irqsave(&er->lock, flags);
- 	/* add mask of the non-shared field if it's in use */
--	if (__BITS_VALUE(atomic_read(&er->ref), idx, 8))
--		mask |= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	if (__BITS_VALUE(atomic_read(&er->ref), idx, 8)) {
-+		if (uncore_nhmex)
-+			mask |= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		else
-+			mask |= WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	}
- 
- 	if (!atomic_read(&er->ref) || !((er->config ^ config) & mask)) {
- 		atomic_add(1 << (idx * 8), &er->ref);
--		mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK |
--			NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		if (uncore_nhmex)
-+			mask = NHMEX_M_PMON_ZDP_CTL_FVC_MASK |
-+				NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+		else
-+			mask = WSMEX_M_PMON_ZDP_CTL_FVC_MASK |
-+				WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
- 		er->config &= ~mask;
- 		er->config |= (config & mask);
- 		ret = true;
-@@ -1212,7 +1231,10 @@ u64 nhmex_mbox_alter_er(struct perf_event *event, int new_idx, bool modify)
- 
- 	/* get the non-shared control bits and shift them */
- 	idx = orig_idx - EXTRA_REG_NHMEX_M_ZDP_CTL_FVC;
--	config &= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	if (uncore_nhmex)
-+		config &= NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
-+	else
-+		config &= WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(idx);
- 	if (new_idx > orig_idx) {
- 		idx = new_idx - orig_idx;
- 		config <<= 3 * idx;
-@@ -1222,6 +1244,10 @@ u64 nhmex_mbox_alter_er(struct perf_event *event, int new_idx, bool modify)
- 	}
- 
- 	/* add the shared control bits back */
-+	if (uncore_nhmex)
-+		config |= NHMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
-+	else
-+		config |= WSMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
- 	config |= NHMEX_M_PMON_ZDP_CTL_FVC_MASK & reg1->config;
- 	if (modify) {
- 		/* adjust the main event selector */
-@@ -1480,6 +1506,12 @@ static struct uncore_event_desc nhmex_uncore_mbox_events[] = {
- 	{ /* end: all zeroes */ },
- };
- 
-+static struct uncore_event_desc wsmex_uncore_mbox_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(bbox_cmds_read, "inc_sel=0xd,fvc=0x5000"),
-+	INTEL_UNCORE_EVENT_DESC(bbox_cmds_write, "inc_sel=0xd,fvc=0x5040"),
-+	{ /* end: all zeroes */ },
-+};
-+
- static struct intel_uncore_ops nhmex_uncore_mbox_ops = {
- 	NHMEX_UNCORE_OPS_COMMON_INIT(),
- 	.enable_event	= nhmex_mbox_msr_enable_event,
-@@ -2791,7 +2823,13 @@ static int __init uncore_cpu_init(void)
- 			snbep_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = snbep_msr_uncores;
- 		break;
--	case 46:
-+	case 46: /* Nehalem-EX */
-+		uncore_nhmex = true;
-+	case 47: /* Westmere-EX aka. Xeon E7 */
-+		if (!uncore_nhmex)
-+			nhmex_uncore_mbox.event_descs = wsmex_uncore_mbox_events;
-+		if (nhmex_uncore_cbox.num_boxes > max_cores)
-+			nhmex_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = nhmex_msr_uncores;
- 		break;
- 	default:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 8384e9b..5b81c18 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -276,18 +276,12 @@
- 		 NHMEX_M_PMON_CTL_INC_SEL_MASK |	\
- 		 NHMEX_M_PMON_CTL_SET_FLAG_SEL_MASK)
- 
--
--#define NHMEX_M_PMON_ZDP_CTL_FVC_FVID_MASK	0x1f
--#define NHMEX_M_PMON_ZDP_CTL_FVC_BCMD_MASK	(0x7 << 5)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_RSP_MASK	(0x7 << 8)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_PBOX_INIT_ERR	(1 << 23)
--#define NHMEX_M_PMON_ZDP_CTL_FVC_MASK			\
--		(NHMEX_M_PMON_ZDP_CTL_FVC_FVID_MASK |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_BCMD_MASK |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_RSP_MASK  |	\
--		 NHMEX_M_PMON_ZDP_CTL_FVC_PBOX_INIT_ERR)
-+#define NHMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 11) - 1) | (1 << 23))
- #define NHMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (11 + 3 * (n)))
- 
-+#define WSMEX_M_PMON_ZDP_CTL_FVC_MASK		(((1 << 12) - 1) | (1 << 24))
-+#define WSMEX_M_PMON_ZDP_CTL_FVC_EVENT_MASK(n)	(0x7 << (12 + 3 * (n)))
-+
- /*
-  * use the 9~13 bits to select event If the 7th bit is not set,
-  * otherwise use the 19~21 bits to select event.
-@@ -369,6 +363,7 @@ struct intel_uncore_type {
- 	unsigned num_shared_regs:8;
- 	unsigned single_fixed:1;
- 	unsigned pair_ctr_ctl:1;
-+	unsigned *msr_offsets;
- 	struct event_constraint unconstrainted;
- 	struct event_constraint *constraints;
- 	struct intel_uncore_pmu *pmus;
-@@ -486,29 +481,31 @@ unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
- 	return idx * 8 + box->pmu->type->perf_ctr;
+-	*nr = 1;
++	*nr = 2;
+ 	return arr;
  }
  
--static inline
--unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_box_offset(struct intel_uncore_box *box)
-+{
-+	struct intel_uncore_pmu *pmu = box->pmu;
-+	return pmu->type->msr_offsets ?
-+		pmu->type->msr_offsets[pmu->pmu_idx] :
-+		pmu->type->msr_offset * pmu->pmu_idx;
-+}
-+
-+static inline unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
- {
- 	if (!box->pmu->type->box_ctl)
- 		return 0;
--	return box->pmu->type->box_ctl +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->box_ctl + uncore_msr_box_offset(box);
- }
- 
--static inline
--unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
- {
- 	if (!box->pmu->type->fixed_ctl)
- 		return 0;
--	return box->pmu->type->fixed_ctl +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->fixed_ctl + uncore_msr_box_offset(box);
- }
- 
--static inline
--unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
-+static inline unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
- {
--	return box->pmu->type->fixed_ctr +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+	return box->pmu->type->fixed_ctr + uncore_msr_box_offset(box);
- }
- 
- static inline
-@@ -516,7 +513,7 @@ unsigned uncore_msr_event_ctl(struct intel_uncore_box *box, int idx)
- {
- 	return box->pmu->type->event_ctl +
- 		(box->pmu->type->pair_ctr_ctl ? 2 * idx : idx) +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+		uncore_msr_box_offset(box);
- }
- 
- static inline
-@@ -524,7 +521,7 @@ unsigned uncore_msr_perf_ctr(struct intel_uncore_box *box, int idx)
- {
- 	return box->pmu->type->perf_ctr +
- 		(box->pmu->type->pair_ctr_ctl ? 2 * idx : idx) +
--		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+		uncore_msr_box_offset(box);
- }
- 
- static inline
