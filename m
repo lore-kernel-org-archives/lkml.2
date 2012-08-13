@@ -1,169 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2HMQPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:15:25 -0400
-Received: from powered.by.root24.eu ([91.121.15.64]:43343 "EHLO Root24.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab2HMQPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:15:24 -0400
-Message-ID: <50292819.1090908@ionic.de>
-Date: Mon, 13 Aug 2012 18:15:21 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>
-CC: Jani Nikula <jani.nikula@intel.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] hopefully fix null pointer dereference on i915 load
-References: <50254887.6030209@ionic.de> <cover.1344867962.git.jani.nikula@intel.com> <5029173C.90709@ionic.de> <20120813150955.GD5248@phenom.ffwll.local> <50291CC4.4090604@ionic.de>
-In-Reply-To: <50291CC4.4090604@ionic.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010108060909070808040706"
+	id S1752556Ab2HMQPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:15:49 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43889 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab2HMQPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:15:46 -0400
+Message-ID: <1344874518.4430.12.camel@footlong>
+Subject: Re: [PATCH V2 3/3] drivers/char/tpm: Add securityfs support for
+ event log
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: linux-kernel@vger.kernel.org, rcj@linux.vnet.ibm.com,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, adlai@us.ibm.com,
+        key@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+Date: Mon, 13 Aug 2012 11:15:18 -0500
+In-Reply-To: <1344583401.27290.15.camel@concordia>
+References: <1344553253.28791.7.camel@footlong>
+	 <1344553986.28791.13.camel@footlong> <1344583401.27290.15.camel@concordia>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081316-6148-0000-0000-00000893DED7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+Thank you so much for reviewing the code.  Please see my reply below.
 
---------------ms010108060909070808040706
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2012-08-10 at 17:23 +1000, Michael Ellerman wrote:
+> On Thu, 2012-08-09 at 18:13 -0500, Ashley Lai wrote:
+> > This patch retrieves the event log data from the device tree
+> > during file open. The event log data will then displayed through
+> > securityfs.
+> 
+> Hi Ashley,
+> 
+> Comments inline ..
+> 
+> > diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+> > index 547509d..b53da57 100644
+> > --- a/drivers/char/tpm/Makefile
+> > +++ b/drivers/char/tpm/Makefile
+> > @@ -2,9 +2,15 @@
+> >  # Makefile for the kernel tpm device drivers.
+> >  #
+> >  obj-$(CONFIG_TCG_TPM) += tpm.o
+> > +obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+> >  ifdef CONFIG_ACPI
+> > -	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+> >  	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
+> > +else
+> > +ifdef CONFIG_TCG_IBMVTPM
+> > +	tpm_bios-objs += tpm_eventlog.o tpm_of.o
+> > +else
+> > +	tpm_bios-objs += tpm_eventlog.o tpm_noeventlog.o
+> 
+> What does it mean to build tpm_eventlog and tpm_noeventlog ?
 
-Had another look at the code and would like to apologize for the confusio=
-n...
+This is the case where the event log is not available. I agree it does not
+look clean.  I'm thinking of moving tpm_noeventlog into header file to
+eliminate this file.
 
-* On 13.08.2012 05:27 PM, Mihai Moldovan wrote:
-> Uhm, no, quite on the contrary. gmbus starts at 0 (with idx 0 being lab=
-eled
-> "disabled" and idx ((GMBUS_NUM_PORTS =3D=3D 6) + 1) being labeled "rese=
-rved", which
-> neither should be touched).
+> 
+> 
+> 
+> > diff --git a/drivers/char/tpm/tpm_eventlog.h b/drivers/char/tpm/tpm_eventlog.h
+> > index 8e23ccd..21ac6af 100644
+> > --- a/drivers/char/tpm/tpm_eventlog.h
+> > +++ b/drivers/char/tpm/tpm_eventlog.h
+> > @@ -68,4 +68,18 @@ enum tcpa_pc_event_ids {
+> >  };
+> >  
+> >  int read_log(struct tpm_bios_log *log);
+> > +
+> > +extern struct dentry **tpm_bios_log_setup(char *);
+> > +extern void tpm_bios_log_teardown(struct dentry **);
+> > +
+> > +#ifdef CONFIG_PPC64
+> > +#define TPM_NO_EVENT_LOG !of_find_node_by_name(NULL, "ibm,vtpm")
+> > +#else
+> > +#ifdef CONFIG_ACPI
+> > +#define TPM_NO_EVENT_LOG 0
+> > +#else
+> > +#define TPM_NO_EVENT_LOG 1
+> > +#endif
+> > +#endif
+> 
+> This should be a static inline, with the ifdefs inside.
 
-Wrong.
-struct intel_gmbus gmbus[GMBUS_NUM_PORTS];
-thus starting at 0 to GMBUS_NUM_PORTS-1, no more reserved or disabled por=
-ts. I
-have totally overlooked the definition, sorry.
+I just realized that it does not need to call of_find_node_by_name() 
+here because if ibm,vtpm is not there it does not go to probe. Thanks
+for pointing this out.
 
-Ignore the rest of my comments and the patch, as they are based on false
-assumptions (gmbus still containing the disabled and reserved ports.)
+> 
+> How often is this called? of_find_node_by_name() is not particularly
+> efficient. It might be better to search once and save a flag indicating
+> whether you found it.
 
-Instead, I'd like to ACK Jani's patch. The module can now be loaded fine,=
+This is called during load and unload of the driver. I'll remove the call to
+of_find_node_by_name() in next version.  See above.
 
-there's no null ptr dereference anymore and only some gmbus warnings show=
- up,
-though this time only one message per port, so basically it's falling bac=
-k to
-bit banging on all gmbus ports as it should:
+> 
+> Also you must call of_node_put() on the result of
+> of_find_node_by_name(), so at the least you must do:
 
-[   14.722454] i915 0000:00:02.0: setting latency timer to 64
-[   14.796032] [drm] GMBUS [i915 gmbus ssc] timed out, falling back to bi=
-t
-banging on pin 1
-[   15.044039] [drm] GMBUS [i915 gmbus panel] timed out, falling back to =
-bit
-banging on pin 3
-[   15.420067] [drm] GMBUS [i915 gmbus dpd] timed out, falling back to bi=
-t
-banging on pin 6
-[   15.548121] i915 0000:00:02.0: irq 55 for MSI/MSI-X
-[   15.842123] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on =
-minor 0
+Nice catch!!! I will fix other places in the code in the next
+version.
 
-Best regards,
+> 
+> struct device_node *np;
+> np = of_find_node_by_name(NULL, "ibm,vtpm");
+> of_node_put(np);
+> return (np != NULL);
+> 
+> >  #endif
+> > diff --git a/drivers/char/tpm/tpm_noeventlog.c b/drivers/char/tpm/tpm_noeventlog.c
+> > new file mode 100644
+> > index 0000000..f30a2bf
+> > --- /dev/null
+> > +++ b/drivers/char/tpm/tpm_noeventlog.c
+> > @@ -0,0 +1,21 @@
+> > +/*
+> > + * Copyright (C) 2012 IBM Corporation
+>                 ^^
+> Don't use (C)
+
+Will remove it.
+
+> 
+> > + *
+> > + * Author: Ashley Lai <adlai@us.ibm.com>
+> > + *
+> > + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version
+> > + * 2 of the License, or (at your option) any later version.
+> > + *
+> > + */
+> > +
+> > +#include <linux/slab.h>
+> > +#include "tpm_eventlog.h"
+> > +
+> > +int read_log(struct tpm_bios_log *log)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> 
+> Wouldn't it be simpler to put this in a header with the appropriate
+> ifdefs, and then you'd need less logic in the Makefile?
+
+Will move this to header file. Thanks.
+
+> 
+> 
+> > diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
+> > new file mode 100644
+> > index 0000000..6d44adb
+> > --- /dev/null
+> > +++ b/drivers/char/tpm/tpm_of.c
+> > @@ -0,0 +1,68 @@
+> > +/*
+> > + * Copyright 2012 IBM Corporation
+> > + *
+> > + * Author: Ashley Lai <adlai@us.ibm.com>
+> > + *
+> > + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+> > + *
+> > + * Read the event log created by the firmware on PPC64
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version
+> > + * 2 of the License, or (at your option) any later version.
+> > + *
+> > + */
+> > +
+> > +#include <linux/slab.h>
+> > +#include <linux/of.h>
+> > +
+> > +#include "tpm.h"
+> > +#include "tpm_eventlog.h"
+> > +
+> > +int read_log(struct tpm_bios_log *log)
+> > +{
+> > +	struct device_node *np;
+> > +	const u32 *sizep;
+> > +	const __be64 *basep;
+> > +
+> > +	if (log->bios_event_log != NULL) {
+> > +		pr_err("%s: ERROR - Eventlog already initialized\n", __func__);
+> > +		return -EFAULT;
+> > +	}
+> > +
+> > +	np = of_find_node_by_name(NULL, "ibm,vtpm");
+> > +	if (!np) {
+> > +		pr_err("%s: ERROR - IBMVTPM not supported\n", __func__);
+> > +		return -ENODEV;
+> > +	}
+> 
+> All your return paths below here must call of_node_put(np).
+
+I'll fix it in next version.  Thanks.
+
+> 
+> > +	sizep = of_get_property(np, "linux,sml-size", NULL);
+> > +	if (sizep == NULL) {
+> > +		pr_err("%s: ERROR - SML size not found\n", __func__);
+> > +		return -EIO;
+> > +	}
+> > +	if (*sizep == 0) {
+> > +		pr_err("%s: ERROR - event log area empty\n", __func__);
+> > +		return -EIO;
+> > +	}
+> > +
+> > +	basep = of_get_property(np, "linux,sml-base", NULL);
+> > +	if (basep == NULL) {
+> > +		pr_err(KERN_ERR "%s: ERROR - SML not found\n", __func__);
+> > +		return -EIO;
+> > +	}
+> > +
+> > +	log->bios_event_log = kmalloc(*sizep, GFP_KERNEL);
+> > +	if (!log->bios_event_log) {
+> > +		pr_err("%s: ERROR - Not enough memory for BIOS measurements\n",
+> > +		       __func__);
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	log->bios_event_log_end = log->bios_event_log + *sizep;
+> > +
+> > +	memcpy(log->bios_event_log, __va(be64_to_cpup(basep)), *sizep);
+> > +
+> > +	return 0;
+> > +}
+> 
+> 
+> cheers
+> 
 
 
-Mihai
 
-
---------------ms010108060909070808040706
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRjCCBi6gAwIBAgICHn8wDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjAzMjEyMzU3NTda
-Fw0xNDAzMjMxNTE0MzlaMIGRMRkwFwYDVQQNExAwSjh4RlU1aWNwTGFuNHlLMQswCQYDVQQG
-EwJERTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMaylRRCBj2U12flvhmZMgwADN/0
-P/ej3O9uLe8XWsr6McU8my6GYxfTXFxfcLl8MxqugflmQQqq1c1Qt69n3zHi+qTvZnHBCBHs
-G1CkuL3Of7Srx6ulz0/zgNRMlDnJ7EUAIQDoYkUzn69y/4ap3n/nQf7EmO9o3FnSCX27td5Y
-J21uJp/PLvbwvG9kdWMVeiyBubwdBSoMu1D9Cy6YlqFE1DIgPO9RR6EOkie4BgMr/3eliAoK
-j7HAOkFhsqTrVy81YtxQDYNrpeMZ2imSQUP1wN1X0NNkdcIWpUNYkRdvzrmpFXxYNhwPPPiE
-BIKctzMt00Pss2ziyMqpkQFzcI8CAwEAAaOCA6kwggOlMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUypNX2Sx5I6PQ
-yCj0Lgno1pTiwnswHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggIhBgNVHSAEggIYMIICFDCCAhAGCysGAQQBgbU3AQICMIIB
-/zAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCB9wYI
-KwYBBQUHAgIwgeowJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBARqB
-vlRoaXMgY2VydGlmaWNhdGUgd2FzIGlzc3VlZCBhY2NvcmRpbmcgdG8gdGhlIENsYXNzIDIg
-VmFsaWRhdGlvbiByZXF1aXJlbWVudHMgb2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeSwgcmVs
-aWFuY2Ugb25seSBmb3IgdGhlIGludGVuZGVkIHB1cnBvc2UgaW4gY29tcGxpYW5jZSBvZiB0
-aGUgcmVseWluZyBwYXJ0eSBvYmxpZ2F0aW9ucy4wgZwGCCsGAQUFBwICMIGPMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQIaZExpYWJpbGl0eSBhbmQgd2FycmFu
-dGllcyBhcmUgbGltaXRlZCEgU2VlIHNlY3Rpb24gIkxlZ2FsIGFuZCBMaW1pdGF0aW9ucyIg
-b2YgdGhlIFN0YXJ0Q29tIENBIHBvbGljeS4wNgYDVR0fBC8wLTAroCmgJ4YlaHR0cDovL2Ny
-bC5zdGFydHNzbC5jb20vY3J0dTItY3JsLmNybDCBjgYIKwYBBQUHAQEEgYEwfzA5BggrBgEF
-BQcwAYYtaHR0cDovL29jc3Auc3RhcnRzc2wuY29tL3N1Yi9jbGFzczIvY2xpZW50L2NhMEIG
-CCsGAQUFBzAChjZodHRwOi8vYWlhLnN0YXJ0c3NsLmNvbS9jZXJ0cy9zdWIuY2xhc3MyLmNs
-aWVudC5jYS5jcnQwIwYDVR0SBBwwGoYYaHR0cDovL3d3dy5zdGFydHNzbC5jb20vMA0GCSqG
-SIb3DQEBBQUAA4IBAQAWDJnVeIEl30sEHVyZ43IOK1RrYRyNJFAoClulBqL229p3whd4mtCY
-hE25avnoZIMPTxhjZJlnmIlr0Ahh8hjSeqzjeEIVzBV//vVRBwI1DnaJ2u965og2FBhp3KXc
-5pIHJA6aqJFqZE8EoI+81gdPB9Rc4cDAa0S4Bd4YtsLFfmxgR33EPC0MhEkwE2cihRTbF5Ye
-yW1j4sUmnaJKlv9mxAs79D6n3Ggx8YBAOnkmg/tCTbTrJcqrB67NUpFhEcgFNRNqaL2oxE3u
-qO7IjtyOzIlD+5dOJragt5dJJjXZF3NqWjsohcyYMECY8WEKUJlE0lPFQ4bPNfzWWdh16ooV
-MYID2jCCA9YCAQEwgZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICHn8w
-CQYFKw4DAhoFAKCCAhswGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTIwODEzMTYxNTIxWjAjBgkqhkiG9w0BCQQxFgQU7nT+QFIxeJbcj7kBJCbxHVoHaw8w
-bAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMH
-MA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIB
-KDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
-MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQg
-Q0ECAh5/MIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUg
-Q2xpZW50IENBAgIefzANBgkqhkiG9w0BAQEFAASCAQBLiczYJM7MC4FnKyEqwLvsYK2/dLEN
-tsnN5RMeMUvqzJu+a/H2Cl2dyZu854AcAxSd5nEPlHxSPMfUOF0SnJI01u82TXZFmjdtX49l
-MtK66usMdI+sxZR5JxGFDxuuFUiSfSrfCnR/vyNdcGCqJsszxBakwscbDPB+itD+UuOEond+
-Tv9mDeRriYPIjsZpWllvn9/yI7KVynA6BTRyOqduCSz0h0+e9Kg4U0SHLk/UM4xz246hve0M
-OQ2HrdZeCvM89lJpVvvNi61uWOBhAavST/fu3KnwAPdneMTpu7da6rlCPVIJ49LYQJNMa4Fz
-JVp3Y863jmFpKNxYbG7hXWjHAAAAAAAA
---------------ms010108060909070808040706--
