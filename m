@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2HMW2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:28:19 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59891 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755371Ab2HMWQd (ORCPT
+	id S1755394Ab2HMW2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:28:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61785 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358Ab2HMWQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:16:33 -0400
+	Mon, 13 Aug 2012 18:16:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boaz Harrosh <bharrosh@panasas.com>
-Subject: [ 24/65] ore: Fix out-of-bounds access in _ios_obj()
-Date: Mon, 13 Aug 2012 15:14:08 -0700
-Message-Id: <20120813221417.093549310@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 22/65] md/raid1: dont abort a resync on the first badblock.
+Date: Mon, 13 Aug 2012 15:14:06 -0700
+Message-Id: <20120813221416.919463165@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,73 +29,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 9e62bb4458ad2cf28bd701aa5fab380b846db326 upstream.
+commit b7219ccb33aa0df9949a60c68b5e9f712615e56f upstream.
 
-_ios_obj() is accessed by group_index not device_table index.
+If a resync of a RAID1 array with 2 devices finds a known bad block
+one device it will neither read from, or write to, that device for
+this block offset.
+So there will be one read_target (The other device) and zero write
+targets.
+This condition causes md/raid1 to abort the resync assuming that it
+has finished - without known bad blocks this would be true.
 
-The oc->comps array is only a group_full of devices at a time
-it is not like ore_comp_dev() which is indexed by a global
-device_table index.
+When there are no write targets because of the presence of bad blocks
+we should only skip over the area covered by the bad block.
+RAID10 already gets this right, raid1 doesn't.  Or didn't.
 
-This did not BUG until now because exofs only uses a single
-COMP for all devices. But with other FSs like PanFS this is
-not true.
+As this can cause a 'sync' to abort early and appear to have succeeded
+it could lead to some data corruption, so it suitable for -stable.
 
-This bug was only in the write_path, all other users were
-using it correctly
-
-[This is a bug since 3.2 Kernel]
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exofs/ore.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/md/raid1.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -837,11 +837,11 @@ static int _write_mirror(struct ore_io_s
- 				bio->bi_rw |= REQ_WRITE;
- 			}
- 
--			osd_req_write(or, _ios_obj(ios, dev), per_dev->offset,
--				      bio, per_dev->length);
-+			osd_req_write(or, _ios_obj(ios, cur_comp),
-+				      per_dev->offset, bio, per_dev->length);
- 			ORE_DBGMSG("write(0x%llx) offset=0x%llx "
- 				      "length=0x%llx dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     _LLU(per_dev->offset),
- 				     _LLU(per_dev->length), dev);
- 		} else if (ios->kern_buff) {
-@@ -853,20 +853,20 @@ static int _write_mirror(struct ore_io_s
- 			       (ios->si.unit_off + ios->length >
- 				ios->layout->stripe_unit));
- 
--			ret = osd_req_write_kern(or, _ios_obj(ios, per_dev->dev),
-+			ret = osd_req_write_kern(or, _ios_obj(ios, cur_comp),
- 						 per_dev->offset,
- 						 ios->kern_buff, ios->length);
- 			if (unlikely(ret))
- 				goto out;
- 			ORE_DBGMSG2("write_kern(0x%llx) offset=0x%llx "
- 				      "length=0x%llx dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     _LLU(per_dev->offset),
- 				     _LLU(ios->length), per_dev->dev);
- 		} else {
--			osd_req_set_attributes(or, _ios_obj(ios, dev));
-+			osd_req_set_attributes(or, _ios_obj(ios, cur_comp));
- 			ORE_DBGMSG2("obj(0x%llx) set_attributes=%d dev=%d\n",
--				     _LLU(_ios_obj(ios, dev)->id),
-+				     _LLU(_ios_obj(ios, cur_comp)->id),
- 				     ios->out_attr_len, dev);
- 		}
- 
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2429,7 +2429,10 @@ static sector_t sync_request(struct mdde
+ 		/* There is nowhere to write, so all non-sync
+ 		 * drives must be failed - so we are finished
+ 		 */
+-		sector_t rv = max_sector - sector_nr;
++		sector_t rv;
++		if (min_bad > 0)
++			max_sector = sector_nr + min_bad;
++		rv = max_sector - sector_nr;
+ 		*skipped = 1;
+ 		put_buf(r1_bio);
+ 		return rv;
 
 
