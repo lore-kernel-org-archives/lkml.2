@@ -1,170 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab2HMRO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:14:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33801 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab2HMRO0 (ORCPT
+	id S1753560Ab2HMRPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:15:41 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:51920 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752204Ab2HMRPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:14:26 -0400
-Date: Mon, 13 Aug 2012 10:14:12 -0700
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-f03542a7019c600163ac4441d8a826c92c1bd510@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, alex.shi@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <5028F431.6000306@intel.com>
-References: <5028F431.6000306@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
-Git-Commit-ID: f03542a7019c600163ac4441d8a826c92c1bd510
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 13 Aug 2012 13:15:38 -0400
+Message-ID: <1344878131.2733.28.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [patch net-next 15/16] net: remove usage of dev->master
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jiri Pirko <jiri@resnulli.us>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <edumazet@google.com>,
+        <faisal.latif@intel.com>, <roland@kernel.org>, <sean.hefty@intel.com>,
+        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
+        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
+        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
+        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
+        <linux390@de.ibm.com>, <shemminger@vyatta.com>, <therbert@google.com>,
+        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
+        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
+        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
+        <fbl@redhat.com>
+Date: Mon, 13 Aug 2012 18:15:31 +0100
+In-Reply-To: <1344871635-1052-16-git-send-email-jiri@resnulli.us>
+References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
+	 <1344871635-1052-16-git-send-email-jiri@resnulli.us>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:14:18 -0700 (PDT)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f03542a7019c600163ac4441d8a826c92c1bd510
-Gitweb:     http://git.kernel.org/tip/f03542a7019c600163ac4441d8a826c92c1bd510
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 26 Jul 2012 08:55:34 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 19:02:05 +0200
+On Mon, 2012-08-13 at 17:27 +0200, Jiri Pirko wrote:
+> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+> ---
+>  net/core/dev.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index c0f9adb..8977404 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -5461,8 +5461,8 @@ static void rollback_registered_many(struct list_head *head)
+>  		if (dev->netdev_ops->ndo_uninit)
+>  			dev->netdev_ops->ndo_uninit(dev);
+>  
+> -		/* Notifier chain MUST detach us from master device. */
+> -		WARN_ON(dev->master);
+> +		/* Notifier chain MUST detach us all upper devices. */
+> +		WARN_ON(netdev_has_any_upper_dev(dev));
+>  
+>  		/* Remove entries from kobject tree */
+>  		netdev_unregister_kobject(dev);
 
-sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
+I think this should be folded into patch 1, since that already ensures
+that any master device is included in the upper device list.
 
-Since power saving code was removed from sched now, the implement
-code is out of service in this function, and even pollute other logical.
-like, 'want_sd' never has chance to be set '0', that remove the effect
-of SD_WAKE_AFFINE here.
+Ben.
 
-So, clean up the obsolete code, includes SD_PREFER_LOCAL.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/5028F431.6000306@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h    |    1 -
- include/linux/topology.h |    2 --
- kernel/sched/core.c      |    1 -
- kernel/sched/fair.c      |   34 +++-------------------------------
- 4 files changed, 3 insertions(+), 35 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b8c8664..f3eebc1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -860,7 +860,6 @@ enum cpu_idle_type {
- #define SD_BALANCE_FORK		0x0008	/* Balance on fork, clone */
- #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
- #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
--#define SD_PREFER_LOCAL		0x0040  /* Prefer to keep tasks local to this domain */
- #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
- #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
- #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index fec12d6..d3cf0d6 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -129,7 +129,6 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_BALANCE_FORK			\
- 				| 0*SD_BALANCE_WAKE			\
- 				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 1*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
-@@ -160,7 +159,6 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_BALANCE_FORK			\
- 				| 0*SD_BALANCE_WAKE			\
- 				| 1*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c9a3655..4376c9f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6622,7 +6622,6 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
- 					| 0*SD_BALANCE_FORK
- 					| 0*SD_BALANCE_WAKE
- 					| 0*SD_WAKE_AFFINE
--					| 0*SD_PREFER_LOCAL
- 					| 0*SD_SHARE_CPUPOWER
- 					| 0*SD_SHARE_PKG_RESOURCES
- 					| 1*SD_SERIALIZE
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 287bfac..01d3eda 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2686,7 +2686,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
- 	int want_affine = 0;
--	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
- 
- 	if (p->nr_cpus_allowed == 1)
-@@ -2704,48 +2703,21 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 			continue;
- 
- 		/*
--		 * If power savings logic is enabled for a domain, see if we
--		 * are not overloaded, if so, don't balance wider.
--		 */
--		if (tmp->flags & (SD_PREFER_LOCAL)) {
--			unsigned long power = 0;
--			unsigned long nr_running = 0;
--			unsigned long capacity;
--			int i;
--
--			for_each_cpu(i, sched_domain_span(tmp)) {
--				power += power_of(i);
--				nr_running += cpu_rq(i)->cfs.nr_running;
--			}
--
--			capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
--
--			if (nr_running < capacity)
--				want_sd = 0;
--		}
--
--		/*
- 		 * If both cpu and prev_cpu are part of this domain,
- 		 * cpu is a valid SD_WAKE_AFFINE target.
- 		 */
- 		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
- 		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
- 			affine_sd = tmp;
--			want_affine = 0;
--		}
--
--		if (!want_sd && !want_affine)
- 			break;
-+		}
- 
--		if (!(tmp->flags & sd_flag))
--			continue;
--
--		if (want_sd)
-+		if (tmp->flags & sd_flag)
- 			sd = tmp;
- 	}
- 
- 	if (affine_sd) {
--		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
-+		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
- 			prev_cpu = cpu;
- 
- 		new_cpu = select_idle_sibling(p, prev_cpu);
