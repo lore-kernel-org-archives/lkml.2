@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab2HMNxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:53:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53653 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab2HMNxJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:53:09 -0400
-Message-ID: <1344865977.31459.26.camel@twins>
-Subject: Re: [RFC][PATCH 4/4] perf/events: Use helper functions in event
- assignment to shrink macro size
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 13 Aug 2012 15:52:57 +0200
-In-Reply-To: <1344863027.6935.111.camel@gandalf.stny.rr.com>
-References: <20120810034302.758092203@goodmis.org>
-	 <20120810034708.589220175@goodmis.org> <1344845024.31459.9.camel@twins>
-	 <1344863027.6935.111.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752714Ab2HMN4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:56:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59433 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab2HMN4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:56:08 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hillf Danton <dhillf@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] hugetlb: do not use vma_hugecache_offset for vma_prio_tree_foreach
+Date: Mon, 13 Aug 2012 15:55:41 +0200
+Message-Id: <1344866141-27906-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 09:03 -0400, Steven Rostedt wrote:
-> On Mon, 2012-08-13 at 10:03 +0200, Peter Zijlstra wrote:
-> 
-> > > +void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
-> > > +                            struct perf_trace_event *pe)
-> > > +{
-> > > +       struct hlist_head *head;
-> > > +
-> > > +       head = this_cpu_ptr(event_call->perf_events);
-> > > +       perf_trace_buf_submit(raw_data, pe->entry_size, pe->rctx, pe->addr,
-> > > +                             pe->count, &pe->regs, head);
-> > > +}
-> > 
-> > Can you make perf_trace_buf_submit() go away? Its reduced to a simple
-> > fwd function and layering another wrapper on top seems like pushing it.
-> 
-> You mean just have perf_trace_event_submit() call perf_tp_event()
-> directly?
-> 
-> I have no problem with that. Although I may make that into a separate
-> patch to keep this patch as a 'move' and the other patch as the change.
-> 
-> Looking at the history of perf_trace_buf_submit(), it use to be more
-> than one function call. But when you inlined
-> perf_swevent_put_recursion_context(), it became just a one2one mapping.
+0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
+from vma) fixed pgoff calculation but it has replaced it by
+vma_hugecache_offset which is not approapriate for offsets used for
+vma_prio_tree_foreach because that one expects index in page units
+rather than in huge_page_shift.
+Using vma_hugecache_offset is not incorrect because the pgoff will fit
+into the same vmas but it is confusing so the standard PAGE_SHIFT based
+index calculation is used instead.
 
-Right.
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/hugetlb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> I'm assuming that we want to convert all calls to
-> perf_trace_buf_submit()s into perf_tp_event()?
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c39e4be..a74ea31 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * from page cache lookup which is in HPAGE_SIZE units.
+ 	 */
+ 	address = address & huge_page_mask(h);
+-	pgoff = vma_hugecache_offset(h, vma, address);
++	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
+ 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+ 
+ 	/*
+-- 
+1.7.10.4
 
-Yeah.. I think you're referring to the {u,k}probes open-coded nonsense?
-Should we make those use these new helpers you created as well?
