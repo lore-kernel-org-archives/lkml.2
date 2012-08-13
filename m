@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2HMUUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:20:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
+	id S1753425Ab2HMUUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:20:32 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab2HMUUn (ORCPT
+	with ESMTP id S1753396Ab2HMUU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:20:43 -0400
+	Mon, 13 Aug 2012 16:20:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Karsten Keil <keil@b1-systems.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/82] mISDN: Bugfix only few bytes are transfered on a connection
-Date: Mon, 13 Aug 2012 13:18:46 -0700
-Message-Id: <20120813201747.341043888@linuxfoundation.org>
+        Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [ 05/82] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
+Date: Mon, 13 Aug 2012 13:18:41 -0700
+Message-Id: <20120813201746.937383793@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,50 +29,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Karsten Keil <keil@b1-systems.de>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit b41a9a66f67817f8acd85bd650e012a14da39faa upstream.
+commit 63a78bb1051b240417daad3a3fa9c1bb10646dca upstream.
 
-The test for the fillempty condition was wrong in one place.
-Changed the variable to the right boolean type.
+According to responses from the BIOS team, ASUS_WMI_METHODID_DSTS2
+(0x53545344) will be used as future DSTS ID. In addition, calling
+asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL) returns
+ASUS_WMI_UNSUPPORTED_METHOD in new ASUS laptop PCs. This patch fixes
+no DSTS ID will be assigned in this case.
 
-Signed-off-by: Karsten Keil <keil@b1-systems.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/isdn/hardware/mISDN/avmfritz.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/platform/x86/asus-wmi.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/drivers/isdn/hardware/mISDN/avmfritz.c
-+++ b/drivers/isdn/hardware/mISDN/avmfritz.c
-@@ -449,7 +449,8 @@ hdlc_fill_fifo(struct bchannel *bch)
- {
- 	struct fritzcard *fc = bch->hw;
- 	struct hdlc_hw *hdlc;
--	int count, fs, cnt = 0, idx, fillempty = 0;
-+	int count, fs, cnt = 0, idx;
-+	bool fillempty = false;
- 	u8 *p;
- 	u32 *ptr, val, addr;
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1467,14 +1467,9 @@ static int asus_wmi_platform_init(struct
+ 	 */
+ 	if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS, 0, 0, NULL))
+ 		asus->dsts_id = ASUS_WMI_METHODID_DSTS;
+-	else if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL))
++	else
+ 		asus->dsts_id = ASUS_WMI_METHODID_DSTS2;
  
-@@ -462,7 +463,7 @@ hdlc_fill_fifo(struct bchannel *bch)
- 			return;
- 		count = fs;
- 		p = bch->fill;
--		fillempty = 1;
-+		fillempty = true;
- 	} else {
- 		count = bch->tx_skb->len - bch->tx_idx;
- 		if (count <= 0)
-@@ -477,7 +478,7 @@ hdlc_fill_fifo(struct bchannel *bch)
- 			hdlc->ctrl.sr.cmd |= HDLC_CMD_XME;
- 	}
- 	ptr = (u32 *)p;
--	if (fillempty) {
-+	if (!fillempty) {
- 		pr_debug("%s.B%d: %d/%d/%d", fc->name, bch->nr, count,
- 			 bch->tx_idx, bch->tx_skb->len);
- 		bch->tx_idx += count;
+-	if (!asus->dsts_id) {
+-		pr_err("Can't find DSTS");
+-		return -ENODEV;
+-	}
+-
+ 	/* CWAP allow to define the behavior of the Fn+F2 key,
+ 	 * this method doesn't seems to be present on Eee PCs */
+ 	if (asus->driver->quirks->wapf >= 0)
 
 
