@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2HMXgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 19:36:54 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:60021 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754221Ab2HMXgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 19:36:52 -0400
-Date: Mon, 13 Aug 2012 16:36:41 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: Re: [PATCH] [NETFILTER] bridge: rcu_deref outside read-lock section
-Message-ID: <20120813163641.69a8388a@nehalam.linuxnetplumber.net>
-In-Reply-To: <1344898062-23633-1-git-send-email-yefremov.denis@gmail.com>
-References: <1344898062-23633-1-git-send-email-yefremov.denis@gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754998Ab2HMXhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 19:37:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44137 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750Ab2HMXhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 19:37:32 -0400
+Date: Mon, 13 Aug 2012 16:37:27 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, peterz@infradead.org, davem@davemloft.net,
+        tomi.valkeinen@ti.com
+Subject: Re: [PATCHSET] workqueue: use irqsafe timer in delayed_work
+Message-ID: <20120813233727.GH25632@google.com>
+References: <1344461882-10149-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344461882-10149-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012 02:47:42 +0400
-Denis Efremov <yefremov.denis@gmail.com> wrote:
+Hello,
 
-> As it noted in the comment before the br_handle_frame_finish
-> function, this function should be called under rcu_read_lock.
-> 
-> The problem callgraph:
-> br_dev_xmit -> br_nf_pre_routing_finish_bridge_slow ->
-> -> br_handle_frame_finish -> br_port_get_rcu -> rcu_dereference
-> 
-> And in this case there is no read-lock section.
-> I have put lock/unlock in br_nf_pre_routing_finish_bridge_slow,
-> as the only function that calls it(for now) - is br_dev_xmit.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-> ---
->  include/linux/netfilter_bridge.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/netfilter_bridge.h b/include/linux/netfilter_bridge.h
-> index 31d2844..ceb048e 100644
-> --- a/include/linux/netfilter_bridge.h
-> +++ b/include/linux/netfilter_bridge.h
-> @@ -79,6 +79,7 @@ extern int br_handle_frame_finish(struct sk_buff *skb);
->  /* Only used in br_device.c */
->  static inline int br_nf_pre_routing_finish_bridge_slow(struct sk_buff *skb)
->  {
-> +	int res;
->  	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
->  
->  	skb_pull(skb, ETH_HLEN);
-> @@ -86,7 +87,10 @@ static inline int br_nf_pre_routing_finish_bridge_slow(struct sk_buff *skb)
->  	skb_copy_to_linear_data_offset(skb, -(ETH_HLEN-ETH_ALEN),
->  				       skb->nf_bridge->data, ETH_HLEN-ETH_ALEN);
->  	skb->dev = nf_bridge->physindev;
-> -	return br_handle_frame_finish(skb);
-> +	rcu_read_lock();
-> +	res = br_handle_frame_finish(skb);
-> +	rcu_read_unlock();
-> +	return res;
->  }
->  
->  /* This is called by the IP fragmenting code and it ensures there is
+On Wed, Aug 08, 2012 at 02:37:55PM -0700, Tejun Heo wrote:
+> This patchset makes delayed_work use the irqsafe timer added by the
+> pending "timer: clean up initializers and implement irqsafe timers"
+> patchset[1].  This enables try_to_grab_pending() to be used from any
+> context which in turn makes mod_delayed_work() usable from IRQ
+> handlers.  cancel_delayed_work() is reimplemented using
+> try_to_grab_pending() so that it also can be used from IRQ handlers
+> and its behavior is consitent with other canceling operations.
+> __cancel_delayed_work() is no longer necessary and deprecated.
 
-Why not just move the rcu_read_lock() in br_dev_xmit earlier?
+I'll soon push this to linux-next through wq/for-3.7 together with
+irqsafe timer patchset.  Plese scream if you don't like that.
+
+Thanks.
+
+-- 
+tejun
