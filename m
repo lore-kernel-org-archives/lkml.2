@@ -1,103 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab2HMQfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:35:52 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:41196 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab2HMQfv (ORCPT
+	id S1752842Ab2HMQgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:36:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58653 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2HMQgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:35:51 -0400
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Aug 2012 12:35:51 EDT
-Message-ID: <50292A95.9030200@ge.com>
-Date: Mon, 13 Aug 2012 17:25:57 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 13 Aug 2012 12:36:06 -0400
+Date: Mon, 13 Aug 2012 09:36:01 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] workqueue: use system_highpri_wq for unbind_work
+Message-ID: <20120813163601.GC9180@google.com>
+References: <Yes>
+ <1344874672-6257-1-git-send-email-js1304@gmail.com>
+ <1344874672-6257-5-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]staging "vme" Fix typos.
-References: <1344873531-4091-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1344873531-4091-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344874672-6257-5-git-send-email-js1304@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/12 16:58, Justin P. Mattock wrote:
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
-> 
-> The below patch fixes typos found while reading through staging "vme"
-> 
->  drivers/staging/vme/devices/Kconfig    |    2 +-
->  drivers/staging/vme/devices/vme_user.c |    6 +++---
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
-> index d0cab17..5504ab4 100644
-> --- a/drivers/staging/vme/devices/Kconfig
-> +++ b/drivers/staging/vme/devices/Kconfig
-> @@ -5,7 +5,7 @@ config VME_USER
->  	depends on STAGING
->  	help
->  	  If you say Y here you want to be able to access a limited number of
-> -	  VME windows in a manner at least semi-compatible with the interface
-> +	  VME windows in a manner atleast semi-compatible with the interface
+On Tue, Aug 14, 2012 at 01:17:52AM +0900, Joonsoo Kim wrote:
+> To speed cpu down processing up, use system_highpri_wq.
+> As scheduling priority of workers on it is higher than system_wq and
+> it is not contended by other normal works on this cpu, work on it
+> is processed faster than system_wq.
 
-Um, are you sure? I don't think "atleast" is a word.
+Is this from an actual workload?  ie. do you have a test case where
+this matters?
 
->  	  provided with the original driver at http://vmelinux.org/.
->  
->  config VME_PIO2
-> diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-> index e25645e..46f60d6 100644
-> --- a/drivers/staging/vme/devices/vme_user.c
-> +++ b/drivers/staging/vme/devices/vme_user.c
-> @@ -64,12 +64,12 @@ static unsigned int bus_num;
->   *
->   * However the VME driver at http://www.vmelinux.org/ is rather old and doesn't
->   * even support the tsi148 chipset (which has 8 master and 8 slave windows).
-> - * We'll run with this or now as far as possible, however it probably makes
-> + * We'll run with this for now as far as possible, however it probably makes
->   * sense to get rid of the old mappings and just do everything dynamically.
->   *
->   * So for now, we'll restrict the driver to providing 4 masters and 4 slaves as
->   * defined above and try to support at least some of the interface from
-> - * http://www.vmelinux.org/ as an alternative drive can be written providing a
-> + * http://www.vmelinux.org/ as an alternative the driver can be written providing a
-
-Sorry, but you'll have to wrap the line here. The comment now extends beyond
-80 characters.
-
->   * saner interface later.
->   *
->   * The vmelinux.org driver never supported slave images, the devices reserved
-> @@ -242,7 +242,7 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
->  }
->  
->  /*
-> - * We are going ot alloc a page during init per window for small transfers.
-> + * We are going to alloc a page during init per window for small transfers.
-
-Yup - that's OK.
-
-Care to fix up the issues above?
-
-Martyn
-
->   * Small transfers will go user space -> buffer -> VME. Larger (more than a
->   * page) transfers will lock the user space buffer into memory and then
->   * transfer the data directly from the user space buffers out to VME.
-> 
-
+Thanks.
 
 -- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
+tejun
