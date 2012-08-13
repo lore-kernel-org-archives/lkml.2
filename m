@@ -1,121 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2HMDtZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 23:49:25 -0400
-Received: from science.horizon.com ([71.41.210.146]:59955 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753200Ab2HMDtY (ORCPT
+	id S1751024Ab2HMEDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 00:03:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38228 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab2HMEDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 23:49:24 -0400
-Date: 12 Aug 2012 23:49:22 -0400
-Message-ID: <20120813034922.24517.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: ben@bwidawsk.net
-Subject: Re: v3.5  Oops in i2c_algo_bit.c:bit_xfer+0x23/0x870: i915 or i2c?
-Cc: dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        linux@horizon.com, linux-kernel@vger.kernel.org
-In-Reply-To: <e6945e875aa0667550285cd5da6d473f@bwidawsk.net>
+	Mon, 13 Aug 2012 00:03:50 -0400
+Date: Mon, 13 Aug 2012 00:03:47 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Cyril Chemparathy <cyril@ti.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, catalin.marinas@arm.com, grant.likely@secretlab.ca,
+        linux@arm.linux.org.uk, will.deacon@arm.com
+Subject: Re: [PATCH v2 05/22] ARM: LPAE: support 64-bit virt_to_phys
+ patching
+In-Reply-To: <50283BF5.1050908@ti.com>
+Message-ID: <alpine.LFD.2.02.1208122336260.5231@xanadu.home>
+References: <1344648306-15619-1-git-send-email-cyril@ti.com> <1344648306-15619-6-git-send-email-cyril@ti.com> <alpine.LFD.2.02.1208112316560.5231@xanadu.home> <50283BF5.1050908@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Bringing this back to the mailing lists after a bit of uninteresting private
-conversation.)
+On Sun, 12 Aug 2012, Cyril Chemparathy wrote:
 
-> Honestly, I think we need a way to force disable gmbus with a module 
-> parameter or something anyway. It's not the first time gmbus has been 
-> implicated with an issue. Maybe it even exists already, but I couldn't 
-> find this. So if you confirm that fixes the problem for you on the ml, 
-> at least maybe such a patch will be the result.
->
-> If you feel it's a software bug (which I agree it seems likely), a
-> bisect is always much appreciated. Personally, I'll usually step back
-> major releases until something works, or I hit 3.2ish. Even knowing it
-> never worked through 3.2 is helpful.
+> On 08/11/12 23:39, Nicolas Pitre wrote:
+> > On Fri, 10 Aug 2012, Cyril Chemparathy wrote:
+> > 
+> > > This patch adds support for 64-bit physical addresses in virt_to_phys()
+> > > patching.  This does not do real 64-bit add/sub, but instead patches in
+> > > the
+> > > upper 32-bits of the phys_offset directly into the output of virt_to_phys.
+> > > 
+> > > There is no corresponding change on the phys_to_virt() side, because
+> > > computations on the upper 32-bits would be discarded anyway.
+> > > 
+> > > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> > > ---
+> > >   arch/arm/include/asm/memory.h |   22 ++++++++++++++++++----
+> > >   arch/arm/kernel/head.S        |    4 ++++
+> > >   arch/arm/kernel/setup.c       |    2 +-
+> > >   3 files changed, 23 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> > > index 81e1714..dc5fbf3 100644
+> > > --- a/arch/arm/include/asm/memory.h
+> > > +++ b/arch/arm/include/asm/memory.h
+> > > @@ -154,14 +154,28 @@
+> > >   #ifdef CONFIG_ARM_PATCH_PHYS_VIRT
+> > > 
+> > >   extern unsigned long	__pv_offset;
+> > > -extern unsigned long	__pv_phys_offset;
+> > > +extern phys_addr_t	__pv_phys_offset;
+> > >   #define PHYS_OFFSET	__virt_to_phys(PAGE_OFFSET)
+> > > 
+> > >   static inline phys_addr_t __virt_to_phys(unsigned long x)
+> > >   {
+> > > -	unsigned long t;
+> > > -	early_patch_imm8("add", t, x, __pv_offset, 0);
+> > > -	return t;
+> > > +	unsigned long tlo, thi;
+> > > +
+> > > +	early_patch_imm8("add", tlo, x, __pv_offset, 0);
+> > > +
+> > > +#ifdef CONFIG_ARM_LPAE
+> > > +	/*
+> > > +	 * On LPAE, we do not _need_ to do 64-bit arithmetic because the high
+> > > +	 * order 32 bits are never changed by the phys-virt offset.  We simply
+> > > +	 * patch in the high order physical address bits instead.
+> > > +	 */
+> > > +#ifdef __ARMEB__
+> > > +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
+> > > +#else
+> > > +	early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
+> > > +#endif
+> > > +#endif
+> > > +	return (u64)tlo | (u64)thi << 32;
+> > >   }
+> > 
+> > Hmmm...  I'm afraid this is going to be suboptimal when LPAE is not
+> > selected.
+> > 
+> 
+> I understand your concern, but I don't see the sub-optimality.  I tested the
+> following function with GCC versions 4.3.3 and 4.7.  This is after the other
+> changes that I mentioned in my previous email, but with the __virt_to_phys()
+> code itself unchanged:
+> 
+> phys_addr_t ____test_virt_to_phys(unsigned long addr)
+> {
+>         return __virt_to_phys(addr);
+> }
+> 
+> The resulting code in both cases looks like:
+> 
+> <____test_virt_to_phys>:
+> 	b       c04f0528
+> 	bx      lr
+> 
+> [the branch of course gets patched to an add]
 
-It's a friend's machine, which I normally only have remote access to,
-so it's a bit pf a pain, but I can manage.  I just thought a basic
-i3 motherboard was so common I couldn't possibly be the only one with
-this problem.
+OK.  Please add such information and results in your commit log.
 
-Here's the 3.2 dmesg showing the fallback working, but this is an
-Ubuntu-patched kernel (linux-image-3.2.0-29-generic) that may be a fair
-distance from stock:
+> > First of all, you do not need to cast tlo to a u64 in the return value.
+> > 
+> 
+> True enough.
+> 
+> > Then, I'm not sure if the compiler is smart enough to see that the
+> > returned value is a phys_addr_t which can be a u32, and in this case the
+> > (u64)thi << 32 is going to be truncated right away, and therefore there
+> > is no point in emiting the corresponding instructions.
+> > 
+> 
+> In this case, it appears to be smart enough.  However, I agree that relying on
+> compiler smarts is probably not the best thing for us to do.
 
-[   44.401124] [drm] Initialized drm 1.1.0 20060810
-[   44.471549] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[   44.471553] i915 0000:00:02.0: setting latency timer to 64
-[   44.555865] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.611882] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.667876] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.723831] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.779841] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.835854] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.895843] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   44.951836] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus disabled]
-[   45.007798] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.063716] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.119776] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.175716] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.231689] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.287696] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.343704] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.399667] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus ssc]
-[   45.455651] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.511629] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.567581] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.623645] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.679546] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.735614] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.791596] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.847533] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus vga]
-[   45.903517] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   45.959547] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.015492] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.071473] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.127430] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.183447] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.239425] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.295407] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus panel]
-[   46.351401] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.407382] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.463363] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.519347] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.575302] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.631320] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.687360] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.743300] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpc]
-[   46.799250] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   46.855292] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   46.911250] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   46.967250] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   47.023258] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   47.079206] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   47.135232] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   47.191163] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpb]
-[   47.247148] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.303186] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.359091] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.415157] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.471062] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.527121] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.583087] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.639092] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus reserved]
-[   47.695081] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   47.751011] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   47.810995] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   47.867014] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   47.923009] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   47.978921] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   48.034954] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   48.090936] [drm] GMBUS timed out, falling back to bit banging on pin 0 [i915 gmbus dpd]
-[   48.091142] i915 0000:00:02.0: irq 49 for MSI/MSI-X
-[   48.091147] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[   48.091148] [drm] Driver supports precise vblank timestamp query.
-[   48.091182] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-[   48.511902] fbcon: inteldrmfb (fb0) is primary device
-[   48.852752] Console: switching to colour frame buffer device 240x67
-[   48.857087] fb0: inteldrmfb frame buffer device
-[   48.857088] drm: registered panic notifier
-[   48.857205] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+Well, we do rely on a lot of compiler smarts in the kernel.  As long as 
+sufficiently old compiler versions do get it right then it should be 
+fine.
 
+> > Furthermore, if LPAE is not defined, then thi never gets initialized and
+> > should produce a warning. Did you test compilation of the code with LPAE
+> > turned off?
+> > 
+> 
+> Sure.  One of our test platforms is non-LPAE.  The compiler does not produce
+> warnings on this, and this is consistent across both compiler versions.
+
+That is odd.  I still prefer my version nevertheless so to avoid this 
+potential issue in the future.
+
+> > I'd prefer something like this where more stuff is validated by the
+> > compiler:
+> > 
+> > static inline phys_addr_t __virt_to_phys(unsigned long x)
+> > {
+> > 	unsigned long tlo, thi;
+> > 	phys_addr_t ret;
+> > 
+> > 	early_patch_imm8("add", tlo, x, __pv_offset, 0);
+> > 	ret = tlo;
+> > 
+> > 	if (sizeof(phys_addr_t) > 4) {
+> > #ifdef __ARMEB__
+> > 		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 0);
+> > #else
+> > 		early_patch_imm8_mov("mov", thi, __pv_phys_offset, 4);
+> > #endif
+> > 		ret |= ((u64)thi) << 32;
+> > 	}
+> > 
+> > 	return ret);
+> > }
+> > 
+> > This should let the compiler optimize things whether LPAE is enabledor
+> > not while validating both cases.
+> > 
+> 
+> Agreed on the principal, but more below...
+> 
+> 
+> I've meanwhile been chasing down another problem - the code generated for the
+> LPAE case.  The original code resulted in the following:
+> 
+> <____test_virt_to_phys>:
+>         mov     r2, #0
+>         b       c01bc800	# patch: add r1, r0, __pv_offset
+>         b       c01bc810	# patch: mov r0, __phys_offset_high
+>         orr     r2, r2, r1
+>         mov     r3, r0
+>         mov     r1, r3
+>         mov     r0, r2
+>         bx      lr
+> 
+> Yikes! This code does a bunch of futile register shuffling and a pointless or,
+> all in the name of generating the result in a 64-bit register-pair from the
+> 32-bit halves.
+> 
+> In order to get past this, I tried adding operand qualifiers (R = upper
+> 32-bits, Q = lower 32-bits) in the patch macros, in the hope that treating
+> these as native 64-bit register pairs would eliminate the need to shuffle them
+> around after the inline assembly blocks.  This then allows us to implement
+> __virt_to_phys() as follows:
+> 
+> static inline phys_addr_t __virt_to_phys(unsigned long x)
+> {
+>         phys_addr_t t;
+> 
+>         if (sizeof(t) == 4) {
+> 		t = x;
+>                 early_patch_imm8("add", t, "", t, __pv_offset, 0);
+>                 return t;
+>         }
+> 
+>         /*
+>          * On LPAE, we do not _need_ to do 64-bit arithmetic because
+>          * the high order 32 bits are never changed by the phys-virt
+>          * offset.  We simply patch in the high order physical address
+>          * bits instead.
+>          *
+>          * Note: the mov _must_ be first here.  From the compiler's
+>          * perspective, this is the initializer for the variable. The
+>          * mov itself initializes only the upper half. The subsequent
+>          * add treats t as a read/write operand and initializes the
+>          * lower half.
+>          */
+> #ifdef __ARMEB__
+>         early_patch_imm8_mov("mov", t, "R", __pv_phys_offset, 0);
+> #else
+>         early_patch_imm8_mov("mov", t, "R", __pv_phys_offset, 4);
+> #endif
+>         early_patch_imm8("add", t, "Q", x, __pv_offset, 0);
+> 
+>         return t;
+> }
+> 
+> With this, we get significantly better looking generated code:
+> 
+> <____test_virt_to_phys>:
+> 	b       c01d519c	# patch: mov r3, __phys_offset_high
+> 	b       c01d51ac	# patch: add r2, r0, __phys_offset_high
+> 	mov     r0, r2
+> 	mov     r1, r3
+> 	bx      lr
+> 
+> This is about as far along as I've been able to proceed.  I still haven't
+> figured out a way to get it to patch in place without an extra register pair.
+> 
+> Overall, this is still a bit too kludgy for my liking.  In particular, the
+> read/write operand forces add/sub/... users to initialize the result variable.
+> I am currently leaning towards adding native support for 64-bit operations in
+> the runtime patch code, instead of having to hack around it with 32-bit
+> primitives.  Better ideas, any one?
+
+The best I've come up with is this:
+
+//typedef unsigned long phys_addr_t;
+typedef unsigned long long phys_addr_t;
+
+phys_addr_t __virt_to_phys(unsigned long v)
+{
+	phys_addr_t p;
+
+	if (sizeof(phys_addr_t) > 4) {
+		asm ("add %Q0, %1, #PV_OFFSET" : "=r" (p) : "r" (v));
+		asm ("mov %R0, #PHYS_HIGHBITS" : "+r" (p));
+	} else {
+		asm ("add %0, %1, #PV_OFFSET" : "=r" (p) : "r" (v));
+	}
+
+	return p;
+}
+
+The add is done first as this reduce the life span of the v variable.  
+Because p is listed as an early clobber, then in theory the register 
+holding v could be used to store the low part of p right away.  If you 
+put the mov first then you can't do that especially on big endian.
+
+It seems that there is no clean way to combine the LPAE and non LPAE 
+cases.
+
+
+Nicolas
