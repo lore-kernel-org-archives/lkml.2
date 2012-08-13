@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2HMWAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:00:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36743 "EHLO ogre.sisk.pl"
+	id S1753899Ab2HMWCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:02:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36073 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753648Ab2HMWAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:00:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH][Alternative][RFC] PM / Runtime: Introduce driver runtime PM work routine
-Date: Tue, 14 Aug 2012 00:06:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>, Ming Lei <tom.leiming@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <Pine.LNX.4.44L0.1208131737400.27622-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208131737400.27622-100000@netrider.rowland.org>
+	id S1753240Ab2HMWCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 18:02:15 -0400
+Message-ID: <5029794F.1050302@zytor.com>
+Date: Mon, 13 Aug 2012 15:01:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Betty Dall <betty.dall@hp.com>
+CC: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, pci: Fix all early PCI scans to check the vendor
+ ID first
+References: <1344464246-14618-1-git-send-email-andi@firstfloor.org>  <1344551691.10751.12.camel@ejdallLaptop> <50259FCE.4070205@zytor.com>  <20120811104352.GI2644@tassilo.jf.intel.com> <1344895094.23469.37.camel@ejdallLaptop>
+In-Reply-To: <1344895094.23469.37.camel@ejdallLaptop>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208140006.37977.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 13, 2012, Alan Stern wrote:
-> On Mon, 13 Aug 2012, Rafael J. Wysocki wrote:
+On 08/13/2012 02:58 PM, Betty Dall wrote:
 > 
-> > > I guess the best we can say is that if you call pm_runtime_barrier()  
-> > > after updating the dev_pm_ops method pointers then after the barrier
-> > > returns, the old method pointers will not be invoked and the old method
-> > > routines will not be running.  So we need an equivalent guarantee with
-> > > regard to the pm_runtime_work pointer.  (Yes, we could use a better 
-> > > name for that pointer.)
-> > > 
-> > > Which means the code in the patch isn't quite right, because it saves 
-> > > the pm_runtime_work pointer before calling rpm_resume().  Maybe we 
-> > > should avoid looking at the pointer until rpm_resume() returns.
-> > 
-> > Yes, we can do that.
-> > 
-> > Alternatively, we can set power.work_in_progress before calling
-> > rpm_resume(dev, 0) (i.e. regard the resume as a part of the work) to make
-> > the barrier wait for all of it to complete.
+> I checked the PCI specification, and Peter is right that function
+> numbers can be sparse. Please go with version 1 of the patch, as Andi
+> suggested. I will follow up by looking at why the three scans are not
+> consistent and send a patch, if appropriate. The scans could be improved
+> by stopping the function scan if function 0 does not exist because
+> function 0 is required, and if it is not there then none of the other
+> functions will be implemented.
 > 
-> Yep, that would work.  In fact, I did it that way in the proposed code 
-> posted earlier in this thread.  (But that was just on general 
-> principles, not because I had this particular race in mind.)
 
-OK
+Yes, if function 0 doesn't exist we could, and *should* skip functions
+1-7; in fact, we should not process functions 1-7 unless the
+multifunction bit is set in function 0.  This matters on real devices in
+the field.
 
-I need to prepare a new patch now, but first I'll send a couple of (minor)
-fixes for the core runtime PM code.
+	-hpa
 
-Thanks,
-Rafael
