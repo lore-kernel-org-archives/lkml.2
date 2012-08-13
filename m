@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab2HMUZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:25:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	id S1754830Ab2HMUZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:25:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab2HMUZD (ORCPT
+	with ESMTP id S1754911Ab2HMUZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:25:03 -0400
+	Mon, 13 Aug 2012 16:25:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 70/82] ARM: imx: enable emi_slow_gate clock for imx5
-Date: Mon, 13 Aug 2012 13:19:46 -0700
-Message-Id: <20120813201752.592776005@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Ribeiro <drwyrm@gmail.com>
+Subject: [ 73/82] ARM: pxa: remove irq_to_gpio from ezx-pcap driver
+Date: Mon, 13 Aug 2012 13:19:49 -0700
+Message-Id: <20120813201752.845650717@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,37 +32,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 68b0562df90a76ba964423986b2472c7e791729a upstream.
+commit 59ee93a528b94ef4e81a08db252b0326feff171f upstream.
 
-The imx5 common clock migration causes a regression with smsc911x
-driver on imx53-ard board, where a smsc lan9220 controller gets
-connected on imx53 with EIM interface.  EIM needs clock emi_slow_gate
-to be functional.  In the new imx5 clock driver, there is no use count
-incremented for the clock by enabling it, so the framework closes the
-clock at late init time and makes EIM stop working then.
+The irq_to_gpio function was removed from the pxa platform
+in linux-3.2, and this driver has been broken since.
 
-Enable emi_slow_gate in clock driver initialization to fix the
-regression.
+There is actually no in-tree user of this driver that adds
+this platform device, but the driver can and does get enabled
+on some platforms.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Without this patch, building ezx_defconfig results in:
+
+drivers/mfd/ezx-pcap.c: In function 'pcap_isr_work':
+drivers/mfd/ezx-pcap.c:205:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Daniel Ribeiro <drwyrm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/clk-imx51-imx53.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/ezx-pcap.c       |    2 +-
+ include/linux/mfd/ezx-pcap.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-imx/clk-imx51-imx53.c
-+++ b/arch/arm/mach-imx/clk-imx51-imx53.c
-@@ -293,6 +293,7 @@ static void __init mx5_clocks_common_ini
- 	clk_prepare_enable(clk[aips_tz2]); /* fec */
- 	clk_prepare_enable(clk[spba]);
- 	clk_prepare_enable(clk[emi_fast_gate]); /* fec */
-+	clk_prepare_enable(clk[emi_slow_gate]); /* eim */
- 	clk_prepare_enable(clk[tmax1]);
- 	clk_prepare_enable(clk[tmax2]); /* esdhc2, fec */
- 	clk_prepare_enable(clk[tmax3]); /* esdhc1, esdhc4 */
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -202,7 +202,7 @@ static void pcap_isr_work(struct work_st
+ 		}
+ 		local_irq_enable();
+ 		ezx_pcap_write(pcap, PCAP_REG_MSR, pcap->msr);
+-	} while (gpio_get_value(irq_to_gpio(pcap->spi->irq)));
++	} while (gpio_get_value(pdata->gpio));
+ }
+ 
+ static void pcap_irq_handler(unsigned int irq, struct irq_desc *desc)
+--- a/include/linux/mfd/ezx-pcap.h
++++ b/include/linux/mfd/ezx-pcap.h
+@@ -16,6 +16,7 @@ struct pcap_subdev {
+ struct pcap_platform_data {
+ 	unsigned int irq_base;
+ 	unsigned int config;
++	int gpio;
+ 	void (*init) (void *);	/* board specific init */
+ 	int num_subdevs;
+ 	struct pcap_subdev *subdevs;
 
 
