@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab2HMNEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:04:52 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:57961
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751229Ab2HMNEu (ORCPT
+	id S1751983Ab2HMNGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:06:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55722 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab2HMNGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:04:50 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371Ic89bh542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Topic: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Index: AQHNeVPH89FPJRfAcEaBVc7d2VxtVZdXtRFw
-Date: Mon, 13 Aug 2012 13:04:35 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236BF42E@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <87fw8mlv7e.fsf@nemi.mork.no>
-	<1342771388-24389-1-git-send-email-bjorn@mork.no>
-	<20120720152650.GA5201@kroah.com>
-	<426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	<20120720160953.GA5802@kroah.com> <87fw7rhrpv.fsf@nemi.mork.no>
-In-Reply-To: <87fw7rhrpv.fsf@nemi.mork.no>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 13 Aug 2012 09:06:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: wei_wang@realsil.com.cn
+Subject: Re: [PATCH 1/2] drivers/mfd: Add realtek pcie card reader driver
+Date: Mon, 13 Aug 2012 13:06:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, sameo@linux.intel.com, bp@alien8.de, aaron.lu@amd.com
+References: <1344823586-2956-1-git-send-email-wei_wang@realsil.com.cn>
+In-Reply-To: <1344823586-2956-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%MORK.NO$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208131306.21248.arnd@arndb.de>
+X-Provags-ID: V02:K0:E4sXoQfKHvyEVIWjliSzWihdKUfyQ8PXn3HG+OoU1kQ
+ Ddp4cvdFNdw5JHHRbSVlg3XlF7iHRuIamQcW8tbofJA65MRzXE
+ BEILC22LNZpduoL5OGIvdQxl34vG41nPnVTdL9xPWH5P38PJsl
+ 3r0xaWSU1S+ei5X8dzEIHb3kMjuH2GA5lNYshNA6ApSMQbNNGR
+ dLZE+T5p57H6LUfZIj3l283oEkzE2+1WGTgBZSooKLTQJidhJs
+ XvIOKITkwC5VK2wzPhYxjk6CUuwle5Gk5bgPrEIaJIwUrae3ez
+ wWPQN7Xna61E13DaOjOFzjCJxm5L5jApdl5S9b8PMazwqt/lYu
+ 7nQTkgVmP8EFG/5mZ0fA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7DD4vOc008519
 
-
-
-> -----Original Message-----
-> From: BjÃ¸rn Mork [mailto:bjorn@mork.no]
-> Sent: Monday, August 13, 2012 9:00 AM
-> To: Greg KH
-> Cc: KY Srinivasan; Paolo Bonzini; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
+On Monday 13 August 2012, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> Greg KH <gregkh@linuxfoundation.org> writes:
-> > On Fri, Jul 20, 2012 at 04:02:44PM +0000, KY Srinivasan wrote:
-> >> > On Fri, Jul 20, 2012 at 10:03:08AM +0200, BjÃ¸rn Mork wrote:
-> >> >
-> >> > > +/* Linux vendor ID allocated by Microsoft */
-> >> > > +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
-> >> > > +
-> >> > > +/* Creating a guest ID conforming to the encoding recommended by
-> >> > > + * Microsoft, with variant and build fixed to 0
-> >> >
-> >> > We could use the kernel build number here as well, if we really wanted
-> >> > it, right?
+> Realtek PCI-E card reader driver adapts requests from upper-level
+> sdmmc/memstick layer to the real physical card reader.
 > 
-> Yes, we could.  I just didn't see any value it that. Why would you want
-> your hypervisor to care about some arbitrary build number?
-> 
-> But it can of course be added if anyone needs it.
-> 
-> >> > Otherwise, I like this patch, KY, any objection to me taking it?
-> >>
-> >> Greg,
-> >>
-> >> If it is ok with you can we wait a couple of days. I am pushing to get
-> information
-> >> back from folks within MSFT. I am hoping  we can fix this issue soon.
-> >
-> > Ok, I'll hold on to it for a week or so.
-> 
-> Not to nag or anything like that, but ... It's been a week or so now,
-> hasn't it? :-)
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 
-In the interim, I have submitted a patch that conforms to the MSFT guidelines
-for generating guest IDs for non-MSFT operating systems on Hyper-V.
+Hi,
 
-Regards,
+This looks pretty good overall, I'm generally happy with how you have
+changed the structure. Looking at some of the details now:
 
-K. Y
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +
+> +static const struct pcr_ops rts5209_pcr_ops = {
+> +	.extra_init_hw = rts5209_extra_init_hw,
+> +	.optimize_phy = rts5209_optimize_phy,
+> +	.turn_on_led = rts5209_turn_on_led,
+> +	.turn_off_led = rts5209_turn_off_led,
+> +	.enable_auto_blink = rts5209_enable_auto_blink,
+> +	.disable_auto_blink = rts5209_disable_auto_blink,
+> +};
+> ...
+> +
+> +static const struct pcr_ops rts5229_pcr_ops = {
+> +	.extra_init_hw = rts5229_extra_init_hw,
+> +	.optimize_phy = rts5229_optimize_phy,
+> +	.turn_on_led = rts5229_turn_on_led,
+> +	.turn_off_led = rts5229_turn_off_led,
+> +	.enable_auto_blink = rts5229_enable_auto_blink,
+> +	.disable_auto_blink = rts5229_disable_auto_blink,
+> +};
+
+Doing this separation is fine for two or three variants, especially
+since the code behind them is not very big. If it becomes likely
+that there will be many more variants, you should consider moving
+them into separate files.
+
+> +void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+> +{
+> +	/* If pci device removed, don't queue idle work any more */
+> +	if (pcr->remove_pci)
+> +		return;
+> +
+> +	if (pcr->state != PDEV_STAT_RUN) {
+> +		pcr->state = PDEV_STAT_RUN;
+> +		pcr->ops->enable_auto_blink(pcr);
+> +	}
+> +
+> +	cancel_delayed_work(&pcr->idle_work);
+> +	queue_delayed_work(workqueue, &pcr->idle_work, msecs_to_jiffies(200));
+> +}
+> +EXPORT_SYMBOL_GPL(rtsx_pci_start_run);
+
+Let me make sure I understand the logic here: When you send a command to
+the driver, you turn on the blinking LED and then set a timer to turn
+it off again after 200 ms, unless another command comes in, right?
+
+This is slightly more overhead than I think you should have here.
+Doing mod_timer() on a timer function might be better if you have a lot
+of commands calling into rtsx_pci_start_run. Since you currently
+require a mutex to be held when disabling the blinking, you might
+need to schedule a work queue without timer from that timer function
+though, or alternatively change the code to not require the mutex.
+
+	Arnd
