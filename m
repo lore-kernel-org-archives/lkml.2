@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2HMSoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:44:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49420 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab2HMShr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752915Ab2HMShr (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 13 Aug 2012 14:37:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49343 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab2HMShe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 14:37:34 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/38] perf: Factor __output_copy to be usable with specific copy function
-Date: Mon, 13 Aug 2012 15:36:53 -0300
-Message-Id: <1344883039-13495-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/38] perf tools: Fix /etc config related installation
+Date: Mon, 13 Aug 2012 15:36:46 -0300
+Message-Id: <1344883039-13495-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -35,168 +28,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-Adding a generic way to use __output_copy function with specific copy
-function via DEFINE_PERF_OUTPUT_COPY macro.
+Fix missing /etc/bash_completion.d directory creation, otherwise
+the installation fails miserably on systems that don't have bash
+completion installed yet or on specific target:
 
-Using this to add new __output_copy_user function, that provides output
-copy from user pointers. For x86 the copy_from_user_nmi function is used
-and __copy_from_user_inatomic for the rest of the architectures.
+	   $ make DESTDIR=/tmp/junk-perf O=/tmp/pbuild -C tools/perf/ install
+	   ...
+	   install -m 755 bash_completion /tmp/junk-perf/etc/bash_completion.d/perf
+	   install: cannot create regular file
+	   `/tmp/junk-perf/etc/bash_completion.d/perf': No such file or directory
+	   make: *** [install] Error 1
+	   make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
 
-This new function will be used in user stack dump on sample, coming in
-next patches.
+Also use sysconfdir variable instead of the hardcoded /etc to handle
+overriden conf directory.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Reported-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-4-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1344522713-27951-4-git-send-email-fweisbec@gmail.com
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/include/asm/perf_event.h |    2 +
- include/linux/perf_event.h        |    2 +-
- kernel/events/internal.h          |   62 ++++++++++++++++++++++++------------
- kernel/events/ring_buffer.c       |    4 +-
- 4 files changed, 46 insertions(+), 24 deletions(-)
+ tools/perf/Makefile |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index cb4e43b..4fabcdf 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -262,4 +262,6 @@ static inline void perf_check_microcode(void) { }
-  static inline void amd_pmu_disable_virt(void) { }
- #endif
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 84b4227..a9458b9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -700,6 +700,7 @@ perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
+ template_dir_SQ = $(subst ','\'',$(template_dir))
+ htmldir_SQ = $(subst ','\'',$(htmldir))
+ prefix_SQ = $(subst ','\'',$(prefix))
++sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
  
-+#define arch_perf_out_copy_user copy_from_user_nmi
-+
- #endif /* _ASM_X86_PERF_EVENT_H */
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 3d4d847..d41394a 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1319,7 +1319,7 @@ static inline bool has_branch_stack(struct perf_event *event)
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
--extern void perf_output_copy(struct perf_output_handle *handle,
-+extern unsigned int perf_output_copy(struct perf_output_handle *handle,
- 			     const void *buf, unsigned int len);
- extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index a096c19..7fd5408 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -2,6 +2,7 @@
- #define _KERNEL_EVENTS_INTERNAL_H
+ SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
  
- #include <linux/hardirq.h>
-+#include <linux/uaccess.h>
+@@ -951,7 +952,8 @@ install: all
+ 	$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
+ 	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+ 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+-	$(INSTALL) -m 755 bash_completion $(DESTDIR_SQ)/etc/bash_completion.d/perf
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d'
++	$(INSTALL) bash_completion '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d/perf'
  
- /* Buffer handling */
- 
-@@ -76,30 +77,49 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
- 	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
- }
- 
--static inline void
--__output_copy(struct perf_output_handle *handle,
--		   const void *buf, unsigned int len)
-+#define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
-+static inline unsigned int						\
-+func_name(struct perf_output_handle *handle,				\
-+	  const void *buf, unsigned int len)				\
-+{									\
-+	unsigned long size, written;					\
-+									\
-+	do {								\
-+		size = min_t(unsigned long, handle->size, len);		\
-+									\
-+		written = memcpy_func(handle->addr, buf, size);		\
-+									\
-+		len -= written;						\
-+		handle->addr += written;				\
-+		buf += written;						\
-+		handle->size -= written;				\
-+		if (!handle->size) {					\
-+			struct ring_buffer *rb = handle->rb;		\
-+									\
-+			handle->page++;					\
-+			handle->page &= rb->nr_pages - 1;		\
-+			handle->addr = rb->data_pages[handle->page];	\
-+			handle->size = PAGE_SIZE << page_order(rb);	\
-+		}							\
-+	} while (len && written == size);				\
-+									\
-+	return len;							\
-+}
-+
-+static inline int memcpy_common(void *dst, const void *src, size_t n)
- {
--	do {
--		unsigned long size = min_t(unsigned long, handle->size, len);
--
--		memcpy(handle->addr, buf, size);
--
--		len -= size;
--		handle->addr += size;
--		buf += size;
--		handle->size -= size;
--		if (!handle->size) {
--			struct ring_buffer *rb = handle->rb;
--
--			handle->page++;
--			handle->page &= rb->nr_pages - 1;
--			handle->addr = rb->data_pages[handle->page];
--			handle->size = PAGE_SIZE << page_order(rb);
--		}
--	} while (len);
-+	memcpy(dst, src, n);
-+	return n;
- }
- 
-+DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
-+
-+#ifndef arch_perf_out_copy_user
-+#define arch_perf_out_copy_user __copy_from_user_inatomic
-+#endif
-+
-+DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
-+
- /* Callchain handling */
- extern struct perf_callchain_entry *
- perf_callchain(struct perf_event *event, struct pt_regs *regs);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 6ddaba4..b4c2ad3 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -182,10 +182,10 @@ out:
- 	return -ENOSPC;
- }
- 
--void perf_output_copy(struct perf_output_handle *handle,
-+unsigned int perf_output_copy(struct perf_output_handle *handle,
- 		      const void *buf, unsigned int len)
- {
--	__output_copy(handle, buf, len);
-+	return __output_copy(handle, buf, len);
- }
- 
- void perf_output_end(struct perf_output_handle *handle)
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
 -- 
 1.7.1
 
