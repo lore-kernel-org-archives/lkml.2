@@ -1,134 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab2HMUUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:20:19 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:54680 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab2HMUUE (ORCPT
+	id S1753394Ab2HMUUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:20:24 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:21536
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753318Ab2HMUUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:20:04 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Date: Mon, 13 Aug 2012 13:18:19 -0700
-Message-Id: <1344889115-21610-5-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+wEFz/bAWPgVDJoF1kfPdaqv0svM/zFnQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 05/21] userns: Make seq_file's user namespace accessible
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:20:19 -0400
+X-IronPort-AV: E=Sophos;i="4.77,761,1336341600"; 
+   d="scan'208";a="153006056"
+Date: Mon, 13 Aug 2012 22:20:16 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+In-Reply-To: <50295A43.30305@redhat.com>
+Message-ID: <alpine.DEB.2.02.1208132219060.2355@localhost6.localdomain6>
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien> <50295A43.30305@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-struct file already has a user namespace associated with it
-in file->f_cred->user_ns, unfortunately because struct
-seq_file has no struct file backpointer associated with
-it, it is difficult to get at the user namespace in seq_file
-context.  Therefore add a helper function seq_user_ns to return
-the associated user namespace and a user_ns field to struct
-seq_file to be used in implementing seq_user_ns.
+Using devm_kzalloc simplifies the code and ensures that the use of
+devm_request_irq is safe.  When kzalloc and kfree were used, the interrupt
+could be triggered after the handler's data argument had been freed.
 
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+This also introduces some missing initializations of the return variable
+ret, and uses devm_request_and_ioremap instead of the combination of
+devm_request_mem_region and devm_ioremap.
+
+The problem of a free after a devm_request_irq was found using the
+following semantic match (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r exists@
+expression e1,e2,x,a,b,c,d;
+identifier free;
+position p1,p2;
+@@
+
+   devm_request_irq@p1(e1,e2,...,x)
+   ... when any
+       when != e2 = a
+       when != x = b
+   if (...) {
+     ... when != e2 = c
+         when != x = d
+     free@p2(...,x,...);
+     ...
+     return ...;
+   }
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
 ---
- fs/seq_file.c            |    4 ++++
- include/linux/seq_file.h |   14 ++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+v3: due to a conflict with another patch
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 14cf9de..99dffab 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -9,6 +9,7 @@
- #include <linux/export.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
-+#include <linux/cred.h>
- 
- #include <asm/uaccess.h>
- #include <asm/page.h>
-@@ -56,6 +57,9 @@ int seq_open(struct file *file, const struct seq_operations *op)
- 	memset(p, 0, sizeof(*p));
- 	mutex_init(&p->lock);
- 	p->op = op;
-+#ifdef CONFIG_USER_NS
-+	p->user_ns = file->f_cred->user_ns;
-+#endif
- 
- 	/*
- 	 * Wrappers around seq_open(e.g. swaps_open) need to be
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 83c44ee..68a04a3 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -13,6 +13,7 @@ struct file;
- struct path;
- struct inode;
- struct dentry;
-+struct user_namespace;
- 
- struct seq_file {
- 	char *buf;
-@@ -25,6 +26,9 @@ struct seq_file {
- 	struct mutex lock;
- 	const struct seq_operations *op;
- 	int poll_event;
-+#ifdef CONFIG_USER_NS
-+	struct user_namespace *user_ns;
-+#endif
- 	void *private;
- };
- 
-@@ -128,6 +132,16 @@ int seq_put_decimal_ull(struct seq_file *m, char delimiter,
- int seq_put_decimal_ll(struct seq_file *m, char delimiter,
- 			long long num);
- 
-+static inline struct user_namespace *seq_user_ns(struct seq_file *seq)
-+{
-+#ifdef CONFIG_USER_NS
-+	return seq->user_ns;
-+#else
-+	extern struct user_namespace init_user_ns;
-+	return &init_user_ns;
-+#endif
-+}
-+
- #define SEQ_START_TOKEN ((void *)1)
- /*
-  * Helpers for iteration over list_head-s in seq_files
--- 
-1.7.5.4
+  drivers/media/video/mx2_emmaprp.c |   31 ++++++++++++-------------------
+  1 file changed, 12 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
+index 2810015..dab380a 100644
+--- a/drivers/media/video/mx2_emmaprp.c
++++ b/drivers/media/video/mx2_emmaprp.c
+@@ -896,7 +896,7 @@ static int emmaprp_probe(struct platform_device *pdev)
+  	int irq_emma;
+  	int ret;
+
+-	pcdev = kzalloc(sizeof *pcdev, GFP_KERNEL);
++	pcdev = devm_kzalloc(&pdev->dev, sizeof(*pcdev), GFP_KERNEL);
+  	if (!pcdev)
+  		return -ENOMEM;
+
+@@ -904,27 +904,24 @@ static int emmaprp_probe(struct platform_device *pdev)
+
+  	pcdev->clk_emma_ipg = devm_clk_get(&pdev->dev, "ipg");
+  	if (IS_ERR(pcdev->clk_emma_ipg)) {
+-		ret = PTR_ERR(pcdev->clk_emma_ipg);
+-		goto free_dev;
++		return PTR_ERR(pcdev->clk_emma_ipg);
+  	}
+
+  	pcdev->clk_emma_ahb = devm_clk_get(&pdev->dev, "ahb");
+  	if (IS_ERR(pcdev->clk_emma_ipg)) {
+-		ret = PTR_ERR(pcdev->clk_emma_ahb);
+-		goto free_dev;
++		return PTR_ERR(pcdev->clk_emma_ahb);
+  	}
+
+  	irq_emma = platform_get_irq(pdev, 0);
+  	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+  	if (irq_emma < 0 || res_emma == NULL) {
+  		dev_err(&pdev->dev, "Missing platform resources data\n");
+-		ret = -ENODEV;
+-		goto free_dev;
++		return -ENODEV;
+  	}
+
+  	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
+  	if (ret)
+-		goto free_dev;
++		return ret;
+
+  	mutex_init(&pcdev->dev_mutex);
+
+@@ -946,21 +943,20 @@ static int emmaprp_probe(struct platform_device *pdev)
+
+  	platform_set_drvdata(pdev, pcdev);
+
+-	if (devm_request_mem_region(&pdev->dev, res_emma->start,
+-	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
+-		goto rel_vdev;
+-
+-	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
+-					resource_size(res_emma));
+-	if (!pcdev->base_emma)
++	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
++	if (!pcdev->base_emma) {
++		ret = -ENXIO;
+  		goto rel_vdev;
++	}
+
+  	pcdev->irq_emma = irq_emma;
+  	pcdev->res_emma = res_emma;
+
+  	if (devm_request_irq(&pdev->dev, pcdev->irq_emma, emmaprp_irq,
+-			     0, MEM2MEM_NAME, pcdev) < 0)
++			     0, MEM2MEM_NAME, pcdev) < 0) {
++		ret = -ENODEV;
+  		goto rel_vdev;
++	}
+
+  	pcdev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+  	if (IS_ERR(pcdev->alloc_ctx)) {
+@@ -993,8 +989,6 @@ rel_vdev:
+  	video_device_release(vfd);
+  unreg_dev:
+  	v4l2_device_unregister(&pcdev->v4l2_dev);
+-free_dev:
+-	kfree(pcdev);
+
+  	return ret;
+  }
+@@ -1009,7 +1003,6 @@ static int emmaprp_remove(struct platform_device *pdev)
+  	v4l2_m2m_release(pcdev->m2m_dev);
+  	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
+  	v4l2_device_unregister(&pcdev->v4l2_dev);
+-	kfree(pcdev);
+
+  	return 0;
+  }
 
