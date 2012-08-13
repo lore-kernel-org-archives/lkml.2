@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab2HMWSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:06 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52232 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643Ab2HMWSA (ORCPT
+	id S1755714Ab2HMWSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35526 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587Ab2HMWSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:00 -0400
+	Mon, 13 Aug 2012 18:18:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Austin Hendrix <ahendrix@willowgarage.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 45/65] HID: multitouch: add support for Novatek touchscreen
-Date: Mon, 13 Aug 2012 15:14:29 -0700
-Message-Id: <20120813221418.961729464@linuxfoundation.org>
+        Cyrus Lien <cyrus.lien@canonical.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 47/65] HID: add ASUS AIO keyboard model AK1D
+Date: Mon, 13 Aug 2012 15:14:31 -0700
+Message-Id: <20120813221419.128571954@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -30,47 +29,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Austin Hendrix <ahendrix@willowgarage.com>
+From: Cyrus Lien <cyrus.lien@canonical.com>
 
-commit 4db703ead4535792ea54dba7275fdd1527848e74 upstream.
+commit 2d8767bb421574dfcf48e4be0751ce7d8f73d5d7 upstream.
 
-Add support for a Novatek touchscreen panel as a generic HID multitouch
-panel.
+Add Asus All-In-One PC keyboard model AK1D.
 
-Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
+BugLink: https://bugs.launchpad.net/bugs/1027789
+
+Signed-off-by: Cyrus Lien <cyrus.lien@canonical.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    5 +++++
- 2 files changed, 8 insertions(+)
+ drivers/hid/hid-chicony.c |    1 +
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-ids.h     |    1 +
+ 3 files changed, 3 insertions(+)
 
+--- a/drivers/hid/hid-chicony.c
++++ b/drivers/hid/hid-chicony.c
+@@ -60,6 +60,7 @@ static int ch_input_mapping(struct hid_d
+ static const struct hid_device_id ch_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, ch_devices);
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1404,6 +1404,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_TACTICAL_PAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_AK1D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CHUNGHWAT, USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CREATIVELABS, USB_DEVICE_ID_PRODIKEYS_PCMIDI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CVTOUCH, USB_DEVICE_ID_CVTOUCH_SCREEN) },
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -567,6 +567,9 @@
- #define USB_VENDOR_ID_NINTENDO		0x057e
- #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
+@@ -202,6 +202,7 @@
+ #define USB_DEVICE_ID_CHICONY_MULTI_TOUCH	0xb19d
+ #define USB_DEVICE_ID_CHICONY_WIRELESS	0x0618
+ #define USB_DEVICE_ID_CHICONY_WIRELESS2	0x1123
++#define USB_DEVICE_ID_CHICONY_AK1D	0x1125
  
-+#define USB_VENDOR_ID_NOVATEK		0x0603
-+#define USB_DEVICE_ID_NOVATEK_PCT	0x0600
-+
- #define USB_VENDOR_ID_NTRIG		0x1b96
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -940,6 +940,11 @@ static const struct hid_device_id mt_dev
- 		HID_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
- 			USB_DEVICE_ID_PANABOARD_UBT880) },
- 
-+	/* Novatek Panel */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
-+			USB_DEVICE_ID_NOVATEK_PCT) },
-+
- 	/* PenMount panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
+ #define USB_VENDOR_ID_CHUNGHWAT		0x2247
+ #define USB_DEVICE_ID_CHUNGHWAT_MULTITOUCH	0x0001
 
 
