@@ -1,118 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2HMVJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 17:09:25 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:51102 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752374Ab2HMVJX (ORCPT
+	id S1753213Ab2HMVN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:13:57 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57712 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2HMVN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 17:09:23 -0400
-Message-ID: <50296CA8.1060303@xenotime.net>
-Date: Mon, 13 Aug 2012 14:07:52 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 13 Aug 2012 17:13:56 -0400
 MIME-Version: 1.0
-To: Thai Bui <blquythai@gmail.com>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
- DEBUG_INITCALL
-References: <n> <1344891431-30869-1-git-send-email-blquythai@gmail.com>
-In-Reply-To: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <20120813185817.GA17342@pengutronix.de>
+References: <1344625575-27560-1-git-send-email-arnd@arndb.de>
+	<20120813185817.GA17342@pengutronix.de>
+Date: Mon, 13 Aug 2012 14:13:55 -0700
+Message-ID: <CAOesGMjcSw1vUJ8nn4TakrRxEonryc=Oo-uhRxML=HwJpZQ8hQ@mail.gmail.com>
+Subject: Re: [GIT PULL 0/3] arm-soc updates
+From: Olof Johansson <olof@lixom.net>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 01:57 PM, Thai Bui wrote:
+On Mon, Aug 13, 2012 at 11:58 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> Hi Arnd,
+>
+> On Fri, Aug 10, 2012 at 09:06:12PM +0200, Arnd Bergmann wrote:
+>> Hi Linus,
+>>
+>> Here are three pull requests for you to consider for the next -rc.
+>
+> How do you send multiple pull requests? Is there some git foo available
+> or do you do this manually?
 
-> Putting DEBUG_INITCALL config option to compile out the command-line option
-> "initcall_debug".
+For truly trivial multi-branch pulls, I just generate each
+individually. For the merge windows we tend to have several branches
+touching the same files, so diffstats would be harder to compare that
+way.
 
-The patch description does not tell us Why.
+So, this is my workflow. I think Arnd's is quite similar since my
+script is based on an early version of what I got from him:
 
-presumably to save some memory?
-
-How much memory is saved by disabling DEBUG_INITCALL?
-
-
-> Signed-off-by: Thai Bui <blquythai@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  Documentation/kernel-parameters.txt |    3 ++-
->  include/linux/init.h                |    4 ++++
->  init/main.c                         |    2 ++
->  lib/Kconfig.debug                   |    9 +++++++++
->  4 files changed, 17 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index d99fd9c..3dbaf15 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1026,7 +1026,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  
->  	initcall_debug	[KNL] Trace initcalls as they are executed.  Useful
->  			for working out where the kernel is dying during
-> -			startup.
-> +			startup. DEBUG_INITCALL needs to be enabled in order
-> +			for this option to work.
->  
->  	initrd=		[BOOT] Specify the location of the initial ramdisk
->  
-> diff --git a/include/linux/init.h b/include/linux/init.h
-> index 6b95109..d2f31f1 100644
-> --- a/include/linux/init.h
-> +++ b/include/linux/init.h
-> @@ -157,7 +157,11 @@ void prepare_namespace(void);
->  
->  extern void (*late_time_init)(void);
->  
-> +#ifdef CONFIG_DEBUG_INITCALL
->  extern bool initcall_debug;
-> +#else
-> +static const bool initcall_debug = false;
-> +#endif /* CONFIG_DEBUG_INITCALL */
->  
->  #endif
->    
-> diff --git a/init/main.c b/init/main.c
-> index ff49a6d..65837f7 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -648,8 +648,10 @@ static void __init do_ctors(void)
->  #endif
->  }
->  
-> +#ifdef CONFIG_DEBUG_INITCALL
->  bool initcall_debug;
->  core_param(initcall_debug, initcall_debug, bool, 0644);
-> +#endif /* CONFIG_DEBUG_INITCALL */
->  
->  static char msgbuf[64];
->  
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 8745ac7..424ac93 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -769,6 +769,15 @@ config DEBUG_WRITECOUNT
->  
->  	  If unsure, say N.
->  
-> +config DEBUG_INITCALL
-> +	bool "Debug initcalls as they are executed"
-> +	depends on DEBUG_KERNEL
-> +	help
-> +	  Enable this for tracing initcalls during startup. Useful for working
-> +	  out where the kernel is dying during startup.
-> +
-> +	  If unsure, say N
-> +
->  config DEBUG_MEMORY_INIT
->  	bool "Debug memory initialisation" if EXPERT
->  	default !EXPERT
+* Start a dummy branch based on latest upstream version
+* For each branch to pull:
+  - Merge in the branch to make sure you document/resolve conflicts
+  - Generate pull request email (save to file)
+  - Push resolved branch (if you want to provide that)
+* Edit the saved pull requests to modify the x/y fields
+* Send them (with git send-mail --annotate for cover letter)
 
 
+I have a script that generates the pull-request email in a format that
+git send-email accepts (i.e. it has a From/Subject header). It's not
+very pretty, but for reference I included a copy below.
 
--- 
-~Randy
+
+#!/bin/sh
+
+# Usage: my-request-pull <tagname>, run from a branch that is checked out
+# with the branch you wish to request pulled merged in as the top commit.
+
+echo "From: $(git config --get user.name) <$(git config --get user.email)>"
+echo -n Subject: [GIT PULL x/y]\
+git tag -n20 -l $1 | sed -e 's:^[-a-z0-9]* *::g'
+
+echo
+echo "----------------------------------------------------------------"
+echo
+
+SHA=$(git log --pretty=oneline -1 HEAD~ | cut -d' ' -f 1)
+DESC=$(git log --pretty=oneline -1 HEAD~ | cut -d' ' -f 1 --complement)
+
+echo "The following changes since commit $SHA:"
+echo
+echo "  $DESC"
+echo
+echo "are available in the git repository at:"
+echo
+echo "  git://EDIT_YOUR_URL_IN_HERE tags/$1"
+echo
+
+SHA=$(git log --pretty=oneline -1 $1 | cut -d' ' -f 1)
+DESC=$(git log --pretty=oneline -1 $1 | cut -d' ' -f 1 --complement)
+
+echo "for you to fetch changes up to $SHA:"
+echo
+echo "  $DESC"
+echo
+echo "----------------------------------------------------------------"
+echo
+
+git shortlog HEAD~..$1
+echo
+git diff -M --stat=75 --summary HEAD~ | cat
