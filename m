@@ -1,147 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2HMQuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:50:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33468 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab2HMQuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:50:44 -0400
-Date: Mon, 13 Aug 2012 09:50:28 -0700
-From: tip-bot for Stanislaw Gruszka <sgruszka@redhat.com>
-Message-ID: <tip-bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, sgruszka@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, sgruszka@redhat.com
-In-Reply-To: <20120808092714.GA3580@redhat.com>
-References: <20120808092714.GA3580@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: fix divide by zero at {thread_group,
- task}_times
-Git-Commit-ID: bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:50:33 -0700 (PDT)
+	id S1753217Ab2HMQu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:50:57 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:55573
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752915Ab2HMQus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:50:48 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 18/18] Tools: hv: Properly manage open streams
+Date: Mon, 13 Aug 2012 10:07:07 -0700
+Message-Id: <1344877627-21779-18-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1344877627-21779-1-git-send-email-kys@microsoft.com>
+References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e
-Gitweb:     http://git.kernel.org/tip/bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e
-Author:     Stanislaw Gruszka <sgruszka@redhat.com>
-AuthorDate: Wed, 8 Aug 2012 11:27:15 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 18:41:54 +0200
+Close the open streams properly.
 
-sched: fix divide by zero at {thread_group,task}_times
-
-On architectures where cputime_t is 64 bit type, is possible to trigger
-divide by zero on do_div(temp, (__force u32) total) line, if total is a
-non zero number but has lower 32 bit's zeroed. Removing casting is not
-a good solution since some do_div() implementations do cast to u32
-internally.
-
-This problem can be triggered in practice on very long lived processes:
-
-  PID: 2331   TASK: ffff880472814b00  CPU: 2   COMMAND: "oraagent.bin"
-   #0 [ffff880472a51b70] machine_kexec at ffffffff8103214b
-   #1 [ffff880472a51bd0] crash_kexec at ffffffff810b91c2
-   #2 [ffff880472a51ca0] oops_end at ffffffff814f0b00
-   #3 [ffff880472a51cd0] die at ffffffff8100f26b
-   #4 [ffff880472a51d00] do_trap at ffffffff814f03f4
-   #5 [ffff880472a51d60] do_divide_error at ffffffff8100cfff
-   #6 [ffff880472a51e00] divide_error at ffffffff8100be7b
-      [exception RIP: thread_group_times+0x56]
-      RIP: ffffffff81056a16  RSP: ffff880472a51eb8  RFLAGS: 00010046
-      RAX: bc3572c9fe12d194  RBX: ffff880874150800  RCX: 0000000110266fad
-      RDX: 0000000000000000  RSI: ffff880472a51eb8  RDI: 001038ae7d9633dc
-      RBP: ffff880472a51ef8   R8: 00000000b10a3a64   R9: ffff880874150800
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: ffff880472a51f08
-      R13: ffff880472a51f10  R14: 0000000000000000  R15: 0000000000000007
-      ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-   #7 [ffff880472a51f00] do_sys_times at ffffffff8108845d
-   #8 [ffff880472a51f40] sys_times at ffffffff81088524
-   #9 [ffff880472a51f80] system_call_fastpath at ffffffff8100b0f2
-      RIP: 0000003808caac3a  RSP: 00007fcba27ab6d8  RFLAGS: 00000202
-      RAX: 0000000000000064  RBX: ffffffff8100b0f2  RCX: 0000000000000000
-      RDX: 00007fcba27ab6e0  RSI: 000000000076d58e  RDI: 00007fcba27ab6e0
-      RBP: 00007fcba27ab700   R8: 0000000000000020   R9: 000000000000091b
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: 00007fff9ca41940
-      R13: 0000000000000000  R14: 00007fcba27ac9c0  R15: 00007fff9ca41940
-      ORIG_RAX: 0000000000000064  CS: 0033  SS: 002b
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120808092714.GA3580@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: Olaf Hering <olaf@aepfle.de>
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched/core.c |   34 ++++++++++++++++++++--------------
- 1 files changed, 20 insertions(+), 14 deletions(-)
+ tools/hv/hv_kvp_daemon.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2cb4e77..e2c5841 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3142,6 +3142,20 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index c8e1013..ca6424f 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -160,7 +160,7 @@ static void kvp_update_file(int pool)
+ 				sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
  
-+static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+{
-+	u64 temp = (__force u64) rtime;
-+
-+	temp *= (__force u64) utime;
-+
-+	if (sizeof(cputime_t) == 4)
-+		temp = div_u64(temp, (__force u32) total);
-+	else
-+		temp = div64_u64(temp, (__force u64) total);
-+
-+	return (__force cputime_t) temp;
-+}
-+
- void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
- 	cputime_t rtime, utime = p->utime, total = utime + p->stime;
-@@ -3151,13 +3165,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	 */
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+-	fflush(filep);
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
  
--	if (total) {
--		u64 temp = (__force u64) rtime;
+@@ -206,7 +206,7 @@ static void kvp_update_mem_state(int pool)
+ 	kvp_file_info[pool].num_blocks = num_blocks;
+ 	kvp_file_info[pool].records = record;
+ 	kvp_file_info[pool].num_records = records_read;
 -
--		temp *= (__force u64) utime;
--		do_div(temp, (__force u32) total);
--		utime = (__force cputime_t) temp;
--	} else
-+	if (total)
-+		utime = scale_utime(utime, rtime, total);
-+	else
- 		utime = rtime;
- 
- 	/*
-@@ -3184,13 +3194,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	total = cputime.utime + cputime.stime;
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
- 
--	if (total) {
--		u64 temp = (__force u64) rtime;
--
--		temp *= (__force u64) cputime.utime;
--		do_div(temp, (__force u32) total);
--		utime = (__force cputime_t) temp;
--	} else
-+	if (total)
-+		utime = scale_utime(cputime.utime, rtime, total);
-+	else
- 		utime = rtime;
- 
- 	sig->prev_utime = max(sig->prev_utime, utime);
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ static int kvp_file_init(void)
+-- 
+1.7.4.1
+
