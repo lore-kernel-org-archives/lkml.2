@@ -1,119 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab2HMJdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 05:33:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51906 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab2HMJdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 05:33:05 -0400
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-To: LMML <linux-media@vger.kernel.org>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Subject: [PATCH] davinci: fix build warning when CONFIG_DEBUG_SECTION_MISMATCH is enabled
-Date: Mon, 13 Aug 2012 15:02:17 +0530
-Message-ID: <1344850337-6852-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751671Ab2HMJzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 05:55:03 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48584 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab2HMJzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 05:55:00 -0400
+X-AuditID: cbfee61b-b7faf6d00000476a-aa-5028cec62b94
+Message-id: <5028CDED.2020307@samsung.com>
+Date: Mon, 13 Aug 2012 18:50:37 +0900
+From: IAN CHEN <ian.cy.chen@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
+        subhashj@codeaurora.org, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
+        jh80.chung@samsung.com, ian.cy.chen@samsung.com
+Subject: [PATCH] mmc: card: Skip secure option for MoviNAND.
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQd1j5zQCDN62Wllc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLeXlrAWHBJquLP53+MDYztol2MnBwSAiYSXYdPsELY
+	YhIX7q1n62Lk4hASmM4oMfdXDzuE85pR4kvzMmaQKl4BLYkJP3YzgtgsAqoSy069ZgOx2QQ0
+	JL4ffAIWFxUIk1j0/gArRL2gxI/J91hABokIbGSUON2xF8xhFmhklJj3bjpYlbCAjcSayStY
+	QGxmAR2J/a3T2CBseYnNa94yT2Dkm4Vk2CwkZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqX
+	rpecn7uJERxgz6R3MK5qsDjEKMDBqMTDe9FOI0CINbGsuDL3EKMEB7OSCK/EKaAQb0piZVVq
+	UX58UWlOavEhRmkOFiVxXhPvr/5CAumJJanZqakFqUUwWSYOTqkGxiX79/7/EKMbzBx+YP8q
+	VY+ldn82rC0KUqlIc1u88GjZ1jPfjNft0rFvX730cliYztQNomt1f+slz/BXsXGSznN5PS3G
+	NPr9kXVlnqwOiYWx1uwF7449efOJ96n3RlefxoNOCycnLg9d8zMgVyLF7ezeH/Pu2mteUNq8
+	clnk4gj3pa/5D4QvMlFiKc5INNRiLipOBACxExHZLAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>From 5c60eb8be04c7440d6e33b8f72ea2046a3657ac4 Mon Sep 17 00:00:00 2001
+From: ian.cy.chen <ian.cy.chen@samsung.com>
+Date: Mon, 13 Aug 2012 10:53:55 +0900
+Subject: [PATCH] mmc: card: Skip secure option for MoviNAND.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+For several MoviNAND, there are some known issue with secure option.
+For these specific MoviNAND device, we skip secure option.
+
+Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
 ---
- drivers/media/video/davinci/dm355_ccdc.c   |    2 +-
- drivers/media/video/davinci/dm644x_ccdc.c  |    2 +-
- drivers/media/video/davinci/isif.c         |    2 +-
- drivers/media/video/davinci/vpfe_capture.c |    2 +-
- drivers/media/video/davinci/vpif.c         |    2 +-
- drivers/media/video/davinci/vpss.c         |    2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
+ include/linux/mmc/card.h |    1 +
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/davinci/dm355_ccdc.c b/drivers/media/video/davinci/dm355_ccdc.c
-index 5b68847..2eb7dbd 100644
---- a/drivers/media/video/davinci/dm355_ccdc.c
-+++ b/drivers/media/video/davinci/dm355_ccdc.c
-@@ -1060,7 +1060,7 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
- 	return 0;
- }
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index f1c84de..9f47dbf 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
+struct request *req)
+         /* complete ongoing async transfer before issuing discard */
+         if (card->host->areq)
+             mmc_blk_issue_rw_rq(mq, NULL);
+-        if (req->cmd_flags & REQ_SECURE)
++        if (req->cmd_flags & REQ_SECURE &&
++            !(card->quirks & MMC_QUIRK_MOVINAND_SECURE))
+             ret = mmc_blk_issue_secdiscard_rq(mq, req);
+         else
+             ret = mmc_blk_issue_discard_rq(mq, req);
+@@ -1716,6 +1717,7 @@ force_ro_fail:
+ #define CID_MANFID_SANDISK    0x2
+ #define CID_MANFID_TOSHIBA    0x11
+ #define CID_MANFID_MICRON    0x13
++#define CID_MANFID_SAMSUNG    0x15
  
--static struct platform_driver dm355_ccdc_driver = {
-+static __refdata struct platform_driver dm355_ccdc_driver = {
- 	.driver = {
- 		.name	= "dm355_ccdc",
- 		.owner = THIS_MODULE,
-diff --git a/drivers/media/video/davinci/dm644x_ccdc.c b/drivers/media/video/davinci/dm644x_ccdc.c
-index 9303fe5..3ffb7f2 100644
---- a/drivers/media/video/davinci/dm644x_ccdc.c
-+++ b/drivers/media/video/davinci/dm644x_ccdc.c
-@@ -1068,7 +1068,7 @@ static const struct dev_pm_ops dm644x_ccdc_pm_ops = {
- 	.resume = dm644x_ccdc_resume,
+ static const struct mmc_fixup blk_fixups[] =
+ {
+@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
+     MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
+           MMC_QUIRK_LONG_READ_TIME),
+ 
++    /*
++     * Some issue about secure erase/secure trim for Samsung MoviNAND
++     */
++    MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++    MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++          MMC_QUIRK_MOVINAND_SECURE),
++
+     END_FIXUP
  };
  
--static struct platform_driver dm644x_ccdc_driver = {
-+static __refdata struct platform_driver dm644x_ccdc_driver = {
- 	.driver = {
- 		.name	= "dm644x_ccdc",
- 		.owner = THIS_MODULE,
-diff --git a/drivers/media/video/davinci/isif.c b/drivers/media/video/davinci/isif.c
-index 5278fe7..6ce4249 100644
---- a/drivers/media/video/davinci/isif.c
-+++ b/drivers/media/video/davinci/isif.c
-@@ -1148,7 +1148,7 @@ static int isif_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct platform_driver isif_driver = {
-+static __refdata struct platform_driver isif_driver = {
- 	.driver = {
- 		.name	= "isif",
- 		.owner = THIS_MODULE,
-diff --git a/drivers/media/video/davinci/vpfe_capture.c b/drivers/media/video/davinci/vpfe_capture.c
-index 49a845f..572d8f0 100644
---- a/drivers/media/video/davinci/vpfe_capture.c
-+++ b/drivers/media/video/davinci/vpfe_capture.c
-@@ -2066,7 +2066,7 @@ static const struct dev_pm_ops vpfe_dev_pm_ops = {
- 	.resume = vpfe_resume,
- };
- 
--static struct platform_driver vpfe_driver = {
-+static __refdata struct platform_driver vpfe_driver = {
- 	.driver = {
- 		.name = CAPTURE_DRV_NAME,
- 		.owner = THIS_MODULE,
-diff --git a/drivers/media/video/davinci/vpif.c b/drivers/media/video/davinci/vpif.c
-index b3637af..a058fed 100644
---- a/drivers/media/video/davinci/vpif.c
-+++ b/drivers/media/video/davinci/vpif.c
-@@ -490,7 +490,7 @@ static const struct dev_pm_ops vpif_pm = {
- #define vpif_pm_ops NULL
- #endif
- 
--static struct platform_driver vpif_driver = {
-+static __refdata struct platform_driver vpif_driver = {
- 	.driver = {
- 		.name	= "vpif",
- 		.owner = THIS_MODULE,
-diff --git a/drivers/media/video/davinci/vpss.c b/drivers/media/video/davinci/vpss.c
-index 3e5cf27..8f682d8 100644
---- a/drivers/media/video/davinci/vpss.c
-+++ b/drivers/media/video/davinci/vpss.c
-@@ -460,7 +460,7 @@ static int __devexit vpss_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct platform_driver vpss_driver = {
-+static __refdata struct platform_driver vpss_driver = {
- 	.driver = {
- 		.name	= "vpss",
- 		.owner = THIS_MODULE,
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 111aca5..4505a30 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -239,6 +239,7 @@ struct mmc_card {
+ #define MMC_QUIRK_BLK_NO_CMD23    (1<<7)        /* Avoid CMD23 for
+regular multiblock */
+ #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)    /* Avoid sending 512
+bytes in */
+ #define MMC_QUIRK_LONG_READ_TIME (1<<9)        /* Data read time > CSD
+says */
++#define MMC_QUIRK_MOVINAND_SECURE (1<<10)    /* MoviNAND secure issue */
+                         /* byte mode */
+     unsigned int    poweroff_notify_state;    /* eMMC4.5 notify feature */
+ #define MMC_NO_POWER_NOTIFICATION    0
 -- 
 1.7.0.4
-
