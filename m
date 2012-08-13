@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab2HMUes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:34:48 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	id S1754568Ab2HMUfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:35:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55329 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2HMUYF (ORCPT
+	with ESMTP id S1754510Ab2HMUXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:24:05 -0400
+	Mon, 13 Aug 2012 16:23:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [ 48/82] random: create add_device_randomness() interface
-Date: Mon, 13 Aug 2012 13:19:24 -0700
-Message-Id: <20120813201750.657590311@linuxfoundation.org>
+Subject: [ 51/82] random: use the arch-specific rng in xfer_secondary_pool
+Date: Mon, 13 Aug 2012 13:19:27 -0700
+Message-Id: <20120813201750.935526936@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -29,89 +29,88 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit a2080a67abe9e314f9e9c2cc3a4a176e8a8f8793 upstream.
+commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
 
-Add a new interface, add_device_randomness() for adding data to the
-random pool that is likely to differ between two devices (or possibly
-even per boot).  This would be things like MAC addresses or serial
-numbers, or the read-out of the RTC. This does *not* add any actual
-entropy to the pool, but it initializes the pool to different values
-for devices that might otherwise be identical and have very little
-entropy available to them (particularly common in the embedded world).
+If the CPU supports a hardware random number generator, use it in
+xfer_secondary_pool(), where it will significantly improve things and
+where we can afford it.
 
-[ Modified by tytso to mix in a timestamp, since there may be some
-  variability caused by the time needed to detect/configure the hardware
-  in question. ]
+Also, remove the use of the arch-specific rng in
+add_timer_randomness(), since the call is significantly slower than
+get_cycles(), and we're much better off using it in
+xfer_secondary_pool() anyway.
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c  |   28 ++++++++++++++++++++++++++++
- include/linux/random.h |    1 +
- 2 files changed, 29 insertions(+)
+ drivers/char/random.c |   25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -125,11 +125,20 @@
-  * The current exported interfaces for gathering environmental noise
-  * from the devices are:
-  *
-+ *	void add_device_randomness(const void *buf, unsigned int size);
-  * 	void add_input_randomness(unsigned int type, unsigned int code,
-  *                                unsigned int value);
-  *	void add_interrupt_randomness(int irq, int irq_flags);
-  * 	void add_disk_randomness(struct gendisk *disk);
-  *
-+ * add_device_randomness() is for adding data to the random pool that
-+ * is likely to differ between two devices (or possibly even per boot).
-+ * This would be things like MAC addresses or serial numbers, or the
-+ * read-out of the RTC. This does *not* add any actual entropy to the
-+ * pool, but it initializes the pool to different values for devices
-+ * that might otherwise be identical and have very little entropy
-+ * available to them (particularly common in the embedded world).
-+ *
-  * add_input_randomness() uses the input layer interrupt timing, as well as
-  * the event type information from the hardware.
-  *
-@@ -646,6 +655,25 @@ static void set_timer_rand_state(unsigne
- }
- #endif
+@@ -254,6 +254,7 @@
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+ #include <linux/ptrace.h>
++#include <linux/kmemcheck.h>
  
-+/*
-+ * Add device- or boot-specific data to the input and nonblocking
-+ * pools to help initialize them to unique values.
-+ *
-+ * None of this adds any entropy, it is meant to avoid the
-+ * problem of the nonblocking pool having similar initial state
-+ * across largely identical devices.
-+ */
-+void add_device_randomness(const void *buf, unsigned int size)
-+{
-+	unsigned long time = get_cycles() ^ jiffies;
-+
-+	mix_pool_bytes(&input_pool, buf, size, NULL);
-+	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
-+	mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
-+	mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
-+}
-+EXPORT_SYMBOL(add_device_randomness);
-+
- static struct timer_rand_state input_timer_state;
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -702,11 +703,7 @@ static void add_timer_randomness(struct
+ 		goto out;
+ 
+ 	sample.jiffies = jiffies;
+-
+-	/* Use arch random value, fall back to cycles */
+-	if (!arch_get_random_int(&sample.cycles))
+-		sample.cycles = get_cycles();
+-
++	sample.cycles = get_cycles();
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ 
+@@ -838,7 +835,11 @@ static ssize_t extract_entropy(struct en
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+-	__u32 tmp[OUTPUT_POOL_WORDS];
++	union {
++		__u32	tmp[OUTPUT_POOL_WORDS];
++		long	hwrand[4];
++	} u;
++	int	i;
+ 
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -849,17 +850,23 @@ static void xfer_secondary_pool(struct e
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(tmp));
++		bytes = min_t(int, bytes, sizeof(u.tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, tmp, bytes,
++		bytes = extract_entropy(r->pull, u.tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, tmp, bytes, NULL);
++		mix_pool_bytes(r, u.tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
++	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
++	for (i = 0; i < 4; i++)
++		if (arch_get_random_long(&u.hwrand[i]))
++			break;
++	if (i)
++		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+ }
  
  /*
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -50,6 +50,7 @@ struct rnd_state {
- 
- extern void rand_initialize_irq(int irq);
- 
-+extern void add_device_randomness(const void *, unsigned int);
- extern void add_input_randomness(unsigned int type, unsigned int code,
- 				 unsigned int value);
- extern void add_interrupt_randomness(int irq, int irq_flags);
 
 
