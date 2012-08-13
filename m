@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2HMNSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:18:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56978 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260Ab2HMNSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:18:37 -0400
-Date: Mon, 13 Aug 2012 15:18:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Andreas Schwab <schwab@linux-m68k.org>
-Subject: [PATCH] [RESEND] powerpc: fix personality handling in
- ppc64_personality()
-Message-ID: <alpine.LNX.2.00.1208131515550.29827@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752166Ab2HMNTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 09:19:35 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48723 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab2HMNTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 09:19:34 -0400
+Date: Mon, 13 Aug 2012 18:48:51 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] uprobes: kill uprobes_state->count
+Message-ID: <20120813131850.GF31805@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120808173659.GA13220@redhat.com>
+ <20120808173736.GA13252@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120808173736.GA13252@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12081313-5816-0000-0000-000003F93D78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Directly comparing current->personality against PER_LINUX32 doesn't work 
-in cases when any of the personality flags stored in the top three bytes 
-are used.
+* Oleg Nesterov <oleg@redhat.com> [2012-08-08 19:37:37]:
 
-Directly forcefully setting personality to PER_LINUX32 or PER_LINUX 
-discards any flags stored in the top three bytes
+> uprobes_state->count is only needed to avoid the slow path in
+> uprobe_pre_sstep_notifier(). It is also checked in uprobe_munmap()
+> but ironically its only goal to decrement this counter. However,
+> it is very broken. Just some examples:
+> 
+> - uprobe_mmap() can race with uprobe_unregister() and wrongly
+>   increment the counter if it hits the non-uprobe "int3". Note
+>   that install_breakpoint() checks ->consumers first and returns
+>   -EEXIST if it is NULL.
+> 
+>   "atomic_sub() if error" in uprobe_mmap() looks obviously wrong
+>   too.
+> 
+> - uprobe_munmap() can race with uprobe_register() and wrongly
+>   decrement the counter by the same reason.
+> 
+> - Suppose an appication tries to increase the mmapped area via
+>   sys_mremap(). vma_adjust() does uprobe_munmap(whole_vma) first,
+>   this can nullify the counter temporarily and race with another
+>   thread which can hit the bp, the application will be killed by
+>   SIGTRAP.
+> 
+> - Suppose an application mmaps 2 consecutive areas in the same file
+>   and one (or both) of these areas has uprobes. In the likely case
+>   mmap_region()->vma_merge() suceeds. Like above, this leads to
+>   uprobe_munmap/uprobe_mmap from vma_merge()->vma_adjust() but then
+>   mmap_region() does another uprobe_mmap(resulting_vma) and doubles
+>   the counter.
+> 
+> This patch only removes this counter and fixes the compile errors,
+> then we will try to cleanup the changed code and add something else
+> instead.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Use personality() macro to compare only PER_MASK bytes and make sure that 
-we are setting only the bits that should be set, instead of overwriting 
-the whole value.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
-
-Resned of patch sent on Thu, 2 Aug 2012 09:10:03 +0200 (CEST)
-
- arch/powerpc/kernel/syscalls.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/powerpc/kernel/syscalls.c b/arch/powerpc/kernel/syscalls.c
-index f2496f2..dc1558e 100644
---- a/arch/powerpc/kernel/syscalls.c
-+++ b/arch/powerpc/kernel/syscalls.c
-@@ -107,11 +107,11 @@ long ppc64_personality(unsigned long personality)
- 	long ret;
- 
- 	if (personality(current->personality) == PER_LINUX32
--	    && personality == PER_LINUX)
--		personality = PER_LINUX32;
-+	    && personality(personality) == PER_LINUX)
-+		personality = (personality & ~PER_MASK) | PER_LINUX32;
- 	ret = sys_personality(personality);
--	if (ret == PER_LINUX32)
--		ret = PER_LINUX;
-+	if (personality(ret) == PER_LINUX32)
-+		ret = (ret & ~PER_MASK) | PER_LINUX;
- 	return ret;
- }
- #endif
-
--- 
-Jiri Kosina
-SUSE Labs
