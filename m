@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab2HMKfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:35:47 -0400
-Received: from relay.parallels.com ([195.214.232.42]:52128 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2HMKfp convert rfc822-to-8bit (ORCPT
+	id S1751700Ab2HMKhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:37:53 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44313 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2HMKhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:35:45 -0400
-Message-ID: <5028D86E.9040907@parallels.com>
-Date: Mon, 13 Aug 2012 14:35:26 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 13 Aug 2012 06:37:51 -0400
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "eparis@parisplace.org" <eparis@parisplace.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "arnd@arndb.de" <arnd@arndb.de>, "hughd@google.com" <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "yeohc@au1.ibm.com" <yeohc@au1.ibm.com>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "casey@schaufler-ca.com" <casey@schaufler-ca.com>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "james.l.morris@oracle.com" <james.l.morris@oracle.com>
-Subject: Re: [PATCH v3 08/10] IPC: message queue copy feature introduced
-References: <20120810141517.12411.83398.stgit@localhost6.localdomain6> <20120810142602.12411.63440.stgit@localhost6.localdomain6> <CALgW_8X_gSDG0GdoU4WShohsyhdXOXTh8o9KsYPFtnkzcJXpCQ@mail.gmail.com> <50265EC9.5020602@parallels.com> <CALgW_8VX2pnhohrm6kNA4Ps4COpxVcPV=jNFp+s9O6yj64Vpzw@mail.gmail.com>
-In-Reply-To: <CALgW_8VX2pnhohrm6kNA4Ps4COpxVcPV=jNFp+s9O6yj64Vpzw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1344846039.31459.14.camel@twins>
+References: <1344324343-3817-1-git-send-email-walken@google.com>
+	<1344846039.31459.14.camel@twins>
+Date: Mon, 13 Aug 2012 03:37:50 -0700
+Message-ID: <CANN689GFMvHHwnweK_=RrrSisOqm5CdcGat1txmW48t3k1VDNg@mail.gmail.com>
+Subject: Re: [PATCH 0/5] rbtree based interval tree as a prio_tree replacement
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: riel@redhat.com, vrajesh@umich.edu, daniel.santos@pobox.com,
+        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-12.08.2012 13:48, Manfred Spraul пишет:
-> I would keep it simple - unless there is a clear use case where "peek
-> by id" is useful.
+On Mon, Aug 13, 2012 at 1:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-08-07 at 00:25 -0700, Michel Lespinasse wrote:
+>> a faster worst-case complexity of O(k+log N) for stabbing queries in a
+>> well-balanced prio tree, vs O(k*log N) for interval trees (where k=number
+>> of matches, N=number of intervals). Now this sounds great, but in practice
+>> prio trees don't realize this theorical benefit. First, the additional
+>> constraint makes them harder to update, so that the kernel implementation
+>> has to simplify things by balancing them like a radix tree, which is not
+>> always ideal.
 >
-> Or - since MSG_COPY is linux specific anyway:
-> What about storing the number of the message that should be returned in *msgp?
-> Store it as "int64", just to avoid any 32/64 bit issues.
+> Not something spending a great deal of time on, but do you have any idea
+> what the radix like balancing does the the worst case stabbing
+> complexity?
 
-Sounds reasonable. But, probably, mtype suit better for message number.
-I'll update.
+Well, it's not terribly bad as the height of the radix tree is still
+bounded by (IIRC) log(ULONG_MAX) + log(max pgoff_t in the file). So
+the complexity ends up being O(k + some constant) where the constant
+is in practice always larger than log(N).
+
+One can still construct cases where a prio tree stabbing query would
+read less nodes (so touch less cache lines) than with augmented
+rbtree. I think the best way to explain this is to look at what
+augmented rbtree does - for a stabbing query returning k matches, it
+visits all nodes between the root and the k matching nodes (plus one
+extra path at the end to conclude that there are no further matches).
+So the worst case there would be if the matching nodes are all close
+to leaf level in the tree, and if the paths leading to them branch up
+close to the root level. It's easy to construct such a case by making
+all N nodes in the tree start to the left of the stabbing query, and
+having only an arbitrary k among them end to the right of the query.
+Prio tree achieves a better worst case complexity by placing these k
+nodes near the top of the tree (due to the heap constraint). But this
+worst case situation isn't very likely to begin with, and in the
+typical case the k paths leading to the matching nodes in an augmented
+rbtree don't branch up so close to the root so typically prio tree
+doesn't get an advantage there.
+
+To sum it up, I would say that both algorithms are really pretty good,
+with prio tree getting a slightly better theorical worst-case and
+augmented rbtree getting (IMO) a practical advantage due to lower
+constant factors and a still very acceptable worst case.
+
+> Anyway, I like the thing, that prio-tree code always made my head hurt.
+
+Black magic I tell you ;-)
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
