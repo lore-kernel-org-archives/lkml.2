@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab2HMRF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:05:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50545 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab2HMRF1 (ORCPT
+	id S1753675Ab2HMRFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:05:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33697 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab2HMRFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:05:27 -0400
-Date: Mon, 13 Aug 2012 10:05:22 -0700
-From: Tejun Heo <tj@kernel.org>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] workqueue: use system_highpri_wq for highpri
- workers in rebind_workers()
-Message-ID: <20120813170522.GG9180@google.com>
-References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
- <1344874672-6257-4-git-send-email-js1304@gmail.com>
- <20120813163452.GB9180@google.com>
- <CAAmzW4P23=XDd6r1cJmz4R8Q4wotyhGx-6u=B=cmMofUj36Bng@mail.gmail.com>
+	Mon, 13 Aug 2012 13:05:41 -0400
+Date: Mon, 13 Aug 2012 10:05:27 -0700
+From: tip-bot for Pekka Enberg <penberg@kernel.org>
+Message-ID: <tip-edde96eafc91a510f404e7b82cfc0ecb608505ee@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, rdunlap@xenotime.net,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, tglx@linutronix.de,
+        rdunlap@xenotime.net
+In-Reply-To: <1344070187-2420-1-git-send-email-penberg@kernel.org>
+References: <1344070187-2420-1-git-send-email-penberg@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Document schedule() entry points
+Git-Commit-ID: edde96eafc91a510f404e7b82cfc0ecb608505ee
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAAmzW4P23=XDd6r1cJmz4R8Q4wotyhGx-6u=B=cmMofUj36Bng@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:05:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 01:57:10AM +0900, JoonSoo Kim wrote:
-> > I think it would be better to just opencode system_wq selection in
-> > rebind_workers().
-> 
-> Sorry for my poor English skill.
-> Could you elaborate "opencode system_wq selection" means?
+Commit-ID:  edde96eafc91a510f404e7b82cfc0ecb608505ee
+Gitweb:     http://git.kernel.org/tip/edde96eafc91a510f404e7b82cfc0ecb608505ee
+Author:     Pekka Enberg <penberg@kernel.org>
+AuthorDate: Sat, 4 Aug 2012 11:49:47 +0300
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 13 Aug 2012 18:58:15 +0200
 
-Dropping get_pool_system_wq() and putting the logic inside
-rebind_workers() directly.  I tend to dislike short helpers which are
-used only once.  They tend to obfuscate while not really contributing
-to anything else.
+sched: Document schedule() entry points
 
-Thanks.
+This patch adds a comment on top of the schedule() function to explain
+to scheduler newbies how the main scheduler function is entered.
 
--- 
-tejun
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Explained-by: Ingo Molnar <mingo@kernel.org>
+Explained-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344070187-2420-1-git-send-email-penberg@kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/core.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fbf1fd0..c9a3655 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3367,6 +3367,40 @@ pick_next_task(struct rq *rq)
+ 
+ /*
+  * __schedule() is the main scheduler function.
++ *
++ * The main means of driving the scheduler and thus entering this function are:
++ *
++ *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
++ *
++ *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
++ *      paths. For example, see arch/x86/entry_64.S.
++ *
++ *      To drive preemption between tasks, the scheduler sets the flag in timer
++ *      interrupt handler scheduler_tick().
++ *
++ *   3. Wakeups don't really cause entry into schedule(). They add a
++ *      task to the run-queue and that's it.
++ *
++ *      Now, if the new task added to the run-queue preempts the current
++ *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
++ *      called on the nearest possible occasion:
++ *
++ *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
++ *
++ *         - in syscall or exception context, at the next outmost
++ *           preempt_enable(). (this might be as soon as the wake_up()'s
++ *           spin_unlock()!)
++ *
++ *         - in IRQ context, return from interrupt-handler to
++ *           preemptible context
++ *
++ *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
++ *         then at the next:
++ *
++ *          - cond_resched() call
++ *          - explicit schedule() call
++ *          - return from syscall or exception to user-space
++ *          - return from interrupt-handler to user-space
+  */
+ static void __sched __schedule(void)
+ {
