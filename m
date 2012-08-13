@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab2HMOUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 10:20:34 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:59904 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751368Ab2HMOUc (ORCPT
+	id S1752494Ab2HMOXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:23:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16153 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab2HMOXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 10:20:32 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zz9371Ic89bh542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Greg KH <gregkh@linuxfoundation.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Topic: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Index: AQHNeVgr89FPJRfAcEaBVc7d2VxtVZdXypug
-Date: Mon, 13 Aug 2012 14:20:15 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236BF470@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <87fw8mlv7e.fsf@nemi.mork.no>
-	<1342771388-24389-1-git-send-email-bjorn@mork.no>
-	<20120720152650.GA5201@kroah.com>
-	<426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
-	<20120720160953.GA5802@kroah.com> <87fw7rhrpv.fsf@nemi.mork.no>
-	<426367E2313C2449837CD2DE46E7EAF9236BF42E@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <877gt2j4ry.fsf@nemi.mork.no>
-In-Reply-To: <877gt2j4ry.fsf@nemi.mork.no>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%MORK.NO$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	Mon, 13 Aug 2012 10:23:05 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=nJMv3_NQHZAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=WIa_LenKEI2MxesMrvgA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344867782.6935.119.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "borislav.petkov" <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Date: Mon, 13 Aug 2012 10:23:02 -0400
+In-Reply-To: <20120813132438.GA18990@aftab.osrc.amd.com>
+References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
+	 <20120813132438.GA18990@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7DEKjx9008850
+
+On Mon, 2012-08-13 at 15:24 +0200, Borislav Petkov wrote:
+
+> So wouldn't it make sense to call this ABSOLUTE_O or so then?
+
+That's just because you're russian, and are promoting Vodka! ;-)
 
 
+Done...
 
-> -----Original Message-----
-> From: Bj√∏rn Mork [mailto:bjorn@mork.no]
-> Sent: Monday, August 13, 2012 9:33 AM
-> To: KY Srinivasan
-> Cc: Greg KH; Paolo Bonzini; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
-> 
-> KY Srinivasan <kys@microsoft.com> writes:
-> 
-> > In the interim, I have submitted a patch that conforms to the MSFT guidelines
-> > for generating guest IDs for non-MSFT operating systems on Hyper-V.
-> 
-> Oh, sorry.  I missed that.  Found it now.  Thanks
-> 
-> Including distro info in a driver interface looks a bit weird to me, but
-> I don't really care as long as the previous static value goes away.
-This is optional and does not need to be populated.
+----------
 
-K. Y
+When I did a compile of perf using a relative path for the output
+directory, the build failed when it tried to compile libtraceevent. This
+is because it continues to use the same relative path when the new
+working directory is in a different path.
+
+    SUBDIR ../lib/traceevent/
+/bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
+Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
+make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
 
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Make the path used an absolute path when building perf with O=.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index bde8521..e90e1b4 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -1,6 +1,7 @@
+ ifeq ("$(origin O)", "command line")
+-	OUTPUT := $(O)/
+-	COMMAND_O := O=$(O)
++	ABSOLUTE_O := $(shell cd $(O) ; pwd)
++	OUTPUT := $(ABSOLUTE_O)/
++	COMMAND_O := O=$(ABSOLUTE_O)
+ endif
+ 
+ ifneq ($(OUTPUT),)
+
+
