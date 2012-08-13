@@ -1,144 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab2HMBx4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 21:53:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54654 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab2HMBxz (ORCPT
+	id S1752759Ab2HMCEf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 22:04:35 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55579 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab2HMCEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 21:53:55 -0400
-Date: Mon, 13 Aug 2012 02:53:48 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: netdev@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>, Neil Horman <nhorman@tuxdriver.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [flame^Wreview] net: netprio_cgroup: rework update socket logic
-Message-ID: <20120813015348.GZ23464@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 12 Aug 2012 22:04:34 -0400
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: [PATCH 01/16] MIPS: Loongson: Add basic Loongson-3 definition.
+Date: Mon, 13 Aug 2012 10:04:15 +0800
+Message-Id: <1344823455-28387-1-git-send-email-chenhc@lemote.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Ladies and gentlemen, who the devil had reviewed that little gem?
+Loongson-3 is a multi-core MIPS family CPU, it support MIPS64R2
+fully. Loongson-3 has the same IMP field (0x6300) as Loongson-2.
 
-commit 406a3c638ce8b17d9704052c07955490f732c2b8
-Author: John Fastabend <john.r.fastabend@intel.com>
-Date:   Fri Jul 20 10:39:25 2012 +0000
+Loongson-3 has a hardware-maintained cache, system software doesn't
+need to maintain coherency.
 
-is a bleeding bogosity that doesn't pass even the most cursory
-inspection.  It iterates through descriptor tables of a bunch
-of processes, doing this:
-                        file = fcheck_files(files, fd);
-                        if (!file)
-                                continue;
+Loongson-3A is the first revision of Loongson-3, and it is the quad-
+core version of Loongson-2G. Loongson-3A has a simplified version named
+Loongson-2Gq, the main difference between Loongson-3A/2Gq is 3A has two
+HyperTransport controller but 2Gq has only one. HT0 is used for cross-
+chip interconnection and HT1 is used to link PCI bus. Therefore, 2Gq
+cannot support NUMA but 3A can. For software, Loongson-2Gq is simply
+identified as Loongson-3A.
 
-                        path = d_path(&file->f_path, tmp, PAGE_SIZE);
-                        rv = sscanf(path, "socket:[%lu]", &s);
-                        if (rv <= 0)
-                                continue;
+Exsisting Loongson family CPUs:
+Loongson-1: Loongson-1A, Loongson-1B, they are 32-bit MIPS CPUs.
+Loongson-2: Loongson-2E, Loongson-2F, Loongson-2G, they are 64-bit
+            single-core MIPS CPUs.
+Loongson-3: Loongson-3A(including so-called Loongson-2Gq), they are
+            64-bit multi-core MIPS CPUs.
 
-                        sock = sock_from_file(file, &err);
-                        if (!err)
-                                sock_update_netprioidx(sock->sk, p);
-Note the charming use of sscanf() for pattern-matching.  's' (inode
-number of socket) is completely unused afterwards; what happens here
-is a very badly written attempt to skip non-sockets.  Why, will
-sock_from_file() blow up on non-sockets?  And isn't there some less
-obnoxious way to check that the file is a sockfs one?  Let's see:
-struct socket *sock_from_file(struct file *file, int *err)
-{
-        if (file->f_op == &socket_file_ops)
-                return file->private_data;      /* set in sock_map_fd */
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+---
+ arch/mips/include/asm/addrspace.h            |    6 ++++++
+ arch/mips/include/asm/cpu.h                  |    6 ++++--
+ arch/mips/include/asm/mach-loongson/spaces.h |   15 +++++++++++++++
+ arch/mips/include/asm/module.h               |    2 ++
+ arch/mips/include/asm/pgtable-bits.h         |    7 +++++++
+ arch/mips/loongson/Platform                  |    1 +
+ 6 files changed, 35 insertions(+), 2 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-loongson/spaces.h
 
-        *err = -ENOTSOCK;
-        return NULL;
-}
-... and the first line is exactly that - a check that we are on sockfs.
-_Far_ less expensive one, at that, so it's not even that we are avoiding
-a costly test.  In other words, all masturbation with d_path() is absolutely
-pointless.
+diff --git a/arch/mips/include/asm/addrspace.h b/arch/mips/include/asm/addrspace.h
+index 569f80a..cf62bfb 100644
+--- a/arch/mips/include/asm/addrspace.h
++++ b/arch/mips/include/asm/addrspace.h
+@@ -116,7 +116,13 @@
+ #define K_CALG_UNCACHED		2
+ #define K_CALG_NONCOHERENT	3
+ #define K_CALG_COH_EXCL		4
++
++#ifdef CONFIG_CPU_LOONGSON3
++#define K_CALG_COH_SHAREABLE	3
++#else
+ #define K_CALG_COH_SHAREABLE	5
++#endif
++
+ #define K_CALG_NOTUSED		6
+ #define K_CALG_UNCACHED_ACCEL	7
+ 
+diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
+index f21b7c0..75b6127 100644
+--- a/arch/mips/include/asm/cpu.h
++++ b/arch/mips/include/asm/cpu.h
+@@ -72,6 +72,7 @@
+ #define PRID_IMP_R5432		0x5400
+ #define PRID_IMP_R5500		0x5500
+ #define PRID_IMP_LOONGSON2	0x6300
++#define PRID_IMP_LOONGSON3	0x6300
+ 
+ #define PRID_IMP_UNKNOWN	0xff00
+ 
+@@ -200,6 +201,7 @@
+ #define PRID_REV_LOONGSON1B	0x0020
+ #define PRID_REV_LOONGSON2E	0x0002
+ #define PRID_REV_LOONGSON2F	0x0003
++#define PRID_REV_LOONGSON3A	0x0005
+ 
+ /*
+  * Older processors used to encode processor version and revision in two
+@@ -268,8 +270,8 @@ enum cpu_type_enum {
+ 	 * MIPS64 class processors
+ 	 */
+ 	CPU_5KC, CPU_5KE, CPU_20KC, CPU_25KF, CPU_SB1, CPU_SB1A, CPU_LOONGSON2,
+-	CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS, CPU_CAVIUM_OCTEON2,
+-	CPU_XLR, CPU_XLP,
++	CPU_LOONGSON3, CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS,
++	CPU_CAVIUM_OCTEON2, CPU_XLR, CPU_XLP,
+ 
+ 	CPU_LAST
+ };
+diff --git a/arch/mips/include/asm/mach-loongson/spaces.h b/arch/mips/include/asm/mach-loongson/spaces.h
+new file mode 100644
+index 0000000..1e82804
+--- /dev/null
++++ b/arch/mips/include/asm/mach-loongson/spaces.h
+@@ -0,0 +1,15 @@
++#ifndef __ASM_MACH_LOONGSON_SPACES_H_
++#define __ASM_MACH_LOONGSON_SPACES_H_
++
++#ifndef CAC_BASE
++#if defined(CONFIG_64BIT)
++#if defined(CONFIG_DMA_NONCOHERENT) || defined(CONFIG_CPU_LOONGSON3)
++#define CAC_BASE        _AC(0x9800000000000000, UL)
++#else
++#define CAC_BASE        _AC(0xa800000000000000, UL)
++#endif /* CONFIG_DMA_NONCOHERENT || CONFIG_CPU_LOONGSON3 */
++#endif /* CONFIG_64BIT */
++#endif /* CONFIG_CAC_BASE */
++
++#include <asm/mach-generic/spaces.h>
++#endif
+diff --git a/arch/mips/include/asm/module.h b/arch/mips/include/asm/module.h
+index dca8bce..523600f 100644
+--- a/arch/mips/include/asm/module.h
++++ b/arch/mips/include/asm/module.h
+@@ -122,6 +122,8 @@ search_module_dbetables(unsigned long addr)
+ #define MODULE_PROC_FAMILY "LOONGSON1 "
+ #elif defined CONFIG_CPU_LOONGSON2
+ #define MODULE_PROC_FAMILY "LOONGSON2 "
++#elif defined CONFIG_CPU_LOONGSON3
++#define MODULE_PROC_FAMILY "LOONGSON3 "
+ #elif defined CONFIG_CPU_CAVIUM_OCTEON
+ #define MODULE_PROC_FAMILY "OCTEON "
+ #elif defined CONFIG_CPU_XLR
+diff --git a/arch/mips/include/asm/pgtable-bits.h b/arch/mips/include/asm/pgtable-bits.h
+index e9fe7e9..1afd39a 100644
+--- a/arch/mips/include/asm/pgtable-bits.h
++++ b/arch/mips/include/asm/pgtable-bits.h
+@@ -206,6 +206,13 @@ static inline uint64_t pte_to_entrylo(unsigned long pte_val)
+ #define _CACHE_UNCACHED		    _CACHE_UC_B
+ #define _CACHE_CACHABLE_NONCOHERENT _CACHE_WB
+ 
++#elif defined(CONFIG_CPU_LOONGSON3)
++
++#define _CACHE_UNCACHED             (2<<_CACHE_SHIFT)  /* LOONGSON       */
++#define _CACHE_CACHABLE_NONCOHERENT (3<<_CACHE_SHIFT)  /* LOONGSON       */
++#define _CACHE_CACHABLE_COHERENT    (3<<_CACHE_SHIFT)  /* LOONGSON-3     */
++#define _CACHE_UNCACHED_ACCELERATED (7<<_CACHE_SHIFT)  /* LOONGSON       */
++
+ #else
+ 
+ #define _CACHE_CACHABLE_NO_WA	    (0<<_CACHE_SHIFT)  /* R4600 only      */
+diff --git a/arch/mips/loongson/Platform b/arch/mips/loongson/Platform
+index 29692e5..6205372 100644
+--- a/arch/mips/loongson/Platform
++++ b/arch/mips/loongson/Platform
+@@ -30,3 +30,4 @@ platform-$(CONFIG_MACH_LOONGSON) += loongson/
+ cflags-$(CONFIG_MACH_LOONGSON) += -I$(srctree)/arch/mips/include/asm/mach-loongson -mno-branch-likely
+ load-$(CONFIG_LEMOTE_FULOONG2E) += 0xffffffff80100000
+ load-$(CONFIG_LEMOTE_MACH2F) += 0xffffffff80200000
++load-$(CONFIG_CPU_LOONGSON3) += 0xffffffff80200000
+-- 
+1.7.7.3
 
-Furthermore, it's racy; had been even more so before the delayed fput series
-went in, but even now it's not safe.  fcheck_files() does *NOT* guarantee
-that file is not getting closed right now.  rcu_read_lock() prevents only
-freeing and potential reuse of struct file we'd got; it might go all the
-way through final fput() just as we look at it.  So file->f_path is not
-protected by anything.  Worse yet, neither is struct socket itself - we
-might be going through sock_release() at the same time, so sock->sk might
-very well be NULL, leaving us a oops even after we dump d_path() idiocy.
-
-To make it even funnier, there's such thing as SCM_RIGHTS datagrams and
-descriptor passing.  In other words, it's *not* going to catch all sockets
-that would be caught by the earlier variant.
-
-What the hell it is about cgroups that turns otherwise sane people into
-gibbering idiots?  Other than the Old Ones' apparent involvement in
-the mental processes that had lead to the entire concept, that is...
-
-Let's take a closer look at the entire net/core/netprio_cgroup.c, shall we?
-
-Right at the beginning of that Fine Piece of Software we find this:
-static atomic_t max_prioidx = ATOMIC_INIT(0);
-Why is it atomic?  We have all of four accesses to it; one writer and three
-readers.  The writer and one of the readers are under the same spinlock;
-the rest of readers are under rtnl_lock().  Moreover, the sole writer is
-in get_prioidx(), which is called in one place and is immediately followed
-by grabbing rtnl_lock().  So shifting it down there would've put *all*
-accesses of that sucker under the same mutex...
-
-Next to that one we have
-static DEFINE_SPINLOCK(prioidx_map_lock);
-What is that one for?  Two places touching that sucker; get_prioidx() and
-put_prioidx().  spin_lock_irqsave()/spin_unlock_irqrestore() in both.
-Why irqsave?  Somebody calling that from interrupt context?  Looks odd...
-OK, there's not a lot of callers - cgrp_create(), cgrp_destroy().  And
-neither looks like something that could be called from an interrupt.
-The former has GFP_KERNEL allocation right in the beginning.  Oh, lookie -
-both do rtnl_lock().  So not only is all this wanking with irqs pure
-cargo-culting, the whole spinlock is pointless; we can simply shift all
-this stuff under rtnl_lock().
-
-After get_prioidx()/put_priodix() we come to the following gem:
-        for (i = 0;
-             old_priomap && (i < old_priomap->priomap_len);
-             i++)
-                new_priomap->priomap[i] = old_priomap->priomap[i];
-Why are we checking old_priomap on every step?  Sure, gcc will take
-that out of loop, but why obfuscate the damn thing?
-	if (old_priomap)
-		memcpy(new_priomap->priomap, old_priomap,
-			sizeof(u32) * old_priomap->priomap_len);
-would be far more idiomatic...  Anyway, we are extending the damn array,
-copying contents of the old one to replacement.  Understandable.  Where
-do we modify the contents of that array, anyway?  Aha:
-        rtnl_lock();
-        for_each_netdev(&init_net, dev) {
-                map = rtnl_dereference(dev->priomap);
-                if (map && cs->prioidx < map->priomap_len)
-                        map->priomap[cs->prioidx] = 0;
-        }
-        rtnl_unlock();
-and
-        rcu_read_lock();
-        map = rcu_dereference(dev->priomap);   
-        if (map)
-                map->priomap[prioidx] = priority;
-        rcu_read_unlock();
-The first one is serialized with the reallocate-and-copy by rtnl_lock().
-The second one, though, is immediately suspicious - rcu_read_lock() in
-updater.  It's in write_priomap(), which is ->write_string() in some object
-deep in the bloated bowels of cgroup.  Only one caller: cgroup_write_string().
-No locks grabbed.  Called from cgroup_file_write(), again without any locks.
-Which is ->write() of file_operations.  And that is callable without any
-locks whatsoever.  OK, so we definitely have a race here.
-
-Incidentally, we'd dropped rtnl_lock() just before that point.  IOW, it's
-trivially fixed by moving that thing into write_update_netdev_table()...
-
-BTW, speaking of highly non-idiomatic code: strstr(devname, " ").  Why
-not introduce strcasestr(), if we are going for maximal obfuscation here?
-Sigh...
