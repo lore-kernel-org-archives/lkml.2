@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab2HMWSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47188 "EHLO
+	id S1755889Ab2HMWSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62584 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab2HMWSi (ORCPT
+	with ESMTP id S1755878Ab2HMWSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:38 -0400
+	Mon, 13 Aug 2012 18:18:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 54/65] target: Check number of unmap descriptors against our limit
-Date: Mon, 13 Aug 2012 15:14:38 -0700
-Message-Id: <20120813221419.739183105@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 56/65] ARM: dts: imx53-ard: add regulators for lan9220
+Date: Mon, 13 Aug 2012 15:14:40 -0700
+Message-Id: <20120813221419.916248702@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -31,35 +29,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 7409a6657aebf8be74c21d0eded80709b27275cb upstream.
+commit 1eec0c569523782392b5e6245effddb626213b8c upstream.
 
-Fail UNMAP commands that have more than our reported limit on unmap
-descriptors.
+Since commit c7e963f (net/smsc911x: Add regulator support), the lan9220
+device tree probe fails on imx53-ard board, because the commit makes
+VDD33A and VDDVARIO supplies mandatory for the driver.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Add a fixed dummy 3V3 supplying lan9220 to fix the regression.
+
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/target/target_core_cdb.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -1041,6 +1041,11 @@ int target_emulate_unmap(struct se_task
- 	bd_dl = get_unaligned_be16(&buf[2]);
+---
+ arch/arm/boot/dts/imx53-ard.dts |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+--- a/arch/arm/boot/dts/imx53-ard.dts
++++ b/arch/arm/boot/dts/imx53-ard.dts
+@@ -70,10 +70,30 @@
+ 			interrupt-parent = <&gpio2>;
+ 			interrupts = <31>;
+ 			reg-io-width = <4>;
++			/*
++			 * VDD33A and VDDVARIO of LAN9220 are supplied by
++			 * SW4_3V3 of LTC3589.  Before the regulator driver
++			 * for this PMIC is available, we use a fixed dummy
++			 * 3V3 regulator to get LAN9220 driver probing work.
++			 */
++			vdd33a-supply = <&reg_3p3v>;
++			vddvario-supply = <&reg_3p3v>;
+ 			smsc,irq-push-pull;
+ 		};
+ 	};
  
- 	size = min(size - 8, bd_dl);
-+	if (size / 16 > dev->se_sub_dev->se_dev_attrib.max_unmap_block_desc_count) {
-+		cmd->scsi_sense_reason = TCM_INVALID_PARAMETER_LIST;
-+		ret = -EINVAL;
-+		goto err;
-+	}
++	regulators {
++		compatible = "simple-bus";
++
++		reg_3p3v: 3p3v {
++			compatible = "regulator-fixed";
++			regulator-name = "3P3V";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++	};
++
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
  
- 	/* First UNMAP block descriptor starts at 8 byte offset */
- 	ptr = &buf[8];
 
 
