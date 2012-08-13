@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2HMU7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:59:43 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45310 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab2HMU7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:59:42 -0400
-Message-ID: <1344891576.16792.5.camel@maxim-laptop>
-Subject: Re: [PATCH 1/3] drivers/misc: Add realtek card reader core driver
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: wwang <wei_wang@realsil.com.cn>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>, "bp@alien8.de" <bp@alien8.de>
-Date: Mon, 13 Aug 2012 23:59:36 +0300
-In-Reply-To: <201208011431.02050.arnd@arndb.de>
-References: <1343720536-22077-1-git-send-email-wei_wang@realsil.com.cn>
-	 <201207311123.25862.arnd@arndb.de> <5018CA65.1080906@realsil.com.cn>
-	 <201208011431.02050.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1754022Ab2HMVBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 17:01:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35574 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab2HMVBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 17:01:51 -0400
+Message-ID: <50296B34.8090502@zytor.com>
+Date: Mon, 13 Aug 2012 14:01:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: David Cullen <David.Cullen@koe-americas.com>
+CC: Michal Marek <mmarek@suse.cz>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
+ during make distclean
+References: <502957D5.1070800@koe-americas.com> <502965BE.3070406@zytor.com> <502969FA.6010907@koe-americas.com>
+In-Reply-To: <502969FA.6010907@koe-americas.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-01 at 14:31 +0000, Arnd Bergmann wrote: 
-> On Wednesday 01 August 2012, wwang wrote:
-> > 于 2012年07月31日 19:23, Arnd Bergmann 写道:
-> > >
-> > > You posted the sdmmc host driver and the pci card reader driver.
-> > > I assume that the USB card reader and the memstick host
-> > > will also get posted at some point. Do you have a timeframe
-> > > for those?
-> > 
-> > I will submit my memstick host driver around two months later, and
-> > submit USB part at the end of this year.
+On 08/13/2012 01:56 PM, David Cullen wrote:
+>>
+>> That sounds like a bug in xargs...
+>>
 > 
-> ok.
+> In my specific case, qemu-arm-static calls xargs (In fact, in my
+> cross chroot, qemu-arm-static is used to run every user mode process).
 > 
-> > > The hardware seems to also support xd/smartmedia. Do you have
-> > > plans to add those? I think we have some code in drivers/mfd
-> > > that acts as an abstraction layer for these, given that the
-> > > host has to do the wear leveling there too.
-> > 
-> > Yes, xD is still in our plan. But because the user population of xD/SM
-> > is so small, we put the priority of writing xD host driver in a relevant
-> > low level.
-> > Maybe we will submit this driver in the next year.
+> Do you mean that qemu-arm-static is exposing a latent defect in xargs?
 > 
-> Ok. When you get to that, I think you should use the code
-> from drivers/mtd/nand/sm_common.c, but it's better to confirm
-> that with the MTD maintainers first.
-Just note that this file doesn't have much stuff as it turned out
-that xD card readers and cards are just raw NAND.
-Except that large xD cards, still use small block size, and somewhat
-different IDs, thus I placed them in this file.
+> Does qemu-arm-static steal some of the command line space that would
+> normally be available for xargs? If so, how would xargs figure out
+> this was happening and handle the problem?
+> 
 
-You just need to write a NAND driver exposing raw flash, and my sm_ftl
-will take care of wear leveling and everything else.
+I have no idea.  Perhaps strace can help you see what is happening, I
+don't know.  More likely it is qemu-arm-static that is broken and it is
+trying to enforce the old 128K limit that we used to have before 2.6.23.
+ This could cause a mismatch between what sysconf(_SC_ARG_MAX) returns
+and what the actual limit is.
 
+Anyway, even more so the reason to reject this patch.
 
-If any questions, bug-reports, just notes, I glad to hear about this.
-Best regards,
-Maxim Levitsky
-
+	-hpa
