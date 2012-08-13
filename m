@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab2HMID6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:03:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34495 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab2HMID4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:03:56 -0400
-Message-ID: <1344845024.31459.9.camel@twins>
-Subject: Re: [RFC][PATCH 4/4] perf/events: Use helper functions in event
- assignment to shrink macro size
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+	id S1752944Ab2HMIEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:04:35 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49823 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab2HMIEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:04:33 -0400
+Message-ID: <5028B450.9080309@parallels.com>
+Date: Mon, 13 Aug 2012 12:01:20 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 13 Aug 2012 10:03:44 +0200
-In-Reply-To: <20120810034708.589220175@goodmis.org>
-References: <20120810034302.758092203@goodmis.org>
-	 <20120810034708.589220175@goodmis.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
+ children
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <50254A0A.3080805@jp.fujitsu.com>
+In-Reply-To: <50254A0A.3080805@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-09 at 23:43 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0004-perf-events-Use-helper-functions-in-event-assignment.patch)
-> From: Steven Rostedt <srostedt@redhat.com>
+On 08/10/2012 09:51 PM, Kamezawa Hiroyuki wrote:
+>> +		/*
+>> +		 * Once enabled, can't be disabled. We could in theory disable
+>> +		 * it if we haven't yet created any caches, or if we can shrink
+>> +		 * them all to death. But it is not worth the trouble
+>> +		 */
+>>   		static_key_slow_inc(&memcg_kmem_enabled_key);
+>> -		memcg->kmem_accounted = true;
+>> +
+>> +		if (!memcg->use_hierarchy)
+>> +			goto out;
+>> +
+>> +		for_each_mem_cgroup_tree(iter, memcg) {
+>> +			if (iter == memcg)
+>> +				continue;
+>> +			memcg_kmem_account_parent(iter);
+>> +		}
 > 
-> The functions that assign the contents for the perf software events are
-> defined by the TRACE_EVENT() macros. Each event has its own unique
-> way to assign data to its buffer. When you have over 700 events,
-> that means there's 700 functions assigning data uniquely for each
-> event.
+> Could you add an explanation comment ?
 > 
-> By making helper functions in the core kernel to do the work
-> instead, we can shrink the size of the kernel down a bit.
-> 
-> With a kernel configured with 707 events, the change in size was:
-> 
->    text    data     bss     dec     hex filename
-> 19966937        2594648 1945600 24507185        175f331 vmlinux-before
-> 19924761        2594584 1945600 24464945        1754e31 vmlinux-after
-> 
-> That's a total of 42240 bytes, which comes down to 59 bytes per event.
 
-Seems like good stuff.. one nit..
+Of course, Kame.
+Thanks
 
-
-> +void perf_trace_event_submit(void *raw_data, struct ftrace_event_call *event_call,
-> +                            struct perf_trace_event *pe)
-> +{
-> +       struct hlist_head *head;
-> +
-> +       head = this_cpu_ptr(event_call->perf_events);
-> +       perf_trace_buf_submit(raw_data, pe->entry_size, pe->rctx, pe->addr,
-> +                             pe->count, &pe->regs, head);
-> +}
-
-Can you make perf_trace_buf_submit() go away? Its reduced to a simple
-fwd function and layering another wrapper on top seems like pushing it.
