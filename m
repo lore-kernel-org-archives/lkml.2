@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2HMRAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:00:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33644 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab2HMRAi (ORCPT
+	id S1753388Ab2HMRBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:01:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60321 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab2HMRBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:00:38 -0400
-Date: Mon, 13 Aug 2012 10:00:22 -0700
-From: tip-bot for Michael Wang <wangyun@linux.vnet.ibm.com>
-Message-ID: <tip-79a7810be652f95e52325ceadc380f461545ae74@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <501F8357.3070102@linux.vnet.ibm.com>
-References: <501F8357.3070102@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  using dst_rq instead of this_rq during load balance
-Git-Commit-ID: 79a7810be652f95e52325ceadc380f461545ae74
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 13 Aug 2012 13:01:14 -0400
+Date: Mon, 13 Aug 2012 18:01:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+Subject: Re: [flame^Wreview] net: netprio_cgroup: rework update socket logic
+Message-ID: <20120813170109.GD23464@ZenIV.linux.org.uk>
+References: <20120813015348.GZ23464@ZenIV.linux.org.uk>
+ <502896C5.7080303@intel.com>
+ <50289D7F.3070402@intel.com>
+ <20120813121827.GB23464@ZenIV.linux.org.uk>
+ <50293224.90803@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 10:00:28 -0700 (PDT)
+In-Reply-To: <50293224.90803@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  79a7810be652f95e52325ceadc380f461545ae74
-Gitweb:     http://git.kernel.org/tip/79a7810be652f95e52325ceadc380f461545ae74
-Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Mon, 6 Aug 2012 16:41:59 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 18:51:59 +0200
+On Mon, Aug 13, 2012 at 09:58:12AM -0700, John Fastabend wrote:
+> [...]
+> 
+> >HOWEVER, it still doesn't address more fundamental problem - somebody
+> >creating a socket and passing it to you in SCM_RIGHTS datagram will
+> >leave you with a socket you can do IO on, still tagged according to who
+> >had created it.
+> >
+> >AFAICS, the whole point of that exercise was to allow third-party changing
+> >the priorities of traffic on sockets already created by a process we now
+> >move to a different cgroup.  Consider e.g. this:
+> 
+> Correct that is the point of the exercise.
+> 
+> To fix this specific case we could add a call to sock_update_netprioidx
+> in scm_recv to set the sk_cgrp_prioidx value.
 
-sched: using dst_rq instead of this_rq during load balance
-
-As we already have dst_rq in lb_env, using or changing "this_rq" do not
-make sense.
-
-This patch will replace "this_rq" with dst_rq in load_balance, and we
-don't need to change "this_rq" while process LBF_SOME_PINNED any more.
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/501F8357.3070102@linux.vnet.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched/fair.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 67ac0b1..4f7fcd6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4275,7 +4275,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	BUG_ON(busiest == this_rq);
-+	BUG_ON(busiest == env.dst_rq);
- 
- 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
- 
-@@ -4295,7 +4295,7 @@ redo:
- 
- more_balance:
- 		local_irq_save(flags);
--		double_rq_lock(this_rq, busiest);
-+		double_rq_lock(env.rq, busiest);
- 		if (!env.loop)
- 			update_h_load(env.src_cpu);
- 
-@@ -4305,7 +4305,7 @@ more_balance:
- 		 */
- 		cur_ld_moved = move_tasks(&env);
- 		ld_moved += cur_ld_moved;
--		double_rq_unlock(this_rq, busiest);
-+		double_rq_unlock(env.dst_rq, busiest);
- 		local_irq_restore(flags);
- 
- 		if (env.flags & LBF_NEED_BREAK) {
-@@ -4341,8 +4341,7 @@ more_balance:
- 		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
- 				lb_iterations++ < max_lb_iterations) {
- 
--			this_rq		 = cpu_rq(env.new_dst_cpu);
--			env.dst_rq	 = this_rq;
-+			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
- 			env.dst_cpu	 = env.new_dst_cpu;
- 			env.flags	&= ~LBF_SOME_PINNED;
- 			env.loop	 = 0;
+On every received descriptor, that is?  Eeek...
