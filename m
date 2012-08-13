@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2HMSAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:00:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54237 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2HMSAW (ORCPT
+	id S1752307Ab2HMSDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:03:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44225 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab2HMSDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:00:22 -0400
-Date: Mon, 13 Aug 2012 11:00:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] workqueue: change value of lcpu in
- queue_delayed_work_on()
-Message-ID: <20120813180017.GJ9180@google.com>
-References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
- <1344874672-6257-2-git-send-email-js1304@gmail.com>
- <20120813163219.GA9180@google.com>
- <CAAmzW4NfPAVQnmD0vG71Ahz_=gmV7CQBNABpnEHFU7YBsYJOyQ@mail.gmail.com>
- <20120813170303.GF9180@google.com>
- <CAAmzW4Nfzq6i-KHky2qb1Qzgg1psVVEAME_mkzLfUWYGBXjH_Q@mail.gmail.com>
+	Mon, 13 Aug 2012 14:03:02 -0400
+Date: Mon, 13 Aug 2012 15:02:49 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+Message-ID: <20120813180249.GB6840@infradead.org>
+References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
+ <20120813132438.GA18990@aftab.osrc.amd.com>
+ <1344867782.6935.119.camel@gandalf.stny.rr.com>
+ <20120813142909.GC18990@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAmzW4Nfzq6i-KHky2qb1Qzgg1psVVEAME_mkzLfUWYGBXjH_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120813142909.GC18990@aftab.osrc.amd.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em Mon, Aug 13, 2012 at 04:29:09PM +0200, Borislav Petkov escreveu:
+> On Mon, Aug 13, 2012 at 10:23:02AM -0400, Steven Rostedt wrote:
+> > On Mon, 2012-08-13 at 15:24 +0200, Borislav Petkov wrote:
+> > 
+> > > So wouldn't it make sense to call this ABSOLUTE_O or so then?
+> > 
+> > That's just because you're russian, and are promoting Vodka! ;-)
 
-On Tue, Aug 14, 2012 at 02:43:28AM +0900, JoonSoo Kim wrote:
-> >> And, do u mean  @cpu is WORK_CPU_UNBOUND?
-> >
-> > @cpu could be WORK_CPU_UNBOUND at that point.  The timer will be added
-> > to local CPU but @work->data would be pointing to WORK_CPU_UNBOUND,
-> > again triggering the condition.  Given that @cpu being
-> > WORK_CPU_UNBOUND is far more common than an actual CPU number, the
-> > patch would actually increase spurious nrt lookups.  The right thing
-> > to do is probably setting cpu to raw_smp_processor_id() beforehand.
-> 
-> I got your point.
-> Thanks for kind illustration.
-> 
-> Following is a alternative implementation for this.
-> I thinks this is too rare case, so it doesn't help in any real workload.
-> But how do you thinks?
-> 
-> @@ -1156,7 +1156,9 @@ int queue_delayed_work_on(int cpu, struct
-> workqueue_struct *wq,
->                 if (!(wq->flags & WQ_UNBOUND)) {
->                         struct global_cwq *gcwq = get_work_gcwq(work);
-> 
-> -                       if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
-> +                       if (!gcwq)
-> +                               lcpu = cpu;
-> +                       else if (gcwq->cpu != WORK_CPU_UNBOUND)
->                                 lcpu = gcwq->cpu;
->                         else
->                                 lcpu = raw_smp_processor_id();
+Before:
 
-Why not just do
+[acme@sandy linux]$ rm -rf ../build/perf
+[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
+/bin/sh: line 0: cd: /home/acme/git/build/perf/: No such file or directory
+make: Entering directory `/home/git/linux/tools/perf'
+../scripts/Makefile.include:9: *** output directory "/home/acme/git/build/perf/" does not exist.  Stop.
+make: Leaving directory `/home/git/linux/tools/perf'
+[acme@sandy linux]$
 
-	if (cpu == WORK_CPU_UNBOUND)
-		cpu = raw_smp_processor_id();
+Now:
 
-	if (!(wq->flags...) {
-		...
-		if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
-			lcpu = gcwq->cpu;
-		else
-			lcpu = cpu;
-	}
-	...
+[acme@sandy linux]$ rm -rf ../build/perf
+[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
+/bin/sh: line 0: cd: /home/acme/git/build/perf: No such file or directory
+make: Entering directory `/home/git/linux/tools/perf'
+    GEN perf-archive
+    GEN /home/git/linux/tools/perf/python/perf.so
+make[1]: Entering directory `/home/git/linux/tools/lib/traceevent'
+make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+    * new build flags or cross compiler
+    CC /home/git/linux/tools/perf/perf.o
+    CC /home/git/linux/tools/perf/builtin-annotate.o
+    CC /home/git/linux/tools/perf/builtin-bench.o
+    CC /home/git/linux/tools/perf/bench/sched-messaging.o
+    CC /home/git/linux/tools/perf/bench/sched-pipe.o
 
-	add_timer_on(timer, cpu);
+I.e. it should stop if the O= provided directory is not there.
 
-Also, can you please base the patches on top of the following git
-branch?
+Can you fix this? Avoid vodka while doing it :-P
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
-
-Thanks.
-
--- 
-tejun
+- Arnaldo
