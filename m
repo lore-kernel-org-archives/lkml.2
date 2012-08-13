@@ -1,111 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2HMIFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:05:01 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63186 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752615Ab2HMIE6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:04:58 -0400
+	id S1753403Ab2HMIFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:05:30 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49881 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752912Ab2HMIF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:05:26 -0400
+Message-ID: <5028B488.6060201@parallels.com>
+Date: Mon, 13 Aug 2012 12:02:16 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1344844219.4126.24.camel@mattotaupa>
-References: <1344823753-28780-1-git-send-email-chenhc@lemote.com>
-	<1344841259.4126.4.camel@mattotaupa>
-	<CAAhV-H5ZA0kC-0kNag-e35Oh9wYh9nZK3OY3GOS2hkhkSn1Jzg@mail.gmail.com>
-	<1344844219.4126.24.camel@mattotaupa>
-Date: Mon, 13 Aug 2012 16:04:56 +0800
-Message-ID: <CAAhV-H4mJJqirEVJ55N2ejuQXmht5-y-1_7j3gHMfAdvsM974w@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Huacai Chen <chenhc@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Greg Thelen <gthelen@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-8-git-send-email-glommer@parallels.com> <xr937gt6fy2t.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr937gt6fy2t.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 3:50 PM, Paul Menzel
-<paulepanter@users.sourceforge.net> wrote:
-> Dear Huacai,
->
->
-> Am Montag, den 13.08.2012, 15:16 +0800 schrieb Huacai Chen:
->> On Mon, Aug 13, 2012 at 3:00 PM, Paul Menzel wrote:
->
->> > thanks for your patch.
->> >
->> > Firstly, is Chen your first or last name? If it is your first name, your
->> > From address should be switched.
->> Chen is may last name.
->
-> I am sorry then.
->
->> > Am Montag, den 13.08.2012, 10:09 +0800 schrieb Huacai Chen:
->> >> When SWIOTLB is configured, if without this patch kernel compilation
->> >> fails.
->> >
->> > Secondly, could you please always paste part of the error message into
->> > the commit message so that people hitting this problem and searching for
->> > it on the WWW have a higher chance finding your patch.
->> >
->> OK, I'll paste error message.
+On 08/10/2012 09:36 PM, Greg Thelen wrote:
+> On Thu, Aug 09 2012, Glauber Costa wrote:
+> 
+>> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
+>> page allocator will call the corresponding memcg functions to validate
+>> the allocation. Tasks in the root memcg can always proceed.
 >>
->> > Thirdly, do you know why this was not caught beforehand and compilation
->> > worked before?
->> Maybe radeon is mostly used on X86 and swiotlb.h is included
->> indirectly on X86 platform. This patch is split from my MIPS patchset,
->> on MIPS machines compilation always failed.
->
-> Ah, I thought your patches had already been submitted.
-My MIPS patchset is under review (not accepted now), I think this drm
-patch is important and should be accept first, so sent it
-independently.
+>> To avoid adding markers to the page - and a kmem flag that would
+>> necessarily follow, as much as doing page_cgroup lookups for no reason,
+>> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+>> for telling the page allocator that this is such an allocation at
+>> free_pages() time. This is done by the invocation of
+>> __free_accounted_pages() and free_accounted_pages().
+>>
+>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: Michal Hocko <mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal <suleiman@google.com>
+>> ---
+>>  include/linux/gfp.h |  3 +++
+>>  mm/page_alloc.c     | 38 ++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 41 insertions(+)
+>>
+>> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+>> index d8eae4d..029570f 100644
+>> --- a/include/linux/gfp.h
+>> +++ b/include/linux/gfp.h
+>> @@ -370,6 +370,9 @@ extern void free_pages(unsigned long addr, unsigned int order);
+>>  extern void free_hot_cold_page(struct page *page, int cold);
+>>  extern void free_hot_cold_page_list(struct list_head *list, int cold);
+>>  
+>> +extern void __free_accounted_pages(struct page *page, unsigned int order);
+>> +extern void free_accounted_pages(unsigned long addr, unsigned int order);
+>> +
+>>  #define __free_page(page) __free_pages((page), 0)
+>>  #define free_page(addr) free_pages((addr), 0)
+>>  
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index b956cec..da341dc 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -2532,6 +2532,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>>  	struct page *page = NULL;
+>>  	int migratetype = allocflags_to_migratetype(gfp_mask);
+>>  	unsigned int cpuset_mems_cookie;
+>> +	void *handle = NULL;
+>>  
+>>  	gfp_mask &= gfp_allowed_mask;
+>>  
+>> @@ -2543,6 +2544,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>>  		return NULL;
+>>  
+>>  	/*
+>> +	 * Will only have any effect when __GFP_KMEMCG is set.
+>> +	 * This is verified in the (always inline) callee
+>> +	 */
+>> +	if (!memcg_kmem_new_page(gfp_mask, &handle, order))
+>> +		return NULL;
+>> +
+>> +	/*
+>>  	 * Check the zones suitable for the gfp_mask contain at least one
+>>  	 * valid zone. It's possible to have an empty zonelist as a result
+>>  	 * of GFP_THISNODE and a memoryless node
+>> @@ -2583,6 +2591,8 @@ out:
+>>  	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+>>  		goto retry_cpuset;
+>>  
+>> +	memcg_kmem_commit_page(page, handle, order);
+>> +
+>>  	return page;
+>>  }
+>>  EXPORT_SYMBOL(__alloc_pages_nodemask);
+>> @@ -2635,6 +2645,34 @@ void free_pages(unsigned long addr, unsigned int order)
+>>  
+>>  EXPORT_SYMBOL(free_pages);
+>>  
+>> +/*
+>> + * __free_accounted_pages and free_accounted_pages will free pages allocated
+>> + * with __GFP_KMEMCG.
+>> + *
+>> + * Those pages are accounted to a particular memcg, embedded in the
+>> + * corresponding page_cgroup. To avoid adding a hit in the allocator to search
+>> + * for that information only to find out that it is NULL for users who have no
+>> + * interest in that whatsoever, we provide these functions.
+>> + *
+>> + * The caller knows better which flags it relies on.
+>> + */
+>> +void __free_accounted_pages(struct page *page, unsigned int order)
+>> +{
+>> +	memcg_kmem_free_page(page, order);
+>> +	__free_pages(page, order);
+>> +}
+>> +EXPORT_SYMBOL(__free_accounted_pages);
+>> +
+>> +void free_accounted_pages(unsigned long addr, unsigned int order)
+>> +{
+>> +	if (addr != 0) {
+>> +		VM_BUG_ON(!virt_addr_valid((void *)addr));
+>> +		memcg_kmem_free_page(virt_to_page((void *)addr), order);
+>> +		__free_pages(virt_to_page((void *)addr), order);
+> 
+> Nit.  Is there any reason not to replace the above two lines with:
+> 		__free_accounted_pages(virt_to_page((void *)addr), order);
+> 
+Not any particular reason. If people prefer it this way, I can do that
+with no problems.
 
->
->> >> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> >
->> > Lastly, the addresses in your From line and Signed-off-by line disagree.
->> > You can easily fix that, by adding
->> My patch is generated by git format-patch and there is surely a From
->> line in the beginning (from chenhc@lemote.com),
->
-> It should be `From: Huacai Chen <chenhc@lemote.com>`.
-Yes, git format-patch generate `From: Huacai Chen <chenhc@lemote.com>`
-
->
->> but the mail is sent out by gmail, so I don't know how to make From
->> line and Signed-off-by agree.
->
-> Do you copy the content of the file created by `git format-patch` into
-> the Gmail Web compositor?
->
-> If yes, just do not delete the `From` *and* `Date` lines from the
-> beginning as for example Alex Deucher is doing [1].
-No, I use git send-email to send the patch but use gmail's server
-(mail server of lemote.com is too weak). The original patch is begin
-with:
------
->From 70e1e058da3d39c52b7dba3e8fa754e7ed41828c Mon Sep 17 00:00:00 2001
-From: Huacai Chen <chenhc@lemote.com>
-Date: Thu, 2 Aug 2012 17:02:59 +0800
-Subject: [PATCH] drm/radeon: Include swiotlb.h if SWIOTLB configured.
-
-When SWIOTLB is configured, if without this patch kernel compilation
-fails with error messages:
-----
-Do you means I need to copy the From line and paste it after the Subject line?
-
->
-> […]
->
->
-> Thanks,
->
-> Paul
->
->
-> [1] http://lists.freedesktop.org/archives/dri-devel/2012-July/025200.html
