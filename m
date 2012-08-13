@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab2HMFwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 01:52:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50293 "EHLO
+	id S1752907Ab2HMFws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 01:52:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50300 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab2HMFwi (ORCPT
+	with ESMTP id S1751489Ab2HMFwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 01:52:38 -0400
+	Mon, 13 Aug 2012 01:52:46 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-leds@vger.kernel.org, arnd.bergmann@linaro.org,
         nicolas.pitre@linaro.org, olof@lixom.net
-Subject: [PATCH 06/18] ARM: mach-orion5x: convert custom LED code to gpio_led and LED CPU trigger
-Date: Mon, 13 Aug 2012 13:51:30 +0800
-Message-Id: <1344837102-11850-7-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 07/18] ARM: mach-integrator: move CM_CTRL to header file for accessing by other functions
+Date: Mon, 13 Aug 2012 13:51:31 +0800
+Message-Id: <1344837102-11850-8-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
 References: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
@@ -23,161 +23,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-Acked-by: Nicolas Pitre <nico@fluxnic.net>
 ---
- arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |  1 -
- arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |  1 -
- arch/arm/mach-orion5x/rd88f5182-setup.c      | 72 +++++++++-------------------
- arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |  1 -
- 4 files changed, 22 insertions(+), 53 deletions(-)
+ arch/arm/mach-integrator/core.c            | 2 --
+ arch/arm/mach-integrator/include/mach/cm.h | 2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
-index 78a6a11..9b1c953 100644
---- a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
-+++ b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
-@@ -18,7 +18,6 @@
- #include <linux/ethtool.h>
- #include <net/dsa.h>
- #include <asm/mach-types.h>
--#include <asm/leds.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/pci.h>
- #include <mach/orion5x.h>
-diff --git a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
-index 2f5dc54..51ba2b8 100644
---- a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
-+++ b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
-@@ -19,7 +19,6 @@
- #include <linux/i2c.h>
- #include <net/dsa.h>
- #include <asm/mach-types.h>
--#include <asm/leds.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/pci.h>
- #include <mach/orion5x.h>
-diff --git a/arch/arm/mach-orion5x/rd88f5182-setup.c b/arch/arm/mach-orion5x/rd88f5182-setup.c
-index 399130f..0a56b94 100644
---- a/arch/arm/mach-orion5x/rd88f5182-setup.c
-+++ b/arch/arm/mach-orion5x/rd88f5182-setup.c
-@@ -19,8 +19,8 @@
- #include <linux/mv643xx_eth.h>
- #include <linux/ata_platform.h>
- #include <linux/i2c.h>
-+#include <linux/leds.h>
- #include <asm/mach-types.h>
--#include <asm/leds.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/pci.h>
- #include <mach/orion5x.h>
-@@ -53,12 +53,6 @@
- #define RD88F5182_PCI_SLOT0_IRQ_A_PIN	7
- #define RD88F5182_PCI_SLOT0_IRQ_B_PIN	6
- 
--/*
-- * GPIO Debug LED
-- */
--
--#define RD88F5182_GPIO_DBG_LED		0
--
- /*****************************************************************************
-  * 16M NOR Flash on Device bus CS1
-  ****************************************************************************/
-@@ -83,55 +77,32 @@ static struct platform_device rd88f5182_nor_flash = {
- 	.resource		= &rd88f5182_nor_flash_resource,
+diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
+index eaf6c63..8c53562 100644
+--- a/arch/arm/mach-integrator/core.c
++++ b/arch/arm/mach-integrator/core.c
+@@ -172,8 +172,6 @@ static struct amba_pl010_data integrator_uart_data = {
+ 	.set_mctrl = integrator_uart_set_mctrl,
  };
  
--#ifdef CONFIG_LEDS
+-#define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
 -
- /*****************************************************************************
-- * Use GPIO debug led as CPU active indication
-+ * Use GPIO LED as CPU active indication
-  ****************************************************************************/
+ static DEFINE_RAW_SPINLOCK(cm_lock);
  
--static void rd88f5182_dbgled_event(led_event_t evt)
--{
--	int val;
--
--	if (evt == led_idle_end)
--		val = 1;
--	else if (evt == led_idle_start)
--		val = 0;
--	else
--		return;
--
--	gpio_set_value(RD88F5182_GPIO_DBG_LED, val);
--}
--
--static int __init rd88f5182_dbgled_init(void)
--{
--	int pin;
--
--	if (machine_is_rd88f5182()) {
--		pin = RD88F5182_GPIO_DBG_LED;
-+#define RD88F5182_GPIO_LED		0
+ /**
+diff --git a/arch/arm/mach-integrator/include/mach/cm.h b/arch/arm/mach-integrator/include/mach/cm.h
+index 445d57a..1a78692e 100644
+--- a/arch/arm/mach-integrator/include/mach/cm.h
++++ b/arch/arm/mach-integrator/include/mach/cm.h
+@@ -3,6 +3,8 @@
+  */
+ void cm_control(u32, u32);
  
--		if (gpio_request(pin, "DBGLED") == 0) {
--			if (gpio_direction_output(pin, 0) != 0) {
--				printk(KERN_ERR "rd88f5182_dbgled_init failed "
--						"to set output pin %d\n", pin);
--				gpio_free(pin);
--				return 0;
--			}
--		} else {
--			printk(KERN_ERR "rd88f5182_dbgled_init failed "
--					"to request gpio %d\n", pin);
--			return 0;
--		}
--
--		leds_event = rd88f5182_dbgled_event;
--	}
--
--	return 0;
--}
-+static struct gpio_led rd88f5182_gpio_led_pins[] = {
-+	{
-+		.name		= "rd88f5182:cpu",
-+		.default_trigger = "cpu0",
-+		.gpio		= RD88F5182_GPIO_LED,
-+	},
-+};
- 
--__initcall(rd88f5182_dbgled_init);
-+static struct gpio_led_platform_data rd88f5182_gpio_led_data = {
-+	.leds		= rd88f5182_gpio_led_pins,
-+	.num_leds	= ARRAY_SIZE(rd88f5182_gpio_led_pins),
-+};
- 
--#endif
-+static struct platform_device rd88f5182_gpio_leds = {
-+	.name	= "leds-gpio",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data = &rd88f5182_gpio_led_data,
-+	},
-+};
- 
- /*****************************************************************************
-  * PCI
-@@ -298,6 +269,7 @@ static void __init rd88f5182_init(void)
- 
- 	orion5x_setup_dev1_win(RD88F5182_NOR_BASE, RD88F5182_NOR_SIZE);
- 	platform_device_register(&rd88f5182_nor_flash);
-+	platform_device_register(&rd88f5182_gpio_leds);
- 
- 	i2c_register_board_info(0, &rd88f5182_i2c_rtc, 1);
- }
-diff --git a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
-index 92df49c..ed50910 100644
---- a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
-+++ b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
-@@ -20,7 +20,6 @@
- #include <linux/ethtool.h>
- #include <net/dsa.h>
- #include <asm/mach-types.h>
--#include <asm/leds.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/pci.h>
- #include <mach/orion5x.h>
++#define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
++
+ #define CM_CTRL_LED			(1 << 0)
+ #define CM_CTRL_nMBDET			(1 << 1)
+ #define CM_CTRL_REMAP			(1 << 2)
 -- 
 1.7.11.4
 
