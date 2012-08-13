@@ -1,374 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2HMFyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 01:54:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50366 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab2HMFyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 01:54:14 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: linux@arm.linux.org.uk, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, arnd.bergmann@linaro.org,
-        nicolas.pitre@linaro.org, olof@lixom.net
-Subject: [PATCH 18/18] ARM: use new LEDS CPU trigger stub to replace old one
-Date: Mon, 13 Aug 2012 13:51:42 +0800
-Message-Id: <1344837102-11850-19-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
-References: <1344837102-11850-1-git-send-email-bryan.wu@canonical.com>
+	id S1753581Ab2HMFze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 01:55:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32906 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752938Ab2HMFzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 01:55:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,757,1336374000"; 
+   d="scan'208";a="179833772"
+Message-ID: <502896C5.7080303@intel.com>
+Date: Sun, 12 Aug 2012 22:55:17 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+Subject: Re: [flame^Wreview] net: netprio_cgroup: rework update socket logic
+References: <20120813015348.GZ23464@ZenIV.linux.org.uk>
+In-Reply-To: <20120813015348.GZ23464@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc:  Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
----
- arch/arm/Kconfig            |  53 -------------------
- arch/arm/include/asm/leds.h |  50 ------------------
- arch/arm/kernel/Makefile    |   1 -
- arch/arm/kernel/leds.c      | 121 --------------------------------------------
- arch/arm/kernel/process.c   |   6 +--
- arch/arm/kernel/time.c      |  17 -------
- 6 files changed, 3 insertions(+), 245 deletions(-)
- delete mode 100644 arch/arm/include/asm/leds.h
- delete mode 100644 arch/arm/kernel/leds.c
+On 8/12/2012 6:53 PM, Al Viro wrote:
+> 	Ladies and gentlemen, who the devil had reviewed that little gem?
+>
+> commit 406a3c638ce8b17d9704052c07955490f732c2b8
+> Author: John Fastabend <john.r.fastabend@intel.com>
+> Date:   Fri Jul 20 10:39:25 2012 +0000
+>
+> is a bleeding bogosity that doesn't pass even the most cursory
+> inspection.  It iterates through descriptor tables of a bunch
+> of processes, doing this:
+>                          file = fcheck_files(files, fd);
+>                          if (!file)
+>                                  continue;
+>
+>                          path = d_path(&file->f_path, tmp, PAGE_SIZE);
+>                          rv = sscanf(path, "socket:[%lu]", &s);
+>                          if (rv <= 0)
+>                                  continue;
+>
+>                          sock = sock_from_file(file, &err);
+>                          if (!err)
+>                                  sock_update_netprioidx(sock->sk, p);
+> Note the charming use of sscanf() for pattern-matching.  's' (inode
+> number of socket) is completely unused afterwards; what happens here
+> is a very badly written attempt to skip non-sockets.  Why, will
+> sock_from_file() blow up on non-sockets?  And isn't there some less
+> obnoxious way to check that the file is a sockfs one?  Let's see:
+> struct socket *sock_from_file(struct file *file, int *err)
+> {
+>          if (file->f_op == &socket_file_ops)
+>                  return file->private_data;      /* set in sock_map_fd */
+>
+>          *err = -ENOTSOCK;
+>          return NULL;
+> }
+> ... and the first line is exactly that - a check that we are on sockfs.
+> _Far_ less expensive one, at that, so it's not even that we are avoiding
+> a costly test.  In other words, all masturbation with d_path() is absolutely
+> pointless.
+>
+> Furthermore, it's racy; had been even more so before the delayed fput series
+> went in, but even now it's not safe.  fcheck_files() does *NOT* guarantee
+> that file is not getting closed right now.  rcu_read_lock() prevents only
+> freeing and potential reuse of struct file we'd got; it might go all the
+> way through final fput() just as we look at it.  So file->f_path is not
+> protected by anything.  Worse yet, neither is struct socket itself - we
+> might be going through sock_release() at the same time, so sock->sk might
+> very well be NULL, leaving us a oops even after we dump d_path() idiocy.
+>
+> To make it even funnier, there's such thing as SCM_RIGHTS datagrams and
+> descriptor passing.  In other words, it's *not* going to catch all sockets
+> that would be caught by the earlier variant.
+>
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a91009c..dc57d37 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1739,59 +1739,6 @@ config FORCE_MAX_ZONEORDER
- 	  This config option is actually maximum order plus one. For example,
- 	  a value of 11 means that the largest free memory block is 2^10 pages.
- 
--config LEDS
--	bool "Timer and CPU usage LEDs"
--	depends on ARCH_CDB89712 || ARCH_EBSA110 || \
--		   ARCH_EBSA285 || ARCH_INTEGRATOR || \
--		   ARCH_LUBBOCK || MACH_MAINSTONE || ARCH_NETWINDER || \
--		   ARCH_OMAP || ARCH_P720T || ARCH_PXA_IDP || \
--		   ARCH_SA1100 || ARCH_SHARK || ARCH_VERSATILE || \
--		   ARCH_AT91 || ARCH_DAVINCI || \
--		   ARCH_KS8695 || MACH_RD88F5182 || ARCH_REALVIEW
--	help
--	  If you say Y here, the LEDs on your machine will be used
--	  to provide useful information about your current system status.
--
--	  If you are compiling a kernel for a NetWinder or EBSA-285, you will
--	  be able to select which LEDs are active using the options below. If
--	  you are compiling a kernel for the EBSA-110 or the LART however, the
--	  red LED will simply flash regularly to indicate that the system is
--	  still functional. It is safe to say Y here if you have a CATS
--	  system, but the driver will do nothing.
--
--config LEDS_TIMER
--	bool "Timer LED" if (!ARCH_CDB89712 && !ARCH_OMAP) || \
--			    OMAP_OSK_MISTRAL || MACH_OMAP_H2 \
--			    || MACH_OMAP_PERSEUS2
--	depends on LEDS
--	depends on !GENERIC_CLOCKEVENTS
--	default y if ARCH_EBSA110
--	help
--	  If you say Y here, one of the system LEDs (the green one on the
--	  NetWinder, the amber one on the EBSA285, or the red one on the LART)
--	  will flash regularly to indicate that the system is still
--	  operational. This is mainly useful to kernel hackers who are
--	  debugging unstable kernels.
--
--	  The LART uses the same LED for both Timer LED and CPU usage LED
--	  functions. You may choose to use both, but the Timer LED function
--	  will overrule the CPU usage LED.
--
--config LEDS_CPU
--	bool "CPU usage LED" if (!ARCH_CDB89712 && !ARCH_EBSA110 && \
--			!ARCH_OMAP) \
--			|| OMAP_OSK_MISTRAL || MACH_OMAP_H2 \
--			|| MACH_OMAP_PERSEUS2
--	depends on LEDS
--	help
--	  If you say Y here, the red LED will be used to give a good real
--	  time indication of CPU usage, by lighting whenever the idle task
--	  is not currently executing.
--
--	  The LART uses the same LED for both Timer LED and CPU usage LED
--	  functions. You may choose to use both, but the Timer LED function
--	  will overrule the CPU usage LED.
--
- config ALIGNMENT_TRAP
- 	bool
- 	depends on CPU_CP15_MMU
-diff --git a/arch/arm/include/asm/leds.h b/arch/arm/include/asm/leds.h
-deleted file mode 100644
-index c545739..0000000
---- a/arch/arm/include/asm/leds.h
-+++ /dev/null
-@@ -1,50 +0,0 @@
--/*
-- *  arch/arm/include/asm/leds.h
-- *
-- *  Copyright (C) 1998 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- *  Event-driven interface for LEDs on machines
-- *  Added led_start and led_stop- Alex Holden, 28th Dec 1998.
-- */
--#ifndef ASM_ARM_LEDS_H
--#define ASM_ARM_LEDS_H
--
--
--typedef enum {
--	led_idle_start,
--	led_idle_end,
--	led_timer,
--	led_start,
--	led_stop,
--	led_claim,		/* override idle & timer leds */
--	led_release,		/* restore idle & timer leds */
--	led_start_timer_mode,
--	led_stop_timer_mode,
--	led_green_on,
--	led_green_off,
--	led_amber_on,
--	led_amber_off,
--	led_red_on,
--	led_red_off,
--	led_blue_on,
--	led_blue_off,
--	/*
--	 * I want this between led_timer and led_start, but
--	 * someone has decided to export this to user space
--	 */
--	led_halted
--} led_event_t;
--
--/* Use this routine to handle LEDs */
--
--#ifdef CONFIG_LEDS
--extern void (*leds_event)(led_event_t);
--#else
--#define leds_event(e)
--#endif
--
--#endif
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 7ad2d5c..8951577 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -21,7 +21,6 @@ obj-y		:= elf.o entry-armv.o entry-common.o irq.o opcodes.o \
- 
- obj-$(CONFIG_DEPRECATED_PARAM_STRUCT) += compat.o
- 
--obj-$(CONFIG_LEDS)		+= leds.o
- obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- obj-$(CONFIG_ISA_DMA_API)	+= dma.o
-diff --git a/arch/arm/kernel/leds.c b/arch/arm/kernel/leds.c
-deleted file mode 100644
-index 1911dae..0000000
---- a/arch/arm/kernel/leds.c
-+++ /dev/null
-@@ -1,121 +0,0 @@
--/*
-- * LED support code, ripped out of arch/arm/kernel/time.c
-- *
-- *  Copyright (C) 1994-2001 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/export.h>
--#include <linux/init.h>
--#include <linux/device.h>
--#include <linux/syscore_ops.h>
--#include <linux/string.h>
--
--#include <asm/leds.h>
--
--static void dummy_leds_event(led_event_t evt)
--{
--}
--
--void (*leds_event)(led_event_t) = dummy_leds_event;
--
--struct leds_evt_name {
--	const char	name[8];
--	int		on;
--	int		off;
--};
--
--static const struct leds_evt_name evt_names[] = {
--	{ "amber", led_amber_on, led_amber_off },
--	{ "blue",  led_blue_on,  led_blue_off  },
--	{ "green", led_green_on, led_green_off },
--	{ "red",   led_red_on,   led_red_off   },
--};
--
--static ssize_t leds_store(struct device *dev,
--			struct device_attribute *attr,
--			const char *buf, size_t size)
--{
--	int ret = -EINVAL, len = strcspn(buf, " ");
--
--	if (len > 0 && buf[len] == '\0')
--		len--;
--
--	if (strncmp(buf, "claim", len) == 0) {
--		leds_event(led_claim);
--		ret = size;
--	} else if (strncmp(buf, "release", len) == 0) {
--		leds_event(led_release);
--		ret = size;
--	} else {
--		int i;
--
--		for (i = 0; i < ARRAY_SIZE(evt_names); i++) {
--			if (strlen(evt_names[i].name) != len ||
--			    strncmp(buf, evt_names[i].name, len) != 0)
--				continue;
--			if (strncmp(buf+len, " on", 3) == 0) {
--				leds_event(evt_names[i].on);
--				ret = size;
--			} else if (strncmp(buf+len, " off", 4) == 0) {
--				leds_event(evt_names[i].off);
--				ret = size;
--			}
--			break;
--		}
--	}
--	return ret;
--}
--
--static DEVICE_ATTR(event, 0200, NULL, leds_store);
--
--static struct bus_type leds_subsys = {
--	.name		= "leds",
--	.dev_name	= "leds",
--};
--
--static struct device leds_device = {
--	.id		= 0,
--	.bus		= &leds_subsys,
--};
--
--static int leds_suspend(void)
--{
--	leds_event(led_stop);
--	return 0;
--}
--
--static void leds_resume(void)
--{
--	leds_event(led_start);
--}
--
--static void leds_shutdown(void)
--{
--	leds_event(led_halted);
--}
--
--static struct syscore_ops leds_syscore_ops = {
--	.shutdown	= leds_shutdown,
--	.suspend	= leds_suspend,
--	.resume		= leds_resume,
--};
--
--static int __init leds_init(void)
--{
--	int ret;
--	ret = subsys_system_register(&leds_subsys, NULL);
--	if (ret == 0)
--		ret = device_register(&leds_device);
--	if (ret == 0)
--		ret = device_create_file(&leds_device, &dev_attr_event);
--	if (ret == 0)
--		register_syscore_ops(&leds_syscore_ops);
--	return ret;
--}
--
--device_initcall(leds_init);
--
--EXPORT_SYMBOL(leds_event);
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 19c95ea..864580a 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -31,9 +31,9 @@
- #include <linux/random.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/cpuidle.h>
-+#include <linux/leds.h>
- 
- #include <asm/cacheflush.h>
--#include <asm/leds.h>
- #include <asm/processor.h>
- #include <asm/thread_notify.h>
- #include <asm/stacktrace.h>
-@@ -189,7 +189,7 @@ void cpu_idle(void)
- 	while (1) {
- 		tick_nohz_idle_enter();
- 		rcu_idle_enter();
--		leds_event(led_idle_start);
-+		ledtrig_cpu(CPU_LED_IDLE_START);
- 		while (!need_resched()) {
- #ifdef CONFIG_HOTPLUG_CPU
- 			if (cpu_is_offline(smp_processor_id()))
-@@ -220,7 +220,7 @@ void cpu_idle(void)
- 			} else
- 				local_irq_enable();
- 		}
--		leds_event(led_idle_end);
-+		ledtrig_cpu(CPU_LED_IDLE_END);
- 		rcu_idle_exit();
- 		tick_nohz_idle_exit();
- 		schedule_preempt_disabled();
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index af2afb0..09be0c3 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -25,7 +25,6 @@
- #include <linux/timer.h>
- #include <linux/irq.h>
- 
--#include <asm/leds.h>
- #include <asm/thread_info.h>
- #include <asm/sched_clock.h>
- #include <asm/stacktrace.h>
-@@ -80,21 +79,6 @@ u32 arch_gettimeoffset(void)
- }
- #endif /* CONFIG_ARCH_USES_GETTIMEOFFSET */
- 
--#ifdef CONFIG_LEDS_TIMER
--static inline void do_leds(void)
--{
--	static unsigned int count = HZ/2;
--
--	if (--count == 0) {
--		count = HZ/2;
--		leds_event(led_timer);
--	}
--}
--#else
--#define	do_leds()
--#endif
--
--
- #ifndef CONFIG_GENERIC_CLOCKEVENTS
- /*
-  * Kernel system timer support.
-@@ -102,7 +86,6 @@ static inline void do_leds(void)
- void timer_tick(void)
- {
- 	profile_tick(CPU_PROFILING);
--	do_leds();
- 	xtime_update(1);
- #ifndef CONFIG_SMP
- 	update_process_times(user_mode(get_irq_regs()));
--- 
-1.7.11.4
+OK clearly I screwed it up thanks for reviewing Al. How about this.
 
+                 fdt = files_fdtable(files);
+                 for (fd = 0; fd < fdt->max_fds; fd++) {
+                         struct socket *sock;
+                         int err = 0;
+
+                         sock = sockfd_lookup(fd, &err);
+                         if (!sock) {
+                                 lock_sock(sock->sk);
+                                 sock_update_netprioidx(sock->sk, p);
+                                 release_sock(sock->sk);
+                                 sockfd_put(sock);
+                         }
+                 }
+
+sockfd_lookup will call fget() and also test file->f_op. testing this
+now.
