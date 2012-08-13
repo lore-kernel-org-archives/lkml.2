@@ -1,247 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2HMR0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 13:26:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54825 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434Ab2HMR0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 13:26:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,761,1336374000"; 
-   d="scan'208";a="180479514"
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-        tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-        hpa@zytor.com, "H. Peter Anvin" <hpa@linux.intel.com>,
-        DJ Johnston <dj.johnston@intel.com>, <stable@vger.kernel.org>
-Subject: [PATCH RFC] random: Account for entropy loss due to overwrites
-Date: Mon, 13 Aug 2012 10:26:19 -0700
-Message-Id: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1753408Ab2HMR1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 13:27:46 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:34205 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab2HMR1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 13:27:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Date: Mon, 13 Aug 2012 10:27:43 -0700
+Message-ID: <CA+HUmGhsOEgcAMjLRBHY9TRNJo6C25SghqQXFrHLXy4r3zZCgA@mail.gmail.com>
+Subject: [PATCH 1/1]: leak of ctl_table_header structs in proc_sys_lookup
+From: Francesco Ruggeri <fruggeri@aristanetworks.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Commit 076c3eed2c31773200b082568957fd8852ae93d7 in 3.4 changed some of
+the logic in proc_sys_lookup() by introducing lookup_entry().
+On success lookup_entry() will return having invoked use_table() on
+its first parameter. In case of a failure later on in proc_sys_lookup()
+this reference has to be dropped.
+This patch fixes one such case when sysctl_follow_link() fails.
+When this happened the reference would never drop to 0, and would cause
+dev_change_net_namespace() to hang while holding the rtnl lock with this
+backtrace:
 
-When we write entropy into a non-empty pool, we currently don't
-account at all for the fact that we will probabilistically overwrite
-some of the entropy in that pool.  This means that unless the pool is
-fully empty, we are currently *guaranteed* to overestimate the amount
-of entropy in the pool!
+[<ffffffff814489d4>] schedule+0x5f/0x61
+[<ffffffff8144784e>] schedule_timeout+0x22/0xbb
+[<ffffffff8103153b>] ? vprintk+0x376/0x3b1
+[<ffffffff8144834a>] wait_for_common+0x99/0x110
+[<ffffffff81056e2d>] ? try_to_wake_up+0x1ae/0x1ae
+[<ffffffff8144845b>] wait_for_completion+0x18/0x1a
+[<ffffffff811438e0>] drop_sysctl_table+0x97/0x114
+[<ffffffff811437e0>] put_links+0x10a/0x173
+[<ffffffff81143872>] drop_sysctl_table+0x29/0x114
+[<ffffffff81143952>] drop_sysctl_table+0x109/0x114
+[<ffffffff81035f95>] ? local_bh_enable_ip+0x9/0xb
+[<ffffffff811439c2>] unregister_sysctl_table+0x65/0x75
+[<ffffffff8138a846>] neigh_sysctl_unregister+0x22/0x3a
+[<ffffffff813d3b86>] inetdev_event+0x2c6/0x411
+[<ffffffff8144c444>] notifier_call_chain+0x32/0x5e
+[<ffffffff8104e8ee>] raw_notifier_call_chain+0xf/0x11
+[<ffffffff813818b6>] call_netdevice_notifiers+0x45/0x4a
+[<ffffffff81383a7f>] dev_change_net_namespace+0xc6/0x18e
+[<ffffffff8138f270>] do_setlink+0x77/0x766
+[<ffffffff812306de>] ? nla_parse+0x4f/0xc3
+[<ffffffff813908cb>] rtnl_newlink+0x252/0x49f
+[<ffffffff8139073d>] ? rtnl_newlink+0xc4/0x49f
+[<ffffffff810cab4d>] ? pmd_offset+0x14/0x3b
+[<ffffffff8139048c>] rtnetlink_rcv_msg+0x248/0x25e
+[<ffffffff8100813a>] ? read_tsc+0x9/0x19
+[<ffffffff810605de>] ? timekeeping_get_ns+0x15/0x34
+[<ffffffff81390244>] ? __rtnl_unlock+0x33/0x33
+[<ffffffff813a4b23>] netlink_rcv_skb+0x40/0x8c
+[<ffffffff8138fb73>] rtnetlink_rcv+0x21/0x28
+[<ffffffff813a46c0>] netlink_unicast+0xec/0x155
+[<ffffffff813a492b>] netlink_sendmsg+0x202/0x220
+[<ffffffff81371292>] __sock_sendmsg+0x6e/0x7a
+[<ffffffff81371b71>] sock_sendmsg+0xa3/0xbc
+[<ffffffff81371a74>] ? sock_recvmsg+0xa6/0xbf
+[<ffffffff810b9b5e>] ? get_page+0x29/0x2e
+[<ffffffff810b9faf>] ? __lru_cache_add+0x2f/0x56
+[<ffffffff810ba16d>] ? lru_cache_add_lru+0x4e/0x55
+[<ffffffff810d5147>] ? page_add_new_anon_rmap+0x5b/0x6d
+[<ffffffff81372854>] ? move_addr_to_kernel+0x44/0x49
+[<ffffffff81399080>] ? verify_compat_iovec+0x6d/0xb9
+[<ffffffff81371e46>] __sys_sendmsg+0x21c/0x2c3
+[<ffffffff810c6a48>] ? inc_zone_page_state+0x28/0x2a
+[<ffffffff810cab4d>] ? pmd_offset+0x14/0x3b
+[<ffffffff810cdb5e>] ? handle_mm_fault+0xeb/0x100
+[<ffffffff8144c3a0>] ? do_page_fault+0x2da/0x34c
+[<ffffffff81373432>] sys_sendmsg+0x3d/0x5b
+[<ffffffff813998c7>] compat_sys_sendmsg+0xf/0x11
+[<ffffffff81399af7>] compat_sys_socketcall+0x152/0x19b
+[<ffffffff81450c56>] sysenter_dispatch+0x7/0x21
 
-Assuming Shannon entropy with zero correlations we end up with an
-exponentally decaying value of new entropy added:
+This patch slightly changes the logic in proc_sys_lookup in that
+        d_set_d_op(dentry, &proc_sys_dentry_operations);
+        d_add(dentry, inode);
+will now execute before the ctl_table_header is freed.
+This should not be a problem, and it makes the code cleaner than just
+adding an extra call to sysctl_head_finish(h);
 
-	entropy <- entropy + (pool_size - entropy) *
-		(1 - exp(-add_entropy/pool_size))
+Tested in Linux 3.4.4.
 
-However, calculations involving fractional exponentials are not
-practical in the kernel, so apply a piecewise linearization:
+Signed-off-by: Francesco Ruggeri <fruggeri@aristanetworks.com>
 
-	  For add_entropy <= pool_size then
+Index: linux-3.4.x86_64/fs/proc/proc_sysctl.c
+===================================================================
+--- linux-3.4.x86_64.orig/fs/proc/proc_sysctl.c
++++ linux-3.4.x86_64/fs/proc/proc_sysctl.c
+@@ -462,9 +462,6 @@ static struct dentry *proc_sys_lookup(st
 
-	  (1 - exp(-add_entropy/pool_size)) >= (add_entropy/pool_size)*0.632...
+ 	err = ERR_PTR(-ENOMEM);
+ 	inode = proc_sys_make_inode(dir->i_sb, h ? h : head, p);
+-	if (h)
+-		sysctl_head_finish(h);
+-
+ 	if (!inode)
+ 		goto out;
 
-	  ... so we can approximate the exponential with
-	  add_entropy/(pool_size*2) and still be on the
-	  safe side by adding at most one pool_size at a time.
+@@ -473,6 +470,8 @@ static struct dentry *proc_sys_lookup(st
+ 	d_add(dentry, inode);
 
-In order for the loop not to take arbitrary amounts of time if a bad
-ioctl is received, terminate if we are within one bit of full.  This
-way the loop is guaranteed to terminate after no more than
-log2(poolsize) iterations, no matter what the input value is.  The
-vast majority of the time the loop will be executed exactly once.
-
-The piecewise linearization is very conservative, approaching 1/2 of
-the usable input value for small inputs, however, our entropy
-estimation is pretty weak at best, especially for small values; we
-have no handle on correlation; and the Shannon entropy measure (Rényi
-entropy of order 1) is not the correct one to use in the first place,
-but rather the correct entropy measure is the min-entropy, the Rényi
-entropy of infinite order.
-
-As such, this conservatism seems more than justified.  Note, however,
-that attempting to add one bit of entropy will never succeed; nor will
-two bits unless the pool is completely empty.  These roundoff
-artifacts could be improved by using fixed-point arithmetic and adding
-some number of fractional entropy bits.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: DJ Johnston <dj.johnston@intel.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/char/random.c | 104 ++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 72 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index b86eae9..5d870ad 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -272,10 +272,12 @@
- /*
-  * Configuration information
-  */
--#define INPUT_POOL_WORDS 128
--#define OUTPUT_POOL_WORDS 32
--#define SEC_XFER_SIZE 512
--#define EXTRACT_SIZE 10
-+#define INPUT_POOL_SHIFT	12
-+#define INPUT_POOL_WORDS	(1 << (INPUT_POOL_SHIFT-5))
-+#define OUTPUT_POOL_SHIFT	10
-+#define OUTPUT_POOL_WORDS	(1 << (OUTPUT_POOL_SHIFT-5))
-+#define SEC_XFER_SIZE		512
-+#define EXTRACT_SIZE		10
- 
- #define LONGS(x) (((x) + sizeof(unsigned long) - 1)/sizeof(unsigned long))
- 
-@@ -309,40 +311,41 @@ static DEFINE_PER_CPU(int, trickle_count);
-  * scaled squared error sum) except for the last tap, which is 1 to
-  * get the twisting happening as fast as possible.
-  */
--static struct poolinfo {
-+static const struct poolinfo {
-+	int poolshift;		/* log2(POOLBITS) */
- 	int poolwords;
- 	int tap1, tap2, tap3, tap4, tap5;
- } poolinfo_table[] = {
--	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
--	{ 128,	103,	76,	51,	25,	1 },
--	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
--	{ 32,	26,	20,	14,	7,	1 },
-+	/*    x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-+	{ 12, 128,	103,	76,	51,	25,	1 },
-+	/*    x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
-+	{ 10, 32,	26,	20,	14,	7,	1 },
- #if 0
--	/* x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
--	{ 2048,	1638,	1231,	819,	411,	1 },
-+	/*    x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115 */
-+	{ 16, 2048,	1638,	1231,	819,	411,	1 },
- 
--	/* x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
--	{ 1024,	817,	615,	412,	204,	1 },
-+	/*    x^1024 + x^817 + x^615 + x^412 + x^204 + x + 1 -- 290 */
-+	{ 15, 1024,	817,	615,	412,	204,	1 },
- 
--	/* x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
--	{ 1024,	819,	616,	410,	207,	2 },
-+	/*    x^1024 + x^819 + x^616 + x^410 + x^207 + x^2 + 1 -- 115 */
-+	{ 15, 1024,	819,	616,	410,	207,	2 },
- 
--	/* x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
--	{ 512,	411,	308,	208,	104,	1 },
-+	/*    x^512 + x^411 + x^308 + x^208 + x^104 + x + 1 -- 225 */
-+	{ 14, 512,	411,	308,	208,	104,	1 },
- 
--	/* x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
--	{ 512,	409,	307,	206,	102,	2 },
--	/* x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
--	{ 512,	409,	309,	205,	103,	2 },
-+	/*    x^512 + x^409 + x^307 + x^206 + x^102 + x^2 + 1 -- 95 */
-+	{ 14, 512,	409,	307,	206,	102,	2 },
-+	/*    x^512 + x^409 + x^309 + x^205 + x^103 + x^2 + 1 -- 95 */
-+	{ 14, 512,	409,	309,	205,	103,	2 },
- 
--	/* x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
--	{ 256,	205,	155,	101,	52,	1 },
-+	/*    x^256 + x^205 + x^155 + x^101 + x^52 + x + 1 -- 125 */
-+	{ 13, 256,	205,	155,	101,	52,	1 },
- 
--	/* x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
--	{ 128,	103,	78,	51,	27,	2 },
-+	/*    x^128 + x^103 + x^78 + x^51 + x^27 + x^2 + 1 -- 70 */
-+	{ 12, 128,	103,	78,	51,	27,	2 },
- 
--	/* x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
--	{ 64,	52,	39,	26,	14,	1 },
-+	/*    x^64 + x^52 + x^39 + x^26 + x^14 + x + 1 -- 15 */
-+	{ 11, 64,	52,	39,	26,	14,	1 },
- #endif
- };
- 
-@@ -424,7 +427,7 @@ module_param(debug, bool, 0644);
- struct entropy_store;
- struct entropy_store {
- 	/* read-only data: */
--	struct poolinfo *poolinfo;
-+	const struct poolinfo *poolinfo;
- 	__u32 *pool;
- 	const char *name;
- 	struct entropy_store *pull;
-@@ -585,11 +588,13 @@ static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
+ out:
++	if (h)
++		sysctl_head_finish(h);
+ 	sysctl_head_finish(head);
+ 	return err;
  }
- 
- /*
-- * Credit (or debit) the entropy store with n bits of entropy
-+ * Credit (or debit) the entropy store with n bits of entropy.
-+ * The nbits value is given in units of 2^-16 bits, i.e. 0x10000 == 1 bit.
-  */
- static void credit_entropy_bits(struct entropy_store *r, int nbits)
- {
- 	int entropy_count, orig;
-+	int pool_size = r->poolinfo->POOLBITS;
- 
- 	if (!nbits)
- 		return;
-@@ -597,13 +602,48 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
- 	DEBUG_ENT("added %d entropy credits to %s\n", nbits, r->name);
- retry:
- 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
--	entropy_count += nbits;
-+	if (nbits < 0) {
-+		/* Debit. */
-+		entropy_count += nbits;
-+	} else {
-+		/*
-+		 * Credit: we have to account for the possibility of
-+		 * overwriting already present entropy.  Even in the
-+		 * ideal case of pure Shannon entropy, new contributions
-+		 * approach the full value asymptotically:
-+		 *
-+		 * entropy <- entropy + (pool_size - entropy) * 
-+		 *	(1 - exp(-add_entropy/pool_size))
-+		 *
-+		 * For add_entropy <= pool_size then
-+		 * (1 - exp(-add_entropy/pool_size)) >= 
-+		 *    (add_entropy/pool_size)*0.632...
-+		 * so we can approximate the exponential with
-+		 * add_entropy/(pool_size*2) and still be on the
-+		 * safe side by adding at most one pool_size at a time.
-+		 *
-+		 * The use of pool_size-1 in the while statement is to
-+		 * prevent rounding artifacts from making the loop
-+		 * arbitrarily long; this limits the loop to poolshift
-+		 * turns no matter how large nbits is.
-+		 */
-+		int pnbits = nbits;
-+		int s      = r->poolinfo->poolshift + 1;
-+
-+		do {
-+			int anbits = min(pnbits, pool_size);
-+
-+			entropy_count +=
-+				((pool_size - entropy_count)*anbits) >> s;
-+			pnbits -= anbits;
-+		} while (unlikely(entropy_count < pool_size-1 && pnbits));
-+	}
- 
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
--	} else if (entropy_count > r->poolinfo->POOLBITS)
--		entropy_count = r->poolinfo->POOLBITS;
-+	} else if (entropy_count > pool_size)
-+		entropy_count = pool_size;
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
- 
--- 
-1.7.11.2
-
