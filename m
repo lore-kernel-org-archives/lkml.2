@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab2HMWSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:18:51 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62584 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab2HMWSq (ORCPT
+	id S1755920Ab2HMWS5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:18:57 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53985 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908Ab2HMWSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:18:46 -0400
+	Mon, 13 Aug 2012 18:18:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 56/65] ARM: dts: imx53-ard: add regulators for lan9220
-Date: Mon, 13 Aug 2012 15:14:40 -0700
-Message-Id: <20120813221419.916248702@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 58/65] cfg80211: process pending events when unregistering net device
+Date: Mon, 13 Aug 2012 15:14:42 -0700
+Message-Id: <20120813221420.103760697@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -29,55 +31,65 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 1eec0c569523782392b5e6245effddb626213b8c upstream.
+commit 1f6fc43e621167492ed4b7f3b4269c584c3d6ccc upstream.
 
-Since commit c7e963f (net/smsc911x: Add regulator support), the lan9220
-device tree probe fails on imx53-ard board, because the commit makes
-VDD33A and VDDVARIO supplies mandatory for the driver.
+libertas currently calls cfg80211_disconnected() when it is being
+brought down. This causes an event to be allocated, but since the
+wdev is already removed from the rdev by the time that the event
+processing work executes, the event is never processed or freed.
+http://article.gmane.org/gmane.linux.kernel.wireless.general/95666
 
-Add a fixed dummy 3V3 supplying lan9220 to fix the regression.
+Fix this leak, and other possible situations, by processing the event
+queue when a device is being unregistered. Thanks to Johannes Berg for
+the suggestion.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/imx53-ard.dts |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ net/wireless/core.c |    5 +++++
+ net/wireless/core.h |    1 +
+ net/wireless/util.c |    2 +-
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/imx53-ard.dts
-+++ b/arch/arm/boot/dts/imx53-ard.dts
-@@ -70,10 +70,30 @@
- 			interrupt-parent = <&gpio2>;
- 			interrupts = <31>;
- 			reg-io-width = <4>;
-+			/*
-+			 * VDD33A and VDDVARIO of LAN9220 are supplied by
-+			 * SW4_3V3 of LTC3589.  Before the regulator driver
-+			 * for this PMIC is available, we use a fixed dummy
-+			 * 3V3 regulator to get LAN9220 driver probing work.
-+			 */
-+			vdd33a-supply = <&reg_3p3v>;
-+			vddvario-supply = <&reg_3p3v>;
- 			smsc,irq-push-pull;
- 		};
- 	};
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -975,6 +975,11 @@ static int cfg80211_netdev_notifier_call
+ 		 */
+ 		synchronize_rcu();
+ 		INIT_LIST_HEAD(&wdev->list);
++		/*
++		 * Ensure that all events have been processed and
++		 * freed.
++		 */
++		cfg80211_process_wdev_events(wdev);
+ 		break;
+ 	case NETDEV_PRE_UP:
+ 		if (!(wdev->wiphy->interface_modes & BIT(wdev->iftype)))
+--- a/net/wireless/core.h
++++ b/net/wireless/core.h
+@@ -426,6 +426,7 @@ int cfg80211_change_iface(struct cfg8021
+ 			  struct net_device *dev, enum nl80211_iftype ntype,
+ 			  u32 *flags, struct vif_params *params);
+ void cfg80211_process_rdev_events(struct cfg80211_registered_device *rdev);
++void cfg80211_process_wdev_events(struct wireless_dev *wdev);
  
-+	regulators {
-+		compatible = "simple-bus";
-+
-+		reg_3p3v: 3p3v {
-+			compatible = "regulator-fixed";
-+			regulator-name = "3P3V";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-always-on;
-+		};
-+	};
-+
- 	gpio-keys {
- 		compatible = "gpio-keys";
+ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
+ 				  struct wireless_dev *wdev,
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -717,7 +717,7 @@ void cfg80211_upload_connect_keys(struct
+ 	wdev->connect_keys = NULL;
+ }
  
+-static void cfg80211_process_wdev_events(struct wireless_dev *wdev)
++void cfg80211_process_wdev_events(struct wireless_dev *wdev)
+ {
+ 	struct cfg80211_event *ev;
+ 	unsigned long flags;
 
 
