@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2HMLfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 07:35:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37672 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab2HMLfL convert rfc822-to-8bit (ORCPT
+	id S1751772Ab2HMLhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 07:37:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39798 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2HMLhU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 07:35:11 -0400
-Message-ID: <1344857686.31459.25.camel@twins>
-Subject: Re: [RFC 5/5] uprobes: add global breakpoints
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
-        gdb-patches@sourceware.org
-Date: Mon, 13 Aug 2012 13:34:46 +0200
-In-Reply-To: <1344355952-2382-6-git-send-email-bigeasy@linutronix.de>
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de>
-	 <1344355952-2382-6-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 13 Aug 2012 07:37:20 -0400
+Message-ID: <5028E6E2.2070608@parallels.com>
+Date: Mon, 13 Aug 2012 15:37:06 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@poochiereds.net>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] SUNRPC: check current nsproxy before set of node name
+ on client creation
+References: <20120813112156.8459.54793.stgit@localhost.localdomain> <20120813073505.7870ef21@corrin.poochiereds.net>
+In-Reply-To: <20120813073505.7870ef21@corrin.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 18:12 +0200, Sebastian Andrzej Siewior wrote:
-> By setting an uprobe tracepoint, one learns whenever a certain point
-> within a program is reached / passed. This is recorded and the
-> application continues.
-> This patch adds the ability to hold the program once this point has been
-> passed and the user may attach to the program via ptrace.
-> First, setup a global breakpoint which is very similar to a uprobe trace
-> point:
-> 
-> |echo 'g /home/bigeasy/sample:0x0000044d %ip %ax' > uprobe_events
-> 
-> This is exactly what uprobe does except that it starts with the letter
-> 'g' instead of 'p'.
-> 
-> Step two is to enable it:
-> |echo 1 > events/uprobes/enable
-> 
-> Lets assume you execute ./sample and the breakpoint is hit. In ps you will
-> see:
-> |1938 pts/1    t+     0:00 ./sample
+Thanks, Jeff. Will fix.
 
-This seems particularly dangerous.. suppose you tag a frequent function
-(say malloc) and the entire userspace freezes, including your shell.
+13.08.2012 15:35, Jeff Layton пишет:
+> On Mon, 13 Aug 2012 15:21:56 +0400
+> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+>
+>> When child reaper exits, it can destroy mount namespace it belong to, and if
+>> there are NFS mounts inside, then it will try to umount them. But in this
+>> point current->nsproxy is set to NULL and all namespaces will be destroyed one
+>> by one. I.e. we can't dereference current->nsproxy to obtain uts namespace.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> ---
+>>   net/sunrpc/clnt.c |   14 ++++++++++++--
+>>   1 files changed, 12 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+>> index 9a9676e..28ac940 100644
+>> --- a/net/sunrpc/clnt.c
+>> +++ b/net/sunrpc/clnt.c
+>> @@ -279,6 +279,16 @@ void rpc_clients_notifier_unregister(void)
+>>
+>>   static void rpc_clnt_set_nodename(struct rpc_clnt *clnt, const char *nodename)
+>
+> Don't you need to change the prototype of the function here too?
+>
+>>   {
+>> +	const char *nodename;
+>> +
+>> +	/*
+>> +	 * We have to protect against dying chilp reaper, which has released
+>
+> 	nit: "dying child reaper" ?
+>
+>> +	 * it's nsproxy already and is trying to destroy mount namespace.
+>
+> 	nit: "its"
+>
+>> +	 */
+>> +	if (current->nsproxy == NULL)
+>> +		return;
+>> +
+>> +	nodename = utsname()->nodename;
+>>   	clnt->cl_nodelen = strlen(nodename);
+>>   	if (clnt->cl_nodelen > UNX_MAXNODENAME)
+>>   		clnt->cl_nodelen = UNX_MAXNODENAME;
+>> @@ -365,7 +375,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+>>   	}
+>>
+>>   	/* save the nodename */
+>> -	rpc_clnt_set_nodename(clnt, utsname()->nodename);
+>> +	rpc_clnt_set_nodename(clnt);
+>>   	rpc_register_client(clnt);
+>>   	return clnt;
+>>
+>> @@ -524,7 +534,7 @@ rpc_clone_client(struct rpc_clnt *clnt)
+>>   	err = rpc_setup_pipedir(new, clnt->cl_program->pipe_dir_name);
+>>   	if (err != 0)
+>>   		goto out_no_path;
+>> -	rpc_clnt_set_nodename(new, utsname()->nodename);
+>> +	rpc_clnt_set_nodename(new);
+>>   	if (new->cl_auth)
+>>   		atomic_inc(&new->cl_auth->au_count);
+>>   	atomic_inc(&clnt->cl_count);
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-> Now you can attach gdb via 'gdb -p 1938'. The gdb can now interact with
-> the tracee and inspect its registers, its stack, single step, let it
-> run…
-> In case the process is not of great interest, the user may continue
-> without gdb by writting its pid into the uprobe_gp_wakeup file
-> 
-> |echo 1938 > uprobe_gp_wakeup
-> 
-> What I miss right now is an interface to tell the user/gdb that there is a
-> program that hit a global breakpoint and is waiting for further instructions.
-> A "tail -f trace" does not work and may contain also a lot of other
-> informations. I've been thinking about a poll()able file which returns pids of
-> tasks which are put on hold. Other suggestions? 
 
-I'm not really happy with any of this. I would suggest limiting this
-stuff much further, like say only have it affect ptraced
-processes/tasks. That way you cannot accidentally freeze the entire
-system into oblivion.
-
-GDB (and assorted stuff) can already track an entire process hierarchy
-with fork follow stuffs.
+-- 
+Best regards,
+Stanislav Kinsbursky
