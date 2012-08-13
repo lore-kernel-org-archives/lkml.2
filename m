@@ -1,267 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2HMIK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 04:10:59 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47247 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab2HMIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 04:10:56 -0400
-Message-ID: <5028B5D2.8010004@parallels.com>
-Date: Mon, 13 Aug 2012 12:07:46 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <xr93ehnec8sl.fsf@gthelen.mtv.corp.google.com>
-In-Reply-To: <xr93ehnec8sl.fsf@gthelen.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753431Ab2HMILo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 04:11:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34671 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab2HMILl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 04:11:41 -0400
+Message-ID: <1344845488.31459.10.camel@twins>
+Subject: Re: rcu stalls seen with numasched_v2 patches applied.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: john stultz <johnstul@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 13 Aug 2012 10:11:28 +0200
+In-Reply-To: <1344844273.31459.1.camel@twins>
+References: <20120807123305.GA7137@linux.vnet.ibm.com>
+	 <1344347568.27828.122.camel@twins>
+	 <20120807171859.GB3850@linux.vnet.ibm.com>
+	 <1344455938.16728.13.camel@laptop>
+	 <20120810162425.GD31805@linux.vnet.ibm.com>
+	 <1344844273.31459.1.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2012 09:11 AM, Greg Thelen wrote:
-> On Thu, Aug 09 2012, Glauber Costa wrote:
+On Mon, 2012-08-13 at 09:51 +0200, Peter Zijlstra wrote:
+> On Fri, 2012-08-10 at 21:54 +0530, Srikar Dronamraju wrote:
 > 
->> This patch introduces infrastructure for tracking kernel memory pages to
->> a given memcg. This will happen whenever the caller includes the flag
->> __GFP_KMEMCG flag, and the task belong to a memcg other than the root.
->>
->> In memcontrol.h those functions are wrapped in inline accessors.  The
->> idea is to later on, patch those with static branches, so we don't incur
->> any overhead when no mem cgroups with limited kmem are being used.
->>
->> [ v2: improved comments and standardized function names ]
->>
->> Signed-off-by: Glauber Costa <glommer@parallels.com>
->> CC: Christoph Lameter <cl@linux.com>
->> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->> CC: Michal Hocko <mhocko@suse.cz>
->> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Johannes Weiner <hannes@cmpxchg.org>
->> ---
->>  include/linux/memcontrol.h |  79 +++++++++++++++++++
->>  mm/memcontrol.c            | 185 +++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 264 insertions(+)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 8d9489f..75b247e 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -21,6 +21,7 @@
->>  #define _LINUX_MEMCONTROL_H
->>  #include <linux/cgroup.h>
->>  #include <linux/vm_event_item.h>
->> +#include <linux/hardirq.h>
->>  
->>  struct mem_cgroup;
->>  struct page_cgroup;
->> @@ -399,6 +400,11 @@ struct sock;
->>  #ifdef CONFIG_MEMCG_KMEM
->>  void sock_update_memcg(struct sock *sk);
->>  void sock_release_memcg(struct sock *sk);
->> +
->> +#define memcg_kmem_on 1
->> +bool __memcg_kmem_new_page(gfp_t gfp, void *handle, int order);
->> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order);
->> +void __memcg_kmem_free_page(struct page *page, int order);
->>  #else
->>  static inline void sock_update_memcg(struct sock *sk)
->>  {
->> @@ -406,6 +412,79 @@ static inline void sock_update_memcg(struct sock *sk)
->>  static inline void sock_release_memcg(struct sock *sk)
->>  {
->>  }
->> +
->> +#define memcg_kmem_on 0
->> +static inline bool
->> +__memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
->> +{
->> +	return false;
->> +}
->> +
->> +static inline void  __memcg_kmem_free_page(struct page *page, int order)
->> +{
->> +}
->> +
->> +static inline void
->> +__memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
->> +{
->> +}
->>  #endif /* CONFIG_MEMCG_KMEM */
->> +
->> +/**
->> + * memcg_kmem_new_page: verify if a new kmem allocation is allowed.
->> + * @gfp: the gfp allocation flags.
->> + * @handle: a pointer to the memcg this was charged against.
->> + * @order: allocation order.
->> + *
->> + * returns true if the memcg where the current task belongs can hold this
->> + * allocation.
->> + *
->> + * We return true automatically if this allocation is not to be accounted to
->> + * any memcg.
->> + */
->> +static __always_inline bool
->> +memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
->> +{
->> +	if (!memcg_kmem_on)
->> +		return true;
->> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
->> +		return true;
->> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
->> +		return true;
->> +	return __memcg_kmem_new_page(gfp, handle, order);
->> +}
->> +
->> +/**
->> + * memcg_kmem_free_page: uncharge pages from memcg
->> + * @page: pointer to struct page being freed
->> + * @order: allocation order.
->> + *
->> + * there is no need to specify memcg here, since it is embedded in page_cgroup
->> + */
->> +static __always_inline void
->> +memcg_kmem_free_page(struct page *page, int order)
->> +{
->> +	if (memcg_kmem_on)
->> +		__memcg_kmem_free_page(page, order);
->> +}
->> +
->> +/**
->> + * memcg_kmem_commit_page: embeds correct memcg in a page
->> + * @handle: a pointer to the memcg this was charged against.
->> + * @page: pointer to struct page recently allocated
->> + * @handle: the memcg structure we charged against
->> + * @order: allocation order.
->> + *
->> + * Needs to be called after memcg_kmem_new_page, regardless of success or
->> + * failure of the allocation. if @page is NULL, this function will revert the
->> + * charges. Otherwise, it will commit the memcg given by @handle to the
->> + * corresponding page_cgroup.
->> + */
->> +static __always_inline void
->> +memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
->> +{
->> +	if (memcg_kmem_on)
->> +		__memcg_kmem_commit_page(page, handle, order);
->> +}
->>  #endif /* _LINUX_MEMCONTROL_H */
->>  
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 54e93de..e9824c1 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -10,6 +10,10 @@
->>   * Copyright (C) 2009 Nokia Corporation
->>   * Author: Kirill A. Shutemov
->>   *
->> + * Kernel Memory Controller
->> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
->> + * Authors: Glauber Costa and Suleiman Souhlal
->> + *
->>   * This program is free software; you can redistribute it and/or modify
->>   * it under the terms of the GNU General Public License as published by
->>   * the Free Software Foundation; either version 2 of the License, or
->> @@ -434,6 +438,9 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
->>  #include <net/ip.h>
->>  
->>  static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
->> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
->> +static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
->> +
->>  void sock_update_memcg(struct sock *sk)
->>  {
->>  	if (mem_cgroup_sockets_enabled) {
->> @@ -488,6 +495,118 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
->>  }
->>  EXPORT_SYMBOL(tcp_proto_cgroup);
->>  #endif /* CONFIG_INET */
->> +
->> +static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
->> +{
->> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
->> +		memcg->kmem_accounted;
->> +}
->> +
->> +/*
->> + * We need to verify if the allocation against current->mm->owner's memcg is
->> + * possible for the given order. But the page is not allocated yet, so we'll
->> + * need a further commit step to do the final arrangements.
->> + *
->> + * It is possible for the task to switch cgroups in this mean time, so at
->> + * commit time, we can't rely on task conversion any longer.  We'll then use
->> + * the handle argument to return to the caller which cgroup we should commit
->> + * against
->> + *
->> + * Returning true means the allocation is possible.
->> + */
->> +bool __memcg_kmem_new_page(gfp_t gfp, void *_handle, int order)
->> +{
->> +	struct mem_cgroup *memcg;
->> +	struct mem_cgroup **handle = (struct mem_cgroup **)_handle;
->> +	bool ret = true;
->> +	size_t size;
->> +	struct task_struct *p;
->> +
->> +	*handle = NULL;
->> +	rcu_read_lock();
->> +	p = rcu_dereference(current->mm->owner);
->> +	memcg = mem_cgroup_from_task(p);
->> +	if (!memcg_kmem_enabled(memcg))
->> +		goto out;
->> +
->> +	mem_cgroup_get(memcg);
->> +
->> +	size = PAGE_SIZE << order;
->> +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
->> +	if (!ret) {
->> +		mem_cgroup_put(memcg);
->> +		goto out;
->> +	}
->> +
->> +	*handle = memcg;
->> +out:
->> +	rcu_read_unlock();
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL(__memcg_kmem_new_page);
+> > This change worked well on the 2 node machine 
+> > but on the 8 node machine it hangs with repeated messages
+> > 
+> > Pid: 60935, comm: numa01 Tainted: G        W    3.5.0-numasched_v2_020812+ #4
+> > Call Trace:
+> > <IRQ>  [<ffffffff810d32e2>] ? rcu_check_callback s+0x632/0x650
+> > [<ffffffff81061bb8>] ? update_process_times+0x48/0x90
+> > [<ffffffff810a2a4e>] ? tick_sched_timer+0x6e/0xe0
+> > [<ffffffff81079c85>] ? __run_hrtimer+0x75/0x1a0
+> > [<ffffffff810a29e0>] ? tick_setup_sched_timer+0x100/0x100
+> > [<ffffffff8107a036>] ? hrtimer_interrupt+0xf6/0x250
+> > [<ffffffff814f1379>] ? smp_apic_timer_interrupt+0x69/0x99
+> > [<ffffffff814f034a>] ? apic_timer_interrupt+0x6a/0x70
+> > <EOI>  [<ffffffff811082e3>] ? wait_on_page_bit+0x73/0x80
+> > [<ffffffff814e7992>] ? _raw_spin_lock+0x22/0x30
+> > [<ffffffff81131bf3>] ? handle_pte_fault+0x1b3/0xca0
+> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
+> > [<ffffffff8107a9a8>] ? up_read+0x18/0x30
+> > [<ffffffff814eb2be>] ? do_page_fault+0x13e/0x460
+> > [<ffffffff810137ba>] ? __switch_to+0x1aa/0x460
+> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
+> > [<ffffffff814e7de5>] ? page_fault+0x25/0x30
+> > { 3}  (t=62998 jiffies)
+> > 
 > 
-> While running f853d89 from git://github.com/glommer/linux.git , I hit a
-> lockdep issue.  To create this I allocated and held reference to some
-> kmem in the context of a kmem limited memcg.  Then I moved the
-> allocating process out of memcg and then deleted the memcg.  Due to the
-> kmem reference the struct mem_cgroup is still active but invisible in
-> cgroupfs namespace.  No problems yet.  Then I killed the user process
-> which freed the kmem from the now unlinked memcg.  Dropping the kmem
-> caused the memcg ref to hit zero.  Then the memcg is deleted but that
-> acquires a non-irqsafe spinlock in softirq which annoys lockdep.  I
-> think the lock in question is the mctz below:
-> 
->     mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
->     				struct mem_cgroup_per_zone *mz,
->     				struct mem_cgroup_tree_per_zone *mctz)
->     {
->     	spin_lock(&mctz->lock);
->     	__mem_cgroup_remove_exceeded(memcg, mz, mctz);
->     	spin_unlock(&mctz->lock);
->     }
-> 
-> Perhaps your patches expose this problem by being the first time we call
-> __mem_cgroup_free() from softirq (this is just an educated guess).  I'm
-> not sure how this would interact with Ying's soft limit rework:
-> https://lwn.net/Articles/501338/
-> 
+> If you run a -tip kernel without the numa patches, does that work?
 
-Thanks for letting me know, Greg,
 
-I'll try to reproduce this today and see how it goes.
+n/m, I found a total brain-fart in there.. does the below sort it?
+
+---
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -917,7 +917,7 @@ void task_numa_work(struct callback_head
+ 		t = p;
+ 		do {
+ 			sched_setnode(t, node);
+-		} while ((t = next_thread(p)) != p);
++		} while ((t = next_thread(t)) != p);
+ 		rcu_read_unlock();
+ 	}
+ 
+
