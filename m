@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab2HMQUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:20:12 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:63093 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab2HMQTm (ORCPT
+	id S1752590Ab2HMQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:22:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53365 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab2HMQW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:19:42 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH 4/5] workqueue: use system_highpri_wq for highpri workers in rebind_workers()
-Date: Tue, 14 Aug 2012 01:17:51 +0900
-Message-Id: <1344874672-6257-4-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344874672-6257-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1344874672-6257-1-git-send-email-js1304@gmail.com>
+	Mon, 13 Aug 2012 12:22:56 -0400
+Date: Mon, 13 Aug 2012 13:22:46 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH 5/6] floppy: remove check for allocated queue on
+ do_floppy_init error handling
+Message-ID: <20120813162242.GB23193@herton-Z68MA-D2H-B3>
+References: <1344542391-16474-1-git-send-email-herton.krzesinski@canonical.com>
+ <1344542391-16474-6-git-send-email-herton.krzesinski@canonical.com>
+ <20120810173653.GK5416@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120810173653.GK5416@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In rebind_workers(), we do inserting a work to rebind to cpu for busy workers.
-Currently, in this case, we use only system_wq. This makes a possible
-error situation as there is mismatch between cwq->pool and worker->pool.
+On Fri, Aug 10, 2012 at 01:36:53PM -0400, Vivek Goyal wrote:
+> On Thu, Aug 09, 2012 at 04:59:50PM -0300, Herton Ronaldo Krzesinski wrote:
+> > The check "if (disks[dr]->queue)" check is bogus, if we reach there
+> > for each dr should exist an queue allocated (note that we decrement dr
+> > first on entering the loop).
+> > 
+> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> 
+> As mentioned in second patch, I like going trhough full array of drives
+> and do cleanup as needed instead of relying on "dr" variable. 
+> 
+> But if you don't like that, then I am not as such against this approach.
+> Was just trying to keep all put_disk() at one place.
 
-To prevent this, we should use system_highpri_wq for highpri worker
-to match theses. This implements it.
+Ok, I'll drop this, and do a full cleanup. I just ended up doing the
+minimal work, but I'm not against cleaning this. I still want to keep
+the second patch, as being a simple/appropriate bug fix for stable. I'll
+submit a new series soon. Thanks for looking at this series.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> 
+> Thanks
+> Vivek
+> 
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f69f094..e0e1d41 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -489,6 +489,11 @@ static int worker_pool_pri(struct worker_pool *pool)
- 	return pool - pool->gcwq->pools;
- }
- 
-+static struct workqueue_struct *get_pool_system_wq(struct worker_pool *pool)
-+{
-+	return worker_pool_pri(pool) ? system_highpri_wq : system_wq;
-+}
-+
- static struct global_cwq *get_gcwq(unsigned int cpu)
- {
- 	if (cpu != WORK_CPU_UNBOUND)
-@@ -1450,9 +1455,10 @@ retry:
- 
- 		/* wq doesn't matter, use the default one */
- 		debug_work_activate(rebind_work);
--		insert_work(get_cwq(gcwq->cpu, system_wq), rebind_work,
--			    worker->scheduled.next,
--			    work_color_to_flags(WORK_NO_COLOR));
-+		insert_work(
-+			get_cwq(gcwq->cpu, get_pool_system_wq(worker->pool)),
-+			rebind_work, worker->scheduled.next,
-+			work_color_to_flags(WORK_NO_COLOR));
- 	}
- }
- 
 -- 
-1.7.9.5
-
+[]'s
+Herton
