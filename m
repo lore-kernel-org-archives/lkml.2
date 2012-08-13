@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2HMKFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 06:05:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52684 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab2HMKER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 06:04:17 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: Sourav Poddar <sourav.poddar@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 3/4] arm/dts: omap5-evm: Add keypad data
-Date: Mon, 13 Aug 2012 15:35:12 +0530
-Message-ID: <1344852313-30484-4-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
-References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
+	id S1751824Ab2HMKRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 06:17:45 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:38678 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab2HMKRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 06:17:44 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Aug 2012 06:17:44 EDT
+Message-ID: <5028D2B0.4010800@ce.jp.nec.com>
+Date: Mon, 13 Aug 2012 19:10:56 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andi Kleen <andi@firstfloor.org>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <nhoriguc@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 2/3] HWPOISON: undo memory error handling for dirty pagecache
+References: <1344634913-13681-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1344634913-13681-3-git-send-email-n-horiguchi@ah.jp.nec.com> <m2a9y2cpj7.fsf@firstfloor.org>
+In-Reply-To: <m2a9y2cpj7.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keypad data node in omap5 device tree file.
-Also fill the device tree binding parameters
-with the required value in "omap5-evm" dts file.
+On 08/11/12 08:09, Andi Kleen wrote:
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> 
+>> Current memory error handling on dirty pagecache has a bug that user
+>> processes who use corrupted pages via read() or write() can't be aware
+>> of the memory error and result in discarding dirty data silently.
+>>
+>> The following patch is to improve handling/reporting memory errors on
+>> this case, but as a short term solution I suggest that we should undo
+>> the present error handling code and just leave errors for such cases
+>> (which expect the 2nd MCE to panic the system) to ensure data consistency.
+> 
+> Not sure that's the right approach. It's not worse than any other IO 
+> errors isn't it? 
 
-Tested on omap5430 evm with 3.5 custom kernel.
+IMO, it's worse in certain cases.  For example, producer-consumer type
+program which uses file as a temporary storage.
+Current memory-failure.c drops produced data from dirty pagecache
+and allows reader to consume old or empty data from disk (silently!),
+that's what I think HWPOISON should prevent.
 
-Cc: Benoit Cousson <b-cousson@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
-v1->v2
-Add key names as comments
- arch/arm/boot/dts/omap5-evm.dts |   12 ++++++++++++
- arch/arm/boot/dts/omap5.dtsi    |    5 +++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+Similar thing could happen theoretically with disk I/O errors,
+though, practically those errors are often persistent and reader will
+likely get errors again instead of bad data.
+Also, ext3/ext4 has an option to panic when an error is detected,
+for people who want to avoid corruption on intermittent errors.
 
-diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-index 45a8aeb..c2ea189 100644
---- a/arch/arm/boot/dts/omap5-evm.dts
-+++ b/arch/arm/boot/dts/omap5-evm.dts
-@@ -17,6 +17,18 @@
- 		device_type = "memory";
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
-+
-+	keypad {
-+		keypad,num-rows = <8>;
-+		keypad,num-columns = <8>;
-+		linux,keymap = < 0x02020073  /* VOLUP */
-+			0x02030072  /* VOLDOWM */
-+			0x020400e7  /* SEND */
-+			0x02050066  /* HOME */
-+			0x0206006b  /* END */
-+			0x020700d9 >; /* SEARCH */
-+		linux,input-no-autorepeat;
-+	};
- };
- 
- &i2c4 {
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 6b68dfe..c38b823 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -216,4 +216,9 @@
- 			clock-frequency = <48000000>;
- 		};
- 	};
-+
-+	keypad {
-+		compatible = "ti,omap4-keypad";
-+		ti,hwmods = "kbd";
-+	};
- };
 -- 
-1.7.1
+Jun'ichi Nomura, NEC Corporation
 
