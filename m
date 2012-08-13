@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2HMUnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:43:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59516 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab2HMUnO convert rfc822-to-8bit (ORCPT
+	id S1753792Ab2HMUnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:43:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51310 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab2HMUUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:43:14 -0400
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 13 Aug 2012 13:42:53 -0700
-X-Google-Sender-Auth: Jo4998UxLDjYgdaJGzPqSz_CYZk
-Message-ID: <CAB=NE6W_SQUJmAXaLesyRShtQ=Urz=w5Ks5jEXq_50bRge+PWQ@mail.gmail.com>
-Subject: Backports mailing list
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        lf_driver_backport@lists.linux-foundation.org,
-        Julia Lawall <julia.lawall@lip6.fr>, Jesper Andersen <jespera@diku.dk>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Aug 2012 16:20:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 12/82] media: ene_ir: Fix driver initialisation
+Date: Mon, 13 Aug 2012 13:18:48 -0700
+Message-Id: <20120813201747.503720230@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-The compat [0] / compat-wireless [1] [2] projects have received quite
-a bit of love of the years to the point we now have 3 subsystems
-backported: Ethernet, Bluetooth and 802.11. Ozan Çağlayan, a Linux
-Foundation Google Summer of Code student is folding in right now drm
-driver support. At the request of the community, specifically those
-part of the Linux Foundation driver working group [3], we are going to
-be renaming the project to compat-drivers soon after drm is integrated
-and will be housing documentation under the kernel.org infrastructure
-[4] under this new name. It'll take some time for us to migrate the
-documentation / releases but do not see major issues with that, it
-will just take a bit of time but hope to have it done for the next
-stable release based on the next kernel stable release. At this time
-for patches we do have a Linux Foundation mailing list but have had
-issues with it for a while now so we keep using linux-wireless for
-patches. Given that our focus is to always prioritize upstream and
-always try to work with solutions that ensure vendors are focusing on
-upstream solutions and prioritizing upstream [5] I was hoping we can
-get a mailing list set up on vger for the project, perhaps
-backports@vger.kernel.org, so we don't flood the other mailing lists
-with random kernel backport junk. Please let me know if this is
-reasonable.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-[0] https://github.com/mcgrof/compat
-[1] http://wireless.kernel.org/en/users/Download/
-[2] http://wireless.kernel.org/en/users/Download/stable/
-[3] http://www.linuxfoundation.org/collaborate/workgroups/driver-backport/group
-[4] https://backports.wiki.kernel.org
-[5] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
+------------------
 
-  Luis
+From: Luis Henriques <luis.henriques@canonical.com>
+
+commit b31b021988fed9e3741a46918f14ba9b063811db upstream.
+
+commit 9ef449c6b31bb6a8e6dedc24de475a3b8c79be20 ("[media] rc: Postpone ISR
+registration") fixed an early ISR registration on several drivers.  It did
+however also introduced a bug by moving the invocation of pnp_port_start()
+to the end of the probe function.
+
+This patch fixes this issue by moving the invocation of pnp_port_start() to
+an earlier stage in the probe function.
+
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Cc: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/rc/ene_ir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/media/rc/ene_ir.c
++++ b/drivers/media/rc/ene_ir.c
+@@ -1018,6 +1018,8 @@ static int ene_probe(struct pnp_dev *pnp
+ 
+ 	spin_lock_init(&dev->hw_lock);
+ 
++	dev->hw_io = pnp_port_start(pnp_dev, 0);
++
+ 	pnp_set_drvdata(pnp_dev, dev);
+ 	dev->pnp_dev = pnp_dev;
+ 
+@@ -1072,7 +1074,6 @@ static int ene_probe(struct pnp_dev *pnp
+ 
+ 	/* claim the resources */
+ 	error = -EBUSY;
+-	dev->hw_io = pnp_port_start(pnp_dev, 0);
+ 	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
+ 		dev->hw_io = -1;
+ 		dev->irq = -1;
+
+
