@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2HMPJu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 11:09:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60834 "EHLO
+	id S1752553Ab2HMPKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 11:10:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60866 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab2HMPJs (ORCPT
+	with ESMTP id S1752394Ab2HMPKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 11:09:48 -0400
-Date: Mon, 13 Aug 2012 08:07:34 -0700
+	Mon, 13 Aug 2012 11:10:52 -0400
+Date: Mon, 13 Aug 2012 08:10:21 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-5d01bbd111d6ff9ea9d9847774f66dff39633776@git.kernel.org>
+Message-ID: <tip-f97f8f06a49febbc3cb3635172efbe64ddc79700@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         rusty@rustcorp.com.au, peterz@infradead.org,
         srivatsa.bhat@linux.vnet.ibm.com, namhyung@kernel.org,
@@ -18,11 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, peterz@infradead.org,
         srivatsa.bhat@linux.vnet.ibm.com, namhyung@kernel.org,
         paulmck@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <20120716103948.131256723@linutronix.de>
-References: <20120716103948.131256723@linutronix.de>
+In-Reply-To: <20120716103948.352501068@linutronix.de>
+References: <20120716103948.352501068@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] rcu: Yield simpler
-Git-Commit-ID: 5d01bbd111d6ff9ea9d9847774f66dff39633776
+Subject: [tip:smp/hotplug] smpboot:
+  Provide infrastructure for percpu hotplug threads
+Git-Commit-ID: f97f8f06a49febbc3cb3635172efbe64ddc79700
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,463 +32,402 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 08:07:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 08:10:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5d01bbd111d6ff9ea9d9847774f66dff39633776
-Gitweb:     http://git.kernel.org/tip/5d01bbd111d6ff9ea9d9847774f66dff39633776
+Commit-ID:  f97f8f06a49febbc3cb3635172efbe64ddc79700
+Gitweb:     http://git.kernel.org/tip/f97f8f06a49febbc3cb3635172efbe64ddc79700
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Mon, 16 Jul 2012 10:42:35 +0000
+AuthorDate: Mon, 16 Jul 2012 10:42:36 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 17:01:06 +0200
+CommitDate: Mon, 13 Aug 2012 17:01:07 +0200
 
-rcu: Yield simpler
+smpboot: Provide infrastructure for percpu hotplug threads
 
-The rcu_yield() code is amazing. It's there to avoid starvation of the
-system when lots of (boosting) work is to be done.
+Provide a generic interface for setting up and tearing down percpu
+threads.
 
-Now looking at the code it's functionality is:
+On registration the threads for already online cpus are created and
+started. On deregistration (modules) the threads are stoppped.
 
- Make the thread SCHED_OTHER and very nice, i.e. get it out of the way
- Arm a timer with 2 ticks
- schedule()
+During hotplug operations the threads are created, started, parked and
+unparked. The datastructure for registration provides a pointer to
+percpu storage space and optional setup, cleanup, park, unpark
+functions. These functions are called when the thread state changes.
 
-Now if the system goes idle the rcu task returns, regains SCHED_FIFO
-and plugs on. If the systems stays busy the timer fires and wakes a
-per node kthread which in turn makes the per cpu thread SCHED_FIFO and
-brings it back on the cpu. For the boosting thread the "make it FIFO"
-bit is missing and it just runs some magic boost checks. Now this is a
-lot of code with extra threads and complexity.
+Each implementation has to provide a function which is queried and
+returns whether the thread should run and the thread function itself.
 
-It's way simpler to let the tasks when they detect overload schedule
-away for 2 ticks and defer the normal wakeup as long as they are in
-yielded state and the cpu is not idle.
+The core code handles all state transitions and avoids duplicated code
+in the call sites.
 
-That solves the same problem and the only difference is that when the
-cpu goes idle it's not guaranteed that the thread returns right away,
-but it won't be longer out than two ticks, so no harm is done. If
-that's an issue than it is way simpler just to wake the task from
-idle as RCU has callbacks there anyway.
+[ paulmck: Preemption leak fix ]
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Namhyung Kim <namhyung@kernel.org>
 Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120716103948.131256723@linutronix.de
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/20120716103948.352501068@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/rcutree.c        |    8 +-
- kernel/rcutree.h        |    7 +--
- kernel/rcutree_plugin.h |  210 ++++++++---------------------------------------
- 3 files changed, 41 insertions(+), 184 deletions(-)
+ include/linux/smpboot.h |   43 +++++++++
+ kernel/cpu.c            |   10 ++-
+ kernel/smpboot.c        |  229 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/smpboot.h        |    4 +
+ 4 files changed, 285 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index f280e54..f08ee3b 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -139,7 +139,7 @@ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
+new file mode 100644
+index 0000000..e0106d8
+--- /dev/null
++++ b/include/linux/smpboot.h
+@@ -0,0 +1,43 @@
++#ifndef _LINUX_SMPBOOT_H
++#define _LINUX_SMPBOOT_H
++
++#include <linux/types.h>
++
++struct task_struct;
++/* Cookie handed to the thread_fn*/
++struct smpboot_thread_data;
++
++/**
++ * struct smp_hotplug_thread - CPU hotplug related thread descriptor
++ * @store:		Pointer to per cpu storage for the task pointers
++ * @list:		List head for core management
++ * @thread_should_run:	Check whether the thread should run or not. Called with
++ *			preemption disabled.
++ * @thread_fn:		The associated thread function
++ * @setup:		Optional setup function, called when the thread gets
++ *			operational the first time
++ * @cleanup:		Optional cleanup function, called when the thread
++ *			should stop (module exit)
++ * @park:		Optional park function, called when the thread is
++ *			parked (cpu offline)
++ * @unpark:		Optional unpark function, called when the thread is
++ *			unparked (cpu online)
++ * @thread_comm:	The base name of the thread
++ */
++struct smp_hotplug_thread {
++	struct task_struct __percpu	**store;
++	struct list_head		list;
++	int				(*thread_should_run)(unsigned int cpu);
++	void				(*thread_fn)(unsigned int cpu);
++	void				(*setup)(unsigned int cpu);
++	void				(*cleanup)(unsigned int cpu, bool online);
++	void				(*park)(unsigned int cpu);
++	void				(*unpark)(unsigned int cpu);
++	const char			*thread_comm;
++};
++
++int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread);
++void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread);
++int smpboot_thread_schedule(void);
++
++#endif
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 14d3258..e615dfb 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -280,12 +280,13 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 				__func__, cpu);
+ 		goto out_release;
+ 	}
++	smpboot_park_threads(cpu);
  
- #endif /* #ifdef CONFIG_RCU_BOOST */
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
++		smpboot_unpark_threads(cpu);
+ 		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+-
+ 		goto out_release;
+ 	}
+ 	BUG_ON(cpu_online(cpu));
+@@ -354,6 +355,10 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
+ 		goto out;
+ 	}
  
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
- static void invoke_rcu_core(void);
- static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
++	ret = smpboot_create_threads(cpu);
++	if (ret)
++		goto out;
++
+ 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
+ 	if (ret) {
+ 		nr_calls--;
+@@ -368,6 +373,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
+ 		goto out_notify;
+ 	BUG_ON(!cpu_online(cpu));
  
-@@ -1469,7 +1469,7 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
++	/* Wake the per cpu threads */
++	smpboot_unpark_threads(cpu);
++
+ 	/* Now call notifier in preparation. */
+ 	cpu_notify(CPU_ONLINE | mod, hcpu);
  
- 	/* Adjust any no-longer-needed kthreads. */
- 	rcu_stop_cpu_kthread(cpu);
--	rcu_node_kthread_setaffinity(rnp, -1);
-+	rcu_boost_kthread_setaffinity(rnp, -1);
+diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+index 98f60c5..9d5f7b0 100644
+--- a/kernel/smpboot.c
++++ b/kernel/smpboot.c
+@@ -1,11 +1,17 @@
+ /*
+  * Common SMP CPU bringup/teardown functions
+  */
++#include <linux/cpu.h>
+ #include <linux/err.h>
+ #include <linux/smp.h>
+ #include <linux/init.h>
++#include <linux/list.h>
++#include <linux/slab.h>
+ #include <linux/sched.h>
++#include <linux/export.h>
+ #include <linux/percpu.h>
++#include <linux/kthread.h>
++#include <linux/smpboot.h>
  
- 	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+ #include "smpboot.h"
  
-@@ -2594,11 +2594,11 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
--		rcu_node_kthread_setaffinity(rnp, -1);
-+		rcu_boost_kthread_setaffinity(rnp, -1);
- 		rcu_cpu_kthread_setrt(cpu, 1);
- 		break;
- 	case CPU_DOWN_PREPARE:
--		rcu_node_kthread_setaffinity(rnp, cpu);
-+		rcu_boost_kthread_setaffinity(rnp, cpu);
- 		rcu_cpu_kthread_setrt(cpu, 0);
- 		break;
- 	case CPU_DYING:
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4d29169..f081761 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -491,13 +491,8 @@ static void invoke_rcu_callbacks_kthread(void);
- static bool rcu_is_callbacks_kthread(void);
- #ifdef CONFIG_RCU_BOOST
- static void rcu_preempt_do_callbacks(void);
--static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp,
--					  cpumask_var_t cm);
- static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
--						 struct rcu_node *rnp,
--						 int rnp_index);
--static void invoke_rcu_node_kthread(struct rcu_node *rnp);
--static void rcu_yield(void (*f)(unsigned long), unsigned long arg);
-+						 struct rcu_node *rnp);
- #endif /* #ifdef CONFIG_RCU_BOOST */
- static void rcu_cpu_kthread_setrt(int cpu, int to_rt);
- static void __cpuinit rcu_prepare_kthreads(int cpu);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 7f3244c..0f8b5ec 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1069,6 +1069,16 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
- 
- #endif /* #else #ifdef CONFIG_RCU_TRACE */
- 
-+static void rcu_wake_cond(struct task_struct *t, int status)
+@@ -65,3 +71,226 @@ void __init idle_threads_init(void)
+ 	}
+ }
+ #endif
++
++static LIST_HEAD(hotplug_threads);
++static DEFINE_MUTEX(smpboot_threads_lock);
++
++struct smpboot_thread_data {
++	unsigned int			cpu;
++	unsigned int			status;
++	struct smp_hotplug_thread	*ht;
++};
++
++enum {
++	HP_THREAD_NONE = 0,
++	HP_THREAD_ACTIVE,
++	HP_THREAD_PARKED,
++};
++
++/**
++ * smpboot_thread_fn - percpu hotplug thread loop function
++ * @data:	thread data pointer
++ *
++ * Checks for thread stop and park conditions. Calls the necessary
++ * setup, cleanup, park and unpark functions for the registered
++ * thread.
++ *
++ * Returns 1 when the thread should exit, 0 otherwise.
++ */
++static int smpboot_thread_fn(void *data)
 +{
-+	/*
-+	 * If the thread is yielding, only wake it when this
-+	 * is invoked from idle
-+	 */
-+	if (status != RCU_KTHREAD_YIELDING || is_idle_task(current))
-+		wake_up_process(t);
++	struct smpboot_thread_data *td = data;
++	struct smp_hotplug_thread *ht = td->ht;
++
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		preempt_disable();
++		if (kthread_should_stop()) {
++			set_current_state(TASK_RUNNING);
++			preempt_enable();
++			if (ht->cleanup)
++				ht->cleanup(td->cpu, cpu_online(td->cpu));
++			kfree(td);
++			return 0;
++		}
++
++		if (kthread_should_park()) {
++			__set_current_state(TASK_RUNNING);
++			preempt_enable();
++			if (ht->park && td->status == HP_THREAD_ACTIVE) {
++				BUG_ON(td->cpu != smp_processor_id());
++				ht->park(td->cpu);
++				td->status = HP_THREAD_PARKED;
++			}
++			kthread_parkme();
++			/* We might have been woken for stop */
++			continue;
++		}
++
++		BUG_ON(td->cpu != smp_processor_id());
++
++		/* Check for state change setup */
++		switch (td->status) {
++		case HP_THREAD_NONE:
++			preempt_enable();
++			if (ht->setup)
++				ht->setup(td->cpu);
++			td->status = HP_THREAD_ACTIVE;
++			preempt_disable();
++			break;
++		case HP_THREAD_PARKED:
++			preempt_enable();
++			if (ht->unpark)
++				ht->unpark(td->cpu);
++			td->status = HP_THREAD_ACTIVE;
++			preempt_disable();
++			break;
++		}
++
++		if (!ht->thread_should_run(td->cpu)) {
++			preempt_enable();
++			schedule();
++		} else {
++			set_current_state(TASK_RUNNING);
++			preempt_enable();
++			ht->thread_fn(td->cpu);
++		}
++	}
 +}
 +
- /*
-  * Carry out RCU priority boosting on the task indicated by ->exp_tasks
-  * or ->boost_tasks, advancing the pointer to the next task in the
-@@ -1141,17 +1151,6 @@ static int rcu_boost(struct rcu_node *rnp)
- }
- 
- /*
-- * Timer handler to initiate waking up of boost kthreads that
-- * have yielded the CPU due to excessive numbers of tasks to
-- * boost.  We wake up the per-rcu_node kthread, which in turn
-- * will wake up the booster kthread.
-- */
--static void rcu_boost_kthread_timer(unsigned long arg)
--{
--	invoke_rcu_node_kthread((struct rcu_node *)arg);
--}
--
--/*
-  * Priority-boosting kthread.  One per leaf rcu_node and one for the
-  * root rcu_node.
-  */
-@@ -1174,8 +1173,9 @@ static int rcu_boost_kthread(void *arg)
- 		else
- 			spincnt = 0;
- 		if (spincnt > 10) {
-+			rnp->boost_kthread_status = RCU_KTHREAD_YIELDING;
- 			trace_rcu_utilization("End boost kthread@rcu_yield");
--			rcu_yield(rcu_boost_kthread_timer, (unsigned long)rnp);
-+			schedule_timeout_interruptible(2);
- 			trace_rcu_utilization("Start boost kthread@rcu_yield");
- 			spincnt = 0;
- 		}
-@@ -1213,8 +1213,8 @@ static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags)
- 			rnp->boost_tasks = rnp->gp_tasks;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		t = rnp->boost_kthread_task;
--		if (t != NULL)
--			wake_up_process(t);
-+		if (t)
-+			rcu_wake_cond(t, rnp->boost_kthread_status);
- 	} else {
- 		rcu_initiate_boost_trace(rnp);
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-@@ -1231,8 +1231,10 @@ static void invoke_rcu_callbacks_kthread(void)
- 	local_irq_save(flags);
- 	__this_cpu_write(rcu_cpu_has_work, 1);
- 	if (__this_cpu_read(rcu_cpu_kthread_task) != NULL &&
--	    current != __this_cpu_read(rcu_cpu_kthread_task))
--		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
-+	    current != __this_cpu_read(rcu_cpu_kthread_task)) {
-+		rcu_wake_cond(__this_cpu_read(rcu_cpu_kthread_task),
-+			      __this_cpu_read(rcu_cpu_kthread_status));
-+	}
- 	local_irq_restore(flags);
- }
- 
-@@ -1245,21 +1247,6 @@ static bool rcu_is_callbacks_kthread(void)
- 	return __get_cpu_var(rcu_cpu_kthread_task) == current;
- }
- 
--/*
-- * Set the affinity of the boost kthread.  The CPU-hotplug locks are
-- * held, so no one should be messing with the existence of the boost
-- * kthread.
-- */
--static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp,
--					  cpumask_var_t cm)
--{
--	struct task_struct *t;
--
--	t = rnp->boost_kthread_task;
--	if (t != NULL)
--		set_cpus_allowed_ptr(rnp->boost_kthread_task, cm);
--}
--
- #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
- 
- /*
-@@ -1276,15 +1263,19 @@ static void rcu_preempt_boost_start_gp(struct rcu_node *rnp)
-  * Returns zero if all is well, a negated errno otherwise.
-  */
- static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
--						 struct rcu_node *rnp,
--						 int rnp_index)
-+						 struct rcu_node *rnp)
- {
-+	int rnp_index = rnp - &rsp->node[0];
- 	unsigned long flags;
- 	struct sched_param sp;
- 	struct task_struct *t;
- 
- 	if (&rcu_preempt_state != rsp)
- 		return 0;
++static int
++__smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
++{
++	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
++	struct smpboot_thread_data *td;
 +
-+	if (!rcu_scheduler_fully_active || rnp->qsmaskinit == 0)
++	if (tsk)
 +		return 0;
 +
- 	rsp->boost = 1;
- 	if (rnp->boost_kthread_task != NULL)
- 		return 0;
-@@ -1328,20 +1319,6 @@ static void rcu_kthread_do_work(void)
- }
++	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_node(cpu));
++	if (!td)
++		return -ENOMEM;
++	td->cpu = cpu;
++	td->ht = ht;
++
++	tsk = kthread_create_on_cpu(smpboot_thread_fn, td, cpu,
++				    ht->thread_comm);
++	if (IS_ERR(tsk)) {
++		kfree(td);
++		return PTR_ERR(tsk);
++	}
++
++	get_task_struct(tsk);
++	*per_cpu_ptr(ht->store, cpu) = tsk;
++	return 0;
++}
++
++int smpboot_create_threads(unsigned int cpu)
++{
++	struct smp_hotplug_thread *cur;
++	int ret = 0;
++
++	mutex_lock(&smpboot_threads_lock);
++	list_for_each_entry(cur, &hotplug_threads, list) {
++		ret = __smpboot_create_thread(cur, cpu);
++		if (ret)
++			break;
++	}
++	mutex_unlock(&smpboot_threads_lock);
++	return ret;
++}
++
++static void smpboot_unpark_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
++{
++	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
++
++	kthread_unpark(tsk);
++}
++
++void smpboot_unpark_threads(unsigned int cpu)
++{
++	struct smp_hotplug_thread *cur;
++
++	mutex_lock(&smpboot_threads_lock);
++	list_for_each_entry(cur, &hotplug_threads, list)
++		smpboot_unpark_thread(cur, cpu);
++	mutex_unlock(&smpboot_threads_lock);
++}
++
++static void smpboot_park_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
++{
++	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
++
++	if (tsk)
++		kthread_park(tsk);
++}
++
++void smpboot_park_threads(unsigned int cpu)
++{
++	struct smp_hotplug_thread *cur;
++
++	mutex_lock(&smpboot_threads_lock);
++	list_for_each_entry_reverse(cur, &hotplug_threads, list)
++		smpboot_park_thread(cur, cpu);
++	mutex_unlock(&smpboot_threads_lock);
++}
++
++static void smpboot_destroy_threads(struct smp_hotplug_thread *ht)
++{
++	unsigned int cpu;
++
++	/* We need to destroy also the parked threads of offline cpus */
++	for_each_possible_cpu(cpu) {
++		struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
++
++		if (tsk) {
++			kthread_stop(tsk);
++			put_task_struct(tsk);
++			*per_cpu_ptr(ht->store, cpu) = NULL;
++		}
++	}
++}
++
++/**
++ * smpboot_register_percpu_thread - Register a per_cpu thread related to hotplug
++ * @plug_thread:	Hotplug thread descriptor
++ *
++ * Creates and starts the threads on all online cpus.
++ */
++int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
++{
++	unsigned int cpu;
++	int ret = 0;
++
++	mutex_lock(&smpboot_threads_lock);
++	for_each_online_cpu(cpu) {
++		ret = __smpboot_create_thread(plug_thread, cpu);
++		if (ret) {
++			smpboot_destroy_threads(plug_thread);
++			goto out;
++		}
++		smpboot_unpark_thread(plug_thread, cpu);
++	}
++	list_add(&plug_thread->list, &hotplug_threads);
++out:
++	mutex_unlock(&smpboot_threads_lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
++
++/**
++ * smpboot_unregister_percpu_thread - Unregister a per_cpu thread related to hotplug
++ * @plug_thread:	Hotplug thread descriptor
++ *
++ * Stops all threads on all possible cpus.
++ */
++void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread)
++{
++	get_online_cpus();
++	mutex_lock(&smpboot_threads_lock);
++	list_del(&plug_thread->list);
++	smpboot_destroy_threads(plug_thread);
++	mutex_unlock(&smpboot_threads_lock);
++	put_online_cpus();
++}
++EXPORT_SYMBOL_GPL(smpboot_unregister_percpu_thread);
+diff --git a/kernel/smpboot.h b/kernel/smpboot.h
+index 6ef9433..72415a0 100644
+--- a/kernel/smpboot.h
++++ b/kernel/smpboot.h
+@@ -13,4 +13,8 @@ static inline void idle_thread_set_boot_cpu(void) { }
+ static inline void idle_threads_init(void) { }
+ #endif
  
- /*
-- * Wake up the specified per-rcu_node-structure kthread.
-- * Because the per-rcu_node kthreads are immortal, we don't need
-- * to do anything to keep them alive.
-- */
--static void invoke_rcu_node_kthread(struct rcu_node *rnp)
--{
--	struct task_struct *t;
--
--	t = rnp->node_kthread_task;
--	if (t != NULL)
--		wake_up_process(t);
--}
--
--/*
-  * Set the specified CPU's kthread to run RT or not, as specified by
-  * the to_rt argument.  The CPU-hotplug locks are held, so the task
-  * is not going away.
-@@ -1366,45 +1343,6 @@ static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
- }
- 
- /*
-- * Timer handler to initiate the waking up of per-CPU kthreads that
-- * have yielded the CPU due to excess numbers of RCU callbacks.
-- * We wake up the per-rcu_node kthread, which in turn will wake up
-- * the booster kthread.
-- */
--static void rcu_cpu_kthread_timer(unsigned long arg)
--{
--	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, arg);
--	struct rcu_node *rnp = rdp->mynode;
--
--	atomic_or(rdp->grpmask, &rnp->wakemask);
--	invoke_rcu_node_kthread(rnp);
--}
--
--/*
-- * Drop to non-real-time priority and yield, but only after posting a
-- * timer that will cause us to regain our real-time priority if we
-- * remain preempted.  Either way, we restore our real-time priority
-- * before returning.
-- */
--static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
--{
--	struct sched_param sp;
--	struct timer_list yield_timer;
--	int prio = current->rt_priority;
--
--	setup_timer_on_stack(&yield_timer, f, arg);
--	mod_timer(&yield_timer, jiffies + 2);
--	sp.sched_priority = 0;
--	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
--	set_user_nice(current, 19);
--	schedule();
--	set_user_nice(current, 0);
--	sp.sched_priority = prio;
--	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
--	del_timer(&yield_timer);
--}
--
--/*
-  * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
-  * This can happen while the corresponding CPU is either coming online
-  * or going offline.  We cannot wait until the CPU is fully online
-@@ -1476,7 +1414,7 @@ static int rcu_cpu_kthread(void *arg)
- 		if (spincnt > 10) {
- 			*statusp = RCU_KTHREAD_YIELDING;
- 			trace_rcu_utilization("End CPU kthread@rcu_yield");
--			rcu_yield(rcu_cpu_kthread_timer, (unsigned long)cpu);
-+			schedule_timeout_interruptible(2);
- 			trace_rcu_utilization("Start CPU kthread@rcu_yield");
- 			spincnt = 0;
- 		}
-@@ -1533,48 +1471,6 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
- }
- 
- /*
-- * Per-rcu_node kthread, which is in charge of waking up the per-CPU
-- * kthreads when needed.  We ignore requests to wake up kthreads
-- * for offline CPUs, which is OK because force_quiescent_state()
-- * takes care of this case.
-- */
--static int rcu_node_kthread(void *arg)
--{
--	int cpu;
--	unsigned long flags;
--	unsigned long mask;
--	struct rcu_node *rnp = (struct rcu_node *)arg;
--	struct sched_param sp;
--	struct task_struct *t;
--
--	for (;;) {
--		rnp->node_kthread_status = RCU_KTHREAD_WAITING;
--		rcu_wait(atomic_read(&rnp->wakemask) != 0);
--		rnp->node_kthread_status = RCU_KTHREAD_RUNNING;
--		raw_spin_lock_irqsave(&rnp->lock, flags);
--		mask = atomic_xchg(&rnp->wakemask, 0);
--		rcu_initiate_boost(rnp, flags); /* releases rnp->lock. */
--		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1) {
--			if ((mask & 0x1) == 0)
--				continue;
--			preempt_disable();
--			t = per_cpu(rcu_cpu_kthread_task, cpu);
--			if (!cpu_online(cpu) || t == NULL) {
--				preempt_enable();
--				continue;
--			}
--			per_cpu(rcu_cpu_has_work, cpu) = 1;
--			sp.sched_priority = RCU_KTHREAD_PRIO;
--			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
--			preempt_enable();
--		}
--	}
--	/* NOTREACHED */
--	rnp->node_kthread_status = RCU_KTHREAD_STOPPED;
--	return 0;
--}
--
--/*
-  * Set the per-rcu_node kthread's affinity to cover all CPUs that are
-  * served by the rcu_node in question.  The CPU hotplug lock is still
-  * held, so the value of rnp->qsmaskinit will be stable.
-@@ -1583,17 +1479,17 @@ static int rcu_node_kthread(void *arg)
-  * no outgoing CPU.  If there are no CPUs left in the affinity set,
-  * this function allows the kthread to execute on any CPU.
-  */
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
- {
-+	struct task_struct *t = rnp->boost_kthread_task;
-+	unsigned long mask = rnp->qsmaskinit;
- 	cpumask_var_t cm;
- 	int cpu;
--	unsigned long mask = rnp->qsmaskinit;
- 
--	if (rnp->node_kthread_task == NULL)
-+	if (!t)
- 		return;
--	if (!alloc_cpumask_var(&cm, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&cm, GFP_KERNEL))
- 		return;
--	cpumask_clear(cm);
- 	for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1)
- 		if ((mask & 0x1) && cpu != outgoingcpu)
- 			cpumask_set_cpu(cpu, cm);
-@@ -1603,50 +1499,17 @@ static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
- 			cpumask_clear_cpu(cpu, cm);
- 		WARN_ON_ONCE(cpumask_weight(cm) == 0);
- 	}
--	set_cpus_allowed_ptr(rnp->node_kthread_task, cm);
--	rcu_boost_kthread_setaffinity(rnp, cm);
-+	set_cpus_allowed_ptr(t, cm);
- 	free_cpumask_var(cm);
- }
- 
- /*
-- * Spawn a per-rcu_node kthread, setting priority and affinity.
-- * Called during boot before online/offline can happen, or, if
-- * during runtime, with the main CPU-hotplug locks held.  So only
-- * one of these can be executing at a time.
-- */
--static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
--						struct rcu_node *rnp)
--{
--	unsigned long flags;
--	int rnp_index = rnp - &rsp->node[0];
--	struct sched_param sp;
--	struct task_struct *t;
--
--	if (!rcu_scheduler_fully_active ||
--	    rnp->qsmaskinit == 0)
--		return 0;
--	if (rnp->node_kthread_task == NULL) {
--		t = kthread_create(rcu_node_kthread, (void *)rnp,
--				   "rcun/%d", rnp_index);
--		if (IS_ERR(t))
--			return PTR_ERR(t);
--		raw_spin_lock_irqsave(&rnp->lock, flags);
--		rnp->node_kthread_task = t;
--		raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		sp.sched_priority = 99;
--		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
--		wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
--	}
--	return rcu_spawn_one_boost_kthread(rsp, rnp, rnp_index);
--}
--
--/*
-  * Spawn all kthreads -- called as soon as the scheduler is running.
-  */
- static int __init rcu_spawn_kthreads(void)
- {
--	int cpu;
- 	struct rcu_node *rnp;
-+	int cpu;
- 
- 	rcu_scheduler_fully_active = 1;
- 	for_each_possible_cpu(cpu) {
-@@ -1655,10 +1518,10 @@ static int __init rcu_spawn_kthreads(void)
- 			(void)rcu_spawn_one_cpu_kthread(cpu);
- 	}
- 	rnp = rcu_get_root(rcu_state);
--	(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+	(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	if (NUM_RCU_NODES > 1) {
- 		rcu_for_each_leaf_node(rcu_state, rnp)
--			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+			(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	}
- 	return 0;
- }
-@@ -1672,8 +1535,7 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
- 	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
- 	if (rcu_scheduler_fully_active) {
- 		(void)rcu_spawn_one_cpu_kthread(cpu);
--		if (rnp->node_kthread_task == NULL)
--			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+		(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	}
- }
- 
-@@ -1706,7 +1568,7 @@ static void rcu_stop_cpu_kthread(int cpu)
- 
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
- {
- }
- 
++int smpboot_create_threads(unsigned int cpu);
++void smpboot_park_threads(unsigned int cpu);
++void smpboot_unpark_threads(unsigned int cpu);
++
+ #endif
