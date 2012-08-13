@@ -1,61 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2HMQy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:54:27 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:41788 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab2HMQyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:54:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120813163219.GA9180@google.com>
-References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
-	<1344874672-6257-2-git-send-email-js1304@gmail.com>
-	<20120813163219.GA9180@google.com>
-Date: Tue, 14 Aug 2012 01:54:22 +0900
-Message-ID: <CAAmzW4NfPAVQnmD0vG71Ahz_=gmV7CQBNABpnEHFU7YBsYJOyQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] workqueue: change value of lcpu in queue_delayed_work_on()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753493Ab2HMQxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:53:24 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:60083
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753050Ab2HMQxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 12:53:17 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 09/18] Tools: hv: Represent the ipv6 mask using CIDR notation
+Date: Mon, 13 Aug 2012 10:06:58 -0700
+Message-Id: <1344877627-21779-9-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1344877627-21779-1-git-send-email-kys@microsoft.com>
+References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/14 Tejun Heo <tj@kernel.org>:
-> Hello,
->
-> On Tue, Aug 14, 2012 at 01:17:49AM +0900, Joonsoo Kim wrote:
->> We assign cpu id into work struct in queue_delayed_work_on().
->> In current implementation, when work is come in first time,
->> current running cpu id is assigned.
->> If we do queue_delayed_work_on() with CPU A on CPU B,
->> __queue_work() invoked in delayed_work_timer_fn() go into sub-optimal path
->> in case of WQ_NON_REENTRANT.
->> Change it to cpu argument is prevent to go into sub-optimal path.
->
-> Which part is suboptimal?  Also, what if @cpu is WQ_UNBOUND?
+Transform ipv6 subnet information to CIDR notation.
 
-Hi.
-I think a following scenario.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: Olaf Hering <olaf@aepfle.de>
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ tools/hv/hv_kvp_daemon.c |   46 ++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 36 insertions(+), 10 deletions(-)
 
-wq = WQ_NON_REENTRANT.
-queue_delayed_work_on(CPU B) is invoked in CPU A, so lcpu = CPU A, cpu = CPU B.
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index de1724c..a63e83a 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -491,6 +491,15 @@ done:
+ 	return;
+ }
+ 
++static unsigned int hweight32(unsigned int *w)
++{
++	unsigned int res = *w - ((*w >> 1) & 0x55555555);
++	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
++	res = (res + (res >> 4)) & 0x0F0F0F0F;
++	res = res + (res >> 8);
++	return (res + (res >> 16)) & 0x000000FF;
++}
++
+ static int kvp_process_ip_address(void *addrp,
+ 				int family, char *buffer,
+ 				int length,  int *offset)
+@@ -535,10 +544,15 @@ kvp_get_ip_address(int family, char *if_name, int op,
+ 	struct ifaddrs *curp;
+ 	int offset = 0;
+ 	int sn_offset = 0;
+-	const char *str;
+ 	int error = 0;
+ 	char *buffer;
+ 	struct hv_kvp_ipaddr_value *ip_buffer;
++	char cidr_mask[5]; /* /xyz */
++	int weight;
++	int i;
++	unsigned int *w;
++	char *sn_str;
++	struct sockaddr_in6 *addr6;
+ 
+ 	if (op == KVP_OP_ENUMERATE) {
+ 		buffer = out_buffer;
+@@ -611,18 +625,30 @@ kvp_get_ip_address(int family, char *if_name, int op,
+ 					goto gather_ipaddr;
+ 			} else {
+ 				ip_buffer->addr_family |= ADDR_FAMILY_IPV6;
++
+ 				/*
+-				 * Get subnet info.
++				 * Get subnet info in CIDR format.
+ 				 */
+-				error = kvp_process_ip_address(
+-							     curp->ifa_netmask,
+-							     AF_INET6,
+-							     (char *)
+-							     ip_buffer->sub_net,
+-							     length,
+-							     &sn_offset);
+-				if (error)
++				weight = 0;
++				sn_str = (char *)ip_buffer->sub_net;
++				addr6 = (struct sockaddr_in6 *)
++					curp->ifa_netmask;
++				w = addr6->sin6_addr.s6_addr32;
++
++				for (i = 0; i < 4; i++)
++					weight += hweight32(&w[i]);
++
++				sprintf(cidr_mask, "/%d", weight);
++				if ((length - sn_offset) <
++					(strlen(cidr_mask) + 1))
+ 					goto gather_ipaddr;
++
++				if (sn_offset == 0)
++					strcpy(sn_str, cidr_mask);
++				else
++					strcat(sn_str, cidr_mask);
++				strcat((char *)ip_buffer->sub_net, ";");
++				sn_offset += strlen(sn_str) + 1;
+ 			}
+ 		}
+ 
+-- 
+1.7.4.1
 
-In this case, we call add_time_on(CPU B), then delayed_work_timer_fn()
-is invoked on CPU B.
-delayed_work_timer_fn() calls __queue_work(), then following
-comparisons return true!
-
-                gcwq = get_gcwq(cpu);
-                if (wq->flags & WQ_NON_REENTRANT &&
-                    (last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
-
-I thinks that if we assign cpu to lcpu, above comparisons return
-false, so save some overheads.
-Is there any missing part?
-
-And, do u mean  @cpu is WORK_CPU_UNBOUND?
-
-Thanks.
