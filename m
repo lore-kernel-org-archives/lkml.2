@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2HMN7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 09:59:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40123 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2HMN7q convert rfc822-to-8bit (ORCPT
+	id S1752595Ab2HMOAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 10:00:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48254 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab2HMOAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 09:59:46 -0400
-Message-ID: <1344866374.31459.30.camel@twins>
-Subject: Re: [PATCH] sched: fix divide by zero at {thread_group,task}_times
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date: Mon, 13 Aug 2012 15:59:34 +0200
-In-Reply-To: <20120813114820.GA2834@redhat.com>
-References: <20120808092714.GA3580@redhat.com>
-	 <1344455404.2440.35.camel@marge.simpson.net>
-	 <1344456500.16728.15.camel@laptop> <20120813114820.GA2834@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 13 Aug 2012 10:00:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344610378-12117-1-git-send-email-richard.genoud@gmail.com>
+References: <1344610378-12117-1-git-send-email-richard.genoud@gmail.com>
+Date: Mon, 13 Aug 2012 16:00:49 +0200
+Message-ID: <CACRpkdaWiwM+iZ8fZMxxnKT5zgYnci6AP172vt991NNw6gJSKg@mail.gmail.com>
+Subject: Re: [PATCH] Pinctrl header: trivial: declare struct device
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 13:48 +0200, Stanislaw Gruszka wrote:
-> 
-> Is this or will be queued (I do not see it queued anywhere)? Or should
-> I repost with above change? 
+On Fri, Aug 10, 2012 at 4:52 PM, Richard Genoud
+<richard.genoud@gmail.com> wrote:
 
-I've got it.. my queue lives at:
+> As struct device is used as a function argument, it should at least be
+> declared (device.h is not included).
+>
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
- http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+Applied.
 
-until Ingo gets around to stuffing them into -tip. That's usually only a
-few days, but he's currently traveling so latency is somewhat increased.
-
-
+Thanks,
+Linus Walleij
