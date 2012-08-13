@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab2HMWEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:04:46 -0400
+	id S1754826Ab2HMWE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:04:57 -0400
 Received: from mail-gg0-f174.google.com ([209.85.161.174]:57384 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2HMWEm (ORCPT
+	with ESMTP id S1754752Ab2HMWEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:04:42 -0400
+	Mon, 13 Aug 2012 18:04:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 26/44] random: add new get_random_bytes_arch() function
-Date: Mon, 13 Aug 2012 15:02:33 -0700
-Message-Id: <20120813220144.435932681@linuxfoundation.org>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Theodore Tso <tytso@mit.edu>
+Subject: [ 29/44] rtc: wm831x: Feed the write counter into device_add_randomness()
+Date: Mon, 13 Aug 2012 15:02:36 -0700
+Message-Id: <20120813220144.714969878@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813220142.113186818@linuxfoundation.org>
 References: <20120813220142.113186818@linuxfoundation.org>
@@ -29,112 +30,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit c2557a303ab6712bb6e09447df828c557c710ac9 upstream.
+commit 9dccf55f4cb011a7552a8a2749a580662f5ed8ed upstream.
 
-Create a new function, get_random_bytes_arch() which will use the
-architecture-specific hardware random number generator if it is
-present.  Change get_random_bytes() to not use the HW RNG, even if it
-is avaiable.
+The tamper evident features of the RTC include the "write counter" which
+is a pseudo-random number regenerated whenever we set the RTC. Since this
+value is unpredictable it should provide some useful seeding to the random
+number generator.
 
-The reason for this is that the hw random number generator is fast (if
-it is present), but it requires that we trust the hardware
-manufacturer to have not put in a back door.  (For example, an
-increasing counter encrypted by an AES key known to the NSA.)
+Only do this on boot since the goal is to seed the pool rather than add
+useful entropy.
 
-It's unlikely that Intel (for example) was paid off by the US
-Government to do this, but it's impossible for them to prove otherwise
-  --- especially since Bull Mountain is documented to use AES as a
-whitener.  Hence, the output of an evil, trojan-horse version of
-RDRAND is statistically indistinguishable from an RDRAND implemented
-to the specifications claimed by Intel.  Short of using a tunnelling
-electronic microscope to reverse engineer an Ivy Bridge chip and
-disassembling and analyzing the CPU microcode, there's no way for us
-to tell for sure.
-
-Since users of get_random_bytes() in the Linux kernel need to be able
-to support hardware systems where the HW RNG is not present, most
-time-sensitive users of this interface have already created their own
-cryptographic RNG interface which uses get_random_bytes() as a seed.
-So it's much better to use the HW RNG to improve the existing random
-number generator, by mixing in any entropy returned by the HW RNG into
-/dev/random's entropy pool, but to always _use_ /dev/random's entropy
-pool.
-
-This way we get almost of the benefits of the HW RNG without any
-potential liabilities.  The only benefits we forgo is the
-speed/performance enhancements --- and generic kernel code can't
-depend on depend on get_random_bytes() having the speed of a HW RNG
-anyway.
-
-For those places that really want access to the arch-specific HW RNG,
-if it is available, we provide get_random_bytes_arch().
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c  |   27 +++++++++++++++++++++++----
- include/linux/random.h |    1 +
- 2 files changed, 24 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1038,11 +1038,28 @@ static ssize_t extract_entropy_user(stru
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -24,7 +24,7 @@
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+-
++#include <linux/random.h>
  
  /*
-  * This function is the exported kernel interface.  It returns some
-- * number of good random numbers, suitable for seeding TCP sequence
-- * numbers, etc.
-+ * number of good random numbers, suitable for key generation, seeding
-+ * TCP sequence numbers, etc.  It does not use the hw random number
-+ * generator, if available; use get_random_bytes_arch() for that.
-  */
- void get_random_bytes(void *buf, int nbytes)
- {
-+	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+}
-+EXPORT_SYMBOL(get_random_bytes);
-+
-+/*
-+ * This function will use the architecture-specific hardware random
-+ * number generator if it is available.  The arch-specific hw RNG will
-+ * almost certainly be faster than what we can do in software, but it
-+ * is impossible to verify that it is implemented securely (as
-+ * opposed, to, say, the AES encryption of a sequence number using a
-+ * key known by the NSA).  So it's useful if we need the speed, but
-+ * only if we're willing to trust the hardware manufacturer not to
-+ * have put in a back door.
-+ */
-+void get_random_bytes_arch(void *buf, int nbytes)
-+{
- 	char *p = buf;
+  * R16416 (0x4020) - RTC Write Counter
+@@ -96,6 +96,26 @@ struct wm831x_rtc {
+ 	unsigned int alarm_enabled:1;
+ };
  
- 	while (nbytes) {
-@@ -1057,9 +1074,11 @@ void get_random_bytes(void *buf, int nby
- 		nbytes -= chunk;
++static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
++{
++	int ret;
++	u16 reg;
++
++	/*
++	 * The write counter contains a pseudo-random number which is
++	 * regenerated every time we set the RTC so it should be a
++	 * useful per-system source of entropy.
++	 */
++	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
++	if (ret >= 0) {
++		reg = ret;
++		add_device_randomness(&reg, sizeof(reg));
++	} else {
++		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
++			 ret);
++	}
++}
++
+ /*
+  * Read current time and date in RTC
+  */
+@@ -449,6 +469,8 @@ static int wm831x_rtc_probe(struct platf
+ 			alm_irq, ret);
  	}
  
--	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
-+	if (nbytes)
-+		extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
- }
--EXPORT_SYMBOL(get_random_bytes);
-+EXPORT_SYMBOL(get_random_bytes_arch);
++	wm831x_rtc_add_randomness(wm831x);
 +
+ 	return 0;
  
- /*
-  * init_std_data - initialize pool with system data
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -56,6 +56,7 @@ extern void add_input_randomness(unsigne
- extern void add_interrupt_randomness(int irq, int irq_flags);
- 
- extern void get_random_bytes(void *buf, int nbytes);
-+extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
- 
- #ifndef MODULE
+ err:
 
 
