@@ -1,85 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2HMS4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:56:55 -0400
-Received: from claw.goop.org ([74.207.240.146]:49509 "EHLO claw.goop.org"
+	id S1752429Ab2HMS5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:57:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47145 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab2HMS4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:56:54 -0400
-Message-ID: <50294DF0.8040206@goop.org>
-Date: Mon, 13 Aug 2012 11:56:48 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752194Ab2HMS5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 14:57:04 -0400
+Date: Mon, 13 Aug 2012 15:21:32 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v8] kvm: notify host when the guest is panicked
+Message-ID: <20120813182132.GB25268@amt.cnet>
+References: <5021D235.4050800@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad@darnok.org,
-        Ian.Campbell@eu.citrix.com, David Miller <davem@davemloft.net>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] netvm: check for page == NULL when propogating the skb->pfmemalloc
- flag
-References: <20120807085554.GF29814@suse.de> <20120808.155046.820543563969484712.davem@davemloft.net> <20120813102604.GC4177@suse.de> <20120813104745.GE4177@suse.de>
-In-Reply-To: <20120813104745.GE4177@suse.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5021D235.4050800@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 03:47 AM, Mel Gorman wrote:
-> Resending to correct Jeremy's address.
->
-> On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
->> From: Mel Gorman <mgorman@suse.de>
->> Date: Tue, 7 Aug 2012 09:55:55 +0100
->>
->>> Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
->>> for the following bug triggered by a xen network driver
->>  ...
->>> The problem is that the xenfront driver is passing a NULL page to
->>> __skb_fill_page_desc() which was unexpected. This patch checks that
->>> there is a page before dereferencing.
->>>
->>> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> Signed-off-by: Mel Gorman <mgorman@suse.de>
->> That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
->> It's the only driver passing NULL here.
->>
->> That whole song and dance figuring out what to do with the head
->> fragment page, depending upon whether the length is greater than the
->> RX_COPY_THRESHOLD, is completely unnecessary.
->>
->> Just use something like a call to __pskb_pull_tail(skb, len) and all
->> that other crap around that area can simply be deleted.
-> I looked at this for a while but I did not see how __pskb_pull_tail()
-> could be used sensibly but I'm simily not familiar with writing network
-> device drivers or Xen.
->
-> This messing with RX_COPY_THRESHOLD seems to be related to how the frontend
-> and backend communicate (maybe some fixed limitation of the xenbus). The
-> existing code looks like it is trying to take the fragments received and
-> pass them straight to the backend without copying by passing the fragments
-> to the backend without copying. I worry that if I try converting this to
-> __pskb_pull_tail() that it would either hit the limitation of xenbus or
-> introduce copying where it is not wanted.
->
-> I'm going to have to punt this to Jeremy and the other Xen folk as I'm not
-> sure what the original intention was and I don't have a Xen setup anywhere
-> to test any patch. Jeremy, xen folk? 
+On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
+> We can know the guest is panicked when the guest runs on xen.
+> But we do not have such feature on kvm.
+> 
+> Another purpose of this feature is: management app(for example:
+> libvirt) can do auto dump when the guest is panicked. If management
+> app does not do auto dump, the guest's user can do dump by hand if
+> he sees the guest is panicked.
+> 
+> We have three solutions to implement this feature:
+> 1. use vmcall
+> 2. use I/O port
+> 3. use virtio-serial.
+> 
+> We have decided to avoid touching hypervisor. The reason why I choose
+> choose the I/O port is:
+> 1. it is easier to implememt
+> 2. it does not depend any virtual device
+> 3. it can work when starting the kernel
 
-It's been a while since I've looked at that stuff, but as I remember,
-the issue is that since the packet ring memory is shared with another
-domain which may be untrustworthy, we want to make copies of the headers
-before making any decisions based on them so that the other domain can't
-change them after header processing but before they're actually sent. 
-(The packet payload is considered less important, but of course the same
-issue applies if you're using some kind of content-aware packet filter.)
+How about searching for the "Kernel panic - not syncing" string 
+in the guests serial output? Say libvirtd could take an action upon
+that?
 
-So that's the rationale for always copying RX_COPY_THRESHOLD, even if
-the packet is larger than that amount.  As far as I know, changing this
-behaviour wouldn't break the ring protocol, but it does introduce a
-potential security issue.
+Advantages:
+- It works for all architectures.
+- It does not depend on any virtual device.
+- It works as early as serial console output does (panics before
+that should be rare).
+- It allows you to see why the guest panicked.
 
-    J
-
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  Documentation/virtual/kvm/pv_event.txt |   32 ++++++++++++++++++++++++++++++++
+>  arch/ia64/include/asm/kvm_para.h       |   14 ++++++++++++++
+>  arch/powerpc/include/asm/kvm_para.h    |   14 ++++++++++++++
+>  arch/s390/include/asm/kvm_para.h       |   14 ++++++++++++++
+>  arch/x86/include/asm/kvm_para.h        |   27 +++++++++++++++++++++++++++
+>  arch/x86/kernel/kvm.c                  |   25 +++++++++++++++++++++++++
+>  include/linux/kvm_para.h               |   23 +++++++++++++++++++++++
+>  7 files changed, 149 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/virtual/kvm/pv_event.txt
+> 
+> diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
+> new file mode 100644
+> index 0000000..0ebc890
+> --- /dev/null
+> +++ b/Documentation/virtual/kvm/pv_event.txt
+> @@ -0,0 +1,32 @@
+> +The KVM paravirtual event interface
+> +=================================
+> +
+> +Initializing the paravirtual event interface
+> +======================
+> +kvm_pv_event_init()
+> +Argiments:
+> +	None
+> +
+> +Return Value:
+> +	0 : The guest kernel can't use paravirtual event interface.
+> +	-1: The guest kernel can use paravirtual event interface.
+> +
+> +Querying whether the event can be ejected
+> +======================
+> +kvm_pv_has_feature()
+> +Arguments:
+> +	feature: The bit value of this paravirtual event to query
+> +
+> +Return Value:
+> +	0: The guest kernel can't eject this paravirtual event.
+> +	1: The guest kernel can eject this paravirtual event.
+> +
+> +
+> +Ejecting paravirtual event
+> +======================
+> +kvm_pv_eject_event()
+> +Arguments:
+> +	event: The event to be ejected.
+> +
+> +Return Value:
+> +	None
+> diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+> index 2019cb9..b5ec658 100644
+> --- a/arch/ia64/include/asm/kvm_para.h
+> +++ b/arch/ia64/include/asm/kvm_para.h
+> @@ -31,6 +31,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>  	return false;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+>  #endif
+>  
+>  #endif
+> diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+> index c18916b..01b98c7 100644
+> --- a/arch/powerpc/include/asm/kvm_para.h
+> +++ b/arch/powerpc/include/asm/kvm_para.h
+> @@ -211,6 +211,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>  	return false;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #endif /* __POWERPC_KVM_PARA_H__ */
+> diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+> index da44867..00ce058 100644
+> --- a/arch/s390/include/asm/kvm_para.h
+> +++ b/arch/s390/include/asm/kvm_para.h
+> @@ -154,6 +154,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>  	return false;
+>  }
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +}
+> +
+>  #endif
+>  
+>  #endif /* __S390_KVM_PARA_H */
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index 2f7712e..7d297f0 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -96,8 +96,11 @@ struct kvm_vcpu_pv_apf_data {
+>  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+>  #define KVM_PV_EOI_DISABLED 0x0
+>  
+> +#define KVM_PV_EVENT_PORT	(0x505UL)
+> +
+>  #ifdef __KERNEL__
+>  #include <asm/processor.h>
+> +#include <linux/ioport.h>
+>  
+>  extern void kvmclock_init(void);
+>  extern int kvm_register_clock(char *txt);
+> @@ -228,6 +231,30 @@ static inline void kvm_disable_steal_time(void)
+>  }
+>  #endif
+>  
+> +static inline int kvm_arch_pv_event_init(void)
+> +{
+> +	if (!request_region(KVM_PV_EVENT_PORT, 1, "KVM_PV_EVENT"))
+> +		return -1;
+> +
+> +	return 0;
+> +}
+> +
+> +static inline unsigned int kvm_arch_pv_features(void)
+> +{
+> +	unsigned int features = inl(KVM_PV_EVENT_PORT);
+> +
+> +	/* Reading from an invalid I/O port will return -1 */
+> +	if (features == ~0)
+> +		features = 0;
+> +
+> +	return features;
+> +}
+> +
+> +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> +{
+> +	outl(event, KVM_PV_EVENT_PORT);
+> +}
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #endif /* _ASM_X86_KVM_PARA_H */
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index c1d61ee..6129459 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -368,6 +368,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>  	.notifier_call = kvm_pv_reboot_notify,
+>  };
+>  
+> +static int
+> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+> +{
+> +	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block kvm_pv_panic_nb = {
+> +	.notifier_call = kvm_pv_panic_notify,
+> +};
+> +
+>  static u64 kvm_steal_clock(int cpu)
+>  {
+>  	u64 steal;
+> @@ -447,6 +458,20 @@ static void __init kvm_apf_trap_init(void)
+>  	set_intr_gate(14, &async_page_fault);
+>  }
+>  
+> +static void __init kvm_pv_panicked_event_init(void)
+> +{
+> +	if (!kvm_para_available())
+> +		return;
+> +
+> +	if (kvm_pv_event_init())
+> +		return;
+> +
+> +	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
+> +		atomic_notifier_chain_register(&panic_notifier_list,
+> +			&kvm_pv_panic_nb);
+> +}
+> +arch_initcall(kvm_pv_panicked_event_init);
+> +
+>  void __init kvm_guest_init(void)
+>  {
+>  	int i;
+> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+> index ff476dd..8e0fb81 100644
+> --- a/include/linux/kvm_para.h
+> +++ b/include/linux/kvm_para.h
+> @@ -20,6 +20,12 @@
+>  #define KVM_HC_FEATURES			3
+>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+>  
+> +/* The bit of supported pv event */
+> +#define KVM_PV_FEATURE_PANICKED	0
+> +
+> +/* The pv event value */
+> +#define KVM_PV_EVENT_PANICKED	1
+> +
+>  /*
+>   * hypercalls use architecture specific
+>   */
+> @@ -33,5 +39,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
+>  		return 1;
+>  	return 0;
+>  }
+> +
+> +static inline int kvm_pv_event_init(void)
+> +{
+> +	return kvm_arch_pv_event_init();
+> +}
+> +
+> +static inline int kvm_pv_has_feature(unsigned int feature)
+> +{
+> +	if (kvm_arch_pv_features() & (1UL << feature))
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static inline void kvm_pv_eject_event(unsigned int event)
+> +{
+> +	kvm_arch_pv_eject_event(event);
+> +}
+>  #endif /* __KERNEL__ */
+>  #endif /* __LINUX_KVM_PARA_H */
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
