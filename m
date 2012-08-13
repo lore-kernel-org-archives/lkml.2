@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2HMSiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:38:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44964 "EHLO
+	id S1753486Ab2HMSiI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:38:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44963 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636Ab2HMShk (ORCPT
+	with ESMTP id S1752629Ab2HMShj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:40 -0400
+	Mon, 13 Aug 2012 14:37:39 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 24/38] perf symbols: Don't try to synthesize plt without dynstr
-Date: Mon, 13 Aug 2012 15:37:05 -0300
-Message-Id: <1344883039-13495-25-git-send-email-acme@infradead.org>
+Subject: [PATCH 22/38] perf symbols: Only un-prelink non-zero symbols
+Date: Mon, 13 Aug 2012 15:37:03 -0300
+Message-Id: <1344883039-13495-23-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -31,8 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-If .dynsym exists but .dynstr is empty (NO_BITS or size==0), a segfault
-occurs.  Avoid this by checking that .dynstr is not empty.
+Prelink only adjusts the addresses of non-zero symbols. Do the same when we
+reverse the adjustments.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 Cc: David Hansen <dave@linux.vnet.ibm.com>
@@ -42,26 +42,25 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-6-git-send-email-cody@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1344637382-22789-4-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-elf.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ tools/perf/util/symbol-elf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index e037609..a2e994e 100644
+index 9ca89f8..e037609 100644
 --- a/tools/perf/util/symbol-elf.c
 +++ b/tools/perf/util/symbol-elf.c
-@@ -232,6 +232,9 @@ int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
- 	if (symstrs == NULL)
- 		goto out_elf_end;
+@@ -717,7 +717,7 @@ int dso__load_sym(struct dso *dso, struct map *map, const char *name, int fd,
+ 			goto new_symbol;
+ 		}
  
-+	if (symstrs->d_size == 0)
-+		goto out_elf_end;
-+
- 	nr_rel_entries = shdr_rel_plt.sh_size / shdr_rel_plt.sh_entsize;
- 	plt_offset = shdr_plt.sh_offset;
- 
+-		if (curr_dso->adjust_symbols) {
++		if (curr_dso->adjust_symbols && sym.st_value) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
 -- 
 1.7.1
 
