@@ -1,212 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2HMSiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:38:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49413 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab2HMShn (ORCPT
+	id S1753696Ab2HMSiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:38:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44998 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab2HMShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 14:37:43 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Hansen <dave@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Matt Hellsley <matthltc@us.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/38] perf script python: Correct handler check and spelling errors
-Date: Mon, 13 Aug 2012 15:36:42 -0300
-Message-Id: <1344883039-13495-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 36/38] perf symbols: Convert dso__load_syms to take 2 symsrc's
+Date: Mon, 13 Aug 2012 15:37:17 -0300
+Message-Id: <1344883039-13495-37-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Correct the checking for handler returned by PyDict_GetItemString(),
-also fix some spelling error and remove some data code in
-event_analyzing_sample.py, as suggested by Namhyung Kim.
+To properly handle platforms with an opd section, both a runtime image
+(which contains the opd section but possibly lacks symbols) and a symbol
+image (which probably lacks an opd section but has symbols).
 
-v2: restore back the wrongly removed trace_unhandled() func
+The next patch ("perf symbol: use both runtime and debug images")
+adjusts the callsite in dso__load() to take advantage of being able to
+pass both runtime & debug images.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Assumptions made here:
+
+ - The opd section, if it exists in the runtime image, has headers in
+   both the runtime image and the debug/syms image.
+
+ - The index of the opd section (again, only if it exists in the runtime
+   image) is the same in both the runtime and debug/symbols image.
+
+Both of these are true on RHEL, but it is unclear how accurate they are
+in general (on platforms with function descriptors in opd sections).
+
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: David Hansen <dave@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Hellsley <matthltc@us.ibm.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/20120809134613.067104c4@feng-i7
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1344637382-22789-16-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../Perf-Trace-Util/lib/Perf/Trace/EventClass.py   |    4 +-
- .../perf/scripts/python/event_analyzing_sample.py  |   30 ++++++++-----------
- .../util/scripting-engines/trace-event-python.c    |    8 ++---
- 3 files changed, 18 insertions(+), 24 deletions(-)
+ tools/perf/util/symbol-elf.c     |   47 +++++++++++++++++++------------------
+ tools/perf/util/symbol-minimal.c |    1 +
+ tools/perf/util/symbol.c         |    4 +-
+ tools/perf/util/symbol.h         |    5 ++-
+ 4 files changed, 30 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-index 6372431..9e09857 100755
---- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/EventClass.py
-@@ -1,12 +1,12 @@
- # EventClass.py
- #
--# This is a libray defining some events typs classes, which could
-+# This is a library defining some events types classes, which could
- # be used by other scripts to analyzing the perf samples.
- #
- # Currently there are just a few classes defined for examples,
- # PerfEvent is the base class for all perf event sample, PebsEvent
- # is a HW base Intel x86 PEBS event, and user could add more SW/HW
--# event classes based on requriements.
-+# event classes based on requirements.
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 492ebec..36e4a45 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -619,7 +619,8 @@ out_close:
+ 	return err;
+ }
  
- import struct
- 
-diff --git a/tools/perf/scripts/python/event_analyzing_sample.py b/tools/perf/scripts/python/event_analyzing_sample.py
-index 46f05aa..163c39f 100644
---- a/tools/perf/scripts/python/event_analyzing_sample.py
-+++ b/tools/perf/scripts/python/event_analyzing_sample.py
-@@ -1,15 +1,15 @@
--# process_event.py: general event handler in python
-+# event_analyzing_sample.py: general event handler in python
- #
--# Current perf report is alreay very powerful with the anotation integrated,
-+# Current perf report is already very powerful with the annotation integrated,
- # and this script is not trying to be as powerful as perf report, but
- # providing end user/developer a flexible way to analyze the events other
- # than trace points.
- #
- # The 2 database related functions in this script just show how to gather
- # the basic information, and users can modify and write their own functions
--# according to their specific requirment.
-+# according to their specific requirement.
- #
--# The first sample "show_general_events" just does a baisc grouping for all
-+# The first function "show_general_events" just does a basic grouping for all
- # generic events with the help of sqlite, and the 2nd one "show_pebs_ll" is
- # for a x86 HW PMU event: PEBS with load latency data.
- #
-@@ -85,7 +85,7 @@ def process_event(param_dict):
-         else:
-                 symbol = "Unknown_symbol"
- 
--        # Creat the event object and insert it to the right table in database
-+        # Create the event object and insert it to the right table in database
-         event = create_event(name, comm, dso, symbol, raw_buf)
-         insert_db(event)
- 
-@@ -109,7 +109,7 @@ def trace_end():
- 
- #
- # As the event number may be very big, so we can't use linear way
--# to show the histgram in real number, but use a log2 algorithm.
-+# to show the histogram in real number, but use a log2 algorithm.
- #
- 
- def num2sym(num):
-@@ -130,18 +130,18 @@ def show_general_events():
- 
-          # Group by thread
-         commq = con.execute("select comm, count(comm) from gen_events group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from gen_events group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dso
--        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histgram", "="*74)
-+        print "\n%40s %8s %16s\n%s" % ("dso", "number", "histogram", "="*74)
-         dsoq = con.execute("select dso, count(dso) from gen_events group by dso order by -count(dso)")
-         for row in dsoq:
-              print "%40s %8d     %s" % (row[0], row[1], num2sym(row[1]))
-@@ -163,31 +163,27 @@ def show_pebs_ll():
- 
-         # Group by thread
-         commq = con.execute("select comm, count(comm) from pebs_ll group by comm order by -count(comm)")
--        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histgram", "="*42)
-+        print "\n%16s %8s %16s\n%s" % ("comm", "number", "histogram", "="*42)
-         for row in commq:
-              print "%16s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by symbol
--        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("symbol", "number", "histogram", "="*58)
-         symbolq = con.execute("select symbol, count(symbol) from pebs_ll group by symbol order by -count(symbol)")
-         for row in symbolq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by dse
-         dseq = con.execute("select dse, count(dse) from pebs_ll group by dse order by -count(dse)")
--        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("dse", "number", "histogram", "="*58)
-         for row in dseq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
-         # Group by latency
-         latq = con.execute("select lat, count(lat) from pebs_ll group by lat order by lat")
--        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histgram", "="*58)
-+        print "\n%32s %8s %16s\n%s" % ("latency", "number", "histogram", "="*58)
-         for row in latq:
-              print "%32s %8d     %s" % (row[0], row[1], num2sym(row[1]))
- 
- def trace_unhandled(event_name, context, event_fields_dict):
- 		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
--
--def print_header(event_name, cpu, secs, nsecs, pid, comm):
--	print "%-20s %5u %05u.%09u %8u %-20s " % \
--	(event_name, cpu, secs, nsecs, pid, comm),
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 7e3f576..afba097 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -343,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
- 					 struct machine *machine __unused,
--					 struct addr_location *al __unused)
-+					 struct addr_location *al)
+-int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
++int dso__load_sym(struct dso *dso, struct map *map,
++		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
+ 		  symbol_filter_t filter, int kmodule)
  {
- 	PyObject *handler, *retval, *t, *dict;
- 	static char handler_name[64];
-@@ -352,7 +352,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+@@ -630,31 +631,27 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	int err = -1;
+ 	uint32_t idx;
+ 	GElf_Ehdr ehdr;
+-	GElf_Shdr shdr, opdshdr;
++	GElf_Shdr shdr;
+ 	Elf_Data *syms, *opddata = NULL;
+ 	GElf_Sym sym;
+-	Elf_Scn *sec, *sec_strndx, *opdsec;
++	Elf_Scn *sec, *sec_strndx;
+ 	Elf *elf;
+ 	int nr = 0;
+-	size_t opdidx = 0;
  
- 	/*
- 	 * Use the MAX_FIELDS to make the function expandable, though
--	 * currently there is only one itme for the tuple.
-+	 * currently there is only one item for the tuple.
- 	 */
- 	t = PyTuple_New(MAX_FIELDS);
- 	if (!t)
-@@ -365,10 +365,8 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+-	dso->symtab_type = ss->type;
++	dso->symtab_type = syms_ss->type;
  
- 	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler)) {
--		handler = NULL;
-+	if (!handler || !PyCallable_Check(handler))
- 		goto exit;
--	}
+-	if (!ss->symtab) {
+-		ss->symtab  = ss->dynsym;
+-		ss->symshdr = ss->dynshdr;
++	if (!syms_ss->symtab) {
++		syms_ss->symtab  = syms_ss->dynsym;
++		syms_ss->symshdr = syms_ss->dynshdr;
+ 	}
  
- 	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
- 	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
+-	elf = ss->elf;
+-	ehdr = ss->ehdr;
+-	sec = ss->symtab;
+-	shdr = ss->symshdr;
++	elf = syms_ss->elf;
++	ehdr = syms_ss->ehdr;
++	sec = syms_ss->symtab;
++	shdr = syms_ss->symshdr;
+ 
+-	opdsec = ss->opdsec;
+-	opdshdr = ss->opdshdr;
+-	opdidx  = ss->opdidx;
+-	if (opdsec)
+-		opddata = elf_rawdata(opdsec, NULL);
++	if (runtime_ss->opdsec)
++		opddata = elf_rawdata(runtime_ss->opdsec, NULL);
+ 
+ 	syms = elf_getdata(sec, NULL);
+ 	if (syms == NULL)
+@@ -679,13 +676,14 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 	nr_syms = shdr.sh_size / shdr.sh_entsize;
+ 
+ 	memset(&sym, 0, sizeof(sym));
+-	dso->adjust_symbols = ss->adjust_symbols;
++	dso->adjust_symbols = runtime_ss->adjust_symbols;
+ 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
+ 		struct symbol *f;
+ 		const char *elf_name = elf_sym__name(&sym, symstrs);
+ 		char *demangled = NULL;
+ 		int is_label = elf_sym__is_label(&sym);
+ 		const char *section_name;
++		bool used_opd = false;
+ 
+ 		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
+ 		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
+@@ -704,14 +702,16 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 				continue;
+ 		}
+ 
+-		if (opdsec && sym.st_shndx == opdidx) {
+-			u32 offset = sym.st_value - opdshdr.sh_addr;
++		if (runtime_ss->opdsec && sym.st_shndx == runtime_ss->opdidx) {
++			u32 offset = sym.st_value - syms_ss->opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+ 			sym.st_value = DSO__SWAP(dso, u64, *opd);
+-			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
++			sym.st_shndx = elf_addr_to_index(runtime_ss->elf,
++					sym.st_value);
++			used_opd = true;
+ 		}
+ 
+-		sec = elf_getscn(elf, sym.st_shndx);
++		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
+ 
+@@ -777,7 +777,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 			goto new_symbol;
+ 		}
+ 
+-		if (curr_dso->adjust_symbols && sym.st_value) {
++		if ((used_opd && runtime_ss->adjust_symbols)
++				|| (!used_opd && syms_ss->adjust_symbols)) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index 11c2c60..7747ea6 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -280,6 +280,7 @@ int dso__synthesize_plt_symbols(struct dso *dso __used,
+ }
+ 
+ int dso__load_sym(struct dso *dso, struct map *map __used, struct symsrc *ss,
++		  struct symsrc *runtime_ss __used,
+ 		  symbol_filter_t filter __used, int kmodule __used)
+ {
+ 	unsigned char *build_id[BUILD_ID_SIZE];
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 8e7d74f..739e5a3 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1094,7 +1094,7 @@ restart:
+ 			continue;
+ 		}
+ 
+-		ret = dso__load_sym(dso, map, &ss, filter, 0);
++		ret = dso__load_sym(dso, map, &ss, &ss, filter, 0);
+ 
+ 		/*
+ 		 * Some people seem to have debuginfo files _WITHOUT_ debug
+@@ -1380,7 +1380,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
+ 		return -1;
+ 
+-	err = dso__load_sym(dso, map, &ss, filter, 0);
++	err = dso__load_sym(dso, map, &ss, &ss, filter, 0);
+ 	symsrc__destroy(&ss);
+ 
+ 	if (err > 0) {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index fa9f6b1..1f3eed2 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -369,8 +369,9 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size);
+ int dso__test_data(void);
+-int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+-		  symbol_filter_t filter, int kmodule);
++int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
++		  struct symsrc *runtime_ss, symbol_filter_t filter,
++		  int kmodule);
+ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
+ 				struct map *map, symbol_filter_t filter);
+ 
 -- 
 1.7.1
 
