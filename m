@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab2HMUZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:25:26 -0400
+	id S1754964Ab2HMUZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:25:33 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab2HMUZW (ORCPT
+	with ESMTP id S1754934Ab2HMUZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:25:22 -0400
+	Mon, 13 Aug 2012 16:25:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [ 75/82] printk: Fix calculation of length used to discard records
-Date: Mon, 13 Aug 2012 13:19:51 -0700
-Message-Id: <20120813201753.013023496@linuxfoundation.org>
+        Ruan Zhijie <ruanzhijie@hotmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Eric Dumazet <edumazet@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 76/82] tun: dont zeroize sock->file on detach
+Date: Mon, 13 Aug 2012 13:19:52 -0700
+Message-Id: <20120813201753.106031113@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -29,51 +33,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit e3756477aec028427fec767957c0d4b6cfb87208 upstream.
+commit 66d1b9263a371abd15806c53f486f0645ef31a8f upstream.
 
-While tracking down a weird buffer overflow issue in a program that
-looked to be sane, I started double checking the length returned by
-syslog(SYSLOG_ACTION_READ_ALL, ...) to make sure it wasn't overflowing
-the buffer.
+This is a fix for bug, introduced in 3.4 kernel by commit
+1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d ("tun: don't hold network
+namespace by tun sockets"), which, among other things, replaced simple
+sock_put() by sk_release_kernel(). Below is sequence, which leads to
+oops for non-persistent devices:
 
-Sure enough, it was.  I saw this in strace:
+tun_chr_close()
+tun_detach()				<== tun->socket.file = NULL
+tun_free_netdev()
+sk_release_sock()
+sock_release(sock->file == NULL)
+iput(SOCK_INODE(sock))			<== dereference on NULL pointer
 
-  11339 syslog(SYSLOG_ACTION_READ_ALL, "<5>[244017.708129] REISERFS (dev"..., 8192) = 8279
+This patch just removes zeroing of socket's file from __tun_detach().
+sock_release() will do this.
 
-It turns out that the loops that calculate how much space the entries
-will take when they're copied don't include the newlines and prefixes
-that will be included in the final output since prev flags is passed as
-zero.
-
-This patch properly accounts for it and fixes the overflow.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
+Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/printk.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/tun.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -999,6 +999,7 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -185,7 +185,6 @@ static void __tun_detach(struct tun_stru
+ 	netif_tx_lock_bh(tun->dev);
+ 	netif_carrier_off(tun->dev);
+ 	tun->tfile = NULL;
+-	tun->socket.file = NULL;
+ 	netif_tx_unlock_bh(tun->dev);
  
- 			len += msg_print_text(msg, prev, true, NULL, 0);
-+			prev = msg->flags;
- 			idx = log_next(idx);
- 			seq++;
- 		}
-@@ -1011,6 +1012,7 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
- 
- 			len -= msg_print_text(msg, prev, true, NULL, 0);
-+			prev = msg->flags;
- 			idx = log_next(idx);
- 			seq++;
- 		}
+ 	/* Drop read queue */
 
 
