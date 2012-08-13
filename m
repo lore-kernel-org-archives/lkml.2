@@ -1,120 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2HMQyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 12:54:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33521 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab2HMQxZ (ORCPT
+	id S1753609Ab2HMQy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 12:54:27 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:41788 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab2HMQyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 12:53:25 -0400
-Date: Mon, 13 Aug 2012 09:53:06 -0700
-From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
-Message-ID: <tip-8f6189684eb4e85e6c593cd710693f09c944450a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-In-Reply-To: <1344051854.6739.19.camel@marge.simpson.net>
-References: <1344051854.6739.19.camel@marge.simpson.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix migration thread runtime bogosity
-Git-Commit-ID: 8f6189684eb4e85e6c593cd710693f09c944450a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 13 Aug 2012 12:54:23 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 13 Aug 2012 09:53:11 -0700 (PDT)
+In-Reply-To: <20120813163219.GA9180@google.com>
+References: <1344874672-6257-1-git-send-email-js1304@gmail.com>
+	<1344874672-6257-2-git-send-email-js1304@gmail.com>
+	<20120813163219.GA9180@google.com>
+Date: Tue, 14 Aug 2012 01:54:22 +0900
+Message-ID: <CAAmzW4NfPAVQnmD0vG71Ahz_=gmV7CQBNABpnEHFU7YBsYJOyQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] workqueue: change value of lcpu in queue_delayed_work_on()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f6189684eb4e85e6c593cd710693f09c944450a
-Gitweb:     http://git.kernel.org/tip/8f6189684eb4e85e6c593cd710693f09c944450a
-Author:     Mike Galbraith <mgalbraith@suse.de>
-AuthorDate: Sat, 4 Aug 2012 05:44:14 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 13 Aug 2012 18:41:55 +0200
+2012/8/14 Tejun Heo <tj@kernel.org>:
+> Hello,
+>
+> On Tue, Aug 14, 2012 at 01:17:49AM +0900, Joonsoo Kim wrote:
+>> We assign cpu id into work struct in queue_delayed_work_on().
+>> In current implementation, when work is come in first time,
+>> current running cpu id is assigned.
+>> If we do queue_delayed_work_on() with CPU A on CPU B,
+>> __queue_work() invoked in delayed_work_timer_fn() go into sub-optimal path
+>> in case of WQ_NON_REENTRANT.
+>> Change it to cpu argument is prevent to go into sub-optimal path.
+>
+> Which part is suboptimal?  Also, what if @cpu is WQ_UNBOUND?
 
-sched: Fix migration thread runtime bogosity
+Hi.
+I think a following scenario.
 
-Make stop scheduler class do the same accounting as other classes,
+wq = WQ_NON_REENTRANT.
+queue_delayed_work_on(CPU B) is invoked in CPU A, so lcpu = CPU A, cpu = CPU B.
 
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
+In this case, we call add_time_on(CPU B), then delayed_work_timer_fn()
+is invoked on CPU B.
+delayed_work_timer_fn() calls __queue_work(), then following
+comparisons return true!
 
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
+                gcwq = get_gcwq(cpu);
+                if (wq->flags & WQ_NON_REENTRANT &&
+                    (last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
 
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+I thinks that if we assign cpu to lcpu, above comparisons return
+false, so save some overheads.
+Is there any missing part?
 
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 7b386e8..da5eb5b 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -27,8 +27,10 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
- {
- 	struct task_struct *stop = rq->stop;
- 
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
-+	}
- 
- 	return NULL;
- }
-@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *rq)
- 
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
- {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
-+
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
- 
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
- 
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
- 
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
+And, do u mean  @cpu is WORK_CPU_UNBOUND?
+
+Thanks.
