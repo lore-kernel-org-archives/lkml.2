@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145Ab2HMJF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 05:05:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20284 "EHLO mga09.intel.com"
+	id S1751298Ab2HMJGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 05:06:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41861 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2HMJF1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 05:05:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,758,1336374000"; 
-   d="scan'208";a="179900842"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>, "hpa@zytor.com" <hpa@zytor.com>
-Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
-Thread-Topic: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
-Thread-Index: Ac15MsI6ncx2OLFBSBevzwjQUyIXXg==
-Date: Mon, 13 Aug 2012 09:05:23 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A13679F@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750826Ab2HMJGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 05:06:49 -0400
+Date: Mon, 13 Aug 2012 11:06:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Yann Cantin <yann.cantin@laposte.net>
+Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC ebeam PATCH v2 3/3] input: misc: New USB eBeam input
+ driver.
+In-Reply-To: <501BEEA8.4060702@laposte.net>
+Message-ID: <alpine.LNX.2.00.1208131106040.29827@pobox.suse.cz>
+References: <1343912397-18353-1-git-send-email-yann.cantin@laposte.net> <1343912397-18353-4-git-send-email-yann.cantin@laposte.net> <alpine.LRH.2.00.1208031424250.15211@twin.jikos.cz> <501BEEA8.4060702@laposte.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
+On Fri, 3 Aug 2012, Yann Cantin wrote:
 
-Found the case that endless " <IRQ> " printing in dump_trace,
-and no real meaningful stack traces are output, so there should
-one rare case that possibly context->previous_esp = context or
-other cases.
+> >> +#include <linux/hid.h>
+> > 
+> > As this driver is not a HID bus driver, why do you need this include?
+> 
+> Cinder, removed
+> 
+> >> +#define DRIVER_VERSION	"v0.7"
+> > 
+> > I don't think we need to be tracking driver versions for newly submitted 
+> > drivers, git is much better at tracking changes.
+> 
+> Old habit, removed.
+> 
+> >> +	u16			 X, Y;		/* raw coordinates	     */
+> >> +	int			 x, y;		/* computed coordinates      */
+> > 
+> > X,x being different fields seems confusing to me. How about, let's say, x, 
+> > raw_x?
+> 
+> Done.
+>  
+> >> +DEVICE_H_ATTR(1);
+> >> +DEVICE_H_ATTR(2);
+> >> +DEVICE_H_ATTR(3);
+> >> +DEVICE_H_ATTR(4);
+> >> +DEVICE_H_ATTR(5);
+> >> +DEVICE_H_ATTR(6);
+> >> +DEVICE_H_ATTR(7);
+> >> +DEVICE_H_ATTR(8);
+> >> +DEVICE_H_ATTR(9);
+> > 
+> > You are adding a number of sysfs files. If they are really necessary, 
+> > you'll probably need to document those in Documentation/ABI.
+> 
+> Will do, in testing i suppose.
+> 
+> BTW : The driver need lot of parameters to be passed from user-space calibration
+> tool. The best way to do it isn't decided yet : one sysfs file per parameter, or
+> one sysfs file for all, with a big sscanf parsing. Any idea ?
 
-The endless " <IRQ> " is as below:
-...
-[   82.215244,0]  <IRQ>
-[   82.215399,0]  <IRQ>
-[   82.215554,0]  <IRQ>
-[   82.215710,0]  <IRQ>
-[   82.215865,0]  <IRQ>
-[   82.216022,0]  <IRQ>
-[   82.216178,0]  <IRQ>
-[   82.216333,0]  <IRQ>
-[   82.216488,0]  <IRQ>
-[   82.216643,0]  <IRQ>
-[   82.216798,0]  <IRQ>
-[   82.216953,0]  <IRQ>
-...
+Sysfs always had a rule one value per file, so please stick to that.
 
-This patch aim is:
-1/ Limiting the " <IRQ> " outputing, currently the max IRQ contexts
-is 2(softirq+harirq combination);
-2/ When the max IRQ contexts 2 is reached, print the context content
-to confirm;
+> >> +		strlcat(ebeam->name, ")", sizeof(ebeam->name));
+> > 
+> > I'd suggest checking the length, making sure that you don't overflow the 
+> > ->name buffer.
+> 
+> Something like this ? :
+> 
+> if (strlcat(ebeam->name, ")", sizeof(ebeam->name))>=sizeof(ebeam->name)) {
+> 	// overflowed, closing ) anyway
+> 	ebeam->name[sizeof(ebeam->name)-2] = ')';
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- arch/x86/kernel/dumpstack_32.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Some variation on that, yes.
 
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 1038a41..5387429 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -22,6 +22,7 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
-                const struct stacktrace_ops *ops, void *data)
- {
-        int graph = 0;
-+       int dump_irq = 0;
- 
-        if (!task)
-                task = current;
-@@ -47,8 +48,18 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
-                stack = (unsigned long *)context->previous_esp;
-                if (!stack)
-                        break;
-+
-+               if (unlikely(dump_irq > 2)) {
-+                       printk(KERN_WARNING "break multi-IRQ print,"
-+                               "context=%08lx, stack=%08lx\n",
-+                               (unsigned long)context,
-+                               (unsigned long)stack);
-+                       break;
-+               }
-+
-                if (ops->stack(data, "IRQ") < 0)
-                        break;
-+               dump_irq++;
-                touch_nmi_watchdog();
-        }
- }
+Thanks,
+
 -- 
-1.7.0.4
+Jiri Kosina
+SUSE Labs
