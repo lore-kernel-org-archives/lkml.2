@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab2HMUV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:21:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab2HMUV4 (ORCPT
+	id S1753808Ab2HMUVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:21:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61639 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab2HMUVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:21:56 -0400
+	Mon, 13 Aug 2012 16:21:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 26/82] ARM: Fix undefined instruction exception handling
-Date: Mon, 13 Aug 2012 13:19:02 -0700
-Message-Id: <20120813201748.725488533@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, Theodore Tso <tytso@mit.edu>
+Subject: [ 17/82] memcg: further prevent OOM with too many dirty pages
+Date: Mon, 13 Aug 2012 13:18:53 -0700
+Message-Id: <20120813201747.950071528@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813201746.448504360@linuxfoundation.org>
 References: <20120813201746.448504360@linuxfoundation.org>
@@ -30,327 +35,122 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Hugh Dickins <hughd@google.com>
 
-commit 15ac49b65024f55c4371a53214879a9c77c4fbf9 upstream.
+commit c3b94f44fcb0725471ecebb701c077a0ed67bd07 upstream.
 
-While trying to get a v3.5 kernel booted on the cubox, I noticed that
-VFP does not work correctly with VFP bounce handling.  This is because
-of the confusion over 16-bit vs 32-bit instructions, and where PC is
-supposed to point to.
+The may_enter_fs test turns out to be too restrictive: though I saw no
+problem with it when testing on 3.5-rc6, it very soon OOMed when I tested
+on 3.5-rc6-mm1.  I don't know what the difference there is, perhaps I just
+slightly changed the way I started off the testing: dd if=/dev/zero
+of=/mnt/temp bs=1M count=1024; rm -f /mnt/temp; sync repeatedly, in 20M
+memory.limit_in_bytes cgroup to ext4 on USB stick.
 
-The rule is that FP handlers are entered with regs->ARM_pc pointing at
-the _next_ instruction to be executed.  However, if the exception is
-not handled, regs->ARM_pc points at the faulting instruction.
+ext4 (and gfs2 and xfs) turn out to allocate new pages for writing with
+AOP_FLAG_NOFS: that seems a little worrying, and it's unclear to me why
+the transaction needs to be started even before allocating pagecache
+memory.  But it may not be worth worrying about these days: if direct
+reclaim avoids FS writeback, does __GFP_FS now mean anything?
 
-This is easy for ARM mode, because we know that the next instruction and
-previous instructions are separated by four bytes.  This is not true of
-Thumb2 though.
+Anyway, we insisted on the may_enter_fs test to avoid hangs with the loop
+device; but since that also masks off __GFP_IO, we can test for __GFP_IO
+directly, ignoring may_enter_fs and __GFP_FS.
 
-Since all FP instructions are 32-bit in Thumb2, it makes things easy.
-We just need to select the appropriate adjustment.  Do this by moving
-the adjustment out of do_undefinstr() into the assembly code, as only
-the assembly code knows whether it's dealing with a 32-bit or 16-bit
-instruction.
+But even so, the test still OOMs sometimes: when originally testing on
+3.5-rc6, it OOMed about one time in five or ten; when testing just now on
+3.5-rc6-mm1, it OOMed on the first iteration.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This residual problem comes from an accumulation of pages under ordinary
+writeback, not marked PageReclaim, so rightly not causing the memcg check
+to wait on their writeback: these too can prevent shrink_page_list() from
+freeing any pages, so many times that memcg reclaim fails and OOMs.
+
+Deal with these in the same way as direct reclaim now deals with dirty FS
+pages: mark them PageReclaim.  It is appropriate to rotate these to tail
+of list when writepage completes, but more importantly, the PageReclaim
+flag makes memcg reclaim wait on them if encountered again.  Increment
+NR_VMSCAN_IMMEDIATE?  That's arguable: I chose not.
+
+Setting PageReclaim here may occasionally race with end_page_writeback()
+clearing it: lru_deactivate_fn() already faced the same race, and
+correctly concluded that the window is small and the issue non-critical.
+
+With these changes, the test runs indefinitely without OOMing on ext4,
+ext3 and ext2: I'll move on to test with other filesystems later.
+
+Trivia: invert conditions for a clearer block without an else, and goto
+keep_locked to do the unlock_page.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ying Han <yinghan@google.com>
+Cc: Greg Thelen <gthelen@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/entry-armv.S |  111 +++++++++++++++++++++++++++----------------
- arch/arm/kernel/traps.c      |    8 ---
- arch/arm/vfp/entry.S         |   16 +++---
- arch/arm/vfp/vfphw.S         |   19 ++++---
- 4 files changed, 92 insertions(+), 62 deletions(-)
+ mm/vmscan.c |   33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
 
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -244,6 +244,19 @@ svc_preempt:
- 	b	1b
- #endif
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -723,23 +723,38 @@ static unsigned long shrink_page_list(st
+ 			/*
+ 			 * memcg doesn't have any dirty pages throttling so we
+ 			 * could easily OOM just because too many pages are in
+-			 * writeback from reclaim and there is nothing else to
+-			 * reclaim.
++			 * writeback and there is nothing else to reclaim.
+ 			 *
+-			 * Check may_enter_fs, certainly because a loop driver
++			 * Check __GFP_IO, certainly because a loop driver
+ 			 * thread might enter reclaim, and deadlock if it waits
+ 			 * on a page for which it is needed to do the write
+ 			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
+ 			 * but more thought would probably show more reasons.
++			 *
++			 * Don't require __GFP_FS, since we're not going into
++			 * the FS, just waiting on its writeback completion.
++			 * Worryingly, ext4 gfs2 and xfs allocate pages with
++			 * grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so
++			 * testing may_enter_fs here is liable to OOM on them.
+ 			 */
+-			if (!global_reclaim(sc) && PageReclaim(page) &&
+-					may_enter_fs)
+-				wait_on_page_writeback(page);
+-			else {
++			if (global_reclaim(sc) ||
++			    !PageReclaim(page) || !(sc->gfp_mask & __GFP_IO)) {
++				/*
++				 * This is slightly racy - end_page_writeback()
++				 * might have just cleared PageReclaim, then
++				 * setting PageReclaim here end up interpreted
++				 * as PageReadahead - but that does not matter
++				 * enough to care.  What we do want is for this
++				 * page to have PageReclaim set next time memcg
++				 * reclaim reaches the tests above, so it will
++				 * then wait_on_page_writeback() to avoid OOM;
++				 * and it's also appropriate in global reclaim.
++				 */
++				SetPageReclaim(page);
+ 				nr_writeback++;
+-				unlock_page(page);
+-				goto keep;
++				goto keep_locked;
+ 			}
++			wait_on_page_writeback(page);
+ 		}
  
-+__und_fault:
-+	@ Correct the PC such that it is pointing at the instruction
-+	@ which caused the fault.  If the faulting instruction was ARM
-+	@ the PC will be pointing at the next instruction, and have to
-+	@ subtract 4.  Otherwise, it is Thumb, and the PC will be
-+	@ pointing at the second half of the Thumb instruction.  We
-+	@ have to subtract 2.
-+	ldr	r2, [r0, #S_PC]
-+	sub	r2, r2, r1
-+	str	r2, [r0, #S_PC]
-+	b	do_undefinstr
-+ENDPROC(__und_fault)
-+
- 	.align	5
- __und_svc:
- #ifdef CONFIG_KPROBES
-@@ -261,25 +274,32 @@ __und_svc:
- 	@
- 	@  r0 - instruction
- 	@
--#ifndef	CONFIG_THUMB2_KERNEL
-+#ifndef CONFIG_THUMB2_KERNEL
- 	ldr	r0, [r4, #-4]
- #else
-+	mov	r1, #2
- 	ldrh	r0, [r4, #-2]			@ Thumb instruction at LR - 2
- 	cmp	r0, #0xe800			@ 32-bit instruction if xx >= 0
--	ldrhhs	r9, [r4]			@ bottom 16 bits
--	orrhs	r0, r9, r0, lsl #16
-+	blo	__und_svc_fault
-+	ldrh	r9, [r4]			@ bottom 16 bits
-+	add	r4, r4, #2
-+	str	r4, [sp, #S_PC]
-+	orr	r0, r9, r0, lsl #16
- #endif
--	adr	r9, BSYM(1f)
-+	adr	r9, BSYM(__und_svc_finish)
- 	mov	r2, r4
- 	bl	call_fpe
- 
-+	mov	r1, #4				@ PC correction to apply
-+__und_svc_fault:
- 	mov	r0, sp				@ struct pt_regs *regs
--	bl	do_undefinstr
-+	bl	__und_fault
- 
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--1:	disable_irq_notrace
-+__und_svc_finish:
-+	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
-@@ -423,25 +443,33 @@ __und_usr:
- 	mov	r2, r4
- 	mov	r3, r5
- 
-+	@ r2 = regs->ARM_pc, which is either 2 or 4 bytes ahead of the
-+	@      faulting instruction depending on Thumb mode.
-+	@ r3 = regs->ARM_cpsr
- 	@
--	@ fall through to the emulation code, which returns using r9 if
--	@ it has emulated the instruction, or the more conventional lr
--	@ if we are to treat this as a real undefined instruction
--	@
--	@  r0 - instruction
-+	@ The emulation code returns using r9 if it has emulated the
-+	@ instruction, or the more conventional lr if we are to treat
-+	@ this as a real undefined instruction
- 	@
- 	adr	r9, BSYM(ret_from_exception)
--	adr	lr, BSYM(__und_usr_unknown)
-+
- 	tst	r3, #PSR_T_BIT			@ Thumb mode?
--	itet	eq				@ explicit IT needed for the 1f label
--	subeq	r4, r2, #4			@ ARM instr at LR - 4
--	subne	r4, r2, #2			@ Thumb instr at LR - 2
--1:	ldreqt	r0, [r4]
-+	bne	__und_usr_thumb
-+	sub	r4, r2, #4			@ ARM instr at LR - 4
-+1:	ldrt	r0, [r4]
- #ifdef CONFIG_CPU_ENDIAN_BE8
--	reveq	r0, r0				@ little endian instruction
-+	rev	r0, r0				@ little endian instruction
- #endif
--	beq	call_fpe
-+	@ r0 = 32-bit ARM instruction which caused the exception
-+	@ r2 = PC value for the following instruction (:= regs->ARM_pc)
-+	@ r4 = PC value for the faulting instruction
-+	@ lr = 32-bit undefined instruction function
-+	adr	lr, BSYM(__und_usr_fault_32)
-+	b	call_fpe
-+
-+__und_usr_thumb:
- 	@ Thumb instruction
-+	sub	r4, r2, #2			@ First half of thumb instr at LR - 2
- #if CONFIG_ARM_THUMB && __LINUX_ARM_ARCH__ >= 6 && CONFIG_CPU_V7
- /*
-  * Thumb-2 instruction handling.  Note that because pre-v6 and >= v6 platforms
-@@ -455,7 +483,7 @@ __und_usr:
- 	ldr	r5, .LCcpu_architecture
- 	ldr	r5, [r5]
- 	cmp	r5, #CPU_ARCH_ARMv7
--	blo	__und_usr_unknown
-+	blo	__und_usr_fault_16		@ 16bit undefined instruction
- /*
-  * The following code won't get run unless the running CPU really is v7, so
-  * coding round the lack of ldrht on older arches is pointless.  Temporarily
-@@ -463,15 +491,18 @@ __und_usr:
-  */
- 	.arch	armv6t2
- #endif
--2:
-- ARM(	ldrht	r5, [r4], #2	)
-- THUMB(	ldrht	r5, [r4]	)
-- THUMB(	add	r4, r4, #2	)
-+2:	ldrht	r5, [r4]
- 	cmp	r5, #0xe800			@ 32bit instruction if xx != 0
--	blo	__und_usr_unknown
--3:	ldrht	r0, [r4]
-+	blo	__und_usr_fault_16		@ 16bit undefined instruction
-+3:	ldrht	r0, [r2]
- 	add	r2, r2, #2			@ r2 is PC + 2, make it PC + 4
-+	str	r2, [sp, #S_PC]			@ it's a 2x16bit instr, update
- 	orr	r0, r0, r5, lsl #16
-+	adr	lr, BSYM(__und_usr_fault_32)
-+	@ r0 = the two 16-bit Thumb instructions which caused the exception
-+	@ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc)
-+	@ r4 = PC value for the first 16-bit Thumb instruction
-+	@ lr = 32bit undefined instruction function
- 
- #if __LINUX_ARM_ARCH__ < 7
- /* If the target arch was overridden, change it back: */
-@@ -482,17 +513,13 @@ __und_usr:
- #endif
- #endif /* __LINUX_ARM_ARCH__ < 7 */
- #else /* !(CONFIG_ARM_THUMB && __LINUX_ARM_ARCH__ >= 6 && CONFIG_CPU_V7) */
--	b	__und_usr_unknown
-+	b	__und_usr_fault_16
- #endif
-- UNWIND(.fnend		)
-+ UNWIND(.fnend)
- ENDPROC(__und_usr)
- 
--	@
--	@ fallthrough to call_fpe
--	@
--
- /*
-- * The out of line fixup for the ldrt above.
-+ * The out of line fixup for the ldrt instructions above.
-  */
- 	.pushsection .fixup, "ax"
- 	.align	2
-@@ -524,11 +551,12 @@ ENDPROC(__und_usr)
-  * NEON handler code.
-  *
-  * Emulators may wish to make use of the following registers:
-- *  r0  = instruction opcode.
-- *  r2  = PC+4
-+ *  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
-+ *  r2  = PC value to resume execution after successful emulation
-  *  r9  = normal "successful" return address
-- *  r10 = this threads thread_info structure.
-+ *  r10 = this threads thread_info structure
-  *  lr  = unrecognised instruction return address
-+ * IRQs disabled, FIQs enabled.
-  */
- 	@
- 	@ Fall-through from Thumb-2 __und_usr
-@@ -659,12 +687,17 @@ ENTRY(no_fp)
- 	mov	pc, lr
- ENDPROC(no_fp)
- 
--__und_usr_unknown:
--	enable_irq
-+__und_usr_fault_32:
-+	mov	r1, #4
-+	b	1f
-+__und_usr_fault_16:
-+	mov	r1, #2
-+1:	enable_irq
- 	mov	r0, sp
- 	adr	lr, BSYM(ret_from_exception)
--	b	do_undefinstr
--ENDPROC(__und_usr_unknown)
-+	b	__und_fault
-+ENDPROC(__und_usr_fault_32)
-+ENDPROC(__und_usr_fault_16)
- 
- 	.align	5
- __pabt_usr:
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -370,18 +370,10 @@ static int call_undef_hook(struct pt_reg
- 
- asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
- {
--	unsigned int correction = thumb_mode(regs) ? 2 : 4;
- 	unsigned int instr;
- 	siginfo_t info;
- 	void __user *pc;
- 
--	/*
--	 * According to the ARM ARM, PC is 2 or 4 bytes ahead,
--	 * depending whether we're in Thumb mode or not.
--	 * Correct this offset.
--	 */
--	regs->ARM_pc -= correction;
--
- 	pc = (void __user *)instruction_pointer(regs);
- 
- 	if (processor_mode(regs) == SVC_MODE) {
---- a/arch/arm/vfp/entry.S
-+++ b/arch/arm/vfp/entry.S
-@@ -7,18 +7,20 @@
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-- *
-- * Basic entry code, called from the kernel's undefined instruction trap.
-- *  r0  = faulted instruction
-- *  r5  = faulted PC+4
-- *  r9  = successful return
-- *  r10 = thread_info structure
-- *  lr  = failure return
-  */
- #include <asm/thread_info.h>
- #include <asm/vfpmacros.h>
- #include "../kernel/entry-header.S"
- 
-+@ VFP entry point.
-+@
-+@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
-+@  r2  = PC value to resume execution after successful emulation
-+@  r9  = normal "successful" return address
-+@  r10 = this threads thread_info structure
-+@  lr  = unrecognised instruction return address
-+@  IRQs disabled.
-+@
- ENTRY(do_vfp)
- #ifdef CONFIG_PREEMPT
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
---- a/arch/arm/vfp/vfphw.S
-+++ b/arch/arm/vfp/vfphw.S
-@@ -61,13 +61,13 @@
- 
- @ VFP hardware support entry point.
- @
--@  r0  = faulted instruction
--@  r2  = faulted PC+4
--@  r9  = successful return
-+@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
-+@  r2  = PC value to resume execution after successful emulation
-+@  r9  = normal "successful" return address
- @  r10 = vfp_state union
- @  r11 = CPU number
--@  lr  = failure return
--
-+@  lr  = unrecognised instruction return address
-+@  IRQs enabled.
- ENTRY(vfp_support_entry)
- 	DBGSTR3	"instr %08x pc %08x state %p", r0, r2, r10
- 
-@@ -161,9 +161,12 @@ vfp_hw_state_valid:
- 					@ exception before retrying branch
- 					@ out before setting an FPEXC that
- 					@ stops us reading stuff
--	VFPFMXR	FPEXC, r1		@ restore FPEXC last
--	sub	r2, r2, #4
--	str	r2, [sp, #S_PC]		@ retry the instruction
-+	VFPFMXR	FPEXC, r1		@ Restore FPEXC last
-+	sub	r2, r2, #4		@ Retry current instruction - if Thumb
-+	str	r2, [sp, #S_PC]		@ mode it's two 16-bit instructions,
-+					@ else it's one 32-bit instruction, so
-+					@ always subtract 4 from the following
-+					@ instruction address.
- #ifdef CONFIG_PREEMPT
- 	get_thread_info	r10
- 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count
+ 		references = page_check_references(page, sc);
 
 
