@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2HMWRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 18:17:33 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52232 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab2HMWRa (ORCPT
+	id S1755447Ab2HMWRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 18:17:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43626 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab2HMWRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 18:17:30 -0400
+	Mon, 13 Aug 2012 18:17:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Mackall <mpm@selenic.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 38/65] MAINTAINERS: Theodore Tso is taking over the random driver
-Date: Mon, 13 Aug 2012 15:14:22 -0700
-Message-Id: <20120813221418.337581132@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 35/65] random: use the arch-specific rng in xfer_secondary_pool
+Date: Mon, 13 Aug 2012 15:14:19 -0700
+Message-Id: <20120813221418.065993348@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120813221414.965154048@linuxfoundation.org>
 References: <20120813221414.965154048@linuxfoundation.org>
@@ -31,29 +31,86 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 330e0a01d54c2b8606c56816f99af6ebc58ec92c upstream.
+commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
 
-Matt Mackall stepped down as the /dev/random driver maintainer last
-year, so Theodore Ts'o is taking back the /dev/random driver.
+If the CPU supports a hardware random number generator, use it in
+xfer_secondary_pool(), where it will significantly improve things and
+where we can afford it.
 
-Cc: Matt Mackall <mpm@selenic.com>
+Also, remove the use of the arch-specific rng in
+add_timer_randomness(), since the call is significantly slower than
+get_cycles(), and we're much better off using it in
+xfer_secondary_pool() anyway.
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/random.c |   25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5566,7 +5566,7 @@ F:	Documentation/blockdev/ramdisk.txt
- F:	drivers/block/brd.c
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -254,6 +254,7 @@
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+ #include <linux/ptrace.h>
++#include <linux/kmemcheck.h>
  
- RANDOM NUMBER DRIVER
--M:	Matt Mackall <mpm@selenic.com>
-+M:	Theodore Ts'o" <tytso@mit.edu>
- S:	Maintained
- F:	drivers/char/random.c
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -702,11 +703,7 @@ static void add_timer_randomness(struct
+ 		goto out;
  
+ 	sample.jiffies = jiffies;
+-
+-	/* Use arch random value, fall back to cycles */
+-	if (!arch_get_random_int(&sample.cycles))
+-		sample.cycles = get_cycles();
+-
++	sample.cycles = get_cycles();
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ 
+@@ -838,7 +835,11 @@ static ssize_t extract_entropy(struct en
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ {
+-	__u32 tmp[OUTPUT_POOL_WORDS];
++	union {
++		__u32	tmp[OUTPUT_POOL_WORDS];
++		long	hwrand[4];
++	} u;
++	int	i;
+ 
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -849,17 +850,23 @@ static void xfer_secondary_pool(struct e
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(tmp));
++		bytes = min_t(int, bytes, sizeof(u.tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, tmp, bytes,
++		bytes = extract_entropy(r->pull, u.tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, tmp, bytes, NULL);
++		mix_pool_bytes(r, u.tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
++	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
++	for (i = 0; i < 4; i++)
++		if (arch_get_random_long(&u.hwrand[i]))
++			break;
++	if (i)
++		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
+ }
+ 
+ /*
 
 
