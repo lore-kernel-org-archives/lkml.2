@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2HMBcx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Aug 2012 21:32:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11850 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2HMBcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Aug 2012 21:32:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,757,1336374000"; 
-   d="scan'208";a="180134502"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>,
-        bp@amd64.org, x86@kernel.org
-Subject: [GIT PULL] x86 - handle CMCI storms gracefully
-Date: Sun, 12 Aug 2012 18:32:52 -0700
-Message-Id: <50285944174651edb3@agluck-desktop.sc.intel.com>
+	id S1752969Ab2HMBx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Aug 2012 21:53:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54654 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab2HMBxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Aug 2012 21:53:55 -0400
+Date: Mon, 13 Aug 2012 02:53:48 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: netdev@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, Neil Horman <nhorman@tuxdriver.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [flame^Wreview] net: netprio_cgroup: rework update socket logic
+Message-ID: <20120813015348.GZ23464@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
+	Ladies and gentlemen, who the devil had reviewed that little gem?
 
-  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
+commit 406a3c638ce8b17d9704052c07955490f732c2b8
+Author: John Fastabend <john.r.fastabend@intel.com>
+Date:   Fri Jul 20 10:39:25 2012 +0000
 
-are available in the git repository at:
+is a bleeding bogosity that doesn't pass even the most cursory
+inspection.  It iterates through descriptor tables of a bunch
+of processes, doing this:
+                        file = fcheck_files(files, fd);
+                        if (!file)
+                                continue;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-cmci-storm3
+                        path = d_path(&file->f_path, tmp, PAGE_SIZE);
+                        rv = sscanf(path, "socket:[%lu]", &s);
+                        if (rv <= 0)
+                                continue;
 
-for you to fetch changes up to 55babd8f41f122f5f4c7cebf520c766c983282c6:
+                        sock = sock_from_file(file, &err);
+                        if (!err)
+                                sock_update_netprioidx(sock->sk, p);
+Note the charming use of sscanf() for pattern-matching.  's' (inode
+number of socket) is completely unused afterwards; what happens here
+is a very badly written attempt to skip non-sockets.  Why, will
+sock_from_file() blow up on non-sockets?  And isn't there some less
+obnoxious way to check that the file is a sockfs one?  Let's see:
+struct socket *sock_from_file(struct file *file, int *err)
+{
+        if (file->f_op == &socket_file_ops)
+                return file->private_data;      /* set in sock_map_fd */
 
-  x86/mce: Add CMCI poll mode (2012-08-09 11:44:51 -0700)
+        *err = -ENOTSOCK;
+        return NULL;
+}
+... and the first line is exactly that - a check that we are on sockfs.
+_Far_ less expensive one, at that, so it's not even that we are avoiding
+a costly test.  In other words, all masturbation with d_path() is absolutely
+pointless.
 
-----------------------------------------------------------------
-Handle CMCI storm gracefully by switching to polling mode if there
-are too many interrupts, and switching back to interrupt mode when the
-storm abates.
+Furthermore, it's racy; had been even more so before the delayed fput series
+went in, but even now it's not safe.  fcheck_files() does *NOT* guarantee
+that file is not getting closed right now.  rcu_read_lock() prevents only
+freeing and potential reuse of struct file we'd got; it might go all the
+way through final fput() just as we look at it.  So file->f_path is not
+protected by anything.  Worse yet, neither is struct socket itself - we
+might be going through sock_release() at the same time, so sock->sk might
+very well be NULL, leaving us a oops even after we dump d_path() idiocy.
 
-----------------------------------------------------------------
-Chen Gong (1):
-      x86/mce: Add CMCI poll mode
+To make it even funnier, there's such thing as SCM_RIGHTS datagrams and
+descriptor passing.  In other words, it's *not* going to catch all sockets
+that would be caught by the earlier variant.
 
-Thomas Gleixner (4):
-      x86: mce: Disable preemption when calling raise_local()
-      x86: mce: Serialize mce injection
-      x86: mce: Split timer init
-      x86: mce: Remove the frozen cases in the hotplug code
+What the hell it is about cgroups that turns otherwise sane people into
+gibbering idiots?  Other than the Old Ones' apparent involvement in
+the mental processes that had lead to the entire concept, that is...
 
-Tony Luck (1):
-      x86/mce: Make cmci_discover() quiet
+Let's take a closer look at the entire net/core/netprio_cgroup.c, shall we?
 
- arch/x86/kernel/cpu/mcheck/mce-inject.c   |   8 ++
- arch/x86/kernel/cpu/mcheck/mce-internal.h |  12 +++
- arch/x86/kernel/cpu/mcheck/mce.c          |  84 +++++++++++++------
- arch/x86/kernel/cpu/mcheck/mce_intel.c    | 133 +++++++++++++++++++++++++-----
- 4 files changed, 192 insertions(+), 45 deletions(-)
+Right at the beginning of that Fine Piece of Software we find this:
+static atomic_t max_prioidx = ATOMIC_INIT(0);
+Why is it atomic?  We have all of four accesses to it; one writer and three
+readers.  The writer and one of the readers are under the same spinlock;
+the rest of readers are under rtnl_lock().  Moreover, the sole writer is
+in get_prioidx(), which is called in one place and is immediately followed
+by grabbing rtnl_lock().  So shifting it down there would've put *all*
+accesses of that sucker under the same mutex...
+
+Next to that one we have
+static DEFINE_SPINLOCK(prioidx_map_lock);
+What is that one for?  Two places touching that sucker; get_prioidx() and
+put_prioidx().  spin_lock_irqsave()/spin_unlock_irqrestore() in both.
+Why irqsave?  Somebody calling that from interrupt context?  Looks odd...
+OK, there's not a lot of callers - cgrp_create(), cgrp_destroy().  And
+neither looks like something that could be called from an interrupt.
+The former has GFP_KERNEL allocation right in the beginning.  Oh, lookie -
+both do rtnl_lock().  So not only is all this wanking with irqs pure
+cargo-culting, the whole spinlock is pointless; we can simply shift all
+this stuff under rtnl_lock().
+
+After get_prioidx()/put_priodix() we come to the following gem:
+        for (i = 0;
+             old_priomap && (i < old_priomap->priomap_len);
+             i++)
+                new_priomap->priomap[i] = old_priomap->priomap[i];
+Why are we checking old_priomap on every step?  Sure, gcc will take
+that out of loop, but why obfuscate the damn thing?
+	if (old_priomap)
+		memcpy(new_priomap->priomap, old_priomap,
+			sizeof(u32) * old_priomap->priomap_len);
+would be far more idiomatic...  Anyway, we are extending the damn array,
+copying contents of the old one to replacement.  Understandable.  Where
+do we modify the contents of that array, anyway?  Aha:
+        rtnl_lock();
+        for_each_netdev(&init_net, dev) {
+                map = rtnl_dereference(dev->priomap);
+                if (map && cs->prioidx < map->priomap_len)
+                        map->priomap[cs->prioidx] = 0;
+        }
+        rtnl_unlock();
+and
+        rcu_read_lock();
+        map = rcu_dereference(dev->priomap);   
+        if (map)
+                map->priomap[prioidx] = priority;
+        rcu_read_unlock();
+The first one is serialized with the reallocate-and-copy by rtnl_lock().
+The second one, though, is immediately suspicious - rcu_read_lock() in
+updater.  It's in write_priomap(), which is ->write_string() in some object
+deep in the bloated bowels of cgroup.  Only one caller: cgroup_write_string().
+No locks grabbed.  Called from cgroup_file_write(), again without any locks.
+Which is ->write() of file_operations.  And that is callable without any
+locks whatsoever.  OK, so we definitely have a race here.
+
+Incidentally, we'd dropped rtnl_lock() just before that point.  IOW, it's
+trivially fixed by moving that thing into write_update_netdev_table()...
+
+BTW, speaking of highly non-idiomatic code: strstr(devname, " ").  Why
+not introduce strcasestr(), if we are going for maximal obfuscation here?
+Sigh...
