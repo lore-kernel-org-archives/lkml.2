@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2HMSiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 14:38:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49397 "EHLO
+	id S1753610Ab2HMSiP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 14:38:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49396 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab2HMShj (ORCPT
+	with ESMTP id S1752592Ab2HMShi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 14:37:39 -0400
+	Mon, 13 Aug 2012 14:37:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 30/38] perf symbols: Avoid segfault in elf_strptr
-Date: Mon, 13 Aug 2012 15:37:11 -0300
-Message-Id: <1344883039-13495-31-git-send-email-acme@infradead.org>
+Subject: [PATCH 26/38] perf symbols: Correct comment wrt kallsyms loading
+Date: Mon, 13 Aug 2012 15:37:07 -0300
+Message-Id: <1344883039-13495-27-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1344883039-13495-1-git-send-email-acme@infradead.org>
 References: <1344883039-13495-1-git-send-email-acme@infradead.org>
@@ -31,14 +31,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-If we call elf_section_by_name() with a truncated elf image (ie: the
-file header indicates that the section headers are placed past the end
-of the file), elf_strptr() causes a segfault within libelf.
+In kallsyms_parse() when calling process_symbol() (a callback argument
+to kallsyms_parse()), we pass start as both start & end (ie:
+start=start, end=start).
 
-Avoid this by checking that we can access the section string table
-properly.
+In map__process_kallsym_symbol(), the length is calculated as 'end -
+start + 1', making the length 1, not 0.
 
-Should really be fixed in libelf/elfutils.
+Essentially, start & end define an inclusive range.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 Cc: David Hansen <dave@linux.vnet.ibm.com>
@@ -48,27 +48,25 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-10-git-send-email-cody@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1344637382-22789-2-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-elf.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ tools/perf/util/symbol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index a2e994e..a9a194d 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -129,6 +129,10 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 	Elf_Scn *sec = NULL;
- 	size_t cnt = 1;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 42c0d94..9f181a8 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -605,7 +605,7 @@ int kallsyms__parse(const char *filename, void *arg,
  
-+	/* Elf is corrupted/truncated, avoid calling elf_strptr. */
-+	if (!elf_rawdata(elf_getscn(elf, ep->e_shstrndx), NULL))
-+		return NULL;
-+
- 	while ((sec = elf_nextscn(elf, sec)) != NULL) {
- 		char *str;
- 
+ 		/*
+ 		 * module symbols are not sorted so we add all
+-		 * symbols with zero length and rely on
++		 * symbols, setting length to 1, and rely on
+ 		 * symbols__fixup_end() to fix it up.
+ 		 */
+ 		err = process_symbol(arg, symbol_name,
 -- 
 1.7.1
 
