@@ -1,84 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab2HMUUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 16:20:08 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51780 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab2HMUTt (ORCPT
+	id S1753077Ab2HMUtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 16:49:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49138 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2HMUUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 16:19:49 -0400
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Klaus Heinrich Kiwi <klausk@br.ibm.com>,
-        Eric Paris <eparis@redhat.com>
-Date: Mon, 13 Aug 2012 13:18:16 -0700
-Message-Id: <1344889115-21610-2-git-send-email-ebiederm@xmission.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-References: <87ehnav9n5.fsf@xmission.com>
- <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+8Rg17aE0d4CI9A9ADDX2Sp1n17QsrmQI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0014]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 02/21] userns: Convert __dev_set_promiscuity to use kuids in audit logs
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 13 Aug 2012 16:20:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [ 00/82] 3.5.2-stable review
+Date: Mon, 13 Aug 2012 13:18:36 -0700
+Message-Id: <20120813201746.448504360@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Cc: Klaus Heinrich Kiwi <klausk@br.ibm.com>
-Cc: Eric Paris <eparis@redhat.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- net/core/dev.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+This is the start of the stable review cycle for the 3.5.2 release.
+There are 82 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 0cb3fe8..026bb4a 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4492,8 +4492,8 @@ static void dev_change_rx_flags(struct net_device *dev, int flags)
- static int __dev_set_promiscuity(struct net_device *dev, int inc)
- {
- 	unsigned int old_flags = dev->flags;
--	uid_t uid;
--	gid_t gid;
-+	kuid_t uid;
-+	kgid_t gid;
- 
- 	ASSERT_RTNL();
- 
-@@ -4525,7 +4525,8 @@ static int __dev_set_promiscuity(struct net_device *dev, int inc)
- 				dev->name, (dev->flags & IFF_PROMISC),
- 				(old_flags & IFF_PROMISC),
- 				audit_get_loginuid(current),
--				uid, gid,
-+				from_kuid(&init_user_ns, uid),
-+				from_kgid(&init_user_ns, gid),
- 				audit_get_sessionid(current));
- 		}
- 
--- 
-1.7.5.4
+Responses should be made by Wed Aug 15 20:17:43 UTC 2012.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.2-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+ Documentation/security/Yama.txt              |   14 +-
+ MAINTAINERS                                  |    2 +-
+ Makefile                                     |    4 +-
+ arch/arm/boot/dts/imx53-ard.dts              |   20 ++
+ arch/arm/configs/mxs_defconfig               |    1 -
+ arch/arm/include/asm/cacheflush.h            |    8 +-
+ arch/arm/include/asm/mutex.h                 |  119 +--------
+ arch/arm/kernel/entry-armv.S                 |  111 +++++---
+ arch/arm/kernel/process.c                    |    2 +
+ arch/arm/kernel/smp.c                        |    3 +-
+ arch/arm/kernel/traps.c                      |    8 -
+ arch/arm/mach-imx/clk-imx31.c                |    2 +-
+ arch/arm/mach-imx/clk-imx51-imx53.c          |    1 +
+ arch/arm/mach-pxa/raumfeld.c                 |    2 +-
+ arch/arm/mm/tlb-v7.S                         |   12 +
+ arch/arm/vfp/entry.S                         |   16 +-
+ arch/arm/vfp/vfphw.S                         |   19 +-
+ arch/arm/vfp/vfpmodule.c                     |    8 +-
+ arch/ia64/include/asm/atomic.h               |    4 +-
+ arch/ia64/kernel/irq_ia64.c                  |    1 -
+ arch/sh/mm/fault.c                           |    8 +-
+ arch/x86/kernel/alternative.c                |    2 +-
+ arch/x86/syscalls/syscall_64.tbl             |    2 +-
+ block/blk-ioc.c                              |    1 +
+ drivers/acpi/processor_driver.c              |    2 +-
+ drivers/block/virtio_blk.c                   |   25 +-
+ drivers/char/mspec.c                         |    2 +-
+ drivers/char/random.c                        |  352 +++++++++++++++++---------
+ drivers/firmware/dmi_scan.c                  |    3 +
+ drivers/firmware/pcdp.c                      |    4 +-
+ drivers/hid/hid-chicony.c                    |    1 +
+ drivers/hid/hid-core.c                       |    2 +
+ drivers/hid/hid-cypress.c                    |    2 +
+ drivers/hid/hid-ids.h                        |    5 +
+ drivers/hid/hid-multitouch.c                 |    5 +
+ drivers/input/mouse/synaptics.c              |   22 ++
+ drivers/input/tablet/wacom_wac.c             |    2 +-
+ drivers/input/touchscreen/eeti_ts.c          |   21 +-
+ drivers/isdn/hardware/mISDN/avmfritz.c       |    7 +-
+ drivers/isdn/mISDN/layer2.c                  |    2 +-
+ drivers/md/raid1.c                           |    5 +-
+ drivers/media/rc/ene_ir.c                    |    3 +-
+ drivers/media/video/m5mols/m5mols_controls.c |    4 +-
+ drivers/media/video/videobuf-dma-contig.c    |   53 ++--
+ drivers/mfd/ab3100-core.c                    |    5 -
+ drivers/mfd/ezx-pcap.c                       |    2 +-
+ drivers/mfd/wm831x-otp.c                     |    8 +
+ drivers/net/ethernet/intel/e1000e/82571.c    |    4 +-
+ drivers/net/tun.c                            |    1 -
+ drivers/net/wireless/ath/ath9k/hw.c          |    1 +
+ drivers/net/wireless/ath/ath9k/hw.h          |    1 +
+ drivers/net/wireless/ath/ath9k/pci.c         |    1 +
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c    |   13 +-
+ drivers/net/wireless/rt2x00/rt61pci.c        |    3 +-
+ drivers/platform/x86/asus-wmi.c              |    7 +-
+ drivers/rtc/rtc-wm831x.c                     |   24 +-
+ drivers/target/target_core_cdb.c             |   43 +++-
+ drivers/usb/core/hub.c                       |    9 +
+ drivers/video/smscufx.c                      |    2 +-
+ fs/exofs/ore.c                               |   14 +-
+ fs/nilfs2/ioctl.c                            |    4 +-
+ fs/nilfs2/super.c                            |    3 +
+ fs/nilfs2/the_nilfs.c                        |    1 +
+ fs/nilfs2/the_nilfs.h                        |    2 +
+ include/linux/input/eeti_ts.h                |    1 +
+ include/linux/irqdesc.h                      |    1 -
+ include/linux/mfd/ezx-pcap.h                 |    1 +
+ include/linux/random.h                       |    6 +-
+ include/linux/security.h                     |    2 -
+ include/trace/events/random.h                |  134 ++++++++++
+ kernel/irq/handle.c                          |    7 +-
+ kernel/irq/manage.c                          |   17 --
+ kernel/printk.c                              |    2 +
+ lib/vsprintf.c                               |    3 +-
+ mm/hugetlb.c                                 |   25 +-
+ mm/internal.h                                |    2 +
+ mm/memory-failure.c                          |    6 +-
+ mm/mmu_notifier.c                            |   45 ++--
+ mm/page_alloc.c                              |    4 +-
+ mm/sparse.c                                  |    3 +
+ mm/vmscan.c                                  |   38 ++-
+ net/core/dev.c                               |    3 +
+ net/core/rtnetlink.c                         |    1 +
+ net/mac80211/mesh.c                          |    1 +
+ net/sunrpc/clnt.c                            |    3 +-
+ net/sunrpc/rpcb_clnt.c                       |    4 +-
+ net/wireless/core.c                          |    5 +
+ net/wireless/core.h                          |    1 +
+ net/wireless/reg.c                           |   16 +-
+ net/wireless/util.c                          |    2 +-
+ security/selinux/hooks.c                     |   15 +-
+ security/yama/yama_lsm.c                     |   41 +++
+ sound/pci/hda/patch_conexant.c               |    1 -
+ sound/pci/hda/patch_realtek.c                |    7 +-
+ 94 files changed, 931 insertions(+), 506 deletions(-)
+
 
