@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2HNOGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:06:46 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55680 "EHLO
+	id S1755120Ab2HNOGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:06:44 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57578 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753375Ab2HNOG2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751663Ab2HNOG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:06:28 -0400
-Message-Id: <20120814140620.456133962@openvz.org>
+	Tue, 14 Aug 2012 10:06:27 -0400
+Message-Id: <20120814140620.191720208@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 14 Aug 2012 18:03:50 +0400
+Date: Tue, 14 Aug 2012 18:03:47 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -17,145 +17,129 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [patch 8/8] fdinfo: Show sigmask for signalfd fd
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 5/8] fs, epoll: Add procfs fdinfo helper v2
 References: <20120814140342.354405844@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-signalfd
+Content-Disposition: inline; filename=seq-fdinfo-eventpoll-5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- fs/proc/array.c         |    2 -
- fs/signalfd.c           |   63 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/proc_fs.h |    3 ++
- 3 files changed, 67 insertions(+), 1 deletion(-)
+This allow us to print out eventpoll target file descriptor,
+events and data, the /proc/pid/fdinfo/fd consists of
 
-Index: linux-2.6.git/fs/proc/array.c
+ | pos:	0
+ | flags:	02
+ | tfd:        5 events:       1d data: ffffffffffffffff
+
+This feature is CONFIG_CHECKPOINT_RESTORE only.
+
+v2:
+ - don't walk over all rb nodes on seq-next,
+   try to continue from pervious position
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+---
+ fs/eventpoll.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+
+Index: linux-2.6.git/fs/eventpoll.c
 ===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -220,7 +220,7 @@ static inline void task_state(struct seq
- 	seq_putc(m, '\n');
- }
- 
--static void render_sigset_t(struct seq_file *m, const char *header,
-+void render_sigset_t(struct seq_file *m, const char *header,
- 				sigset_t *set)
- {
- 	int i;
-Index: linux-2.6.git/fs/signalfd.c
-===================================================================
---- linux-2.6.git.orig/fs/signalfd.c
-+++ linux-2.6.git/fs/signalfd.c
-@@ -29,6 +29,7 @@
- #include <linux/anon_inodes.h>
- #include <linux/signalfd.h>
- #include <linux/syscalls.h>
+--- linux-2.6.git.orig/fs/eventpoll.c
++++ linux-2.6.git/fs/eventpoll.c
+@@ -38,6 +38,8 @@
+ #include <asm/io.h>
+ #include <asm/mman.h>
+ #include <linux/atomic.h>
 +#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
  
- void signalfd_cleanup(struct sighand_struct *sighand)
- {
-@@ -46,6 +47,7 @@ void signalfd_cleanup(struct sighand_str
+ /*
+  * LOCKING:
+@@ -1897,6 +1899,69 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd,
+ 	return error;
  }
  
- struct signalfd_ctx {
-+	seqcount_t cnt;
- 	sigset_t sigmask;
- };
- 
-@@ -259,6 +261,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
- 			return -ENOMEM;
- 
- 		ctx->sigmask = sigmask;
-+		seqcount_init(&ctx->cnt);
- 
- 		/*
- 		 * When we call this, the initialization must be complete, since
-@@ -279,7 +282,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
- 			return -EINVAL;
- 		}
- 		spin_lock_irq(&current->sighand->siglock);
-+		write_seqcount_begin(&ctx->cnt);
- 		ctx->sigmask = sigmask;
-+		write_seqcount_end(&ctx->cnt);
- 		spin_unlock_irq(&current->sighand->siglock);
- 
- 		wake_up(&current->sighand->signalfd_wqh);
-@@ -294,3 +299,61 @@ SYSCALL_DEFINE3(signalfd, int, ufd, sigs
- {
- 	return sys_signalfd4(ufd, user_mask, sizemask, 0);
- }
-+
 +#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
 +
 +static void *seq_start(struct seq_file *m, loff_t *pos)
 +{
 +	struct proc_fdinfo_extra *extra = m->private;
-+	return *pos == 0 ? extra->f_file : NULL;
++	struct eventpoll *ep = extra->f_file->private_data;
++	struct rb_node *rbp;
++	loff_t num = *pos;
++
++	mutex_lock(&ep->mtx);
++	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
++		if (num-- == 0)
++			return rbp;
++	}
++
++	return NULL;
++}
++
++static void seq_stop(struct seq_file *m, void *v)
++{
++	struct proc_fdinfo_extra *extra = m->private;
++	struct eventpoll *ep = extra->f_file->private_data;
++	mutex_unlock(&ep->mtx);
 +}
 +
 +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
 +{
++	struct rb_node *rbp = p;
 +	++*pos;
-+	return NULL;
++	return (void *)rb_next(rbp);
 +}
 +
 +static int seq_show(struct seq_file *m, void *v)
 +{
-+	struct signalfd_ctx *ctx = ((struct file *)v)->private_data;
-+	sigset_t sigmask;
-+	unsigned seq;
++	struct rb_node *rbp = v;
++	struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
 +
-+	do {
-+		seq = read_seqcount_begin(&ctx->cnt);
-+		sigmask = ctx->sigmask;
-+	} while (read_seqcount_retry(&ctx->cnt, seq));
-+
-+	signotset(&sigmask);
-+	render_sigset_t(m, "sigmask:\t", &sigmask);
-+	return 0;
++	return seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
++			  epi->ffd.fd, epi->event.events,
++			  (long long)epi->event.data);
 +}
 +
-+static void seq_stop(struct seq_file *p, void *v) { }
-+
-+static const struct seq_operations signalfd_fdinfo_ops = {
-+	.start	= seq_start,
-+	.next	= seq_next,
-+	.stop	= seq_stop,
-+	.show	= seq_show,
++static const struct seq_operations ep_fdinfo_ops = {
++	.start		= seq_start,
++	.next		= seq_next,
++	.stop		= seq_stop,
++	.show		= seq_show,
 +};
 +
-+static int is_signalfd_file(struct file *file)
-+{
-+	return file->f_op == &signalfd_fops;
-+}
-+
-+static struct proc_fdinfo_driver signalfd_fdinfo = {
-+	.name	= "signalfd",
-+	.ops	= &signalfd_fdinfo_ops,
-+	.probe	= is_signalfd_file,
++static struct proc_fdinfo_driver ep_fdinfo = {
++	.name		= "eventpoll",
++	.ops		= &ep_fdinfo_ops,
++	.probe		= is_file_epoll,
 +};
 +
-+static int __init signalfd_init(void)
++static int __init ep_register_fdinfo_driver(void)
 +{
-+	return proc_register_fdinfo_driver(&signalfd_fdinfo);
++	return proc_register_fdinfo_driver(&ep_fdinfo);
 +}
-+fs_initcall(signalfd_init);
-+
++#else
++static void ep_register_fdinfo_driver(void) { }
 +#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
-Index: linux-2.6.git/include/linux/proc_fs.h
-===================================================================
---- linux-2.6.git.orig/include/linux/proc_fs.h
-+++ linux-2.6.git/include/linux/proc_fs.h
-@@ -316,4 +316,7 @@ static inline struct net *PDE_NET(struct
- 	return pde->parent->data;
- }
- 
-+#include <asm/signal.h>
 +
-+void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
- #endif /* _LINUX_PROC_FS_H */
+ static int __init eventpoll_init(void)
+ {
+ 	struct sysinfo si;
+@@ -1929,6 +1994,8 @@ static int __init eventpoll_init(void)
+ 	pwq_cache = kmem_cache_create("eventpoll_pwq",
+ 			sizeof(struct eppoll_entry), 0, SLAB_PANIC, NULL);
+ 
++	ep_register_fdinfo_driver();
++
+ 	return 0;
+ }
+ fs_initcall(eventpoll_init);
 
