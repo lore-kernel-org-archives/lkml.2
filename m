@@ -1,1116 +1,903 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab2HNRyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54936 "EHLO
+	id S932073Ab2HNRyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:43 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55633 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756775Ab2HNRxF (ORCPT
+	with ESMTP id S1756920Ab2HNRxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:05 -0400
+	Tue, 14 Aug 2012 13:53:17 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Date: Tue, 14 Aug 2012 18:52:03 +0100
-Message-Id: <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 30/31] arm64: Build infrastructure
+Date: Tue, 14 Aug 2012 18:52:31 +0100
+Message-Id: <1344966752-16102-31-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:46.0072 (UTC) FILETIME=[E408B380:01CD7A45]
-X-MC-Unique: 112081418530214701
+X-OriginalArrivalTime: 14 Aug 2012 17:54:57.0900 (UTC) FILETIME=[EB1582C0:01CD7A45]
+X-MC-Unique: 112081418531509601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHv4Th017321
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHvGiT017325
 
-The patch adds the kernel booting and the initial setup code.
-Documentation/arm64/booting.txt describes the booting protocol on the
-AArch64 Linux kernel. This is subject to change following the work on
-boot standardisation, ACPI.
+This patch adds Makefile and Kconfig files required for building an
+AArch64 kernel.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- Documentation/arm64/booting.txt |  141 +++++++++++
- arch/arm64/include/asm/setup.h  |   26 ++
- arch/arm64/kernel/head.S        |  521 +++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/setup.c       |  357 +++++++++++++++++++++++++++
- 4 files changed, 1045 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/arm64/booting.txt
- create mode 100644 arch/arm64/include/asm/setup.h
- create mode 100644 arch/arm64/kernel/head.S
- create mode 100644 arch/arm64/kernel/setup.c
+ arch/arm64/Kconfig                   |  261 ++++++++++++++++++++++++++++++++++
+ arch/arm64/Kconfig.debug             |   27 ++++
+ arch/arm64/Makefile                  |   71 +++++++++
+ arch/arm64/boot/.gitignore           |    2 +
+ arch/arm64/boot/Makefile             |   38 +++++
+ arch/arm64/boot/install.sh           |   52 +++++++
+ arch/arm64/configs/generic_defconfig |   85 +++++++++++
+ arch/arm64/include/asm/prom.h        |    1 +
+ arch/arm64/kernel/.gitignore         |    1 +
+ arch/arm64/kernel/Makefile           |   27 ++++
+ arch/arm64/kernel/vmlinux.lds.S      |  146 +++++++++++++++++++
+ arch/arm64/mm/Kconfig                |    5 +
+ arch/arm64/mm/Makefile               |    6 +
+ init/Kconfig                         |    3 +-
+ lib/Kconfig.debug                    |    6 +-
+ 15 files changed, 728 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm64/Kconfig
+ create mode 100644 arch/arm64/Kconfig.debug
+ create mode 100644 arch/arm64/Makefile
+ create mode 100644 arch/arm64/boot/.gitignore
+ create mode 100644 arch/arm64/boot/Makefile
+ create mode 100644 arch/arm64/boot/install.sh
+ create mode 100644 arch/arm64/configs/generic_defconfig
+ create mode 100644 arch/arm64/include/asm/prom.h
+ create mode 100644 arch/arm64/kernel/.gitignore
+ create mode 100644 arch/arm64/kernel/Makefile
+ create mode 100644 arch/arm64/kernel/vmlinux.lds.S
+ create mode 100644 arch/arm64/mm/Kconfig
+ create mode 100644 arch/arm64/mm/Makefile
 
-diff --git a/Documentation/arm64/booting.txt b/Documentation/arm64/booting.txt
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
 new file mode 100644
-index 0000000..3197820
+index 0000000..1ce3d04
 --- /dev/null
-+++ b/Documentation/arm64/booting.txt
-@@ -0,0 +1,141 @@
-+			Booting AArch64 Linux
-+			=====================
++++ b/arch/arm64/Kconfig
+@@ -0,0 +1,261 @@
++config ARM64
++	def_bool y
++	select OF
++	select OF_EARLY_FLATTREE
++	select IRQ_DOMAIN
++	select HAVE_AOUT
++	select HAVE_DMA_ATTRS
++	select HAVE_DMA_API_DEBUG
++	select HAVE_IDE
++	select HAVE_MEMBLOCK
++	select RTC_LIB
++	select SYS_SUPPORTS_APM_EMULATION
++	select HAVE_GENERIC_DMA_COHERENT
++	select GENERIC_IOMAP
++	select HAVE_IRQ_WORK
++	select HAVE_PERF_EVENTS
++	select HAVE_ARCH_TRACEHOOK
++	select PERF_USE_VMALLOC
++	select HAVE_HW_BREAKPOINT if PERF_EVENTS
++	select HAVE_GENERIC_HARDIRQS
++	select GENERIC_HARDIRQS_NO_DEPRECATED
++	select HAVE_SPARSE_IRQ
++	select SPARSE_IRQ
++	select GENERIC_IRQ_SHOW
++	select GENERIC_SMP_IDLE_THREAD
++	select NO_BOOTMEM
++	help
++	  ARM 64-bit (AArch64) Linux support.
 +
-+Author: Will Deacon <will.deacon@arm.com>
-+Date  : 25 April 2012
++config 64BIT
++	def_bool y
 +
-+This document is based on the ARM booting document by Russell King and
-+is relevant to all public releases of the AArch64 Linux kernel.
++config ARCH_PHYS_ADDR_T_64BIT
++	def_bool y
 +
-+The AArch64 exception model is made up of a number of exception levels
-+(EL0 - EL3), with EL0 and EL1 having a secure and a non-secure
-+counterpart.  EL2 is the hypervisor level and exists only in non-secure
-+mode. EL3 is the highest priority level and exists only in secure mode.
++config HAVE_PWM
++	bool
 +
-+For the purposes of this document, we will use the term `boot loader'
-+simply to define all software that executes on the CPU(s) before control
-+is passed to the Linux kernel.  This may include secure monitor and
-+hypervisor code, or it may just be a handful of instructions for
-+preparing a minimal boot environment.
++config SYS_SUPPORTS_APM_EMULATION
++	bool
 +
-+Essentially, the boot loader should provide (as a minimum) the
-+following:
++config NO_IOPORT
++	def_bool y
 +
-+1. Setup and initialise the RAM
-+2. Setup the device tree
-+3. Decompress the kernel image
-+4. Call the kernel image
++config GENERIC_GPIO
++	bool
 +
++config GENERIC_TIME_VSYSCALL
++	def_bool y
 +
-+1. Setup and initialise RAM
-+---------------------------
++config GENERIC_CLOCKEVENTS
++	def_bool y
 +
-+Requirement: MANDATORY
++config STACKTRACE_SUPPORT
++	def_bool y
 +
-+The boot loader is expected to find and initialise all RAM that the
-+kernel will use for volatile data storage in the system.  It performs
-+this in a machine dependent manner.  (It may use internal algorithms
-+to automatically locate and size all RAM, or it may use knowledge of
-+the RAM in the machine, or any other method the boot loader designer
-+sees fit.)
++config LOCKDEP_SUPPORT
++	def_bool y
 +
++config TRACE_IRQFLAGS_SUPPORT
++	def_bool y
 +
-+2. Setup the device tree
-+-------------------------
++config HARDIRQS_SW_RESEND
++	def_bool y
 +
-+Requirement: MANDATORY
++config GENERIC_IRQ_PROBE
++	def_bool y
 +
-+The device tree blob (dtb) must be no bigger than 2 megabytes in size
-+and placed at a 2-megabyte boundary within the first 512 megabytes from
-+the start of the kernel image. This is to allow the kernel to map the
-+blob using a single section mapping in the initial page tables.
++config GENERIC_LOCKBREAK
++	def_bool y
++	depends on SMP && PREEMPT
 +
++config RWSEM_GENERIC_SPINLOCK
++	def_bool y
 +
-+3. Decompress the kernel image
-+------------------------------
++config RWSEM_XCHGADD_ALGORITHM
++	bool
 +
-+Requirement: OPTIONAL
++config ARCH_HAS_ILOG2_U32
++	bool
 +
-+The AArch64 kernel does not provide a decompressor and therefore
-+requires gzip decompression to be performed by the boot loader if the
-+default Image.gz target is used.  For bootloaders that do not implement
-+this requirement, the larger Image target is available instead.
++config ARCH_HAS_ILOG2_U64
++	bool
 +
++config ARCH_HAS_CPUFREQ
++	bool
++	help
++	  Internal node to signify that the ARCH has CPUFREQ support
++	  and that the relevant menu configurations are displayed for
++	  it.
 +
-+4. Call the kernel image
-+------------------------
++config GENERIC_HWEIGHT
++	def_bool y
 +
-+Requirement: MANDATORY
++config GENERIC_CSUM
++        def_bool y
 +
-+The decompressed kernel image contains a 32-byte header as follows:
++config GENERIC_CALIBRATE_DELAY
++	def_bool y
 +
-+  u32 magic	= 0x14000008;	/* branch to stext, little-endian */
-+  u32 res0	= 0;		/* reserved */
-+  u64 text_offset;		/* Image load offset */
-+  u64 res1	= 0;		/* reserved */
-+  u64 res2	= 0;		/* reserved */
++config ZONE_DMA32
++	def_bool y
 +
-+The image must be placed at the specified offset (currently 0x80000)
-+from the start of the system RAM and called there. The start of the
-+system RAM must be aligned to 2MB.
++config ARCH_DMA_ADDR_T_64BIT
++	def_bool y
 +
-+Before jumping into the kernel, the following conditions must be met:
++config NEED_DMA_MAP_STATE
++	def_bool y
 +
-+- Quiesce all DMA capable devices so that memory does not get
-+  corrupted by bogus network packets or disk data.  This will save
-+  you many hours of debug.
++config NEED_SG_DMA_LENGTH
++	def_bool y
 +
-+- Primary CPU general-purpose register settings
-+  x0 = physical address of device tree blob (dtb) in system RAM.
++config SWIOTLB
++	def_bool y
 +
-+- CPU mode
-+  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
-+  IRQ and FIQ).
-+  The CPU must be in either EL2 (RECOMMENDED in order to have access to
-+  the virtualisation extensions) or non-secure EL1.
++config IOMMU_HELPER
++	def_bool SWIOTLB
 +
-+- Caches, MMUs
-+  The MMU must be off.
-+  Instruction cache may be on or off.
-+  Data cache must be off and invalidated.
++source "init/Kconfig"
 +
-+- Architected timers
-+  CNTFRQ must be programmed with the timer frequency.
-+  If entering the kernel at EL1, CNTHCTL_EL2 must have EL1PCTEN (bit 0)
-+  set where available.
++source "kernel/Kconfig.freezer"
 +
-+- Coherency
-+  All CPUs to be booted by the kernel must be part of the same coherency
-+  domain on entry to the kernel.  This may require IMPLEMENTATION DEFINED
-+  initialisation to enable the receiving of maintenance operations on
-+  each CPU.
++menu "System Type"
 +
-+- System registers
-+  All writable architected system registers at the exception level where
-+  the kernel image will be entered must be initialised by software at a
-+  higher exception level to prevent execution in an UNKNOWN state.
++source "arch/arm64/mm/Kconfig"
 +
-+The boot loader is expected to enter the kernel on each CPU in the
-+following manner:
++endmenu
 +
-+- The primary CPU must jump directly to the first instruction of the
-+  kernel image.  The device tree blob passed by this CPU must contain
-+  for each CPU node:
++menu "Bus support"
 +
-+    1. An 'enable-method' property. Currently, the only supported value
-+       for this field is the string "spin-table".
++config ARM_AMBA
++	bool
 +
-+    2. A 'cpu-release-addr' property identifying a 64-bit,
-+       zero-initialised memory location.
++endmenu
 +
-+  It is expected that the bootloader will generate these device tree
-+  properties and insert them into the blob prior to kernel entry.
++menu "Kernel Features"
 +
-+- Any secondary CPUs must spin outside of the kernel in a reserved area
-+  of memory (communicated to the kernel by a /memreserve/ region in the
-+  device tree) polling their cpu-release-addr location, which must be
-+  contained in the reserved region.  A wfe instruction may be inserted
-+  to reduce the overhead of the busy-loop and a sev will be issued by
-+  the primary CPU.  When a read of the location pointed to by the
-+  cpu-release-addr returns a non-zero value, the CPU must jump directly
-+  to this value.
-diff --git a/arch/arm64/include/asm/setup.h b/arch/arm64/include/asm/setup.h
++source "kernel/time/Kconfig"
++
++config ARM64_64K_PAGES
++	bool "Enable 64KB pages support"
++	help
++	  This feature enables 64KB pages support (4KB by default)
++	  allowing only two levels of page tables and faster TLB
++	  look-up. AArch32 emulation is not available when this feature
++	  is enabled.
++
++config SMP
++	bool "Symmetric Multi-Processing"
++	depends on GENERIC_CLOCKEVENTS
++	select USE_GENERIC_SMP_HELPERS
++	help
++	  This enables support for systems with more than one CPU.  If
++	  you say N here, the kernel will run on single and
++	  multiprocessor machines, but will use only one CPU of a
++	  multiprocessor machine. If you say Y here, the kernel will run
++	  on many, but not all, single processor machines. On a single
++	  processor machine, the kernel will run faster if you say N
++	  here.
++
++	  If you don't know what to do here, say N.
++
++config NR_CPUS
++	int "Maximum number of CPUs (2-32)"
++	range 2 32
++	depends on SMP
++	default "4"
++
++source kernel/Kconfig.preempt
++
++config HZ
++	int
++	default 100
++
++config ARCH_HAS_HOLES_MEMORYMODEL
++	def_bool y if SPARSEMEM
++
++config ARCH_SPARSEMEM_ENABLE
++	def_bool y
++	select SPARSEMEM_VMEMMAP_ENABLE
++
++config ARCH_SPARSEMEM_DEFAULT
++	def_bool ARCH_SPARSEMEM_ENABLE
++
++config ARCH_SELECT_MEMORY_MODEL
++	def_bool ARCH_SPARSEMEM_ENABLE
++
++config HAVE_ARCH_PFN_VALID
++	def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
++
++config HW_PERF_EVENTS
++	bool "Enable hardware performance counter support for perf events"
++	depends on PERF_EVENTS
++	default y
++	help
++	  Enable hardware performance counter support for perf events. If
++	  disabled, perf events will use software events only.
++
++source "mm/Kconfig"
++
++endmenu
++
++menu "Boot options"
++
++config CMDLINE
++	string "Default kernel command string"
++	default ""
++	help
++	  Provide a set of default command-line options at build time by
++	  entering them here. As a minimum, you should specify the the
++	  root device (e.g. root=/dev/nfs).
++
++config CMDLINE_FORCE
++	bool "Always use the default kernel command string"
++	help
++	  Always use the default kernel command string, even if the boot
++	  loader passes other arguments to the kernel.
++	  This is useful if you cannot or don't want to change the
++	  command-line options your boot loader passes to the kernel.
++
++endmenu
++
++menu "Userspace binary formats"
++
++source "fs/Kconfig.binfmt"
++
++config AARCH32_EMULATION
++	bool "Kernel support for 32-bit EL0"
++	depends on !ARM64_64K_PAGES
++	select COMPAT_BINFMT_ELF
++	help
++	  This option enables support for a 32-bit EL0 running under a 64-bit
++	  kernel at EL1. AArch32-specific components such as system calls,
++	  the user helper functions, VFP support and the ptrace interface are
++	  handled appropriately by the kernel.
++
++	  If you want to execute 32-bit userspace applications, say Y.
++
++config COMPAT
++	def_bool y
++	depends on AARCH32_EMULATION
++
++config SYSVIPC_COMPAT
++	def_bool y
++	depends on COMPAT && SYSVIPC
++
++endmenu
++
++source "net/Kconfig"
++
++source "drivers/Kconfig"
++
++source "fs/Kconfig"
++
++source "arch/arm64/Kconfig.debug"
++
++source "security/Kconfig"
++
++source "crypto/Kconfig"
++
++source "lib/Kconfig"
+diff --git a/arch/arm64/Kconfig.debug b/arch/arm64/Kconfig.debug
 new file mode 100644
-index 0000000..d766493
+index 0000000..d7553f2
 --- /dev/null
-+++ b/arch/arm64/include/asm/setup.h
-@@ -0,0 +1,26 @@
++++ b/arch/arm64/Kconfig.debug
+@@ -0,0 +1,27 @@
++menu "Kernel hacking"
++
++source "lib/Kconfig.debug"
++
++config FRAME_POINTER
++	bool
++	default y
++
++config DEBUG_ERRORS
++	bool "Verbose kernel error messages"
++	depends on DEBUG_KERNEL
++	help
++	  This option controls verbose debugging information which can be
++	  printed when the kernel detects an internal error. This debugging
++	  information is useful to kernel hackers when tracking down problems,
++	  but mostly meaningless to other people. It's safe to say Y unless
++	  you are concerned with the code size or don't want to see these
++	  messages.
++
++config DEBUG_STACK_USAGE
++	bool "Enable stack utilization instrumentation"
++	depends on DEBUG_KERNEL
++	help
++	  Enables the display of the minimum amount of free stack which each
++	  task has ever had available in the sysrq-T output.
++
++endmenu
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+new file mode 100644
+index 0000000..831bd41
+--- /dev/null
++++ b/arch/arm64/Makefile
+@@ -0,0 +1,71 @@
++#
++# arch/arm64/Makefile
++#
++# This file is included by the global makefile so that you can add your own
++# architecture-specific flags and dependencies.
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 1995-2001 by Russell King
++
++LDFLAGS_vmlinux	:=-p --no-undefined -X
++CPPFLAGS_vmlinux.lds = -DTEXT_OFFSET=$(TEXT_OFFSET)
++OBJCOPYFLAGS	:=-O binary -R .note -R .note.gnu.build-id -R .comment -S
++GZFLAGS		:=-9
++
++LIBGCC 		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
++
++KBUILD_DEFCONFIG := generic_defconfig
++
++KBUILD_CFLAGS	+= -mgeneral-regs-only
++KBUILD_CPPFLAGS	+= -mlittle-endian
++AS		+= -EL
++LD		+= -EL
++
++comma = ,
++
++CHECKFLAGS	+= -D__aarch64__
++
++# Default value
++head-y		:= arch/arm64/kernel/head.o
++
++# The byte offset of the kernel image in RAM from the start of RAM.
++TEXT_OFFSET := 0x00080000
++
++export	TEXT_OFFSET GZFLAGS
++
++core-y		+= arch/arm64/kernel/ arch/arm64/mm/
++libs-y		:= arch/arm64/lib/ $(libs-y)
++libs-y		+= $(LIBGCC)
++
++# Default target when executing plain make
++KBUILD_IMAGE := Image.gz
++
++all:	$(KBUILD_IMAGE)
++
++boot := arch/arm64/boot
++
++Image Image.gz: vmlinux
++	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++
++zinstall install: vmlinux
++	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
++
++%.dtb:
++	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++
++# We use MRPROPER_FILES and CLEAN_FILES now
++archclean:
++	$(Q)$(MAKE) $(clean)=$(boot)
++
++define archhelp
++  echo  '* Image.gz      - Compressed kernel image (arch/$(ARCH)/boot/Image.gz)'
++  echo  '  Image         - Uncompressed kernel image (arch/$(ARCH)/boot/Image)'
++  echo  '  install       - Install uncompressed kernel'
++  echo  '  zinstall      - Install compressed kernel'
++  echo  '                  Install using (your) ~/bin/installkernel or'
++  echo  '                  (distribution) /sbin/installkernel or'
++  echo  '                  install to $$(INSTALL_PATH) and run lilo'
++endef
+diff --git a/arch/arm64/boot/.gitignore b/arch/arm64/boot/.gitignore
+new file mode 100644
+index 0000000..8dab0bb
+--- /dev/null
++++ b/arch/arm64/boot/.gitignore
+@@ -0,0 +1,2 @@
++Image
++Image.gz
+diff --git a/arch/arm64/boot/Makefile b/arch/arm64/boot/Makefile
+new file mode 100644
+index 0000000..15a58a8
+--- /dev/null
++++ b/arch/arm64/boot/Makefile
+@@ -0,0 +1,38 @@
++#
++# arch/arm64/boot/Makefile
++#
++# This file is included by the global makefile so that you can add your own
++# architecture-specific flags and dependencies.
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 2012, ARM Ltd.
++# Author: Will Deacon <will.deacon@arm.com>
++#
++# Based on the ia64 boot/Makefile.
++#
++
++targets := Image Image.gz
++
++$(obj)/Image: vmlinux FORCE
++	$(call if_changed,objcopy)
++	@echo '  Kernel: $@ is ready'
++
++$(obj)/Image.gz: $(obj)/Image FORCE
++	$(call if_changed,gzip)
++	@echo '  Kernel: $@ is ready'
++
++$(obj)/%.dtb: $(src)/dts/%.dts
++	$(call cmd,dtc)
++
++install: $(obj)/Image
++	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
++	$(obj)/Image System.map "$(INSTALL_PATH)"
++
++zinstall: $(obj)/Image.gz
++	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
++	$(obj)/Image.gz System.map "$(INSTALL_PATH)"
++
++clean-files += *.dtb
+diff --git a/arch/arm64/boot/install.sh b/arch/arm64/boot/install.sh
+new file mode 100644
+index 0000000..9151e21
+--- /dev/null
++++ b/arch/arm64/boot/install.sh
+@@ -0,0 +1,52 @@
++#!/bin/sh
++#
++# arch/arm64/boot/install.sh
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 1995 by Linus Torvalds
++#
++# Adapted from code in arch/i386/boot/Makefile by H. Peter Anvin
++# Adapted from code in arch/i386/boot/install.sh by Russell King
++#
++# "make install" script for the AArch64 Linux port
++#
++# Arguments:
++#   $1 - kernel version
++#   $2 - kernel image file
++#   $3 - kernel map file
++#   $4 - default install path (blank if root directory)
++#
++
++# User may have a custom install script
++if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
++if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
++
++if [ "$(basename $2)" = "Image.gz" ]; then
++# Compressed install
++  echo "Installing compressed kernel"
++  base=vmlinuz
++else
++# Normal install
++  echo "Installing normal kernel"
++  base=vmlinux
++fi
++
++if [ -f $4/$base-$1 ]; then
++  mv $4/$base-$1 $4/$base-$1.old
++fi
++cat $2 > $4/$base-$1
++
++# Install system map file
++if [ -f $4/System.map-$1 ]; then
++  mv $4/System.map-$1 $4/System.map-$1.old
++fi
++cp $3 $4/System.map-$1
++
++if [ -x /sbin/loadmap ]; then
++  /sbin/loadmap
++else
++  echo "You have to install it yourself"
++fi
+diff --git a/arch/arm64/configs/generic_defconfig b/arch/arm64/configs/generic_defconfig
+new file mode 100644
+index 0000000..d9aac95
+--- /dev/null
++++ b/arch/arm64/configs/generic_defconfig
+@@ -0,0 +1,85 @@
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++# CONFIG_SWAP is not set
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=14
++# CONFIG_UTS_NS is not set
++# CONFIG_IPC_NS is not set
++# CONFIG_PID_NS is not set
++# CONFIG_NET_NS is not set
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_KALLSYMS_ALL=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_PROFILING=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++CONFIG_SMP=y
++CONFIG_PREEMPT_VOLUNTARY=y
++CONFIG_CMDLINE="console=ttyAMA0"
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_AARCH32_EMULATION=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++# CONFIG_INET_LRO is not set
++# CONFIG_IPV6 is not set
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++# CONFIG_BLK_DEV is not set
++CONFIG_SCSI=y
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=y
++# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_NETDEVICES=y
++CONFIG_MII=y
++# CONFIG_WLAN is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_SERIO_I8042 is not set
++# CONFIG_SERIO_SERPORT is not set
++CONFIG_LEGACY_PTY_COUNT=16
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++CONFIG_FB=y
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++# CONFIG_EXT3_FS_XATTR is not set
++CONFIG_FUSE_FS=y
++CONFIG_CUSE=y
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS=y
++# CONFIG_MISC_FILESYSTEMS is not set
++CONFIG_NFS_FS=y
++CONFIG_ROOT_NFS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_FS=y
++CONFIG_DEBUG_KERNEL=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
++# CONFIG_FTRACE is not set
++CONFIG_ATOMIC64_SELFTEST=y
++CONFIG_DEBUG_ERRORS=y
+diff --git a/arch/arm64/include/asm/prom.h b/arch/arm64/include/asm/prom.h
+new file mode 100644
+index 0000000..68b90e6
+--- /dev/null
++++ b/arch/arm64/include/asm/prom.h
+@@ -0,0 +1 @@
++/* Empty for now */
+diff --git a/arch/arm64/kernel/.gitignore b/arch/arm64/kernel/.gitignore
+new file mode 100644
+index 0000000..c5f676c
+--- /dev/null
++++ b/arch/arm64/kernel/.gitignore
+@@ -0,0 +1 @@
++vmlinux.lds
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+new file mode 100644
+index 0000000..59fbdef
+--- /dev/null
++++ b/arch/arm64/kernel/Makefile
+@@ -0,0 +1,27 @@
++#
++# Makefile for the linux kernel.
++#
++
++CPPFLAGS_vmlinux.lds	:= -DTEXT_OFFSET=$(TEXT_OFFSET)
++AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
++
++# Object file lists.
++arm64-obj-y		:= debug-monitors.o elf.o entry.o irq.o	fpsimd.o	\
++			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
++			   sys.o stacktrace.o time.o traps.o io.o vdso.o
++
++arm64-obj-$(CONFIG_AARCH32_EMULATION)	+= sys32.o kuser32.o signal32.o 	\
++					   sys_compat.o
++arm64-obj-$(CONFIG_MODULES)		+= arm64ksyms.o module.o
++arm64-obj-$(CONFIG_SMP)			+= smp.o
++arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
++arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
++
++obj-y					+= $(arm64-obj-y) vdso/
++obj-m					+= $(arm64-obj-m)
++head-y					:= head.o
++extra-y					:= $(head-y) vmlinux.lds
++
++# vDSO - this must be built first to generate the symbol offsets
++$(call objectify,$(arm64-obj-y)): $(obj)/vdso/vdso-offsets.h
++$(obj)/vdso/vdso-offsets.h: $(obj)/vdso
+diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+new file mode 100644
+index 0000000..5eab87b
+--- /dev/null
++++ b/arch/arm64/kernel/vmlinux.lds.S
+@@ -0,0 +1,146 @@
 +/*
-+ * Based on arch/arm/include/asm/setup.h
-+ *
-+ * Copyright (C) 1997-1999 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_SETUP_H
-+#define __ASM_SETUP_H
-+
-+#include <linux/types.h>
-+
-+#define COMMAND_LINE_SIZE 1024
-+
-+#endif
-diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-new file mode 100644
-index 0000000..34ccdc0
---- /dev/null
-+++ b/arch/arm64/kernel/head.S
-@@ -0,0 +1,521 @@
-+/*
-+ * Low-level CPU initialisation
-+ * Based on arch/arm/kernel/head.S
-+ *
-+ * Copyright (C) 1994-2002 Russell King
-+ * Copyright (C) 2003-2012 ARM Ltd.
-+ * Authors:	Catalin Marinas <catalin.marinas@arm.com>
-+ *		Will Deacon <will.deacon@arm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * ld script to make ARM Linux kernel
++ * taken from the i386 version by Russell King
++ * Written by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
 + */
 +
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+
-+#include <asm/assembler.h>
-+#include <asm/ptrace.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/memory.h>
++#include <asm-generic/vmlinux.lds.h>
 +#include <asm/thread_info.h>
-+#include <asm/pgtable-hwdef.h>
-+#include <asm/pgtable.h>
++#include <asm/memory.h>
 +#include <asm/page.h>
 +
-+/*
-+ * swapper_pg_dir is the virtual address of the initial page table. We place
-+ * the page tables 3 * PAGE_SIZE below KERNEL_RAM_VADDR. The idmap_pg_dir has
-+ * 2 pages and is placed below swapper_pg_dir.
-+ */
-+#define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
++#define PROC_INFO							\
++	VMLINUX_SYMBOL(__proc_info_begin) = .;				\
++	*(.proc.info.init)						\
++	VMLINUX_SYMBOL(__proc_info_end) = .;
 +
-+#if (KERNEL_RAM_VADDR & 0xfffff) != 0x80000
-+#error KERNEL_RAM_VADDR must start at 0xXXX80000
-+#endif
++#define ARM_CPU_DISCARD(x)	x
++#define ARM_CPU_KEEP(x)
 +
-+#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
-+#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
++#define ARM_EXIT_KEEP(x)
++#define ARM_EXIT_DISCARD(x)	x
 +
-+	.globl	swapper_pg_dir
-+	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - SWAPPER_DIR_SIZE
-+
-+	.globl	idmap_pg_dir
-+	.equ	idmap_pg_dir, swapper_pg_dir - IDMAP_DIR_SIZE
-+
-+	.macro	pgtbl, ttb0, ttb1, phys
-+	add	\ttb1, \phys, #TEXT_OFFSET - SWAPPER_DIR_SIZE
-+	sub	\ttb0, \ttb1, #IDMAP_DIR_SIZE
-+	.endm
-+
-+#ifdef CONFIG_ARM64_64K_PAGES
-+#define BLOCK_SHIFT	PAGE_SHIFT
-+#define BLOCK_SIZE	PAGE_SIZE
-+#else
-+#define BLOCK_SHIFT	SECTION_SHIFT
-+#define BLOCK_SIZE	SECTION_SIZE
-+#endif
-+
-+#define KERNEL_START	KERNEL_RAM_VADDR
-+#define KERNEL_END	_end
-+
-+/*
-+ * Initial memory map attributes.
-+ */
-+#ifndef CONFIG_SMP
-+#define PTE_FLAGS	PTE_ATTRINDX(MT_NORMAL) | PTE_AF
-+#define PMD_FLAGS	PMD_ATTRINDX(MT_NORMAL) | PMD_SECT_AF
-+#else
-+#define PTE_FLAGS	PTE_ATTRINDX(MT_NORMAL) | PTE_AF | PTE_SHARED
-+#define PMD_FLAGS	PMD_ATTRINDX(MT_NORMAL) | PMD_SECT_AF | PMD_SECT_S
-+#endif
-+
-+#ifdef CONFIG_ARM64_64K_PAGES
-+#define MM_MMUFLAGS	PTE_TYPE_PAGE | PTE_FLAGS
-+#define IO_MMUFLAGS	PTE_TYPE_PAGE | PTE_XN | PTE_FLAGS
-+#else
-+#define MM_MMUFLAGS	PMD_TYPE_SECT | PMD_FLAGS
-+#define IO_MMUFLAGS	PMD_TYPE_SECT | PMD_SECT_XN | PMD_FLAGS
-+#endif
-+
-+/*
-+ * Kernel startup entry point.
-+ * ---------------------------
-+ *
-+ * The requirements are:
-+ *   MMU = off, D-cache = off, I-cache = on or off,
-+ *   x0 = physical address to the FDT blob.
-+ *
-+ * This code is mostly position independent so you call this at
-+ * __pa(PAGE_OFFSET + TEXT_OFFSET).
-+ *
-+ * Note that the callee-saved registers are used for storing variables
-+ * that are useful before the MMU is enabled. The allocations are described
-+ * in the entry routines.
-+ */
-+	__HEAD
-+
-+	/*
-+	 * DO NOT MODIFY. Image header expected by Linux boot-loaders.
-+	 */
-+	b	stext				// branch to kernel start, magic
-+	.long	0				// reserved
-+	.quad	TEXT_OFFSET			// Image load offset from start of RAM
-+	.quad	0				// reserved
-+	.quad	0				// reserved
-+
++OUTPUT_ARCH(aarch64)
 +ENTRY(stext)
-+	mov	x21, x0				// x21=FDT
-+	bl	el2_setup			// Drop to EL1
-+	mrs	x22, midr_el1			// x22=cpuid
-+	mov	x0, x22
-+	bl	__lookup_processor_type
-+	mov	x23, x0				// x23=procinfo
-+	cbz	x23, __error_p			// invalid processor (x23=0)?
-+	bl	__calc_phys_offset		// x24=phys offset
-+	bl	__vet_fdt
-+	bl	__create_page_tables		// x25=TTBR0, x26=TTBR1
-+	/*
-+	 * The following calls CPU specific code in a position independent
-+	 * manner. See arch/arm64/mm/proc.S for details. x23 = base of
-+	 * cpu_proc_info structure selected by __lookup_processor_type above.
-+	 * On return, the CPU will be ready for the MMU to be turned on and
-+	 * the TCR will have been set.
-+	 */
-+	ldr	x27, __switch_data		// address to jump to after
-+						// MMU has been enabled
-+	adr	lr, __enable_mmu		// return (PIC) address
-+	add	x12, x23, #PROCINFO_INITFUNC
-+	br	x12				// initialise processor
-+ENDPROC(stext)
 +
-+/*
-+ * If we're fortunate enough to boot at EL2, ensure that the world is
-+ * sane before dropping to EL1.
-+ */
-+ENTRY(el2_setup)
-+	mrs	x0, CurrentEL
-+	cmp	x0, #PSR_MODE_EL2t
-+	ccmp	x0, #PSR_MODE_EL2h, #0x4, ne
-+	b.eq	1f
-+	ret
++jiffies = jiffies_64;
 +
-+	/* Hyp configuration. */
-+1:	mov	x0, #(1 << 31)			// 64-bit EL1
-+	msr	hcr_el2, x0
-+
-+	/* Generic timers. */
-+	mrs	x0, cnthctl_el2
-+	orr	x0, x0, #3			// Enable EL1 physical timers
-+	msr	cnthctl_el2, x0
-+
-+	/* Populate ID registers. */
-+	mrs	x0, midr_el1
-+	mrs	x1, mpidr_el1
-+	msr	vpidr_el2, x0
-+	msr	vmpidr_el2, x1
-+
-+	/* sctlr_el1 */
-+	mov	x0, #0x0800			// Set/clear RES{1,0} bits
-+	movk	x0, #0x30d0, lsl #16
-+	msr	sctlr_el1, x0
-+
-+	/* Coprocessor traps. */
-+	mov	x0, #0x33ff
-+	msr	cptr_el2, x0			// Disable copro. traps to EL2
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+	msr	hstr_el2, xzr			// Disable CP15 traps to EL2
-+#endif
-+
-+	/* spsr */
-+	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT |\
-+		      PSR_MODE_EL1h)
-+	msr	spsr_el2, x0
-+	msr	elr_el2, lr
-+	eret
-+ENDPROC(el2_setup)
-+
-+	.align	3
-+2:	.quad	.
-+	.quad	PAGE_OFFSET
-+
-+#ifdef CONFIG_SMP
-+	.pushsection    .smp.pen.text, "ax"
-+	.align	3
-+1:	.quad	.
-+	.quad	secondary_holding_pen_release
-+
-+	/*
-+	 * This provides a "holding pen" for platforms to hold all secondary
-+	 * cores are held until we're ready for them to initialise.
-+	 */
-+ENTRY(secondary_holding_pen)
-+	bl	el2_setup			// Drop to EL1
-+	mrs	x0, mpidr_el1
-+	and	x0, x0, #15			// CPU number
-+	adr	x1, 1b
-+	ldp	x2, x3, [x1]
-+	sub	x1, x1, x2
-+	add	x3, x3, x1
-+pen:	ldr	x4, [x3]
-+	cmp	x4, x0
-+	b.eq	secondary_startup
-+	wfe
-+	b	pen
-+ENDPROC(secondary_holding_pen)
-+	.popsection
-+
-+ENTRY(secondary_startup)
-+	/*
-+	 * Common entry point for secondary CPUs.
-+	 */
-+	mrs	x22, midr_el1			// x22=cpuid
-+	mov	x0, x22
-+	bl	__lookup_processor_type
-+	mov	x23, x0				// x23=procinfo
-+	cbz	x23, __error_p			// invalid processor (x23=0)?
-+
-+	bl	__calc_phys_offset		// x24=phys offset
-+	pgtbl	x25, x26, x24			// x25=TTBR0, x26=TTBR1
-+	add	x12, x23, #PROCINFO_INITFUNC
-+	blr	x12				// initialise processor
-+
-+	ldr	x21, =secondary_data
-+	ldr	x27, =__secondary_switched	// address to jump to after enabling the MMU
-+	b	__enable_mmu
-+ENDPROC(secondary_startup)
-+
-+ENTRY(__secondary_switched)
-+	ldr	x0, [x21]			// get secondary_data.stack
-+	mov	sp, x0
-+	mov	x29, #0
-+	b	secondary_start_kernel
-+ENDPROC(__secondary_switched)
-+#endif	/* CONFIG_SMP */
-+
-+/*
-+ * Setup common bits before finally enabling the MMU. Essentially this is just
-+ * loading the page table pointer and vector base registers.
-+ *
-+ * On entry to this code, x0 must contain the SCTLR_EL1 value for turning on
-+ * the MMU.
-+ */
-+__enable_mmu:
-+	ldr	x5, =vectors
-+	msr	vbar_el1, x5
-+	msr	ttbr0_el1, x25			// load TTBR0
-+	msr	ttbr1_el1, x26			// load TTBR1
-+	isb
-+	b	__turn_mmu_on
-+ENDPROC(__enable_mmu)
-+
-+/*
-+ * Enable the MMU. This completely changes the structure of the visible memory
-+ * space. You will not be able to trace execution through this.
-+ *
-+ *  x0  = system control register
-+ *  x27 = *virtual* address to jump to upon completion
-+ *
-+ * other registers depend on the function called upon completion
-+ */
-+	.align	6
-+__turn_mmu_on:
-+	msr	sctlr_el1, x0
-+	isb
-+	br	x27
-+ENDPROC(__turn_mmu_on)
-+
-+/*
-+ * Calculate the start of physical memory.
-+ */
-+__calc_phys_offset:
-+	adr	x0, 1f
-+	ldp	x1, x2, [x0]
-+	sub	x3, x0, x1			// PHYS_OFFSET - PAGE_OFFSET
-+	add	x24, x2, x3			// x24=PHYS_OFFSET
-+	ret
-+ENDPROC(__calc_phys_offset)
-+
-+	.align 3
-+1:	.quad	.
-+	.quad	PAGE_OFFSET
-+
-+/*
-+ * Macro to populate the PGD for the corresponding block entry in the next
-+ * level (tbl) for the given virtual address.
-+ *
-+ * Preserves:	pgd, tbl, virt
-+ * Corrupts:	tmp1, tmp2
-+ */
-+	.macro	create_pgd_entry, pgd, tbl, virt, tmp1, tmp2
-+	lsr	\tmp1, \virt, #PGDIR_SHIFT
-+	and	\tmp1, \tmp1, #PTRS_PER_PGD - 1	// PGD index
-+	orr	\tmp2, \tbl, #3			// PGD entry table type
-+	str	\tmp2, [\pgd, \tmp1, lsl #3]
-+	.endm
-+
-+/*
-+ * Macro to populate block entries in the page table for the start..end
-+ * virtual range (inclusive).
-+ *
-+ * Preserves:	tbl, flags
-+ * Corrupts:	phys, start, end, pstate
-+ */
-+	.macro	create_block_map, tbl, flags, phys, start, end, idmap=0
-+	lsr	\phys, \phys, #BLOCK_SHIFT
-+	.if	\idmap
-+	and	\start, \phys, #PTRS_PER_PTE - 1	// table index
-+	.else
-+	lsr	\start, \start, #BLOCK_SHIFT
-+	and	\start, \start, #PTRS_PER_PTE - 1	// table index
-+	.endif
-+	orr	\phys, \flags, \phys, lsl #BLOCK_SHIFT	// table entry
-+	.ifnc	\start,\end
-+	lsr	\end, \end, #BLOCK_SHIFT
-+	and	\end, \end, #PTRS_PER_PTE - 1		// table end index
-+	.endif
-+9999:	str	\phys, [\tbl, \start, lsl #3]		// store the entry
-+	.ifnc	\start,\end
-+	add	\start, \start, #1			// next entry
-+	add	\phys, \phys, #BLOCK_SIZE		// next block
-+	cmp	\start, \end
-+	b.ls	9999b
-+	.endif
-+	.endm
-+
-+/*
-+ * Setup the initial page tables. We only setup the barest amount which is
-+ * required to get the kernel running. The following sections are required:
-+ *   - identity mapping to enable the MMU (low address, TTBR0)
-+ *   - first few MB of the kernel linear mapping to jump to once the MMU has
-+ *     been enabled, including the FDT blob (TTBR1)
-+ */
-+__create_page_tables:
-+	pgtbl	x25, x26, x24			// idmap_pg_dir and swapper_pg_dir addresses
-+
-+	/*
-+	 * Clear the idmap and swapper page tables.
-+	 */
-+	mov	x0, x25
-+	add	x6, x26, #SWAPPER_DIR_SIZE
-+1:	stp	xzr, xzr, [x0], #16
-+	stp	xzr, xzr, [x0], #16
-+	stp	xzr, xzr, [x0], #16
-+	stp	xzr, xzr, [x0], #16
-+	cmp	x0, x6
-+	b.lo	1b
-+
-+	ldr	x7, =MM_MMUFLAGS
-+
-+	/*
-+	 * Create the identity mapping.
-+	 */
-+	add	x0, x25, #PAGE_SIZE		// section table address
-+	adr	x3, __turn_mmu_on		// virtual/physical address
-+	create_pgd_entry x25, x0, x3, x5, x6
-+	create_block_map x0, x7, x3, x5, x5, idmap=1
-+
-+	/*
-+	 * Map the kernel image (starting with PHYS_OFFSET).
-+	 */
-+	add	x0, x26, #PAGE_SIZE		// section table address
-+	mov	x5, #PAGE_OFFSET
-+	create_pgd_entry x26, x0, x5, x3, x6
-+	ldr	x6, =KERNEL_END - 1
-+	mov	x3, x24				// phys offset
-+	create_block_map x0, x7, x3, x5, x6
-+
-+	/*
-+	 * Map the FDT blob (maximum 2MB; must be within 512MB of
-+	 * PHYS_OFFSET).
-+	 */
-+	mov	x3, x21				// FDT phys address
-+	and	x3, x3, #~((1 << 21) - 1)	// 2MB aligned
-+	mov	x6, #PAGE_OFFSET
-+	sub	x5, x3, x24			// subtract PHYS_OFFSET
-+	tst	x5, #~((1 << 29) - 1)		// within 512MB?
-+	csel	x21, xzr, x21, ne		// zero the FDT pointer
-+	b.ne	1f
-+	add	x5, x5, x6			// __va(FDT blob)
-+	add	x6, x5, #1 << 21		// 2MB for the FDT blob
-+	sub	x6, x6, #1			// inclusive range
-+	create_block_map x0, x7, x3, x5, x6
-+1:
-+	ret
-+ENDPROC(__create_page_tables)
-+	.ltorg
-+
-+	.align	3
-+	.type	__switch_data, %object
-+__switch_data:
-+	.quad	__mmap_switched
-+	.quad	__data_loc			// x4
-+	.quad	_data				// x5
-+	.quad	__bss_start			// x6
-+	.quad	_end				// x7
-+	.quad	processor_id			// x4
-+	.quad	__fdt_pointer			// x5
-+	.quad	memstart_addr			// x6
-+	.quad	init_thread_union + THREAD_START_SP // sp
-+
-+/*
-+ * The following fragment of code is executed with the MMU on in MMU mode, and
-+ * uses absolute addresses; this is not position independent.
-+ */
-+__mmap_switched:
-+	adr	x3, __switch_data + 8
-+
-+	ldp	x4, x5, [x3], #16
-+	ldp	x6, x7, [x3], #16
-+	cmp	x4, x5				// Copy data segment if needed
-+1:	ccmp	x5, x6, #4, ne
-+	b.eq	2f
-+	ldr	x16, [x4], #8
-+	str	x16, [x5], #8
-+	b	1b
-+2:
-+1:	cmp	x6, x7
-+	b.hs	2f
-+	str	xzr, [x6], #8			// Clear BSS
-+	b	1b
-+2:
-+	ldp	x4, x5, [x3], #16
-+	ldr	x6, [x3], #8
-+	ldr	x16, [x3]
-+	mov	sp, x16
-+	str	x22, [x4]			// Save processor ID
-+	str	x21, [x5]			// Save FDT pointer
-+	str	x24, [x6]			// Save PHYS_OFFSET
-+	mov	x29, #0
-+	b	start_kernel
-+ENDPROC(__mmap_switched)
-+
-+/*
-+ * Exception handling. Something went wrong and we can't proceed. We ought to
-+ * tell the user, but since we don't have any guarantee that we're even
-+ * running on the right architecture, we do virtually nothing.
-+ */
-+__error_p:
-+ENDPROC(__error_p)
-+
-+__error:
-+1:	nop
-+	b	1b
-+ENDPROC(__error)
-+
-+/*
-+ * Read processor ID register and look up in the linker-built supported
-+ * processor list. Note that we can't use the absolute addresses for the
-+ * __proc_info lists since we aren't running with the MMU on (and therefore,
-+ * we are not in the correct address space). We have to calculate the offset.
-+ *
-+ * This routine can be called via C code, so to avoid needlessly saving
-+ * callee-saved registers, we take the CPUID in x0 and return the physical
-+ * proc_info pointer in x0 as well.
-+ */
-+__lookup_processor_type:
-+	adr	x1, __lookup_processor_type_data
-+	ldr	x2, [x1]
-+	ldp	x3, x4, [x1, #8]
-+	sub	x1, x1, x2			// get offset between virt&phys
-+	add	x3, x3, x1			// convert virt addresses to
-+	add	x4, x4, x1			// physical address space
-+1:
-+	ldp	w5, w6, [x3]			// load cpu_val and cpu_mask
-+	and	x6, x6, x0
-+	cmp	x5, x6
-+	b.eq	2f
-+	add	x3, x3, #PROC_INFO_SZ
-+	cmp	x4, x4
-+	b.ne	1b
-+	mov	x3, #0				// unknown processor
-+2:
-+	mov	x0, x3
-+	ret
-+ENDPROC(__lookup_processor_type)
-+
-+/*
-+ * This provides a C-API version of the above function.
-+ */
-+ENTRY(lookup_processor_type)
-+	mov	x8, lr
-+	bl	__lookup_processor_type
-+	ret	x8
-+ENDPROC(lookup_processor_type)
-+
-+	.align	3
-+	.type	__lookup_processor_type_data, %object
-+__lookup_processor_type_data:
-+	.quad	.
-+	.quad	__proc_info_begin
-+	.quad	__proc_info_end
-+	.size	__lookup_processor_type_data, . - __lookup_processor_type_data
-+
-+/*
-+ * Determine validity of the x21 FDT pointer.
-+ * The dtb must be 8-byte aligned and live in the first 512M of memory.
-+ */
-+__vet_fdt:
-+	tst	x21, #0x7
-+	b.ne	1f
-+	cmp	x21, x24
-+	b.lt	1f
-+	mov	x0, #(1 << 29)
-+	add	x0, x0, x24
-+	cmp	x21, x0
-+	b.ge	1f
-+	ret
-+1:
-+	mov	x21, #0
-+	ret
-+ENDPROC(__vet_fdt)
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-new file mode 100644
-index 0000000..f25186f
---- /dev/null
-+++ b/arch/arm64/kernel/setup.c
-@@ -0,0 +1,357 @@
-+/*
-+ * Based on arch/arm/kernel/setup.c
-+ *
-+ * Copyright (C) 1995-2001 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+#include <linux/stddef.h>
-+#include <linux/ioport.h>
-+#include <linux/delay.h>
-+#include <linux/utsname.h>
-+#include <linux/initrd.h>
-+#include <linux/console.h>
-+#include <linux/bootmem.h>
-+#include <linux/seq_file.h>
-+#include <linux/screen_info.h>
-+#include <linux/init.h>
-+#include <linux/kexec.h>
-+#include <linux/crash_dump.h>
-+#include <linux/root_dev.h>
-+#include <linux/cpu.h>
-+#include <linux/interrupt.h>
-+#include <linux/smp.h>
-+#include <linux/fs.h>
-+#include <linux/proc_fs.h>
-+#include <linux/memblock.h>
-+#include <linux/of_fdt.h>
-+
-+#include <asm/cputype.h>
-+#include <asm/elf.h>
-+#include <asm/procinfo.h>
-+#include <asm/sections.h>
-+#include <asm/setup.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+#include <asm/traps.h>
-+#include <asm/memblock.h>
-+
-+extern void paging_init(void);
-+
-+unsigned int processor_id;
-+EXPORT_SYMBOL(processor_id);
-+
-+unsigned int elf_hwcap __read_mostly;
-+EXPORT_SYMBOL(elf_hwcap);
-+
-+static const char *cpu_name;
-+static const char *machine_name;
-+phys_addr_t __fdt_pointer __initdata;
-+
-+/*
-+ * Standard memory resources
-+ */
-+static struct resource mem_res[] = {
-+	{
-+		.name = "Kernel code",
-+		.start = 0,
-+		.end = 0,
-+		.flags = IORESOURCE_MEM
-+	},
-+	{
-+		.name = "Kernel data",
-+		.start = 0,
-+		.end = 0,
-+		.flags = IORESOURCE_MEM
-+	}
-+};
-+
-+#define kernel_code mem_res[0]
-+#define kernel_data mem_res[1]
-+
-+/*
-+ * These functions re-use the assembly code in head.S, which
-+ * already provide the required functionality.
-+ */
-+extern struct proc_info_list *lookup_processor_type(unsigned int);
-+
-+void __init early_print(const char *str, ...)
++SECTIONS
 +{
-+	char buf[256];
-+	va_list ap;
-+
-+	va_start(ap, str);
-+	vsnprintf(buf, sizeof(buf), str, ap);
-+	va_end(ap);
-+
-+	printk("%s", buf);
-+}
-+
-+static void __init setup_processor(void)
-+{
-+	struct proc_info_list *list;
-+
 +	/*
-+	 * locate processor in the list of supported processor
-+	 * types.  The linker builds this table for us from the
-+	 * entries in arch/arm/mm/proc.S
++	 * XXX: The linker does not define how output sections are
++	 * assigned to input sections when there are multiple statements
++	 * matching the same input section name.  There is no documented
++	 * order of matching.
 +	 */
-+	list = lookup_processor_type(read_cpuid_id());
-+	if (!list) {
-+		printk("CPU configuration botched (ID %08x), unable to continue.\n",
-+		       read_cpuid_id());
-+		while (1);
++	/DISCARD/ : {
++		ARM_EXIT_DISCARD(EXIT_TEXT)
++		ARM_EXIT_DISCARD(EXIT_DATA)
++		EXIT_CALL
++		*(.discard)
++		*(.discard.*)
 +	}
 +
-+	cpu_name = list->cpu_name;
++	. = PAGE_OFFSET + TEXT_OFFSET;
 +
-+	printk("CPU: %s [%08x] revision %d\n",
-+	       cpu_name, read_cpuid_id(), read_cpuid_id() & 15);
-+
-+	sprintf(init_utsname()->machine, "aarch64");
-+	elf_hwcap = 0;
-+
-+	cpu_proc_init();
-+}
-+
-+static void __init setup_machine_fdt(phys_addr_t dt_phys)
-+{
-+	struct boot_param_header *devtree;
-+	unsigned long dt_root;
-+
-+	/* Check we have a non-NULL DT pointer */
-+	if (!dt_phys) {
-+		early_print("\n"
-+			"Error: NULL or invalid device tree blob\n"
-+			"The dtb must be 8-byte aligned and passed in the first 512MB of memory\n"
-+			"\nPlease check your bootloader.\n");
-+
-+		while (true)
-+			cpu_relax();
-+
++	.head.text : {
++		_text = .;
++		HEAD_TEXT
++	}
++	.text : {			/* Real text segment		*/
++		_stext = .;		/* Text and read-only data	*/
++			*(.smp.pen.text)
++			__exception_text_start = .;
++			*(.exception.text)
++			__exception_text_end = .;
++			IRQENTRY_TEXT
++			TEXT_TEXT
++			SCHED_TEXT
++			LOCK_TEXT
++			*(.fixup)
++			*(.gnu.warning)
++		. = ALIGN(16);
++		*(.got)			/* Global offset table		*/
++			ARM_CPU_KEEP(PROC_INFO)
 +	}
 +
-+	devtree = phys_to_virt(dt_phys);
++	RO_DATA(PAGE_SIZE)
 +
-+	/* Check device tree validity */
-+	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER) {
-+		early_print("\n"
-+			"Error: invalid device tree blob at physical address 0x%p (virtual address 0x%p)\n"
-+			"Expected 0x%x, found 0x%x\n"
-+			"\nPlease check your bootloader.\n",
-+			dt_phys, devtree, OF_DT_HEADER,
-+			be32_to_cpu(devtree->magic));
++	_etext = .;			/* End of text and rodata section */
 +
-+		while (true)
-+			cpu_relax();
++	. = ALIGN(PAGE_SIZE);
++	__init_begin = .;
++
++	INIT_TEXT_SECTION(8)
++	.exit.text : {
++		ARM_EXIT_KEEP(EXIT_TEXT)
++	}
++	. = ALIGN(16);
++	.init.proc.info : {
++		ARM_CPU_DISCARD(PROC_INFO)
++	}
++	. = ALIGN(16);
++	.init.data : {
++		INIT_DATA
++		INIT_SETUP(16)
++		INIT_CALLS
++		CON_INITCALL
++		SECURITY_INITCALL
++		INIT_RAM_FS
++	}
++	.exit.data : {
++		ARM_EXIT_KEEP(EXIT_DATA)
 +	}
 +
-+	initial_boot_params = devtree;
-+	dt_root = of_get_flat_dt_root();
++	PERCPU_SECTION(64)
 +
-+	machine_name = of_get_flat_dt_prop(dt_root, "model", NULL);
-+	if (!machine_name)
-+		machine_name = of_get_flat_dt_prop(dt_root, "compatible", NULL);
-+	if (!machine_name)
-+		machine_name = "<unknown>";
-+	pr_info("Machine: %s\n", machine_name);
++	__init_end = .;
++	. = ALIGN(THREAD_SIZE);
++	__data_loc = .;
 +
-+	/* Retrieve various information from the /chosen node */
-+	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-+	/* Initialize {size,address}-cells info */
-+	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-+	/* Setup memory, calling early_init_dt_add_memory_arch */
-+	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
-+}
++	.data : AT(__data_loc) {
++		_data = .;		/* address in memory */
++		_sdata = .;
 +
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	size &= PAGE_MASK;
-+	memblock_add(base, size);
-+}
-+
-+void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	return __va(memblock_alloc(size, align));
-+}
-+
-+/*
-+ * Limit the memory size that was specified via FDT.
-+ */
-+static int __init early_mem(char *p)
-+{
-+	phys_addr_t limit;
-+
-+	if (!p)
-+		return 1;
-+
-+	limit = memparse(p, &p) & PAGE_MASK;
-+	pr_notice("Memory limited to %lldMB\n", limit >> 20);
-+
-+	memblock_enforce_memory_limit(limit);
-+
-+	return 0;
-+}
-+early_param("mem", early_mem);
-+
-+static void __init request_standard_resources(void)
-+{
-+	struct memblock_region *region;
-+	struct resource *res;
-+
-+	kernel_code.start   = virt_to_phys(_text);
-+	kernel_code.end     = virt_to_phys(_etext - 1);
-+	kernel_data.start   = virt_to_phys(_sdata);
-+	kernel_data.end     = virt_to_phys(_end - 1);
-+
-+	for_each_memblock(memory, region) {
-+		res = alloc_bootmem_low(sizeof(*res));
-+		res->name  = "System RAM";
-+		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
-+		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
-+		res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-+
-+		request_resource(&iomem_resource, res);
-+
-+		if (kernel_code.start >= res->start &&
-+		    kernel_code.end <= res->end)
-+			request_resource(res, &kernel_code);
-+		if (kernel_data.start >= res->start &&
-+		    kernel_data.end <= res->end)
-+			request_resource(res, &kernel_data);
-+	}
-+}
-+
-+void __init setup_arch(char **cmdline_p)
-+{
-+	setup_processor();
-+
-+	setup_machine_fdt(__fdt_pointer);
-+
-+	init_mm.start_code = (unsigned long) _text;
-+	init_mm.end_code   = (unsigned long) _etext;
-+	init_mm.end_data   = (unsigned long) _edata;
-+	init_mm.brk	   = (unsigned long) _end;
-+
-+	*cmdline_p = boot_command_line;
-+
-+	parse_early_param();
-+
-+	arm64_memblock_init();
-+
-+	paging_init();
-+	request_standard_resources();
-+
-+	unflatten_device_tree();
-+
-+#ifdef CONFIG_SMP
-+	smp_init_cpus();
-+#endif
-+
-+#ifdef CONFIG_VT
-+#if defined(CONFIG_VGA_CONSOLE)
-+	conswitchp = &vga_con;
-+#elif defined(CONFIG_DUMMY_CONSOLE)
-+	conswitchp = &dummy_con;
-+#endif
-+#endif
-+}
-+
-+static DEFINE_PER_CPU(struct cpu, cpu_data);
-+
-+static int __init topology_init(void)
-+{
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		struct cpu *cpu = &per_cpu(cpu_data, i);
-+		cpu->hotpluggable = 1;
-+		register_cpu(cpu, i);
-+	}
-+
-+	return 0;
-+}
-+subsys_initcall(topology_init);
-+
-+static const char *hwcap_str[] = {
-+	"fp",
-+	"asimd",
-+	NULL
-+};
-+
-+static int c_show(struct seq_file *m, void *v)
-+{
-+	int i;
-+
-+	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
-+		   cpu_name, read_cpuid_id() & 15, ELF_PLATFORM);
-+
-+	for_each_online_cpu(i) {
 +		/*
-+		 * glibc reads /proc/cpuinfo to determine the number of
-+		 * online processors, looking for lines beginning with
-+		 * "processor".  Give glibc what it expects.
++		 * first, the init task union, aligned
++		 * to an 8192 byte boundary.
 +		 */
-+#ifdef CONFIG_SMP
-+		seq_printf(m, "processor\t: %d\n", i);
-+#endif
-+		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n\n",
-+			   loops_per_jiffy / (500000UL/HZ),
-+			   loops_per_jiffy / (5000UL/HZ) % 100);
++		INIT_TASK_DATA(THREAD_SIZE)
++		NOSAVE_DATA
++		CACHELINE_ALIGNED_DATA(64)
++		READ_MOSTLY_DATA(64)
++
++		/*
++		 * The exception fixup table (might need resorting at runtime)
++		 */
++		. = ALIGN(32);
++		__start___ex_table = .;
++		*(__ex_table)
++		__stop___ex_table = .;
++
++		/*
++		 * and the usual data section
++		 */
++		DATA_DATA
++		CONSTRUCTORS
++
++		_edata = .;
 +	}
++	_edata_loc = __data_loc + SIZEOF(.data);
 +
-+	/* dump out the processor features */
-+	seq_puts(m, "Features\t: ");
++	NOTES
 +
-+	for (i = 0; hwcap_str[i]; i++)
-+		if (elf_hwcap & (1 << i))
-+			seq_printf(m, "%s ", hwcap_str[i]);
++	BSS_SECTION(0, 0, 0)
++	_end = .;
 +
-+	seq_printf(m, "\nCPU implementer\t: 0x%02x\n", read_cpuid_id() >> 24);
-+	seq_printf(m, "CPU architecture: AArch64\n");
-+	seq_printf(m, "CPU variant\t: 0x%x\n", (read_cpuid_id() >> 20) & 15);
-+	seq_printf(m, "CPU part\t: 0x%03x\n", (read_cpuid_id() >> 4) & 0xfff);
-+	seq_printf(m, "CPU revision\t: %d\n", read_cpuid_id() & 15);
-+
-+	seq_puts(m, "\n");
-+
-+	seq_printf(m, "Hardware\t: %s\n", machine_name);
-+
-+	return 0;
++	STABS_DEBUG
++	.comment 0 : { *(.comment) }
 +}
 +
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	return *pos < 1 ? (void *)1 : NULL;
-+}
++/*
++ * These must never be empty
++ * If you have to comment these two assert statements out, your
++ * binutils is too old (for other reasons as well)
++ */
++ASSERT((__proc_info_end - __proc_info_begin), "missing CPU support")
+diff --git a/arch/arm64/mm/Kconfig b/arch/arm64/mm/Kconfig
+new file mode 100644
+index 0000000..8e94e52
+--- /dev/null
++++ b/arch/arm64/mm/Kconfig
+@@ -0,0 +1,5 @@
++config MMU
++	def_bool y
 +
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	++*pos;
-+	return NULL;
-+}
++config CPU_64
++	def_bool y
+diff --git a/arch/arm64/mm/Makefile b/arch/arm64/mm/Makefile
+new file mode 100644
+index 0000000..81a9d8b
+--- /dev/null
++++ b/arch/arm64/mm/Makefile
+@@ -0,0 +1,6 @@
++obj-y				:= dma-mapping.o extable.o fault.o init.o \
++				   cache.o copypage.o flush.o \
++				   ioremap.o mmap.o pgd.o mmu.o \
++				   context.o tlb.o proc.o
 +
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+}
-+
-+const struct seq_operations cpuinfo_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= c_show
-+};
++obj-$(CONFIG_MODULES)		+= proc-syms.o
+diff --git a/init/Kconfig b/init/Kconfig
+index af6c7f8..8bfda46 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1153,7 +1153,8 @@ menuconfig EXPERT
+ 
+ config UID16
+ 	bool "Enable 16-bit UID system calls" if EXPERT
+-	depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION)
++	depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION) \
++		|| AARCH32_EMULATION
+ 	default y
+ 	help
+ 	  This enables the legacy 16-bit UID syscall wrappers.
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2403a63..cfb4578 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -452,7 +452,8 @@ config SLUB_STATS
+ config DEBUG_KMEMLEAK
+ 	bool "Kernel memory leak detector"
+ 	depends on DEBUG_KERNEL && EXPERIMENTAL && \
+-		(X86 || ARM || PPC || MIPS || S390 || SPARC64 || SUPERH || MICROBLAZE || TILE)
++		(X86 || ARM || PPC || MIPS || S390 || SPARC64 || SUPERH || \
++		 MICROBLAZE || TILE || ARM64)
+ 
+ 	select DEBUG_FS
+ 	select STACKTRACE if STACKTRACE_SUPPORT
+@@ -739,7 +740,8 @@ config DEBUG_BUGVERBOSE
+ 	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
+ 	depends on BUG
+ 	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
+-		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || TILE
++		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || \
++		   TILE || ARM64
+ 	default y
+ 	help
+ 	  Say Y here to make BUG() panics output the file name and line number
 
