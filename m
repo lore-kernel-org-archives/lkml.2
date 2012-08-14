@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab2HNPGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:06:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33776 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640Ab2HNPGd (ORCPT
+	id S932080Ab2HNPGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:06:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37087 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640Ab2HNPGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:06:33 -0400
+	Tue, 14 Aug 2012 11:06:42 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next v2 12/15] nes: remove usage of dev->master
-Date: Tue, 14 Aug 2012 17:05:45 +0200
-Message-Id: <1344956748-2099-13-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next v2 15/15] net: kill dev->master
+Date: Tue, 14 Aug 2012 17:05:48 +0200
+Message-Id: <1344956748-2099-16-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
 References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
@@ -30,60 +30,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nobody uses this now. Remove it.
+
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/infiniband/hw/nes/nes.c    |    8 +++++---
- drivers/infiniband/hw/nes/nes_cm.c |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ include/linux/netdevice.h |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
-index 7140199..6686251 100644
---- a/drivers/infiniband/hw/nes/nes.c
-+++ b/drivers/infiniband/hw/nes/nes.c
-@@ -140,6 +140,7 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 	struct net_device *event_netdev = ifa->ifa_dev->dev;
- 	struct nes_device *nesdev;
- 	struct net_device *netdev;
-+	struct net_device *upper_dev;
- 	struct nes_vnic *nesvnic;
- 	unsigned int is_bonded;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index c689593..8459f72 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1168,10 +1168,6 @@ struct net_device {
+ 						 * avoid dirtying this cache line.
+ 						 */
  
-@@ -150,8 +151,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 				nesdev, nesdev->netdev[0]->name);
- 		netdev = nesdev->netdev[0];
- 		nesvnic = netdev_priv(netdev);
-+		upper_dev = netdev_master_upper_dev_get(netdev);
- 		is_bonded = netif_is_bond_slave(netdev) &&
--			    (netdev->master == event_netdev);
-+			    (upper_dev == event_netdev);
- 		if ((netdev == event_netdev) || is_bonded) {
- 			if (nesvnic->rdma_enabled == 0) {
- 				nes_debug(NES_DBG_NETDEV, "Returning without processing event for %s since"
-@@ -184,9 +186,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
- 					/* fall through */
- 				case NETDEV_CHANGEADDR:
- 					/* Add the address to the IP table */
--					if (netdev->master)
-+					if (upper_dev)
- 						nesvnic->local_ipaddr =
--							((struct in_device *)netdev->master->ip_ptr)->ifa_list->ifa_address;
-+							((struct in_device *)upper_dev->ip_ptr)->ifa_list->ifa_address;
- 					else
- 						nesvnic->local_ipaddr = ifa->ifa_address;
+-	struct net_device	*master; /* Pointer to master device of a group,
+-					  * which this device is member of.
+-					  */
+-
+ 	struct list_head	upper_dev_list; /* List of upper devices */
  
-diff --git a/drivers/infiniband/hw/nes/nes_cm.c b/drivers/infiniband/hw/nes/nes_cm.c
-index 020e95c..15e6340 100644
---- a/drivers/infiniband/hw/nes/nes_cm.c
-+++ b/drivers/infiniband/hw/nes/nes_cm.c
-@@ -1352,7 +1352,7 @@ static int nes_addr_resolve_neigh(struct nes_vnic *nesvnic, u32 dst_ip, int arpi
- 	}
- 
- 	if (netif_is_bond_slave(nesvnic->netdev))
--		netdev = nesvnic->netdev->master;
-+		netdev = netdev_unique_upper_dev_get(nesvnic->netdev);
- 	else
- 		netdev = nesvnic->netdev;
- 
+ 	/* Interface address info used in eth_type_trans() */
 -- 
 1.7.10.4
 
