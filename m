@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2HNMyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:54:44 -0400
-Received: from 209.248.170.90.nw.nuvox.net ([209.248.170.90]:47891 "EHLO
-	GVL-MAIL.koe-americas.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753342Ab2HNMyn (ORCPT
+	id S1755307Ab2HNMzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:55:42 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53218 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab2HNMzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:54:43 -0400
-From: David Cullen <David.Cullen@koe-americas.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Michal Marek <mmarek@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
- during make distclean
-Thread-Topic: [PATCH RFC] Fix "/usr/bin/xargs: rm: Argument list too long"
- during make distclean
-Thread-Index: AQHNeYtJ0vuHTHXr8kOIY+yAGwirYZdYdyAAgAAFDACAAAF2AIABCkQA
-Date: Tue, 14 Aug 2012 12:54:41 +0000
-Message-ID: <502A4A90.3070901@koe-americas.com>
-References: <502957D5.1070800@koe-americas.com> <502965BE.3070406@zytor.com>
- <502969FA.6010907@koe-americas.com> <50296B34.8090502@zytor.com>
-In-Reply-To: <50296B34.8090502@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-x-originating-ip: [10.1.5.27]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <9C236C0ACF09F4498F9343BCA50EB71A@koe-americas.com>
+	Tue, 14 Aug 2012 08:55:41 -0400
+Date: Tue, 14 Aug 2012 08:55:23 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: viro@ZenIV.linux.org.uk, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [net PATCH v2 2/2] net: netprio: fd passed in SCM_RIGHTS
+ datagram not set correctly
+Message-ID: <20120814125523.GA18731@hmsreliant.think-freely.org>
+References: <20120814024320.6983.92222.stgit@jf-dev1-dcblab>
+ <20120814024326.6983.97403.stgit@jf-dev1-dcblab>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814024326.6983.97403.stgit@jf-dev1-dcblab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7ECsoKu015548
 
-On 8/13/2012 5:01 PM, H. Peter Anvin wrote:
-> On 08/13/2012 01:56 PM, David Cullen wrote:
->>>
->>> That sounds like a bug in xargs...
->>>
->>
->> In my specific case, qemu-arm-static calls xargs (In fact, in my
->> cross chroot, qemu-arm-static is used to run every user mode process).
->>
->> Do you mean that qemu-arm-static is exposing a latent defect in xargs?
->>
->> Does qemu-arm-static steal some of the command line space that would
->> normally be available for xargs? If so, how would xargs figure out
->> this was happening and handle the problem?
->>
+On Mon, Aug 13, 2012 at 07:43:27PM -0700, John Fastabend wrote:
+> A socket fd passed in a SCM_RIGHTS datagram was not getting
+> updated with the new tasks cgrp prioidx. This leaves IO on
+> the socket tagged with the old tasks priority.
 > 
-> I have no idea.  Perhaps strace can help you see what is happening, I
-> don't know.  More likely it is qemu-arm-static that is broken and it is
-> trying to enforce the old 128K limit that we used to have before 2.6.23.
->  This could cause a mismatch between what sysconf(_SC_ARG_MAX) returns
-> and what the actual limit is.
+> To fix this add a check in the scm recvmsg path to update the
+> sock cgrp prioidx with the new tasks value.
 > 
-> Anyway, even more so the reason to reject this patch.
+> Thanks to Al Viro for catching this.
+> 
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+> ---
+> 
+>  net/core/scm.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/core/scm.c b/net/core/scm.c
+> index 8f6ccfd..a14d9e2 100644
+> --- a/net/core/scm.c
+> +++ b/net/core/scm.c
+> @@ -249,6 +249,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+>  	struct file **fp = scm->fp->fp;
+>  	int __user *cmfptr;
+>  	int err = 0, i;
+> +	__u32 prioidx = task_netprioidx(current);
+>  
+>  	if (MSG_CMSG_COMPAT & msg->msg_flags) {
+>  		scm_detach_fds_compat(msg, scm);
+> @@ -265,6 +266,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+>  	for (i=0, cmfptr=(__force int __user *)CMSG_DATA(cm); i<fdmax;
+>  	     i++, cmfptr++)
+>  	{
+> +		struct socket *sock;
+>  		int new_fd;
+>  		err = security_file_receive(fp[i]);
+>  		if (err)
+> @@ -281,6 +283,9 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+>  		}
+>  		/* Bump the usage count and install the file. */
+>  		get_file(fp[i]);
+> +		sock = sock_from_file(fp[i], &err);
+> +		if (sock)
+> +			sock->sk->sk_cgrp_prioidx = prioidx;
+nit: You can replace the prioidx variable above and this set with a call to
+sock_update_netprioidx
 
+Neil
 
-I submitted a bug report on xargs:
-
-    http://savannah.gnu.org/bugs/index.php?37093
-
-I also submitted a bug report on QEMU:
-
-    https://bugs.launchpad.net/qemu/+bug/1036645
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
