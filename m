@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab2HNOWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:22:47 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:46784 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756164Ab2HNOWl (ORCPT
+	id S1756238Ab2HNOWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:22:53 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:38068 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756164Ab2HNOWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:22:41 -0400
+	Tue, 14 Aug 2012 10:22:49 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -16,9 +16,9 @@ Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 02/14] MFD: twl4030-audio: Convert to use devm_kzalloc
-Date: Tue, 14 Aug 2012 17:22:30 +0300
-Message-Id: <1344954162-7985-3-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 04/14] MFD: twl-core: Add API to query the HFCLK rate
+Date: Tue, 14 Aug 2012 17:22:32 +0300
+Message-Id: <1344954162-7985-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,52 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CFG_BOOT register's HFCLK_FREQ field hold information about the used HFCLK
+frequency.
+Add possibility for users to get the configured rate based on this
+register.
+This register was configured during boot, without it the chip would not
+operate correctly, so we can trust on this information.
+
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl4030-audio.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/mfd/twl-core.c  |   32 ++++++++++++++++++++++++++++++++
+ include/linux/i2c/twl.h |    1 +
+ 2 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index ac04b4f..efa2d42 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -188,7 +188,8 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
- 					val, TWL4030_REG_APLL_CTL);
- 
--	audio = kzalloc(sizeof(struct twl4030_audio), GFP_KERNEL);
-+	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
-+			     GFP_KERNEL);
- 	if (!audio)
- 		return -ENOMEM;
- 
-@@ -229,22 +230,18 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 		ret = -ENODEV;
- 	}
- 
--	if (!ret)
--		return 0;
-+	if (ret) {
-+		platform_set_drvdata(pdev, NULL);
-+		twl4030_audio_dev = NULL;
-+	}
- 
--	platform_set_drvdata(pdev, NULL);
--	kfree(audio);
--	twl4030_audio_dev = NULL;
- 	return ret;
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 1c32afe..f162b68 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -552,6 +552,38 @@ int twl_get_version(void)
  }
+ EXPORT_SYMBOL_GPL(twl_get_version);
  
- static int __devexit twl4030_audio_remove(struct platform_device *pdev)
- {
--	struct twl4030_audio *audio = platform_get_drvdata(pdev);
--
- 	mfd_remove_devices(&pdev->dev);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(audio);
- 	twl4030_audio_dev = NULL;
++/**
++ * twl_get_hfclk_rate - API to get TWL external HFCLK clock rate.
++ *
++ * Api to get the TWL HFCLK rate based on BOOT_CFG register.
++ */
++int twl_get_hfclk_rate(void)
++{
++	u8 ctrl;
++	int rate;
++
++	twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &ctrl, R_CFG_BOOT);
++
++	switch (ctrl & 0x3) {
++	case HFCLK_FREQ_19p2_MHZ:
++		rate = 19200000;
++		break;
++	case HFCLK_FREQ_26_MHZ:
++		rate = 26000000;
++		break;
++	case HFCLK_FREQ_38p4_MHZ:
++		rate = 38400000;
++		break;
++	default:
++		pr_err("TWL4030: HFCLK is not configured\n");
++		rate = -EINVAL;
++		break;
++	}
++
++	return rate;
++}
++EXPORT_SYMBOL_GPL(twl_get_hfclk_rate);
++
+ static struct device *
+ add_numbered_child(unsigned chip, const char *name, int num,
+ 		void *pdata, unsigned pdata_len,
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 7ea898c..ac6488c 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -188,6 +188,7 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes);
  
- 	return 0;
+ int twl_get_type(void);
+ int twl_get_version(void);
++int twl_get_hfclk_rate(void);
+ 
+ int twl6030_interrupt_unmask(u8 bit_mask, u8 offset);
+ int twl6030_interrupt_mask(u8 bit_mask, u8 offset);
 -- 
 1.7.8.6
 
