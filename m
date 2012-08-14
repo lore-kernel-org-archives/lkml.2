@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab2HNT7R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:59:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34704 "EHLO mx1.redhat.com"
+	id S1756354Ab2HNUAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:00:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19458 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756448Ab2HNT7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:59:15 -0400
-Message-ID: <1344974352.4683.320.camel@ul30vt.home>
-Subject: Re: [GIT PULL] VFIO update for 3.6-rc1
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Date: Tue, 14 Aug 2012 13:59:12 -0600
-In-Reply-To: <1344366349.3441.86.camel@ul30vt.home>
-References: <1344366349.3441.86.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754911Ab2HNUAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 16:00:50 -0400
+Date: Tue, 14 Aug 2012 16:00:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue on
+ do_floppy_init error handling
+Message-ID: <20120814200032.GF5760@redhat.com>
+References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
+ <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+ <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-07 at 13:05 -0600, Alex Williamson wrote:
-> Hi Linus,
+On Tue, Aug 14, 2012 at 04:20:39AM +0100, Ben Hutchings wrote:
+> On Mon, 2012-08-13 at 15:16 -0300, Herton Ronaldo Krzesinski wrote:
+> > After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
+> > put_disk() if add_disk() was never called"), if something fails in the
+> > add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
+> > that's wrong, since we may have succesfully done an add_disk on some of
+> > the drives previously in the loop, and in this case we would end up with
+> > an extra reference to the disks[dr]->queue.
+> > 
+> > Add a new global array to mark "registered" disks, and use that to check
+> > if we did an add_disk on one of the disks already. Using an array to
+> > track added disks also will help to simplify/cleanup code later, as
+> > suggested by Vivek Goyal.
+> [...]
 > 
-> The following changes since commit 42a579a0f960081cd16fc945036e4780c3ad3202:
+> It's totally ridiculous that a driver should have to do this.  Any
+> registered disk should have the GENHD_FL_UP flag set... so why can't
+> genhd check it?  It doesn't look like floppy is the only driver affected
+> by this problem, either.  So I suggest the following general fix
+> (untested):
 > 
->   Merge branches 'timers-urgent-for-linus' and 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-08-05 22:28:49 +0300)
+> ---
+> Subject: genhd: Make put_disk() safe for disks that have not been registered
 > 
-> are available in the git repository at:
+> Since commit 9f53d2f ('block: fix __blkdev_get and add_disk race
+> condition'), add_disk() adds a reference to disk->queue, which is then
+> dropped by disk_release().  But if a disk is destroyed without being
+> registered through add_disk() (or if add_disk() fails at the first
+> hurdle) then we have a reference imbalance.
 > 
-> 
->   git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.6-rc1
-> 
-> for you to fetch changes up to 817fea2df3c24b22f6123dc0106eb063b7132883:
-> 
->   vfio: Include vfio.h in installed headers (2012-08-07 11:48:33 -0600)
-> 
-> ----------------------------------------------------------------
-> VFIO for v3.6-rc1
-> 
-> Just a trivial patch to include vfio.h in the installed headers
-> so we can complete userspace integration into QEMU.  Thanks!
-> 
-> ----------------------------------------------------------------
-> Alex Williamson (1):
->       vfio: Include vfio.h in installed headers
-> 
->  include/linux/Kbuild | 1 +
->  1 file changed, 1 insertion(+)
+> Use the GENHD_FL_UP flag to tell whether this extra reference has been
+> added.  Remove the incomplete workaround from the floppy driver.
 > 
 
-Hi Linus,
+Checking for GENHD_FL_UP to represent whether we took a reference on the
+disk->queue or not sounds reasonable. 
 
-I'd really appreciate getting this fix in, I can send as a patch if you
-prefer for such a trivial change.  Thanks,
-
-Alex
-
+Thanks
+Vivek
