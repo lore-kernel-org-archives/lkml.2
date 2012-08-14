@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2HNQ0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:26:00 -0400
+	id S1756792Ab2HNQZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:25:44 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab2HNQZx (ORCPT
+	with ESMTP id S1756743Ab2HNQZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:25:53 -0400
+	Tue, 14 Aug 2012 12:25:40 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 09/16] SUNRPC/cache: use new hashtable implementation
-Date: Tue, 14 Aug 2012 18:24:43 +0200
-Message-Id: <1344961490-4068-10-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 07/16] net,9p: use new hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:41 +0200
+Message-Id: <1344961490-4068-8-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
 References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
@@ -32,93 +32,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch cache to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the cache implementation.
+Switch 9p error table to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in 9p.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- net/sunrpc/cache.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+ net/9p/error.c |   21 ++++++++++-----------
+ 1 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 2afd2a8..2d1f333 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -28,6 +28,7 @@
- #include <linux/workqueue.h>
- #include <linux/mutex.h>
- #include <linux/pagemap.h>
-+#include <linux/hashtable.h>
- #include <asm/ioctls.h>
- #include <linux/sunrpc/types.h>
- #include <linux/sunrpc/cache.h>
-@@ -524,19 +525,18 @@ EXPORT_SYMBOL_GPL(cache_purge);
-  * it to be revisited when cache info is available
-  */
- 
--#define	DFR_HASHSIZE	(PAGE_SIZE/sizeof(struct list_head))
--#define	DFR_HASH(item)	((((long)item)>>4 ^ (((long)item)>>13)) % DFR_HASHSIZE)
-+#define	DFR_HASH_BITS	9
- 
- #define	DFR_MAX	300	/* ??? */
- 
- static DEFINE_SPINLOCK(cache_defer_lock);
- static LIST_HEAD(cache_defer_list);
--static struct hlist_head cache_defer_hash[DFR_HASHSIZE];
-+static DEFINE_HASHTABLE(cache_defer_hash, DFR_HASH_BITS)
- static int cache_defer_cnt;
- 
- static void __unhash_deferred_req(struct cache_deferred_req *dreq)
- {
--	hlist_del_init(&dreq->hash);
-+	hash_del(&dreq->hash);
- 	if (!list_empty(&dreq->recent)) {
- 		list_del_init(&dreq->recent);
- 		cache_defer_cnt--;
-@@ -545,10 +545,7 @@ static void __unhash_deferred_req(struct cache_deferred_req *dreq)
- 
- static void __hash_deferred_req(struct cache_deferred_req *dreq, struct cache_head *item)
- {
--	int hash = DFR_HASH(item);
+diff --git a/net/9p/error.c b/net/9p/error.c
+index 2ab2de7..a5cc7dd 100644
+--- a/net/9p/error.c
++++ b/net/9p/error.c
+@@ -34,7 +34,7 @@
+ #include <linux/jhash.h>
+ #include <linux/errno.h>
+ #include <net/9p/9p.h>
 -
--	INIT_LIST_HEAD(&dreq->recent);
--	hlist_add_head(&dreq->hash, &cache_defer_hash[hash]);
-+	hash_add(cache_defer_hash, &dreq->hash, (unsigned long)item);
- }
++#include <linux/hashtable.h>
+ /**
+  * struct errormap - map string errors from Plan 9 to Linux numeric ids
+  * @name: string sent over 9P
+@@ -50,8 +50,8 @@ struct errormap {
+ 	struct hlist_node list;
+ };
  
- static void setup_deferral(struct cache_deferred_req *dreq,
-@@ -600,7 +597,7 @@ static void cache_wait_req(struct cache_req *req, struct cache_head *item)
- 		 * to clean up
- 		 */
- 		spin_lock(&cache_defer_lock);
--		if (!hlist_unhashed(&sleeper.handle.hash)) {
-+		if (hash_hashed(&sleeper.handle.hash)) {
- 			__unhash_deferred_req(&sleeper.handle);
- 			spin_unlock(&cache_defer_lock);
- 		} else {
-@@ -671,12 +668,11 @@ static void cache_revisit_request(struct cache_head *item)
- 	struct cache_deferred_req *dreq;
- 	struct list_head pending;
- 	struct hlist_node *lp, *tmp;
--	int hash = DFR_HASH(item);
+-#define ERRHASHSZ		32
+-static struct hlist_head hash_errmap[ERRHASHSZ];
++#define ERR_HASH_BITS 5
++static DEFINE_HASHTABLE(hash_errmap, ERR_HASH_BITS);
  
- 	INIT_LIST_HEAD(&pending);
- 	spin_lock(&cache_defer_lock);
- 
--	hlist_for_each_entry_safe(dreq, lp, tmp, &cache_defer_hash[hash], hash)
-+	hash_for_each_possible_safe(cache_defer_hash, dreq, lp, tmp, hash, (unsigned long)item)
- 		if (dreq->item == item) {
- 			__unhash_deferred_req(dreq);
- 			list_add(&dreq->recent, &pending);
-@@ -1636,6 +1632,8 @@ static int create_cache_proc_entries(struct cache_detail *cd, struct net *net)
- void __init cache_initialize(void)
+ /* FixMe - reduce to a reasonable size */
+ static struct errormap errmap[] = {
+@@ -193,18 +193,17 @@ static struct errormap errmap[] = {
+ int p9_error_init(void)
  {
- 	INIT_DELAYED_WORK_DEFERRABLE(&cache_cleaner, do_cache_clean);
-+
-+	hash_init(cache_defer_hash);
- }
+ 	struct errormap *c;
+-	int bucket;
++	u32 hash;
  
- int cache_register_net(struct cache_detail *cd, struct net *net)
+ 	/* initialize hash table */
+-	for (bucket = 0; bucket < ERRHASHSZ; bucket++)
+-		INIT_HLIST_HEAD(&hash_errmap[bucket]);
++	hash_init(hash_errmap);
+ 
+ 	/* load initial error map into hash table */
+ 	for (c = errmap; c->name != NULL; c++) {
+ 		c->namelen = strlen(c->name);
+-		bucket = jhash(c->name, c->namelen, 0) % ERRHASHSZ;
++		hash = jhash(c->name, c->namelen, 0);
+ 		INIT_HLIST_NODE(&c->list);
+-		hlist_add_head(&c->list, &hash_errmap[bucket]);
++		hash_add(hash_errmap, &c->list, hash);
+ 	}
+ 
+ 	return 1;
+@@ -223,13 +222,13 @@ int p9_errstr2errno(char *errstr, int len)
+ 	int errno;
+ 	struct hlist_node *p;
+ 	struct errormap *c;
+-	int bucket;
++	u32 hash;
+ 
+ 	errno = 0;
+ 	p = NULL;
+ 	c = NULL;
+-	bucket = jhash(errstr, len, 0) % ERRHASHSZ;
+-	hlist_for_each_entry(c, p, &hash_errmap[bucket], list) {
++	hash = jhash(errstr, len, 0);
++	hash_for_each_possible(hash_errmap, c, p, list, hash) {
+ 		if (c->namelen == len && !memcmp(c->name, errstr, len)) {
+ 			errno = c->val;
+ 			break;
 -- 
 1.7.8.6
 
