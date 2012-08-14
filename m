@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab2HNUdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:33:07 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:23281 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757421Ab2HNUdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:33:01 -0400
-Message-ID: <1344976373.2690.41.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [patch net-next v2 00/15] net: introduce upper device lists and
- remove dev->master
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Andy Gospodarek <gospo@redhat.com>
-CC: Jiri Pirko <jiri@resnulli.us>, <netdev@vger.kernel.org>,
-        <davem@davemloft.net>, <edumazet@google.com>, <faisal.latif@intel.com>,
-        <roland@kernel.org>, <sean.hefty@intel.com>,
-        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
-        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
-        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
-        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
-        <linux390@de.ibm.com>, <shemminger@vyatta.com>, <therbert@google.com>,
-        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
-        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
-        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
-        <fbl@redhat.com>
-Date: Tue, 14 Aug 2012 21:32:53 +0100
-In-Reply-To: <20120814201950.GA17781@quad.redhat.com>
-References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
-	 <20120814201950.GA17781@quad.redhat.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1757510Ab2HNUdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:33:43 -0400
+Received: from edge.cmeerw.net ([84.200.12.152]:40854 "EHLO edge.cmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757456Ab2HNUdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 16:33:40 -0400
+X-Greylist: delayed 713 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Aug 2012 16:33:40 EDT
+Date: Tue, 14 Aug 2012 22:21:25 +0200
+From: Christof Meerwald <cmeerw@cmeerw.org>
+To: "Paton J. Lewis" <palewis@adobe.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
+Message-ID: <20120814202125.GH1407@edge.cmeerw.net>
+References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
+ <20120616184707.GA22656@edge.cmeerw.net>
+ <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
+ <20120619181711.GE1281@edge.cmeerw.net>
+ <6.2.5.6.2.20120629140909.04bb0a40@adobe.com>
+ <6.2.5.6.2.20120802174226.04afdcd0@adobe.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6.2.5.6.2.20120802174226.04afdcd0@adobe.com>
+X-PGP-Key: 1024D/2B10BE68, 1998-06-29
+X-PGP-Fingerprint: 0289 5466 C1F5 B03C DBA7  6304 8CAF 9782 2B10 BE68
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-14 at 16:19 -0400, Andy Gospodarek wrote:
-> On Tue, Aug 14, 2012 at 05:05:33PM +0200, Jiri Pirko wrote:
-> > Hi all.
-> > 
-> > Recent discussion around
-> > "[net-next] bonding: don't allow the master to become its slave"
-> > forced me to think about upper<->lower device connections.
-> > 
-> > This patchset adds a possibility to record upper device linkage.
-> > All upper<->lower devices are converted to use this mechanism right after.
-> > That leads to dev->master removal because this info becomes redundant since
-> > "unique links" have the same value.
-> > 
-> > After all changes, there is no longer possible to do:
-> > "bond->someotherdevice->samebond"
-> > 
-> > Also I think that drivers like cxgb3, qlcnic, qeth would benefit by this
-> > in future by being able to get more appropriate info about l3 addresses.
-> > 
-> > v1->v2:
-> > - s/unique/master/ better naming + stays closer to the history
-> > - fixed vlan err goto
-> > - original patch 15 (WARN_ON change) is squashed into the first patch
-> > - fixed netdev_unique_upper_dev_get_rcu() case of upper==NULL
-> I just started to review v1 when v2 came out, but luckily the changes
-> were not too significant that I need to start all over.
-> 
-> The first note is that I didn't like the use of the term 'upper' -- it
-> seems like 'stacked' might be a better alternative as these are stacked
-> devices.
+Hi Paton,
 
-When linking any two devices in a stack, one will be upper and the other
-lower.  The lower device might itself be stacked on top of a further
-device, so 'stacked' is not a useful distinguishing adjective in
-variable names.  It might be a useful term in the commit messages and
-kernel-doc, though.
-
-> One thing to note is that I don't see any clear changelog that states
-> the current goals for this.  You have stated in several places that it
-> will no longer be possible to create bonds of bonds, but there are
-> probably a few more things it might be wise to intentionally outlaw.
->
-> What about teams of teams?  Or teams of bonds?  Or bonds of teams?
-> Bonds of vlans?
+On Thu, Aug 02, 2012 at 06:37:06PM -0700, Paton J. Lewis wrote:
 [...]
+> My first concern is about code clarity. Using a custom event to
+> delete an event type (either EPOLLIN or EPOLLOUT) from an epoll item
+> requires that functionality to be split across two areas of code:
+> the code that requests the deletion (via the call to epoll_ctl), and
+> the code that responds to it (via epoll_wait).
 
-It doesn't disallow bonds of bonds (unless I'm missing something).  It
-disallows loops that involve any or all of those types of stacked
-devices.
+But don't you have a similar problem in your proposal as well as you
+might get an EBUSY when trying to disabling the item - in which case
+you would have to do the deletion in the epoll_wait loop.
 
-Ben.
+> However, my main concern is about performance. Handling a custom
+> event means that each return from epoll_wait requires the responding
+> thread to check for possible custom events, which in the case of
+> deletion is going to be relatively rare. Thus code which was once
+> purely concerned with responding to I/O events must now spend a
+> fraction of its time testing for exceptional conditions. In
+> addition, handling deletion in this manner now requires a thread or
+> context switch.
+
+But in your initial proposal you also had the code checking for
+deletion in the epoll_wait loop.
+
+
+> Given the drawbacks listed above, and the kernel design philosophy
+> of only implementing what is actually needed, I would argue for
+> sticking with the original EPOLL_CTL_DISABLE proposal for now.
+
+I have finally had some chance to play around with your patch a bit
+and I really think that you don't want to check for
+ep_is_linked(&epi->rdllink) in ep_disable as I don't see that this
+would provide any useful semantics with respect to race-conditions.
+I.e. consider the point in the epoll_wait loop just after you have
+re-enabled to item - in this case ep_disable would (almost certainly)
+return EBUSY, but there is no guarantee that epoll_wait will be woken
+up on the next iteration.
+
+As I mentioned, I think it would be much more useful to check for
+"epi->event.events & ~EP_PRIVATE_BITS" instead which I believe would
+provide more useful semantics.
+
+
+Christof
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
+http://cmeerw.org                              sip:cmeerw at cmeerw.org
+mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
