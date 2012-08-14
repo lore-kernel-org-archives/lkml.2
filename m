@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2HNMkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:40:43 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55168 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab2HNMkm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:40:42 -0400
+	id S1754346Ab2HNMlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:41:12 -0400
+Received: from bar.sig21.net ([80.81.252.164]:45678 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916Ab2HNMlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 08:41:11 -0400
+Date: Tue, 14 Aug 2012 14:39:37 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+Message-ID: <20120814123937.GA14756@sig21.net>
+References: <50299142.2030504@oberhumer.com>
 MIME-Version: 1.0
-In-Reply-To: <1344494323-4992-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1344494323-4992-1-git-send-email-thierry.reding@avionic-design.de>
-Date: Tue, 14 Aug 2012 14:40:41 +0200
-Message-ID: <CACRpkdb=9nN-ArV2KzzzwjQx3KnrdsMWE_iRABg283maueYZgg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Fix debug message in of_get_named_gpio_flags()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50299142.2030504@oberhumer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 8:38 AM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
+On Tue, Aug 14, 2012 at 01:44:02AM +0200, Markus F.X.J. Oberhumer wrote:
+> On 2012-07-16 20:30, Markus F.X.J. Oberhumer wrote:
+> >
+> > As stated in the README this version is significantly faster (typically more
+> > than 2 times faster!) than the current version, has been thoroughly tested on
+> > x86_64/i386/powerpc platforms and is intended to get included into the
+> > official Linux 3.6 or 3.7 release.
+> >
+> > I encourage all compression users to test and benchmark this new version,
+> > and I also would ask some official LZO maintainer to convert the updated
+> > source files into a GIT commit and possibly push it to Linus or linux-next.
 
-> This was probably missed in the conversion done in commit 3d0f7cf
-> ("gpio: Adjust of_xlate API to support multiple GPIO chips").
->
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Sorry for not reporting earlier, but I didn't have time to do real
+benchmarks, just a quick test on ARM926EJ-S using barebox,
+and found in the new version decompression is slower:
+http://lists.infradead.org/pipermail/barebox/2012-July/008268.html
 
-Applied to my fixes branch, Grant: complain if it looks wrong.
+BTW, do you have userspace code matching the old and new
+lzo versions?  It would be easier to benchmark.
 
-Yours,
-Linus Walleij
+Unfortunately I cannot claim high confidence in my benchmark results
+due to missing time to do it properly, it would be useful if
+someone else could do some benchmarks on ARM before merging this.
+
+
+Johannes
