@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab2HNU30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:29:26 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39511 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab2HNU3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:29:25 -0400
-Message-ID: <502AB521.6090201@kernel.org>
-Date: Tue, 14 Aug 2012 21:29:21 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1757449Ab2HNUaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:30:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757398Ab2HNUaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 16:30:12 -0400
+Date: Tue, 14 Aug 2012 17:29:50 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120814202949.GF22133@t510.redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
+ <20120813084123.GF14081@redhat.com>
+ <20120814182244.GB13338@t510.redhat.com>
+ <20120814195139.GA28870@redhat.com>
+ <20120814195916.GC28870@redhat.com>
+ <20120814200830.GD22133@t510.redhat.com>
+ <20120814202401.GB28990@redhat.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: lm3533-als: Fix build warnings
-References: <1343902209.1207.2.camel@phoenix>
-In-Reply-To: <1343902209.1207.2.camel@phoenix>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814202401.GB28990@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2012 11:10 AM, Axel Lin wrote:
-> Fix below build warnings:
->   CC [M]  drivers/iio/light/lm3533-als.o
-> drivers/iio/light/lm3533-als.c:667:8: warning: initialization from incompatible pointer type [enabled by default]
-> drivers/iio/light/lm3533-als.c:667:8: warning: (near initialization for 'dev_attr_in_illuminance0_thresh_either_en.show') [enabled by default]
-> drivers/iio/light/lm3533-als.c:667:8: warning: initialization from incompatible pointer type [enabled by default]
-> drivers/iio/light/lm3533-als.c:667:8: warning: (near initialization for 'dev_attr_in_illuminance0_thresh_either_en.store') [enabled by default]
+On Tue, Aug 14, 2012 at 11:24:01PM +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 14, 2012 at 05:08:31PM -0300, Rafael Aquini wrote:
+> > On Tue, Aug 14, 2012 at 10:59:16PM +0300, Michael S. Tsirkin wrote:
+> > > > > > What if there is more than one balloon device?
+> > > > > 
+> > > > > Is it possible to load this driver twice, or are you foreseeing a future case
+> > > > > where this driver will be able to manage several distinct memory balloons for
+> > > > > the same guest?
+> > > > > 
+> > > > 
+> > > > Second.
+> > > > It is easy to create several balloons they are just
+> > > > pci devices.
+> > >  
+> > > 
+> > > 
+> > > and it might not be too important to make it work but
+> > > at least would be nice not to have a crash in this
+> > > setup.
+> > >
+> > Fair enough. For now, as I believe it's safe to assume we are only inflating one
+> > balloon per guest, I'd like to propose this as a future enhancement. Sounds
+> > good?
+> >  
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Thanks queued up.
-> ---
->  drivers/iio/light/lm3533-als.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iio/light/lm3533-als.c b/drivers/iio/light/lm3533-als.c
-> index c3e7bac..e45712a9 100644
-> --- a/drivers/iio/light/lm3533-als.c
-> +++ b/drivers/iio/light/lm3533-als.c
-> @@ -404,7 +404,7 @@ out:
->  	return ret;
->  }
->  
-> -static int show_thresh_either_en(struct device *dev,
-> +static ssize_t show_thresh_either_en(struct device *dev,
->  					struct device_attribute *attr,
->  					char *buf)
->  {
-> @@ -424,7 +424,7 @@ static int show_thresh_either_en(struct device *dev,
->  	return scnprintf(buf, PAGE_SIZE, "%u\n", enable);
->  }
->  
-> -static int store_thresh_either_en(struct device *dev,
-> +static ssize_t store_thresh_either_en(struct device *dev,
->  					struct device_attribute *attr,
->  					const char *buf, size_t len)
->  {
-> 
+> Since guest crashes when it's not the case, no it doesn't, sorry :(.
+>
+Ok, but right now this driver only takes care of 1 balloon per guest, so how
+could this approach crash it? 
+
+Your point is a good thing to be on a to-do list for future enhancements, but
+it's not a dealbreaker for the present balloon driver implementation, IMHO.
+ 
