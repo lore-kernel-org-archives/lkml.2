@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab2HNFPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 01:15:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60371 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751654Ab2HNFPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 01:15:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,764,1336374000"; 
-   d="scan'208";a="200366423"
-Date: Tue, 14 Aug 2012 13:15:07 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: gerg@snapgear.com
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, ebiederm@xmission.com,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [PATCH] m68k: select CONFIG_GENERIC_ATOMIC64 for all m68k CPU
- types
-Message-ID: <20120814051507.GA10244@localhost>
-References: <1344919533-9357-1-git-send-email-gerg@snapgear.com>
+	id S1752772Ab2HNFRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 01:17:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55608 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab2HNFRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 01:17:47 -0400
+Message-ID: <5029DF77.1010301@canonical.com>
+Date: Tue, 14 Aug 2012 07:17:43 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344919533-9357-1-git-send-email-gerg@snapgear.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [ 10/44] ALSA: hda - remove quirk for Dell Vostro 1015
+References: <20120813220142.113186818@linuxfoundation.org> <20120813220143.070291526@linuxfoundation.org>
+In-Reply-To: <20120813220143.070291526@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 02:45:33PM +1000, gerg@snapgear.com wrote:
-> From: Greg Ungerer <gerg@uclinux.org>
-> 
-> There is no specific atomic64 support code for any m68k CPUs, so we should
-> select CONFIG_GENERIC_ATOMC64 for all. Remove the existing per CPU selection
-> of this and select it for all m68k.
+On 08/14/2012 12:02 AM, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
 >
-> Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+As my previous email states, I still object to this patch being applied 
+to 3.0 (it is for 3.2+). Repeating that text now:
 
-Thanks for the complete solution!
+This patch will not work on 3.0 because there is no model=auto fallback, 
+so please remove it from 3.0-stable-queue.
+
+In the original patch [1], the cc to stable was written as this:
+
+Cc: stable@kernel.org (3.2+)
+
+Is there a better way to specify what kernels it should and should not 
+be applied to, as it doesn't seem to have worked in this case?
+
+[1] 
+http://git.kernel.org/?p=linux/kernel/git/tiwai/sound.git;a=commit;h=e9fc83cb2e5877801a255a37ddbc5be996ea8046
+
+-- 
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
