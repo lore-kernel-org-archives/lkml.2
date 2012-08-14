@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2HNXXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:23:23 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:55825 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab2HNXXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:23:21 -0400
-Date: Wed, 15 Aug 2012 02:22:50 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 11/31] arm64: IRQ handling
-Message-ID: <20120814232250.GB747@harshnoise.musicnaut.iki.fi>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-12-git-send-email-catalin.marinas@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344966752-16102-12-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754247Ab2HNX0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:26:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44657 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab2HNXZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:25:58 -0400
+Date: Wed, 15 Aug 2012 09:25:23 +1000
+From: NeilBrown <neilb@suse.de>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 01/16] hashtable: introduce a small and naive hashtable
+Message-ID: <20120815092523.00a909ef@notabene.brown>
+In-Reply-To: <1344961490-4068-2-git-send-email-levinsasha928@gmail.com>
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+	<1344961490-4068-2-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/WaPYDSkmDZTaSUO/RNup8tR"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/WaPYDSkmDZTaSUO/RNup8tR
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 14, 2012 at 06:52:12PM +0100, Catalin Marinas wrote:
-> +void handle_IRQ(unsigned int irq, struct pt_regs *regs)
+On Tue, 14 Aug 2012 18:24:35 +0200 Sasha Levin <levinsasha928@gmail.com>
+wrote:
+
+
+> +static inline void hash_init_size(struct hlist_head *hashtable, int bits)
 > +{
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
+> +	int i;
 > +
-> +	irq_enter();
-> +
-> +	/*
-> +	 * Some hardware gives randomly wrong interrupts.  Rather
-> +	 * than crashing, do something sensible.
-> +	 */
-> +	if (unlikely(irq >= nr_irqs)) {
-> +		if (printk_ratelimit())
-> +			pr_warning("Bad IRQ%u\n", irq);
+> +	for (i =3D 0; i < HASH_SIZE(bits); i++)
+> +		INIT_HLIST_HEAD(hashtable + i);
+> +}
 
-I guess pr_warn_ratelimited() should be used for new code.
+This seems like an inefficient way to do "memset(hashtable, 0, ...);".
+And in many cases it isn't needed as the hash table is static and initialis=
+ed
+to zero.
+I note that in the SUNRPC/cache patch you call hash_init(), but in the lockd
+patch you don't.  You don't actually need to in either case.
 
-(See include/linux/printk.h, "Please don't use printk_ratelimit()...")
+I realise that any optimisation here is for code that is only executed once
+per boot, so no big deal, and even the presence of extra code making the
+kernel bigger is unlikely to be an issue.  But I'd at least like to see
+consistency: Either use hash_init everywhere, even when not needed, or only
+use it where absolutely needed which might be no-where because static tables
+are already initialised, and dynamic tables can use GFP_ZERO.
 
-A.
+And if you keep hash_init_size I would rather see a memset(0)....
+
+Thanks,
+NeilBrown
+
+--Sig_/WaPYDSkmDZTaSUO/RNup8tR
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUCreYznsnt1WYoG5AQJjuA//cxInQBsHXHRtWYyYJpxwOX9hqpSDNaZ2
+37aTlFSGjdhr1yn+RcwmtWh9nEj+oHEFlds46gW/woLpGFSXuCPD85CDtZDjPSpL
+7VNXdZ1i3+EEPR0K2vjMaUs1cpdz2KIx8KZjIXfQVnARaZNfts7EuaTCpGM+5bac
+G4CX6uoFtPc/A4LVEiYbowLzhUG+GmxcofMjd9ZJ4Ug0Xg4sl8xXtYg8YDkSn3LJ
+zef9ltlJ1WxLSTtBm6+jyH25Xlb31P7TT3BUgNcStSz9Jak2wdggbUE79iOb3GJL
+sP6/meXapGELz7IE8PVo/cdYdfBcskH6M8ai8pNNYTguSh/2VSRnjR1hPqXhgUYn
+FDKLL8galmS5OxQMwv4mb3zhUIHIiTT7tWBq6eYXo3xUzInU5VufAyLIcpRX3fXm
+VNLnnDOyaoWJCP/fUDrmHskSWPhLQA5/1YtiSI1NYwbY2C+OCybFHYixcWe5CT4w
+YvQ2TTweApDjk5JRndjiO0/j4++kAYvQ8KwC7oo7CUK13dH/9h8rxzV3H4zAhxkh
+4F6FzPEagR1CzKpSkJEA46DJQNIdAbbyCM0VkHORy7gTUa0MA3MsjW8dOKSnBnux
+xsx1GI08WW16NEf1TyGrkqdE/caa4WtDDoLNG3cpwLTZNlMACcZOHXQmgeQu3Ija
+TqL1y22gF/Q=
+=lYgD
+-----END PGP SIGNATURE-----
+
+--Sig_/WaPYDSkmDZTaSUO/RNup8tR--
