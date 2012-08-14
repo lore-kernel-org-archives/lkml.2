@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab2HNSgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 14:36:05 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53728 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754258Ab2HNSgC (ORCPT
+	id S1757311Ab2HNSj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 14:39:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52825 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757066Ab2HNSjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 14:36:02 -0400
-Date: Tue, 14 Aug 2012 22:35:58 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
- providers
-Message-ID: <20120814183558.GA1551@moon>
-References: <20120814140342.354405844@openvz.org>
- <20120814140620.033884909@openvz.org>
- <20120814183142.GH23464@ZenIV.linux.org.uk>
+	Tue, 14 Aug 2012 14:39:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Daney <ddaney.cavm@gmail.com>
+Subject: Re: [PATCH 0/2] Align MIPS swapper_pg_dir for faster code.
+Date: Tue, 14 Aug 2012 18:39:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+References: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814183142.GH23464@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208141839.41441.arnd@arndb.de>
+X-Provags-ID: V02:K0:i21pUrDBuA6vgW6GO8ZWM1ouWOKa4IeboWcf3hAMtAd
+ OmAMrR12HTamt1WW5Hhh43SeC9JPiMf62FUKyvCHwFgAOR2wS6
+ mvl108NOgoTwZjnGUb/LMSJX55MRiRdlYv4CQxYkiIEHByeDG4
+ gnvrtz6VAmId8jM3OXElM1rdRMiksNqYfEL+0Pe1A4hf4H/UXZ
+ 6HLP0olEmOrPRYD63wFSqigEWUqGUdyjGvAbhW8hV0/YtlisTo
+ y44X1jRen0oGHYBslNM1i/K8ENfykwOPaUu+64J+0SzIvL7sw6
+ btBy5RzRQB5c/7EVsBmId8jcWlhra6xiZSAAe4dXX6byB9e7OS
+ DQ5VSZAk1EJZyOGd+iSQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 07:31:42PM +0100, Al Viro wrote:
-> > Initially we considered to inject some "show" metod to
-> > file_operations but since there really a number of
-> > file_operations declared inside kernel (and in real the
-> > further patches cover onle eventfd/epoll/inotify) the
-> > waste of memory space will be inacceptable I think.
-> 
-> NAK.  This is too ugly to live.  Put it into file_operations,
-> with NULL meaning default output, or don't do it at all.
-> 
-> And no, "it's only if you enable CONFIG_SOME_SHIT" gambit won't
-> fly - we have all seen it played too many times.  All it takes
-> is one politically-inclined induhvidual adding a dependency to
-> some "vertically integrated" turd (*cough* systemd *spit* udev
-> *cough*) and we are stuck with the damn thing.  CGROUP shite
-> is already there, DEVTMPFS is well on its way, etc.
+On Tuesday 14 August 2012, David Daney wrote:
+> Since the initial use of the code is for MIPS, perhaps both parts
+> could be merged by Ralf's tree (after collecting any Acked-bys).
 
-OK, I'll put it into file_operations then (actually Pavel was
-proposing the same but I've been scared by amount of file_operations
-declared). Thanks!
-
-	Cyrill
+Acked-by: Arnd Bergmann <arnd@arndb.de>
