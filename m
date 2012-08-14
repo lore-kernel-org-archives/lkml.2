@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab2HNDVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 23:21:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45423 "EHLO
+	id S1755361Ab2HNDbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 23:31:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45499 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753366Ab2HNDU7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751275Ab2HNDbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 23:20:59 -0400
-Message-ID: <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue
- on do_floppy_init error handling
+	Mon, 13 Aug 2012 23:31:37 -0400
+Message-ID: <1344915083.824.182.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v3 4/6] floppy: properly handle failure on add_disk loop
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jens Axboe <axboe@kernel.dk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Date: Tue, 14 Aug 2012 04:20:39 +0100
-In-Reply-To: <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
+Date: Tue, 14 Aug 2012 04:31:23 +0100
+In-Reply-To: <1344881787-6422-5-git-send-email-herton.krzesinski@canonical.com>
 References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
-	 <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+	 <1344881787-6422-5-git-send-email-herton.krzesinski@canonical.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-UsxMOd631+8ZWR0R7gzZ"
+	protocol="application/pgp-signature"; boundary="=-eo/YQuN9y/6EbFhO+gtn"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -33,142 +30,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-UsxMOd631+8ZWR0R7gzZ
+--=-eo/YQuN9y/6EbFhO+gtn
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 On Mon, 2012-08-13 at 15:16 -0300, Herton Ronaldo Krzesinski wrote:
-> After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
-> put_disk() if add_disk() was never called"), if something fails in the
-> add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
-> that's wrong, since we may have succesfully done an add_disk on some of
-> the drives previously in the loop, and in this case we would end up with
-> an extra reference to the disks[dr]->queue.
+> On do_floppy_init, if something failed inside the loop we call add_disk,
+> there was no cleanup of previous iterations in the error handling.
 >=20
-> Add a new global array to mark "registered" disks, and use that to check
-> if we did an add_disk on one of the disks already. Using an array to
-> track added disks also will help to simplify/cleanup code later, as
-> suggested by Vivek Goyal.
-[...]
+> Cc: stable@vger.kernel.org
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com=
+>
 
-It's totally ridiculous that a driver should have to do this.  Any
-registered disk should have the GENHD_FL_UP flag set... so why can't
-genhd check it?  It doesn't look like floppy is the only driver affected
-by this problem, either.  So I suggest the following general fix
-(untested):
+This depends on 3/6.  If that's replaced by my proposed fix, then:
 
----
-Subject: genhd: Make put_disk() safe for disks that have not been registere=
-d
+> ---
+>  drivers/block/floppy.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> index 9272203..3eafe93 100644
+> --- a/drivers/block/floppy.c
+> +++ b/drivers/block/floppy.c
+> @@ -4294,7 +4294,7 @@ static int __init do_floppy_init(void)
+> =20
+>  		err =3D platform_device_register(&floppy_device[drive]);
+>  		if (err)
+> -			goto out_release_dma;
+> +			goto out_remove_drives;
+> =20
+>  		err =3D device_create_file(&floppy_device[drive].dev,
+>  					 &dev_attr_cmos);
+> @@ -4313,6 +4313,14 @@ static int __init do_floppy_init(void)
+> =20
+>  out_unreg_platform_dev:
+>  	platform_device_unregister(&floppy_device[drive]);
+> +out_remove_drives:
+> +	while (drive--) {
+> +		if (disk_registered[drive]) {
 
-Since commit 9f53d2f ('block: fix __blkdev_get and add_disk race
-condition'), add_disk() adds a reference to disk->queue, which is then
-dropped by disk_release().  But if a disk is destroyed without being
-registered through add_disk() (or if add_disk() fails at the first
-hurdle) then we have a reference imbalance.
+I think the test of allowed_drive_mask and FDC version before
+registering each driver should be factored out into a function that you
+can use here.  There would then no need for the disk_registered array.
 
-Use the GENHD_FL_UP flag to tell whether this extra reference has been
-added.  Remove the incomplete workaround from the floppy driver.
+Ben.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@vger.kernel.org
----
- block/genhd.c          |    6 +++---
- drivers/block/floppy.c |   16 +---------------
- 2 files changed, 4 insertions(+), 18 deletions(-)
-
-diff --git a/block/genhd.c b/block/genhd.c
-index cac7366..6201212 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -587,8 +587,6 @@ void add_disk(struct gendisk *disk)
- 	WARN_ON(disk->minors && !(disk->major || disk->first_minor));
- 	WARN_ON(!disk->minors && !(disk->flags & GENHD_FL_EXT_DEVT));
-=20
--	disk->flags |=3D GENHD_FL_UP;
--
- 	retval =3D blk_alloc_devt(&disk->part0, &devt);
- 	if (retval) {
- 		WARN_ON(1);
-@@ -596,6 +594,8 @@ void add_disk(struct gendisk *disk)
- 	}
- 	disk_to_dev(disk)->devt =3D devt;
-=20
-+	disk->flags |=3D GENHD_FL_UP;
-+
- 	/* ->major and ->first_minor aren't supposed to be
- 	 * dereferenced from here on, but set them just in case.
- 	 */
-@@ -1105,7 +1105,7 @@ static void disk_release(struct device *dev)
- 	disk_replace_part_tbl(disk, NULL);
- 	free_part_stats(&disk->part0);
- 	free_part_info(&disk->part0);
--	if (disk->queue)
-+	if (disk->queue && disk->flags & GENHD_FL_UP)
- 		blk_put_queue(disk->queue);
- 	kfree(disk);
- }
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index a7d6347..cf27922 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4325,14 +4325,8 @@ out_unreg_blkdev:
- out_put_disk:
- 	while (dr--) {
- 		del_timer_sync(&motor_off_timer[dr]);
--		if (disks[dr]->queue) {
-+		if (disks[dr]->queue)
- 			blk_cleanup_queue(disks[dr]->queue);
--			/*
--			 * put_disk() is not paired with add_disk() and
--			 * will put queue reference one extra time. fix it.
--			 */
--			disks[dr]->queue =3D NULL;
--		}
- 		put_disk(disks[dr]);
- 	}
- 	return err;
-@@ -4560,14 +4554,6 @@ static void __exit floppy_module_exit(void)
- 		}
- 		blk_cleanup_queue(disks[drive]->queue);
-=20
--		/*
--		 * These disks have not called add_disk().  Don't put down
--		 * queue reference in put_disk().
--		 */
--		if (!(allowed_drive_mask & (1 << drive)) ||
--		    fdc_state[FDC(drive)].version =3D=3D FDC_NONE)
--			disks[drive]->queue =3D NULL;
--
- 		put_disk(disks[drive]);
- 	}
-=20
-
+> +			del_gendisk(disks[drive]);
+> +			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
+> +			platform_device_unregister(&floppy_device[drive]);
+> +		}
+> +	}
+>  out_release_dma:
+>  	if (atomic_read(&usage_count))
+>  		floppy_release_irq_and_dma();
 
 --=20
 Ben Hutchings
 I say we take off; nuke the site from orbit.  It's the only way to be sure.
 
---=-UsxMOd631+8ZWR0R7gzZ
+--=-eo/YQuN9y/6EbFhO+gtn
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUCnEB+e/yOyVhhEJAQqjjw/9HiPEHBx2oh3AvHJ1VvbR5P8QXcruOjuX
-wu3a6heC9K3f2lYt5ibpy68QO+9ImOaKw2z9gjTgMWLUr7kn0ewhrQ4k5xh4xuQN
-jEKkXWerK00t2DwvsGL64jgPZSB09T9hUa03I3Q2bzQv8Y9VEn3zTRt7SCD6w6n2
-Nbkvt/KiDU/1tdaB0djpuy+P1a3RWCuhKMh3rPdpTVVwSqo3bosPtyeShS+V1Tfc
-GZfAjTGnOVS6+8mJLNh/kG7p9Tp2Tz+YS1sT8vHFa2v4+26pjsbp0lX0rMxRfzyU
-HS+Oltqh+Ajh2eWkQogEW42VlH6d8L7TYekuwBCu9m6tEmg9iYLngKOFh/vvW79K
-WlDNfHEQ6FzP74M7siVTqOh+OT+GKZvBYcBUFcSDvAb+DpzfAYMZAFCmS0qeevDh
-TTlNGn9Kl6ib4RaWlA3OZcp6TI8exK95pWJggRQpLcwUhvTWXfcuQ+LpjyD0ohnY
-FOWdTg7VVxwQETT+RX0aGC1G6fW79IX8IXGQCNxSwIr3m8ICwczM1v+YR3qIkb1p
-p3oILa8rZW8reN6KauLzzNzjbL5jwnYa1IpETCKexl2axmRUSDadCgXk2fKNCOW9
-Et+TkVEB7zxHPjFk4EISP2U7yTgGQQgGbejb0DkuYcCVZcrJKGtDxJtB7mExJSqc
-nGeDrhic7og=
-=ESOB
+iQIVAwUAUCnGi+e/yOyVhhEJAQrXLxAAlX1OZbFeSRCz2YYnDm6vvCPq5fypoSEV
+a3fnKswnI5z9GZnk8Kcb/yiLdl3pyDkQbFIU3KAl55n/vy9oaDaDSjccTKXncO9D
+75JHRVX8ZHQXUGrJ23wL3jC+0q6jAR8WFthHgQELGHIFXaJfi7NdrF7rccznzxgB
+/if0KHpOQoTMEx/bw/iBZ43j+21tYX5CMBMsmOWOvhryzAs2jtmTHKGHtw6QNa/c
+LA937xo29+jiRvzzDnvloVpr7uyEp+0L/6rnMbf40CxH6sX8XIUewynb4qoWHlF6
+rru6iuhnuhZeS/pi2eAYkhA5HTvNXGLRKzN25PDjwS/odWBv5aBp5ovVDGxYZ806
+Nu7i/fQSR18b6HSViByRRAxa0UEnammZe6AvvqAJ/6V1neiJHZ5gksjNRmgJc9Z6
+XtPnsAWbNaJuRZnQVNeZ23VOkPK0k44/+j3Nxpd3zDcO/mzPykprIbHg/86TwgW4
+k15N+rA/d1zOkk7FYJpLCZC1+eXvZMhCw97nntoZM2YIBA9AW+zgNWjxI+Mx47vc
+G1TPcgIpQx0pds9Ud5OIMRlSFpYnu/zGYNMVBFdG8RrRrBAy6BKEVgFL5ru1rPm7
+e+535ru5Swz+4Q0aCc1u86WtaLG1zHC7ufrclkj/miVuD5smFxR0VkqQwKLjGeuS
+aNZnFLQWwFA=
+=H8RA
 -----END PGP SIGNATURE-----
 
---=-UsxMOd631+8ZWR0R7gzZ--
+--=-eo/YQuN9y/6EbFhO+gtn--
