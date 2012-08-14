@@ -1,102 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2HNO3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:29:12 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:34512 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756186Ab2HNOWp (ORCPT
+	id S1753598Ab2HNOax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:30:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25895 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab2HNOav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:22:45 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 03/14] MFD: twl4030-audio: Rearange and clean-up the probe function
-Date: Tue, 14 Aug 2012 17:22:31 +0300
-Message-Id: <1344954162-7985-4-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 14 Aug 2012 10:30:51 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=dF28KBnHEbwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=nhe7_gQCEjgajjuE_twA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344954649.6724.13.camel@gandalf.stny.rr.com>
+Subject: Using random in interrupts for RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        RT <linux-rt-users@vger.kernel.org>
+Date: Tue, 14 Aug 2012 10:30:49 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To facilitate the device tree support the probe function need to be rearanged.
-Small cleanup in the APLL frequency selection part as well.
+Thomas,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl4030-audio.c |   34 ++++++++++++++++------------------
- 1 files changed, 16 insertions(+), 18 deletions(-)
+Ben Hutchings asked me if we still need "genirq: Disable random call on
+preempt-rt" for -rt? With commit 902c098a366 "random: use lockless
+techniques in the interrupt path" there is no more locks used. But does
+it still produce high latencies?
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index efa2d42..ca2d669 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -169,35 +169,30 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
-+			     GFP_KERNEL);
-+	if (!audio)
-+		return -ENOMEM;
-+
-+	mutex_init(&audio->mutex);
-+	audio->audio_mclk = pdata->audio_mclk;
-+
- 	/* Configure APLL_INFREQ and disable APLL if enabled */
--	val = 0;
--	switch (pdata->audio_mclk) {
-+	switch (audio->audio_mclk) {
- 	case 19200000:
--		val |= TWL4030_APLL_INFREQ_19200KHZ;
-+		val = TWL4030_APLL_INFREQ_19200KHZ;
- 		break;
- 	case 26000000:
--		val |= TWL4030_APLL_INFREQ_26000KHZ;
-+		val = TWL4030_APLL_INFREQ_26000KHZ;
- 		break;
- 	case 38400000:
--		val |= TWL4030_APLL_INFREQ_38400KHZ;
-+		val = TWL4030_APLL_INFREQ_38400KHZ;
- 		break;
- 	default:
- 		dev_err(&pdev->dev, "Invalid audio_mclk\n");
- 		return -EINVAL;
- 	}
--	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
--					val, TWL4030_REG_APLL_CTL);
--
--	audio = devm_kzalloc(&pdev->dev, sizeof(struct twl4030_audio),
--			     GFP_KERNEL);
--	if (!audio)
--		return -ENOMEM;
--
--	platform_set_drvdata(pdev, audio);
--
--	twl4030_audio_dev = pdev;
--	mutex_init(&audio->mutex);
--	audio->audio_mclk = pdata->audio_mclk;
-+	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, val, TWL4030_REG_APLL_CTL);
- 
- 	/* Codec power */
- 	audio->resource[TWL4030_AUDIO_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
-@@ -222,6 +217,9 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 		childs++;
- 	}
- 
-+	platform_set_drvdata(pdev, audio);
-+	twl4030_audio_dev = pdev;
-+
- 	if (childs)
- 		ret = mfd_add_devices(&pdev->dev, pdev->id, audio->cells,
- 				      childs, NULL, 0);
--- 
-1.7.8.6
+-- Steve
+
 
