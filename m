@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab2HNRyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55147 "EHLO
+	id S1757081Ab2HNRyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:15 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55135 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756843Ab2HNRxJ (ORCPT
+	with ESMTP id S1756830Ab2HNRxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:09 -0400
+	Tue, 14 Aug 2012 13:53:08 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 13/31] arm64: Device specific operations
-Date: Tue, 14 Aug 2012 18:52:14 +0100
-Message-Id: <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 12/31] arm64: Atomic operations
+Date: Tue, 14 Aug 2012 18:52:13 +0100
+Message-Id: <1344966752-16102-13-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:50.0635 (UTC) FILETIME=[E6C0F5B0:01CD7A45]
-X-MC-Unique: 112081418530705401
+X-OriginalArrivalTime: 14 Aug 2012 17:54:50.0260 (UTC) FILETIME=[E687BD40:01CD7A45]
+X-MC-Unique: 112081418530702501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHxv0v017372
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI088j017376
 
-This patch adds several definitions for device communication, including
-I/O accessors and ioremap(). The __raw_* accessors are implemented as
-inline asm to avoid compiler generation of post-indexed accesses (less
-efficient to emulate in a virtualised environment).
+This patch introduces the atomic, mutex and futex operations. Many
+atomic operations use the load-acquire and store-release operations
+which imply barriers, avoiding the need for explicit DMB.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/device.h |   26 ++++
- arch/arm64/include/asm/fb.h     |   34 +++++
- arch/arm64/include/asm/io.h     |  263 +++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/io.c          |   64 ++++++++++
- arch/arm64/mm/ioremap.c         |   84 +++++++++++++
- 5 files changed, 471 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/device.h
- create mode 100644 arch/arm64/include/asm/fb.h
- create mode 100644 arch/arm64/include/asm/io.h
- create mode 100644 arch/arm64/kernel/io.c
- create mode 100644 arch/arm64/mm/ioremap.c
+ arch/arm64/include/asm/atomic.h |  306 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/include/asm/futex.h  |  134 +++++++++++++++++
+ 2 files changed, 440 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/atomic.h
+ create mode 100644 arch/arm64/include/asm/futex.h
 
-diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
+diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
 new file mode 100644
-index 0000000..0d8453c
+index 0000000..fa60c8b
 --- /dev/null
-+++ b/arch/arm64/include/asm/device.h
-@@ -0,0 +1,26 @@
++++ b/arch/arm64/include/asm/atomic.h
+@@ -0,0 +1,306 @@
 +/*
++ * Based on arch/arm/include/asm/atomic.h
++ *
++ * Copyright (C) 1996 Russell King.
++ * Copyright (C) 2002 Deep Blue Solutions Ltd.
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -67,335 +64,300 @@ index 0000000..0d8453c
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_DEVICE_H
-+#define __ASM_DEVICE_H
++#ifndef __ASM_ATOMIC_H
++#define __ASM_ATOMIC_H
 +
-+struct dev_archdata {
-+	struct dma_map_ops *dma_ops;
-+};
++#include <linux/compiler.h>
++#include <linux/types.h>
 +
-+struct pdev_archdata {
-+};
++#include <asm/barrier.h>
++#include <asm/cmpxchg.h>
 +
-+#endif
-diff --git a/arch/arm64/include/asm/fb.h b/arch/arm64/include/asm/fb.h
-new file mode 100644
-index 0000000..adb88a6
---- /dev/null
-+++ b/arch/arm64/include/asm/fb.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_FB_H_
-+#define __ASM_FB_H_
-+
-+#include <linux/fb.h>
-+#include <linux/fs.h>
-+#include <asm/page.h>
-+
-+static inline void fb_pgprotect(struct file *file, struct vm_area_struct *vma,
-+				unsigned long off)
-+{
-+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
-+}
-+
-+static inline int fb_is_primary_device(struct fb_info *info)
-+{
-+	return 0;
-+}
-+
-+#endif /* __ASM_FB_H_ */
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-new file mode 100644
-index 0000000..48fa83f
---- /dev/null
-+++ b/arch/arm64/include/asm/io.h
-@@ -0,0 +1,263 @@
-+/*
-+ * Based on arch/arm/include/asm/io.h
-+ *
-+ * Copyright (C) 1996-2000 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_IO_H
-+#define __ASM_IO_H
++#define ATOMIC_INIT(i)	{ (i) }
 +
 +#ifdef __KERNEL__
 +
-+#include <linux/types.h>
-+
-+#include <asm/byteorder.h>
-+#include <asm/barrier.h>
-+#include <asm/pgtable.h>
++/*
++ * On ARM, ordinary assignment (str instruction) doesn't clear the local
++ * strex/ldrex monitor on some implementations. The reason we can use it for
++ * atomic_set() is the clrex or dummy strex done on every exception return.
++ */
++#define atomic_read(v)	(*(volatile int *)&(v)->counter)
++#define atomic_set(v,i)	(((v)->counter) = (i))
 +
 +/*
-+ * Generic IO read/write.  These perform native-endian accesses.
++ * AArch64 UP and SMP safe atomic ops.  We use load exclusive and
++ * store exclusive to ensure that these are atomic.  We may loop
++ * to ensure that the update happens.
 + */
-+static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
++static inline void atomic_add(int i, atomic_t *v)
 +{
-+	asm volatile("strb %w0, [%1]" : : "r" (val), "r" (addr));
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_add\n"
++"1:	ldxr	%w0, [%3]\n"
++"	add	%w0, %w0, %w4\n"
++"	stxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1,1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
 +}
 +
-+static inline void __raw_writew(u16 val, volatile void __iomem *addr)
++static inline int atomic_add_return(int i, atomic_t *v)
 +{
-+	asm volatile("strh %w0, [%1]" : : "r" (val), "r" (addr));
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_add_return\n"
++"1:	ldaxr	%w0, [%3]\n"
++"	add	%w0, %w0, %w4\n"
++"	stlxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
 +}
 +
-+static inline void __raw_writel(u32 val, volatile void __iomem *addr)
++static inline void atomic_sub(int i, atomic_t *v)
 +{
-+	asm volatile("str %w0, [%1]" : : "r" (val), "r" (addr));
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_sub\n"
++"1:	ldxr	%w0, [%3]\n"
++"	sub	%w0, %w0, %w4\n"
++"	stxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
 +}
 +
-+static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
++static inline int atomic_sub_return(int i, atomic_t *v)
 +{
-+	asm volatile("str %0, [%1]" : : "r" (val), "r" (addr));
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_sub_return\n"
++"1:	ldaxr	%w0, [%3]\n"
++"	sub	%w0, %w0, %w4\n"
++"	stlxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
 +}
 +
-+static inline u8 __raw_readb(const volatile void __iomem *addr)
++static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
 +{
-+	u8 val;
-+	asm volatile("ldrb %w0, [%1]" : "=r" (val) : "r" (addr));
-+	return val;
++	unsigned long tmp;
++	int oldval;
++
++	asm volatile("// atomic_cmpxchg\n"
++"1:	ldaxr	%w1, [%3]\n"
++"	cmp	%w1, %w4\n"
++"	b.ne	2f\n"
++"	stlxr	%w0, %w5, [%3]\n"
++"	cbnz	%w0, 1b\n"
++"2:"
++	: "=&r" (tmp), "=&r" (oldval), "+o" (ptr->counter)
++	: "r" (&ptr->counter), "Ir" (old), "r" (new)
++	: "cc");
++
++	return oldval;
 +}
 +
-+static inline u16 __raw_readw(const volatile void __iomem *addr)
++static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
 +{
-+	u16 val;
-+	asm volatile("ldrh %w0, [%1]" : "=r" (val) : "r" (addr));
-+	return val;
++	unsigned long tmp, tmp2;
++
++	asm volatile("// atomic_clear_mask\n"
++"1:	ldxr	%0, [%3]\n"
++"	bic	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (tmp), "=&r" (tmp2), "+o" (*addr)
++	: "r" (addr), "Ir" (mask)
++	: "cc");
 +}
 +
-+static inline u32 __raw_readl(const volatile void __iomem *addr)
++#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
++
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
 +{
-+	u32 val;
-+	asm volatile("ldr %w0, [%1]" : "=r" (val) : "r" (addr));
-+	return val;
++	int c, old;
++
++	c = atomic_read(v);
++	while (c != u && (old = atomic_cmpxchg((v), c, c + a)) != c)
++		c = old;
++	return c;
 +}
 +
-+static inline u64 __raw_readq(const volatile void __iomem *addr)
-+{
-+	u64 val;
-+	asm volatile("ldr %0, [%1]" : "=r" (val) : "r" (addr));
-+	return val;
-+}
++#define atomic_inc(v)		atomic_add(1, v)
++#define atomic_dec(v)		atomic_sub(1, v)
 +
-+/* IO barriers */
-+#define __iormb()		rmb()
-+#define __iowmb()		wmb()
++#define atomic_inc_and_test(v)	(atomic_add_return(1, v) == 0)
++#define atomic_dec_and_test(v)	(atomic_sub_return(1, v) == 0)
++#define atomic_inc_return(v)    (atomic_add_return(1, v))
++#define atomic_dec_return(v)    (atomic_sub_return(1, v))
++#define atomic_sub_and_test(i, v) (atomic_sub_return(i, v) == 0)
 +
-+#define mmiowb()		do { } while (0)
++#define atomic_add_negative(i,v) (atomic_add_return(i, v) < 0)
++
++#define smp_mb__before_atomic_dec()	smp_mb()
++#define smp_mb__after_atomic_dec()	smp_mb()
++#define smp_mb__before_atomic_inc()	smp_mb()
++#define smp_mb__after_atomic_inc()	smp_mb()
 +
 +/*
-+ * Relaxed I/O memory access primitives. These follow the Device memory
-+ * ordering rules but do not guarantee any ordering relative to Normal memory
-+ * accesses.
++ * 64-bit atomic operations.
 + */
-+#define readb_relaxed(c)	({ u8  __v = __raw_readb(c); __v; })
-+#define readw_relaxed(c)	({ u16 __v = le16_to_cpu((__force __le16)__raw_readw(c)); __v; })
-+#define readl_relaxed(c)	({ u32 __v = le32_to_cpu((__force __le32)__raw_readl(c)); __v; })
++#define ATOMIC64_INIT(i) { (i) }
 +
-+#define writeb_relaxed(v,c)	((void)__raw_writeb((v),(c)))
-+#define writew_relaxed(v,c)	((void)__raw_writew((__force u16)cpu_to_le16(v),(c)))
-+#define writel_relaxed(v,c)	((void)__raw_writel((__force u32)cpu_to_le32(v),(c)))
++#define atomic64_read(v)	(*(volatile long long *)&(v)->counter)
++#define atomic64_set(v,i)	(((v)->counter) = (i))
 +
-+/*
-+ * I/O memory access primitives. Reads are ordered relative to any
-+ * following Normal memory access. Writes are ordered relative to any prior
-+ * Normal memory access.
-+ */
-+#define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
-+#define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
-+#define readl(c)		({ u32 __v = readl_relaxed(c); __iormb(); __v; })
-+
-+#define writeb(v,c)		({ __iowmb(); writeb_relaxed((v),(c)); })
-+#define writew(v,c)		({ __iowmb(); writew_relaxed((v),(c)); })
-+#define writel(v,c)		({ __iowmb(); writel_relaxed((v),(c)); })
-+
-+/*
-+ *  I/O port access primitives.
-+ */
-+#define IO_SPACE_LIMIT		0xffff
-+
-+/*
-+ * We currently don't have any platform with PCI support, so just leave this
-+ * defined to 0 until needed.
-+ */
-+#define PCI_IOBASE		((void __iomem *)0)
-+
-+static inline u8 inb(unsigned long addr)
++static inline void atomic64_add(u64 i, atomic64_t *v)
 +{
-+	return readb(addr + PCI_IOBASE);
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_add\n"
++"1:	ldxr	%0, [%3]\n"
++"	add	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
 +}
 +
-+static inline u16 inw(unsigned long addr)
++static inline long atomic64_add_return(long i, atomic64_t *v)
 +{
-+	return readw(addr + PCI_IOBASE);
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_add_return\n"
++"1:	ldaxr	%0, [%3]\n"
++"	add	%0, %0, %4\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
 +}
 +
-+static inline u32 inl(unsigned long addr)
++static inline void atomic64_sub(u64 i, atomic64_t *v)
 +{
-+	return readl(addr + PCI_IOBASE);
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_sub\n"
++"1:	ldxr	%0, [%3]\n"
++"	sub	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
 +}
 +
-+static inline void outb(u8 b, unsigned long addr)
++static inline long atomic64_sub_return(long i, atomic64_t *v)
 +{
-+	writeb(b, addr + PCI_IOBASE);
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_sub_return\n"
++"1:	ldaxr	%0, [%3]\n"
++"	sub	%0, %0, %4\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
 +}
 +
-+static inline void outw(u16 b, unsigned long addr)
++static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
 +{
-+	writew(b, addr + PCI_IOBASE);
++	long oldval;
++	unsigned long res;
++
++	asm volatile("// atomic64_cmpxchg\n"
++"1:	ldaxr	%1, [%3]\n"
++"	cmp	%1, %4\n"
++"	b.ne	2f\n"
++"	stlxr	%w0, %5, [%3]\n"
++"	cbnz	%w0, 1b\n"
++"2:"
++	: "=&r" (res), "=&r" (oldval), "+o" (ptr->counter)
++	: "r" (&ptr->counter), "Ir" (old), "r" (new)
++	: "cc");
++
++	return oldval;
 +}
 +
-+static inline void outl(u32 b, unsigned long addr)
++#define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
++
++#define ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
++static inline long atomic64_dec_if_positive(atomic64_t *v)
 +{
-+	writel(b, addr + PCI_IOBASE);
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_dec_if_positive\n"
++"1:	ldaxr	%0, [%3]\n"
++"	subs	%0, %0, #1\n"
++"	b.mi	2f\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b\n"
++"2:"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter)
++	: "cc");
++
++	return result;
 +}
 +
-+#define inb_p(addr)	inb(addr)
-+#define inw_p(addr)	inw(addr)
-+#define inl_p(addr)	inl(addr)
-+
-+#define outb_p(x, addr)	outb((x), (addr))
-+#define outw_p(x, addr)	outw((x), (addr))
-+#define outl_p(x, addr)	outl((x), (addr))
-+
-+static inline void insb(unsigned long addr, void *buffer, int count)
++static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
 +{
-+	u8 *buf = buffer;
-+	while (count--)
-+		*buf++ = __raw_readb(addr + PCI_IOBASE);
++	long c, old;
++
++	c = atomic64_read(v);
++	while (c != u && (old = atomic64_cmpxchg((v), c, c + a)) != c)
++		c = old;
++
++	return c != u;
 +}
 +
-+static inline void insw(unsigned long addr, void *buffer, int count)
-+{
-+	u16 *buf = buffer;
-+	while (count--)
-+		*buf++ = __raw_readw(addr + PCI_IOBASE);
-+}
++#define atomic64_add_negative(a, v)	(atomic64_add_return((a), (v)) < 0)
++#define atomic64_inc(v)			atomic64_add(1LL, (v))
++#define atomic64_inc_return(v)		atomic64_add_return(1LL, (v))
++#define atomic64_inc_and_test(v)	(atomic64_inc_return(v) == 0)
++#define atomic64_sub_and_test(a, v)	(atomic64_sub_return((a), (v)) == 0)
++#define atomic64_dec(v)			atomic64_sub(1LL, (v))
++#define atomic64_dec_return(v)		atomic64_sub_return(1LL, (v))
++#define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
++#define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
 +
-+static inline void insl(unsigned long addr, void *buffer, int count)
-+{
-+	u32 *buf = buffer;
-+	while (count--)
-+		*buf++ = __raw_readl(addr + PCI_IOBASE);
-+}
-+
-+static inline void outsb(unsigned long addr, const void *buffer, int count)
-+{
-+	const u8 *buf = buffer;
-+	while (count--)
-+		__raw_writeb(*buf++, addr + PCI_IOBASE);
-+}
-+
-+static inline void outsw(unsigned long addr, const void *buffer, int count)
-+{
-+	const u16 *buf = buffer;
-+	while (count--)
-+		__raw_writew(*buf++, addr + PCI_IOBASE);
-+}
-+
-+static inline void outsl(unsigned long addr, const void *buffer, int count)
-+{
-+	const u32 *buf = buffer;
-+	while (count--)
-+		__raw_writel(*buf++, addr + PCI_IOBASE);
-+}
-+
-+#define insb_p(port,to,len)	insb(port,to,len)
-+#define insw_p(port,to,len)	insw(port,to,len)
-+#define insl_p(port,to,len)	insl(port,to,len)
-+
-+#define outsb_p(port,from,len)	outsb(port,from,len)
-+#define outsw_p(port,from,len)	outsw(port,from,len)
-+#define outsl_p(port,from,len)	outsl(port,from,len)
-+
-+/*
-+ * String version of I/O memory access operations.
-+ */
-+extern void __memcpy_fromio(void *, const volatile void __iomem *, size_t);
-+extern void __memcpy_toio(volatile void __iomem *, const void *, size_t);
-+extern void __memset_io(volatile void __iomem *, int, size_t);
-+
-+#define memset_io(c,v,l)	__memset_io((c),(v),(l))
-+#define memcpy_fromio(a,c,l)	__memcpy_fromio((a),(c),(l))
-+#define memcpy_toio(c,a,l)	__memcpy_toio((c),(a),(l))
-+
-+/*
-+ * I/O memory mapping functions.
-+ */
-+extern void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot);
-+extern void __iounmap(volatile void __iomem *addr);
-+
-+#define PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY)
-+#define PROT_DEVICE_nGnRE	(PROT_DEFAULT | PTE_XN | PTE_ATTRINDX(MT_DEVICE_nGnRE))
-+#define PROT_NORMAL_NC		(PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC))
-+
-+#define ioremap(addr, size)		__ioremap((addr), (size), PROT_DEVICE_nGnRE)
-+#define ioremap_nocache(addr, size)	__ioremap((addr), (size), PROT_DEVICE_nGnRE)
-+#define ioremap_wc(addr, size)		__ioremap((addr), (size), PROT_NORMAL_NC)
-+#define iounmap				__iounmap
-+
-+#define ARCH_HAS_IOREMAP_WC
-+#include <asm-generic/iomap.h>
-+
-+/*
-+ * More restrictive address range checking than the default implementation
-+ * (PHYS_OFFSET and PHYS_MASK taken into account).
-+ */
-+#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-+extern int valid_phys_addr_range(unsigned long addr, size_t size);
-+extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
-+
-+extern int devmem_is_allowed(unsigned long pfn);
-+
-+/*
-+ * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-+ * access
-+ */
-+#define xlate_dev_mem_ptr(p)	__va(p)
-+
-+/*
-+ * Convert a virtual cached pointer to an uncached pointer
-+ */
-+#define xlate_dev_kmem_ptr(p)	p
-+
-+#endif	/* __KERNEL__ */
-+#endif	/* __ASM_IO_H */
-diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
++#endif
++#endif
+diff --git a/arch/arm64/include/asm/futex.h b/arch/arm64/include/asm/futex.h
 new file mode 100644
-index 0000000..7d37ead
+index 0000000..0745e82
 --- /dev/null
-+++ b/arch/arm64/kernel/io.c
-@@ -0,0 +1,64 @@
++++ b/arch/arm64/include/asm/futex.h
+@@ -0,0 +1,134 @@
 +/*
-+ * Based on arch/arm/kernel/io.c
-+ *
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -410,141 +372,123 @@ index 0000000..7d37ead
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#ifndef __ASM_FUTEX_H
++#define __ASM_FUTEX_H
 +
-+#include <linux/export.h>
-+#include <linux/types.h>
-+#include <linux/io.h>
++#ifdef __KERNEL__
 +
-+/*
-+ * Copy data from IO memory space to "real" memory space.
-+ */
-+void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
++#include <linux/futex.h>
++#include <linux/uaccess.h>
++#include <asm/errno.h>
++
++#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
++	asm volatile(							\
++"1:	ldaxr	%w1, %2\n"						\
++	insn "\n"							\
++"2:	stlxr	%w3, %w0, %2\n"						\
++"	cbnz	%w3, 1b\n"						\
++"3:	.pushsection __ex_table,\"a\"\n"				\
++"	.align	3\n"							\
++"	.quad	1b, 4f, 2b, 4f\n"					\
++"	.popsection\n"							\
++"	.pushsection .fixup,\"ax\"\n"					\
++"4:	mov	%w0, %w5\n"						\
++"	b	3b\n"							\
++"	.popsection"							\
++	: "=&r" (ret), "=&r" (oldval), "+Q" (*uaddr), "=&r" (tmp)	\
++	: "r" (oparg), "Ir" (-EFAULT)					\
++	: "cc")
++
++static inline int
++futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
 +{
-+	unsigned char *t = to;
-+	while (count) {
-+		count--;
-+		*t = readb(from);
-+		t++;
-+		from++;
-+	}
-+}
-+EXPORT_SYMBOL(__memcpy_fromio);
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval = 0, ret, tmp;
 +
-+/*
-+ * Copy data from "real" memory space to IO memory space.
-+ */
-+void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
-+{
-+	const unsigned char *f = from;
-+	while (count) {
-+		count--;
-+		writeb(*f, to);
-+		f++;
-+		to++;
-+	}
-+}
-+EXPORT_SYMBOL(__memcpy_toio);
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
 +
-+/*
-+ * "memset" on IO memory space.
-+ */
-+void __memset_io(volatile void __iomem *dst, int c, size_t count)
-+{
-+	while (count) {
-+		count--;
-+		writeb(c, dst);
-+		dst++;
-+	}
-+}
-+EXPORT_SYMBOL(__memset_io);
-diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
-new file mode 100644
-index 0000000..1725cd6
---- /dev/null
-+++ b/arch/arm64/mm/ioremap.c
-@@ -0,0 +1,84 @@
-+/*
-+ * Based on arch/arm/mm/ioremap.c
-+ *
-+ * (C) Copyright 1995 1996 Linus Torvalds
-+ * Hacked for ARM by Phil Blundell <philb@gnu.org>
-+ * Hacked to allow all architectures to build, and various cleanups
-+ * by Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
++		return -EFAULT;
 +
-+#include <linux/export.h>
-+#include <linux/mm.h>
-+#include <linux/vmalloc.h>
-+#include <linux/io.h>
++	pagefault_disable();	/* implies preempt_disable() */
 +
-+static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
-+				      pgprot_t prot, void *caller)
-+{
-+	unsigned long last_addr;
-+	unsigned long offset = phys_addr & ~PAGE_MASK;
-+	int err;
-+	unsigned long addr;
-+	struct vm_struct *area;
-+
-+	/*
-+	 * Page align the mapping address and size, taking account of any
-+	 * offset.
-+	 */
-+	phys_addr &= PAGE_MASK;
-+	size = PAGE_ALIGN(size + offset);
-+
-+	/*
-+	 * Don't allow wraparound, zero size or outside PHYS_MASK.
-+	 */
-+	last_addr = phys_addr + size - 1;
-+	if (!size || last_addr < phys_addr || (last_addr & ~PHYS_MASK))
-+		return NULL;
-+
-+	/*
-+	 * Don't allow RAM to be mapped.
-+	 */
-+	if (WARN_ON(pfn_valid(__phys_to_pfn(phys_addr))))
-+		return NULL;
-+
-+	area = get_vm_area_caller(size, VM_IOREMAP, caller);
-+	if (!area)
-+		return NULL;
-+	addr = (unsigned long)area->addr;
-+
-+	err = ioremap_page_range(addr, addr + size, phys_addr, prot);
-+	if (err) {
-+		vunmap((void *)addr);
-+		return NULL;
++	switch (op) {
++	case FUTEX_OP_SET:
++		__futex_atomic_op("mov	%w0, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_ADD:
++		__futex_atomic_op("add	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_OR:
++		__futex_atomic_op("orr	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_ANDN:
++		__futex_atomic_op("and	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, ~oparg);
++		break;
++	case FUTEX_OP_XOR:
++		__futex_atomic_op("eor	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	default:
++		ret = -ENOSYS;
 +	}
 +
-+	return (void __iomem *)(offset + addr);
++	pagefault_enable();	/* subsumes preempt_enable() */
++
++	if (!ret) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
++		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
++		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
++		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
++		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
++		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
++		default: ret = -ENOSYS;
++		}
++	}
++	return ret;
 +}
 +
-+void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot)
++static inline int
++futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
++			      u32 oldval, u32 newval)
 +{
-+	return __ioremap_caller(phys_addr, size, prot,
-+				__builtin_return_address(0));
-+}
-+EXPORT_SYMBOL(__ioremap);
++	int ret = 0;
++	u32 val, tmp;
 +
-+void __iounmap(volatile void __iomem *io_addr)
-+{
-+	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
++		return -EFAULT;
 +
-+	vunmap(addr);
++	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
++"1:	ldaxr	%w1, %2\n"
++"	sub	%w3, %w1, %w4\n"
++"	cbnz	%w3, 3f\n"
++"2:	stlxr	%w3, %w5, %2\n"
++"	cbnz	%w3, 1b\n"
++"3:	.pushsection __ex_table,\"a\"\n"
++"	.align	3\n"
++"	.quad	1b, 4f, 2b, 4f\n"
++"	.popsection\n"
++"	.pushsection .fixup,\"ax\"\n"
++"4:	mov	%w0, %w6\n"
++"	b	3b\n"
++"	.popsection"
++	: "+r" (ret), "=&r" (val), "+Q" (*uaddr), "=&r" (tmp)
++	: "r" (oldval), "r" (newval), "Ir" (-EFAULT)
++	: "cc", "memory");
++
++	*uval = val;
++	return ret;
 +}
-+EXPORT_SYMBOL(__iounmap);
++
++#endif /* __KERNEL__ */
++#endif /* __ASM_FUTEX_H */
 
