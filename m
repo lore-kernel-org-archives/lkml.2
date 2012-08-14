@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2HNUBK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:01:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756873Ab2HNUBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:01:08 -0400
-Date: Tue, 14 Aug 2012 17:00:49 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120814200043.GB22133@t510.redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
- <20120813082619.GE14081@redhat.com>
- <20120814174404.GA13338@t510.redhat.com>
- <20120814193525.GB28840@redhat.com>
+	id S1757387Ab2HNUBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:01:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59544 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756287Ab2HNUBT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 16:01:19 -0400
+Date: Tue, 14 Aug 2012 17:01:11 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
+        Barry Song <bs14@csr.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Ido Yariv <ido@wizery.com>, Daniel Drake <dsd@laptop.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 07/44] ARM: 7477/1: vfp: Always save VFP state in
+ vfp_pm_suspend on UP
+Message-ID: <20120814200110.GE5277@herton-Z68MA-D2H-B3>
+References: <20120813220142.113186818@linuxfoundation.org>
+ <20120813220142.801309366@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120814193525.GB28840@redhat.com>
+In-Reply-To: <20120813220142.801309366@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 10:35:25PM +0300, Michael S. Tsirkin wrote:
-> > > > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > > > +bool isolate_balloon_page(struct page *page)
-> > > > +{
-> > > > +	if (WARN_ON(!movable_balloon_page(page)))
-> > > 
-> > > Looks like this actually can happen if the page is leaked
-> > > between previous movable_balloon_page and here.
-> > > 
-> > > > +		return false;
-> > 
-> > Yes, it surely can happen, and it does not harm to catch it here, print a warn and
-> > return.
+On Mon, Aug 13, 2012 at 03:02:14PM -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
 > 
-> If it is legal, why warn? For that matter why test here at all?
->
+[...]
+> --- a/arch/arm/vfp/vfpmodule.c
+> +++ b/arch/arm/vfp/vfpmodule.c
+> @@ -412,6 +412,12 @@ static int vfp_pm_suspend(void)
+>  
+>  		/* disable, just in case */
+>  		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
+> +	} else if (vfp_current_hw_state[ti->cpu]) {
+> +#ifndef CONFIG_SMP
+> +		fmxr(FPEXC, fpexc | FPEXC_EN);
+> +		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
+> +		fmxr(FPEXC, fpexc);
+> +#endif
 
-As this is a public symbol, and despite the usage we introduce is sane, the warn
-was placed as an insurance policy to let us know about any insane attempt to use
-the procedure in the future. That was due to a nice review nitpick, actually.
+This fails to build on 3.0:
 
-Even though the code already had a test to properly avoid this race you
-mention, I thought that sustaining the warn was a good thing. As I told you,
-despite real, I've never got (un)lucky enough to stumble across that race window
-while testing the patch.
+linux-stable/arch/arm/vfp/vfpmodule.c: In function 'vfp_pm_suspend':
+linux-stable/arch/arm/vfp/vfpmodule.c:415:13: error: 'vfp_current_hw_state' undeclared (first use in this function)
+linux-stable/arch/arm/vfp/vfpmodule.c:415:13: note: each undeclared identifier is reported only once for each function it appears in
+make[3]: *** [arch/arm/vfp/vfpmodule.o] Error 1
 
-If your concern is about being too much verbose on logging, under certain
-conditions, perhaps we can change that test to a WARN_ON_ONCE() ?
+In 3.0, vfp_current_hw_state was still named last_VFP_context, so I
+think just renaming should be enough to fix this.
 
-Mel, what are your thoughts here?
- 
-> > While testing it, I wasn't lucky to see this small window opening, though.
+>  	}
+>  
+>  	/* clear any information we had about last context state */
+> 
+
+-- 
+[]'s
+Herton
