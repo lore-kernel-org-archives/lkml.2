@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab2HNCdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 22:33:02 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49398 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755159Ab2HNCdA convert rfc822-to-8bit (ORCPT
+	id S1755341Ab2HNCdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 22:33:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53252 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242Ab2HNCdV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 22:33:00 -0400
+	Mon, 13 Aug 2012 22:33:21 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "a.zummo@towertech.it" <a.zummo@towertech.it>
 CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH v3 2/3] power_supply: add new lp8788 charger driver
-Thread-Topic: [PATCH v3 2/3] power_supply: add new lp8788 charger driver
-Thread-Index: Ac15xRPGG7If6OQ6Qz6KCT8FRWyntg==
-Date: Tue, 14 Aug 2012 02:32:50 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEFC3E@DQHE02.ent.ti.com>
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: [PATCH v2 3/3] rtc: add new lp8788 rtc driver
+Thread-Topic: [PATCH v2 3/3] rtc: add new lp8788 rtc driver
+Thread-Index: Ac15xR7iJIGvYWKbRt2CzTeT065CNA==
+Date: Tue, 14 Aug 2012 02:33:00 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EEFC4B@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: BWGF DwIW Kj7q Lm9g MnPD NLhm OeRS PNKN QRhc RfLV TWGB
- UQba VIfM WZ6N hK5o
- jRsw;4;YwBiAG8AdQBhAHQAbQBhAGkAbAByAHUAQABnAG0AYQBpAGwALgBjAG8AbQA7AGoAaQBjADIAMwBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcwBhAG0AZQBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0A;Sosha1_v1;7;{80A60651-D676-483E-AC4E-E509B986FCD7};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Tue,
- 14 Aug 2012 02:32:41
- GMT;WwBQAEEAVABDAEgAIAB2ADMAIAAyAC8AMwBdACAAcABvAHcAZQByAF8AcwB1AHAAcABsAHkAOgAgAGEAZABkACAAbgBlAHcAIABsAHAAOAA3ADgAOAAgAGMAaABhAHIAZwBlAHIAIABkAHIAaQB2AGUAcgA=
-x-cr-puzzleid: {80A60651-D676-483E-AC4E-E509B986FCD7}
 x-originating-ip: [157.87.185.52]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
@@ -35,61 +29,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch v3.
+Patch v2.
 
-(a) use irq domain for handling charger interrupts
-(b) use scaled adc value rather than raw value
-    : replace iio_read_channel_raw() with iio_read_channel_scale()
-(c) clean up charger-platform-data code
-(d) remove goto statement in _probe()
-(e) name change : from lp8788_unregister_psy() to lp8788_psy_unregister()
+(a) use irq domain for handling alarm IRQ
+(b) replace module_init() and module_exit() with module_platform_driver()
+(c) clean up code for _probe() and _remove()
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/power/Kconfig          |    7 +
- drivers/power/Makefile         |    1 +
- drivers/power/lp8788-charger.c |  785 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 793 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/lp8788-charger.c
+ drivers/rtc/Kconfig      |    6 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-lp8788.c |  339 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 346 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-lp8788.c
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index c1892f3..ff86469 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -255,6 +255,13 @@ config CHARGER_LP8727
- 	help
- 	  Say Y here to enable support for LP8727 Charger Driver.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index fabc99a..c2b26f7 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -194,6 +194,12 @@ config RTC_DRV_DS3232
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called rtc-ds3232.
  
-+config CHARGER_LP8788
-+	tristate "TI LP8788 charger driver"
++config RTC_DRV_LP8788
++	tristate "TI LP8788 RTC driver"
 +	depends on MFD_LP8788
-+	depends on LP8788_ADC
 +	help
-+	  Say Y to enable support for the LP8788 linear charger.
++	  Say Y to enable support for the LP8788 RTC/ALARM driver.
 +
- config CHARGER_GPIO
- 	tristate "GPIO charger"
- 	depends on GPIOLIB
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index ee58afb..587c5f1 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
- obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
- obj-$(CONFIG_CHARGER_LP8727)	+= lp8727_charger.o
-+obj-$(CONFIG_CHARGER_LP8788)	+= lp8788-charger.o
- obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
- obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
- obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
-diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
+ config RTC_DRV_MAX6900
+ 	tristate "Maxim MAX6900"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 0d5b2b6..eba0393 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+ obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
+ obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
++obj-$(CONFIG_RTC_DRV_LP8788)	+= rtc-lp8788.o
+ obj-$(CONFIG_RTC_DRV_LPC32XX)	+= rtc-lpc32xx.o
+ obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+diff --git a/drivers/rtc/rtc-lp8788.c b/drivers/rtc/rtc-lp8788.c
 new file mode 100644
-index 0000000..a874eff
+index 0000000..7f22e73
 --- /dev/null
-+++ b/drivers/power/lp8788-charger.c
-@@ -0,0 +1,785 @@
++++ b/drivers/rtc/rtc-lp8788.c
+@@ -0,0 +1,339 @@
 +/*
-+ * TI LP8788 MFD - battery charger driver
++ * TI LP8788 MFD - rtc driver
 + *
 + * Copyright 2012 Texas Instruments
 + *
@@ -102,777 +92,331 @@ index 0000000..a874eff
 + */
 +
 +#include <linux/err.h>
-+#include <linux/iio/consumer.h>
-+#include <linux/interrupt.h>
 +#include <linux/irqdomain.h>
 +#include <linux/mfd/lp8788.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
++#include <linux/rtc.h>
 +#include <linux/slab.h>
-+#include <linux/workqueue.h>
 +
 +/* register address */
-+#define LP8788_CHG_STATUS		0x07
-+#define LP8788_CHG_IDCIN		0x13
-+#define LP8788_CHG_IBATT		0x14
-+#define LP8788_CHG_VTERM		0x15
-+#define LP8788_CHG_EOC			0x16
++#define LP8788_INTEN_3			0x05
++#define LP8788_RTC_UNLOCK		0x64
++#define LP8788_RTC_SEC			0x70
++#define LP8788_ALM1_SEC			0x77
++#define LP8788_ALM1_EN			0x7D
++#define LP8788_ALM2_SEC			0x7E
++#define LP8788_ALM2_EN			0x84
 +
 +/* mask/shift bits */
-+#define LP8788_CHG_INPUT_STATE_M	0x03	/* Addr 07h */
-+#define LP8788_CHG_STATE_M		0x3C
-+#define LP8788_CHG_STATE_S		2
-+#define LP8788_NO_BATT_M		BIT(6)
-+#define LP8788_BAD_BATT_M		BIT(7)
-+#define LP8788_CHG_IBATT_M		0x1F	/* Addr 14h */
-+#define LP8788_CHG_VTERM_M		0x0F	/* Addr 15h */
-+#define LP8788_CHG_EOC_LEVEL_M		0x30	/* Addr 16h */
-+#define LP8788_CHG_EOC_LEVEL_S		4
-+#define LP8788_CHG_EOC_TIME_M		0x0E
-+#define LP8788_CHG_EOC_TIME_S		1
-+#define LP8788_CHG_EOC_MODE_M		BIT(0)
++#define LP8788_INT_RTC_ALM1_M		BIT(1)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM1_S		1
++#define LP8788_INT_RTC_ALM2_M		BIT(2)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM2_S		2
++#define LP8788_ALM_EN_M			BIT(7)	/* Addr 7Dh or 84h */
++#define LP8788_ALM_EN_S			7
 +
-+#define CHARGER_NAME			"charger"
-+#define BATTERY_NAME			"main_batt"
++#define DEFAULT_ALARM_SEL		LP8788_ALARM_1
++#define LP8788_MONTH_OFFSET		1
++#define LP8788_BASE_YEAR		2000
++#define MAX_WDAY_BITS			7
++#define RTC_UNLOCK			0x1
++#define RTC_LATCH			0x2
++#define ALARM_IRQ_FLAG			(RTC_IRQF | RTC_AF)
 +
-+#define LP8788_CHG_START		0x11
-+#define LP8788_CHG_END			0x1C
-+
-+#define BUF_SIZE			40
-+#define LP8788_ISEL_MAX			23
-+#define LP8788_ISEL_STEP		50
-+#define LP8788_VTERM_MIN		4100
-+#define LP8788_VTERM_STEP		25
-+#define MAX_BATT_CAPACITY		100
-+#define MAX_CHG_IRQS			11
-+
-+enum lp8788_charging_state {
-+	OFF,
-+	WARM_UP,
-+	LOW_INPUT = 0x3,
-+	PRECHARGE,
-+	CC,
-+	CV,
-+	MAINTENANCE,
-+	BATTERY_FAULT,
-+	SYSTEM_SUPPORT = 0xC,
-+	HIGH_CURRENT = 0xF,
-+	MAX_CHG_STATE,
++enum lp8788_time {
++	LPTIME_SEC,
++	LPTIME_MIN,
++	LPTIME_HOUR,
++	LPTIME_MDAY,
++	LPTIME_MON,
++	LPTIME_YEAR,
++	LPTIME_WDAY,
++	LPTIME_MAX,
 +};
 +
-+enum lp8788_charger_adc_sel {
-+	VBATT,
-+	BATT_TEMP,
-+	NUM_CHG_ADC,
-+};
-+
-+enum lp8788_charger_input_state {
-+	SYSTEM_SUPPLY = 1,
-+	FULL_FUNCTION,
-+};
-+
-+/*
-+ * struct lp8788_chg_irq
-+ * @which        : lp8788 interrupt id
-+ * @virq         : Linux IRQ number from irq_domain
-+ */
-+struct lp8788_chg_irq {
-+	enum lp8788_int_id which;
-+	int virq;
-+};
-+
-+/*
-+ * struct lp8788_charger
-+ * @lp           : used for accessing the registers of mfd lp8788 device
-+ * @charger      : power supply driver for the battery charger
-+ * @battery      : power supply driver for the battery
-+ * @charger_work : work queue for charger input interrupts
-+ * @chan         : iio channels for getting adc values
-+ *                 eg) battery voltage, capacity and temperature
-+ * @irqs         : charger dedicated interrupts
-+ * @num_irqs     : total numbers of charger interrupts
-+ * @pdata        : charger platform specific data
-+ */
-+struct lp8788_charger {
++struct lp8788_rtc {
 +	struct lp8788 *lp;
-+	struct power_supply charger;
-+	struct power_supply battery;
-+	struct work_struct charger_work;
-+	struct iio_channel *chan[NUM_CHG_ADC];
-+	struct lp8788_chg_irq irqs[MAX_CHG_IRQS];
-+	int num_irqs;
-+	struct lp8788_charger_platform_data *pdata;
++	struct rtc_device *rdev;
++	enum lp8788_alarm_sel alarm;
++	int irq;
 +};
 +
-+static char *battery_supplied_to[] = {
-+	BATTERY_NAME,
++static const u8 addr_alarm_sec[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_SEC,
++	LP8788_ALM2_SEC,
 +};
 +
-+static enum power_supply_property lp8788_charger_prop[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
++static const u8 addr_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_EN,
++	LP8788_ALM2_EN,
 +};
 +
-+static enum power_supply_property lp8788_battery_prop[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
++static const u8 mask_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_M,
++	LP8788_INT_RTC_ALM2_M,
 +};
 +
-+static bool lp8788_is_charger_detected(struct lp8788_charger *pchg)
++static const u8 shift_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_S,
++	LP8788_INT_RTC_ALM2_S,
++};
++
++static int _to_tm_wday(u8 lp8788_wday)
 +{
-+	u8 data;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	data &= LP8788_CHG_INPUT_STATE_M;
-+
-+	return (data == SYSTEM_SUPPLY || data == FULL_FUNCTION);
-+}
-+
-+static int lp8788_charger_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(psy->dev->parent);
-+
-+	if (psp != POWER_SUPPLY_PROP_ONLINE)
-+		return -EINVAL;
-+
-+	val->intval = lp8788_is_charger_detected(pchg);
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_status(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	enum lp8788_charging_state state;
-+	u8 data;
-+	int ret;
-+
-+	ret = lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+	switch (state) {
-+	case OFF:
-+		val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-+		break;
-+	case PRECHARGE:
-+	case CC:
-+	case CV:
-+	case HIGH_CURRENT:
-+		val->intval = POWER_SUPPLY_STATUS_CHARGING;
-+		break;
-+	case MAINTENANCE:
-+		val->intval = POWER_SUPPLY_STATUS_FULL;
-+		break;
-+	default:
-+		val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_health(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	u8 data;
-+	int ret;
-+
-+	ret = lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	if (data & LP8788_NO_BATT_M)
-+		val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+	else if (data & LP8788_BAD_BATT_M)
-+		val->intval = POWER_SUPPLY_HEALTH_DEAD;
-+	else
-+		val->intval = POWER_SUPPLY_HEALTH_GOOD;
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_present(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	u8 data;
-+	int ret;
-+
-+	ret = lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	val->intval = !(data & LP8788_NO_BATT_M);
-+	return 0;
-+}
-+
-+static int lp8788_get_vbatt_adc(struct lp8788_charger *pchg,
-+				unsigned int *result)
-+{
-+	struct iio_channel *channel = pchg->chan[VBATT];
-+	int ret, scaleint, scalepart;
-+
-+	if (!channel)
-+		return -EINVAL;
-+
-+	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
-+	if (ret != IIO_VAL_INT_PLUS_MICRO)
-+		return -EINVAL;
-+
-+	/* unit: mV */
-+	*result = (scaleint + scalepart * 1000000) / 1000;
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_voltage(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	return lp8788_get_vbatt_adc(pchg, &val->intval);
-+}
-+
-+static int lp8788_get_battery_capacity(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	struct lp8788 *lp = pchg->lp;
-+	unsigned int max_vbatt, vbatt;
-+	enum lp8788_charging_state state;
-+	struct lp8788_charger_platform_data *pdata = pchg->pdata;
-+	u8 data;
-+	int ret;
-+
-+	if (!pdata)
-+		return -EINVAL;
-+
-+	max_vbatt = pdata->max_vbatt_mv;
-+	if (max_vbatt == 0)
-+		return -EINVAL;
-+
-+	ret = lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+
-+	if (state == MAINTENANCE) {
-+		val->intval = MAX_BATT_CAPACITY;
-+	} else {
-+		ret = lp8788_get_vbatt_adc(pchg, &vbatt);
-+		if (ret)
-+			return ret;
-+
-+		val->intval = (vbatt * MAX_BATT_CAPACITY) / max_vbatt;
-+		val->intval = min(val->intval, MAX_BATT_CAPACITY);
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
-+				union power_supply_propval *val)
-+{
-+	struct iio_channel *channel = pchg->chan[BATT_TEMP];
-+	int ret, scaleint, scalepart;
-+
-+	if (!channel)
-+		return -EINVAL;
-+
-+	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
-+	if (ret != IIO_VAL_INT_PLUS_MICRO)
-+		return -EINVAL;
-+
-+	/* unit: 0.1 'C */
-+	val->intval = (scaleint + scalepart * 1000000) / 100;
-+
-+	return 0;
-+}
-+
-+static int lp8788_battery_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(psy->dev->parent);
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		return lp8788_get_battery_status(pchg, val);
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		return lp8788_get_battery_health(pchg, val);
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		return lp8788_get_battery_present(pchg, val);
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		return lp8788_get_battery_voltage(pchg, val);
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		return lp8788_get_battery_capacity(pchg, val);
-+	case POWER_SUPPLY_PROP_TEMP:
-+		return lp8788_get_battery_temperature(pchg, val);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static inline bool lp8788_is_valid_charger_register(u8 addr)
-+{
-+	return (addr >= LP8788_CHG_START && addr <= LP8788_CHG_END);
-+}
-+
-+static int lp8788_update_charger_params(struct lp8788_charger *pchg)
-+{
-+	struct lp8788 *lp = pchg->lp;
-+	struct lp8788_charger_platform_data *pdata = pchg->pdata;
-+	struct lp8788_chg_param *param;
-+	int i, ret;
-+
-+	if (!pdata || !pdata->chg_params) {
-+		dev_info(lp->dev, "skip updating charger parameters\n");
-+		return 0;
-+	}
-+
-+	/* settting charging parameters */
-+	for (i = 0 ; i < pdata->num_chg_params ; i++) {
-+		param = pdata->chg_params + i;
-+
-+		if (!param)
-+			continue;
-+
-+		if (lp8788_is_valid_charger_register(param->addr)) {
-+			ret = lp8788_write_byte(lp, param->addr, param->val);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_psy_register(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
-+{
-+	pchg->charger.name = CHARGER_NAME;
-+	pchg->charger.type = POWER_SUPPLY_TYPE_MAINS;
-+	pchg->charger.properties = lp8788_charger_prop;
-+	pchg->charger.num_properties = ARRAY_SIZE(lp8788_charger_prop);
-+	pchg->charger.get_property = lp8788_charger_get_property;
-+	pchg->charger.supplied_to = battery_supplied_to;
-+	pchg->charger.num_supplicants = ARRAY_SIZE(battery_supplied_to);
-+
-+	if (power_supply_register(&pdev->dev, &pchg->charger))
-+		return -EPERM;
-+
-+	pchg->battery.name = BATTERY_NAME;
-+	pchg->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+	pchg->battery.properties = lp8788_battery_prop;
-+	pchg->battery.num_properties = ARRAY_SIZE(lp8788_battery_prop);
-+	pchg->battery.get_property = lp8788_battery_get_property;
-+
-+	if (power_supply_register(&pdev->dev, &pchg->battery))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
-+static void lp8788_psy_unregister(struct lp8788_charger *pchg)
-+{
-+	power_supply_unregister(&pchg->battery);
-+	power_supply_unregister(&pchg->charger);
-+}
-+
-+static void lp8788_charger_event(struct work_struct *work)
-+{
-+	struct lp8788_charger *pchg =
-+		container_of(work, struct lp8788_charger, charger_work);
-+	struct lp8788_charger_platform_data *pdata = pchg->pdata;
-+	enum lp8788_charger_event event = lp8788_is_charger_detected(pchg);
-+
-+	pdata->charger_event(pchg->lp, event);
-+}
-+
-+static bool lp8788_find_irq_id(struct lp8788_charger *pchg, int virq, int *id)
-+{
-+	bool found;
 +	int i;
 +
-+	for (i = 0 ; i < pchg->num_irqs ; i++) {
-+		if (pchg->irqs[i].virq == virq) {
-+			*id = pchg->irqs[i].which;
-+			found = true;
++	if (lp8788_wday == 0)
++		return 0;
++
++	for (i = 0 ; i < MAX_WDAY_BITS ; i++) {
++		if ((lp8788_wday >> i) == 0x01)
 +			break;
-+		}
 +	}
 +
-+	return found;
++	return i + 1;
 +}
 +
-+static irqreturn_t lp8788_charger_irq_thread(int virq, void *ptr)
++static inline int _to_lp8788_wday(int tm_wday)
 +{
-+	struct lp8788_charger *pchg = ptr;
-+	struct lp8788_charger_platform_data *pdata = pchg->pdata;
-+	int id = -1;
++	return 1 << (tm_wday - 1);
++}
 +
-+	if (!lp8788_find_irq_id(pchg, virq, &id))
-+		return IRQ_NONE;
++static void lp8788_rtc_unlock(struct lp8788 *lp)
++{
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_UNLOCK);
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_LATCH);
++}
 +
-+	switch (id) {
-+	case LP8788_INT_CHG_INPUT_STATE:
-+	case LP8788_INT_CHG_STATE:
-+	case LP8788_INT_EOC:
-+	case LP8788_INT_BATT_LOW:
-+	case LP8788_INT_NO_BATT:
-+		power_supply_changed(&pchg->charger);
-+		power_supply_changed(&pchg->battery);
-+		break;
-+	default:
-+		break;
++static int lp8788_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX];
++	int ret;
++
++	lp8788_rtc_unlock(lp);
++
++	ret = lp8788_read_multi_bytes(lp, LP8788_RTC_SEC, data,	LPTIME_MAX);
++	if (ret)
++		return ret;
++
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
++
++	return 0;
++}
++
++static int lp8788_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX - 1];
++	int ret, i, year;
++
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
++		return -EINVAL;
 +	}
 +
-+	/* report charger dectection event if used */
-+	if (!pdata)
-+		goto irq_handled;
++	/* because rtc weekday is a readonly register, do not update */
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
 +
-+	if (pdata->charger_event && id == LP8788_INT_CHG_INPUT_STATE)
-+		schedule_work(&pchg->charger_work);
++	for (i = 0 ; i < ARRAY_SIZE(data) ; i++) {
++		ret = lp8788_write_byte(lp, LP8788_RTC_SEC + i, data[i]);
++		if (ret)
++			return ret;
++	}
 +
-+irq_handled:
++	return 0;
++}
++
++static int lp8788_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
++	int ret;
++
++	addr = addr_alarm_sec[rtc->alarm];
++	ret = lp8788_read_multi_bytes(lp, addr, data, LPTIME_MAX);
++	if (ret)
++		return ret;
++
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
++	alarm->enabled = data[LPTIME_WDAY] & LP8788_ALM_EN_M;
++
++	return 0;
++}
++
++static int lp8788_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
++	int ret, i, year;
++
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
++		return -EINVAL;
++	}
++
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
++	data[LPTIME_WDAY] = _to_lp8788_wday(tm->tm_wday);
++
++	for (i = 0 ; i < ARRAY_SIZE(data) ; i++) {
++		addr = addr_alarm_sec[rtc->alarm] + i;
++		ret = lp8788_write_byte(lp, addr, data[i]);
++		if (ret)
++			return ret;
++	}
++
++	alarm->enabled = 1;
++	addr = addr_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, addr, LP8788_ALM_EN_M,
++				alarm->enabled << LP8788_ALM_EN_S);
++}
++
++static int lp8788_alarm_irq_enable(struct device *dev, unsigned int enable)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 mask, shift;
++
++	mask = mask_alarm_en[rtc->alarm];
++	shift = shift_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, LP8788_INTEN_3, mask, enable << shift);
++}
++
++static const struct rtc_class_ops lp8788_rtc_ops = {
++	.read_time = lp8788_rtc_read_time,
++	.set_time = lp8788_rtc_set_time,
++	.read_alarm = lp8788_read_alarm,
++	.set_alarm = lp8788_set_alarm,
++	.alarm_irq_enable = lp8788_alarm_irq_enable,
++};
++
++static irqreturn_t lp8788_alarm_irq_handler(int irq, void *ptr)
++{
++	struct lp8788_rtc *rtc = ptr;
++
++	rtc_update_irq(rtc->rdev, 1, ALARM_IRQ_FLAG);
 +	return IRQ_HANDLED;
 +}
 +
-+static int lp8788_set_irqs(struct platform_device *pdev,
-+			struct lp8788_charger *pchg, const char *name)
++static int lp8788_alarm_irq_register(struct platform_device *pdev,
++				struct lp8788_rtc *rtc)
 +{
 +	struct resource *r;
-+	struct irq_domain *irqdm = pchg->lp->irqdm;
-+	int irq_start, irq_end;
-+	int i, ret, virq, nr_irq;
++	struct lp8788 *lp = rtc->lp;
++	struct irq_domain *irqdm = lp->irqdm;
++	int irq;
 +
-+	/* no error even if no irq resource */
-+	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, name);
++	if (!lp->pdata) {
++		dev_warn(lp->dev, "no platform data for rtc irq\n");
++		return 0;
++	}
++
++	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, LP8788_ALM_IRQ);
 +	if (!r)
 +		return 0;
 +
-+	irq_start = r->start;
-+	irq_end = r->end;
++	irq = (rtc->alarm == LP8788_ALARM_1) ? r->start : r->end;
++	rtc->irq = irq_create_mapping(irqdm, irq);
 +
-+	for (i = irq_start ; i <= irq_end ; i++) {
-+		nr_irq = pchg->num_irqs;
-+
-+		virq = irq_create_mapping(irqdm, i);
-+		pchg->irqs[nr_irq].virq = virq;
-+		pchg->irqs[nr_irq].which = i;
-+		pchg->num_irqs++;
-+
-+		ret = request_threaded_irq(virq, NULL,
-+					lp8788_charger_irq_thread,
-+					0, name, pchg);
-+		if (ret)
-+			break;
-+	}
-+
-+	if (i <= irq_end)
-+		goto err_free_irq;
-+
-+	return 0;
-+
-+err_free_irq:
-+	for (i = 0 ; i < pchg->num_irqs ; i++)
-+		free_irq(pchg->irqs[i].virq, pchg);
-+	return ret;
++	return request_threaded_irq(rtc->irq, NULL, lp8788_alarm_irq_handler,
++				0, LP8788_ALM_IRQ, rtc);
 +}
 +
-+static int lp8788_irq_register(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
++static void lp8788_alarm_irq_unregister(struct lp8788_rtc *rtc)
 +{
-+	int ret, i;
-+	struct lp8788 *lp = pchg->lp;
-+	const char *name[] = {
-+		LP8788_CHG_IRQ, LP8788_PRSW_IRQ, LP8788_BATT_IRQ
-+	};
-+
-+	pchg->num_irqs = 0;
-+
-+	for (i = 0 ; i < ARRAY_SIZE(name) ; i++) {
-+		ret = lp8788_set_irqs(pdev, pchg, name[i]);
-+		if (ret) {
-+			dev_warn(lp->dev, "irq setup failed: %s\n", name[i]);
-+			return ret;
-+		}
-+	}
-+
-+	if (pchg->num_irqs > MAX_CHG_IRQS) {
-+		dev_err(lp->dev, "invalid total number of irqs: %d\n",
-+			pchg->num_irqs);
-+		return -EINVAL;
-+	}
-+
-+	INIT_WORK(&pchg->charger_work, lp8788_charger_event);
-+
-+	return 0;
++	if (rtc->irq)
++		free_irq(rtc->irq, rtc);
 +}
 +
-+static void lp8788_irq_unregister(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
-+{
-+	int i;
-+
-+	for (i = 0 ; i < pchg->num_irqs ; i++)
-+		free_irq(pchg->irqs[i].virq, pchg);
-+}
-+
-+static void lp8788_setup_adc_channel(struct lp8788_charger *pchg)
-+{
-+	struct lp8788_charger_platform_data *pdata = pchg->pdata;
-+	struct device *dev = pchg->lp->dev;
-+	struct iio_channel *chan;
-+	enum lp8788_adc_id id;
-+	const char *chan_name[LPADC_MAX] = {
-+		[LPADC_VBATT_5P5] = "vbatt-5p5",
-+		[LPADC_VBATT_6P0] = "vbatt-6p0",
-+		[LPADC_VBATT_5P0] = "vbatt-5p0",
-+		[LPADC_ADC1]      = "adc1",
-+		[LPADC_ADC2]      = "adc2",
-+		[LPADC_ADC3]      = "adc3",
-+		[LPADC_ADC4]      = "adc4",
-+	};
-+
-+	if (!pdata)
-+		return;
-+
-+	id = pdata->vbatt_adc;
-+	switch (id) {
-+	case LPADC_VBATT_5P5:
-+	case LPADC_VBATT_6P0:
-+	case LPADC_VBATT_5P0:
-+		chan = iio_channel_get(NULL, chan_name[id]);
-+		pchg->chan[VBATT] = IS_ERR(chan) ? NULL : chan;
-+		break;
-+	default:
-+		dev_err(dev, "invalid ADC id for VBATT: %d\n", id);
-+		pchg->chan[VBATT] = NULL;
-+		break;
-+	}
-+
-+	id = pdata->batt_temp_adc;
-+	switch (id) {
-+	case LPADC_ADC1:
-+	case LPADC_ADC2:
-+	case LPADC_ADC3:
-+	case LPADC_ADC4:
-+		chan = iio_channel_get(NULL, chan_name[id]);
-+		pchg->chan[BATT_TEMP] = IS_ERR(chan) ? NULL : chan;
-+		break;
-+	default:
-+		dev_err(dev, "invalid ADC id for BATT_TEMP : %d\n", id);
-+		pchg->chan[BATT_TEMP] = NULL;
-+		break;
-+	}
-+}
-+
-+static void lp8788_release_adc_channel(struct lp8788_charger *pchg)
-+{
-+	int i;
-+
-+	for (i = 0 ; i < NUM_CHG_ADC ; i++) {
-+		if (!pchg->chan[i])
-+			continue;
-+
-+		iio_channel_release(pchg->chan[i]);
-+		pchg->chan[i] = NULL;
-+	}
-+}
-+
-+static ssize_t lp8788_show_charger_status(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	enum lp8788_charging_state state;
-+	char *desc[MAX_CHG_STATE] = {
-+		[OFF] = "CHARGER OFF",
-+		[WARM_UP] = "WARM UP",
-+		[LOW_INPUT] = "LOW INPUT STATE",
-+		[PRECHARGE] = "CHARGING - PRECHARGE",
-+		[CC] = "CHARGING - CC",
-+		[CV] = "CHARGING - CV",
-+		[MAINTENANCE] = "NO CHARGING - MAINTENANCE",
-+		[BATTERY_FAULT] = "BATTERY FAULT",
-+		[SYSTEM_SUPPORT] = "SYSTEM SUPPORT",
-+		[HIGH_CURRENT] = "HIGH CURRENT",
-+	};
-+	u8 data;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+
-+	return scnprintf(buf, BUF_SIZE, "%s\n", desc[state]);
-+}
-+
-+static ssize_t lp8788_show_idcin(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int isel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_IDCIN, &val);
-+	isel = LP8788_ISEL_STEP * (min_t(int, val, LP8788_ISEL_MAX) + 1);
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Charger Input Current Limit: %dmA\n", isel);
-+}
-+
-+static ssize_t lp8788_show_ibatt(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int isel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_IBATT, &val);
-+	val &= LP8788_CHG_IBATT_M;
-+	isel = LP8788_ISEL_STEP * (min_t(int, val, LP8788_ISEL_MAX) + 1);
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Battery Charging Current: %dmA\n", isel);
-+}
-+
-+static ssize_t lp8788_show_vterm(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int vsel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_VTERM, &val);
-+	val &= LP8788_CHG_VTERM_M;
-+	vsel = LP8788_VTERM_MIN + LP8788_VTERM_STEP * val;
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Charger Termination Voltage: %dmV\n", vsel);
-+}
-+
-+static ssize_t lp8788_show_eoc_time(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	char *stime[] = { "400ms", "5min", "10min", "15min",
-+			"20min", "25min", "30min" "No timeout" };
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_EOC, &val);
-+	val = (val & LP8788_CHG_EOC_TIME_M) >> LP8788_CHG_EOC_TIME_S;
-+
-+	return scnprintf(buf, BUF_SIZE, "End Of Charge Time: %s\n", stime[val]);
-+}
-+
-+static ssize_t lp8788_show_eoc_level(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	char *abs_level[] = { "25mA", "49mA", "75mA", "98mA" };
-+	char *relative_level[] = { "5%", "10%", "15%", "20%" };
-+	char *level;
-+	u8 val, mode;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_EOC, &val);
-+
-+	mode = val & LP8788_CHG_EOC_MODE_M;
-+	val = (val & LP8788_CHG_EOC_LEVEL_M) >> LP8788_CHG_EOC_LEVEL_S;
-+	level = mode ? abs_level[val] : relative_level[val];
-+
-+	return scnprintf(buf, BUF_SIZE, "End Of Charge Level: %s\n", level);
-+}
-+
-+static DEVICE_ATTR(charger_status, S_IRUSR, lp8788_show_charger_status, NULL);
-+static DEVICE_ATTR(idcin, S_IRUSR, lp8788_show_idcin, NULL);
-+static DEVICE_ATTR(ibatt, S_IRUSR, lp8788_show_ibatt, NULL);
-+static DEVICE_ATTR(vterm, S_IRUSR, lp8788_show_vterm, NULL);
-+static DEVICE_ATTR(eoc_time, S_IRUSR, lp8788_show_eoc_time, NULL);
-+static DEVICE_ATTR(eoc_level, S_IRUSR, lp8788_show_eoc_level, NULL);
-+
-+static struct attribute *lp8788_charger_attr[] = {
-+	&dev_attr_charger_status.attr,
-+	&dev_attr_idcin.attr,
-+	&dev_attr_ibatt.attr,
-+	&dev_attr_vterm.attr,
-+	&dev_attr_eoc_time.attr,
-+	&dev_attr_eoc_level.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group lp8788_attr_group = {
-+	.attrs = lp8788_charger_attr,
-+};
-+
-+static __devinit int lp8788_charger_probe(struct platform_device *pdev)
++static __devinit int lp8788_rtc_probe(struct platform_device *pdev)
 +{
 +	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
-+	struct lp8788_charger *pchg;
-+	int ret;
++	struct lp8788_rtc *rtc;
++	struct device *dev = &pdev->dev;
 +
-+	pchg = devm_kzalloc(lp->dev, sizeof(struct lp8788_charger), GFP_KERNEL);
-+	if (!pchg)
++	rtc = devm_kzalloc(lp->dev, sizeof(struct lp8788_rtc), GFP_KERNEL);
++	if (!rtc)
 +		return -ENOMEM;
 +
-+	pchg->lp = lp;
-+	pchg->pdata = lp->pdata ? lp->pdata->chg_pdata : NULL;
-+	platform_set_drvdata(pdev, pchg);
++	rtc->lp = lp;
++	rtc->alarm = lp->pdata ? lp->pdata->alarm_sel : DEFAULT_ALARM_SEL;
++	platform_set_drvdata(pdev, rtc);
 +
-+	ret = lp8788_update_charger_params(pchg);
-+	if (ret)
-+		return ret;
++	device_init_wakeup(dev, 1);
 +
-+	lp8788_setup_adc_channel(pchg);
-+
-+	ret = lp8788_psy_register(pdev, pchg);
-+	if (ret)
-+		return ret;
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	if (ret) {
-+		lp8788_psy_unregister(pchg);
-+		return ret;
++	rtc->rdev = rtc_device_register("lp8788_rtc", dev,
++					&lp8788_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rdev)) {
++		dev_err(dev, "can not register rtc device\n");
++		return -ENODEV;
 +	}
 +
-+	ret = lp8788_irq_register(pdev, pchg);
-+	if (ret)
-+		dev_warn(lp->dev, "failed to register charger irq: %d\n", ret);
++	if (lp8788_alarm_irq_register(pdev, rtc)) {
++		dev_warn(lp->dev, "no rtc irq handler\n");
++		rtc->irq = 0;
++	}
 +
 +	return 0;
 +}
 +
-+static int __devexit lp8788_charger_remove(struct platform_device *pdev)
++static int __devexit lp8788_rtc_remove(struct platform_device *pdev)
 +{
-+	struct lp8788_charger *pchg = platform_get_drvdata(pdev);
++	struct lp8788_rtc *rtc = platform_get_drvdata(pdev);
 +
-+	if (pchg->charger_work.func)
-+		flush_work_sync(&pchg->charger_work);
-+
-+	lp8788_irq_unregister(pdev, pchg);
-+	sysfs_remove_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	lp8788_psy_unregister(pchg);
-+	lp8788_release_adc_channel(pchg);
++	lp8788_alarm_irq_unregister(rtc);
++	rtc_device_unregister(rtc->rdev);
++	platform_set_drvdata(pdev, NULL);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver lp8788_charger_driver = {
-+	.probe = lp8788_charger_probe,
-+	.remove = __devexit_p(lp8788_charger_remove),
++static struct platform_driver lp8788_rtc_driver = {
++	.probe = lp8788_rtc_probe,
++	.remove = __devexit_p(lp8788_rtc_remove),
 +	.driver = {
-+		.name = LP8788_DEV_CHARGER,
++		.name = LP8788_DEV_RTC,
 +		.owner = THIS_MODULE,
 +	},
 +};
-+module_platform_driver(lp8788_charger_driver);
++module_platform_driver(lp8788_rtc_driver);
 +
-+MODULE_DESCRIPTION("TI LP8788 Charger Driver");
++MODULE_DESCRIPTION("Texas Instruments LP8788 RTC Driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lp8788-charger");
++MODULE_ALIAS("platform:lp8788-rtc");
 -- 
 1.7.2.5
 
