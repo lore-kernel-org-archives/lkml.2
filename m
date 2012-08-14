@@ -1,66 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab2HNRys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54956 "EHLO
+	id S932106Ab2HNRyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54936 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab2HNRxF (ORCPT
+	with ESMTP id S1756775Ab2HNRxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Aug 2012 13:53:05 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 03/31] arm64: Exception handling
-Date: Tue, 14 Aug 2012 18:52:04 +0100
-Message-Id: <1344966752-16102-4-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+Date: Tue, 14 Aug 2012 18:52:03 +0100
+Message-Id: <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:46.0494 (UTC) FILETIME=[E44917E0:01CD7A45]
-X-MC-Unique: 112081418530301401
+X-OriginalArrivalTime: 14 Aug 2012 17:54:46.0072 (UTC) FILETIME=[E408B380:01CD7A45]
+X-MC-Unique: 112081418530214701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHukR6017317
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHv4Th017321
 
-The patch contains the exception entry code (kernel/entry.S), pt_regs
-structure and related accessors, undefined instruction trapping and
-stack tracing.
-
-AArch64 Linux kernel (including kernel threads) runs in EL1 mode using
-the SP1 stack. The vectors don't have a fixed address, only alignment
-(2^11) requirements.
+The patch adds the kernel booting and the initial setup code.
+Documentation/arm64/booting.txt describes the booting protocol on the
+AArch64 Linux kernel. This is subject to change following the work on
+boot standardisation, ACPI.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/ptrace.h     |  206 +++++++++++
- arch/arm64/include/asm/stacktrace.h |   29 ++
- arch/arm64/include/asm/traps.h      |   30 ++
- arch/arm64/kernel/entry.S           |  695 +++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/stacktrace.c      |  127 +++++++
- arch/arm64/kernel/traps.c           |  357 ++++++++++++++++++
- 6 files changed, 1444 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/ptrace.h
- create mode 100644 arch/arm64/include/asm/stacktrace.h
- create mode 100644 arch/arm64/include/asm/traps.h
- create mode 100644 arch/arm64/kernel/entry.S
- create mode 100644 arch/arm64/kernel/stacktrace.c
- create mode 100644 arch/arm64/kernel/traps.c
+ Documentation/arm64/booting.txt |  141 +++++++++++
+ arch/arm64/include/asm/setup.h  |   26 ++
+ arch/arm64/kernel/head.S        |  521 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/setup.c       |  357 +++++++++++++++++++++++++++
+ 4 files changed, 1045 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/arm64/booting.txt
+ create mode 100644 arch/arm64/include/asm/setup.h
+ create mode 100644 arch/arm64/kernel/head.S
+ create mode 100644 arch/arm64/kernel/setup.c
 
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+diff --git a/Documentation/arm64/booting.txt b/Documentation/arm64/booting.txt
 new file mode 100644
-index 0000000..a9abace
+index 0000000..3197820
 --- /dev/null
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -0,0 +1,206 @@
++++ b/Documentation/arm64/booting.txt
+@@ -0,0 +1,141 @@
++			Booting AArch64 Linux
++			=====================
++
++Author: Will Deacon <will.deacon@arm.com>
++Date  : 25 April 2012
++
++This document is based on the ARM booting document by Russell King and
++is relevant to all public releases of the AArch64 Linux kernel.
++
++The AArch64 exception model is made up of a number of exception levels
++(EL0 - EL3), with EL0 and EL1 having a secure and a non-secure
++counterpart.  EL2 is the hypervisor level and exists only in non-secure
++mode. EL3 is the highest priority level and exists only in secure mode.
++
++For the purposes of this document, we will use the term `boot loader'
++simply to define all software that executes on the CPU(s) before control
++is passed to the Linux kernel.  This may include secure monitor and
++hypervisor code, or it may just be a handful of instructions for
++preparing a minimal boot environment.
++
++Essentially, the boot loader should provide (as a minimum) the
++following:
++
++1. Setup and initialise the RAM
++2. Setup the device tree
++3. Decompress the kernel image
++4. Call the kernel image
++
++
++1. Setup and initialise RAM
++---------------------------
++
++Requirement: MANDATORY
++
++The boot loader is expected to find and initialise all RAM that the
++kernel will use for volatile data storage in the system.  It performs
++this in a machine dependent manner.  (It may use internal algorithms
++to automatically locate and size all RAM, or it may use knowledge of
++the RAM in the machine, or any other method the boot loader designer
++sees fit.)
++
++
++2. Setup the device tree
++-------------------------
++
++Requirement: MANDATORY
++
++The device tree blob (dtb) must be no bigger than 2 megabytes in size
++and placed at a 2-megabyte boundary within the first 512 megabytes from
++the start of the kernel image. This is to allow the kernel to map the
++blob using a single section mapping in the initial page tables.
++
++
++3. Decompress the kernel image
++------------------------------
++
++Requirement: OPTIONAL
++
++The AArch64 kernel does not provide a decompressor and therefore
++requires gzip decompression to be performed by the boot loader if the
++default Image.gz target is used.  For bootloaders that do not implement
++this requirement, the larger Image target is available instead.
++
++
++4. Call the kernel image
++------------------------
++
++Requirement: MANDATORY
++
++The decompressed kernel image contains a 32-byte header as follows:
++
++  u32 magic	= 0x14000008;	/* branch to stext, little-endian */
++  u32 res0	= 0;		/* reserved */
++  u64 text_offset;		/* Image load offset */
++  u64 res1	= 0;		/* reserved */
++  u64 res2	= 0;		/* reserved */
++
++The image must be placed at the specified offset (currently 0x80000)
++from the start of the system RAM and called there. The start of the
++system RAM must be aligned to 2MB.
++
++Before jumping into the kernel, the following conditions must be met:
++
++- Quiesce all DMA capable devices so that memory does not get
++  corrupted by bogus network packets or disk data.  This will save
++  you many hours of debug.
++
++- Primary CPU general-purpose register settings
++  x0 = physical address of device tree blob (dtb) in system RAM.
++
++- CPU mode
++  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
++  IRQ and FIQ).
++  The CPU must be in either EL2 (RECOMMENDED in order to have access to
++  the virtualisation extensions) or non-secure EL1.
++
++- Caches, MMUs
++  The MMU must be off.
++  Instruction cache may be on or off.
++  Data cache must be off and invalidated.
++
++- Architected timers
++  CNTFRQ must be programmed with the timer frequency.
++  If entering the kernel at EL1, CNTHCTL_EL2 must have EL1PCTEN (bit 0)
++  set where available.
++
++- Coherency
++  All CPUs to be booted by the kernel must be part of the same coherency
++  domain on entry to the kernel.  This may require IMPLEMENTATION DEFINED
++  initialisation to enable the receiving of maintenance operations on
++  each CPU.
++
++- System registers
++  All writable architected system registers at the exception level where
++  the kernel image will be entered must be initialised by software at a
++  higher exception level to prevent execution in an UNKNOWN state.
++
++The boot loader is expected to enter the kernel on each CPU in the
++following manner:
++
++- The primary CPU must jump directly to the first instruction of the
++  kernel image.  The device tree blob passed by this CPU must contain
++  for each CPU node:
++
++    1. An 'enable-method' property. Currently, the only supported value
++       for this field is the string "spin-table".
++
++    2. A 'cpu-release-addr' property identifying a 64-bit,
++       zero-initialised memory location.
++
++  It is expected that the bootloader will generate these device tree
++  properties and insert them into the blob prior to kernel entry.
++
++- Any secondary CPUs must spin outside of the kernel in a reserved area
++  of memory (communicated to the kernel by a /memreserve/ region in the
++  device tree) polling their cpu-release-addr location, which must be
++  contained in the reserved region.  A wfe instruction may be inserted
++  to reduce the overhead of the busy-loop and a sev will be issued by
++  the primary CPU.  When a read of the location pointed to by the
++  cpu-release-addr returns a non-zero value, the CPU must jump directly
++  to this value.
+diff --git a/arch/arm64/include/asm/setup.h b/arch/arm64/include/asm/setup.h
+new file mode 100644
+index 0000000..d766493
+--- /dev/null
++++ b/arch/arm64/include/asm/setup.h
+@@ -0,0 +1,26 @@
 +/*
-+ * Based on arch/arm/include/asm/ptrace.h
++ * Based on arch/arm/include/asm/setup.h
 + *
-+ * Copyright (C) 1996-2003 Russell King
++ * Copyright (C) 1997-1999 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -75,275 +215,26 @@ index 0000000..a9abace
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_PTRACE_H
-+#define __ASM_PTRACE_H
++#ifndef __ASM_SETUP_H
++#define __ASM_SETUP_H
 +
 +#include <linux/types.h>
 +
-+#include <asm/hwcap.h>
-+
-+#define PTRACE_GETREGS		12
-+#define PTRACE_SETREGS		13
-+#define PTRACE_GETFPSIMDREGS	14
-+#define PTRACE_SETFPSIMDREGS	15
-+/* PTRACE_ATTACH is 16 */
-+/* PTRACE_DETACH is 17 */
-+#define PTRACE_GET_THREAD_AREA	22
-+#define PTRACE_SET_SYSCALL	23
-+#define PTRACE_GETHBPREGS	29
-+#define PTRACE_SETHBPREGS	30
-+
-+/* AArch32-specific ptrace requests */
-+#define COMPAT_PTRACE_GETVFPREGS	27
-+#define COMPAT_PTRACE_SETVFPREGS	28
-+
-+/*
-+ * PSR bits
-+ */
-+#define PSR_MODE_EL0t	0x00000000
-+#define PSR_MODE_EL1t	0x00000004
-+#define PSR_MODE_EL1h	0x00000005
-+#define PSR_MODE_EL2t	0x00000008
-+#define PSR_MODE_EL2h	0x00000009
-+#define PSR_MODE_EL3t	0x0000000c
-+#define PSR_MODE_EL3h	0x0000000d
-+#define PSR_MODE_MASK	0x0000000f
-+
-+/* AArch32 CPSR bits */
-+#define PSR_MODE32_BIT		0x00000010
-+#define COMPAT_PSR_MODE_USR	0x00000010
-+#define COMPAT_PSR_T_BIT	0x00000020
-+#define COMPAT_PSR_IT_MASK	0x0600fc00	/* If-Then execution state mask */
-+
-+/* AArch64 SPSR bits */
-+#define PSR_F_BIT	0x00000040
-+#define PSR_I_BIT	0x00000080
-+#define PSR_A_BIT	0x00000100
-+#define PSR_D_BIT	0x00000200
-+#define PSR_Q_BIT	0x08000000
-+#define PSR_V_BIT	0x10000000
-+#define PSR_C_BIT	0x20000000
-+#define PSR_Z_BIT	0x40000000
-+#define PSR_N_BIT	0x80000000
-+
-+/*
-+ * Groups of PSR bits
-+ */
-+#define PSR_f		0xff000000	/* Flags		*/
-+#define PSR_s		0x00ff0000	/* Status		*/
-+#define PSR_x		0x0000ff00	/* Extension		*/
-+#define PSR_c		0x000000ff	/* Control		*/
-+
-+/*
-+ * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
-+ * process is located in memory.
-+ */
-+#define PT_TEXT_ADDR		0x10000
-+#define PT_DATA_ADDR		0x10004
-+#define PT_TEXT_END_ADDR	0x10008
-+
-+#ifndef __ASSEMBLY__
-+
-+/*
-+ * User structures for general purpose and floating point registers.
-+ */
-+struct user_pt_regs {
-+	__u64		regs[31];
-+	__u64		sp;
-+	__u64		pc;
-+	__u64		pstate;
-+};
-+
-+struct user_fpsimd_state {
-+	__uint128_t	vregs[32];
-+	__u32		fpsr;
-+	__u32		fpcr;
-+};
-+
-+#ifdef __KERNEL__
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+/* sizeof(struct user) for AArch32 */
-+#define COMPAT_USER_SZ	296
-+/* AArch32 uses x13 as the stack pointer... */
-+#define compat_sp	regs[13]
-+/* ... and x14 as the link register. */
-+#define compat_lr	regs[14]
-+#endif
-+
-+/*
-+ * This struct defines the way the registers are stored on the stack during an
-+ * exception. Note that sizeof(struct pt_regs) has to be a multiple of 16 (for
-+ * stack alignment). struct user_pt_regs must form a prefix of struct pt_regs.
-+ */
-+struct pt_regs {
-+	union {
-+		struct user_pt_regs user_regs;
-+		struct {
-+			u64 regs[31];
-+			u64 sp;
-+			u64 pc;
-+			u64 pstate;
-+		};
-+	};
-+	u64 orig_x0;
-+	u64 syscallno;
-+};
-+
-+#define arch_has_single_step()	(1)
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define compat_thumb_mode(regs) \
-+	(((regs)->pstate & COMPAT_PSR_T_BIT))
-+#else
-+#define compat_thumb_mode(regs) (0)
-+#endif
-+
-+#define user_mode(regs)	\
-+	(((regs)->pstate & PSR_MODE_MASK) == PSR_MODE_EL0t)
-+
-+#define compat_user_mode(regs)	\
-+	(((regs)->pstate & (PSR_MODE32_BIT | PSR_MODE_MASK)) == \
-+	 (PSR_MODE32_BIT | PSR_MODE_EL0t))
-+
-+#define processor_mode(regs) \
-+	((regs)->pstate & PSR_MODE_MASK)
-+
-+#define interrupts_enabled(regs) \
-+	(!((regs)->pstate & PSR_I_BIT))
-+
-+#define fast_interrupts_enabled(regs) \
-+	(!((regs)->pstate & PSR_F_BIT))
-+
-+#define user_stack_pointer(regs) \
-+	((regs)->sp)
-+
-+/*
-+ * Are the current registers suitable for user mode? (used to maintain
-+ * security in signal handlers)
-+ */
-+static inline int valid_user_regs(struct user_pt_regs *regs)
-+{
-+	if (user_mode(regs) && (regs->pstate & PSR_I_BIT) == 0) {
-+		regs->pstate &= ~(PSR_F_BIT | PSR_A_BIT);
-+
-+		/* The T bit is reserved for AArch64 */
-+		if (!(regs->pstate & PSR_MODE32_BIT))
-+			regs->pstate &= ~COMPAT_PSR_T_BIT;
-+
-+		return 1;
-+	}
-+
-+	/*
-+	 * Force PSR to something logical...
-+	 */
-+	regs->pstate &= PSR_f | PSR_s | (PSR_x & ~PSR_A_BIT) | \
-+			COMPAT_PSR_T_BIT | PSR_MODE32_BIT;
-+
-+	if (!(regs->pstate & PSR_MODE32_BIT)) {
-+		regs->pstate &= ~COMPAT_PSR_T_BIT;
-+		regs->pstate |= PSR_MODE_EL0t;
-+	}
-+
-+	return 0;
-+}
-+
-+#define instruction_pointer(regs)	(regs)->pc
-+
-+#ifdef CONFIG_SMP
-+extern unsigned long profile_pc(struct pt_regs *regs);
-+#else
-+#define profile_pc(regs) instruction_pointer(regs)
-+#endif
-+
-+extern int aarch32_break_trap(struct pt_regs *regs);
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* __ASSEMBLY__ */
++#define COMMAND_LINE_SIZE 1024
 +
 +#endif
-diff --git a/arch/arm64/include/asm/stacktrace.h b/arch/arm64/include/asm/stacktrace.h
+diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
 new file mode 100644
-index 0000000..7318f6d
+index 0000000..34ccdc0
 --- /dev/null
-+++ b/arch/arm64/include/asm/stacktrace.h
-@@ -0,0 +1,29 @@
++++ b/arch/arm64/kernel/head.S
+@@ -0,0 +1,521 @@
 +/*
-+ * Copyright (C) 2012 ARM Ltd.
++ * Low-level CPU initialisation
++ * Based on arch/arm/kernel/head.S
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_STACKTRACE_H
-+#define __ASM_STACKTRACE_H
-+
-+struct stackframe {
-+	unsigned long fp;
-+	unsigned long sp;
-+	unsigned long pc;
-+};
-+
-+extern int unwind_frame(struct stackframe *frame);
-+extern void walk_stackframe(struct stackframe *frame,
-+			    int (*fn)(struct stackframe *, void *), void *data);
-+
-+#endif	/* __ASM_STACKTRACE_H */
-diff --git a/arch/arm64/include/asm/traps.h b/arch/arm64/include/asm/traps.h
-new file mode 100644
-index 0000000..10ca8ff
---- /dev/null
-+++ b/arch/arm64/include/asm/traps.h
-@@ -0,0 +1,30 @@
-+/*
-+ * Based on arch/arm/include/asm/traps.h
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_TRAP_H
-+#define __ASM_TRAP_H
-+
-+static inline int in_exception_text(unsigned long ptr)
-+{
-+	extern char __exception_text_start[];
-+	extern char __exception_text_end[];
-+
-+	return ptr >= (unsigned long)&__exception_text_start &&
-+	       ptr < (unsigned long)&__exception_text_end;
-+}
-+
-+#endif
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-new file mode 100644
-index 0000000..32b96ab
---- /dev/null
-+++ b/arch/arm64/kernel/entry.S
-@@ -0,0 +1,695 @@
-+/*
-+ * Low-level exception handling code
-+ *
-+ * Copyright (C) 2012 ARM Ltd.
++ * Copyright (C) 1994-2002 Russell King
++ * Copyright (C) 2003-2012 ARM Ltd.
 + * Authors:	Catalin Marinas <catalin.marinas@arm.com>
 + *		Will Deacon <will.deacon@arm.com>
 + *
@@ -360,690 +251,515 @@ index 0000000..32b96ab
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/init.h>
 +#include <linux/linkage.h>
++#include <linux/init.h>
 +
 +#include <asm/assembler.h>
++#include <asm/ptrace.h>
 +#include <asm/asm-offsets.h>
-+#include <asm/errno.h>
++#include <asm/memory.h>
 +#include <asm/thread_info.h>
-+#include <asm/unistd.h>
++#include <asm/pgtable-hwdef.h>
++#include <asm/pgtable.h>
++#include <asm/page.h>
 +
 +/*
-+ * Bad Abort numbers
-+ *-----------------
++ * swapper_pg_dir is the virtual address of the initial page table. We place
++ * the page tables 3 * PAGE_SIZE below KERNEL_RAM_VADDR. The idmap_pg_dir has
++ * 2 pages and is placed below swapper_pg_dir.
 + */
-+#define BAD_SYNC	0
-+#define BAD_IRQ		1
-+#define BAD_FIQ		2
-+#define BAD_ERROR	3
++#define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
 +
-+	.macro	kernel_entry, el, regsize = 64
-+	sub	sp, sp, #S_FRAME_SIZE - S_LR	// room for LR, SP, SPSR, ELR
-+	.if	\regsize == 32
-+	mov	w0, w0				// zero upper 32 bits of x0
-+	.endif
-+	push	x28, x29
-+	push	x26, x27
-+	push	x24, x25
-+	push	x22, x23
-+	push	x20, x21
-+	push	x18, x19
-+	push	x16, x17
-+	push	x14, x15
-+	push	x12, x13
-+	push	x10, x11
-+	push	x8, x9
-+	push	x6, x7
-+	push	x4, x5
-+	push	x2, x3
-+	push	x0, x1
-+	.if	\el == 0
-+	mrs	x21, sp_el0
-+	.else
-+	add	x21, sp, #S_FRAME_SIZE
-+	.endif
-+	mrs	x22, elr_el1
-+	mrs	x23, spsr_el1
-+	stp	lr, x21, [sp, #S_LR]
-+	stp	x22, x23, [sp, #S_PC]
++#if (KERNEL_RAM_VADDR & 0xfffff) != 0x80000
++#error KERNEL_RAM_VADDR must start at 0xXXX80000
++#endif
 +
-+	/*
-+	 * Set syscallno to -1 by default (overridden later if real syscall).
-+	 */
-+	.if	\el == 0
-+	mvn	x21, xzr
-+	str	x21, [sp, #S_SYSCALLNO]
-+	.endif
++#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
++#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
 +
-+	/*
-+	 * Registers that may be useful after this macro is invoked:
-+	 *
-+	 * x21 - aborted SP
-+	 * x22 - aborted PC
-+	 * x23 - aborted PSTATE
-+	*/
++	.globl	swapper_pg_dir
++	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - SWAPPER_DIR_SIZE
++
++	.globl	idmap_pg_dir
++	.equ	idmap_pg_dir, swapper_pg_dir - IDMAP_DIR_SIZE
++
++	.macro	pgtbl, ttb0, ttb1, phys
++	add	\ttb1, \phys, #TEXT_OFFSET - SWAPPER_DIR_SIZE
++	sub	\ttb0, \ttb1, #IDMAP_DIR_SIZE
 +	.endm
 +
-+	.macro	kernel_exit, el, ret = 0
-+	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
-+	.if	\el == 0
-+	ldr	x23, [sp, #S_SP]		// load return stack pointer
-+	.endif
-+	.if	\ret
-+	ldr	x1, [sp, #S_X1]			// preserve x0 (syscall return)
-+	add	sp, sp, S_X2
-+	.else
-+	pop	x0, x1
-+	.endif
-+	pop	x2, x3				// load the rest of the registers
-+	pop	x4, x5
-+	pop	x6, x7
-+	pop	x8, x9
-+	msr	elr_el1, x21			// set up the return data
-+	msr	spsr_el1, x22
-+	.if	\el == 0
-+	msr	sp_el0, x23
-+	.endif
-+	pop	x10, x11
-+	pop	x12, x13
-+	pop	x14, x15
-+	pop	x16, x17
-+	pop	x18, x19
-+	pop	x20, x21
-+	pop	x22, x23
-+	pop	x24, x25
-+	pop	x26, x27
-+	pop	x28, x29
-+	ldr	lr, [sp], #S_FRAME_SIZE - S_LR	// load LR and restore SP
-+	eret					// return to kernel
-+	.endm
-+
-+	.macro	get_thread_info, rd
-+	mov	\rd, sp
-+	and	\rd, \rd, #~((1 << 13) - 1)	// top of 8K stack
-+	.endm
-+
-+/*
-+ * These are the registers used in the syscall handler, and allow us to
-+ * have in theory up to 7 arguments to a function - x0 to x6.
-+ *
-+ * x7 is reserved for the system call number in 32-bit mode.
-+ */
-+sc_nr	.req	x25		// number of system calls
-+scno	.req	x26		// syscall number
-+stbl	.req	x27		// syscall table pointer
-+tsk	.req	x28		// current thread_info
-+
-+/*
-+ * Interrupt handling.
-+ */
-+	.macro	irq_handler
-+	ldr	x1, handle_arch_irq
-+	mov	x0, sp
-+	blr	x1
-+	.endm
-+
-+	.text
-+
-+/*
-+ * Exception vectors.
-+ */
-+	.macro	ventry	label
-+	.align	7
-+	b	\label
-+	.endm
-+
-+	.align	11
-+ENTRY(vectors)
-+	ventry	el1_sync_invalid		// Synchronous EL1t
-+	ventry	el1_irq_invalid			// IRQ EL1t
-+	ventry	el1_fiq_invalid			// FIQ EL1t
-+	ventry	el1_error_invalid		// Error EL1t
-+
-+	ventry	el1_sync			// Synchronous EL1h
-+	ventry	el1_irq				// IRQ EL1h
-+	ventry	el1_fiq_invalid			// FIQ EL1h
-+	ventry	el1_error_invalid		// Error EL1h
-+
-+	ventry	el0_sync			// Synchronous 64-bit EL0
-+	ventry	el0_irq				// IRQ 64-bit EL0
-+	ventry	el0_fiq_invalid			// FIQ 64-bit EL0
-+	ventry	el0_error_invalid		// Error 64-bit EL0
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+	ventry	el0_sync_compat			// Synchronous 32-bit EL0
-+	ventry	el0_irq_compat			// IRQ 32-bit EL0
-+	ventry	el0_fiq_invalid_compat		// FIQ 32-bit EL0
-+	ventry	el0_error_invalid_compat	// Error 32-bit EL0
++#ifdef CONFIG_ARM64_64K_PAGES
++#define BLOCK_SHIFT	PAGE_SHIFT
++#define BLOCK_SIZE	PAGE_SIZE
 +#else
-+	ventry	el0_sync_invalid		// Synchronous 32-bit EL0
-+	ventry	el0_irq_invalid			// IRQ 32-bit EL0
-+	ventry	el0_fiq_invalid			// FIQ 32-bit EL0
-+	ventry	el0_error_invalid		// Error 32-bit EL0
++#define BLOCK_SHIFT	SECTION_SHIFT
++#define BLOCK_SIZE	SECTION_SIZE
 +#endif
-+END(vectors)
++
++#define KERNEL_START	KERNEL_RAM_VADDR
++#define KERNEL_END	_end
 +
 +/*
-+ * Invalid mode handlers
++ * Initial memory map attributes.
 + */
-+	.macro	inv_entry, el, reason, regsize = 64
-+	kernel_entry el, \regsize
-+	mov	x0, sp
-+	mov	x1, #\reason
-+	mrs	x2, esr_el1
-+	b	bad_mode
++#ifndef CONFIG_SMP
++#define PTE_FLAGS	PTE_ATTRINDX(MT_NORMAL) | PTE_AF
++#define PMD_FLAGS	PMD_ATTRINDX(MT_NORMAL) | PMD_SECT_AF
++#else
++#define PTE_FLAGS	PTE_ATTRINDX(MT_NORMAL) | PTE_AF | PTE_SHARED
++#define PMD_FLAGS	PMD_ATTRINDX(MT_NORMAL) | PMD_SECT_AF | PMD_SECT_S
++#endif
++
++#ifdef CONFIG_ARM64_64K_PAGES
++#define MM_MMUFLAGS	PTE_TYPE_PAGE | PTE_FLAGS
++#define IO_MMUFLAGS	PTE_TYPE_PAGE | PTE_XN | PTE_FLAGS
++#else
++#define MM_MMUFLAGS	PMD_TYPE_SECT | PMD_FLAGS
++#define IO_MMUFLAGS	PMD_TYPE_SECT | PMD_SECT_XN | PMD_FLAGS
++#endif
++
++/*
++ * Kernel startup entry point.
++ * ---------------------------
++ *
++ * The requirements are:
++ *   MMU = off, D-cache = off, I-cache = on or off,
++ *   x0 = physical address to the FDT blob.
++ *
++ * This code is mostly position independent so you call this at
++ * __pa(PAGE_OFFSET + TEXT_OFFSET).
++ *
++ * Note that the callee-saved registers are used for storing variables
++ * that are useful before the MMU is enabled. The allocations are described
++ * in the entry routines.
++ */
++	__HEAD
++
++	/*
++	 * DO NOT MODIFY. Image header expected by Linux boot-loaders.
++	 */
++	b	stext				// branch to kernel start, magic
++	.long	0				// reserved
++	.quad	TEXT_OFFSET			// Image load offset from start of RAM
++	.quad	0				// reserved
++	.quad	0				// reserved
++
++ENTRY(stext)
++	mov	x21, x0				// x21=FDT
++	bl	el2_setup			// Drop to EL1
++	mrs	x22, midr_el1			// x22=cpuid
++	mov	x0, x22
++	bl	__lookup_processor_type
++	mov	x23, x0				// x23=procinfo
++	cbz	x23, __error_p			// invalid processor (x23=0)?
++	bl	__calc_phys_offset		// x24=phys offset
++	bl	__vet_fdt
++	bl	__create_page_tables		// x25=TTBR0, x26=TTBR1
++	/*
++	 * The following calls CPU specific code in a position independent
++	 * manner. See arch/arm64/mm/proc.S for details. x23 = base of
++	 * cpu_proc_info structure selected by __lookup_processor_type above.
++	 * On return, the CPU will be ready for the MMU to be turned on and
++	 * the TCR will have been set.
++	 */
++	ldr	x27, __switch_data		// address to jump to after
++						// MMU has been enabled
++	adr	lr, __enable_mmu		// return (PIC) address
++	add	x12, x23, #PROCINFO_INITFUNC
++	br	x12				// initialise processor
++ENDPROC(stext)
++
++/*
++ * If we're fortunate enough to boot at EL2, ensure that the world is
++ * sane before dropping to EL1.
++ */
++ENTRY(el2_setup)
++	mrs	x0, CurrentEL
++	cmp	x0, #PSR_MODE_EL2t
++	ccmp	x0, #PSR_MODE_EL2h, #0x4, ne
++	b.eq	1f
++	ret
++
++	/* Hyp configuration. */
++1:	mov	x0, #(1 << 31)			// 64-bit EL1
++	msr	hcr_el2, x0
++
++	/* Generic timers. */
++	mrs	x0, cnthctl_el2
++	orr	x0, x0, #3			// Enable EL1 physical timers
++	msr	cnthctl_el2, x0
++
++	/* Populate ID registers. */
++	mrs	x0, midr_el1
++	mrs	x1, mpidr_el1
++	msr	vpidr_el2, x0
++	msr	vmpidr_el2, x1
++
++	/* sctlr_el1 */
++	mov	x0, #0x0800			// Set/clear RES{1,0} bits
++	movk	x0, #0x30d0, lsl #16
++	msr	sctlr_el1, x0
++
++	/* Coprocessor traps. */
++	mov	x0, #0x33ff
++	msr	cptr_el2, x0			// Disable copro. traps to EL2
++
++#ifdef CONFIG_AARCH32_EMULATION
++	msr	hstr_el2, xzr			// Disable CP15 traps to EL2
++#endif
++
++	/* spsr */
++	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT |\
++		      PSR_MODE_EL1h)
++	msr	spsr_el2, x0
++	msr	elr_el2, lr
++	eret
++ENDPROC(el2_setup)
++
++	.align	3
++2:	.quad	.
++	.quad	PAGE_OFFSET
++
++#ifdef CONFIG_SMP
++	.pushsection    .smp.pen.text, "ax"
++	.align	3
++1:	.quad	.
++	.quad	secondary_holding_pen_release
++
++	/*
++	 * This provides a "holding pen" for platforms to hold all secondary
++	 * cores are held until we're ready for them to initialise.
++	 */
++ENTRY(secondary_holding_pen)
++	bl	el2_setup			// Drop to EL1
++	mrs	x0, mpidr_el1
++	and	x0, x0, #15			// CPU number
++	adr	x1, 1b
++	ldp	x2, x3, [x1]
++	sub	x1, x1, x2
++	add	x3, x3, x1
++pen:	ldr	x4, [x3]
++	cmp	x4, x0
++	b.eq	secondary_startup
++	wfe
++	b	pen
++ENDPROC(secondary_holding_pen)
++	.popsection
++
++ENTRY(secondary_startup)
++	/*
++	 * Common entry point for secondary CPUs.
++	 */
++	mrs	x22, midr_el1			// x22=cpuid
++	mov	x0, x22
++	bl	__lookup_processor_type
++	mov	x23, x0				// x23=procinfo
++	cbz	x23, __error_p			// invalid processor (x23=0)?
++
++	bl	__calc_phys_offset		// x24=phys offset
++	pgtbl	x25, x26, x24			// x25=TTBR0, x26=TTBR1
++	add	x12, x23, #PROCINFO_INITFUNC
++	blr	x12				// initialise processor
++
++	ldr	x21, =secondary_data
++	ldr	x27, =__secondary_switched	// address to jump to after enabling the MMU
++	b	__enable_mmu
++ENDPROC(secondary_startup)
++
++ENTRY(__secondary_switched)
++	ldr	x0, [x21]			// get secondary_data.stack
++	mov	sp, x0
++	mov	x29, #0
++	b	secondary_start_kernel
++ENDPROC(__secondary_switched)
++#endif	/* CONFIG_SMP */
++
++/*
++ * Setup common bits before finally enabling the MMU. Essentially this is just
++ * loading the page table pointer and vector base registers.
++ *
++ * On entry to this code, x0 must contain the SCTLR_EL1 value for turning on
++ * the MMU.
++ */
++__enable_mmu:
++	ldr	x5, =vectors
++	msr	vbar_el1, x5
++	msr	ttbr0_el1, x25			// load TTBR0
++	msr	ttbr1_el1, x26			// load TTBR1
++	isb
++	b	__turn_mmu_on
++ENDPROC(__enable_mmu)
++
++/*
++ * Enable the MMU. This completely changes the structure of the visible memory
++ * space. You will not be able to trace execution through this.
++ *
++ *  x0  = system control register
++ *  x27 = *virtual* address to jump to upon completion
++ *
++ * other registers depend on the function called upon completion
++ */
++	.align	6
++__turn_mmu_on:
++	msr	sctlr_el1, x0
++	isb
++	br	x27
++ENDPROC(__turn_mmu_on)
++
++/*
++ * Calculate the start of physical memory.
++ */
++__calc_phys_offset:
++	adr	x0, 1f
++	ldp	x1, x2, [x0]
++	sub	x3, x0, x1			// PHYS_OFFSET - PAGE_OFFSET
++	add	x24, x2, x3			// x24=PHYS_OFFSET
++	ret
++ENDPROC(__calc_phys_offset)
++
++	.align 3
++1:	.quad	.
++	.quad	PAGE_OFFSET
++
++/*
++ * Macro to populate the PGD for the corresponding block entry in the next
++ * level (tbl) for the given virtual address.
++ *
++ * Preserves:	pgd, tbl, virt
++ * Corrupts:	tmp1, tmp2
++ */
++	.macro	create_pgd_entry, pgd, tbl, virt, tmp1, tmp2
++	lsr	\tmp1, \virt, #PGDIR_SHIFT
++	and	\tmp1, \tmp1, #PTRS_PER_PGD - 1	// PGD index
++	orr	\tmp2, \tbl, #3			// PGD entry table type
++	str	\tmp2, [\pgd, \tmp1, lsl #3]
 +	.endm
 +
-+el0_sync_invalid:
-+	inv_entry 0, BAD_SYNC
-+ENDPROC(el0_sync_invalid)
-+
-+el0_irq_invalid:
-+	inv_entry 0, BAD_IRQ
-+ENDPROC(el0_irq_invalid)
-+
-+el0_fiq_invalid:
-+	inv_entry 0, BAD_FIQ
-+ENDPROC(el0_fiq_invalid)
-+
-+el0_error_invalid:
-+	inv_entry 0, BAD_ERROR
-+ENDPROC(el0_error_invalid)
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+el0_fiq_invalid_compat:
-+	inv_entry 0, BAD_FIQ, 32
-+ENDPROC(el0_fiq_invalid_compat)
-+
-+el0_error_invalid_compat:
-+	inv_entry 0, BAD_ERROR, 32
-+ENDPROC(el0_error_invalid_compat)
-+#endif
-+
-+el1_sync_invalid:
-+	inv_entry 1, BAD_SYNC
-+ENDPROC(el1_sync_invalid)
-+
-+el1_irq_invalid:
-+	inv_entry 1, BAD_IRQ
-+ENDPROC(el1_irq_invalid)
-+
-+el1_fiq_invalid:
-+	inv_entry 1, BAD_FIQ
-+ENDPROC(el1_fiq_invalid)
-+
-+el1_error_invalid:
-+	inv_entry 1, BAD_ERROR
-+ENDPROC(el1_error_invalid)
-+
 +/*
-+ * EL1 mode handlers.
-+ */
-+	.align	6
-+el1_sync:
-+	kernel_entry 1
-+	mrs	x1, esr_el1			// read the syndrome register
-+	lsr	x24, x1, #26			// exception class
-+	cmp	x24, #0x25			// data abort in EL1
-+	b.eq	el1_da
-+	cmp	x24, #0x18			// configurable trap
-+	b.eq	el1_undef
-+	cmp	x24, #0x26			// stack alignment exception
-+	b.eq	el1_sp_pc
-+	cmp	x24, #0x22			// pc alignment exception
-+	b.eq	el1_sp_pc
-+	cmp	x24, #0x00			// unknown exception in EL1
-+	b.eq	el1_undef
-+	cmp	x24, #0x30			// debug exception in EL1
-+	b.ge	el1_dbg
-+	b	el1_inv
-+el1_da:
-+	/*
-+	 * Data abort handling
-+	 */
-+	mrs	x0, far_el1
-+	enable_dbg_if_not_stepping x2
-+	// re-enable interrupts if they were enabled in the aborted context
-+	tbnz	x23, #7, 1f			// PSR_I_BIT
-+	enable_irq
-+1:
-+	mov	x2, sp				// struct pt_regs
-+	bl	do_mem_abort
-+
-+	// disable interrupts before pulling preserved data off the stack
-+	disable_irq
-+	kernel_exit 1
-+el1_sp_pc:
-+	/*
-+	 *Stack or PC alignment exception handling
-+	 */
-+	mrs	x0, far_el1
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_sp_pc_abort
-+el1_undef:
-+	/*
-+	 *Undefined instruction
-+	 */
-+	mov	x0, sp
-+	b	do_undefinstr
-+el1_dbg:
-+	/*
-+	 * Debug exception handling
-+	 */
-+	tbz	x24, #0, el1_inv		// EL1 only
-+	mrs	x0, far_el1
-+	mov	x2, sp				// struct pt_regs
-+	bl	do_debug_exception
-+
-+	kernel_exit 1
-+el1_inv:
-+	// TODO: add support for undefined instructions in kernel mode
-+	mov	x0, sp
-+	mov	x1, #BAD_SYNC
-+	mrs	x2, esr_el1
-+	b	bad_mode
-+ENDPROC(el1_sync)
-+
-+	.align	6
-+el1_irq:
-+	kernel_entry 1
-+	enable_dbg_if_not_stepping x0
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+#ifdef CONFIG_PREEMPT
-+	get_thread_info tsk
-+	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-+	add	x0, x24, #1			// increment it
-+	str	x0, [tsk, #TI_PREEMPT]
-+#endif
-+	irq_handler
-+#ifdef CONFIG_PREEMPT
-+	str	x24, [tsk, #TI_PREEMPT]		// restore preempt count
-+	cbnz	x24, 1f				// preempt count != 0
-+	ldr	x0, [tsk, #TI_FLAGS]		// get flags
-+	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
-+	bl	el1_preempt
-+1:
-+#endif
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_on
-+#endif
-+	kernel_exit 1
-+ENDPROC(el1_irq)
-+
-+#ifdef CONFIG_PREEMPT
-+el1_preempt:
-+	mov	x24, lr
-+1:	enable_dbg
-+	bl	preempt_schedule_irq		// irq en/disable is done inside
-+	ldr	x0, [tsk, #TI_FLAGS]		// get new tasks TI_FLAGS
-+	tbnz	x0, #TIF_NEED_RESCHED, 1b	// needs rescheduling?
-+	ret	x24
-+#endif
-+
-+/*
-+ * EL0 mode handlers.
-+ */
-+	.align	6
-+el0_sync:
-+	kernel_entry 0
-+	mrs	x25, esr_el1			// read the syndrome register
-+	lsr	x24, x25, #26			// exception class
-+	cmp	x24, #0x15			// SVC in 64-bit state
-+	b.eq	el0_svc
-+	adr	lr, ret_from_exception
-+	cmp	x24, #0x24			// data abort in EL0
-+	b.eq	el0_da
-+	cmp	x24, #0x20			// instruction abort in EL0
-+	b.eq	el0_ia
-+	cmp	x24, #0x07			// FP/ASIMD access
-+	b.eq	el0_fpsimd_acc
-+	cmp	x24, #0x2c			// FP/ASIMD exception
-+	b.eq	el0_fpsimd_exc
-+	cmp	x24, #0x18			// configurable trap
-+	b.eq	el0_undef
-+	cmp	x24, #0x26			// stack alignment exception
-+	b.eq	el0_sp_pc
-+	cmp	x24, #0x22			// pc alignment exception
-+	b.eq	el0_sp_pc
-+	cmp	x24, #0x00			// unknown exception in EL0
-+	b.eq	el0_undef
-+	cmp	x24, #0x30			// debug exception in EL0
-+	b.ge	el0_dbg
-+	b	el0_inv
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+	.align	6
-+el0_sync_compat:
-+	kernel_entry 0, 32
-+	mrs	x25, esr_el1			// read the syndrome register
-+	lsr	x24, x25, #26			// exception class
-+	cmp	x24, #0x11			// SVC in 32-bit state
-+	b.eq	el0_svc_compat
-+	adr	lr, ret_from_exception
-+	cmp	x24, #0x24			// data abort in EL0
-+	b.eq	el0_da
-+	cmp	x24, #0x20			// instruction abort in EL0
-+	b.eq	el0_ia
-+	cmp	x24, #0x07			// FP/ASIMD access
-+	b.eq	el0_fpsimd_acc
-+	cmp	x24, #0x28			// FP/ASIMD exception
-+	b.eq	el0_fpsimd_exc
-+	cmp	x24, #0x00			// unknown exception in EL0
-+	b.eq	el0_undef
-+	cmp	x24, #0x30			// debug exception in EL0
-+	b.ge	el0_dbg
-+	b	el0_inv
-+el0_svc_compat:
-+	/*
-+	 * AArch32 syscall handling
-+	 */
-+	adr	stbl, compat_sys_call_table	// load compat syscall table pointer
-+	uxtw	scno, w7			// syscall number in w7 (r7)
-+	mov     sc_nr, #__NR_compat_syscalls
-+	b	el0_svc_naked
-+
-+	.align	6
-+el0_irq_compat:
-+	kernel_entry 0, 32
-+	b	el0_irq_naked
-+#endif
-+
-+el0_da:
-+	/*
-+	 * Data abort handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_mem_abort
-+el0_ia:
-+	/*
-+	 * Instruction abort handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
-+	mov	x2, sp
-+	b	do_mem_abort
-+el0_fpsimd_acc:
-+	/*
-+	 * Floating Point or Advanced SIMD access
-+	 */
-+	mov	x0, x25
-+	mov	x1, sp
-+	b	do_fpsimd_acc
-+el0_fpsimd_exc:
-+	/*
-+	 * Floating Point or Advanced SIMD exception
-+	 */
-+	mov	x0, x25
-+	mov	x1, sp
-+	b	do_fpsimd_exc
-+el0_sp_pc:
-+	/*
-+	 * Stack or PC alignment exception handling
-+	 */
-+	mrs	x0, far_el1
-+	disable_step x1
-+	isb
-+	enable_dbg
-+	// enable interrupts before calling the main handler
-+	enable_irq
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_sp_pc_abort
-+el0_undef:
-+	/*
-+	 *Undefined instruction
-+	 */
-+	mov	x0, sp
-+	b	do_undefinstr
-+el0_dbg:
-+	/*
-+	 * Debug exception handling
-+	 */
-+	tbnz	x24, #0, el0_inv		// EL0 only
-+	mrs	x0, far_el1
-+	disable_step x1
-+	mov	x1, x25
-+	mov	x2, sp
-+	b	do_debug_exception
-+el0_inv:
-+	mov	x0, sp
-+	mov	x1, #BAD_SYNC
-+	mrs	x2, esr_el1
-+	b	bad_mode
-+ENDPROC(el0_sync)
-+
-+	.align	6
-+el0_irq:
-+	kernel_entry 0
-+el0_irq_naked:
-+	disable_step x1
-+	isb
-+	enable_dbg
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+	get_thread_info tsk
-+#ifdef CONFIG_PREEMPT
-+	ldr	x24, [tsk, #TI_PREEMPT]		// get preempt count
-+	add	x23, x24, #1			// increment it
-+	str	x23, [tsk, #TI_PREEMPT]
-+#endif
-+	irq_handler
-+#ifdef CONFIG_PREEMPT
-+	ldr	x0, [tsk, #TI_PREEMPT]
-+	str	x24, [tsk, #TI_PREEMPT]
-+	cmp	x0, x23
-+	b.eq	1f
-+	mov	x1, #0
-+	str	x1, [x1]			// BUG
-+1:
-+#endif
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_on
-+#endif
-+	b	ret_to_user
-+ENDPROC(el0_irq)
-+
-+/*
-+ * This is the return code to user mode for abort handlers
-+ */
-+ENTRY(ret_from_exception)
-+	get_thread_info tsk
-+	b	ret_to_user
-+ENDPROC(ret_from_exception)
-+
-+/*
-+ * Register switch for AArch64. The callee-saved registers need to be saved
-+ * and restored. On entry:
-+ *   x0 = previous task_struct (must be preserved across the switch)
-+ *   x1 = next task_struct
-+ * Previous and next are guaranteed not to be the same.
++ * Macro to populate block entries in the page table for the start..end
++ * virtual range (inclusive).
 + *
++ * Preserves:	tbl, flags
++ * Corrupts:	phys, start, end, pstate
 + */
-+ENTRY(cpu_switch_to)
-+	add	x8, x0, #THREAD_CPU_CONTEXT
-+	mov	x9, sp
-+	stp	x19, x20, [x8], #16		// store callee-saved registers
-+	stp	x21, x22, [x8], #16
-+	stp	x23, x24, [x8], #16
-+	stp	x25, x26, [x8], #16
-+	stp	x27, x28, [x8], #16
-+	stp	x29, x9, [x8], #16
-+	str	lr, [x8]
-+	add	x8, x1, #THREAD_CPU_CONTEXT
-+	ldp	x19, x20, [x8], #16		// restore callee-saved registers
-+	ldp	x21, x22, [x8], #16
-+	ldp	x23, x24, [x8], #16
-+	ldp	x25, x26, [x8], #16
-+	ldp	x27, x28, [x8], #16
-+	ldp	x29, x9, [x8], #16
-+	ldr	lr, [x8]
-+	mov	sp, x9
++	.macro	create_block_map, tbl, flags, phys, start, end, idmap=0
++	lsr	\phys, \phys, #BLOCK_SHIFT
++	.if	\idmap
++	and	\start, \phys, #PTRS_PER_PTE - 1	// table index
++	.else
++	lsr	\start, \start, #BLOCK_SHIFT
++	and	\start, \start, #PTRS_PER_PTE - 1	// table index
++	.endif
++	orr	\phys, \flags, \phys, lsl #BLOCK_SHIFT	// table entry
++	.ifnc	\start,\end
++	lsr	\end, \end, #BLOCK_SHIFT
++	and	\end, \end, #PTRS_PER_PTE - 1		// table end index
++	.endif
++9999:	str	\phys, [\tbl, \start, lsl #3]		// store the entry
++	.ifnc	\start,\end
++	add	\start, \start, #1			// next entry
++	add	\phys, \phys, #BLOCK_SIZE		// next block
++	cmp	\start, \end
++	b.ls	9999b
++	.endif
++	.endm
++
++/*
++ * Setup the initial page tables. We only setup the barest amount which is
++ * required to get the kernel running. The following sections are required:
++ *   - identity mapping to enable the MMU (low address, TTBR0)
++ *   - first few MB of the kernel linear mapping to jump to once the MMU has
++ *     been enabled, including the FDT blob (TTBR1)
++ */
++__create_page_tables:
++	pgtbl	x25, x26, x24			// idmap_pg_dir and swapper_pg_dir addresses
++
++	/*
++	 * Clear the idmap and swapper page tables.
++	 */
++	mov	x0, x25
++	add	x6, x26, #SWAPPER_DIR_SIZE
++1:	stp	xzr, xzr, [x0], #16
++	stp	xzr, xzr, [x0], #16
++	stp	xzr, xzr, [x0], #16
++	stp	xzr, xzr, [x0], #16
++	cmp	x0, x6
++	b.lo	1b
++
++	ldr	x7, =MM_MMUFLAGS
++
++	/*
++	 * Create the identity mapping.
++	 */
++	add	x0, x25, #PAGE_SIZE		// section table address
++	adr	x3, __turn_mmu_on		// virtual/physical address
++	create_pgd_entry x25, x0, x3, x5, x6
++	create_block_map x0, x7, x3, x5, x5, idmap=1
++
++	/*
++	 * Map the kernel image (starting with PHYS_OFFSET).
++	 */
++	add	x0, x26, #PAGE_SIZE		// section table address
++	mov	x5, #PAGE_OFFSET
++	create_pgd_entry x26, x0, x5, x3, x6
++	ldr	x6, =KERNEL_END - 1
++	mov	x3, x24				// phys offset
++	create_block_map x0, x7, x3, x5, x6
++
++	/*
++	 * Map the FDT blob (maximum 2MB; must be within 512MB of
++	 * PHYS_OFFSET).
++	 */
++	mov	x3, x21				// FDT phys address
++	and	x3, x3, #~((1 << 21) - 1)	// 2MB aligned
++	mov	x6, #PAGE_OFFSET
++	sub	x5, x3, x24			// subtract PHYS_OFFSET
++	tst	x5, #~((1 << 29) - 1)		// within 512MB?
++	csel	x21, xzr, x21, ne		// zero the FDT pointer
++	b.ne	1f
++	add	x5, x5, x6			// __va(FDT blob)
++	add	x6, x5, #1 << 21		// 2MB for the FDT blob
++	sub	x6, x6, #1			// inclusive range
++	create_block_map x0, x7, x3, x5, x6
++1:
 +	ret
-+ENDPROC(cpu_switch_to)
++ENDPROC(__create_page_tables)
++	.ltorg
++
++	.align	3
++	.type	__switch_data, %object
++__switch_data:
++	.quad	__mmap_switched
++	.quad	__data_loc			// x4
++	.quad	_data				// x5
++	.quad	__bss_start			// x6
++	.quad	_end				// x7
++	.quad	processor_id			// x4
++	.quad	__fdt_pointer			// x5
++	.quad	memstart_addr			// x6
++	.quad	init_thread_union + THREAD_START_SP // sp
 +
 +/*
-+ * This is the fast syscall return path.  We do as little as possible here,
-+ * and this includes saving x0 back into the kernel stack.
++ * The following fragment of code is executed with the MMU on in MMU mode, and
++ * uses absolute addresses; this is not position independent.
 + */
-+ret_fast_syscall:
-+	disable_irq				// disable interrupts
-+	ldr	x1, [tsk, #TI_FLAGS]
-+	and	x2, x1, #_TIF_WORK_MASK
-+	cbnz	x2, fast_work_pending
-+	tbz	x1, #TIF_SINGLESTEP, fast_exit
-+	disable_dbg
-+	enable_step x2
-+fast_exit:
-+	kernel_exit 0, ret = 1
++__mmap_switched:
++	adr	x3, __switch_data + 8
++
++	ldp	x4, x5, [x3], #16
++	ldp	x6, x7, [x3], #16
++	cmp	x4, x5				// Copy data segment if needed
++1:	ccmp	x5, x6, #4, ne
++	b.eq	2f
++	ldr	x16, [x4], #8
++	str	x16, [x5], #8
++	b	1b
++2:
++1:	cmp	x6, x7
++	b.hs	2f
++	str	xzr, [x6], #8			// Clear BSS
++	b	1b
++2:
++	ldp	x4, x5, [x3], #16
++	ldr	x6, [x3], #8
++	ldr	x16, [x3]
++	mov	sp, x16
++	str	x22, [x4]			// Save processor ID
++	str	x21, [x5]			// Save FDT pointer
++	str	x24, [x6]			// Save PHYS_OFFSET
++	mov	x29, #0
++	b	start_kernel
++ENDPROC(__mmap_switched)
 +
 +/*
-+ * Ok, we need to do extra processing, enter the slow path.
++ * Exception handling. Something went wrong and we can't proceed. We ought to
++ * tell the user, but since we don't have any guarantee that we're even
++ * running on the right architecture, we do virtually nothing.
 + */
-+fast_work_pending:
-+	str	x0, [sp, #S_X0]			// returned x0
-+work_pending:
-+	tbnz	x1, #TIF_NEED_RESCHED, work_resched
-+	/* TIF_SIGPENDING or TIF_NOTIFY_RESUME case */
-+	ldr	x2, [sp, #S_PSTATE]
-+	mov	x0, sp				// 'regs'
-+	tst	x2, #PSR_MODE_MASK		// user mode regs?
-+	b.ne	no_work_pending			// returning to kernel
-+	bl	do_notify_resume
-+	b	ret_to_user
-+work_resched:
-+	enable_dbg
-+	bl	schedule
++__error_p:
++ENDPROC(__error_p)
++
++__error:
++1:	nop
++	b	1b
++ENDPROC(__error)
 +
 +/*
-+ * "slow" syscall return path.
-+ */
-+ENTRY(ret_to_user)
-+	disable_irq				// disable interrupts
-+	ldr	x1, [tsk, #TI_FLAGS]
-+	and	x2, x1, #_TIF_WORK_MASK
-+	cbnz	x2, work_pending
-+	tbz	x1, #TIF_SINGLESTEP, no_work_pending
-+	disable_dbg
-+	enable_step x2
-+no_work_pending:
-+	kernel_exit 0, ret = 0
-+ENDPROC(ret_to_user)
-+
-+/*
-+ * This is how we return from a fork.
-+ */
-+ENTRY(ret_from_fork)
-+	bl	schedule_tail
-+	get_thread_info tsk
-+	b	ret_to_user
-+ENDPROC(ret_from_fork)
-+
-+/*
-+ * SVC handler.
-+ */
-+	.align	6
-+ENTRY(el0_svc)
-+	adrp	stbl, sys_call_table		// load syscall table pointer
-+	uxtw	scno, w8			// syscall number in w8
-+	mov	sc_nr, #__NR_syscalls
-+el0_svc_naked:					// compat entry point
-+	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
-+	disable_step x16
-+	isb
-+	enable_dbg
-+	enable_irq
-+
-+	get_thread_info tsk
-+	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
-+	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
-+	adr	lr, ret_fast_syscall		// return address
-+	cmp     scno, sc_nr                     // check upper syscall limit
-+	b.hs	ni_sys
-+	ldr	x16, [stbl, scno, lsl #3]	// address in the syscall table
-+	br	x16				// call sys_* routine
-+ni_sys:
-+	mov	x0, sp
-+	b	do_ni_syscall
-+ENDPROC(el0_svc)
-+
-+	/*
-+	 * This is the really slow path.  We're going to be doing context
-+	 * switches, and waiting for our parent to respond.
-+	 */
-+__sys_trace:
-+	mov	x1, sp
-+	mov	w0, #0				// trace entry
-+	bl	syscall_trace
-+	adr	lr, __sys_trace_return		// return address
-+	uxtw	scno, w0			// syscall number (possibly new)
-+	mov	x1, sp				// pointer to regs
-+	cmp	scno, sc_nr			// check upper syscall limit
-+	b.hs	ni_sys
-+	ldp	x0, x1, [sp]			// restore the syscall args
-+	ldp	x2, x3, [sp, #S_X2]
-+	ldp	x4, x5, [sp, #S_X4]
-+	ldp	x6, x7, [sp, #S_X6]
-+	ldr	x16, [stbl, scno, lsl #3]	// address in the syscall table
-+	br	x16				// call sys_* routine
-+
-+__sys_trace_return:
-+	str	x0, [sp]			// save returned x0
-+	mov	x1, sp
-+	mov	w0, #1				// trace exit
-+	bl	syscall_trace
-+	b	ret_to_user
-+
-+/*
-+ * Special system call wrappers.
-+ */
-+ENTRY(sys_execve_wrapper)
-+	mov	x3, sp
-+	b	sys_execve
-+ENDPROC(sys_execve_wrapper)
-+
-+ENTRY(sys_clone_wrapper)
-+	mov	x5, sp
-+	b	sys_clone
-+ENDPROC(sys_clone_wrapper)
-+
-+ENTRY(sys_rt_sigreturn_wrapper)
-+	mov	x0, sp
-+	b	sys_rt_sigreturn
-+ENDPROC(sys_rt_sigreturn_wrapper)
-+
-+ENTRY(sys_sigaltstack_wrapper)
-+	ldr	x2, [sp, #S_SP]
-+	b	sys_sigaltstack
-+ENDPROC(sys_sigaltstack_wrapper)
-+
-+ENTRY(handle_arch_irq)
-+	.quad	0
-diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
-new file mode 100644
-index 0000000..d25459f
---- /dev/null
-+++ b/arch/arm64/kernel/stacktrace.c
-@@ -0,0 +1,127 @@
-+/*
-+ * Stack tracing support
++ * Read processor ID register and look up in the linker-built supported
++ * processor list. Note that we can't use the absolute addresses for the
++ * __proc_info lists since we aren't running with the MMU on (and therefore,
++ * we are not in the correct address space). We have to calculate the offset.
 + *
++ * This routine can be called via C code, so to avoid needlessly saving
++ * callee-saved registers, we take the CPUID in x0 and return the physical
++ * proc_info pointer in x0 as well.
++ */
++__lookup_processor_type:
++	adr	x1, __lookup_processor_type_data
++	ldr	x2, [x1]
++	ldp	x3, x4, [x1, #8]
++	sub	x1, x1, x2			// get offset between virt&phys
++	add	x3, x3, x1			// convert virt addresses to
++	add	x4, x4, x1			// physical address space
++1:
++	ldp	w5, w6, [x3]			// load cpu_val and cpu_mask
++	and	x6, x6, x0
++	cmp	x5, x6
++	b.eq	2f
++	add	x3, x3, #PROC_INFO_SZ
++	cmp	x4, x4
++	b.ne	1b
++	mov	x3, #0				// unknown processor
++2:
++	mov	x0, x3
++	ret
++ENDPROC(__lookup_processor_type)
++
++/*
++ * This provides a C-API version of the above function.
++ */
++ENTRY(lookup_processor_type)
++	mov	x8, lr
++	bl	__lookup_processor_type
++	ret	x8
++ENDPROC(lookup_processor_type)
++
++	.align	3
++	.type	__lookup_processor_type_data, %object
++__lookup_processor_type_data:
++	.quad	.
++	.quad	__proc_info_begin
++	.quad	__proc_info_end
++	.size	__lookup_processor_type_data, . - __lookup_processor_type_data
++
++/*
++ * Determine validity of the x21 FDT pointer.
++ * The dtb must be 8-byte aligned and live in the first 512M of memory.
++ */
++__vet_fdt:
++	tst	x21, #0x7
++	b.ne	1f
++	cmp	x21, x24
++	b.lt	1f
++	mov	x0, #(1 << 29)
++	add	x0, x0, x24
++	cmp	x21, x0
++	b.ge	1f
++	ret
++1:
++	mov	x21, #0
++	ret
++ENDPROC(__vet_fdt)
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+new file mode 100644
+index 0000000..f25186f
+--- /dev/null
++++ b/arch/arm64/kernel/setup.c
+@@ -0,0 +1,357 @@
++/*
++ * Based on arch/arm/kernel/setup.c
++ *
++ * Copyright (C) 1995-2001 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -1058,477 +774,343 @@ index 0000000..d25459f
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/stacktrace.h>
 +
-+#include <asm/stacktrace.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/stddef.h>
++#include <linux/ioport.h>
++#include <linux/delay.h>
++#include <linux/utsname.h>
++#include <linux/initrd.h>
++#include <linux/console.h>
++#include <linux/bootmem.h>
++#include <linux/seq_file.h>
++#include <linux/screen_info.h>
++#include <linux/init.h>
++#include <linux/kexec.h>
++#include <linux/crash_dump.h>
++#include <linux/root_dev.h>
++#include <linux/cpu.h>
++#include <linux/interrupt.h>
++#include <linux/smp.h>
++#include <linux/fs.h>
++#include <linux/proc_fs.h>
++#include <linux/memblock.h>
++#include <linux/of_fdt.h>
++
++#include <asm/cputype.h>
++#include <asm/elf.h>
++#include <asm/procinfo.h>
++#include <asm/sections.h>
++#include <asm/setup.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++#include <asm/traps.h>
++#include <asm/memblock.h>
++
++extern void paging_init(void);
++
++unsigned int processor_id;
++EXPORT_SYMBOL(processor_id);
++
++unsigned int elf_hwcap __read_mostly;
++EXPORT_SYMBOL(elf_hwcap);
++
++static const char *cpu_name;
++static const char *machine_name;
++phys_addr_t __fdt_pointer __initdata;
 +
 +/*
-+ * AArch64 PCS assigns the frame pointer to x29.
-+ *
-+ * A simple function prologue looks like this:
-+ * 	sub	sp, sp, #0x10
-+ *   	stp	x29, x30, [sp]
-+ *	mov	x29, sp
-+ *
-+ * A simple function epilogue looks like this:
-+ *	mov	sp, x29
-+ *	ldp	x29, x30, [sp]
-+ *	add	sp, sp, #0x10
++ * Standard memory resources
 + */
-+int unwind_frame(struct stackframe *frame)
++static struct resource mem_res[] = {
++	{
++		.name = "Kernel code",
++		.start = 0,
++		.end = 0,
++		.flags = IORESOURCE_MEM
++	},
++	{
++		.name = "Kernel data",
++		.start = 0,
++		.end = 0,
++		.flags = IORESOURCE_MEM
++	}
++};
++
++#define kernel_code mem_res[0]
++#define kernel_data mem_res[1]
++
++/*
++ * These functions re-use the assembly code in head.S, which
++ * already provide the required functionality.
++ */
++extern struct proc_info_list *lookup_processor_type(unsigned int);
++
++void __init early_print(const char *str, ...)
 +{
-+	unsigned long high, low;
-+	unsigned long fp = frame->fp;
++	char buf[256];
++	va_list ap;
 +
-+	low  = frame->sp;
-+	high = ALIGN(low, THREAD_SIZE);
++	va_start(ap, str);
++	vsnprintf(buf, sizeof(buf), str, ap);
++	va_end(ap);
 +
-+	if (fp < low || fp > high || fp & 0xf)
-+		return -EINVAL;
++	printk("%s", buf);
++}
 +
-+	frame->sp = fp + 0x10;
-+	frame->fp = *(unsigned long *)(fp);
-+	frame->pc = *(unsigned long *)(fp + 8);
++static void __init setup_processor(void)
++{
++	struct proc_info_list *list;
++
++	/*
++	 * locate processor in the list of supported processor
++	 * types.  The linker builds this table for us from the
++	 * entries in arch/arm/mm/proc.S
++	 */
++	list = lookup_processor_type(read_cpuid_id());
++	if (!list) {
++		printk("CPU configuration botched (ID %08x), unable to continue.\n",
++		       read_cpuid_id());
++		while (1);
++	}
++
++	cpu_name = list->cpu_name;
++
++	printk("CPU: %s [%08x] revision %d\n",
++	       cpu_name, read_cpuid_id(), read_cpuid_id() & 15);
++
++	sprintf(init_utsname()->machine, "aarch64");
++	elf_hwcap = 0;
++
++	cpu_proc_init();
++}
++
++static void __init setup_machine_fdt(phys_addr_t dt_phys)
++{
++	struct boot_param_header *devtree;
++	unsigned long dt_root;
++
++	/* Check we have a non-NULL DT pointer */
++	if (!dt_phys) {
++		early_print("\n"
++			"Error: NULL or invalid device tree blob\n"
++			"The dtb must be 8-byte aligned and passed in the first 512MB of memory\n"
++			"\nPlease check your bootloader.\n");
++
++		while (true)
++			cpu_relax();
++
++	}
++
++	devtree = phys_to_virt(dt_phys);
++
++	/* Check device tree validity */
++	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER) {
++		early_print("\n"
++			"Error: invalid device tree blob at physical address 0x%p (virtual address 0x%p)\n"
++			"Expected 0x%x, found 0x%x\n"
++			"\nPlease check your bootloader.\n",
++			dt_phys, devtree, OF_DT_HEADER,
++			be32_to_cpu(devtree->magic));
++
++		while (true)
++			cpu_relax();
++	}
++
++	initial_boot_params = devtree;
++	dt_root = of_get_flat_dt_root();
++
++	machine_name = of_get_flat_dt_prop(dt_root, "model", NULL);
++	if (!machine_name)
++		machine_name = of_get_flat_dt_prop(dt_root, "compatible", NULL);
++	if (!machine_name)
++		machine_name = "<unknown>";
++	pr_info("Machine: %s\n", machine_name);
++
++	/* Retrieve various information from the /chosen node */
++	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
++	/* Initialize {size,address}-cells info */
++	of_scan_flat_dt(early_init_dt_scan_root, NULL);
++	/* Setup memory, calling early_init_dt_add_memory_arch */
++	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
++}
++
++void __init early_init_dt_add_memory_arch(u64 base, u64 size)
++{
++	size &= PAGE_MASK;
++	memblock_add(base, size);
++}
++
++void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
++{
++	return __va(memblock_alloc(size, align));
++}
++
++/*
++ * Limit the memory size that was specified via FDT.
++ */
++static int __init early_mem(char *p)
++{
++	phys_addr_t limit;
++
++	if (!p)
++		return 1;
++
++	limit = memparse(p, &p) & PAGE_MASK;
++	pr_notice("Memory limited to %lldMB\n", limit >> 20);
++
++	memblock_enforce_memory_limit(limit);
++
++	return 0;
++}
++early_param("mem", early_mem);
++
++static void __init request_standard_resources(void)
++{
++	struct memblock_region *region;
++	struct resource *res;
++
++	kernel_code.start   = virt_to_phys(_text);
++	kernel_code.end     = virt_to_phys(_etext - 1);
++	kernel_data.start   = virt_to_phys(_sdata);
++	kernel_data.end     = virt_to_phys(_end - 1);
++
++	for_each_memblock(memory, region) {
++		res = alloc_bootmem_low(sizeof(*res));
++		res->name  = "System RAM";
++		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
++		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
++		res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
++
++		request_resource(&iomem_resource, res);
++
++		if (kernel_code.start >= res->start &&
++		    kernel_code.end <= res->end)
++			request_resource(res, &kernel_code);
++		if (kernel_data.start >= res->start &&
++		    kernel_data.end <= res->end)
++			request_resource(res, &kernel_data);
++	}
++}
++
++void __init setup_arch(char **cmdline_p)
++{
++	setup_processor();
++
++	setup_machine_fdt(__fdt_pointer);
++
++	init_mm.start_code = (unsigned long) _text;
++	init_mm.end_code   = (unsigned long) _etext;
++	init_mm.end_data   = (unsigned long) _edata;
++	init_mm.brk	   = (unsigned long) _end;
++
++	*cmdline_p = boot_command_line;
++
++	parse_early_param();
++
++	arm64_memblock_init();
++
++	paging_init();
++	request_standard_resources();
++
++	unflatten_device_tree();
++
++#ifdef CONFIG_SMP
++	smp_init_cpus();
++#endif
++
++#ifdef CONFIG_VT
++#if defined(CONFIG_VGA_CONSOLE)
++	conswitchp = &vga_con;
++#elif defined(CONFIG_DUMMY_CONSOLE)
++	conswitchp = &dummy_con;
++#endif
++#endif
++}
++
++static DEFINE_PER_CPU(struct cpu, cpu_data);
++
++static int __init topology_init(void)
++{
++	int i;
++
++	for_each_possible_cpu(i) {
++		struct cpu *cpu = &per_cpu(cpu_data, i);
++		cpu->hotpluggable = 1;
++		register_cpu(cpu, i);
++	}
++
++	return 0;
++}
++subsys_initcall(topology_init);
++
++static const char *hwcap_str[] = {
++	"fp",
++	"asimd",
++	NULL
++};
++
++static int c_show(struct seq_file *m, void *v)
++{
++	int i;
++
++	seq_printf(m, "Processor\t: %s rev %d (%s)\n",
++		   cpu_name, read_cpuid_id() & 15, ELF_PLATFORM);
++
++	for_each_online_cpu(i) {
++		/*
++		 * glibc reads /proc/cpuinfo to determine the number of
++		 * online processors, looking for lines beginning with
++		 * "processor".  Give glibc what it expects.
++		 */
++#ifdef CONFIG_SMP
++		seq_printf(m, "processor\t: %d\n", i);
++#endif
++		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n\n",
++			   loops_per_jiffy / (500000UL/HZ),
++			   loops_per_jiffy / (5000UL/HZ) % 100);
++	}
++
++	/* dump out the processor features */
++	seq_puts(m, "Features\t: ");
++
++	for (i = 0; hwcap_str[i]; i++)
++		if (elf_hwcap & (1 << i))
++			seq_printf(m, "%s ", hwcap_str[i]);
++
++	seq_printf(m, "\nCPU implementer\t: 0x%02x\n", read_cpuid_id() >> 24);
++	seq_printf(m, "CPU architecture: AArch64\n");
++	seq_printf(m, "CPU variant\t: 0x%x\n", (read_cpuid_id() >> 20) & 15);
++	seq_printf(m, "CPU part\t: 0x%03x\n", (read_cpuid_id() >> 4) & 0xfff);
++	seq_printf(m, "CPU revision\t: %d\n", read_cpuid_id() & 15);
++
++	seq_puts(m, "\n");
++
++	seq_printf(m, "Hardware\t: %s\n", machine_name);
 +
 +	return 0;
 +}
 +
-+void notrace walk_stackframe(struct stackframe *frame,
-+		     int (*fn)(struct stackframe *, void *), void *data)
++static void *c_start(struct seq_file *m, loff_t *pos)
 +{
-+	while (1) {
-+		int ret;
-+
-+		if (fn(frame, data))
-+			break;
-+		ret = unwind_frame(frame);
-+		if (ret < 0)
-+			break;
-+	}
++	return *pos < 1 ? (void *)1 : NULL;
 +}
-+EXPORT_SYMBOL(walk_stackframe);
 +
-+#ifdef CONFIG_STACKTRACE
-+struct stack_trace_data {
-+	struct stack_trace *trace;
-+	unsigned int no_sched_functions;
-+	unsigned int skip;
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++const struct seq_operations cpuinfo_op = {
++	.start	= c_start,
++	.next	= c_next,
++	.stop	= c_stop,
++	.show	= c_show
 +};
-+
-+static int save_trace(struct stackframe *frame, void *d)
-+{
-+	struct stack_trace_data *data = d;
-+	struct stack_trace *trace = data->trace;
-+	unsigned long addr = frame->pc;
-+
-+	if (data->no_sched_functions && in_sched_functions(addr))
-+		return 0;
-+	if (data->skip) {
-+		data->skip--;
-+		return 0;
-+	}
-+
-+	trace->entries[trace->nr_entries++] = addr;
-+
-+	return trace->nr_entries >= trace->max_entries;
-+}
-+
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	struct stack_trace_data data;
-+	struct stackframe frame;
-+
-+	data.trace = trace;
-+	data.skip = trace->skip;
-+
-+	if (tsk != current) {
-+		data.no_sched_functions = 1;
-+		frame.fp = thread_saved_fp(tsk);
-+		frame.sp = thread_saved_sp(tsk);
-+		frame.pc = thread_saved_pc(tsk);
-+	} else {
-+		register unsigned long current_sp asm("sp");
-+		data.no_sched_functions = 0;
-+		frame.fp = (unsigned long)__builtin_frame_address(0);
-+		frame.sp = current_sp;
-+		frame.pc = (unsigned long)save_stack_trace_tsk;
-+	}
-+
-+	walk_stackframe(&frame, save_trace, &data);
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX;
-+}
-+
-+void save_stack_trace(struct stack_trace *trace)
-+{
-+	save_stack_trace_tsk(current, trace);
-+}
-+EXPORT_SYMBOL_GPL(save_stack_trace);
-+#endif
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-new file mode 100644
-index 0000000..8712a8e
---- /dev/null
-+++ b/arch/arm64/kernel/traps.c
-@@ -0,0 +1,357 @@
-+/*
-+ * Based on arch/arm/kernel/traps.c
-+ *
-+ * Copyright (C) 1995-2009 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/signal.h>
-+#include <linux/personality.h>
-+#include <linux/kallsyms.h>
-+#include <linux/spinlock.h>
-+#include <linux/uaccess.h>
-+#include <linux/hardirq.h>
-+#include <linux/kdebug.h>
-+#include <linux/module.h>
-+#include <linux/kexec.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/syscalls.h>
-+
-+#include <asm/atomic.h>
-+#include <asm/traps.h>
-+#include <asm/stacktrace.h>
-+#include <asm/exception.h>
-+#include <asm/system_misc.h>
-+
-+static const char *handler[]= {
-+	"Synchronous Abort",
-+	"IRQ",
-+	"FIQ",
-+	"Error"
-+};
-+
-+int show_unhandled_signals = 1;
-+
-+/*
-+ * Dump out the contents of some memory nicely...
-+ */
-+static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
-+		     unsigned long top)
-+{
-+	unsigned long first;
-+	mm_segment_t fs;
-+	int i;
-+
-+	/*
-+	 * We need to switch to kernel mode so that we can use __get_user
-+	 * to safely read from kernel space.  Note that we now dump the
-+	 * code first, just in case the backtrace kills us.
-+	 */
-+	fs = get_fs();
-+	set_fs(KERNEL_DS);
-+
-+	printk("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-+
-+	for (first = bottom & ~31; first < top; first += 32) {
-+		unsigned long p;
-+		char str[sizeof(" 12345678") * 8 + 1];
-+
-+		memset(str, ' ', sizeof(str));
-+		str[sizeof(str) - 1] = '\0';
-+
-+		for (p = first, i = 0; i < 8 && p < top; i++, p += 4) {
-+			if (p >= bottom && p < top) {
-+				unsigned int val;
-+				if (__get_user(val, (unsigned int *)p) == 0)
-+					sprintf(str + i * 9, " %08x", val);
-+				else
-+					sprintf(str + i * 9, " ????????");
-+			}
-+		}
-+		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
-+	}
-+
-+	set_fs(fs);
-+}
-+
-+static void dump_backtrace_entry(unsigned long where, unsigned long stack)
-+{
-+	print_ip_sym(where);
-+	if (in_exception_text(where))
-+		dump_mem("", "Exception stack", stack,
-+			 stack + sizeof(struct pt_regs));
-+}
-+
-+static void dump_instr(const char *lvl, struct pt_regs *regs)
-+{
-+	unsigned long addr = instruction_pointer(regs);
-+	mm_segment_t fs;
-+	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
-+	int i;
-+
-+	/*
-+	 * We need to switch to kernel mode so that we can use __get_user
-+	 * to safely read from kernel space.  Note that we now dump the
-+	 * code first, just in case the backtrace kills us.
-+	 */
-+	fs = get_fs();
-+	set_fs(KERNEL_DS);
-+
-+	for (i = -4; i < 1; i++) {
-+		unsigned int val, bad;
-+
-+		bad = __get_user(val, &((u32 *)addr)[i]);
-+
-+		if (!bad)
-+			p += sprintf(p, i == 0 ? "(%08x) " : "%08x ", val);
-+		else {
-+			p += sprintf(p, "bad PC value");
-+			break;
-+		}
-+	}
-+	printk("%sCode: %s\n", lvl, str);
-+
-+	set_fs(fs);
-+}
-+
-+static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
-+{
-+	struct stackframe frame;
-+	const register unsigned long current_sp asm ("sp");
-+
-+	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
-+
-+	if (!tsk)
-+		tsk = current;
-+
-+	if (regs) {
-+		frame.fp = regs->regs[29];
-+		frame.sp = regs->sp;
-+		frame.pc = regs->pc;
-+	} else if (tsk == current) {
-+		frame.fp = (unsigned long)__builtin_frame_address(0);
-+		frame.sp = current_sp;
-+		frame.pc = (unsigned long)dump_backtrace;
-+	} else {
-+		/*
-+		 * task blocked in __switch_to
-+		 */
-+		frame.fp = thread_saved_fp(tsk);
-+		frame.sp = thread_saved_sp(tsk);
-+		frame.pc = thread_saved_pc(tsk);
-+	}
-+
-+	printk("Call trace:\n");
-+	while (1) {
-+		unsigned long where = frame.pc;
-+		int ret;
-+
-+		ret = unwind_frame(&frame);
-+		if (ret < 0)
-+			break;
-+		dump_backtrace_entry(where, frame.sp);
-+	}
-+}
-+
-+void dump_stack(void)
-+{
-+	dump_backtrace(NULL, NULL);
-+}
-+
-+EXPORT_SYMBOL(dump_stack);
-+
-+void show_stack(struct task_struct *tsk, unsigned long *sp)
-+{
-+	dump_backtrace(NULL, tsk);
-+	barrier();
-+}
-+
-+#ifdef CONFIG_PREEMPT
-+#define S_PREEMPT " PREEMPT"
-+#else
-+#define S_PREEMPT ""
-+#endif
-+#ifdef CONFIG_SMP
-+#define S_SMP " SMP"
-+#else
-+#define S_SMP ""
-+#endif
-+
-+static int __die(const char *str, int err, struct thread_info *thread,
-+		 struct pt_regs *regs)
-+{
-+	struct task_struct *tsk = thread->task;
-+	static int die_counter;
-+	int ret;
-+
-+	pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
-+		 str, err, ++die_counter);
-+
-+	/* trap and error numbers are mostly meaningless on ARM */
-+	ret = notify_die(DIE_OOPS, str, regs, err, 0, SIGSEGV);
-+	if (ret == NOTIFY_STOP)
-+		return ret;
-+
-+	print_modules();
-+	__show_regs(regs);
-+	pr_emerg("Process %.*s (pid: %d, stack limit = 0x%p)\n",
-+		 TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
-+
-+	if (!user_mode(regs) || in_interrupt()) {
-+		dump_mem(KERN_EMERG, "Stack: ", regs->sp,
-+			 THREAD_SIZE + (unsigned long)task_stack_page(tsk));
-+		dump_backtrace(regs, tsk);
-+		dump_instr(KERN_EMERG, regs);
-+	}
-+
-+	return ret;
-+}
-+
-+DEFINE_SPINLOCK(die_lock);
-+
-+/*
-+ * This function is protected against re-entrancy.
-+ */
-+void die(const char *str, struct pt_regs *regs, int err)
-+{
-+	struct thread_info *thread = current_thread_info();
-+	int ret;
-+
-+	oops_enter();
-+
-+	spin_lock_irq(&die_lock);
-+	console_verbose();
-+	bust_spinlocks(1);
-+	ret = __die(str, err, thread, regs);
-+
-+	if (regs && kexec_should_crash(thread->task))
-+		crash_kexec(regs);
-+
-+	bust_spinlocks(0);
-+	add_taint(TAINT_DIE);
-+	spin_unlock_irq(&die_lock);
-+	oops_exit();
-+
-+	if (in_interrupt())
-+		panic("Fatal exception in interrupt");
-+	if (panic_on_oops)
-+		panic("Fatal exception");
-+	if (ret != NOTIFY_STOP)
-+		do_exit(SIGSEGV);
-+}
-+
-+void arm64_notify_die(const char *str, struct pt_regs *regs,
-+		      struct siginfo *info, int err)
-+{
-+	if (user_mode(regs))
-+		force_sig_info(info->si_signo, info, current);
-+	else
-+		die(str, regs, err);
-+}
-+
-+asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
-+{
-+	siginfo_t info;
-+	void __user *pc = (void __user *)instruction_pointer(regs);
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+	/* check for AArch32 breakpoint instructions */
-+	if (compat_user_mode(regs) && aarch32_break_trap(regs) == 0)
-+		return;
-+#endif
-+
-+	if (show_unhandled_signals) {
-+		pr_info("%s[%d]: undefined instruction: pc=%p\n",
-+			current->comm, task_pid_nr(current), pc);
-+		dump_instr(KERN_INFO, regs);
-+	}
-+
-+	info.si_signo = SIGILL;
-+	info.si_errno = 0;
-+	info.si_code  = ILL_ILLOPC;
-+	info.si_addr  = pc;
-+
-+	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
-+}
-+
-+long compat_arm_syscall(struct pt_regs *regs);
-+
-+asmlinkage long do_ni_syscall(struct pt_regs *regs)
-+{
-+#ifdef CONFIG_AARCH32_EMULATION
-+	long ret;
-+	if (is_compat_task()) {
-+		ret = compat_arm_syscall(regs);
-+		if (ret != -ENOSYS)
-+			return ret;
-+	}
-+#endif
-+
-+	if (show_unhandled_signals) {
-+		pr_info("%s[%d]: syscall %d\n", current->comm,
-+			task_pid_nr(current), (int)regs->syscallno);
-+		dump_instr("", regs);
-+		if (user_mode(regs))
-+			__show_regs(regs);
-+	}
-+
-+	return sys_ni_syscall();
-+}
-+
-+/*
-+ * bad_mode handles the impossible case in the exception vector.
-+ */
-+asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
-+{
-+	console_verbose();
-+
-+	pr_crit("Bad mode in %s handler detected, code 0x%08x\n",
-+		handler[reason], esr);
-+
-+	die("Oops - bad mode", regs, 0);
-+	local_irq_disable();
-+	panic("bad mode");
-+}
-+
-+
-+void __bad_xchg(volatile void *ptr, int size)
-+{
-+	printk("xchg: bad data size: pc 0x%p, ptr 0x%p, size %d\n",
-+		__builtin_return_address(0), ptr, size);
-+	BUG();
-+}
-+EXPORT_SYMBOL(__bad_xchg);
-+
-+void __pte_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pte %016lx.\n", file, line, val);
-+}
-+
-+void __pmd_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pmd %016lx.\n", file, line, val);
-+}
-+
-+void __pgd_error(const char *file, int line, unsigned long val)
-+{
-+	printk("%s:%d: bad pgd %016lx.\n", file, line, val);
-+}
-+
-+void __init trap_init(void)
-+{
-+	return;
-+}
 
