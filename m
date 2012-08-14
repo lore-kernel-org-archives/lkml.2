@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab2HNM6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:58:45 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:48478 "EHLO
+	id S1755525Ab2HNM6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:58:44 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:41708 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754936Ab2HNM6m (ORCPT
+	by vger.kernel.org with ESMTP id S1755276Ab2HNM6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:58:42 -0400
+	Tue, 14 Aug 2012 08:58:41 -0400
 X-IronPort-AV: E=Sophos;i="4.77,766,1336341600"; 
-   d="scan'208";a="169863668"
+   d="scan'208";a="169863667"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Vitaly Bordug <vbordug@ru.mvista.com>,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: kernel-janitors@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/net/ethernet/freescale/fs_enet: fix error return code
-Date: Tue, 14 Aug 2012 14:58:33 +0200
-Message-Id: <1344949115-13266-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 2/5] drivers/dma/amba-pl08x.c: fix error return code
+Date: Tue, 14 Aug 2012 14:58:32 +0200
+Message-Id: <1344949115-13266-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344949115-13266-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344949115-13266-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -57,52 +56,27 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c |    4 +++-
- drivers/net/ethernet/freescale/fs_enet/mii-fec.c     |    8 ++++++--
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/dma/amba-pl08x.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c b/drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c
-index 0f2d1a7..1514533 100644
---- a/drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c
-@@ -174,8 +174,10 @@ static int __devinit fs_enet_mdio_probe(struct platform_device *ofdev)
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 6fbeebb..d1cc579 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1892,6 +1892,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pl08x->pd = dev_get_platdata(&adev->dev);
+ 	if (!pl08x->pd) {
+ 		dev_err(&adev->dev, "no platform data supplied\n");
++		ret = -EINVAL;
+ 		goto out_no_platdata;
+ 	}
  
- 	new_bus->phy_mask = ~0;
- 	new_bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
--	if (!new_bus->irq)
-+	if (!new_bus->irq) {
+@@ -1943,6 +1944,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 		dev_err(&adev->dev, "%s failed to allocate "
+ 			"physical channel holders\n",
+ 			__func__);
 +		ret = -ENOMEM;
- 		goto out_unmap_regs;
-+	}
+ 		goto out_no_phychans;
+ 	}
  
- 	new_bus->parent = &ofdev->dev;
- 	dev_set_drvdata(&ofdev->dev, new_bus);
-diff --git a/drivers/net/ethernet/freescale/fs_enet/mii-fec.c b/drivers/net/ethernet/freescale/fs_enet/mii-fec.c
-index 55bb867..cdf702a 100644
---- a/drivers/net/ethernet/freescale/fs_enet/mii-fec.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/mii-fec.c
-@@ -137,8 +137,10 @@ static int __devinit fs_enet_mdio_probe(struct platform_device *ofdev)
- 	snprintf(new_bus->id, MII_BUS_ID_SIZE, "%x", res.start);
- 
- 	fec->fecp = ioremap(res.start, resource_size(&res));
--	if (!fec->fecp)
-+	if (!fec->fecp) {
-+		ret = -ENOMEM;
- 		goto out_fec;
-+	}
- 
- 	if (get_bus_freq) {
- 		clock = get_bus_freq(ofdev->dev.of_node);
-@@ -172,8 +174,10 @@ static int __devinit fs_enet_mdio_probe(struct platform_device *ofdev)
- 
- 	new_bus->phy_mask = ~0;
- 	new_bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
--	if (!new_bus->irq)
-+	if (!new_bus->irq) {
-+		ret = -ENOMEM;
- 		goto out_unmap_regs;
-+	}
- 
- 	new_bus->parent = &ofdev->dev;
- 	dev_set_drvdata(&ofdev->dev, new_bus);
 
