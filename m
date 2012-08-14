@@ -1,139 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab2HNFz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 01:55:27 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:36570 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab2HNFz0 (ORCPT
+	id S1753358Ab2HNF5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 01:57:20 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56219 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab2HNF5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 01:55:26 -0400
-Date: Tue, 14 Aug 2012 07:55:24 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: psmouse synaptics: "hardware appears to be different" bail out
-Message-ID: <20120814055524.GA14314@rhlx01.hs-esslingen.de>
-References: <20120716214453.GA14785@rhlx01.hs-esslingen.de>
- <20120716220718.GA28635@core.coreip.homeip.net>
- <20120720182145.GA14622@rhlx01.hs-esslingen.de>
+	Tue, 14 Aug 2012 01:57:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720182145.GA14622@rhlx01.hs-esslingen.de>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120813175447.GB26088@phenom.dumpdata.com>
+References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
+	<1344677543-22591-10-git-send-email-chenhc@lemote.com>
+	<20120813175447.GB26088@phenom.dumpdata.com>
+Date: Tue, 14 Aug 2012 13:57:17 +0800
+Message-ID: <CAAhV-H7mJUC9njF_wHda8ymUBkUom5AZ+u8OFXtA42uyA-hFxg@mail.gmail.com>
+Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
+ memory (>4GB).
+From: Huacai Chen <chenhuacai@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, David,
 
-On Fri, Jul 20, 2012 at 08:21:45PM +0200, Andreas Mohr wrote:
-> Hi,
-> 
-> On Mon, Jul 16, 2012 at 03:07:19PM -0700, Dmitry Torokhov wrote:
-> > On Mon, Jul 16, 2012 at 11:44:53PM +0200, Andreas Mohr wrote:
-> > > Hi,
-> > > 
-> > > just found the following in dmesg after resume
-> > > (currently running -rc7):
-> > > 
-> > > [ 9312.672073] psmouse serio2: synaptics: hardware appears to be
-> > > different: id(149271-149271), model(114865-114865), caps(d04771-d04773),
-> > > ext(a40000-a40000).
-> > > 
-> > > Acer Aspire One A110L here.
-> > > 
-> > > Any clever thoughts about this?
-> > > Just thought that it might be useful to report it,
-> > > especially since the function (in drivers/input/mouse/synaptics.c)
-> > > bails out right after this check/message.
-> > 
-> > Hmm, we do not really expect the touchpad change it's caracteristics at
-> > all during its lifetime, so no clever ideas here... It looks like a
-> > single bit error, but KBC should have signalled parity error in this
-> > case...
-> 
-> OK, that might be true in fact.
-> I disassembled that device recently (and did quite a bit of work),
-> so perhaps the touchpad connection isn't as reliable as I'd want it to
-> be...
-> 
-> 
-> Problem is that now (and some other times, too) S2R resume
-> ended up with a dead x.org keyboard (synaptics i.e. mouse pointer
-> was still working fine).
-> Remote login was ok.
-> 
-> In dmesg, I found:
-> 
-> [   13.694115] atkbd serio0: Spurious NAK on isa0060/serio0. Some
-> program might be trying to access hardware directly.
-> 
-> and then
-> 
-> [ 8278.484469] atkbd serio0: Spurious ACK on isa0060/serio0. Some
-> program might be trying to access hardware directly.
-> 
-> which is the one that occurred around the time of the S2R breakage.
-> I then triggered a remote pm-suspend,
-> and after S2R keyboard WAS FINE AGAIN, with NO dmesg error logged this
-> time!!
+Seems like you are the original author of code in
+arch/mips/cavium-octeon/dma-octeon.c. Could you please tell me why we
+need mb() in alloc_coherent(), map_page(), map_sg()? It seems like
+because of cache coherency (CPU write some data, then map the page for
+a device, if without mb(), then device may read wrong data.) but I'm
+not sure.
 
-Hi,
-
-happened again, this time with different but quite ominous messages
-("Unable to initialize device."):
-
-[15520.944017] PM: resume of devices complete after 1049.856 msecs
-[15520.950597] PM: resume devices took 1.060 seconds
-[15520.950787] PM: Finishing wakeup.
-[15520.950793] Restarting tasks ... done.
-[15520.990705] video LNXVIDEO:00: Restoring backlight state
-[15521.107761] Bluetooth: BNEP (Ethernet Emulation) ver 1.3
-[15521.107774] Bluetooth: BNEP filters: protocol multicast
-[15521.287109] Bluetooth: RFCOMM TTY layer initialized
-[15521.287158] Bluetooth: RFCOMM socket layer initialized
-[15521.287168] Bluetooth: RFCOMM ver 1.11
-[15521.347768] atkbd serio0: Spurious ACK on isa0060/serio0. Some
-program might be trying to access hardware directly.
-[15521.352164] mmc0: new SDHC card at address b368
-[15521.357576] mmcblk0: mmc0:b368       14.9 GiB 
-[15521.370884]  mmcblk0: p1
-[15521.540130] psmouse serio2: synaptics: Unable to initialize device.
-[15522.644250] psmouse serio2: synaptics: Touchpad model: 1, fw: 7.2,
-id: 0x1c0b1, caps: 0xd04773/0xa40000/0xa0000
-[15522.700396] input: SynPS/2 Synaptics TouchPad as
-/devices/platform/i8042/serio2/input/input12
-[15523.299199] r8169 0000:02:00.0: eth1: link down
-
-Identical symptoms: touchpad mighty fine, keyboard DEAD. Remote pm-suspend
-fixed everything.
-This time this occurred at the first suspend after initial kernel bootup
-(not sure about previous incidents).
-
-Log of the subsequent second resume that managed to repair the state:
-
-[16584.645148] PM: resume of devices complete after 1052.387 msecs
-[16584.648803] PM: resume devices took 1.050 seconds
-[16584.648996] PM: Finishing wakeup.
-[16584.649002] Restarting tasks ... done.
-[16584.684401] video LNXVIDEO:00: Restoring backlight state
-[16585.041476] mmc0: new SDHC card at address b368
-[16585.055439] mmcblk0: mmc0:b368       14.9 GiB 
-[16585.058917]  mmcblk0: p1
-[16585.330295] r8169 0000:02:00.0: eth1: link up
-
-Note the large amount of *missing* input device messages (all due to error
-condition?) in the non-fatal case.
-
-
-"Some program might be trying to access hardware directly." - mayhaps
-on resume we've got some BIOS DMI handlers fumbling things
-that they shouldn't fumble?
-
-Still running -rc7, though (time for upgrade treadmill, I know ;).
-
-Thanks,
-
-Andreas Mohr
+On Tue, Aug 14, 2012 at 1:54 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
+>> +                             dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+>> +{
+>> +     void *ret;
+>> +
+>> +     if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
+>> +             return ret;
+>> +
+>> +     /* ignore region specifiers */
+>> +     gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
+>> +
+>> +#ifdef CONFIG_ZONE_DMA
+>> +     if (dev == NULL)
+>> +             gfp |= __GFP_DMA;
+>
+> When would this happen? dev == NULL?
+>
+>> +     else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
+>> +             gfp |= __GFP_DMA;
+>> +     else
+>> +#endif
+>> +#ifdef CONFIG_ZONE_DMA32
+>> +     if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+>> +             gfp |= __GFP_DMA32;
+>> +     else
+>
+> Why the 'else'
+>> +#endif
+>> +     ;
+>
+> why?
+>> +     gfp |= __GFP_NORETRY;
+>> +
+>> +     ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
+>> +     mb();
+>
+> Why the 'mb()' ? Can you just do
+>         return swiotlb_alloc_coherent(...)
+>
+>> +     return ret;
+>> +}
+>> +
+>> +static void loongson_dma_free_coherent(struct device *dev, size_t size,
+>> +                             void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
+>> +{
+>> +     int order = get_order(size);
+>> +
+>> +     if (dma_release_from_coherent(dev, order, vaddr))
+>> +             return;
+>> +
+>> +     swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+>> +}
+>> +
+>> +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
+>> +                             unsigned long offset, size_t size,
+>> +                             enum dma_data_direction dir,
+>> +                             struct dma_attrs *attrs)
+>> +{
+>> +     dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
+>> +                                     dir, attrs);
+>> +     mb();
+>
+> Please do 'return swiotlb_map_page(..)'..
+>
+> But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
+> ?
+>
+>
+>> +     return daddr;
+>> +}
+>> +
+>> +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
+>> +                             int nents, enum dma_data_direction dir,
+>> +                             struct dma_attrs *attrs)
+>> +{
+>> +     int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
+>> +     mb();
+>> +
+>> +     return r;
+>> +}
+>> +
+>> +static void loongson_dma_sync_single_for_device(struct device *dev,
+>> +                             dma_addr_t dma_handle, size_t size,
+>> +                             enum dma_data_direction dir)
+>> +{
+>> +     swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
+>> +     mb();
+>> +}
+>> +
+>> +static void loongson_dma_sync_sg_for_device(struct device *dev,
+>> +                             struct scatterlist *sg, int nents,
+>> +                             enum dma_data_direction dir)
+>> +{
+>> +     swiotlb_sync_sg_for_device(dev, sg, nents, dir);
+>> +     mb();
+>> +}
+>> +
+>
+> I am not really sure why you have these extra functions, when you could
+> just modify the dma_ops to point to the swiotlb ones
+>
+>> +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
+>> +{
+>> +     return (paddr < 0x10000000) ?
+>> +                     (paddr | 0x0000000080000000) : paddr;
+>> +}
+>> +
+>> +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
+>> +{
+>> +     return (daddr < 0x90000000 && daddr >= 0x80000000) ?
+>> +                     (daddr & 0x0fffffff) : daddr;
+>> +}
+>> +
+>> +struct loongson_dma_map_ops {
+>> +     struct dma_map_ops dma_map_ops;
+>> +     dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
+>> +     phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
+>> +};
+>> +
+>> +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+>> +{
+>> +     struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+>> +                                     struct loongson_dma_map_ops, dma_map_ops);
+>> +
+>> +     return ops->phys_to_dma(dev, paddr);
+>> +}
+>> +
+>> +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+>> +{
+>> +     struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+>> +                                     struct loongson_dma_map_ops, dma_map_ops);
+>> +
+>> +     return ops->dma_to_phys(dev, daddr);
+>> +}
+>> +
+>> +static int loongson_dma_set_mask(struct device *dev, u64 mask)
+>> +{
+>> +     /* Loongson doesn't support DMA above 32-bit */
+>> +     if (mask > DMA_BIT_MASK(32))
+>> +             return -EIO;
+>> +
+>> +     *dev->dma_mask = mask;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
+>> +     .dma_map_ops = {
+>> +             .alloc = loongson_dma_alloc_coherent,
+>> +             .free = loongson_dma_free_coherent,
+>> +             .map_page = loongson_dma_map_page,
+>
+> But why not 'swiotlb_map_page'?
+>
+>> +             .unmap_page = swiotlb_unmap_page,
+>> +             .map_sg = loongson_dma_map_sg,
+>> +             .unmap_sg = swiotlb_unmap_sg_attrs,
+>> +             .sync_single_for_cpu = swiotlb_sync_single_for_cpu,
+>> +             .sync_single_for_device = loongson_dma_sync_single_for_device,
+>> +             .sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
+>> +             .sync_sg_for_device = loongson_dma_sync_sg_for_device,
+>> +             .mapping_error = swiotlb_dma_mapping_error,
+>> +             .dma_supported = swiotlb_dma_supported,
+>> +             .set_dma_mask = loongson_dma_set_mask
+>> +     },
+>> +     .phys_to_dma = loongson_unity_phys_to_dma,
+>> +     .dma_to_phys = loongson_unity_dma_to_phys
+>
+> Why do you need these? I am not seeing it being used here by any external code?
+>
+>> +};
+>> +
+>> +void __init plat_swiotlb_setup(void)
+>> +{
+>> +     swiotlb_init(1);
+>> +     mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
+>> +}
+>> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+>> index 3fab204..122f4f8 100644
+>> --- a/arch/mips/mm/dma-default.c
+>> +++ b/arch/mips/mm/dma-default.c
+>> @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
+>>              current_cpu_type() == CPU_R12000);
+>>  }
+>>
+>> +static inline int cpu_is_noncoherent_loongson(struct device *dev)
+>> +{
+>> +     return !plat_device_is_coherent(dev) &&
+>> +                     (current_cpu_type() == CPU_LOONGSON2 ||
+>> +                      current_cpu_type() == CPU_LOONGSON3);
+>> +}
+>> +
+>>  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+>>  {
+>>       gfp_t dma_flag;
+>> @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
+>>  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+>>       size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+>>  {
+>> -     if (cpu_is_noncoherent_r10000(dev))
+>> +     if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>               __dma_sync(dma_addr_to_page(dev, dma_addr),
+>>                          dma_addr & ~PAGE_MASK, size, direction);
+>>
+>> @@ -260,7 +267,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+>>  static void mips_dma_sync_single_for_cpu(struct device *dev,
+>>       dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+>>  {
+>> -     if (cpu_is_noncoherent_r10000(dev))
+>> +     if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>               __dma_sync(dma_addr_to_page(dev, dma_handle),
+>>                          dma_handle & ~PAGE_MASK, size, direction);
+>>  }
+>> @@ -281,7 +288,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+>>
+>>       /* Make sure that gcc doesn't leave the empty loop body.  */
+>>       for (i = 0; i < nelems; i++, sg++) {
+>> -             if (cpu_is_noncoherent_r10000(dev))
+>> +             if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>                       __dma_sync(sg_page(sg), sg->offset, sg->length,
+>>                                  direction);
+>>       }
+>> --
+>> 1.7.7.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
