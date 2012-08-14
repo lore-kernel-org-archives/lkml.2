@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab2HNUAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:00:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19458 "EHLO mx1.redhat.com"
+	id S1757376Ab2HNUBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:01:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754911Ab2HNUAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:00:50 -0400
-Date: Tue, 14 Aug 2012 16:00:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue on
- do_floppy_init error handling
-Message-ID: <20120814200032.GF5760@redhat.com>
-References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
- <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
- <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+	id S1756873Ab2HNUBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 16:01:08 -0400
+Date: Tue, 14 Aug 2012 17:00:49 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120814200043.GB22133@t510.redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
+ <20120813082619.GE14081@redhat.com>
+ <20120814174404.GA13338@t510.redhat.com>
+ <20120814193525.GB28840@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <20120814193525.GB28840@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 04:20:39AM +0100, Ben Hutchings wrote:
-> On Mon, 2012-08-13 at 15:16 -0300, Herton Ronaldo Krzesinski wrote:
-> > After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
-> > put_disk() if add_disk() was never called"), if something fails in the
-> > add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
-> > that's wrong, since we may have succesfully done an add_disk on some of
-> > the drives previously in the loop, and in this case we would end up with
-> > an extra reference to the disks[dr]->queue.
+On Tue, Aug 14, 2012 at 10:35:25PM +0300, Michael S. Tsirkin wrote:
+> > > > +/* __isolate_lru_page() counterpart for a ballooned page */
+> > > > +bool isolate_balloon_page(struct page *page)
+> > > > +{
+> > > > +	if (WARN_ON(!movable_balloon_page(page)))
+> > > 
+> > > Looks like this actually can happen if the page is leaked
+> > > between previous movable_balloon_page and here.
+> > > 
+> > > > +		return false;
 > > 
-> > Add a new global array to mark "registered" disks, and use that to check
-> > if we did an add_disk on one of the disks already. Using an array to
-> > track added disks also will help to simplify/cleanup code later, as
-> > suggested by Vivek Goyal.
-> [...]
+> > Yes, it surely can happen, and it does not harm to catch it here, print a warn and
+> > return.
 > 
-> It's totally ridiculous that a driver should have to do this.  Any
-> registered disk should have the GENHD_FL_UP flag set... so why can't
-> genhd check it?  It doesn't look like floppy is the only driver affected
-> by this problem, either.  So I suggest the following general fix
-> (untested):
-> 
-> ---
-> Subject: genhd: Make put_disk() safe for disks that have not been registered
-> 
-> Since commit 9f53d2f ('block: fix __blkdev_get and add_disk race
-> condition'), add_disk() adds a reference to disk->queue, which is then
-> dropped by disk_release().  But if a disk is destroyed without being
-> registered through add_disk() (or if add_disk() fails at the first
-> hurdle) then we have a reference imbalance.
-> 
-> Use the GENHD_FL_UP flag to tell whether this extra reference has been
-> added.  Remove the incomplete workaround from the floppy driver.
-> 
+> If it is legal, why warn? For that matter why test here at all?
+>
 
-Checking for GENHD_FL_UP to represent whether we took a reference on the
-disk->queue or not sounds reasonable. 
+As this is a public symbol, and despite the usage we introduce is sane, the warn
+was placed as an insurance policy to let us know about any insane attempt to use
+the procedure in the future. That was due to a nice review nitpick, actually.
 
-Thanks
-Vivek
+Even though the code already had a test to properly avoid this race you
+mention, I thought that sustaining the warn was a good thing. As I told you,
+despite real, I've never got (un)lucky enough to stumble across that race window
+while testing the patch.
+
+If your concern is about being too much verbose on logging, under certain
+conditions, perhaps we can change that test to a WARN_ON_ONCE() ?
+
+Mel, what are your thoughts here?
+ 
+> > While testing it, I wasn't lucky to see this small window opening, though.
