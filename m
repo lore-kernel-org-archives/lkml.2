@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2HNPGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:06:31 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52683 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756596Ab2HNPGY (ORCPT
+	id S1756661Ab2HNPGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:06:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33776 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756640Ab2HNPGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:06:24 -0400
+	Tue, 14 Aug 2012 11:06:33 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next v2 09/15] qlcnic: guard __vlan_find_dev_deep() by rcu_read_lock
-Date: Tue, 14 Aug 2012 17:05:42 +0200
-Message-Id: <1344956748-2099-10-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next v2 12/15] nes: remove usage of dev->master
+Date: Tue, 14 Aug 2012 17:05:45 +0200
+Message-Id: <1344956748-2099-13-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
 References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
@@ -30,32 +30,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu_read_lock was missing here
-
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/infiniband/hw/nes/nes.c    |    8 +++++---
+ drivers/infiniband/hw/nes/nes_cm.c |    2 +-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index 212c121..9eadf17 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -4425,12 +4425,14 @@ qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
+diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
+index 7140199..6686251 100644
+--- a/drivers/infiniband/hw/nes/nes.c
++++ b/drivers/infiniband/hw/nes/nes.c
+@@ -140,6 +140,7 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
+ 	struct net_device *event_netdev = ifa->ifa_dev->dev;
+ 	struct nes_device *nesdev;
+ 	struct net_device *netdev;
++	struct net_device *upper_dev;
+ 	struct nes_vnic *nesvnic;
+ 	unsigned int is_bonded;
  
- 	qlcnic_config_indev_addr(adapter, netdev, event);
+@@ -150,8 +151,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
+ 				nesdev, nesdev->netdev[0]->name);
+ 		netdev = nesdev->netdev[0];
+ 		nesvnic = netdev_priv(netdev);
++		upper_dev = netdev_master_upper_dev_get(netdev);
+ 		is_bonded = netif_is_bond_slave(netdev) &&
+-			    (netdev->master == event_netdev);
++			    (upper_dev == event_netdev);
+ 		if ((netdev == event_netdev) || is_bonded) {
+ 			if (nesvnic->rdma_enabled == 0) {
+ 				nes_debug(NES_DBG_NETDEV, "Returning without processing event for %s since"
+@@ -184,9 +186,9 @@ static int nes_inetaddr_event(struct notifier_block *notifier,
+ 					/* fall through */
+ 				case NETDEV_CHANGEADDR:
+ 					/* Add the address to the IP table */
+-					if (netdev->master)
++					if (upper_dev)
+ 						nesvnic->local_ipaddr =
+-							((struct in_device *)netdev->master->ip_ptr)->ifa_list->ifa_address;
++							((struct in_device *)upper_dev->ip_ptr)->ifa_list->ifa_address;
+ 					else
+ 						nesvnic->local_ipaddr = ifa->ifa_address;
  
-+	rcu_read_lock();
- 	for_each_set_bit(vid, adapter->vlans, VLAN_N_VID) {
- 		dev = __vlan_find_dev_deep(netdev, vid);
- 		if (!dev)
- 			continue;
- 		qlcnic_config_indev_addr(adapter, dev, event);
+diff --git a/drivers/infiniband/hw/nes/nes_cm.c b/drivers/infiniband/hw/nes/nes_cm.c
+index 020e95c..15e6340 100644
+--- a/drivers/infiniband/hw/nes/nes_cm.c
++++ b/drivers/infiniband/hw/nes/nes_cm.c
+@@ -1352,7 +1352,7 @@ static int nes_addr_resolve_neigh(struct nes_vnic *nesvnic, u32 dst_ip, int arpi
  	}
-+	rcu_read_unlock();
- }
  
- static int qlcnic_netdev_event(struct notifier_block *this,
+ 	if (netif_is_bond_slave(nesvnic->netdev))
+-		netdev = nesvnic->netdev->master;
++		netdev = netdev_unique_upper_dev_get(nesvnic->netdev);
+ 	else
+ 		netdev = nesvnic->netdev;
+ 
 -- 
 1.7.10.4
 
