@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab2HNLIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 07:08:25 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42369 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab2HNLIY (ORCPT
+	id S1755641Ab2HNLJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 07:09:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54270 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2HNLJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 07:08:24 -0400
+	Tue, 14 Aug 2012 07:09:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344527268-5964-8-git-send-email-lee.jones@linaro.org>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-	<1344527268-5964-8-git-send-email-lee.jones@linaro.org>
-Date: Tue, 14 Aug 2012 13:08:23 +0200
-Message-ID: <CACRpkdbc6bGC4Yp7Bcdfev=Uc=1h4L1v+Lj9RbmJV3F+knQOZQ@mail.gmail.com>
-Subject: Re: [PATCH 07/22] ASoC: Ux500: Initialise PCM from MSP probe rather
- than as a device
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Ola LILJA2 <ola.o.lilja@stericsson.com>,
-        Ola Lilja <olalilja@yahoo.se>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        STEricsson_nomadik_linux@list.st.com
+In-Reply-To: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
+References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Tue, 14 Aug 2012 13:08:38 +0200
+X-Google-Sender-Auth: sZ91Qg3nbAfU5RO9tK_8dBAqTPE
+Message-ID: <CAH+eYFC5WPbwrfMh9tN2ocQOj46a2E2QmjYCLvk2_zHOVCGP1Q@mail.gmail.com>
+Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled for boot-on
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 5:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> The PCM is a pseudo-device. It doesn't have any of it's own registers
-> or hardware. It rather acts as a layer of abstraction for DMA
-> transfers. Hence, instead of classifying it as a device in its own
-> right, we call the initialisation from the MSP driver.
+2012/8/14 Laxman Dewangan <ldewangan@nvidia.com>:
+> If supply regulator is enabled because of boot-on (not always-on)
+> then disable regulator need to be call if regulator have some
+> user or full constraint has been enabled.
+> This will make sure that reference count of supply regulator
+> is in sync with child regulator's state.
 >
-> CC: alsa-devel@alsa-project.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-I'd prefer to have Ola LILJA review this patch, but it looks alright to me.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+ =============================================
+ [ INFO: possible recursive locking detected ]
+ 3.4.0+ #71 Not tainted
+ ---------------------------------------------
+ swapper/0/1 is trying to acquire lock:
+  (&rdev->mutex){+.+.+.}, at: [<c0306c60>] regulator_disable+0x2c/0x6c
 
-Yours,
-Linus Walleij
+ but task is already holding lock:
+  (&rdev->mutex){+.+.+.}, at: [<c0a0d1f4>] regulator_init_complete+0x70/0x1c0
+
+ other info that might help us debug this:
+  Possible unsafe locking scenario:
+
+        CPU0
+        ----
+   lock(&rdev->mutex);
+   lock(&rdev->mutex);
+
+  *** DEADLOCK ***
+
+  May be due to missing lock nesting notation
+
+ 2 locks held by swapper/0/1:
+  #0:  (regulator_list_mutex){+.+.+.}, at: [<c0a0d1a8>]
+regulator_init_complete+0x24/0x1c0
+  #1:  (&rdev->mutex){+.+.+.}, at: [<c0a0d1f4>]
+regulator_init_complete+0x70/0x1c0
+
+ stack backtrace:
+ [<c0017ab4>] (unwind_backtrace+0x0/0x148) from [<c06e86a0>]
+(dump_stack+0x20/0x24)
+ [<c06e86a0>] (dump_stack+0x20/0x24) from [<c008e6d0>]
+(check_deadlock+0x358/0x44c)
+ [<c008e6d0>] (check_deadlock+0x358/0x44c) from [<c008f7b4>]
+(validate_chain+0x410/0x710)
+ [<c008f7b4>] (validate_chain+0x410/0x710) from [<c0090034>]
+(__lock_acquire+0x580/0xb3c)
+ [<c0090034>] (__lock_acquire+0x580/0xb3c) from [<c0090690>]
+(lock_acquire+0xa0/0x138)
+ [<c0090690>] (lock_acquire+0xa0/0x138) from [<c06ea0d0>]
+(mutex_lock_nested+0x5c/0x364)
+ [<c06ea0d0>] (mutex_lock_nested+0x5c/0x364) from [<c0306c60>]
+(regulator_disable+0x2c/0x6c)
+ [<c0306c60>] (regulator_disable+0x2c/0x6c) from [<c0a0d2cc>]
+(regulator_init_complete+0x148/0x1c0)
+ [<c0a0d2cc>] (regulator_init_complete+0x148/0x1c0) from [<c0008644>]
+(do_one_initcall+0x50/0x1a8)
+ [<c0008644>] (do_one_initcall+0x50/0x1a8) from [<c09ee3dc>]
+(kernel_init+0xf4/0x1d4)
+ [<c09ee3dc>] (kernel_init+0xf4/0x1d4) from [<c0010cfc>]
+(kernel_thread_exit+0x0/0x8)
