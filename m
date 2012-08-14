@@ -1,76 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2HNBgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:36:25 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:40702 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2HNBgY (ORCPT
+	id S1754366Ab2HNBiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:38:21 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40081 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab2HNBiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:36:24 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-160.messagelabs.com!1344908183!7371428!1
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.2; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Date: Mon, 13 Aug 2012 20:36:22 -0500
-Subject: RE: [PATCH 1/2 v2] staging: comedi: new adl_pci7x3x driver
-Thread-Topic: [PATCH 1/2 v2] staging: comedi: new adl_pci7x3x driver
-Thread-Index: Ac15vE9Ige8VjotNRhWd5tnrsSzKhQAAEx9g
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AAE977F3@AUSP01VMBX24.collaborationhost.net>
-References: <201208031028.18759.hartleys@visionengravers.com>
- <20120814012949.GA11859@kroah.com>
-In-Reply-To: <20120814012949.GA11859@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 13 Aug 2012 21:38:20 -0400
+Date: Mon, 13 Aug 2012 18:38:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk
+Subject: Re: [PATCH V2 02/18] Drivers: hv: Add KVP definitions for IP address
+ injection
+Message-ID: <20120814013815.GA29829@kroah.com>
+References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344877627-21779-2-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7E1aUx4013377
 
-On Monday, August 13, 2012 6:30 PM, Greg KH wrote:
-> On Fri, Aug 03, 2012 at 10:28:18AM -0700, H Hartley Sweeten wrote:
->> Currently the ADLink PCI-7230 and PCI-7432 Isolated Digital
->> I/O Boards are supported using two drivers (adl_pci7230 and
->> adl_pci7432). These drivers are very similar and only differ
->> in the total number of di/do channels provided.
->> 
->> This driver combines the support for both boards into one
->> common driver. In addition, it adds PCI PnP support for the
->> other boards in the ADLink PCI-723x and PCI-743x series.
->> 
->> This driver only supports the comedi PCI auto config attach
->> mechanism. The legacy attach using the comedi_config utility
->> is not supported or required by this driver.
->
-> I now get the following build warnings on my box with this patch
-> applied:
->
-> drivers/staging/comedi/drivers/adl_pci7x3x.c: In function â€˜adl_pci7x3x_do_insn_bitsâ€™:
-> drivers/staging/comedi/drivers/adl_pci7x3x.c:124:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> drivers/staging/comedi/drivers/adl_pci7x3x.c: In function â€˜adl_pci7x3x_di_insn_bitsâ€™:
-> drivers/staging/comedi/drivers/adl_pci7x3x.c:150:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+On Mon, Aug 13, 2012 at 10:06:51AM -0700, K. Y. Srinivasan wrote:
+> Add the necessary definitions for supporting the IP injection functionality.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: Olaf Hering <olaf@aepfle.de>
+> Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/hv/hv_util.c     |    4 +-
+>  include/linux/hyperv.h   |   76 ++++++++++++++++++++++++++++++++++++++++++++-
+>  tools/hv/hv_kvp_daemon.c |    2 +-
+>  3 files changed, 77 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> index d3ac6a4..a0667de 100644
+> --- a/drivers/hv/hv_util.c
+> +++ b/drivers/hv/hv_util.c
+> @@ -263,7 +263,7 @@ static int util_probe(struct hv_device *dev,
+>  		(struct hv_util_service *)dev_id->driver_data;
+>  	int ret;
+>  
+> -	srv->recv_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
+>  	if (!srv->recv_buffer)
+>  		return -ENOMEM;
+>  	if (srv->util_init) {
+> @@ -274,7 +274,7 @@ static int util_probe(struct hv_device *dev,
+>  		}
+>  	}
+>  
+> -	ret = vmbus_open(dev->channel, 2 * PAGE_SIZE, 2 * PAGE_SIZE, NULL, 0,
+> +	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL, 0,
+>  			srv->util_cb, dev->channel);
+>  	if (ret)
+>  		goto error;
+> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> index 68ed7f7..11afc4e 100644
+> --- a/include/linux/hyperv.h
+> +++ b/include/linux/hyperv.h
+> @@ -122,12 +122,53 @@
+>  #define REG_U32 4
+>  #define REG_U64 8
+>  
+> +/*
+> + * As we look at expanding the KVP functionality to include
+> + * IP injection functionality, we need to maintain binary
+> + * compatibility with older daemons.
+> + *
+> + * The KVP opcodes are defined by the host and it was unfortunate
+> + * that I chose to treat the registration operation as part of the
+> + * KVP operations defined by the host.
+> + * Here is the level of compatibility
+> + * (between the user level daemon and the kernel KVP driver) that we
+> + * will implement:
+> + *
+> + * An older daemon will always be supported on a newer driver.
+> + * A given user level daemon will require a minimal version of the
+> + * kernel driver.
+> + * If we cannot handle the version differences, we will fail gracefully
+> + * (this can happen when we have a user level daemon that is more
+> + * advanced than the KVP driver.
+> + *
+> + * We will use values used in this handshake for determining if we have
+> + * workable user level daemon and the kernel driver. We begin by taking the
+> + * registration opcode out of the KVP opcode namespace. We will however,
+> + * maintain compatibility with the existing user-level daemon code.
+> + */
+> +
+> +/*
+> + * Daemon code not supporting IP injection (legacy daemon).
+> + */
+> +
+> +#define KVP_OP_REGISTER	4
 
-Hmm.. My build does not have the [-Wpointer-to-int-cast] for some reason
-so I didn't see this. I was trying to save having to allocate any private data but
-I guess it's cleaner if I do.  BTW, there is another comedi driver that does this
-but I can't recall which one of the top of my head...
+Huh?
 
-> Care to send a follow-on patch to fix this up?
+> +/*
+> + * Daemon code supporting IP injection.
+> + * The KVP opcode field is used to communicate the
+> + * registration information; so define a namespace that
+> + * will be distinct from the host defined KVP opcode.
+> + */
+> +
+> +#define KVP_OP_REGISTER1 100
+> +
+>  enum hv_kvp_exchg_op {
+>  	KVP_OP_GET = 0,
+>  	KVP_OP_SET,
+>  	KVP_OP_DELETE,
+>  	KVP_OP_ENUMERATE,
+> -	KVP_OP_REGISTER,
+> +	KVP_OP_GET_IP_INFO,
+> +	KVP_OP_SET_IP_INFO,
 
-Not a problem.
+So you overloaded the command and somehow think that is ok?  How is that
+supposed to work?  Why not just always keep it there, but fail if it is
+called as you know you have a mismatch?
 
-Thanks,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Otherwise, again, you just broke older tools on a newer kernel.
+
+Or am I missing something here?
+
+confused,
+
+greg k-h
