@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab2HNOZC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:25:02 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:32903 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756326Ab2HNOXT (ORCPT
+	id S1756464Ab2HNOZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:25:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:41241 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756289Ab2HNOZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:23:19 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
+	Tue, 14 Aug 2012 10:25:04 -0400
+Date: Tue, 14 Aug 2012 10:15:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 13/14] ASoC: twl4030: Add pointer to pdata within the private data
-Date: Tue, 14 Aug 2012 17:22:41 +0300
-Message-Id: <1344954162-7985-14-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.6-rc1-tag
+Message-ID: <20120814141513.GA17776@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Access the pdata via a pointer within the twl4030_priv structure.
-In preparation for DeviceTree support.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- sound/soc/codecs/twl4030.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 413e698..8b13d50 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -153,8 +153,7 @@ struct twl4030_priv {
- 	u8 predrivel_enabled, predriver_enabled;
- 	u8 carkitl_enabled, carkitr_enabled;
- 
--	/* Delay needed after enabling the digimic interface */
--	unsigned int digimic_delay;
-+	struct twl4030_codec_data *pdata;
- };
- 
- /*
-@@ -348,7 +347,7 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
- 	if (!pdata)
- 		return;
- 
--	twl4030->digimic_delay = pdata->digimic_delay;
-+	twl4030->pdata = pdata;
- 
- 	reg = twl4030_read_reg_cache(codec, TWL4030_REG_HS_POPN_SET);
- 	reg &= ~TWL4030_RAMP_DELAY;
-@@ -749,9 +748,9 @@ static int aif_event(struct snd_soc_dapm_widget *w,
- 
- static void headset_ramp(struct snd_soc_codec *codec, int ramp)
- {
--	struct twl4030_codec_data *pdata = codec->dev->platform_data;
- 	unsigned char hs_gain, hs_pop;
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
- 	/* Base values for ramp delay calculation: 2^19 - 2^26 */
- 	unsigned int ramp_base[] = {524288, 1048576, 2097152, 4194304,
- 				    8388608, 16777216, 33554432, 67108864};
-@@ -864,9 +863,10 @@ static int digimic_event(struct snd_soc_dapm_widget *w,
- 		struct snd_kcontrol *kcontrol, int event)
- {
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(w->codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
- 
--	if (twl4030->digimic_delay)
--		twl4030_wait_ms(twl4030->digimic_delay);
-+	if (pdata && pdata->digimic_delay)
-+		twl4030_wait_ms(pdata->digimic_delay);
- 	return 0;
- }
- 
-@@ -2248,8 +2248,8 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
- 
- static int twl4030_soc_remove(struct snd_soc_codec *codec)
- {
--	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
-+	struct twl4030_codec_data *pdata = twl4030->pdata;
- 
- 	/* Reset registers to their chip default before leaving */
- 	twl4030_reset_registers(codec);
--- 
-1.7.8.6
+Hey Linus,
 
+Please pull this tag:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.6-rc1-tag
+
+which has just one tiny fix - way back in v3.5 we added a mechanism to populate
+back pages that were released (they overlapped with MMIO regions), but neglected to
+reserve the proper amount of virtual space for extend_brk to work properly. Coincidentally
+some other commit aligned the _brk space to larger area so I didn't trigger this until
+it was run on a machine with more than 2GB of MMIO space.
+
+ arch/x86/xen/p2m.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+Konrad Rzeszutek Wilk (1):
+      xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
+
+
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQKl1rAAoJEFjIrFwIi8fJIzQIAM7KCWmrmf3pMFClEoeRzDB/
+Ywtut3KZvbP+h35LGJvHBLURishtGRrmuW1aubb/J1TyE+z++6p/IEzArYZ6BjOY
+eNFqCCPV8atQYJe1kRpHW1pJggHjIsQ7w3KP7bM6+0ROG3EXtgUh2oBybKN5YfWX
+vz7Ol6RteTq1ElbQ1TrhyxN/4EkWHof8pViR677ofWhjKajRdF2aP5MF3oggAqg1
+C8tZFkD9D0tf+JQKO00HSVmIGcY63EsceOt9+RuARQzI8zecyS9me3/99gWGsHSx
+mDBigjxzWGfSTZC9R84WUmyLL98pIjNutdLvvsyfSBz+akd8xaOqWMWLpvBdwLU=
+=wRra
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
