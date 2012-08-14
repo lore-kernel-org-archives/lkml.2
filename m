@@ -1,78 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab2HNXdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:33:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33844 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2HNXdO (ORCPT
+	id S1754696Ab2HNXdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:33:37 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:44513 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab2HNXdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:33:14 -0400
-Date: Wed, 15 Aug 2012 01:33:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-In-Reply-To: <20120814230100.GF25632@google.com>
-Message-ID: <alpine.LFD.2.02.1208150116570.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org> <20120813233520.GG25632@google.com> <alpine.LFD.2.02.1208142055260.32033@ionos> <20120814192203.GY25632@google.com> <alpine.LFD.2.02.1208142243500.32033@ionos> <20120814215632.GE25632@google.com>
- <alpine.LFD.2.02.1208150005090.32033@ionos> <20120814230100.GF25632@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 14 Aug 2012 19:33:35 -0400
+Message-ID: <1344987332.4430.28.camel@footlong>
+Subject: [PATCH V3 3/3] drivers/char/tpm: Add securityfs support for event
+ log
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
+        adlai@linux.vnet.ibm.com
+Date: Tue, 14 Aug 2012 18:35:32 -0500
+In-Reply-To: <1344986638.4430.22.camel@footlong>
+References: <1344986638.4430.22.camel@footlong>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081423-2356-0000-0000-00000148720D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012, Tejun Heo wrote:
-> On Wed, Aug 15, 2012 at 12:45:24AM +0200, Thomas Gleixner wrote:
-> > And we have very well worked out mechanisms regarding cross tree
-> > changes, i.e. providing minimal trees to pull for other maintainers.
-> 
-> If you look at the review branches, they're actually structured that
-> way so that the timer part can be pulled separately.  If the
-> maintainer wants to do that, sure.  If the maintainer thinks routing
-> through another tree is fine, that's okay too.  Subsystem boundaries
-> are all good and great but it's not some absolute barrier which can't
-> be crossed at any cost.
+This patch retrieves the event log data from the device tree
+during file open. The event log data will then displayed through
+securityfs.
 
-That's not about any cost. You are trying to force stuff into -next
-with a THREE workdays notice, just because you think that your stuff
-is so important.
+Signed-off-by: Ashley Lai <adlai@us.ibm.com>
+---
+ drivers/char/tpm/Makefile       |    5 +++
+ drivers/char/tpm/tpm.h          |   12 ------
+ drivers/char/tpm/tpm_eventlog.h |   15 ++++++++
+ drivers/char/tpm/tpm_of.c       |   73 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 93 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_of.c
 
-Have you ever tried to understand how the kernel development system
-works?
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index 547509d..9080cc4 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -5,6 +5,11 @@ obj-$(CONFIG_TCG_TPM) += tpm.o
+ ifdef CONFIG_ACPI
+ 	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+ 	tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
++else
++ifdef CONFIG_TCG_IBMVTPM
++	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
++	tpm_bios-objs += tpm_eventlog.o tpm_of.o
++endif
+ endif
+ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
+ obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 870fde7..f1af738 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -327,15 +327,3 @@ extern int tpm_pm_suspend(struct device *);
+ extern int tpm_pm_resume(struct device *);
+ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
+ 			     wait_queue_head_t *);
+-#ifdef CONFIG_ACPI
+-extern struct dentry ** tpm_bios_log_setup(char *);
+-extern void tpm_bios_log_teardown(struct dentry **);
+-#else
+-static inline struct dentry ** tpm_bios_log_setup(char *name)
+-{
+-	return NULL;
+-}
+-static inline void tpm_bios_log_teardown(struct dentry **dir)
+-{
+-}
+-#endif
+diff --git a/drivers/char/tpm/tpm_eventlog.h b/drivers/char/tpm/tpm_eventlog.h
+index 8e23ccd..e7da086 100644
+--- a/drivers/char/tpm/tpm_eventlog.h
++++ b/drivers/char/tpm/tpm_eventlog.h
+@@ -68,4 +68,19 @@ enum tcpa_pc_event_ids {
+ };
+ 
+ int read_log(struct tpm_bios_log *log);
++
++#if defined(CONFIG_TCG_IBMVTPM) || defined(CONFIG_TCG_IBMVTPM_MODULE) || \
++	defined(CONFIG_ACPI)
++extern struct dentry **tpm_bios_log_setup(char *);
++extern void tpm_bios_log_teardown(struct dentry **);
++#else
++static inline struct dentry **tpm_bios_log_setup(char *name)
++{
++	return NULL;
++}
++static inline void tpm_bios_log_teardown(struct dentry **dir)
++{
++}
++#endif
++
+ #endif
+diff --git a/drivers/char/tpm/tpm_of.c b/drivers/char/tpm/tpm_of.c
+new file mode 100644
+index 0000000..98ba2bd
+--- /dev/null
++++ b/drivers/char/tpm/tpm_of.c
+@@ -0,0 +1,73 @@
++/*
++ * Copyright 2012 IBM Corporation
++ *
++ * Author: Ashley Lai <adlai@us.ibm.com>
++ *
++ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
++ *
++ * Read the event log created by the firmware on PPC64
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ *
++ */
++
++#include <linux/slab.h>
++#include <linux/of.h>
++
++#include "tpm.h"
++#include "tpm_eventlog.h"
++
++int read_log(struct tpm_bios_log *log)
++{
++	struct device_node *np;
++	const u32 *sizep;
++	const __be64 *basep;
++
++	if (log->bios_event_log != NULL) {
++		pr_err("%s: ERROR - Eventlog already initialized\n", __func__);
++		return -EFAULT;
++	}
++
++	np = of_find_node_by_name(NULL, "ibm,vtpm");
++	if (!np) {
++		pr_err("%s: ERROR - IBMVTPM not supported\n", __func__);
++		return -ENODEV;
++	}
++
++	sizep = of_get_property(np, "linux,sml-size", NULL);
++	if (sizep == NULL) {
++		pr_err("%s: ERROR - SML size not found\n", __func__);
++		goto cleanup_eio;
++	}
++	if (*sizep == 0) {
++		pr_err("%s: ERROR - event log area empty\n", __func__);
++		goto cleanup_eio;
++	}
++
++	basep = of_get_property(np, "linux,sml-base", NULL);
++	if (basep == NULL) {
++		pr_err(KERN_ERR "%s: ERROR - SML not found\n", __func__);
++		goto cleanup_eio;
++	}
++
++	of_node_put(np);
++	log->bios_event_log = kmalloc(*sizep, GFP_KERNEL);
++	if (!log->bios_event_log) {
++		pr_err("%s: ERROR - Not enough memory for BIOS measurements\n",
++		       __func__);
++		return -ENOMEM;
++	}
++
++	log->bios_event_log_end = log->bios_event_log + *sizep;
++
++	memcpy(log->bios_event_log, __va(be64_to_cpup(basep)), *sizep);
++
++	return 0;
++
++cleanup_eio:
++	of_node_put(np);
++	return -EIO;
++}
+-- 
+1.7.1
 
-> I probably should have written "if the maintainer doesn't object, I
-> think it would be easier to route these through wq/for-3.7 as it will
-> be the only user for now, blah blah blah" instead and maybe I
-> misjudged the character of the changes or the subsystem.  That said, I
-> think you're inferring too much.
 
-No, I'm, not inferrring too much. It's not about what you should have
-written.
-
-It's about your general attitude. You really think that I accept all
-that stuff just because you add some "blah, blah, blah" to some mail?
-
-Far from it!
-
-To convince me to accept your patches you should start answering my
-questions and suggestions seriously in the first place and not
-discarding them upfront as lunatic visions.
-
-As long as you can't provide a proper counter argument against
-maintaining the timer in the same context as the work, no matter what
-the underlying mechanism to achieve this will be, I'm not going to
-accept any of this hackery neither near next nor mainline.
-
-Thanks,
-
-	tglx
