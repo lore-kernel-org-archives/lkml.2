@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab2HNJsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 05:48:06 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35211 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab2HNJsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 05:48:03 -0400
+	id S1755568Ab2HNJy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 05:54:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394Ab2HNJyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 05:54:55 -0400
+Message-ID: <502A2057.3000401@redhat.com>
+Date: Tue, 14 Aug 2012 06:54:31 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
-References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
-Date: Tue, 14 Aug 2012 18:48:02 +0900
-Message-ID: <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
-Subject: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
-From: Chanho Min <chanho0207@gmail.com>
-To: James Bottomley <JBottomley@parallels.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien> <50295A43.30305@redhat.com> <alpine.DEB.2.02.1208132219060.2355@localhost6.localdomain6> <5029AC92.2060408@redhat.com> <alpine.DEB.2.02.1208140819400.1973@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1208140819400.1973@localhost6.localdomain6>
+X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to unlock the queue before put_device in scsi_request_fn()
-If we trigger the ->remove() function, It occur a oops from the caller.
-So sdev reference count should not be dropped to zero here.
-Also It was added before scsi_device_dev_release() was moved
-to user context, so it is outdated.
+Em 14-08-2012 03:30, Julia Lawall escreveu:
+>> Well, I've massively applied hundreds of patches today, but not much
+>> on this driver. Maybe it is better for you to wait for a couple of
+>> days for these to be at -next, or use, instead, our tree as the basis for
+>> it:
+>>     git://linuxtv.org/media_tree.git staging/for_v3.7
+> 
+> I cloned this, but it doesn't seem to contain the file:
+> 
+>> :~: cd staging/for_v3.7/
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
-Reviewed-by: Bart Van Assche <bvanassche@acm.org>
----
- drivers/scsi/scsi_lib.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+staging/for_v3.7 is the name of the branch ;)
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index ffd7773..cb2185a 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1626,11 +1626,7 @@ out_delay:
- 	if (sdev->device_busy == 0)
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- out:
--	/* must be careful here...if we trigger the ->remove() function
--	 * we cannot be holding the q lock */
--	spin_unlock_irq(q->queue_lock);
- 	put_device(&sdev->sdev_gendev);
--	spin_lock_irq(q->queue_lock);
- }
+So, you need to use "--branch staging/for_v3.7" on your git
+clone command.
 
- u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
--- 
-1.7.0.4
+>> :for_v3.7: ls drivers/media/video/mx2_emmaprp.c
+> ls: cannot access drivers/media/video/mx2_emmaprp.c: No such file or directory
+
+PS.: I started yesterday to apply a major reorganization of the drivers
+along drivers/media/. This driver is still there at the same path, but it
+will be moving soon to another place.
+
