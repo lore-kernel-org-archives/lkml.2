@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab2HNPvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:51:39 -0400
+	id S1756130Ab2HNPv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:51:59 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:52609
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755512Ab2HNPtz (ORCPT
+	by vger.kernel.org with ESMTP id S1754335Ab2HNPty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:49:55 -0400
+	Tue, 14 Aug 2012 11:49:54 -0400
 X-IronPort-AV: E=Sophos;i="4.77,766,1336341600"; 
-   d="scan'208";a="153065913"
+   d="scan'208";a="153065911"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/media/video/{s2255drv.c,tm6000/tm6000-alsa.c,tm6000/tm6000-input.c}: Remove potential NULL dereferences
-Date: Tue, 14 Aug 2012 17:49:46 +0200
-Message-Id: <1344959388-19719-4-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/5] drivers/block/swim3.c: Remove potential NULL dereference
+Date: Tue, 14 Aug 2012 17:49:44 +0200
+Message-Id: <1344959388-19719-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -50,63 +49,24 @@ statement S;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/video/s2255drv.c            |    3 ++-
- drivers/media/video/tm6000/tm6000-alsa.c  |    3 ++-
- drivers/media/video/tm6000/tm6000-input.c |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/block/swim3.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/video/s2255drv.c b/drivers/media/video/s2255drv.c
-index 6c7960c..a25513d 100644
---- a/drivers/media/video/s2255drv.c
-+++ b/drivers/media/video/s2255drv.c
-@@ -1861,11 +1861,12 @@ static int s2255_release(struct file *file)
- static int s2255_mmap_v4l(struct file *file, struct vm_area_struct *vma)
+diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
+index 89ddab1..ffecfef 100644
+--- a/drivers/block/swim3.c
++++ b/drivers/block/swim3.c
+@@ -1090,10 +1090,11 @@ static const struct block_device_operations floppy_fops = {
+ static void swim3_mb_event(struct macio_dev* mdev, int mb_state)
  {
- 	struct s2255_fh *fh = file->private_data;
--	struct s2255_dev *dev = fh->dev;
-+	struct s2255_dev *dev;
- 	int ret;
+ 	struct floppy_state *fs = macio_get_drvdata(mdev);
+-	struct swim3 __iomem *sw = fs->swim3;
++	struct swim3 __iomem *sw;
  
- 	if (!fh)
- 		return -ENODEV;
-+	dev = fh->dev;
- 	dprintk(4, "%s, vma=0x%08lx\n", __func__, (unsigned long)vma);
- 	if (mutex_lock_interruptible(&dev->lock))
- 		return -ERESTARTSYS;
-diff --git a/drivers/media/video/tm6000/tm6000-alsa.c b/drivers/media/video/tm6000/tm6000-alsa.c
-index bd07ec7..813c1ec 100644
---- a/drivers/media/video/tm6000/tm6000-alsa.c
-+++ b/drivers/media/video/tm6000/tm6000-alsa.c
-@@ -487,10 +487,11 @@ error:
- 
- static int tm6000_audio_fini(struct tm6000_core *dev)
- {
--	struct snd_tm6000_card	*chip = dev->adev;
-+	struct snd_tm6000_card *chip;
- 
- 	if (!dev)
- 		return 0;
-+	chip = dev->adev;
- 
- 	if (!chip)
- 		return 0;
-diff --git a/drivers/media/video/tm6000/tm6000-input.c b/drivers/media/video/tm6000/tm6000-input.c
-index e80b7e1..dffbd4b 100644
---- a/drivers/media/video/tm6000/tm6000-input.c
-+++ b/drivers/media/video/tm6000/tm6000-input.c
-@@ -319,12 +319,13 @@ static int tm6000_ir_change_protocol(struct rc_dev *rc, u64 rc_type)
- static int __tm6000_ir_int_start(struct rc_dev *rc)
- {
- 	struct tm6000_IR *ir = rc->priv;
--	struct tm6000_core *dev = ir->dev;
-+	struct tm6000_core *dev;
- 	int pipe, size;
- 	int err = -ENOMEM;
- 
- 	if (!ir)
- 		return -ENODEV;
-+	dev = ir->dev;
- 
- 	dprintk(2, "%s\n",__func__);
+ 	if (!fs)
+ 		return;
++	sw = fs->swim3;
+ 	if (mb_state != MB_FD)
+ 		return;
  
 
