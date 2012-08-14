@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2HNVeq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 17:34:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9300 "EHLO mx1.redhat.com"
+	id S1754074Ab2HNVgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 17:36:12 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39007 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab2HNVeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 17:34:44 -0400
-Date: Tue, 14 Aug 2012 18:34:13 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120814213412.GG22133@t510.redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <20120814182244.GB13338@t510.redhat.com>
- <20120814195139.GA28870@redhat.com>
- <20120814195916.GC28870@redhat.com>
- <20120814200830.GD22133@t510.redhat.com>
- <20120814202401.GB28990@redhat.com>
- <20120814202949.GF22133@t510.redhat.com>
- <20120814204906.GD28990@redhat.com>
+	id S1752754Ab2HNVgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 17:36:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 1/3] PM / Runtime: Fix rpm_resume() return value for power.no_callbacks set
+Date: Tue, 14 Aug 2012 23:38:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201208142334.45452.rjw@sisk.pl>
+In-Reply-To: <201208142334.45452.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814204906.GD28990@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208142338.18797.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 11:49:06PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 14, 2012 at 05:29:50PM -0300, Rafael Aquini wrote:
-> > On Tue, Aug 14, 2012 at 11:24:01PM +0300, Michael S. Tsirkin wrote:
-> > > On Tue, Aug 14, 2012 at 05:08:31PM -0300, Rafael Aquini wrote:
-> > > > On Tue, Aug 14, 2012 at 10:59:16PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > > What if there is more than one balloon device?
-> > > > > > > 
-> > > > > > > Is it possible to load this driver twice, or are you foreseeing a future case
-> > > > > > > where this driver will be able to manage several distinct memory balloons for
-> > > > > > > the same guest?
-> > > > > > > 
-> > > > > > 
-> > > > > > Second.
-> > > > > > It is easy to create several balloons they are just
-> > > > > > pci devices.
-> > > > >  
-> > > > > 
-> > > > > 
-> > > > > and it might not be too important to make it work but
-> > > > > at least would be nice not to have a crash in this
-> > > > > setup.
-> > > > >
-> > > > Fair enough. For now, as I believe it's safe to assume we are only inflating one
-> > > > balloon per guest, I'd like to propose this as a future enhancement. Sounds
-> > > > good?
-> > > >  
-> > > 
-> > > Since guest crashes when it's not the case, no it doesn't, sorry :(.
-> > >
-> > Ok, but right now this driver only takes care of 1 balloon per guest,
-> 
-> It does? Are you sure? There is no global state as far as I can see. So
-> I can create 2 devices and driver will happily create two instances,
-> each one can be inflated/deflated independently.
-> 
-> > so how
-> > could this approach crash it? 
-> 
-> Add device. inflate. Add another device. inflate. deflate. unplug.
-> Now you have pointer to freed memory and when mm touches
-> page from first device, you ge use after free.
-> 
-> > Your point is a good thing to be on a to-do list for future enhancements, but
-> > it's not a dealbreaker for the present balloon driver implementation, IMHO.
-> > 
-> 
-> Yes it looks like a dealbreaker to me.
 
-Sorry. You're right, I'm wrong.
+For devices whose power.no_callbacks flag is set, rpm_resume()
+should return 1 if the device's parent is already active, so that
+the callers of pm_runtime_get() don't think that they have to wait
+for the device to resume (asynchronously) in that case (the core
+won't queue up an asynchronous resume in that case, so there's
+nothing to wait for anyway).
 
-I'll get back to the scracthpad to overcome this constraint. I believe the way
-this patch was at its v4 revision (wrt this particular case) could possibly
-address this concern of yours.
+Modify the code accordingly (and make sure that an idle notification
+will be queued up on success, even if 1 is to be returned).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/runtime.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux/drivers/base/power/runtime.c
+===================================================================
+--- linux.orig/drivers/base/power/runtime.c
++++ linux/drivers/base/power/runtime.c
+@@ -584,6 +584,7 @@ static int rpm_resume(struct device *dev
+ 		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
+ 			atomic_inc(&dev->parent->power.child_count);
+ 			spin_unlock(&dev->parent->power.lock);
++			retval = 1;
+ 			goto no_callback;	/* Assume success. */
+ 		}
+ 		spin_unlock(&dev->parent->power.lock);
+@@ -664,7 +665,7 @@ static int rpm_resume(struct device *dev
+ 	}
+ 	wake_up_all(&dev->power.wait_queue);
+ 
+-	if (!retval)
++	if (retval >= 0)
+ 		rpm_idle(dev, RPM_ASYNC);
+ 
+  out:
 
