@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2HNOx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:53:59 -0400
-Received: from luna.vmars.tuwien.ac.at ([128.130.39.29]:52658 "EHLO
-	mail.vmars.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2HNOx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:53:57 -0400
-X-Greylist: delayed 2867 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Aug 2012 10:53:57 EDT
-Message-ID: <502A667B.2060100@vmars.tuwien.ac.at>
-Date: Tue, 14 Aug 2012 16:53:47 +0200
-From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756231Ab2HNOya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:54:30 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752664Ab2HNOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 10:54:18 -0400
+Message-ID: <502A6696.4030200@nod.at>
+Date: Tue, 14 Aug 2012 16:54:14 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] apple_gmux: Add support for newer hardware
-References: <1344898369-4944-1-git-send-email-mjg@redhat.com> <1344898369-4944-2-git-send-email-mjg@redhat.com> <20120814004625.GB18992@thinkpad-t410> <502A5B40.9010303@vmars.tuwien.ac.at>
-In-Reply-To: <502A5B40.9010303@vmars.tuwien.ac.at>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: David Howells <dhowells@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for July 26 (uml)
+References: <502A613F.1090600@nod.at> <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk> <15981.1344955883@warthog.procyon.org.uk>
+In-Reply-To: <15981.1344955883@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDC65854493518245CE064E31"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDC65854493518245CE064E31
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Only in relation to Seth's future apple-gmux patch series about
-vgaswitcheroo and restoring the gmux device configuration across
-suspend/resume [1]:
-On resume the gmux registers 0x28 (DDC) and 0x10 (SWITCH_DISPLAY)
-(i.e., the first two writes) are not restored (result: the screen
-remains black after suspend/resume).
+Am 14.08.2012 16:51, schrieb David Howells:
+> Richard Weinberger <richard@nod.at> wrote:
+>=20
+>> Is there no way to get this information from the UML subarch?
+>> Which is currently X86_32 or X86_64.
+>=20
+> Or ppc or ia64?  Or are those defunct?
 
-Of course, this does not happen with my patch proposal ;)
-Unfortunately, I have not the time to sort this out in the next couple
-of days -- on the other hand this is probably not a problem w.r.t.
-this patch, but needs to be taken care of in Seth's patch series.
+Those are defunct.
+AFAIK viro is working on UML/ppc64.
 
-Bernhard
+> I can certainly try pasting the lines from x86/Kconfig to uml/Kconfig.c=
+ommon
+> to switch the REL/RELA bits, but it would be nice to get this from the =
+actual
+> arch if possible to reduce redundancy.
 
-[1] http://people.canonical.com/~sforshee/apple-gmux-patches/
+The issue happens only on -next, right?
+I can have a closer look at the issue tomorrow.
+
+Thanks,
+//richard
 
 
-On 08/14/2012 04:05 PM, Bernhard Froemel wrote:
-> Please reduce the delay in the gmux_index_wait_[ready|complete] 
-> functions: 100ms is way too long. 1 ms is more than enough. I
-> never experienced any problems with 100 us.
-> 
-> The version information can also be extracted in the new gmux
-> device (see my initial patch proposal).
-> 
-> Bernhard
-> 
-> On 08/14/2012 02:46 AM, Seth Forshee wrote:
->> On Mon, Aug 13, 2012 at 06:52:49PM -0400, Matthew Garrett wrote:
->>> New gmux devices have a different method for accessing the 
->>> registers. Update the driver to cope. Incorporates feedback
->>> from Bernhard Froemel.
->>> 
->>> Signed-off-by: Matthew Garrett <mjg@redhat.com> Cc: Bernhard 
->>> Froemel <froemel@vmars.tuwien.ac.at> Cc: Seth Forshee 
->>> <seth.forshee@canonical.com>
-> 
->> Acked-by: Seth Forshee <seth.forshee@canonical.com>
-> 
-> 
-> 
+--------------enigDC65854493518245CE064E31
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iEYEARECAAYFAlAqZnsACgkQ6iVUjPs37JlYfwCcCH17qDbQO2xqhlOsqjliVWA/
-bm0AnAyeh7pprGvS8qdTAvB0c3RYJsFc
-=pQxQ
+iQEcBAEBAgAGBQJQKmaXAAoJEN9758yqZn9eLOgH/1Er70Qz04+e70Ga1vIAsYvI
+cwCi+G75LBUC6T3W1N4AF7QW3WzEiy1+4+AJd0SJIntp0EDcpTqJ0XM9lEyD7jRp
+S1qc4+Ls6xMEUcDCnOiiLll2u/7TJRcTrUmxCWYI+AvN9JAvNsMWWHgweDxUA917
+/MbjnRl6TtAgD0mZdIUFbSDKQNPLWv6ItRmm5EX5Ddl0RjMOT8hEGdOIAPcNNrTJ
+PFp8cRCt3rt7LHdwnec1E5iymAP/aPPiAFCNgpAPs1xz190f4EdCjvwe6lrtGSmX
+PnyhU7eimWghKCaX7mdhd4iL7/w/pnUc7LwYfZ4nBSgwgASuhej5rutFhuTDSnU=
+=8dnn
 -----END PGP SIGNATURE-----
+
+--------------enigDC65854493518245CE064E31--
