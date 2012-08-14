@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2HNCIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 22:08:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32514 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab2HNCIu convert rfc822-to-8bit (ORCPT
+	id S1754845Ab2HNCLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 22:11:45 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40591 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908Ab2HNCLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 22:08:50 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-2e-5029b3312d4a
+	Mon, 13 Aug 2012 22:11:43 -0400
+X-AuditID: cbfee61b-b7faf6d00000476a-d4-5029b3d3741b
 From: IAN CHEN <ian.cy.chen@samsung.com>
 To: "'Namjae Jeon'" <linkinjeon@gmail.com>
 Cc: cjb@laptop.org, adrian.hunter@intel.com, subhashj@codeaurora.org,
@@ -19,25 +19,25 @@ References: <5028CDED.2020307@samsung.com>
  <CAKYAXd--Ta1xL2uMEsArmpsg99x+B21ScJOQAty=RFWWCQ6M2w@mail.gmail.com>
 In-reply-to: <CAKYAXd--Ta1xL2uMEsArmpsg99x+B21ScJOQAty=RFWWCQ6M2w@mail.gmail.com>
 Subject: RE: [PATCH] mmc: card: Skip secure option for MoviNAND.
-Date: Tue, 14 Aug 2012 11:10:04 +0900
-Message-id: <000101cd79c1$ebf01040$c3d030c0$%cy.chen@samsung.com>
+Date: Tue, 14 Aug 2012 11:12:47 +0900
+Message-id: <000e01cd79c2$4c6a8cc0$e53fa640$%cy.chen@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac15U/X/RN2xdH42R6eCpMthNpQDNQAbd72w
+Thread-index: Ac15U/X/RN2xdH42R6eCpMthNpQDNQAbkpUg
 Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQV3DzZoBBvcuiltc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ2XWpiLTjCW/Fx/lL2BsYt3F2MnBwSAiYSHx9eYYWw
-	xSQu3FvP1sXIxSEkMJ1R4unmfmYI5y+jxI3v/WwgVWwCGhLfDz5hBLFFgOwH27eygxQxCzQy
-	SWzumM8MkhASKJRY8WczmM0pECxxZM4nsGZhAQeJjy1TgdZxcLAIqErs+20DEuYVcJTY9ewZ
-	G4QtKPFj8j0WEJtZQF1i0rxFzBC2tsSTdxfAWiWA4o/+6kKcYCRx7NcBqHJxiUkPHrJPYBSa
-	hWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwSH9TGoH48oGi0OM
-	AhyMSjy8CmmaAUKsiWXFlbmHGCU4mJVEeO/3AIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzGnt/
-	9RcSSE8sSc1OTS1ILYLJMnFwSjUwds74Xid8zzxD6dWFBd1qaitzI34zrBOw0RbNe6dcUbPo
-	4maODd5sNuHdGtYzLMVYd0r/5v0ku9HxhPq/Bq6D5a/KTXw92GSkv7/cuFMpZdVmi7mn7SQE
-	dqc1neZJ/fR785Vl/sbHmWct2pO6/cnm0AWX03Uy+c56h83WnHK29rS78YU5WclOSizFGYmG
-	WsxFxYkAoqhhUWUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd3LmzUDDB72C1lc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDK2Pf/PXnCQt2LapGPsDYwbubsYOTkkBEwkJl3/wwph
+	i0lcuLeerYuRi0NIYBGjxO91s1ggnL+MEtcfXWcDqWIT0JD4fvAJI4gtAmQ/2L6VHaSIWaCR
+	SWJzx3xmkISQQKHEij+bwWxOgWCJI3M+gTULCzhIfGyZCraORUBV4vWOn0wgNq+Ao8TtT5/Z
+	IGxBiR+T77GA2MwC6hKT5i1ihrC1JZ68uwDUywF0qrrEo7+6EDcYSdxdco0NokRcYtKDh+wT
+	GIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcFA/k97BuKrB
+	4hCjAAejEg9vYaJmgBBrYllxZe4hRgkOZiUR3vs9QCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8
+	Jt5f/YUE0hNLUrNTUwtSi2CyTBycUg2MtjMuJ9z6v2eS8q8ljE2hF6vtdZjT20KmK/68zvz+
+	D+uplfvYe5ZvSg2YxJfrWZC6r+y+xYqlk5T/f9/mLF4wZ+WrqGu7Fxw+xbNKom/G4xkLJ3FM
+	Sk/8k8r9e95/tg1pF9oNz8x8+OeJd/dU12wBwYSLXwKnC11J5q3oX56zdBVrSqbZ7bUPYpVY
+	ijMSDbWYi4oTAWPnhqxmAgAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -55,7 +55,7 @@ You could refer this discussion in XDA developers.
 
 Regards,
 Ian
- 
+
 -----Original Message-----
 From: Namjae Jeon [mailto:linkinjeon@gmail.com] 
 Sent: Monday, August 13, 2012 10:03 PM
