@@ -1,28 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2HNRbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:31:31 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62376 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082Ab2HNRb2 (ORCPT
+	id S1756724Ab2HNRfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:35:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48239 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab2HNRfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:31:28 -0400
-Date: Tue, 14 Aug 2012 10:31:24 -0700
+	Tue, 14 Aug 2012 13:35:36 -0400
+Date: Tue, 14 Aug 2012 10:35:31 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-Message-ID: <20120814173124.GO25632@google.com>
-References: <20120730213656.0a9f6d30@neptune.home>
- <20120809200947.2194e89f@neptune.home>
- <20120813232708.GF25632@google.com>
- <20120814083044.78b401d2@pluto.restena.lu>
+To: Marc Dietrich <marvin24@gmx.de>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, mingo@redhat.com,
+        lauro.venancio@openbossa.org, jak@jak-linux.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alasdair Kergon <agk@redhat.com>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Rob Clark <rob@ti.com>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Sage Weil <sage@inktank.com>
+Subject: Re: [PATCH 6/6] workqueue: deprecate WQ_NON_REENTRANT
+Message-ID: <20120814173531.GP25632@google.com>
+References: <1344908986-18152-1-git-send-email-tj@kernel.org>
+ <1344908986-18152-7-git-send-email-tj@kernel.org>
+ <2904218.ZgtLmH5Irc@ax5200p>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120814083044.78b401d2@pluto.restena.lu>
+In-Reply-To: <2904218.ZgtLmH5Irc@ax5200p>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,15 +37,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-On Tue, Aug 14, 2012 at 08:30:44AM +0200, Bruno Prémont wrote:
-> > I'm kinda shooting in the dark but who flushes / cancels
-> > fb_info->deferred_work?
-> 
-> fb_deferred_io_cleanup() does so and is called by destroy fbops
-> (when last reference to fb_info is returned):
+On Tue, Aug 14, 2012 at 07:24:59PM +0200, Marc Dietrich wrote:
+> the nvec driver had its own workqueue because we found that it reduced some 
+> timimg induced protocol errors. I just tested your patch which uses the system 
+> workqueue and I failed to reproduce these protocol errors under stress 
+> testing, so I think it's ok.
 
-I see.  Sorry but just from glancing it I can't really tell what's
-going wrong.
+Thanks, there shouldn't be any difference whether you use system_wq or
+your own.
+
+> Because this is a single patch affecting many drivers, is this going through 
+> linux-next or some subsystem tree? Maybe it would have been better to split it 
+> in one patch per driver. Otherwise ...
+
+I generally think it's better to do quick one time conversion for
+things like this, but this patch is rather borderline.  It might be
+better to separate out the non trivialones and route them separately.
+I'll think more about it.
 
 Thanks.
 
