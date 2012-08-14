@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab2HNItY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:49:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41167 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754668Ab2HNItV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:49:21 -0400
-Date: Tue, 14 Aug 2012 10:49:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 5/5] x86: Move enabling of PSE and PGE out of
- init_memory_mapping
-Message-ID: <20120814084916.GA16399@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-	Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <1344547389-4599-1-git-send-email-jacob.shin@amd.com>
- <1344547389-4599-6-git-send-email-jacob.shin@amd.com>
- <20120811200133.GG2874@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120813073440.GC16654@liondog.tnic>
- <20120813232040.GE25632@google.com>
+	id S1755340Ab2HNIvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:51:07 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55295 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab2HNIvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 04:51:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120813232040.GE25632@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1344527268-5964-5-git-send-email-lee.jones@linaro.org>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+	<1344527268-5964-5-git-send-email-lee.jones@linaro.org>
+Date: Tue, 14 Aug 2012 10:51:02 +0200
+Message-ID: <CACRpkda_xOyu9BFGRK4xTsXOO9RCJu7BbU-kPGpttVkR6mDMZg@mail.gmail.com>
+Subject: Re: [PATCH 04/22] ASoC: Ux500: Move MSP pinctrl setup into the MSP driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        STEricsson_nomadik_linux@list.st.com,
+        Patrice CHOTARD <patrice.chotard@stericsson.com>,
+        Ola LILJA2 <ola.o.lilja@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 04:20:40PM -0700, Tejun Heo wrote:
-> I meant the patch should come before the patch making multiple calls
-> to init_memory_mapping().
+On Thu, Aug 9, 2012 at 5:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Ah, this makes sense.
+> In the initial submission of the MSP driver msp1 and msp3's associated
+> pinctrl mechanism was passed back to platform code using a plat_init()
+> call-back routine, but it has no place in platform code. The MSP driver
+> should set this up for the appropriate ports. Instead we use a use_pinctrl
+> identifier which is passed from platform_data/Device Tree which indicates
+> which ports should use pinctrl.
+>
+> CC: alsa-devel@alsa-project.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> > > Also, there seem to be other stuff which need to be moved out.
-> > 
-> > Which are those pls?
-> 
-> Rebuilding pgtable on each invocation?
+This is very good because it rids platform code and makes the driver
+self-contained without strange platform data hooks.
 
-You mean pagetable_reserve() right?
+Now details...
 
-Yes, Jacob, you basically might want to carve out all functionality
-from init_memory_mapping() which is independent from its start and end
-args and do the carving in a pre-patch or two to 1/5.
+> +/* MSP1/3 Tx/Rx usage protection */
+> +static DEFINE_SPINLOCK(msp_rxtx_lock);
+> +
+> +/* Pin modes */
+> +struct pinctrl *pinctrl_p;
+> +struct pinctrl_state *pinctrl_def;
+> +struct pinctrl_state *pinctrl_sleep;
+> +
+> +/* Reference Count */
+> +int pinctrl_rxtx_ref;
 
-Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+But wait. These are just local statics. Surelty you can put these into
+struct ux500_msp instead? Here it looks like these will be used for
+all ports, so MSP2 will enable the pins requested by MSP1 etc
+completely broken. So put it into the struct ux500_msp state
+container from ux500_msp_i2s.h where it belongs.
+
+Refer to drivers/tty/serial/amba-pl011.c when in trouble. This
+one is a good pinctrl example.
+
+Yours,
+Linus Walleij
