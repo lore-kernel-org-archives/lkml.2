@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab2HNNfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:35:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61450 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2HNNfl (ORCPT
+	id S1752148Ab2HNNiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:38:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25712 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2HNNiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:35:41 -0400
-Date: Tue, 14 Aug 2012 15:35:35 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Flavio Leitner <fbl@redhat.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
-        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
-        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
-        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: [patch net-next 01/16] net: introduce upper device lists
-Message-ID: <20120814133535.GC1661@minipsycho.brq.redhat.com>
-References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
- <1344871635-1052-2-git-send-email-jiri@resnulli.us>
- <20120813145217.38748c4f@obelix.rh>
- <20120814122433.GB1661@minipsycho.brq.redhat.com>
- <20120814101400.0ef7aaa9@obelix.rh>
+	Tue, 14 Aug 2012 09:38:12 -0400
+Date: Tue, 14 Aug 2012 09:28:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: David Miller <davem@davemloft.net>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        xen-devel@lists.xensource.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, konrad@darnok.org,
+        akpm@linux-foundation.org
+Subject: Re: [Xen-devel] [PATCH] netvm: check for page == NULL when
+ propogating the skb->pfmemalloc flag
+Message-ID: <20120814132803.GC10880@phenom.dumpdata.com>
+References: <20120807085554.GF29814@suse.de>
+ <20120808.155046.820543563969484712.davem@davemloft.net>
+ <20120813154144.GA24868@phenom.dumpdata.com>
+ <20120814100522.GL4177@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120814101400.0ef7aaa9@obelix.rh>
+In-Reply-To: <20120814100522.GL4177@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tue, Aug 14, 2012 at 03:14:00PM CEST, fbl@redhat.com wrote:
->On Tue, 14 Aug 2012 14:24:33 +0200
->Jiri Pirko <jiri@resnulli.us> wrote:
->
->> Mon, Aug 13, 2012 at 07:52:17PM CEST, fbl@redhat.com wrote:
->> >On Mon, 13 Aug 2012 17:27:00 +0200
->> >Jiri Pirko <jiri@resnulli.us> wrote:
->> >> +	/*
->> >> +	 * To prevent loops, check if dev is not upper device to upper_dev.
->> >> +	 */
->> >> +	if (__netdev_has_upper_dev(upper_dev, dev, true))
->> >> +		return -EBUSY;
->> >> +
->> >> +	if (__netdev_find_upper(dev, upper_dev))
->> >> +		return -EEXIST;
->> >
->> >__netdev_has_upper_dev() can go all the way up finding the device and
->> >the __netdev_find_upper() just check the first level.
->> 
->> 
->> I do not think this ordering is somewhat inportant.
->
->it's not the order, see below:
->
->> >I think it would be better to use:
->> >__netdev_find_upper_dev(,,deep=true/false)
->> >__netdev_has_upper(,)
->
->It's their names.  Currently, the function ..._find_... look at
->one level only, while the function ..._has_... does one or more
->levels.  I think it's better to swap 'has' and 'find' in their names:
->
->__netdev_find_upper_dev(,,deep=true/false) <-- find in all levels
->__netdev_has_upper(,)  <-- check only the one level.
+On Tue, Aug 14, 2012 at 11:05:22AM +0100, Mel Gorman wrote:
+> On Mon, Aug 13, 2012 at 11:41:44AM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
+> > > From: Mel Gorman <mgorman@suse.de>
+> > > Date: Tue, 7 Aug 2012 09:55:55 +0100
+> > > 
+> > > > Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+> > > > for the following bug triggered by a xen network driver
+> > >  ...
+> > > > The problem is that the xenfront driver is passing a NULL page to
+> > > > __skb_fill_page_desc() which was unexpected. This patch checks that
+> > > > there is a page before dereferencing.
+> > > > 
+> > > > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > 
+> > > That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
+> > > It's the only driver passing NULL here.
+> > 
+> > It looks to be passing a valid page pointer (at least by looking
+> > at the code) so I am not sure how it got turned in a NULL.
+> > 
+> 
+> Are we looking at different code bases? I see this and I was assuming it
+> was the source of the bug.
+> 
+> 	__skb_fill_page_desc(skb, 0, NULL, 0, 0);
 
-Oh, now I think I see your point. But realise this:
+Yes! Well, that is embarrassing. I was looking at the first invocation of 
+__skb_fill_page_desc (which is in xennet_alloc_rx_buffers) <sigh>
 
-The main reason for __netdev_find_upper() is to find "struct upper" for
-netdev_upper_dev_unlink(). Therefore the name is not
-"__netdev_find_upper_dev" and there's no need to go deep here.
-
-On the orher hand, __netdev_has_upper_dev() only says whether device is lower
-to specified upper device. In this case I think the name is quite
-convenient as well.
-
-
->
->fbl
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
