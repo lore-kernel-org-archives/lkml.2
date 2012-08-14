@@ -1,112 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2HNQO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:14:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43446 "EHLO mail.skyhub.de"
+	id S1755916Ab2HNQWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:22:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50646 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752989Ab2HNQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:14:27 -0400
-Date: Tue, 14 Aug 2012 18:14:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>, "arnd@arndb.de" <arnd@arndb.de>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: =?utf-8?B?562U5aSNOiBbUEFUQw==?= =?utf-8?Q?H?= v2 0/2] Add
- modules to support realtek PCIE card reader
-Message-ID: <20120814161420.GA6971@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>,
-	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-	"cjb@laptop.org" <cjb@laptop.org>, "arnd@arndb.de" <arnd@arndb.de>,
-	"sameo@linux.intel.com" <sameo@linux.intel.com>
-References: <cover.1344939464.git.wei_wang@realsil.com.cn>
- <20120814150550.GA4091@x1.osrc.amd.com>
- <637A8844983F7F4092120E33EA3F28CD31E74BE133@RSEX1.realsil.com.cn>
+	id S1752301Ab2HNQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 12:21:58 -0400
+Date: Tue, 14 Aug 2012 18:21:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+Message-ID: <20120814162144.GC6905@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-5-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <637A8844983F7F4092120E33EA3F28CD31E74BE133@RSEX1.realsil.com.cn>
+In-Reply-To: <1344517279-30646-5-git-send-email-glommer@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 11:22:38PM +0800, 王炜 wrote:
+On Thu 09-08-12 17:01:12, Glauber Costa wrote:
+> This patch adds the basic infrastructure for the accounting of the slab
+> caches. To control that, the following files are created:
+> 
+>  * memory.kmem.usage_in_bytes
+>  * memory.kmem.limit_in_bytes
+>  * memory.kmem.failcnt
+>  * memory.kmem.max_usage_in_bytes
+> 
+> They have the same meaning of their user memory counterparts. They
+> reflect the state of the "kmem" res_counter.
+> 
+> The code is not enabled until a limit is set. This can be tested by the
+> flag "kmem_accounted". This means that after the patch is applied, no
+> behavioral changes exists for whoever is still using memcg to control
+> their memory usage.
+> 
+> We always account to both user and kernel resource_counters. This
+> effectively means that an independent kernel limit is in place when the
+> limit is set to a lower value than the user memory. A equal or higher
+> value means that the user limit will always hit first, meaning that kmem
+> is effectively unlimited.
 
-> Hi Boris:
->
-> Can you tell me the detailed information about your pc and the SD
-> card? Do you have ever tried to use another SD card? I have tested
-> all of the SD cards that we have in our company, and everything runs
-> smoothly. Maybe it is compatibilty issue and we have to debug it
-> specifically.
->
-> Please help to check the VID:PID of the card reader using lspci, and I
-> will send you our SCSI driver for this reader to test the card.
+Well, it contributes to the user limit so it is not unlimited. It just
+falls under a different limit and it tends to contribute less. This can
+be quite confusing.  I am still not sure whether we should mix the two
+things together. If somebody wants to limit the kernel memory he has to
+touch the other limit anyway.  Do you have a strong reason to mix the
+user and kernel counters?
+My impression was that kernel allocation should simply fail while user
+allocations might reclaim as well. Why should we reclaim just because of
+the kernel allocation (which is unreclaimable from hard limit reclaim
+point of view)?
+I also think that the whole thing would get much simpler if those two
+are split. Anyway if this is really a must then this should be
+documented here.
+ 
+One nit bellow.
 
-Ok,
+> People who want to track kernel memory but not limit it, can set this
+> limit to a very high number (like RESOURCE_MAX - 1page - that no one
+> will ever hit, or equal to the user memory)
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 68 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b0e29f4..54e93de 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -4046,8 +4059,23 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+>  			break;
+>  		if (type == _MEM)
+>  			ret = mem_cgroup_resize_limit(memcg, val);
+> -		else
+> +		else if (type == _MEMSWAP)
+>  			ret = mem_cgroup_resize_memsw_limit(memcg, val);
+> +		else if (type == _KMEM) {
+> +			ret = res_counter_set_limit(&memcg->kmem, val);
+> +			if (ret)
+> +				break;
+> +			/*
+> +			 * Once enabled, can't be disabled. We could in theory
+> +			 * disable it if we haven't yet created any caches, or
+> +			 * if we can shrink them all to death.
+> +			 *
+> +			 * But it is not worth the trouble
+> +			 */
+> +			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
+> +				memcg->kmem_accounted = true;
+> +		} else
+> +			return -EINVAL;
+>  		break;
 
-here's some info:
+This doesn't check for the hierachy so kmem_accounted might not be in 
+sync with it's parents. mem_cgroup_create (below) needs to copy
+kmem_accounted down from the parent and the above needs to check if this
+is a similar dance like mem_cgroup_oom_control_write.
 
-* Card is: http://tinyurl.com/cadsmb9
+[...]
 
-It is in German but should be clear. Otherwise, ask me.
-
-* lspci output:
-
-03:00.0 Unassigned class [ff00]: Realtek Semiconductor Co., Ltd. RTS5209 PCI Express Card Reader (rev 01)
-...
-03:00.0 ff00: 10ec:5209 (rev 01)
-        Subsystem: 17aa:21ec
-        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 32 bytes
-        Interrupt: pin A routed to IRQ 5
-        Region 0: Memory at f0000000 (32-bit, non-prefetchable) [size=4K]
-        Expansion ROM at f0400000 [disabled] [size=64K]
-        Capabilities: [40] Power Management version 3
-                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA PME(D0-,D1+,D2+,D3hot+,D3cold-)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-                Address: 0000000000000000  Data: 0000
-        Capabilities: [70] Express (v2) Endpoint, MSI 00
-                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <1us, L1 <8us
-                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
-                        MaxPayload 128 bytes, MaxReadReq 512 bytes
-                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
-                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 <64us
-                        ClockPM+ Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM L0s Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-                DevCap2: Completion Timeout: Not Supported, TimeoutDis+
-                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
-                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
-                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
-                         Compliance De-emphasis: -6dB
-                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-
-                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-        Capabilities: [100 v1] Advanced Error Reporting
-                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-                AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-        Capabilities: [140 v1] Device Serial Number 00-00-00-01-00-4c-e0-00
-
-HTH.
+> @@ -5033,6 +5098,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  	if (parent && parent->use_hierarchy) {
+>  		res_counter_init(&memcg->res, &parent->res);
+>  		res_counter_init(&memcg->memsw, &parent->memsw);
+> +		res_counter_init(&memcg->kmem, &parent->kmem);
+>  		/*
+>  		 * We increment refcnt of the parent to ensure that we can
+>  		 * safely access it on res_counter_charge/uncharge.
+> @@ -5043,6 +5109,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  	} else {
+>  		res_counter_init(&memcg->res, NULL);
+>  		res_counter_init(&memcg->memsw, NULL);
+> +		res_counter_init(&memcg->kmem, NULL);
+>  	}
+>  	memcg->last_scanned_node = MAX_NUMNODES;
+>  	INIT_LIST_HEAD(&memcg->oom_notify);
+> -- 
+> 1.7.11.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Regards/Gruss,
-Boris.
+Michal Hocko
+SUSE Labs
