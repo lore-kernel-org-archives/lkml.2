@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2HNBzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:55:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42206 "EHLO mga02.intel.com"
+	id S1754994Ab2HNBzn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:55:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59183 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2HNBzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:55:35 -0400
+	id S1750724Ab2HNBzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 21:55:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,763,1336374000"; 
-   d="scan'208";a="185987853"
+   d="scan'208";a="200244219"
 From: John Fastabend <john.r.fastabend@intel.com>
-Subject: [net PATCH v1 1/2] net: netprio: fix files lock and remove useless
-	d_path bits
+Subject: [net PATCH v1 2/2] net: netprio: fd passed in SCM_RIGHTS datagram not
+	set correctly
 To: viro@ZenIV.linux.org.uk, nhorman@tuxdriver.com
 Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
         joe@perches.com
-Date: Mon, 13 Aug 2012 18:39:39 -0700
-Message-ID: <20120814013939.3144.13167.stgit@jf-dev1-dcblab>
+Date: Mon, 13 Aug 2012 18:39:45 -0700
+Message-ID: <20120814013944.3144.53854.stgit@jf-dev1-dcblab>
+In-Reply-To: <20120814013939.3144.13167.stgit@jf-dev1-dcblab>
+References: <20120814013939.3144.13167.stgit@jf-dev1-dcblab>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,55 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lock to prevent a race with a file closing and also remove
-useless and ugly sscanf code. The extra code was never needed
-and the case it supposedly protected against is in fact handled
-correctly by sock_from_file as pointed out by Al Viro.
+A socket fd passed in a SCM_RIGHTS datagram was not getting
+updated with the new tasks cgrp prioidx. This leaves IO on
+the socket tagged with the old tasks priority.
+
+To fix this add a check in the scm recvmsg path to update the
+sock cgrp prioidx with the new tasks value.
+
+Thanks to Al Viro for catching this.
 
 CC: Neil Horman <nhorman@tuxdriver.com>
 Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
 ---
 
- net/core/netprio_cgroup.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+ net/core/scm.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index ed0c043..0323ec3 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -296,29 +296,22 @@ void net_prio_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 			continue;
- 		}
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 8f6ccfd..053bd43 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -249,6 +249,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+ 	struct file **fp = scm->fp->fp;
+ 	int __user *cmfptr;
+ 	int err = 0, i;
++	__u32 prioidx = task_netprioidx(current);
  
--		rcu_read_lock();
-+		spin_lock(&files->file_lock);
- 		fdt = files_fdtable(files);
- 		for (fd = 0; fd < fdt->max_fds; fd++) {
--			char *path;
- 			struct file *file;
- 			struct socket *sock;
--			unsigned long s;
--			int rv, err = 0;
-+			int err;
- 
- 			file = fcheck_files(files, fd);
- 			if (!file)
- 				continue;
- 
--			path = d_path(&file->f_path, tmp, PAGE_SIZE);
--			rv = sscanf(path, "socket:[%lu]", &s);
--			if (rv <= 0)
--				continue;
--
- 			sock = sock_from_file(file, &err);
--			if (!err)
-+			if (sock)
- 				sock_update_netprioidx(sock->sk, p);
- 		}
--		rcu_read_unlock();
-+		spin_unlock(&files->file_lock);
- 		task_unlock(p);
+ 	if (MSG_CMSG_COMPAT & msg->msg_flags) {
+ 		scm_detach_fds_compat(msg, scm);
+@@ -265,6 +266,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+ 	for (i=0, cmfptr=(__force int __user *)CMSG_DATA(cm); i<fdmax;
+ 	     i++, cmfptr++)
+ 	{
++		struct socket *sock;
+ 		int new_fd;
+ 		err = security_file_receive(fp[i]);
+ 		if (err)
+@@ -282,6 +284,9 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+ 		/* Bump the usage count and install the file. */
+ 		get_file(fp[i]);
+ 		fd_install(new_fd, fp[i]);
++		sock = sock_from_file(fp[i], &err);
++		if (sock)
++			sock->sk->sk_cgrp_prioidx = prioidx;
  	}
- 	kfree(tmp);
+ 
+ 	if (i > 0)
 
