@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab2HNRoh (ORCPT <rfc822;w@1wt.eu>);
+	id S1756808Ab2HNRoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:44:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3677 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756631Ab2HNRoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Aug 2012 13:44:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29808 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab2HNRof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:44:35 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=HMINAUNbf7oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=TNLAKgqMk2JoBKEYc2wA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1344966273.6724.18.camel@gandalf.stny.rr.com>
-Subject: Re: [rfc patch] fs,reiserfs: unlock superblock before callling
- reiserfs_quota_on_mount()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Aug 2012 13:44:33 -0400
-In-Reply-To: <1344965173.4282.3.camel@marge.simpson.net>
-References: <1344949583.14924.36.camel@marge.simpson.net>
-	 <1344954183.6724.8.camel@gandalf.stny.rr.com>
-	 <1344955168.14924.85.camel@marge.simpson.net>
-	 <1344956189.5477.1.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1208141717570.32033@ionos>
-	 <1344965173.4282.3.camel@marge.simpson.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Tue, 14 Aug 2012 14:44:05 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120814174404.GA13338@t510.redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
+ <20120813082619.GE14081@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120813082619.GE14081@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-14 at 19:26 +0200, Mike Galbraith wrote:
-> On Tue, 2012-08-14 at 17:18 +0200, Thomas Gleixner wrote: 
-> > On Tue, 14 Aug 2012, Mike Galbraith wrote:
-> > 
-> > > On Tue, 2012-08-14 at 16:39 +0200, Mike Galbraith wrote: 
-> > > > On Tue, 2012-08-14 at 10:23 -0400, Steven Rostedt wrote: 
-> > > > > On Tue, 2012-08-14 at 15:06 +0200, Mike Galbraith wrote:
-> > > > > > Greetings,
-> > > > > > 
-> > > > > > Using openSUSE's "partitioner" gizmo to set up a reiserfs partition with
-> > > > > > quotas and whatnot enabled rewarded me with a deadlock.
-> > > > > 
-> > > > > Is this just a -rt bug? Can't this deadlock also in mainline?
-> > > > 
-> > > > It didn't with a NOPREEMPT kernel the one time I tried it, which seemed
-> > > > mighty odd when I stared at the rt deadlock.  I'll give it another go, I
-> > > > likely just munged q/d NOPREEMPT test.
-> > > 
-> > > Nope, no screw-up.  Maybe it can deadlock, but it refused to do so.
-> > 
-> > Lockdep should tell you if it could ...
+On Mon, Aug 13, 2012 at 11:26:19AM +0300, Michael S. Tsirkin wrote:
+> > +static inline bool movable_balloon_page(struct page *page)
+> > +{
+> > +	return (page->mapping && page->mapping == balloon_mapping);
 > 
-> I'll give that a shot.  I would expect the thing to gripe.. but then I
-> expected the damn thing to deadlock properly with NOPREEMPT too, so.. :)
+> I am guessing this needs smp_read_barrier_depends, and maybe
+> ACCESS_ONCE ...
 > 
 
-But would it?
+I'm curious about your guessing here. Could you ellaborate it further, please?
 
-We have kworker blocked on the mutex where the owner did a flush_work(),
-and waiting for kworker to finish because of a wait_for_completion(). I
-don't see annotation here that will help lockdep catch such a thing.
 
--- Steve
+> > +#else
+> > +static inline bool isolate_balloon_page(struct page *page) { return false; }
+> > +static inline void putback_balloon_page(struct page *page) { return false; }
+> > +static inline bool movable_balloon_page(struct page *page) { return false; }
+> > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && CONFIG_COMPACTION */
+> > +
+> 
+> This does mean that only one type of balloon is useable at a time.
+> I wonder whether using a flag in address_space structure instead
+> is possible ...
 
+This means we are only introducing this feature for virtio_balloon by now.
+Despite the flagging address_space stuff is something we surely can look in the
+future, I quite didn't get how we could be using two different types of balloon
+devices at the same time for the same system. Could you ellaborate it a little
+more, please?
+
+
+> > +/* __isolate_lru_page() counterpart for a ballooned page */
+> > +bool isolate_balloon_page(struct page *page)
+> > +{
+> > +	if (WARN_ON(!movable_balloon_page(page)))
+> 
+> Looks like this actually can happen if the page is leaked
+> between previous movable_balloon_page and here.
+> 
+> > +		return false;
+
+Yes, it surely can happen, and it does not harm to catch it here, print a warn and
+return. While testing it, I wasn't lucky to see this small window opening, though.
 
