@@ -1,80 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750984Ab2HNNVC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:21:02 -0400
-Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:39724 "EHLO
-	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2HNNVA convert rfc822-to-8bit (ORCPT
+	id S1751299Ab2HNNXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:23:10 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:12782
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750911Ab2HNNXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:21:00 -0400
-Message-Id: <502A6CD5020000A10000BADA@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Tue, 14 Aug 2012 15:20:53 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: "Borislav Petkov" <bp@alien8.de>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Antw: Re: Q: Seeing the microcode revision in /proc/cpuinfo
-References: <502A623C020000A10000BACA@gwsmtp1.uni-regensburg.de>
- <20120814131211.GA25921@x1.osrc.amd.com>
-In-Reply-To: <20120814131211.GA25921@x1.osrc.amd.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Tue, 14 Aug 2012 09:23:08 -0400
+X-IronPort-AV: E=Sophos;i="4.77,766,1336341600"; 
+   d="scan'208";a="153055648"
+Date: Tue, 14 Aug 2012 15:23:06 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+In-Reply-To: <502A2057.3000401@redhat.com>
+Message-ID: <alpine.DEB.2.02.1208141520430.1908@hadrien>
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien> <50295A43.30305@redhat.com>
+ <alpine.DEB.2.02.1208132219060.2355@localhost6.localdomain6> <5029AC92.2060408@redhat.com> <alpine.DEB.2.02.1208140819400.1973@localhost6.localdomain6> <502A2057.3000401@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-probably my edge is not bleeding that much than yours ;-)
+Using devm_kzalloc simplifies the code and ensures that the use of
+devm_request_irq is safe.  When kzalloc and kfree were used, the interrupt
+could be triggered after the handler's data argument had been freed.
 
-I don't see "microcode" in 3.0.34-0.7-default for an AMD Opteron, and not in  2.6.32.59-0.3-default for the Intel Xeon. Both are kernels of SLES11 xon x86_64. The first one is the latest you can get for SLES11 SP2.
+This also introduces some missing initializations of the return variable
+ret, and uses devm_request_and_ioremap instead of the combination of
+devm_request_mem_region and devm_ioremap.
 
-In openSUSE 12.1 (kernel 3.1.10) it's also still missing.
+The problem of a free after a devm_request_irq was found using the
+following semantic match (http://coccinelle.lip6.fr/)
 
-Anyway, it's nice to see that others also thought this feature is useful.
+// <smpl>
+@r exists@
+expression e1,e2,x,a,b,c,d;
+identifier free;
+position p1,p2;
+@@
 
-Thanks & best regards,
-Ulrich
+  devm_request_irq@p1(e1,e2,...,x)
+  ... when any
+      when != e2 = a
+      when != x = b
+  if (...) {
+    ... when != e2 = c
+        when != x = d
+    free@p2(...,x,...);
+    ...
+    return ...;
+  }
+// </smpl>
 
->>> Borislav Petkov <bp@alien8.de> schrieb am 14.08.2012 um 15:12 in Nachricht
-<20120814131211.GA25921@x1.osrc.amd.com>:
-> On Tue, Aug 14, 2012 at 02:35:40PM +0200, Ulrich Windl wrote:
-> > Hi!
-> > 
-> > After several reboots due to memory errors after excellent power-saving of 
-> Linux on a HP DL380G7 with Intel Xeon 5650 processors (all in on memory 
-> bank), I found out the errate "BD104" and "BD123". The former should be fixed 
-> in a microcode revision "15H".
-> > 
-> > Now I wonder what microcode revision my CPUs currently have. /proc/cpuinfo 
-> doesn't show that, and the microcode update is a bit cryptic:
-> > 
-> > kernel: [   44.422912] microcode: CPU23 sig=0x206c2, pf=0x1, revision=0x14
-> > 
-> > Does that mean the revision is 0x14 BEFORE or AFTER the microcode update?
-> > 
-> > Wouldn't you agree that seeing the microcode revision in /proc/cpuinfo 
-> would be nice?
-> 
-> Well, you must be using an old-ish kernel because the microcode revision
-> infact *is* in /proc/cpuinfo:
-> 
-> processor       : 1
-> ...
-> stepping        : 0
-> microcode       : 0x5000028
-> 
-> This is on 3.6-rc1 and that functionality is upstream since 3.2.
-> 
-> HTH.
-> 
-> -- 
-> Regards/Gruss,
-> Boris.
-> 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
- 
- 
+---
+This is the same patch I sent before.  I had no trouble applying it after
+cloning the staging/for_v3.7 branch.
+
+ drivers/media/video/mx2_emmaprp.c |   31 ++++++++++++-------------------
+ 1 file changed, 12 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/media/video/mx2_emmaprp.c b/drivers/media/video/mx2_emmaprp.c
+index 2810015..dab380a 100644
+--- a/drivers/media/video/mx2_emmaprp.c
++++ b/drivers/media/video/mx2_emmaprp.c
+@@ -896,7 +896,7 @@ static int emmaprp_probe(struct platform_device *pdev)
+ 	int irq_emma;
+ 	int ret;
+
+-	pcdev = kzalloc(sizeof *pcdev, GFP_KERNEL);
++	pcdev = devm_kzalloc(&pdev->dev, sizeof(*pcdev), GFP_KERNEL);
+ 	if (!pcdev)
+ 		return -ENOMEM;
+
+@@ -904,27 +904,24 @@ static int emmaprp_probe(struct platform_device *pdev)
+
+ 	pcdev->clk_emma_ipg = devm_clk_get(&pdev->dev, "ipg");
+ 	if (IS_ERR(pcdev->clk_emma_ipg)) {
+-		ret = PTR_ERR(pcdev->clk_emma_ipg);
+-		goto free_dev;
++		return PTR_ERR(pcdev->clk_emma_ipg);
+ 	}
+
+ 	pcdev->clk_emma_ahb = devm_clk_get(&pdev->dev, "ahb");
+ 	if (IS_ERR(pcdev->clk_emma_ipg)) {
+-		ret = PTR_ERR(pcdev->clk_emma_ahb);
+-		goto free_dev;
++		return PTR_ERR(pcdev->clk_emma_ahb);
+ 	}
+
+ 	irq_emma = platform_get_irq(pdev, 0);
+ 	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (irq_emma < 0 || res_emma == NULL) {
+ 		dev_err(&pdev->dev, "Missing platform resources data\n");
+-		ret = -ENODEV;
+-		goto free_dev;
++		return -ENODEV;
+ 	}
+
+ 	ret = v4l2_device_register(&pdev->dev, &pcdev->v4l2_dev);
+ 	if (ret)
+-		goto free_dev;
++		return ret;
+
+ 	mutex_init(&pcdev->dev_mutex);
+
+@@ -946,21 +943,20 @@ static int emmaprp_probe(struct platform_device *pdev)
+
+ 	platform_set_drvdata(pdev, pcdev);
+
+-	if (devm_request_mem_region(&pdev->dev, res_emma->start,
+-	    resource_size(res_emma), MEM2MEM_NAME) == NULL)
+-		goto rel_vdev;
+-
+-	pcdev->base_emma = devm_ioremap(&pdev->dev, res_emma->start,
+-					resource_size(res_emma));
+-	if (!pcdev->base_emma)
++	pcdev->base_emma = devm_request_and_ioremap(&pdev->dev, res_emma);
++	if (!pcdev->base_emma) {
++		ret = -ENXIO;
+ 		goto rel_vdev;
++	}
+
+ 	pcdev->irq_emma = irq_emma;
+ 	pcdev->res_emma = res_emma;
+
+ 	if (devm_request_irq(&pdev->dev, pcdev->irq_emma, emmaprp_irq,
+-			     0, MEM2MEM_NAME, pcdev) < 0)
++			     0, MEM2MEM_NAME, pcdev) < 0) {
++		ret = -ENODEV;
+ 		goto rel_vdev;
++	}
+
+ 	pcdev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+ 	if (IS_ERR(pcdev->alloc_ctx)) {
+@@ -993,8 +989,6 @@ rel_vdev:
+ 	video_device_release(vfd);
+ unreg_dev:
+ 	v4l2_device_unregister(&pcdev->v4l2_dev);
+-free_dev:
+-	kfree(pcdev);
+
+ 	return ret;
+ }
+@@ -1009,7 +1003,6 @@ static int emmaprp_remove(struct platform_device *pdev)
+ 	v4l2_m2m_release(pcdev->m2m_dev);
+ 	vb2_dma_contig_cleanup_ctx(pcdev->alloc_ctx);
+ 	v4l2_device_unregister(&pcdev->v4l2_dev);
+-	kfree(pcdev);
+
+ 	return 0;
+ }
 
