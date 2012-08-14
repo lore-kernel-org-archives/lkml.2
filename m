@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2HNOWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:22:53 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:38068 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756164Ab2HNOWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:22:49 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 04/14] MFD: twl-core: Add API to query the HFCLK rate
-Date: Tue, 14 Aug 2012 17:22:32 +0300
-Message-Id: <1344954162-7985-5-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1756253Ab2HNOW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:22:56 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:34486 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756164Ab2HNOWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 10:22:54 -0400
+Date: Tue, 14 Aug 2012 09:22:52 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ilya Shchepetkov <shchepetkov@ispras.ru>
+Cc: Robin Holt <holt@sgi.com>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH 1/5] sgi-xp: Call netif_carrier_off() after
+ register_netdev()
+Message-ID: <20120814142252.GA3093@sgi.com>
+References: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
+ <1344940135-17079-2-git-send-email-shchepetkov@ispras.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344940135-17079-2-git-send-email-shchepetkov@ispras.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CFG_BOOT register's HFCLK_FREQ field hold information about the used HFCLK
-frequency.
-Add possibility for users to get the configured rate based on this
-register.
-This register was configured during boot, without it the chip would not
-operate correctly, so we can trust on this information.
+On Tue, Aug 14, 2012 at 02:28:51PM +0400, Ilya Shchepetkov wrote:
+> For carrier detection to work properly when binding the driver with a
+> cable unplugged, netif_carrier_off() should be calle after
+> register_netdev(), not before.
+> 
+> Calling netif_carrier_off() before register_netdev() was causing the
+> network interface to miss a linkwatch pending event leading to an
+> inconsistent state if the link is not up when interface is initialized.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Ilya Shchepetkov <shchepetkov@ispras.ru>
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl-core.c  |   32 ++++++++++++++++++++++++++++++++
- include/linux/i2c/twl.h |    1 +
- 2 files changed, 33 insertions(+), 0 deletions(-)
+Acked-by: Robin Holt <holt@sgi.com>
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 1c32afe..f162b68 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -552,6 +552,38 @@ int twl_get_version(void)
- }
- EXPORT_SYMBOL_GPL(twl_get_version);
- 
-+/**
-+ * twl_get_hfclk_rate - API to get TWL external HFCLK clock rate.
-+ *
-+ * Api to get the TWL HFCLK rate based on BOOT_CFG register.
-+ */
-+int twl_get_hfclk_rate(void)
-+{
-+	u8 ctrl;
-+	int rate;
-+
-+	twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &ctrl, R_CFG_BOOT);
-+
-+	switch (ctrl & 0x3) {
-+	case HFCLK_FREQ_19p2_MHZ:
-+		rate = 19200000;
-+		break;
-+	case HFCLK_FREQ_26_MHZ:
-+		rate = 26000000;
-+		break;
-+	case HFCLK_FREQ_38p4_MHZ:
-+		rate = 38400000;
-+		break;
-+	default:
-+		pr_err("TWL4030: HFCLK is not configured\n");
-+		rate = -EINVAL;
-+		break;
-+	}
-+
-+	return rate;
-+}
-+EXPORT_SYMBOL_GPL(twl_get_hfclk_rate);
-+
- static struct device *
- add_numbered_child(unsigned chip, const char *name, int num,
- 		void *pdata, unsigned pdata_len,
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index 7ea898c..ac6488c 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -188,6 +188,7 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes);
- 
- int twl_get_type(void);
- int twl_get_version(void);
-+int twl_get_hfclk_rate(void);
- 
- int twl6030_interrupt_unmask(u8 bit_mask, u8 offset);
- int twl6030_interrupt_mask(u8 bit_mask, u8 offset);
--- 
-1.7.8.6
-
+> ---
+>  drivers/misc/sgi-xp/xpnet.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/sgi-xp/xpnet.c b/drivers/misc/sgi-xp/xpnet.c
+> index 3fac67a..9296c8d 100644
+> --- a/drivers/misc/sgi-xp/xpnet.c
+> +++ b/drivers/misc/sgi-xp/xpnet.c
+> @@ -550,8 +550,6 @@ xpnet_init(void)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	netif_carrier_off(xpnet_device);
+> -
+>  	xpnet_device->netdev_ops = &xpnet_netdev_ops;
+>  	xpnet_device->mtu = XPNET_DEF_MTU;
+>  
+> @@ -584,6 +582,8 @@ xpnet_init(void)
+>  		kfree(xpnet_broadcast_partitions);
+>  	}
+>  
+> +	netif_carrier_off(xpnet_device);
+> +
+>  	return result;
+>  }
+>  
+> -- 
+> 1.7.7
