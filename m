@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab2HNRyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:04 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55296 "EHLO
+	id S1757007Ab2HNRyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55181 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756878Ab2HNRxM (ORCPT
+	with ESMTP id S1756862Ab2HNRxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:12 -0400
+	Tue, 14 Aug 2012 13:53:09 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 18/31] arm64: VDSO support
-Date: Tue, 14 Aug 2012 18:52:19 +0100
-Message-Id: <1344966752-16102-19-git-send-email-catalin.marinas@arm.com>
+        Will Deacon <will.deacon@arm.com>, Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH v2 15/31] arm64: SMP support
+Date: Tue, 14 Aug 2012 18:52:16 +0100
+Message-Id: <1344966752-16102-16-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:52.0650 (UTC) FILETIME=[E7F46CA0:01CD7A45]
-X-MC-Unique: 112081418531007901
+X-OriginalArrivalTime: 14 Aug 2012 17:54:51.0416 (UTC) FILETIME=[E7382180:01CD7A45]
+X-MC-Unique: 112081418530711401
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI1kM8017400
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI28eR017410
 
-From: Will Deacon <will.deacon@arm.com>
+This patch adds SMP initialisation and spinlocks implementation for
+AArch64. The spinlock support uses the new load-acquire/store-release
+instructions to avoid explicit barriers. The architecture also specifies
+that an event is automatically generated when clearing the exclusive
+monitor state to wake up processors in WFE, so there is no need for an
+explicit DSB/SEV instruction sequence. The SEVL instruction is used to
+set the exclusive monitor locally as there is no conditional WFE and a
+branch is more expensive.
 
-This patch adds VDSO support for 64-bit applications. The VDSO code is
-currently used for sys_rt_sigreturn() and optimised gettimeofday()
-(using the user-accessible generic counter).
+For the SMP booting protocol, see Documentation/arm64/booting.txt.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/vdso.h              |   41 +++++
- arch/arm64/include/asm/vdso_datapage.h     |   43 +++++
- arch/arm64/kernel/vdso.c                   |  261 ++++++++++++++++++++++++++++
- arch/arm64/kernel/vdso/.gitignore          |    2 +
- arch/arm64/kernel/vdso/Makefile            |   63 +++++++
- arch/arm64/kernel/vdso/gen_vdso_offsets.sh |   15 ++
- arch/arm64/kernel/vdso/gettimeofday.S      |  242 ++++++++++++++++++++++++++
- arch/arm64/kernel/vdso/note.S              |   28 +++
- arch/arm64/kernel/vdso/sigreturn.S         |   37 ++++
- arch/arm64/kernel/vdso/vdso.S              |   33 ++++
- arch/arm64/kernel/vdso/vdso.lds.S          |  100 +++++++++++
- 11 files changed, 865 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/vdso.h
- create mode 100644 arch/arm64/include/asm/vdso_datapage.h
- create mode 100644 arch/arm64/kernel/vdso.c
- create mode 100644 arch/arm64/kernel/vdso/.gitignore
- create mode 100644 arch/arm64/kernel/vdso/Makefile
- create mode 100755 arch/arm64/kernel/vdso/gen_vdso_offsets.sh
- create mode 100644 arch/arm64/kernel/vdso/gettimeofday.S
- create mode 100644 arch/arm64/kernel/vdso/note.S
- create mode 100644 arch/arm64/kernel/vdso/sigreturn.S
- create mode 100644 arch/arm64/kernel/vdso/vdso.S
- create mode 100644 arch/arm64/kernel/vdso/vdso.lds.S
+ arch/arm64/include/asm/hardirq.h        |    5 +
+ arch/arm64/include/asm/smp.h            |   69 +++++
+ arch/arm64/include/asm/spinlock.h       |  199 +++++++++++++
+ arch/arm64/include/asm/spinlock_types.h |   38 +++
+ arch/arm64/kernel/smp.c                 |  469 +++++++++++++++++++++++++++++++
+ 5 files changed, 780 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/smp.h
+ create mode 100644 arch/arm64/include/asm/spinlock.h
+ create mode 100644 arch/arm64/include/asm/spinlock_types.h
+ create mode 100644 arch/arm64/kernel/smp.c
 
-diff --git a/arch/arm64/include/asm/vdso.h b/arch/arm64/include/asm/vdso.h
+diff --git a/arch/arm64/include/asm/hardirq.h b/arch/arm64/include/asm/hardirq.h
+index c6c9514..5075463 100644
+--- a/arch/arm64/include/asm/hardirq.h
++++ b/arch/arm64/include/asm/hardirq.h
+@@ -20,8 +20,13 @@
+ #include <linux/threads.h>
+ #include <asm/irq.h>
+ 
++#define NR_IPI	4
++
+ typedef struct {
+ 	unsigned int __softirq_pending;
++#ifdef CONFIG_SMP
++	unsigned int ipi_irqs[NR_IPI];
++#endif
+ } ____cacheline_aligned irq_cpustat_t;
+ 
+ #include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
+diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
 new file mode 100644
-index 0000000..839ce00
+index 0000000..7e34295
 --- /dev/null
-+++ b/arch/arm64/include/asm/vdso.h
-@@ -0,0 +1,41 @@
++++ b/arch/arm64/include/asm/smp.h
+@@ -0,0 +1,69 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -80,40 +91,68 @@ index 0000000..839ce00
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_VDSO_H
-+#define __ASM_VDSO_H
++#ifndef __ASM_SMP_H
++#define __ASM_SMP_H
 +
-+#ifdef __KERNEL__
++#include <linux/threads.h>
++#include <linux/cpumask.h>
++#include <linux/thread_info.h>
++
++#ifndef CONFIG_SMP
++# error "<asm/smp.h> included in non-SMP build"
++#endif
++
++#define raw_smp_processor_id() (current_thread_info()->cpu)
++
++struct seq_file;
 +
 +/*
-+ * Default link address for the vDSO.
-+ * Since we randomise the VDSO mapping, there's little point in trying
-+ * to prelink this.
++ * generate IPI list text
 + */
-+#define VDSO_LBASE	0x0
++extern void show_ipi_list(struct seq_file *p, int prec);
 +
-+#ifndef __ASSEMBLY__
-+
-+#include <generated/vdso-offsets.h>
-+
-+#define VDSO_SYMBOL(base, name)						   \
-+({									   \
-+	(void *)(vdso_offset_##name - VDSO_LBASE + (unsigned long)(base)); \
-+})
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* __ASM_VDSO_H */
-diff --git a/arch/arm64/include/asm/vdso_datapage.h b/arch/arm64/include/asm/vdso_datapage.h
-new file mode 100644
-index 0000000..de66199
---- /dev/null
-+++ b/arch/arm64/include/asm/vdso_datapage.h
-@@ -0,0 +1,43 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * Called from C code, this handles an IPI.
++ */
++extern void handle_IPI(int ipinr, struct pt_regs *regs);
++
++/*
++ * Setup the set of possible CPUs (via set_cpu_possible)
++ */
++extern void smp_init_cpus(void);
++
++/*
++ * Provide a function to raise an IPI cross call on CPUs in callmap.
++ */
++extern void set_smp_cross_call(void (*)(const struct cpumask *, unsigned int));
++
++/*
++ * Called from the secondary holding pen, this is the secondary CPU entry point.
++ */
++asmlinkage void secondary_start_kernel(void);
++
++/*
++ * Initial data for bringing up a secondary CPU.
++ */
++struct secondary_data {
++	void *stack;
++};
++extern struct secondary_data secondary_data;
++extern void secondary_holding_pen(void);
++extern volatile unsigned long secondary_holding_pen_release;
++
++extern void arch_send_call_function_single_ipi(int cpu);
++extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
++
++#endif /* ifndef __ASM_SMP_H */
+diff --git a/arch/arm64/include/asm/spinlock.h b/arch/arm64/include/asm/spinlock.h
+new file mode 100644
+index 0000000..34a37fb
+--- /dev/null
++++ b/arch/arm64/include/asm/spinlock.h
+@@ -0,0 +1,199 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -127,867 +166,707 @@ index 0000000..de66199
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_VDSO_DATAPAGE_H
-+#define __ASM_VDSO_DATAPAGE_H
++#ifndef __ASM_SPINLOCK_H
++#define __ASM_SPINLOCK_H
 +
-+#ifdef __KERNEL__
++#include <asm/spinlock_types.h>
++#include <asm/processor.h>
 +
-+#ifndef __ASSEMBLY__
++/*
++ * AArch64 Spin-locking.
++ *
++ * We exclusively read the old value.  If it is zero, we may have
++ * won the lock, so we try exclusively storing it.  A memory barrier
++ * is required after we get a lock, and before we release it, because
++ * V6 CPUs are assumed to have weakly ordered memory.
++ *
++ * Unlocked value: 0
++ * Locked value: 1
++ */
 +
-+struct vdso_data {
-+	__u64 cs_cycle_last;	/* Timebase at clocksource init */
-+	__u64 xtime_clock_sec;	/* Kernel time */
-+	__u64 xtime_clock_nsec;
-+	__u64 xtime_coarse_sec;	/* Coarse time */
-+	__u64 xtime_coarse_nsec;
-+	__u64 wtm_clock_sec;	/* Wall to monotonic time */
-+	__u64 wtm_clock_nsec;
-+	__u32 tb_seq_count;	/* Timebase sequence counter */
-+	__u32 cs_mult;		/* Clocksource multiplier */
-+	__u32 cs_shift;		/* Clocksource shift */
-+	__u32 tz_minuteswest;	/* Whacky timezone stuff */
-+	__u32 tz_dsttime;
-+	__u32 use_syscall;
++#define arch_spin_is_locked(x)		((x)->lock != 0)
++#define arch_spin_unlock_wait(lock) \
++	do { while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
++
++#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
++
++static inline void arch_spin_lock(arch_spinlock_t *lock)
++{
++	unsigned int tmp;
++
++	asm volatile(
++	"	sevl\n"
++	"1:	wfe\n"
++	"2:	ldaxr	%w0, [%1]\n"
++	"	cbnz	%w0, 1b\n"
++	"	stxr	%w0, %w2, [%1]\n"
++	"	cbnz	%w0, 2b\n"
++	: "=&r" (tmp)
++	: "r" (&lock->lock), "r" (1)
++	: "memory");
++}
++
++static inline int arch_spin_trylock(arch_spinlock_t *lock)
++{
++	unsigned int tmp;
++
++	asm volatile(
++	"	ldaxr	%w0, [%1]\n"
++	"	cbnz	%w0, 1f\n"
++	"	stxr	%w0, %w2, [%1]\n"
++	"1:\n"
++	: "=&r" (tmp)
++	: "r" (&lock->lock), "r" (1)
++	: "memory");
++
++	return !tmp;
++}
++
++static inline void arch_spin_unlock(arch_spinlock_t *lock)
++{
++	asm volatile(
++	"	stlr	%w1, [%0]\n"
++	: : "r" (&lock->lock), "r" (0) : "memory");
++}
++
++/*
++ * RWLOCKS
++ *
++ *
++ * Write locks are easy - we just set bit 31.  When unlocking, we can
++ * just write zero since the lock is exclusively held.
++ */
++
++static inline void arch_write_lock(arch_rwlock_t *rw)
++{
++	unsigned int tmp;
++
++	asm volatile(
++	"	sevl\n"
++	"1:	wfe\n"
++	"2:	ldaxr	%w0, [%1]\n"
++	"	cbnz	%w0, 1b\n"
++	"	stxr	%w0, %w2, [%1]\n"
++	"	cbnz	%w0, 2b\n"
++	: "=&r" (tmp)
++	: "r" (&rw->lock), "r" (0x80000000)
++	: "memory");
++}
++
++static inline int arch_write_trylock(arch_rwlock_t *rw)
++{
++	unsigned int tmp;
++
++	asm volatile(
++	"	ldaxr	%w0, [%1]\n"
++	"	cbnz	%w0, 1f\n"
++	"	stxr	%w0, %w2, [%1]\n"
++	"1:\n"
++	: "=&r" (tmp)
++	: "r" (&rw->lock), "r" (0x80000000)
++	: "memory");
++
++	return !tmp;
++}
++
++static inline void arch_write_unlock(arch_rwlock_t *rw)
++{
++	asm volatile(
++	"	stlr	%w1, [%0]\n"
++	: : "r" (&rw->lock), "r" (0) : "memory");
++}
++
++/* write_can_lock - would write_trylock() succeed? */
++#define arch_write_can_lock(x)		((x)->lock == 0)
++
++/*
++ * Read locks are a bit more hairy:
++ *  - Exclusively load the lock value.
++ *  - Increment it.
++ *  - Store new lock value if positive, and we still own this location.
++ *    If the value is negative, we've already failed.
++ *  - If we failed to store the value, we want a negative result.
++ *  - If we failed, try again.
++ * Unlocking is similarly hairy.  We may have multiple read locks
++ * currently active.  However, we know we won't have any write
++ * locks.
++ */
++static inline void arch_read_lock(arch_rwlock_t *rw)
++{
++	unsigned int tmp, tmp2;
++
++	asm volatile(
++	"	sevl\n"
++	"1:	wfe\n"
++	"2:	ldaxr	%w0, [%2]\n"
++	"	add	%w0, %w0, #1\n"
++	"	tbnz	%w0, #31, 1b\n"
++	"	stxr	%w1, %w0, [%2]\n"
++	"	cbnz	%w1, 2b\n"
++	: "=&r" (tmp), "=&r" (tmp2)
++	: "r" (&rw->lock)
++	: "memory");
++}
++
++static inline void arch_read_unlock(arch_rwlock_t *rw)
++{
++	unsigned int tmp, tmp2;
++
++	asm volatile(
++	"1:	ldxr	%w0, [%2]\n"
++	"	sub	%w0, %w0, #1\n"
++	"	stlxr	%w1, %w0, [%2]\n"
++	"	cbnz	%w1, 1b\n"
++	: "=&r" (tmp), "=&r" (tmp2)
++	: "r" (&rw->lock)
++	: "memory");
++}
++
++static inline int arch_read_trylock(arch_rwlock_t *rw)
++{
++	unsigned int tmp, tmp2 = 1;
++
++	asm volatile(
++	"	ldaxr	%w0, [%2]\n"
++	"	add	%w0, %w0, #1\n"
++	"	tbnz	%w0, #31, 1f\n"
++	"	stxr	%w1, %w0, [%2]\n"
++	"1:\n"
++	: "=&r" (tmp), "+r" (tmp2)
++	: "r" (&rw->lock)
++	: "memory");
++
++	return !tmp2;
++}
++
++/* read_can_lock - would read_trylock() succeed? */
++#define arch_read_can_lock(x)		((x)->lock < 0x80000000)
++
++#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
++#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
++
++#define arch_spin_relax(lock)	cpu_relax()
++#define arch_read_relax(lock)	cpu_relax()
++#define arch_write_relax(lock)	cpu_relax()
++
++#endif /* __ASM_SPINLOCK_H */
+diff --git a/arch/arm64/include/asm/spinlock_types.h b/arch/arm64/include/asm/spinlock_types.h
+new file mode 100644
+index 0000000..9a49434
+--- /dev/null
++++ b/arch/arm64/include/asm/spinlock_types.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_SPINLOCK_TYPES_H
++#define __ASM_SPINLOCK_TYPES_H
++
++#if !defined(__LINUX_SPINLOCK_TYPES_H) && !defined(__ASM_SPINLOCK_H)
++# error "please don't include this file directly"
++#endif
++
++/* We only require natural alignment for exclusive accesses. */
++#define __lock_aligned
++
++typedef struct {
++	volatile unsigned int lock;
++} arch_spinlock_t;
++
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
++
++typedef struct {
++	volatile unsigned int lock;
++} arch_rwlock_t;
++
++#define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
++
++#endif
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+new file mode 100644
+index 0000000..0b03e77
+--- /dev/null
++++ b/arch/arm64/kernel/smp.c
+@@ -0,0 +1,469 @@
++/*
++ * SMP initialisation and IPI support
++ * Based on arch/arm/kernel/smp.c
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/sched.h>
++#include <linux/interrupt.h>
++#include <linux/cache.h>
++#include <linux/profile.h>
++#include <linux/errno.h>
++#include <linux/mm.h>
++#include <linux/err.h>
++#include <linux/cpu.h>
++#include <linux/smp.h>
++#include <linux/seq_file.h>
++#include <linux/irq.h>
++#include <linux/percpu.h>
++#include <linux/clockchips.h>
++#include <linux/completion.h>
++#include <linux/of.h>
++
++#include <asm/atomic.h>
++#include <asm/cacheflush.h>
++#include <asm/cputype.h>
++#include <asm/mmu_context.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/processor.h>
++#include <asm/sections.h>
++#include <asm/tlbflush.h>
++#include <asm/ptrace.h>
++#include <asm/mmu_context.h>
++
++/*
++ * as from 2.5, kernels no longer have an init_tasks structure
++ * so we need some other way of telling a new secondary core
++ * where to place its SVC stack
++ */
++struct secondary_data secondary_data;
++volatile unsigned long secondary_holding_pen_release;
++
++enum ipi_msg_type {
++	IPI_RESCHEDULE,
++	IPI_CALL_FUNC,
++	IPI_CALL_FUNC_SINGLE,
++	IPI_CPU_STOP,
 +};
 +
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* __ASM_VDSO_DATAPAGE_H */
-diff --git a/arch/arm64/kernel/vdso.c b/arch/arm64/kernel/vdso.c
-new file mode 100644
-index 0000000..8d8a365
---- /dev/null
-+++ b/arch/arm64/kernel/vdso.c
-@@ -0,0 +1,261 @@
-+/*
-+ * VDSO implementation for AArch64 and vector page setup for AArch32.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/clocksource.h>
-+#include <linux/elf.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/gfp.h>
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+#include <linux/signal.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/signal32.h>
-+#include <asm/vdso.h>
-+#include <asm/vdso_datapage.h>
-+
-+extern char vdso_start, vdso_end;
-+static unsigned long vdso_pages;
-+static struct page **vdso_pagelist;
++static DEFINE_SPINLOCK(boot_lock);
 +
 +/*
-+ * The vDSO data page.
++ * Write secondary_holding_pen_release in a way that is guaranteed to be
++ * visible to all observers, irrespective of whether they're taking part
++ * in coherency or not.  This is necessary for the hotplug code to work
++ * reliably.
 + */
-+static union {
-+	struct vdso_data	data;
-+	u8			page[PAGE_SIZE];
-+} vdso_data_store __page_aligned_data;
-+struct vdso_data *vdso_data = &vdso_data_store.data;
++static void __cpuinit write_pen_release(int val)
++{
++	void *start = (void *)&secondary_holding_pen_release;
++	unsigned long size = sizeof(secondary_holding_pen_release);
 +
-+#ifdef CONFIG_AARCH32_EMULATION
++	secondary_holding_pen_release = val;
++	__cpuc_flush_dcache_area(start, size);
++}
++
 +/*
-+ * Create and map the vectors page for AArch32 tasks.
++ * Boot a secondary CPU, and assign it the specified idle task.
++ * This also gives us the initial stack to use for this CPU.
 + */
-+static struct page *vectors_page[1];
-+
-+static int alloc_vectors_page(void)
++static int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 +{
-+	extern char __kuser_helper_start[], __kuser_helper_end[];
-+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
-+	unsigned long vpage;
++	unsigned long timeout;
 +
-+	vpage = get_zeroed_page(GFP_ATOMIC);
-+
-+	if (!vpage)
-+		return -ENOMEM;
-+
-+	/* kuser helpers */
-+	memcpy((void *)vpage + 0x1000 - kuser_sz, __kuser_helper_start,
-+		kuser_sz);
-+
-+	/* sigreturn code */
-+	memcpy((void *)vpage + AARCH32_KERN_SIGRET_CODE_OFFSET,
-+		aarch32_sigret_code, sizeof(aarch32_sigret_code));
-+
-+	flush_icache_range(vpage, vpage + PAGE_SIZE);
-+	vectors_page[0] = virt_to_page(vpage);
-+
-+	return 0;
-+}
-+arch_initcall(alloc_vectors_page);
-+
-+int aarch32_setup_vectors_page(struct linux_binprm *bprm, int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+	unsigned long addr = AARCH32_VECTORS_BASE;
-+	int ret;
-+
-+	down_write(&mm->mmap_sem);
-+	current->mm->context.vdso = (void *)addr;
-+
-+	/* Map vectors page at the high address. */
-+	ret = install_special_mapping(mm, addr, PAGE_SIZE,
-+				      VM_READ|VM_EXEC|VM_MAYREAD|VM_MAYEXEC,
-+				      vectors_page);
-+
-+	up_write(&mm->mmap_sem);
-+
-+	return ret;
-+}
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+static int __init vdso_init(void)
-+{
-+	struct page *pg;
-+	char *vbase;
-+	int i, ret = 0;
-+
-+	vdso_pages = (&vdso_end - &vdso_start) >> PAGE_SHIFT;
-+	pr_info("vdso: %ld pages (%ld code, %ld data) at base %p\n",
-+		vdso_pages + 1, vdso_pages, 1L, &vdso_start);
-+
-+	/* Allocate the vDSO pagelist, plus a page for the data. */
-+	vdso_pagelist = kzalloc(sizeof(struct page *) * (vdso_pages + 1),
-+				GFP_KERNEL);
-+	if (vdso_pagelist == NULL) {
-+		pr_err("Failed to allocate vDSO pagelist!\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Grab the vDSO code pages. */
-+	for (i = 0; i < vdso_pages; i++) {
-+		pg = virt_to_page(&vdso_start + i*PAGE_SIZE);
-+		ClearPageReserved(pg);
-+		get_page(pg);
-+		vdso_pagelist[i] = pg;
-+	}
-+
-+	/* Sanity check the shared object header. */
-+	vbase = vmap(vdso_pagelist, 1, 0, PAGE_KERNEL);
-+	if (vbase == NULL) {
-+		pr_err("Failed to map vDSO pagelist!\n");
-+		return -ENOMEM;
-+	} else if (memcmp(vbase, "\177ELF", 4)) {
-+		pr_err("vDSO is not a valid ELF object!\n");
-+		ret = -EINVAL;
-+		goto unmap;
-+	}
-+
-+	/* Grab the vDSO data page. */
-+	pg = virt_to_page(vdso_data);
-+	get_page(pg);
-+	vdso_pagelist[i] = pg;
-+
-+unmap:
-+	vunmap(vbase);
-+	return ret;
-+}
-+arch_initcall(vdso_init);
-+
-+int arch_setup_additional_pages(struct linux_binprm *bprm,
-+				int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+	unsigned long vdso_base, vdso_mapping_len;
-+	int ret;
-+
-+	/* Be sure to map the data page */
-+	vdso_mapping_len = (vdso_pages + 1) << PAGE_SHIFT;
-+
-+	down_write(&mm->mmap_sem);
-+	vdso_base = get_unmapped_area(NULL, 0, vdso_mapping_len, 0, 0);
-+	if (IS_ERR_VALUE(vdso_base)) {
-+		ret = vdso_base;
-+		goto up_fail;
-+	}
-+	mm->context.vdso = (void *)vdso_base;
-+
-+	ret = install_special_mapping(mm, vdso_base, vdso_mapping_len,
-+				      VM_READ|VM_EXEC|
-+				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
-+				      vdso_pagelist);
-+	if (ret) {
-+		mm->context.vdso = NULL;
-+		goto up_fail;
-+	}
-+
-+up_fail:
-+	up_write(&mm->mmap_sem);
-+
-+	return ret;
-+}
-+
-+const char *arch_vma_name(struct vm_area_struct *vma)
-+{
 +	/*
-+	 * We can re-use the vdso pointer in mm_context_t for identifying
-+	 * the vectors page for compat applications. The vDSO will always
-+	 * sit above TASK_UNMAPPED_BASE and so we don't need to worry about
-+	 * it conflicting with the vectors base.
++	 * Set synchronisation state between this boot processor
++	 * and the secondary one
 +	 */
-+	if (vma->vm_mm && vma->vm_start == (long)vma->vm_mm->context.vdso) {
-+#ifdef CONFIG_AARCH32_EMULATION
-+		if (vma->vm_start == AARCH32_VECTORS_BASE)
-+			return "[vectors]";
-+#endif
-+		return "[vdso]";
++	spin_lock(&boot_lock);
++
++	/*
++	 * Update the pen release flag.
++	 */
++	write_pen_release(cpu);
++
++	/*
++	 * Send an event, causing the secondaries to read pen_release.
++	 */
++	sev();
++
++	timeout = jiffies + (1 * HZ);
++	while (time_before(jiffies, timeout)) {
++		if (secondary_holding_pen_release == -1UL)
++			break;
++		udelay(10);
 +	}
 +
-+	return NULL;
++	/*
++	 * Now the secondary core is starting up let it run its
++	 * calibrations, then wait for it to finish
++	 */
++	spin_unlock(&boot_lock);
++
++	return secondary_holding_pen_release != -1 ? -ENOSYS : 0;
 +}
 +
-+/*
-+ * We define AT_SYSINFO_EHDR, so we need these function stubs to keep
-+ * Linux happy.
-+ */
-+int in_gate_area_no_mm(unsigned long addr)
++static DECLARE_COMPLETION(cpu_running);
++
++int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
 +{
-+	return 0;
-+}
++	int ret;
 +
-+int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+{
-+	return 0;
-+}
++	/*
++	 * We need to tell the secondary core where to find its stack and the
++	 * page tables.
++	 */
++	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
++	__cpuc_flush_dcache_area(&secondary_data, sizeof(secondary_data));
 +
-+struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+	return NULL;
-+}
++	/*
++	 * Now bring the CPU into our world.
++	 */
++	ret = boot_secondary(cpu, idle);
++	if (ret == 0) {
++		/*
++		 * CPU was successfully started, wait for it to come online or
++		 * time out.
++		 */
++		wait_for_completion_timeout(&cpu_running,
++					    msecs_to_jiffies(1000));
 +
-+/*
-+ * Update the vDSO data page to keep in sync with kernel timekeeping.
-+ */
-+void update_vsyscall(struct timespec *ts, struct timespec *wtm,
-+		     struct clocksource *clock, u32 mult)
-+{
-+	struct timespec xtime_coarse;
-+	u32 use_syscall = strcmp(clock->name, "arch_sys_counter");
-+
-+	++vdso_data->tb_seq_count;
-+	smp_wmb();
-+
-+	xtime_coarse = __current_kernel_time();
-+	vdso_data->use_syscall			= use_syscall;
-+	vdso_data->xtime_coarse_sec		= xtime_coarse.tv_sec;
-+	vdso_data->xtime_coarse_nsec		= xtime_coarse.tv_nsec;
-+
-+	if (!use_syscall) {
-+		vdso_data->cs_cycle_last	= clock->cycle_last;
-+		vdso_data->xtime_clock_sec	= ts->tv_sec;
-+		vdso_data->xtime_clock_nsec	= ts->tv_nsec;
-+		vdso_data->cs_mult		= mult;
-+		vdso_data->cs_shift		= clock->shift;
-+		vdso_data->wtm_clock_sec	= wtm->tv_sec;
-+		vdso_data->wtm_clock_nsec	= wtm->tv_nsec;
++		if (!cpu_online(cpu)) {
++			pr_crit("CPU%u: failed to come online\n", cpu);
++			ret = -EIO;
++		}
++	} else {
++		pr_err("CPU%u: failed to boot: %d\n", cpu, ret);
 +	}
 +
-+	smp_wmb();
-+	++vdso_data->tb_seq_count;
++	secondary_data.stack = NULL;
++
++	return ret;
 +}
 +
-+void update_vsyscall_tz(void)
++/*
++ * This is the secondary CPU boot entry.  We're using this CPUs
++ * idle thread stack, but a set of temporary page tables.
++ */
++asmlinkage void __cpuinit secondary_start_kernel(void)
 +{
-+	++vdso_data->tb_seq_count;
-+	smp_wmb();
-+	vdso_data->tz_minuteswest	= sys_tz.tz_minuteswest;
-+	vdso_data->tz_dsttime		= sys_tz.tz_dsttime;
-+	smp_wmb();
-+	++vdso_data->tb_seq_count;
++	struct mm_struct *mm = &init_mm;
++	unsigned int cpu = smp_processor_id();
++
++	printk("CPU%u: Booted secondary processor\n", cpu);
++
++	/*
++	 * All kernel threads share the same mm context; grab a
++	 * reference and switch to it.
++	 */
++	atomic_inc(&mm->mm_count);
++	current->active_mm = mm;
++	cpumask_set_cpu(cpu, mm_cpumask(mm));
++
++	/*
++	 * TTBR0 is only used for the identity mapping at this stage. Make it
++	 * point to zero page to avoid speculatively fetching new entries.
++	 */
++	cpu_set_reserved_ttbr0();
++	flush_tlb_all();
++
++	preempt_disable();
++	trace_hardirqs_off();
++
++	/*
++	 * Let the primary processor know we're out of the
++	 * pen, then head off into the C entry point
++	 */
++	write_pen_release(-1);
++
++	/*
++	 * Synchronise with the boot thread.
++	 */
++	spin_lock(&boot_lock);
++	spin_unlock(&boot_lock);
++
++	/*
++	 * Enable local interrupts.
++	 */
++	notify_cpu_starting(cpu);
++	local_irq_enable();
++	local_fiq_enable();
++
++	/*
++	 * OK, now it's safe to let the boot CPU continue.  Wait for
++	 * the CPU migration code to notice that the CPU is online
++	 * before we continue.
++	 */
++	set_cpu_online(cpu, true);
++	while (!cpu_active(cpu))
++		cpu_relax();
++
++	/*
++	 * OK, it's off to the idle thread for us
++	 */
++	cpu_idle();
 +}
-diff --git a/arch/arm64/kernel/vdso/.gitignore b/arch/arm64/kernel/vdso/.gitignore
-new file mode 100644
-index 0000000..b8cc94e
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/.gitignore
-@@ -0,0 +1,2 @@
-+vdso.lds
-+vdso-offsets.h
-diff --git a/arch/arm64/kernel/vdso/Makefile b/arch/arm64/kernel/vdso/Makefile
-new file mode 100644
-index 0000000..d8064af
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/Makefile
-@@ -0,0 +1,63 @@
-+#
-+# Building a vDSO image for AArch64.
-+#
-+# Author: Will Deacon <will.deacon@arm.com>
-+# Heavily based on the vDSO Makefiles for other archs.
-+#
 +
-+obj-vdso := gettimeofday.o note.o sigreturn.o
-+
-+# Build rules
-+targets := $(obj-vdso) vdso.so vdso.so.dbg
-+obj-vdso := $(addprefix $(obj)/, $(obj-vdso))
-+
-+ccflags-y := -shared -fno-common -fno-builtin
-+ccflags-y += -nostdlib -Wl,-soname=linux-vdso.so.1 \
-+		$(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
-+
-+obj-y += vdso.o
-+extra-y += vdso.lds vdso-offsets.h
-+CPPFLAGS_vdso.lds += -P -C -U$(ARCH)
-+
-+# Force dependency (incbin is bad)
-+$(obj)/vdso.o : $(obj)/vdso.so
-+
-+# Link rule for the .so file, .lds has to be first
-+$(obj)/vdso.so.dbg: $(src)/vdso.lds $(obj-vdso)
-+	$(call if_changed,vdsold)
-+
-+# Strip rule for the .so file
-+$(obj)/%.so: OBJCOPYFLAGS := -S
-+$(obj)/%.so: $(obj)/%.so.dbg FORCE
-+	$(call if_changed,objcopy)
-+
-+# Generate VDSO offsets using helper script
-+gen-vdsosym := $(srctree)/$(src)/gen_vdso_offsets.sh
-+quiet_cmd_vdsosym = VDSOSYM $@
-+define cmd_vdsosym
-+	$(NM) $< | $(gen-vdsosym) | LC_ALL=C sort > $@ && \
-+	cp $@ include/generated/
-+endef
-+
-+$(obj)/vdso-offsets.h: $(obj)/vdso.so.dbg FORCE
-+	$(call if_changed,vdsosym)
-+
-+# Assembly rules for the .S files
-+$(obj-vdso): %.o: %.S
-+	$(call if_changed_dep,vdsoas)
-+
-+# Actual build commands
-+quiet_cmd_vdsold = VDSOL $@
-+      cmd_vdsold = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+quiet_cmd_vdsoas = VDSOA $@
-+      cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
-+
-+# Install commands for the unstripped file
-+quiet_cmd_vdso_install = INSTALL $@
-+      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
-+
-+vdso.so: $(obj)/vdso.so.dbg
-+	@mkdir -p $(MODLIB)/vdso
-+	$(call cmd,vdso_install)
-+
-+vdso_install: vdso.so
-diff --git a/arch/arm64/kernel/vdso/gen_vdso_offsets.sh b/arch/arm64/kernel/vdso/gen_vdso_offsets.sh
-new file mode 100755
-index 0000000..01924ff
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/gen_vdso_offsets.sh
-@@ -0,0 +1,15 @@
-+#!/bin/sh
-+
-+#
-+# Match symbols in the DSO that look like VDSO_*; produce a header file
-+# of constant offsets into the shared object.
-+#
-+# Doing this inside the Makefile will break the $(filter-out) function,
-+# causing Kbuild to rebuild the vdso-offsets header file every time.
-+#
-+# Author: Will Deacon <will.deacon@arm.com
-+#
-+
-+LC_ALL=C
-+sed -n -e 's/^00*/0/' -e \
-+'s/^\([0-9a-fA-F]*\) . VDSO_\([a-zA-Z0-9_]*\)$/\#define vdso_offset_\2\t0x\1/p'
-diff --git a/arch/arm64/kernel/vdso/gettimeofday.S b/arch/arm64/kernel/vdso/gettimeofday.S
-new file mode 100644
-index 0000000..dcb8c20
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/gettimeofday.S
-@@ -0,0 +1,242 @@
-+/*
-+ * Userspace implementations of gettimeofday() and friends.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/unistd.h>
-+
-+#define NSEC_PER_SEC_LO16	0xca00
-+#define NSEC_PER_SEC_HI16	0x3b9a
-+
-+vdso_data	.req	x6
-+use_syscall	.req	w7
-+seqcnt		.req	w8
-+
-+	.macro	seqcnt_acquire
-+9999:	ldr	seqcnt, [vdso_data, #VDSO_TB_SEQ_COUNT]
-+	tbnz	seqcnt, #0, 9999b
-+	dmb	ishld
-+	ldr	use_syscall, [vdso_data, #VDSO_USE_SYSCALL]
-+	.endm
-+
-+	.macro	seqcnt_read, cnt
-+	dmb	ishld
-+	ldr	\cnt, [vdso_data, #VDSO_TB_SEQ_COUNT]
-+	.endm
-+
-+	.macro	seqcnt_check, cnt, fail
-+	cmp	\cnt, seqcnt
-+	b.ne	\fail
-+	.endm
-+
-+	.text
-+
-+/* int __kernel_gettimeofday(struct timeval *tv, struct timezone *tz); */
-+ENTRY(__kernel_gettimeofday)
-+	.cfi_startproc
-+	mov	x2, x30
-+	.cfi_register x30, x2
-+
-+	/* Acquire the sequence counter and get the timespec. */
-+	adr	vdso_data, _vdso_data
-+1:	seqcnt_acquire
-+	cbnz	use_syscall, 4f
-+
-+	/* If tv is NULL, skip to the timezone code. */
-+	cbz	x0, 2f
-+	bl	__do_get_tspec
-+	seqcnt_check w13, 1b
-+
-+	/* Convert ns to us. */
-+	mov	x11, #1000
-+	udiv	x10, x10, x11
-+	stp	x9, x10, [x0, #TVAL_TV_SEC]
-+2:
-+	/* If tz is NULL, return 0. */
-+	cbz	x1, 3f
-+	ldp	w4, w5, [vdso_data, #VDSO_TZ_MINWEST]
-+	seqcnt_read w13
-+	seqcnt_check w13, 1b
-+	stp	w4, w5, [x1, #TZ_MINWEST]
-+3:
-+	mov	x0, xzr
-+	ret	x2
-+4:
-+	/* Syscall fallback. */
-+	mov	x8, #__NR_gettimeofday
-+	svc	#0
-+	ret	x2
-+	.cfi_endproc
-+ENDPROC(__kernel_gettimeofday)
-+
-+/* int __kernel_clock_gettime(clockid_t clock_id, struct timespec *tp); */
-+ENTRY(__kernel_clock_gettime)
-+	.cfi_startproc
-+	cmp	w0, #CLOCK_REALTIME
-+	ccmp	w0, #CLOCK_MONOTONIC, #0x4, ne
-+	b.ne	2f
-+
-+	mov	x2, x30
-+	.cfi_register x30, x2
-+
-+	/* Get kernel timespec. */
-+	adr	vdso_data, _vdso_data
-+1:	seqcnt_acquire
-+	cbnz	use_syscall, 7f
-+
-+	bl	__do_get_tspec
-+	seqcnt_check w13, 1b
-+
-+	cmp	w0, #CLOCK_MONOTONIC
-+	b.ne	6f
-+
-+	/* Get wtm timespec. */
-+	ldp	x14, x15, [vdso_data, #VDSO_WTM_CLK_SEC]
-+
-+	/* Check the sequence counter. */
-+	seqcnt_read w13
-+	seqcnt_check w13, 1b
-+	b	4f
-+2:
-+	cmp	w0, #CLOCK_REALTIME_COARSE
-+	ccmp	w0, #CLOCK_MONOTONIC_COARSE, #0x4, ne
-+	b.ne	8f
-+
-+	/* Get coarse timespec. */
-+	adr	vdso_data, _vdso_data
-+3:	seqcnt_acquire
-+	ldp	x9, x10, [vdso_data, #VDSO_XTIME_CRS_SEC]
-+
-+	cmp	w0, #CLOCK_MONOTONIC_COARSE
-+	b.ne	6f
-+
-+	/* Get wtm timespec. */
-+	ldp	x14, x15, [vdso_data, #VDSO_WTM_CLK_SEC]
-+
-+	/* Check the sequence counter. */
-+	seqcnt_read w13
-+	seqcnt_check w13, 3b
-+4:
-+	/* Add on wtm timespec. */
-+	add	x9, x9, x14
-+	add	x10, x10, x15
-+
-+	/* Normalise the new timespec. */
-+	mov	x14, #NSEC_PER_SEC_LO16
-+	movk	x14, #NSEC_PER_SEC_HI16, lsl #16
-+	cmp	x10, x14
-+	b.lt	5f
-+	sub	x10, x10, x14
-+	add	x9, x9, #1
-+5:
-+	cmp	x10, #0
-+	b.ge	6f
-+	add	x10, x10, x14
-+	sub	x9, x9, #1
-+
-+6:	/* Store to the user timespec. */
-+	stp	x9, x10, [x1, #TSPEC_TV_SEC]
-+	mov	x0, xzr
-+	ret	x2
-+7:
-+	mov	x30, x2
-+8:	/* Syscall fallback. */
-+	mov	x8, #__NR_clock_gettime
-+	svc	#0
-+	ret
-+	.cfi_endproc
-+ENDPROC(__kernel_clock_gettime)
-+
-+/* int __kernel_clock_getres(clockid_t clock_id, struct timespec *res); */
-+ENTRY(__kernel_clock_getres)
-+	.cfi_startproc
-+	cbz	w1, 3f
-+
-+	cmp	w0, #CLOCK_REALTIME
-+	ccmp	w0, #CLOCK_MONOTONIC, #0x4, ne
-+	b.ne	1f
-+
-+	ldr	x2, 5f
-+	b	2f
-+1:
-+	cmp	w0, #CLOCK_REALTIME_COARSE
-+	ccmp	w0, #CLOCK_MONOTONIC_COARSE, #0x4, ne
-+	b.ne	4f
-+	ldr	x2, 6f
-+2:
-+	stp	xzr, x2, [x1]
-+
-+3:	/* res == NULL. */
-+	mov	w0, wzr
-+	ret
-+
-+4:	/* Syscall fallback. */
-+	mov	x8, #__NR_clock_getres
-+	svc	#0
-+	ret
-+5:
-+	.quad	CLOCK_REALTIME_RES
-+6:
-+	.quad	CLOCK_COARSE_RES
-+	.cfi_endproc
-+ENDPROC(__kernel_clock_getres)
-+
-+/*
-+ * Read the current time from the architected counter.
-+ * Expects vdso_data to be initialised.
-+ * Clobbers the temporary registers (x9 - x15).
-+ * Returns:
-+ *  - (x9, x10) = (ts->tv_sec, ts->tv_nsec)
-+ *  - (x11, x12) = (xtime->tv_sec, xtime->tv_nsec)
-+ *  - w13 = vDSO sequence counter
-+ */
-+ENTRY(__do_get_tspec)
-+	.cfi_startproc
-+
-+	/* Read from the vDSO data page. */
-+	ldr	x10, [vdso_data, #VDSO_CS_CYCLE_LAST]
-+	ldp	x11, x12, [vdso_data, #VDSO_XTIME_CLK_SEC]
-+	ldp	w14, w15, [vdso_data, #VDSO_CS_MULT]
-+	seqcnt_read w13
-+
-+	/* Read the physical counter. */
-+	isb
-+	mrs	x9, cntpct_el0
-+
-+	/* Calculate cycle delta and convert to ns. */
-+	sub	x10, x9, x10
-+	/* We can only guarantee 56 bits of precision. */
-+	movn	x9, #0xff0, lsl #48
-+	and	x10, x9, x10
-+	mul	x10, x10, x14
-+	lsr	x10, x10, x15
-+
-+	/* Use the kernel time to calculate the new timespec. */
-+	add	x10, x12, x10
-+	mov	x14, #NSEC_PER_SEC_LO16
-+	movk	x14, #NSEC_PER_SEC_HI16, lsl #16
-+	udiv	x15, x10, x14
-+	add	x9, x15, x11
-+	mul	x14, x14, x15
-+	sub	x10, x10, x14
-+
-+	ret
-+	.cfi_endproc
-+ENDPROC(__do_get_tspec)
-diff --git a/arch/arm64/kernel/vdso/note.S b/arch/arm64/kernel/vdso/note.S
-new file mode 100644
-index 0000000..b82c85e
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/note.S
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ *
-+ * This supplies .note.* sections to go into the PT_NOTE inside the vDSO text.
-+ * Here we can supply some information useful to userland.
-+ */
-+
-+#include <linux/uts.h>
-+#include <linux/version.h>
-+#include <linux/elfnote.h>
-+
-+ELFNOTE_START(Linux, 0, "a")
-+	.long LINUX_VERSION_CODE
-+ELFNOTE_END
-diff --git a/arch/arm64/kernel/vdso/sigreturn.S b/arch/arm64/kernel/vdso/sigreturn.S
-new file mode 100644
-index 0000000..20d98ef
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/sigreturn.S
-@@ -0,0 +1,37 @@
-+/*
-+ * Sigreturn trampoline for returning from a signal when the SA_RESTORER
-+ * flag is not set.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/unistd.h>
-+
-+	.text
-+
-+	nop
-+ENTRY(__kernel_rt_sigreturn)
-+	.cfi_startproc
-+	.cfi_signal_frame
-+	.cfi_def_cfa	x29, 0
-+	.cfi_offset	x29, 0 * 8
-+	.cfi_offset	x30, 1 * 8
-+	mov	x8, #__NR_rt_sigreturn
-+	svc	#0
-+	.cfi_endproc
-+ENDPROC(__kernel_rt_sigreturn)
-diff --git a/arch/arm64/kernel/vdso/vdso.S b/arch/arm64/kernel/vdso/vdso.S
-new file mode 100644
-index 0000000..60c1db5
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/vdso.S
-@@ -0,0 +1,33 @@
-+/*
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/linkage.h>
-+#include <linux/const.h>
-+#include <asm/page.h>
-+
-+	__PAGE_ALIGNED_DATA
-+
-+	.globl vdso_start, vdso_end
-+	.balign PAGE_SIZE
-+vdso_start:
-+	.incbin "arch/arm64/kernel/vdso/vdso.so"
-+	.balign PAGE_SIZE
-+vdso_end:
-+
-+	.previous
-diff --git a/arch/arm64/kernel/vdso/vdso.lds.S b/arch/arm64/kernel/vdso/vdso.lds.S
-new file mode 100644
-index 0000000..8154b8d
---- /dev/null
-+++ b/arch/arm64/kernel/vdso/vdso.lds.S
-@@ -0,0 +1,100 @@
-+/*
-+ * GNU linker script for the VDSO library.
-+*
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ * Heavily based on the vDSO linker scripts for other archs.
-+ */
-+
-+#include <linux/const.h>
-+#include <asm/page.h>
-+#include <asm/vdso.h>
-+
-+OUTPUT_FORMAT("elf64-littleaarch64", "elf64-bigaarch64", "elf64-littleaarch64")
-+OUTPUT_ARCH(aarch64)
-+
-+SECTIONS
++void __init smp_cpus_done(unsigned int max_cpus)
 +{
-+	. = VDSO_LBASE + SIZEOF_HEADERS;
++	unsigned long bogosum = loops_per_jiffy * num_online_cpus();
 +
-+	.hash		: { *(.hash) }			:text
-+	.gnu.hash	: { *(.gnu.hash) }
-+	.dynsym		: { *(.dynsym) }
-+	.dynstr		: { *(.dynstr) }
-+	.gnu.version	: { *(.gnu.version) }
-+	.gnu.version_d	: { *(.gnu.version_d) }
-+	.gnu.version_r	: { *(.gnu.version_r) }
++	pr_info("SMP: Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
++		num_online_cpus(), bogosum / (500000/HZ),
++		(bogosum / (5000/HZ)) % 100);
++}
 +
-+	.note		: { *(.note.*) }		:text	:note
++void __init smp_prepare_boot_cpu(void)
++{
++}
 +
-+	. = ALIGN(16);
++static void (*smp_cross_call)(const struct cpumask *, unsigned int);
++static phys_addr_t cpu_release_addr[NR_CPUS];
 +
-+	.text		: { *(.text*) }			:text	=0xd503201f
-+	PROVIDE (__etext = .);
-+	PROVIDE (_etext = .);
-+	PROVIDE (etext = .);
++/*
++ * Enumerate the possible CPU set from the device tree.
++ */
++void __init smp_init_cpus(void)
++{
++	const char *enable_method;
++	struct device_node *dn = NULL;
++	int cpu = 0;
 +
-+	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
-+	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
++	while ((dn = of_find_node_by_type(dn, "cpu"))) {
++		if (cpu >= NR_CPUS)
++			goto next;
 +
-+	.dynamic	: { *(.dynamic) }		:text	:dynamic
++		/*
++		 * We currently support only the "spin-table" enable-method.
++		 */
++		enable_method = of_get_property(dn, "enable-method", NULL);
++		if (!enable_method || strcmp(enable_method, "spin-table")) {
++			pr_err("CPU %d: missing or invalid enable-method property: %s\n",
++			       cpu, enable_method);
++			goto next;
++		}
 +
-+	.rodata		: { *(.rodata*) }		:text
++		/*
++		 * Determine the address from which the CPU is polling.
++		 */
++		if (of_property_read_u64(dn, "cpu-release-addr",
++					 &cpu_release_addr[cpu])) {
++			pr_err("CPU %d: missing or invalid cpu-release-addr property\n",
++			       cpu);
++			goto next;
++		}
 +
-+	_end = .;
-+	PROVIDE(end = .);
++		set_cpu_possible(cpu, true);
++next:
++		cpu++;
++	}
 +
-+	. = ALIGN(PAGE_SIZE);
-+	PROVIDE(_vdso_data = .);
++	/* sanity check */
++	if (cpu > NR_CPUS)
++		pr_warning("no. of cores (%d) greater than configured maximum of %d - clipping\n",
++			   cpu, NR_CPUS);
++}
 +
-+	/DISCARD/	: {
-+		*(.note.GNU-stack)
-+		*(.data .data.* .gnu.linkonce.d.* .sdata*)
-+		*(.bss .sbss .dynbss .dynsbss)
++void __init smp_prepare_cpus(unsigned int max_cpus)
++{
++	int cpu;
++	void **release_addr;
++	unsigned int ncores = num_possible_cpus();
++
++	/*
++	 * are we trying to boot more cores than exist?
++	 */
++	if (max_cpus > ncores)
++		max_cpus = ncores;
++
++	/*
++	 * Initialise the present map (which describes the set of CPUs
++	 * actually populated at the present time) and release the
++	 * secondaries from the bootloader.
++	 */
++	for_each_possible_cpu(cpu) {
++		if (max_cpus == 0)
++			break;
++
++		if (!cpu_release_addr[cpu])
++			continue;
++
++		release_addr = __va(cpu_release_addr[cpu]);
++		release_addr[0] = (void *)__pa(secondary_holding_pen);
++		__cpuc_flush_dcache_area(release_addr, sizeof(release_addr[0]));
++
++		set_cpu_present(cpu, true);
++		max_cpus--;
++	}
++
++	/*
++	 * Send an event to wake up the secondaries.
++	 */
++	sev();
++}
++
++
++void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
++{
++	smp_cross_call = fn;
++}
++
++void arch_send_call_function_ipi_mask(const struct cpumask *mask)
++{
++	smp_cross_call(mask, IPI_CALL_FUNC);
++}
++
++void arch_send_call_function_single_ipi(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++}
++
++static const char *ipi_types[NR_IPI] = {
++#define S(x,s)	[x - IPI_RESCHEDULE] = s
++	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
++	S(IPI_CALL_FUNC, "Function call interrupts"),
++	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
++	S(IPI_CPU_STOP, "CPU stop interrupts"),
++};
++
++void show_ipi_list(struct seq_file *p, int prec)
++{
++	unsigned int cpu, i;
++
++	for (i = 0; i < NR_IPI; i++) {
++		seq_printf(p, "%*s%u:%s", prec - 1, "IPI", i + IPI_RESCHEDULE,
++			   prec >= 4 ? " " : "");
++		for_each_present_cpu(cpu)
++			seq_printf(p, "%10u ",
++				   __get_irq_stat(cpu, ipi_irqs[i]));
++		seq_printf(p, "      %s\n", ipi_types[i]);
 +	}
 +}
 +
-+/*
-+ * We must supply the ELF program headers explicitly to get just one
-+ * PT_LOAD segment, and set the flags explicitly to make segments read-only.
-+ */
-+PHDRS
++u64 smp_irq_stat_cpu(unsigned int cpu)
 +{
-+	text		PT_LOAD		FLAGS(5) FILEHDR PHDRS; /* PF_R|PF_X */
-+	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
-+	note		PT_NOTE		FLAGS(4);		/* PF_R */
-+	eh_frame_hdr	PT_GNU_EH_FRAME;
++	u64 sum = 0;
++	int i;
++
++	for (i = 0; i < NR_IPI; i++)
++		sum += __get_irq_stat(cpu, ipi_irqs[i]);
++
++	return sum;
++}
++
++static DEFINE_SPINLOCK(stop_lock);
++
++/*
++ * ipi_cpu_stop - handle IPI from smp_send_stop()
++ */
++static void ipi_cpu_stop(unsigned int cpu)
++{
++	if (system_state == SYSTEM_BOOTING ||
++	    system_state == SYSTEM_RUNNING) {
++		spin_lock(&stop_lock);
++		pr_crit("CPU%u: stopping\n", cpu);
++		dump_stack();
++		spin_unlock(&stop_lock);
++	}
++
++	set_cpu_online(cpu, false);
++
++	local_fiq_disable();
++	local_irq_disable();
++
++	while (1)
++		cpu_relax();
 +}
 +
 +/*
-+ * This controls what symbols we export from the DSO.
++ * Main handler for inter-processor interrupts
 + */
-+VERSION
++void handle_IPI(int ipinr, struct pt_regs *regs)
 +{
-+	LINUX_2.6.39 {
-+	global:
-+		__kernel_rt_sigreturn;
-+		__kernel_gettimeofday;
-+		__kernel_clock_gettime;
-+		__kernel_clock_getres;
-+	local: *;
-+	};
++	unsigned int cpu = smp_processor_id();
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
++		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
++
++	switch (ipinr) {
++	case IPI_RESCHEDULE:
++		scheduler_ipi();
++		break;
++
++	case IPI_CALL_FUNC:
++		irq_enter();
++		generic_smp_call_function_interrupt();
++		irq_exit();
++		break;
++
++	case IPI_CALL_FUNC_SINGLE:
++		irq_enter();
++		generic_smp_call_function_single_interrupt();
++		irq_exit();
++		break;
++
++	case IPI_CPU_STOP:
++		irq_enter();
++		ipi_cpu_stop(cpu);
++		irq_exit();
++		break;
++
++	default:
++		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
++		break;
++	}
++	set_irq_regs(old_regs);
++}
++
++void smp_send_reschedule(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
++}
++
++void smp_send_stop(void)
++{
++	unsigned long timeout;
++
++	if (num_online_cpus() > 1) {
++		cpumask_t mask;
++
++		cpumask_copy(&mask, cpu_online_mask);
++		cpu_clear(smp_processor_id(), mask);
++
++		smp_cross_call(&mask, IPI_CPU_STOP);
++	}
++
++	/* Wait up to one second for other CPUs to stop */
++	timeout = USEC_PER_SEC;
++	while (num_online_cpus() > 1 && timeout--)
++		udelay(1);
++
++	if (num_online_cpus() > 1)
++		pr_warning("SMP: failed to stop secondary CPUs\n");
 +}
 +
 +/*
-+ * Make the sigreturn code visible to the kernel.
++ * not supported here
 + */
-+VDSO_sigtramp		= __kernel_rt_sigreturn;
++int setup_profiling_timer(unsigned int multiplier)
++{
++	return -EINVAL;
++}
 
