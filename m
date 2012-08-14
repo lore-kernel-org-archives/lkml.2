@@ -1,187 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab2HNPMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:12:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55758 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756200Ab2HNPF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:05:59 -0400
-Date: Tue, 14 Aug 2012 17:05:52 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: wei_wang@realsil.com.cn
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH v2 0/2] Add modules to support realtek PCIE card reader
-Message-ID: <20120814150550.GA4091@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
-	gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-	cjb@laptop.org, arnd@arndb.de, sameo@linux.intel.com
-References: <cover.1344939464.git.wei_wang@realsil.com.cn>
+	id S1752169Ab2HNPOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:14:06 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:51341 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2HNPOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:14:04 -0400
+Date: Tue, 14 Aug 2012 17:13:45 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Jonas Gorski <jonas.gorski@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: [PATCH] MIPS: Fix module.c build for 32 bit
+Message-ID: <20120814151345.GB30856@linux-mips.org>
+References: <87d32us55c.fsf@rustcorp.com.au>
+ <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com>
+ <31154.1344872382@warthog.procyon.org.uk>
+ <32504.1344953290@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1344939464.git.wei_wang@realsil.com.cn>
+In-Reply-To: <32504.1344953290@warthog.procyon.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 06:40:36PM +0800, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
-> 
-> Wei WANG (2):
->   drivers/mfd: Add realtek pcie card reader driver
->   drivers/mmc: Add realtek pcie sdmmc host driver
-> 
->  drivers/mfd/Kconfig               |    9 +
->  drivers/mfd/Makefile              |    4 +
->  drivers/mfd/rts5209.c             |  102 +++
->  drivers/mfd/rts5229.c             |  117 +++
->  drivers/mfd/rtsx_pcr.c            | 1464 +++++++++++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.h            |   31 +
->  drivers/mmc/host/Kconfig          |    7 +
->  drivers/mmc/host/Makefile         |    2 +
->  drivers/mmc/host/rtsx_pci_sdmmc.c | 1348 ++++++++++++++++++++++++++++++++++
->  include/linux/mfd/rtsx_common.h   |   47 ++
->  include/linux/mfd/rtsx_pci.h      |  692 ++++++++++++++++++
->  11 files changed, 3823 insertions(+)
->  create mode 100644 drivers/mfd/rts5209.c
->  create mode 100644 drivers/mfd/rts5229.c
->  create mode 100644 drivers/mfd/rtsx_pcr.c
->  create mode 100644 drivers/mfd/rtsx_pcr.h
->  create mode 100644 drivers/mmc/host/rtsx_pci_sdmmc.c
->  create mode 100644 include/linux/mfd/rtsx_common.h
->  create mode 100644 include/linux/mfd/rtsx_pci.h
+Fixes build failure introduced by "Make most arch asm/module.h files use
+asm-generic/module.h" by moving all the RELA processing code to a
+separate file to be used only for RELA processing on 64-bit kernels.
 
-Yeah, this thing still has issues though.
+  CC      arch/mips/kernel/module.o
+arch/mips/kernel/module.c:250:14: error: 'reloc_handlers_rela' defined but not 
+used [-Werror=unused-variable]
+cc1: all warnings being treated as errors
 
-When I slide in an SD card and do
+make[6]: *** [arch/mips/kernel/module.o] Error 1
 
-$ mkfs.ext3 /dev/mmcblk0p1
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-after having created the partition with fdisk, we run out of DMA space and the
-hung-tasks detector triggers:
+---
+This is bigger than Jonas' suggested patch but far less #ifdefy.
+A minimal fix would be to add __maybe_unused to the definition of
+reloc_handlers_rela but imho __maybe_unused should be avoided where
+possible.
 
-...
-[  286.244866] mmc0: new ultra high speed SDR50 SDHC card at address e624
-[  286.277199] mmcblk0: mmc0:e624 SU16G 14.8 GiB 
-[  286.318163]  mmcblk0:
-[  363.754647]  mmcblk0: p1
-[  379.545510] DMA: Out of SW-IOMMU space for 438272 bytes at device 0000:03:00.0
-[  389.578514] DMA: Out of SW-IOMMU space for 380928 bytes at device 0000:03:00.0
-[  399.590953] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  409.590698] DMA: Out of SW-IOMMU space for 380928 bytes at device 0000:03:00.0
-[  419.589054] DMA: Out of SW-IOMMU space for 380928 bytes at device 0000:03:00.0
-[  429.587710] DMA: Out of SW-IOMMU space for 380928 bytes at device 0000:03:00.0
-[  439.586748] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  449.603357] DMA: Out of SW-IOMMU space for 516096 bytes at device 0000:03:00.0
-[  459.602781] DMA: Out of SW-IOMMU space for 385024 bytes at device 0000:03:00.0
-[  469.604105] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  479.602964] DMA: Out of SW-IOMMU space for 385024 bytes at device 0000:03:00.0
-[  489.601303] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  499.599617] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  509.597943] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  519.596815] DMA: Out of SW-IOMMU space for 385024 bytes at device 0000:03:00.0
-[  529.594130] DMA: Out of SW-IOMMU space for 389120 bytes at device 0000:03:00.0
-[  539.593000] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  549.594701] DMA: Out of SW-IOMMU space for 471040 bytes at device 0000:03:00.0
-[  559.594068] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  569.592643] DMA: Out of SW-IOMMU space for 389120 bytes at device 0000:03:00.0
-[  579.589890] DMA: Out of SW-IOMMU space for 520192 bytes at device 0000:03:00.0
-[  589.588743] DMA: Out of SW-IOMMU space for 393216 bytes at device 0000:03:00.0
-[  599.587003] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
-[  600.415530] INFO: task flush-179:0:3418 blocked for more than 120 seconds.
-[  600.418439] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  600.421516] flush-179:0     D ffff880117c40050     0  3418      2 0x00000000
-[  600.424578]  ffff88011578f650 0000000000000086 ffff88011578f5f0 ffffffff810a567d
-[  600.426155]  ffff88011578ffd8 ffff880117e459a0 ffff88011578ffd8 ffff88011578ffd8
-[  600.427705]  ffffffff81a13420 ffff880117e459a0 ffff88011578f620 ffff880117e459a0
-[  600.430917] Call Trace:
-[  600.432458]  [<ffffffff810a567d>] ? trace_hardirqs_on+0xd/0x10
-[  600.434041]  [<ffffffff81495cc9>] schedule+0x29/0x70
-[  600.435627]  [<ffffffff81495d9f>] io_schedule+0x8f/0xd0
-[  600.437204]  [<ffffffff8121d35b>] get_request+0x15b/0x5e0
-[  600.438766]  [<ffffffff81223ccf>] ? ioc_lookup_icq+0x9f/0xf0
-[  600.440340]  [<ffffffff81070320>] ? __init_waitqueue_head+0x60/0x60
-[  600.441904]  [<ffffffff81220b2d>] blk_queue_bio+0x7d/0x400
-[  600.443486]  [<ffffffff8121edc2>] generic_make_request+0xc2/0x110
-[  600.445057]  [<ffffffff8121fb65>] submit_bio+0x75/0x100
-[  600.446616]  [<ffffffff8117f54a>] ? bio_alloc_bioset+0x5a/0x100
-[  600.448191]  [<ffffffff811799d4>] submit_bh+0xf4/0x130
-[  600.449748]  [<ffffffff8117c047>] __block_write_full_page+0x1f7/0x390
-[  600.451299]  [<ffffffff8117c1e0>] ? __block_write_full_page+0x390/0x390
-[  600.452837]  [<ffffffff81180d20>] ? blkdev_get_blocks+0xc0/0xc0
-[  600.452840]  [<ffffffff81180d20>] ? blkdev_get_blocks+0xc0/0xc0
-[  600.452845]  [<ffffffff8117ca5f>] block_write_full_page_endio+0x10f/0x130
-[  600.452852]  [<ffffffff81104fba>] ? clear_page_dirty_for_io+0xba/0x100
-[  600.452856]  [<ffffffff8117ca95>] block_write_full_page+0x15/0x20
-[  600.452861]  [<ffffffff81180548>] blkdev_writepage+0x18/0x20
-[  600.452865]  [<ffffffff81104aba>] __writepage+0x1a/0x50
-[  600.452870]  [<ffffffff81105371>] write_cache_pages+0x241/0x490
-[  600.452874]  [<ffffffff81104aa0>] ? mapping_tagged+0x20/0x20
-[  600.452880]  [<ffffffff81105603>] generic_writepages+0x43/0x60
-[  600.452884]  [<ffffffff81106e41>] do_writepages+0x21/0x50
-[  600.452888]  [<ffffffff811728bb>] __writeback_single_inode.isra.32+0x3b/0x190
-[  600.452893]  [<ffffffff8107fca9>] ? sub_preempt_count+0x79/0xd0
-[  600.452897]  [<ffffffff81173695>] writeback_sb_inodes+0x345/0x4f0
-[  600.452901]  [<ffffffff811738d7>] __writeback_inodes_wb+0x97/0xd0
-[  600.452905]  [<ffffffff81173b1b>] wb_writeback+0x20b/0x340
-[  600.452910]  [<ffffffff811743d5>] wb_do_writeback+0x205/0x260
-[  600.452915]  [<ffffffff811744c3>] bdi_writeback_thread+0x93/0x2b0
-[  600.452919]  [<ffffffff81174430>] ? wb_do_writeback+0x260/0x260
-[  600.452923]  [<ffffffff8106fcaa>] kthread+0xea/0xf0
-[  600.452930]  [<ffffffff814990a4>] kernel_thread_helper+0x4/0x10
-[  600.452935]  [<ffffffff8107b355>] ? finish_task_switch+0x85/0x110
-[  600.452939]  [<ffffffff8149728b>] ? _raw_spin_unlock_irq+0x3b/0x60
-[  600.452943]  [<ffffffff8149769d>] ? retint_restore_args+0xe/0xe
-[  600.452947]  [<ffffffff8106fbc0>] ? kthread_create_on_node+0x160/0x160
-[  600.452951]  [<ffffffff814990a0>] ? gs_change+0xb/0xb
-[  600.452978] 1 lock held by flush-179:0/3418:
-[  600.452990]  #0:  (&type->s_umount_key#19){.+.+..}, at: [<ffffffff8114ce13>] grab_super_passive+0x43/0x90
-[  600.452993] INFO: task mkfs.ext3:3438 blocked for more than 120 seconds.
-[  600.452995] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  600.453000] mkfs.ext3       D ffff880117c40098     0  3438   3353 0x00000000
-[  600.453005]  ffff880117e519b8 0000000000000082 ffff880117e51958 ffffffff810a567d
-[  600.453010]  ffff880117e51fd8 ffff880117e42cd0 ffff880117e51fd8 ffff880117e51fd8
-[  600.453015]  ffffffff81a13420 ffff880117e42cd0 ffff880117e51988 ffff880117e42cd0
-[  600.453017] Call Trace:
-[  600.453021]  [<ffffffff810a567d>] ? trace_hardirqs_on+0xd/0x10
-[  600.453026]  [<ffffffff81495cc9>] schedule+0x29/0x70
-[  600.453031]  [<ffffffff81495d9f>] io_schedule+0x8f/0xd0
-[  600.453034]  [<ffffffff8121d35b>] get_request+0x15b/0x5e0
-[  600.453039]  [<ffffffff81223ccf>] ? ioc_lookup_icq+0x9f/0xf0
-[  600.453043]  [<ffffffff81070320>] ? __init_waitqueue_head+0x60/0x60
-[  600.453047]  [<ffffffff81220b2d>] blk_queue_bio+0x7d/0x400
-[  600.453052]  [<ffffffff8121edc2>] generic_make_request+0xc2/0x110
-[  600.453055]  [<ffffffff8121fb65>] submit_bio+0x75/0x100
-[  600.453060]  [<ffffffff8117f54a>] ? bio_alloc_bioset+0x5a/0x100
-[  600.453064]  [<ffffffff811799d4>] submit_bh+0xf4/0x130
-[  600.453068]  [<ffffffff8117c047>] __block_write_full_page+0x1f7/0x390
-[  600.453073]  [<ffffffff8117c1e0>] ? __block_write_full_page+0x390/0x390
-[  600.453076]  [<ffffffff81180d20>] ? blkdev_get_blocks+0xc0/0xc0
-[  600.453080]  [<ffffffff81180d20>] ? blkdev_get_blocks+0xc0/0xc0
-[  600.453084]  [<ffffffff8117ca5f>] block_write_full_page_endio+0x10f/0x130
-[  600.453089]  [<ffffffff81104fba>] ? clear_page_dirty_for_io+0xba/0x100
-[  600.453094]  [<ffffffff8117ca95>] block_write_full_page+0x15/0x20
-[  600.453098]  [<ffffffff81180548>] blkdev_writepage+0x18/0x20
-[  600.453102]  [<ffffffff81104aba>] __writepage+0x1a/0x50
-[  600.453106]  [<ffffffff81105371>] write_cache_pages+0x241/0x490
-[  600.453111]  [<ffffffff81104aa0>] ? mapping_tagged+0x20/0x20
-[  600.453117]  [<ffffffff81105603>] generic_writepages+0x43/0x60
-[  600.453121]  [<ffffffff81106e41>] do_writepages+0x21/0x50
-[  600.453125]  [<ffffffff810fd6e1>] __filemap_fdatawrite_range+0x51/0x60
-[  600.453129]  [<ffffffff810fd742>] filemap_write_and_wait_range+0x52/0x70
-[  600.453133]  [<ffffffff81180744>] blkdev_fsync+0x24/0x50
-[  600.453137]  [<ffffffff81178110>] do_fsync+0x50/0x80
-[  600.453140]  [<ffffffff811783a0>] sys_fsync+0x10/0x20
-[  600.453144]  [<ffffffff81497f92>] system_call_fastpath+0x16/0x1b
-[  600.453147] no locks held by mkfs.ext3/3438.
-[  609.585190] DMA: Out of SW-IOMMU space for 524288 bytes at device 0000:03:00.0
+I tested this on top of today's -next but ideally to keep bisectability
+it should be applied early in the series before CONFIG_MODULES_USE_ELF_RELA
+is introduced which would require trivial tweaking arch/mips/kernel/Makefile
+tweaking.
 
--- 
-Regards/Gruss,
-Boris.
+ arch/mips/kernel/Makefile      |   1 +
+ arch/mips/kernel/module-rela.c | 145 +++++++++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/module.c      | 123 +---------------------------------
+ 3 files changed, 147 insertions(+), 122 deletions(-)
+
+diff --git a/arch/mips/kernel/Makefile b/arch/mips/kernel/Makefile
+index fdaf65e..cd1e6c2 100644
+--- a/arch/mips/kernel/Makefile
++++ b/arch/mips/kernel/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_SYNC_R4K)		+= sync-r4k.o
+ 
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
+ obj-$(CONFIG_MODULES)		+= mips_ksyms.o module.o
++obj-$(CONFIG_MODULES_USE_ELF_RELA) += module-rela.o
+ 
+ obj-$(CONFIG_FUNCTION_TRACER)	+= mcount.o ftrace.o
+ 
+diff --git a/arch/mips/kernel/module-rela.c b/arch/mips/kernel/module-rela.c
+new file mode 100644
+index 0000000..61d6002
+--- /dev/null
++++ b/arch/mips/kernel/module-rela.c
+@@ -0,0 +1,145 @@
++/*
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ *  Copyright (C) 2001 Rusty Russell.
++ *  Copyright (C) 2003, 2004 Ralf Baechle (ralf@linux-mips.org)
++ *  Copyright (C) 2005 Thiemo Seufer
++ */
++
++#include <linux/elf.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/moduleloader.h>
++
++extern int apply_r_mips_none(struct module *me, u32 *location, Elf_Addr v);
++
++static int apply_r_mips_32_rela(struct module *me, u32 *location, Elf_Addr v)
++{
++	*location = v;
++
++	return 0;
++}
++
++static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
++{
++	if (v % 4) {
++		pr_err("module %s: dangerous R_MIPS_26 RELArelocation\n",
++		       me->name);
++		return -ENOEXEC;
++	}
++
++	if ((v & 0xf0000000) != (((unsigned long)location + 4) & 0xf0000000)) {
++		printk(KERN_ERR
++		       "module %s: relocation overflow\n",
++		       me->name);
++		return -ENOEXEC;
++	}
++
++	*location = (*location & ~0x03ffffff) | ((v >> 2) & 0x03ffffff);
++
++	return 0;
++}
++
++static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
++{
++	*location = (*location & 0xffff0000) |
++	            ((((long long) v + 0x8000LL) >> 16) & 0xffff);
++
++	return 0;
++}
++
++static int apply_r_mips_lo16_rela(struct module *me, u32 *location, Elf_Addr v)
++{
++	*location = (*location & 0xffff0000) | (v & 0xffff);
++
++	return 0;
++}
++
++static int apply_r_mips_64_rela(struct module *me, u32 *location, Elf_Addr v)
++{
++	*(Elf_Addr *)location = v;
++
++	return 0;
++}
++
++static int apply_r_mips_higher_rela(struct module *me, u32 *location,
++				    Elf_Addr v)
++{
++	*location = (*location & 0xffff0000) |
++	            ((((long long) v + 0x80008000LL) >> 32) & 0xffff);
++
++	return 0;
++}
++
++static int apply_r_mips_highest_rela(struct module *me, u32 *location,
++				     Elf_Addr v)
++{
++	*location = (*location & 0xffff0000) |
++	            ((((long long) v + 0x800080008000LL) >> 48) & 0xffff);
++
++	return 0;
++}
++
++static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
++				Elf_Addr v) = {
++	[R_MIPS_NONE]		= apply_r_mips_none,
++	[R_MIPS_32]		= apply_r_mips_32_rela,
++	[R_MIPS_26]		= apply_r_mips_26_rela,
++	[R_MIPS_HI16]		= apply_r_mips_hi16_rela,
++	[R_MIPS_LO16]		= apply_r_mips_lo16_rela,
++	[R_MIPS_64]		= apply_r_mips_64_rela,
++	[R_MIPS_HIGHER]		= apply_r_mips_higher_rela,
++	[R_MIPS_HIGHEST]	= apply_r_mips_highest_rela
++};
++
++int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
++		       unsigned int symindex, unsigned int relsec,
++		       struct module *me)
++{
++	Elf_Mips_Rela *rel = (void *) sechdrs[relsec].sh_addr;
++	Elf_Sym *sym;
++	u32 *location;
++	unsigned int i;
++	Elf_Addr v;
++	int res;
++
++	pr_debug("Applying relocate section %u to %u\n", relsec,
++	       sechdrs[relsec].sh_info);
++
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
++		/* This is where to make the change */
++		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			+ rel[i].r_offset;
++		/* This is the symbol it is referring to */
++		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
++			+ ELF_MIPS_R_SYM(rel[i]);
++		if (IS_ERR_VALUE(sym->st_value)) {
++			/* Ignore unresolved weak symbol */
++			if (ELF_ST_BIND(sym->st_info) == STB_WEAK)
++				continue;
++			printk(KERN_WARNING "%s: Unknown symbol %s\n",
++			       me->name, strtab + sym->st_name);
++			return -ENOENT;
++		}
++
++		v = sym->st_value + rel[i].r_addend;
++
++		res = reloc_handlers_rela[ELF_MIPS_R_TYPE(rel[i])](me, location, v);
++		if (res)
++			return res;
++	}
++
++	return 0;
++}
+diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
+index 1500c80..da6dcd9 100644
+--- a/arch/mips/kernel/module.c
++++ b/arch/mips/kernel/module.c
+@@ -53,7 +53,7 @@ void *module_alloc(unsigned long size)
+ }
+ #endif
+ 
+-static int apply_r_mips_none(struct module *me, u32 *location, Elf_Addr v)
++int apply_r_mips_none(struct module *me, u32 *location, Elf_Addr v)
+ {
+ 	return 0;
+ }
+@@ -65,13 +65,6 @@ static int apply_r_mips_32_rel(struct module *me, u32 *location, Elf_Addr v)
+ 	return 0;
+ }
+ 
+-static int apply_r_mips_32_rela(struct module *me, u32 *location, Elf_Addr v)
+-{
+-	*location = v;
+-
+-	return 0;
+-}
+-
+ static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
+ {
+ 	if (v % 4) {
+@@ -93,26 +86,6 @@ static int apply_r_mips_26_rel(struct module *me, u32 *location, Elf_Addr v)
+ 	return 0;
+ }
+ 
+-static int apply_r_mips_26_rela(struct module *me, u32 *location, Elf_Addr v)
+-{
+-	if (v % 4) {
+-		pr_err("module %s: dangerous R_MIPS_26 RELArelocation\n",
+-		       me->name);
+-		return -ENOEXEC;
+-	}
+-
+-	if ((v & 0xf0000000) != (((unsigned long)location + 4) & 0xf0000000)) {
+-		printk(KERN_ERR
+-		       "module %s: relocation overflow\n",
+-		       me->name);
+-		return -ENOEXEC;
+-	}
+-
+-	*location = (*location & ~0x03ffffff) | ((v >> 2) & 0x03ffffff);
+-
+-	return 0;
+-}
+-
+ static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
+ {
+ 	struct mips_hi16 *n;
+@@ -134,14 +107,6 @@ static int apply_r_mips_hi16_rel(struct module *me, u32 *location, Elf_Addr v)
+ 	return 0;
+ }
+ 
+-static int apply_r_mips_hi16_rela(struct module *me, u32 *location, Elf_Addr v)
+-{
+-	*location = (*location & 0xffff0000) |
+-	            ((((long long) v + 0x8000LL) >> 16) & 0xffff);
+-
+-	return 0;
+-}
+-
+ static int apply_r_mips_lo16_rel(struct module *me, u32 *location, Elf_Addr v)
+ {
+ 	unsigned long insnlo = *location;
+@@ -206,38 +171,6 @@ out_danger:
+ 	return -ENOEXEC;
+ }
+ 
+-static int apply_r_mips_lo16_rela(struct module *me, u32 *location, Elf_Addr v)
+-{
+-	*location = (*location & 0xffff0000) | (v & 0xffff);
+-
+-	return 0;
+-}
+-
+-static int apply_r_mips_64_rela(struct module *me, u32 *location, Elf_Addr v)
+-{
+-	*(Elf_Addr *)location = v;
+-
+-	return 0;
+-}
+-
+-static int apply_r_mips_higher_rela(struct module *me, u32 *location,
+-				    Elf_Addr v)
+-{
+-	*location = (*location & 0xffff0000) |
+-	            ((((long long) v + 0x80008000LL) >> 32) & 0xffff);
+-
+-	return 0;
+-}
+-
+-static int apply_r_mips_highest_rela(struct module *me, u32 *location,
+-				     Elf_Addr v)
+-{
+-	*location = (*location & 0xffff0000) |
+-	            ((((long long) v + 0x800080008000LL) >> 48) & 0xffff);
+-
+-	return 0;
+-}
+-
+ static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
+ 				Elf_Addr v) = {
+ 	[R_MIPS_NONE]		= apply_r_mips_none,
+@@ -247,18 +180,6 @@ static int (*reloc_handlers_rel[]) (struct module *me, u32 *location,
+ 	[R_MIPS_LO16]		= apply_r_mips_lo16_rel
+ };
+ 
+-static int (*reloc_handlers_rela[]) (struct module *me, u32 *location,
+-				Elf_Addr v) = {
+-	[R_MIPS_NONE]		= apply_r_mips_none,
+-	[R_MIPS_32]		= apply_r_mips_32_rela,
+-	[R_MIPS_26]		= apply_r_mips_26_rela,
+-	[R_MIPS_HI16]		= apply_r_mips_hi16_rela,
+-	[R_MIPS_LO16]		= apply_r_mips_lo16_rela,
+-	[R_MIPS_64]		= apply_r_mips_64_rela,
+-	[R_MIPS_HIGHER]		= apply_r_mips_higher_rela,
+-	[R_MIPS_HIGHEST]	= apply_r_mips_highest_rela
+-};
+-
+ int apply_relocate(Elf_Shdr *sechdrs, const char *strtab,
+ 		   unsigned int symindex, unsigned int relsec,
+ 		   struct module *me)
+@@ -299,48 +220,6 @@ int apply_relocate(Elf_Shdr *sechdrs, const char *strtab,
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_MODULES_USE_ELF_RELA
+-int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
+-		       unsigned int symindex, unsigned int relsec,
+-		       struct module *me)
+-{
+-	Elf_Mips_Rela *rel = (void *) sechdrs[relsec].sh_addr;
+-	Elf_Sym *sym;
+-	u32 *location;
+-	unsigned int i;
+-	Elf_Addr v;
+-	int res;
+-
+-	pr_debug("Applying relocate section %u to %u\n", relsec,
+-	       sechdrs[relsec].sh_info);
+-
+-	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
+-		/* This is where to make the change */
+-		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
+-			+ rel[i].r_offset;
+-		/* This is the symbol it is referring to */
+-		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
+-			+ ELF_MIPS_R_SYM(rel[i]);
+-		if (IS_ERR_VALUE(sym->st_value)) {
+-			/* Ignore unresolved weak symbol */
+-			if (ELF_ST_BIND(sym->st_info) == STB_WEAK)
+-				continue;
+-			printk(KERN_WARNING "%s: Unknown symbol %s\n",
+-			       me->name, strtab + sym->st_name);
+-			return -ENOENT;
+-		}
+-
+-		v = sym->st_value + rel[i].r_addend;
+-
+-		res = reloc_handlers_rela[ELF_MIPS_R_TYPE(rel[i])](me, location, v);
+-		if (res)
+-			return res;
+-	}
+-
+-	return 0;
+-}
+-#endif
+-
+ /* Given an address, look for it in the module exception tables. */
+ const struct exception_table_entry *search_module_dbetables(unsigned long addr)
+ {
