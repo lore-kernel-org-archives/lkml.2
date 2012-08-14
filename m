@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab2HNIGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:06:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55247 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2HNIGu (ORCPT
+	id S1753617Ab2HNIHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:07:43 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55004 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751801Ab2HNIHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:06:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <5029F8F6.1080207@samsung.com>
-References: <5029F8F6.1080207@samsung.com>
-Date: Tue, 14 Aug 2012 10:06:49 +0200
-Message-ID: <CACRpkdYNKxjRXC=4no0p55ADkUvXTEcfW3b2z+Exg=cpHCtAAQ@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc: card: Skip secure option for MoviNAND.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: IAN CHEN <ian.cy.chen@samsung.com>
-Cc: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, d.j.shin@samsung.com,
-        jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Aug 2012 04:07:40 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Denis Efremov <yefremov.denis@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, pablo@netfilter.org,
+        kaber@trash.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH v2] bridge: rcu_deref outside read-lock section
+Date: Tue, 14 Aug 2012 12:08:52 +0400
+Message-Id: <1344931732-1858-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1344898062-23633-1-git-send-email-yefremov.denis@gmail.com>
+References: <1344898062-23633-1-git-send-email-yefremov.denis@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 9:06 AM, IAN CHEN <ian.cy.chen@samsung.com> wrote:
+As it noted in the comment before the br_handle_frame_finish
+function, this function should be called under rcu_read_lock.
 
-> +#define MMC_QUIRK_SECURE_MODE_BROKEN (1<<10)   /* Skip secure for
-> erase/trim */
+The problem callgraph:
+br_dev_xmit -> br_nf_pre_routing_finish_bridge_slow ->
+-> br_handle_frame_finish -> br_port_get_rcu -> rcu_dereference
 
-OK this will work and sorry for being picky, but we are working with RPMB
-support and that's some other "secure mode" so to avoid any
-misuderstandings it's better to name the flag like I proposed,
-MMC_QUIRK_SEC_ERASE_TRIM_BROKEN
+And in this case there is no read-lock section.
 
-I won't die if this goes in though :-)
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Yours,
-Linus Walleij
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+---
+ net/bridge/br_device.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
+index 3334845..f9ae07f 100644
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -33,7 +33,9 @@ netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	if (skb->nf_bridge && (skb->nf_bridge->mask & BRNF_BRIDGED_DNAT)) {
++		rcu_read_lock();
+ 		br_nf_pre_routing_finish_bridge_slow(skb);
++		rcu_read_unlock();
+ 		return NETDEV_TX_OK;
+ 	}
+ #endif
+-- 
+1.7.7
+
