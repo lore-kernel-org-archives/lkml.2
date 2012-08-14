@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab2HNE0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 00:26:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55751 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab2HNE0R (ORCPT
+	id S1752262Ab2HNEtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 00:49:42 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:58518 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab2HNEtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 00:26:17 -0400
+	Tue, 14 Aug 2012 00:49:07 -0400
+From: <gerg@snapgear.com>
+To: <linux-m68k@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <geert@linux-m68k.org>,
+        <fengguang.wu@intel.com>, <ebiederm@xmission.com>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: [PATCH] m68k: select CONFIG_GENERIC_ATOMIC64 for all m68k CPU types
+Date: Tue, 14 Aug 2012 14:45:33 +1000
+Message-ID: <1344919533-9357-1-git-send-email-gerg@snapgear.com>
+X-Mailer: git-send-email 1.5.5.1
 MIME-Version: 1.0
-In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 13 Aug 2012 21:25:55 -0700
-Message-ID: <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
-Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> From: Jiang Liu <liuj97@gmail.com>
->
-> As suggested by Bjorn Helgaas and Don Dutile in threads
-> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
-> to PCIe capabilities register in to way:
-> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
->    repeatedly reading this register because it's read only.
-> 2) provide access functions for PCIe Capabilities registers to hide differences
->    among PCIe base specifications, so the caller don't need to handle those
->    differences.
->
-> This patch set applies to
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+From: Greg Ungerer <gerg@uclinux.org>
 
-Would you mind rebasing this to v3.6-rc1?  I think you posted this
-when my branch was still 3.5-based, and there are some upstream
-changes that cause minor conflicts here.
+There is no specific atomic64 support code for any m68k CPUs, so we should
+select CONFIG_GENERIC_ATOMC64 for all. Remove the existing per CPU selection
+of this and select it for all m68k.
 
-You currently have:
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+---
+ arch/m68k/Kconfig     |    1 +
+ arch/m68k/Kconfig.cpu |    4 ----
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
-    int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
-u16 set_bits, u16 clear_bits)
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index 0b0f8b8..26bfa46 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -5,6 +5,7 @@ config M68K
+ 	select HAVE_AOUT if MMU
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_SHOW
++	select GENERIC_ATOMIC64
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ 	select GENERIC_CPU_DEVICES
+ 	select GENERIC_STRNCPY_FROM_USER if MMU
+diff --git a/arch/m68k/Kconfig.cpu b/arch/m68k/Kconfig.cpu
+index 43a9f8f..765e375 100644
+--- a/arch/m68k/Kconfig.cpu
++++ b/arch/m68k/Kconfig.cpu
+@@ -56,7 +56,6 @@ config MCPU32
+ config M68020
+ 	bool "68020 support"
+ 	depends on MMU
+-	select GENERIC_ATOMIC64
+ 	select CPU_HAS_ADDRESS_SPACES
+ 	help
+ 	  If you anticipate running this kernel on a computer with a MC68020
+@@ -67,7 +66,6 @@ config M68020
+ config M68030
+ 	bool "68030 support"
+ 	depends on MMU && !MMU_SUN3
+-	select GENERIC_ATOMIC64
+ 	select CPU_HAS_ADDRESS_SPACES
+ 	help
+ 	  If you anticipate running this kernel on a computer with a MC68030
+@@ -77,7 +75,6 @@ config M68030
+ config M68040
+ 	bool "68040 support"
+ 	depends on MMU && !MMU_SUN3
+-	select GENERIC_ATOMIC64
+ 	select CPU_HAS_ADDRESS_SPACES
+ 	help
+ 	  If you anticipate running this kernel on a computer with a MC68LC040
+@@ -88,7 +85,6 @@ config M68040
+ config M68060
+ 	bool "68060 support"
+ 	depends on MMU && !MMU_SUN3
+-	select GENERIC_ATOMIC64
+ 	select CPU_HAS_ADDRESS_SPACES
+ 	help
+ 	  If you anticipate running this kernel on a computer with a MC68060
+-- 
+1.7.0.4
 
-I think this is a bit awkward because the function name doesn't
-suggest *how* the word will be changed, and the clearing happens
-before the setting (opposite the parameter order).  Something like:
-
-    int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
-    int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
-
-would be more obvious.  If you use "mask_and_set", I think the
-function should do "(val & mask) | set" with the complement being at
-the call site.  If you use "clear_and_set", I think it's OK to do
-"(val & ~mask) | set" as in your current patch.
-
-I know I suggested the "pci_pcie_capability_*" names, but they're
-getting a bit unwieldy, especially if we do "mask_and_set" or similar.
- There are already several "pcie_*" functions, so maybe we should
-drop the leading "pci_" from these and just have:
-
-    pcie_capability_read_word
-    pcie_capability_write_word
-    pcie_capability_mask_and_set_word
-
-Bjorn
