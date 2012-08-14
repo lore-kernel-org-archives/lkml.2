@@ -1,105 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab2HNTaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:30:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755161Ab2HNTaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:30:23 -0400
-Date: Tue, 14 Aug 2012 22:31:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120814193109.GA28840@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <87lihis5qi.fsf@rustcorp.com.au>
- <20120814083320.GA3597@redhat.com>
- <20120814184409.GC13338@t510.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814184409.GC13338@t510.redhat.com>
+	id S1756736Ab2HNTcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 15:32:13 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:39113 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab2HNTcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 15:32:11 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Aug 2012 15:32:11 EDT
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: linux-mtd@lists.infradead.org
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH] mtd: m25p80: add support for Micron N25Q256A
+Date: Tue, 14 Aug 2012 15:24:07 -0400
+Message-Id: <1344972247-23583-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 03:44:09PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 14, 2012 at 11:33:20AM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 14, 2012 at 09:29:49AM +0930, Rusty Russell wrote:
-> > > On Mon, 13 Aug 2012 11:41:23 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > On Fri, Aug 10, 2012 at 02:55:15PM -0300, Rafael Aquini wrote:
-> > > > > +/*
-> > > > > + * Populate balloon_mapping->a_ops->freepage method to help compaction on
-> > > > > + * re-inserting an isolated page into the balloon page list.
-> > > > > + */
-> > > > > +void virtballoon_putbackpage(struct page *page)
-> > > > > +{
-> > > > > +	spin_lock(&pages_lock);
-> > > > > +	list_add(&page->lru, &vb_ptr->pages);
-> > > > > +	spin_unlock(&pages_lock);
-> > > > 
-> > > > Could the following race trigger:
-> > > > migration happens while module unloading is in progress,
-> > > > module goes away between here and when the function
-> > > > returns, then code for this function gets overwritten?
-> > > > If yes we need locking external to module to prevent this.
-> > > > Maybe add a spinlock to struct address_space?
-> > > 
-> > > The balloon module cannot be unloaded until it has leaked all its pages,
-> > > so I think this is safe:
-> > > 
-> > >         static void remove_common(struct virtio_balloon *vb)
-> > >         {
-> > >         	/* There might be pages left in the balloon: free them. */
-> > >         	while (vb->num_pages)
-> > >         		leak_balloon(vb, vb->num_pages);
-> > > 
-> > > Cheers,
-> > > Rusty.
-> > 
-> > I know I meant something else.
-> > Let me lay this out:
-> > 
-> > CPU1 executes:
-> > void virtballoon_putbackpage(struct page *page)
-> > {
-> > 	spin_lock(&pages_lock);
-> > 	list_add(&page->lru, &vb_ptr->pages);
-> > 	spin_unlock(&pages_lock);
-> > 
-> > 
-> > 		at this point CPU2 unloads module:
-> > 						leak_balloon
-> > 						......
-> > 
-> > 		next CPU2 loads another module so code memory gets overwritten
-> > 
-> > now CPU1 executes the next instruction:
-> > 
-> > }
-> > 
-> > which would normally return to function's caller,
-> > but it has been overwritten by CPU2 so we get corruption.
-> > 
-> > No?
-> 
-> At the point CPU2 is unloading the module, it will be kept looping at the
-> snippet Rusty pointed out because the isolation / migration steps do not mess
-> with 'vb->num_pages'. The driver will only unload after leaking the total amount
-> of balloon's inflated pages, which means (for this hypothetical case) CPU2 will
-> wait until CPU1 finishes the putaback procedure.
-> 
+The manufacturer datasheet can be found on the Micron website,
+under the name n25q_256mb_3v_65nm.pdf:
 
-Yes but only until unlock finishes. The last return from function
-is not guarded and can be overwritten.
+http://www.micron.com/search?source=ps&q=n25q_256mb_3v_65nm
+
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ drivers/mtd/devices/m25p80.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 9f9982f..0a23f23 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -686,6 +686,9 @@ static const struct spi_device_id m25p_ids[] = {
+ 	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
+ 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+ 
++	/* Micron */
++	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
++
+ 	/* Spansion -- single (large) sector size only, at least
+ 	 * for the chips listed here (without boot sectors).
+ 	 */
+-- 
+1.7.11.2
+
