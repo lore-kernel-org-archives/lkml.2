@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2HNMtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:49:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51933 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab2HNMtS (ORCPT
+	id S1755278Ab2HNMuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:50:12 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43529 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab2HNMuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:49:18 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org, ralf@linux-mips.org,
-        linux-mips@linux-mips.org, gregkh@suse.de, wuzhangjin@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 4/5] USB: Add EHCI bus glue for Loongson1x SoCs (UPDATED)
-Date: Tue, 14 Aug 2012 14:49:04 +0200
-Message-ID: <2068844.Lgd4iRJr0U@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.4 (Linux/3.2.0-24-generic; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1326868876-20271-1-git-send-email-keguang.zhang@gmail.com>
-References: <1326868876-20271-1-git-send-email-keguang.zhang@gmail.com>
+	Tue, 14 Aug 2012 08:50:10 -0400
+X-Originating-IP: 217.70.178.146
+X-Originating-IP: 50.43.46.74
+Date: Tue, 14 Aug 2012 05:50:03 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Thai Bui <blquythai@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
+ DEBUG_INITCALL
+Message-ID: <20120814125002.GA8125@leaf>
+References: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
+ <20120813212151.GA15429@phenom.dumpdata.com>
+ <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
+ <5029823A.9020207@xenotime.net>
+ <20120814011826.GA2255@leaf>
+ <CA+5PVA6dzzP=go8M=gDRN79DovC6QiuA3sy=2bdgmn3vdZp_zw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA6dzzP=go8M=gDRN79DovC6QiuA3sy=2bdgmn3vdZp_zw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kelvin,
-
-On Wednesday 18 January 2012 14:41:16 Kelvin Cheung wrote:
-> Use ehci_setup() in ehci_ls1x_reset().
+On Tue, Aug 14, 2012 at 08:03:41AM -0400, Josh Boyer wrote:
+> On Mon, Aug 13, 2012 at 9:18 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > On Mon, Aug 13, 2012 at 03:39:54PM -0700, Randy Dunlap wrote:
+> >> On 08/13/2012 03:08 PM, Thai Bui wrote:
+> >> >Hi all,
+> >> >
+> >> >I am as part of a capstone group at Portland State University is working
+> >> >to tinify the kernel as small as possible. The ultimate goal is to make
+> >> >the kernel small enough to use on micro-controller (or under < 200k).
+> >> >This patch is one of them, it saves 176 bytes on a minimal configuration
+> >> >of the kernel (the bzImage file was reduced from 363264 bytes to 363264
+> >> >bytes applying this patch).
+> >> >
+> >> >Aside from the purpose of reducing the size of the kernel. We are also
+> >> >trying to clean up the kernel by making Kconfig options to compile out
+> >> >the stuffs that aren't used often.
+> >>
+> >> IMO the kernel already has too many kconfig options.
+> >>
+> >> Also, personally I would not merge a patch that saves so little memory,
+> >> especially on what I consider a very useful option.
+> >
+> > I think Thai undersold his patch significantly; the *compressed* size
+> > went down by 176 bytes, and the uncompressed size went down more than
+> > that.  And that's the savings starting from a very minimal kernel, not
+> > starting from a defconfig kernel.
+> >
+> > In any case, do you object to the introduction of a Kconfig option at
+> > all, or to that option defaulting to off?  In particular, would you
+> > object if the option only showed up if EMBEDDED, and defaulted to y?  At
+> > that point, you could reasonably expect that most users and distros will
+> > have it enabled, so you'll be able to count on asking people to enable
+> > it and send you the output.  Would that suffice?
 > 
-> The Loongson1x SoCs have a built-in EHCI controller.
-> This patch adds the necessary glue code to make the generic EHCI
-> driver usable for them.
+> Hiding it behind EMBEDDED might be a start.  From a distro perspective,
+> we actually use this particular option quite often so keeping the
+> ability to use it as you describe is important.
+
+Fair enough.
+
+> > The patch itself seems incredibly straightforward and non-invasive to
+> > me; it just stubs out the global variable and lets GCC fold away all the
+> > code.
+> >
+> > At this point, the kernel is running out of major things to cut out to
+> > save space; getting from ~200k (the current smallest kernel possible) to
+> > much less than that will require a pile of patches that save anywhere
+> > from a few hundred bytes to a few kilobytes.  I certainly agree that
+> > those patches need to avoid introducing too much complexity.  However, I
+> > don't think it makes sense to object to a patch that saves space solely
+> > on the grounds that it doesn't save *more* space.  That would make it
+> > impossible to cut out small things, and small things add up.
 > 
-> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
-> ---
+> If you're really going to pursue that, I'd suggest hiding the removals
+> behind a new option that most people won't set.
 
-I do not see this driver doing anything fancy which would require an entirely 
-new ehci implementation so consider using the generic ehci platform driver 
-(drivers/usb/host/ehci-platforms.c) instead.
+Most of the other options added via this project have used EXPERT or
+EMBEDDED.  This one originally seemed enough like a debugging option to
+warrant just using DEBUG_KERNEL and let it default to N, but it sounds
+like this one needs to use EMBEDDED as well.
 
->  drivers/usb/Kconfig          |    1 +
->  drivers/usb/host/ehci-hcd.c  |    5 ++
->  drivers/usb/host/ehci-ls1x.c |  159 
-++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 165 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/usb/host/ehci-ls1x.c
-> 
-> diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-> index 85d5a01..78ac78b 100644
-> --- a/drivers/usb/Kconfig
-> +++ b/drivers/usb/Kconfig
-> @@ -68,6 +68,7 @@ config USB_ARCH_HAS_EHCI
->  	default y if ARCH_MSM
->  	default y if MICROBLAZE
->  	default y if SPARC_LEON
-> +	default y if MACH_LOONGSON1
-
-Do this in arch/mips/Kconfig instead.
---
-Florian
+- Josh Triplett
