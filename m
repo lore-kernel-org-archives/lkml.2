@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab2HNOGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:06:44 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57578 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751663Ab2HNOG1 (ORCPT
+	id S1754864Ab2HNOGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:06:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59313 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2HNOGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:06:27 -0400
-Message-Id: <20120814140620.191720208@openvz.org>
+	Tue, 14 Aug 2012 10:06:25 -0400
+Message-Id: <20120814140620.122836623@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 14 Aug 2012 18:03:47 +0400
+Date: Tue, 14 Aug 2012 18:03:46 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -19,25 +19,21 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 5/8] fs, epoll: Add procfs fdinfo helper v2
+Subject: [patch 4/8] fs, eventfd: Add procfs fdinfo helper
 References: <20120814140342.354405844@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventpoll-5
+Content-Disposition: inline; filename=seq-fdinfo-eventfd-6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out eventpoll target file descriptor,
-events and data, the /proc/pid/fdinfo/fd consists of
+This allow us to print out raw counter value.
+The /proc/pid/fdinfo/fd output is
 
  | pos:	0
- | flags:	02
- | tfd:        5 events:       1d data: ffffffffffffffff
+ | flags:	04002
+ | eventfd-count:               5a
 
 This feature is CONFIG_CHECKPOINT_RESTORE only.
-
-v2:
- - don't walk over all rb nodes on seq-next,
-   try to continue from pervious position
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Al Viro <viro@ZenIV.linux.org.uk>
@@ -45,26 +41,25 @@ CC: Alexey Dobriyan <adobriyan@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
 CC: James Bottomley <jbottomley@parallels.com>
-CC: Matthew Helsley <matt.helsley@gmail.com>
 ---
- fs/eventpoll.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
+ fs/eventfd.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-Index: linux-2.6.git/fs/eventpoll.c
+Index: linux-2.6.git/fs/eventfd.c
 ===================================================================
---- linux-2.6.git.orig/fs/eventpoll.c
-+++ linux-2.6.git/fs/eventpoll.c
-@@ -38,6 +38,8 @@
- #include <asm/io.h>
- #include <asm/mman.h>
- #include <linux/atomic.h>
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -19,6 +19,8 @@
+ #include <linux/export.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
 +#include <linux/proc_fs.h>
 +#include <linux/seq_file.h>
  
- /*
-  * LOCKING:
-@@ -1897,6 +1899,69 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd,
- 	return error;
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -433,3 +435,56 @@ SYSCALL_DEFINE1(eventfd, unsigned int, c
+ 	return sys_eventfd2(count, 0);
  }
  
 +#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
@@ -72,74 +67,52 @@ Index: linux-2.6.git/fs/eventpoll.c
 +static void *seq_start(struct seq_file *m, loff_t *pos)
 +{
 +	struct proc_fdinfo_extra *extra = m->private;
-+	struct eventpoll *ep = extra->f_file->private_data;
-+	struct rb_node *rbp;
-+	loff_t num = *pos;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		if (num-- == 0)
-+			return rbp;
-+	}
-+
-+	return NULL;
-+}
-+
-+static void seq_stop(struct seq_file *m, void *v)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+	struct eventpoll *ep = extra->f_file->private_data;
-+	mutex_unlock(&ep->mtx);
++	return *pos == 0 ? extra->f_file : NULL;
 +}
 +
 +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
 +{
-+	struct rb_node *rbp = p;
 +	++*pos;
-+	return (void *)rb_next(rbp);
++	return NULL;
 +}
 +
 +static int seq_show(struct seq_file *m, void *v)
 +{
-+	struct rb_node *rbp = v;
-+	struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
++	struct eventfd_ctx *ctx = ((struct file *)v)->private_data;
 +
-+	return seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
-+			  epi->ffd.fd, epi->event.events,
-+			  (long long)epi->event.data);
++	spin_lock_irq(&ctx->wqh.lock);
++	seq_printf(m, "eventfd-count: %16llx\n",
++		   (unsigned long long)ctx->count);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return 0;
 +}
 +
-+static const struct seq_operations ep_fdinfo_ops = {
-+	.start		= seq_start,
-+	.next		= seq_next,
-+	.stop		= seq_stop,
-+	.show		= seq_show,
++static void seq_stop(struct seq_file *p, void *v) { }
++
++static const struct seq_operations eventfd_fdinfo_ops = {
++	.start	= seq_start,
++	.next	= seq_next,
++	.stop	= seq_stop,
++	.show	= seq_show,
 +};
 +
-+static struct proc_fdinfo_driver ep_fdinfo = {
-+	.name		= "eventpoll",
-+	.ops		= &ep_fdinfo_ops,
-+	.probe		= is_file_epoll,
-+};
-+
-+static int __init ep_register_fdinfo_driver(void)
++static int is_eventfd_file(struct file *file)
 +{
-+	return proc_register_fdinfo_driver(&ep_fdinfo);
++	return file->f_op == &eventfd_fops;
 +}
-+#else
-+static void ep_register_fdinfo_driver(void) { }
++
++static struct proc_fdinfo_driver eventfd_fdinfo = {
++	.name	= "eventfd",
++	.ops	= &eventfd_fdinfo_ops,
++	.probe	= is_eventfd_file,
++};
++
++static int __init eventfd_init(void)
++{
++	return proc_register_fdinfo_driver(&eventfd_fdinfo);
++}
++fs_initcall(eventfd_init);
++
 +#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
-+
- static int __init eventpoll_init(void)
- {
- 	struct sysinfo si;
-@@ -1929,6 +1994,8 @@ static int __init eventpoll_init(void)
- 	pwq_cache = kmem_cache_create("eventpoll_pwq",
- 			sizeof(struct eppoll_entry), 0, SLAB_PANIC, NULL);
- 
-+	ep_register_fdinfo_driver();
-+
- 	return 0;
- }
- fs_initcall(eventpoll_init);
 
