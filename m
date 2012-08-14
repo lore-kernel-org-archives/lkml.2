@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab2HNRyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:15 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55135 "EHLO
+	id S1757070Ab2HNRyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55311 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830Ab2HNRxI (ORCPT
+	with ESMTP id S1756880Ab2HNRxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:08 -0400
+	Tue, 14 Aug 2012 13:53:12 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 12/31] arm64: Atomic operations
-Date: Tue, 14 Aug 2012 18:52:13 +0100
-Message-Id: <1344966752-16102-13-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 19/31] arm64: Signal handling support
+Date: Tue, 14 Aug 2012 18:52:20 +0100
+Message-Id: <1344966752-16102-20-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:50.0260 (UTC) FILETIME=[E687BD40:01CD7A45]
-X-MC-Unique: 112081418530702501
+X-OriginalArrivalTime: 14 Aug 2012 17:54:53.0072 (UTC) FILETIME=[E834D100:01CD7A45]
+X-MC-Unique: 112081418531100301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI088j017376
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI0RWj017380
 
-This patch introduces the atomic, mutex and futex operations. Many
-atomic operations use the load-acquire and store-release operations
-which imply barriers, avoiding the need for explicit DMB.
+This patch adds support for signal handling. The sigreturn is done via
+VDSO, introduced by a previous patch. The SA_RESTORER is still defined
+as it is required for 32-bit (compat) support but it is not to be used
+for 64-bit applications.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/atomic.h |  306 +++++++++++++++++++++++++++++++++++++++
- arch/arm64/include/asm/futex.h  |  134 +++++++++++++++++
- 2 files changed, 440 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/atomic.h
- create mode 100644 arch/arm64/include/asm/futex.h
+ arch/arm64/include/asm/sigcontext.h |   69 ++++++
+ arch/arm64/include/asm/siginfo.h    |   23 ++
+ arch/arm64/include/asm/signal.h     |   24 ++
+ arch/arm64/include/asm/ucontext.h   |   30 +++
+ arch/arm64/kernel/signal.c          |  436 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 582 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/sigcontext.h
+ create mode 100644 arch/arm64/include/asm/siginfo.h
+ create mode 100644 arch/arm64/include/asm/signal.h
+ create mode 100644 arch/arm64/include/asm/ucontext.h
+ create mode 100644 arch/arm64/kernel/signal.c
 
-diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+diff --git a/arch/arm64/include/asm/sigcontext.h b/arch/arm64/include/asm/sigcontext.h
 new file mode 100644
-index 0000000..fa60c8b
+index 0000000..573cec7
 --- /dev/null
-+++ b/arch/arm64/include/asm/atomic.h
-@@ -0,0 +1,306 @@
++++ b/arch/arm64/include/asm/sigcontext.h
+@@ -0,0 +1,69 @@
 +/*
-+ * Based on arch/arm/include/asm/atomic.h
-+ *
-+ * Copyright (C) 1996 Russell King.
-+ * Copyright (C) 2002 Deep Blue Solutions Ltd.
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -64,299 +67,66 @@ index 0000000..fa60c8b
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_ATOMIC_H
-+#define __ASM_ATOMIC_H
++#ifndef __ASM_SIGCONTEXT_H
++#define __ASM_SIGCONTEXT_H
 +
-+#include <linux/compiler.h>
 +#include <linux/types.h>
 +
-+#include <asm/barrier.h>
-+#include <asm/cmpxchg.h>
++/*
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.
++ */
++struct sigcontext {
++	__u64 fault_address;
++	/* AArch64 registers */
++	__u64 regs[31];
++	__u64 sp;
++	__u64 pc;
++	__u64 pstate;
++	/* 4K reserved for FP/SIMD state and future expansion */
++	__u8 __reserved[4096] __attribute__((__aligned__(16)));
++};
 +
-+#define ATOMIC_INIT(i)	{ (i) }
++/*
++ * Header to be used at the beginning of structures extending the user
++ * context. Such structures must be placed after the rt_sigframe on the stack
++ * and be 16-byte aligned. The last structure must be a dummy one with the
++ * magic and size set to 0.
++ */
++struct _aarch64_ctx {
++	__u32 magic;
++	__u32 size;
++};
++
++#define FPSIMD_MAGIC	0x46508001
++
++struct fpsimd_context {
++	struct _aarch64_ctx head;
++	__u32 fpsr;
++	__u32 fpcr;
++	__uint128_t vregs[32];
++};
 +
 +#ifdef __KERNEL__
-+
 +/*
-+ * On ARM, ordinary assignment (str instruction) doesn't clear the local
-+ * strex/ldrex monitor on some implementations. The reason we can use it for
-+ * atomic_set() is the clrex or dummy strex done on every exception return.
++ * Auxiliary context saved in the sigcontext.__reserved array. Not exported to
++ * user space as it will change with the addition of new context. User space
++ * should check the magic/size information.
 + */
-+#define atomic_read(v)	(*(volatile int *)&(v)->counter)
-+#define atomic_set(v,i)	(((v)->counter) = (i))
-+
-+/*
-+ * AArch64 UP and SMP safe atomic ops.  We use load exclusive and
-+ * store exclusive to ensure that these are atomic.  We may loop
-+ * to ensure that the update happens.
-+ */
-+static inline void atomic_add(int i, atomic_t *v)
-+{
-+	unsigned long tmp;
-+	int result;
-+
-+	asm volatile("// atomic_add\n"
-+"1:	ldxr	%w0, [%3]\n"
-+"	add	%w0, %w0, %w4\n"
-+"	stxr	%w1, %w0, [%3]\n"
-+"	cbnz	%w1,1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+}
-+
-+static inline int atomic_add_return(int i, atomic_t *v)
-+{
-+	unsigned long tmp;
-+	int result;
-+
-+	asm volatile("// atomic_add_return\n"
-+"1:	ldaxr	%w0, [%3]\n"
-+"	add	%w0, %w0, %w4\n"
-+"	stlxr	%w1, %w0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+
-+	return result;
-+}
-+
-+static inline void atomic_sub(int i, atomic_t *v)
-+{
-+	unsigned long tmp;
-+	int result;
-+
-+	asm volatile("// atomic_sub\n"
-+"1:	ldxr	%w0, [%3]\n"
-+"	sub	%w0, %w0, %w4\n"
-+"	stxr	%w1, %w0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+}
-+
-+static inline int atomic_sub_return(int i, atomic_t *v)
-+{
-+	unsigned long tmp;
-+	int result;
-+
-+	asm volatile("// atomic_sub_return\n"
-+"1:	ldaxr	%w0, [%3]\n"
-+"	sub	%w0, %w0, %w4\n"
-+"	stlxr	%w1, %w0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+
-+	return result;
-+}
-+
-+static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
-+{
-+	unsigned long tmp;
-+	int oldval;
-+
-+	asm volatile("// atomic_cmpxchg\n"
-+"1:	ldaxr	%w1, [%3]\n"
-+"	cmp	%w1, %w4\n"
-+"	b.ne	2f\n"
-+"	stlxr	%w0, %w5, [%3]\n"
-+"	cbnz	%w0, 1b\n"
-+"2:"
-+	: "=&r" (tmp), "=&r" (oldval), "+o" (ptr->counter)
-+	: "r" (&ptr->counter), "Ir" (old), "r" (new)
-+	: "cc");
-+
-+	return oldval;
-+}
-+
-+static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-+{
-+	unsigned long tmp, tmp2;
-+
-+	asm volatile("// atomic_clear_mask\n"
-+"1:	ldxr	%0, [%3]\n"
-+"	bic	%0, %0, %4\n"
-+"	stxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (tmp), "=&r" (tmp2), "+o" (*addr)
-+	: "r" (addr), "Ir" (mask)
-+	: "cc");
-+}
-+
-+#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-+
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
-+{
-+	int c, old;
-+
-+	c = atomic_read(v);
-+	while (c != u && (old = atomic_cmpxchg((v), c, c + a)) != c)
-+		c = old;
-+	return c;
-+}
-+
-+#define atomic_inc(v)		atomic_add(1, v)
-+#define atomic_dec(v)		atomic_sub(1, v)
-+
-+#define atomic_inc_and_test(v)	(atomic_add_return(1, v) == 0)
-+#define atomic_dec_and_test(v)	(atomic_sub_return(1, v) == 0)
-+#define atomic_inc_return(v)    (atomic_add_return(1, v))
-+#define atomic_dec_return(v)    (atomic_sub_return(1, v))
-+#define atomic_sub_and_test(i, v) (atomic_sub_return(i, v) == 0)
-+
-+#define atomic_add_negative(i,v) (atomic_add_return(i, v) < 0)
-+
-+#define smp_mb__before_atomic_dec()	smp_mb()
-+#define smp_mb__after_atomic_dec()	smp_mb()
-+#define smp_mb__before_atomic_inc()	smp_mb()
-+#define smp_mb__after_atomic_inc()	smp_mb()
-+
-+/*
-+ * 64-bit atomic operations.
-+ */
-+#define ATOMIC64_INIT(i) { (i) }
-+
-+#define atomic64_read(v)	(*(volatile long long *)&(v)->counter)
-+#define atomic64_set(v,i)	(((v)->counter) = (i))
-+
-+static inline void atomic64_add(u64 i, atomic64_t *v)
-+{
-+	long result;
-+	unsigned long tmp;
-+
-+	asm volatile("// atomic64_add\n"
-+"1:	ldxr	%0, [%3]\n"
-+"	add	%0, %0, %4\n"
-+"	stxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+}
-+
-+static inline long atomic64_add_return(long i, atomic64_t *v)
-+{
-+	long result;
-+	unsigned long tmp;
-+
-+	asm volatile("// atomic64_add_return\n"
-+"1:	ldaxr	%0, [%3]\n"
-+"	add	%0, %0, %4\n"
-+"	stlxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+
-+	return result;
-+}
-+
-+static inline void atomic64_sub(u64 i, atomic64_t *v)
-+{
-+	long result;
-+	unsigned long tmp;
-+
-+	asm volatile("// atomic64_sub\n"
-+"1:	ldxr	%0, [%3]\n"
-+"	sub	%0, %0, %4\n"
-+"	stxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+}
-+
-+static inline long atomic64_sub_return(long i, atomic64_t *v)
-+{
-+	long result;
-+	unsigned long tmp;
-+
-+	asm volatile("// atomic64_sub_return\n"
-+"1:	ldaxr	%0, [%3]\n"
-+"	sub	%0, %0, %4\n"
-+"	stlxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter), "Ir" (i)
-+	: "cc");
-+
-+	return result;
-+}
-+
-+static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
-+{
-+	long oldval;
-+	unsigned long res;
-+
-+	asm volatile("// atomic64_cmpxchg\n"
-+"1:	ldaxr	%1, [%3]\n"
-+"	cmp	%1, %4\n"
-+"	b.ne	2f\n"
-+"	stlxr	%w0, %5, [%3]\n"
-+"	cbnz	%w0, 1b\n"
-+"2:"
-+	: "=&r" (res), "=&r" (oldval), "+o" (ptr->counter)
-+	: "r" (&ptr->counter), "Ir" (old), "r" (new)
-+	: "cc");
-+
-+	return oldval;
-+}
-+
-+#define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
-+
-+#define ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-+static inline long atomic64_dec_if_positive(atomic64_t *v)
-+{
-+	long result;
-+	unsigned long tmp;
-+
-+	asm volatile("// atomic64_dec_if_positive\n"
-+"1:	ldaxr	%0, [%3]\n"
-+"	subs	%0, %0, #1\n"
-+"	b.mi	2f\n"
-+"	stlxr	%w1, %0, [%3]\n"
-+"	cbnz	%w1, 1b\n"
-+"2:"
-+	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
-+	: "r" (&v->counter)
-+	: "cc");
-+
-+	return result;
-+}
-+
-+static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
-+{
-+	long c, old;
-+
-+	c = atomic64_read(v);
-+	while (c != u && (old = atomic64_cmpxchg((v), c, c + a)) != c)
-+		c = old;
-+
-+	return c != u;
-+}
-+
-+#define atomic64_add_negative(a, v)	(atomic64_add_return((a), (v)) < 0)
-+#define atomic64_inc(v)			atomic64_add(1LL, (v))
-+#define atomic64_inc_return(v)		atomic64_add_return(1LL, (v))
-+#define atomic64_inc_and_test(v)	(atomic64_inc_return(v) == 0)
-+#define atomic64_sub_and_test(a, v)	(atomic64_sub_return((a), (v)) == 0)
-+#define atomic64_dec(v)			atomic64_sub(1LL, (v))
-+#define atomic64_dec_return(v)		atomic64_sub_return(1LL, (v))
-+#define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
-+#define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
++struct aux_context {
++	struct fpsimd_context fpsimd;
++	/* additional context to be added before "end" */
++	struct _aarch64_ctx end;
++};
++#endif
 +
 +#endif
-+#endif
-diff --git a/arch/arm64/include/asm/futex.h b/arch/arm64/include/asm/futex.h
+diff --git a/arch/arm64/include/asm/siginfo.h b/arch/arm64/include/asm/siginfo.h
 new file mode 100644
-index 0000000..0745e82
+index 0000000..5a74a08
 --- /dev/null
-+++ b/arch/arm64/include/asm/futex.h
-@@ -0,0 +1,134 @@
++++ b/arch/arm64/include/asm/siginfo.h
+@@ -0,0 +1,23 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -372,123 +142,520 @@ index 0000000..0745e82
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_FUTEX_H
-+#define __ASM_FUTEX_H
++#ifndef __ASM_SIGINFO_H
++#define __ASM_SIGINFO_H
 +
-+#ifdef __KERNEL__
++#define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
 +
-+#include <linux/futex.h>
++#include <asm-generic/siginfo.h>
++
++#endif
+diff --git a/arch/arm64/include/asm/signal.h b/arch/arm64/include/asm/signal.h
+new file mode 100644
+index 0000000..8d1e723
+--- /dev/null
++++ b/arch/arm64/include/asm/signal.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_SIGNAL_H
++#define __ASM_SIGNAL_H
++
++/* Required for AArch32 compatibility. */
++#define SA_RESTORER	0x04000000
++
++#include <asm-generic/signal.h>
++
++#endif
+diff --git a/arch/arm64/include/asm/ucontext.h b/arch/arm64/include/asm/ucontext.h
+new file mode 100644
+index 0000000..bde9607
+--- /dev/null
++++ b/arch/arm64/include/asm/ucontext.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_UCONTEXT_H
++#define __ASM_UCONTEXT_H
++
++struct ucontext {
++	unsigned long	  uc_flags;
++	struct ucontext	 *uc_link;
++	stack_t		  uc_stack;
++	sigset_t	  uc_sigmask;
++	/* glibc uses a 1024-bit sigset_t */
++	__u8		  __unused[(1024 - sizeof(sigset_t)) / 8];
++	/* last for future expansion */
++	struct sigcontext uc_mcontext;
++};
++
++#endif /* __ASM_UCONTEXT_H */
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+new file mode 100644
+index 0000000..a8f29d2
+--- /dev/null
++++ b/arch/arm64/kernel/signal.c
+@@ -0,0 +1,436 @@
++/*
++ * Based on arch/arm/kernel/signal.c
++ *
++ * Copyright (C) 1995-2009 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/errno.h>
++#include <linux/signal.h>
++#include <linux/personality.h>
++#include <linux/freezer.h>
 +#include <linux/uaccess.h>
-+#include <asm/errno.h>
++#include <linux/tracehook.h>
++#include <linux/ratelimit.h>
 +
-+#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
-+	asm volatile(							\
-+"1:	ldaxr	%w1, %2\n"						\
-+	insn "\n"							\
-+"2:	stlxr	%w3, %w0, %2\n"						\
-+"	cbnz	%w3, 1b\n"						\
-+"3:	.pushsection __ex_table,\"a\"\n"				\
-+"	.align	3\n"							\
-+"	.quad	1b, 4f, 2b, 4f\n"					\
-+"	.popsection\n"							\
-+"	.pushsection .fixup,\"ax\"\n"					\
-+"4:	mov	%w0, %w5\n"						\
-+"	b	3b\n"							\
-+"	.popsection"							\
-+	: "=&r" (ret), "=&r" (oldval), "+Q" (*uaddr), "=&r" (tmp)	\
-+	: "r" (oparg), "Ir" (-EFAULT)					\
-+	: "cc")
++#include <asm/debug-monitors.h>
++#include <asm/elf.h>
++#include <asm/cacheflush.h>
++#include <asm/ucontext.h>
++#include <asm/unistd.h>
++#include <asm/fpsimd.h>
++#include <asm/signal32.h>
++#include <asm/vdso.h>
 +
-+static inline int
-+futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
++/*
++ * Do a signal return; undo the signal stack. These are aligned to 128-bit.
++ */
++struct rt_sigframe {
++	struct siginfo info;
++	struct ucontext uc;
++};
++
++static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
 +{
-+	int op = (encoded_op >> 28) & 7;
-+	int cmp = (encoded_op >> 24) & 15;
-+	int oparg = (encoded_op << 8) >> 20;
-+	int cmparg = (encoded_op << 20) >> 20;
-+	int oldval = 0, ret, tmp;
++	struct fpsimd_state *fpsimd = &current->thread.fpsimd_state;
++	int err;
 +
-+	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
-+		oparg = 1 << oparg;
++	/* dump the hardware registers to the fpsimd_state structure */
++	fpsimd_save_state(fpsimd);
 +
-+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
++	/* copy the FP and status/control registers */
++	err = __copy_to_user(ctx->vregs, fpsimd->vregs, sizeof(fpsimd->vregs));
++	__put_user_error(fpsimd->fpsr, &ctx->fpsr, err);
++	__put_user_error(fpsimd->fpcr, &ctx->fpcr, err);
++
++	/* copy the magic/size information */
++	__put_user_error(FPSIMD_MAGIC, &ctx->head.magic, err);
++	__put_user_error(sizeof(struct fpsimd_context), &ctx->head.size, err);
++
++	return err ? -EFAULT : 0;
++}
++
++static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
++{
++	struct fpsimd_state fpsimd;
++	__u32 magic, size;
++	int err = 0;
++
++	/* check the magic/size information */
++	__get_user_error(magic, &ctx->head.magic, err);
++	__get_user_error(size, &ctx->head.size, err);
++	if (err)
 +		return -EFAULT;
++	if (magic != FPSIMD_MAGIC || size != sizeof(struct fpsimd_context))
++		return -EINVAL;
 +
-+	pagefault_disable();	/* implies preempt_disable() */
++	/* copy the FP and status/control registers */
++	err = __copy_from_user(fpsimd.vregs, ctx->vregs,
++			       sizeof(fpsimd.vregs));
++	__get_user_error(fpsimd.fpsr, &ctx->fpsr, err);
++	__get_user_error(fpsimd.fpcr, &ctx->fpcr, err);
 +
-+	switch (op) {
-+	case FUTEX_OP_SET:
-+		__futex_atomic_op("mov	%w0, %w4",
-+				  ret, oldval, uaddr, tmp, oparg);
-+		break;
-+	case FUTEX_OP_ADD:
-+		__futex_atomic_op("add	%w0, %w1, %w4",
-+				  ret, oldval, uaddr, tmp, oparg);
-+		break;
-+	case FUTEX_OP_OR:
-+		__futex_atomic_op("orr	%w0, %w1, %w4",
-+				  ret, oldval, uaddr, tmp, oparg);
-+		break;
-+	case FUTEX_OP_ANDN:
-+		__futex_atomic_op("and	%w0, %w1, %w4",
-+				  ret, oldval, uaddr, tmp, ~oparg);
-+		break;
-+	case FUTEX_OP_XOR:
-+		__futex_atomic_op("eor	%w0, %w1, %w4",
-+				  ret, oldval, uaddr, tmp, oparg);
-+		break;
-+	default:
-+		ret = -ENOSYS;
++	/* load the hardware registers from the fpsimd_state structure */
++	if (!err) {
++		preempt_disable();
++		fpsimd_load_state(&fpsimd);
++		preempt_enable();
 +	}
 +
-+	pagefault_enable();	/* subsumes preempt_enable() */
++	return err ? -EFAULT : 0;
++}
 +
-+	if (!ret) {
-+		switch (cmp) {
-+		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
-+		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
-+		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
-+		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
-+		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
-+		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
-+		default: ret = -ENOSYS;
++static int restore_sigframe(struct pt_regs *regs,
++			    struct rt_sigframe __user *sf)
++{
++	sigset_t set;
++	int i, err;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0)
++		set_current_blocked(&set);
++
++	for (i = 0; i < 31; i++)
++		__get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	/*
++	 * Avoid sys_rt_sigreturn() restarting.
++	 */
++	regs->syscallno = ~0UL;
++
++	err |= !valid_user_regs(&regs->user_regs);
++
++	if (err == 0)
++		err |= restore_fpsimd_context(&aux->fpsimd);
++
++	return err;
++}
++
++asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/*
++	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
++	 * be word aligned here.
++	 */
++	if (regs->sp & 15)
++		goto badframe;
++
++	frame = (struct rt_sigframe __user *)regs->sp;
++
++	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
++		goto badframe;
++
++	if (restore_sigframe(regs, frame))
++		goto badframe;
++
++	if (do_sigaltstack(&frame->uc.uc_stack,
++			   NULL, regs->sp) == -EFAULT)
++		goto badframe;
++
++	return regs->regs[0];
++
++badframe:
++	if (show_unhandled_signals)
++		printk_ratelimited(KERN_INFO "%s[%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
++				   current->comm, task_pid_nr(current), __func__,
++				   regs->pc, regs->sp);
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++asmlinkage long sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
++				unsigned long sp)
++{
++	return do_sigaltstack(uss, uoss, sp);
++}
++
++static int setup_sigframe(struct rt_sigframe __user *sf,
++			  struct pt_regs *regs, sigset_t *set)
++{
++	int i, err = 0;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	for (i = 0; i < 31; i++)
++		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	__put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
++
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
++
++	if (err == 0)
++		err |= preserve_fpsimd_context(&aux->fpsimd);
++
++	/* set the "end" magic */
++	__put_user_error(0, &aux->end.magic, err);
++	__put_user_error(0, &aux->end.size, err);
++
++	return err;
++}
++
++static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
++				 int framesize)
++{
++	unsigned long sp, sp_top;
++	void __user *frame;
++
++	sp = sp_top = regs->sp;
++
++	/*
++	 * This is the X/Open sanctioned signal stack switching.
++	 */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
++
++	/* room for stack frame (FP, LR) */
++	sp -= 16;
++
++	sp = (sp - framesize) & ~15;
++	frame = (void __user *)sp;
++
++	/*
++	 * Check that we can actually write to the signal frame.
++	 */
++	if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
++		frame = NULL;
++
++	return frame;
++}
++
++static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
++			void __user *frame, int usig)
++{
++	int err = 0;
++	__sigrestore_t sigtramp;
++	unsigned long __user *sp = (unsigned long __user *)regs->sp;
++
++	/* set up the stack frame */
++	__put_user_error(regs->regs[29], sp - 2, err);
++	__put_user_error(regs->regs[30], sp - 1, err);
++
++	regs->regs[0] = usig;
++	regs->regs[29] = regs->sp - 16;
++	regs->sp = (unsigned long)frame;
++	regs->pc = (unsigned long)ka->sa.sa_handler;
++
++	if (ka->sa.sa_flags & SA_RESTORER)
++		sigtramp = ka->sa.sa_restorer;
++	else
++		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
++
++	regs->regs[30] = (unsigned long)sigtramp;
++
++	return err;
++}
++
++static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
++			  sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++	stack_t stack;
++	int err = 0;
++
++	frame = get_sigframe(ka, regs, sizeof(*frame));
++	if (!frame)
++		return 1;
++
++	__put_user_error(0, &frame->uc.uc_flags, err);
++	__put_user_error(NULL, &frame->uc.uc_link, err);
++
++	memset(&stack, 0, sizeof(stack));
++	stack.ss_sp = (void __user *)current->sas_ss_sp;
++	stack.ss_flags = sas_ss_flags(regs->sp);
++	stack.ss_size = current->sas_ss_size;
++	err |= __copy_to_user(&frame->uc.uc_stack, &stack, sizeof(stack));
++
++	err |= setup_sigframe(frame, regs, set);
++	if (err == 0)
++		err = setup_return(regs, ka, frame, usig);
++
++	if (err == 0 && ka->sa.sa_flags & SA_SIGINFO) {
++		err |= copy_siginfo_to_user(&frame->info, info);
++		regs->regs[1] = (unsigned long)&frame->info;
++		regs->regs[2] = (unsigned long)&frame->uc;
++	}
++
++	return err;
++}
++
++static void setup_restart_syscall(struct pt_regs *regs)
++{
++	if (test_thread_flag(TIF_32BIT))
++		compat_setup_restart_syscall(regs);
++	else
++		regs->regs[8] = __NR_restart_syscall;
++}
++
++/*
++ * OK, we're invoking a handler
++ */
++static void handle_signal(unsigned long sig, struct k_sigaction *ka,
++			  siginfo_t *info, struct pt_regs *regs)
++{
++	struct thread_info *thread = current_thread_info();
++	struct task_struct *tsk = current;
++	sigset_t *oldset = sigmask_to_save();
++	int usig = sig;
++	int ret;
++
++	/*
++	 * translate the signal
++	 */
++	if (usig < 32 && thread->exec_domain && thread->exec_domain->signal_invmap)
++		usig = thread->exec_domain->signal_invmap[usig];
++
++	/*
++	 * Set up the stack frame
++	 */
++	if (test_thread_flag(TIF_32BIT)) {
++		if (ka->sa.sa_flags & SA_SIGINFO)
++			ret = compat_setup_rt_frame(usig, ka, info, oldset,
++						    regs);
++		else
++			ret = compat_setup_frame(usig, ka, oldset, regs);
++	} else {
++		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++	}
++
++	/*
++	 * Check that the resulting registers are actually sane.
++	 */
++	ret |= !valid_user_regs(&regs->user_regs);
++
++	if (ret != 0) {
++		force_sigsegv(sig, tsk);
++		return;
++	}
++
++	/*
++	 * Fast forward the stepping logic so we step into the signal
++	 * handler.
++	 */
++	user_fastforward_single_step(tsk);
++
++	signal_delivered(sig, info, ka, regs, 0);
++}
++
++/*
++ * Note that 'init' is a special process: it doesn't get signals it doesn't
++ * want to handle. Thus you cannot kill init even with a SIGKILL even by
++ * mistake.
++ *
++ * Note that we go through the signals twice: once to check the signals that
++ * the kernel can handle, and then we build all the user-level signal handling
++ * stack-frames in one go after that.
++ */
++static void do_signal(struct pt_regs *regs)
++{
++	unsigned long continue_addr = 0, restart_addr = 0;
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr, retval = 0;
++	int syscall = (int)regs->syscallno;
++
++	/*
++	 * If we were from a system call, check for system call restarting...
++	 */
++	if (syscall >= 0) {
++		continue_addr = regs->pc;
++		restart_addr = continue_addr - (compat_thumb_mode(regs) ? 2 : 4);
++		retval = regs->regs[0];
++
++		/*
++		 * Avoid additional syscall restarting via ret_to_user.
++		 */
++		regs->syscallno = ~0UL;
++
++		/*
++		 * Prepare for system call restart. We do this here so that a
++		 * debugger will see the already changed PC.
++		 */
++		switch (retval) {
++		case -ERESTARTNOHAND:
++		case -ERESTARTSYS:
++		case -ERESTARTNOINTR:
++		case -ERESTART_RESTARTBLOCK:
++			regs->regs[0] = regs->orig_x0;
++			regs->pc = restart_addr;
++			break;
 +		}
 +	}
-+	return ret;
++
++	/*
++	 * Get the signal to deliver. When running under ptrace, at this point
++	 * the debugger may change all of our registers.
++	 */
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	if (signr > 0) {
++		/*
++		 * Depending on the signal settings, we may need to revert the
++		 * decision to restart the system call, but skip this if a
++		 * debugger has chosen to restart at a different PC.
++		 */
++		if (regs->pc == restart_addr &&
++		    (retval == -ERESTARTNOHAND ||
++		     retval == -ERESTART_RESTARTBLOCK ||
++		     (retval == -ERESTARTSYS &&
++		      !(ka.sa.sa_flags & SA_RESTART)))) {
++			regs->regs[0] = -EINTR;
++			regs->pc = continue_addr;
++		}
++
++		handle_signal(signr, &ka, &info, regs);
++		return;
++	}
++
++	/*
++	 * Handle restarting a different system call. As above, if a debugger
++	 * has chosen to restart at a different PC, ignore the restart.
++	 */
++	if (syscall >= 0 && regs->pc == restart_addr) {
++		if (retval == -ERESTART_RESTARTBLOCK)
++			setup_restart_syscall(regs);
++		user_rewind_single_step(current);
++	}
++
++	restore_saved_sigmask();
 +}
 +
-+static inline int
-+futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-+			      u32 oldval, u32 newval)
++asmlinkage void do_notify_resume(struct pt_regs *regs,
++				 unsigned int thread_flags)
 +{
-+	int ret = 0;
-+	u32 val, tmp;
++	if (thread_flags & _TIF_SIGPENDING)
++		do_signal(regs);
 +
-+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-+		return -EFAULT;
-+
-+	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
-+"1:	ldaxr	%w1, %2\n"
-+"	sub	%w3, %w1, %w4\n"
-+"	cbnz	%w3, 3f\n"
-+"2:	stlxr	%w3, %w5, %2\n"
-+"	cbnz	%w3, 1b\n"
-+"3:	.pushsection __ex_table,\"a\"\n"
-+"	.align	3\n"
-+"	.quad	1b, 4f, 2b, 4f\n"
-+"	.popsection\n"
-+"	.pushsection .fixup,\"ax\"\n"
-+"4:	mov	%w0, %w6\n"
-+"	b	3b\n"
-+"	.popsection"
-+	: "+r" (ret), "=&r" (val), "+Q" (*uaddr), "=&r" (tmp)
-+	: "r" (oldval), "r" (newval), "Ir" (-EFAULT)
-+	: "cc", "memory");
-+
-+	*uval = val;
-+	return ret;
++	if (thread_flags & _TIF_NOTIFY_RESUME) {
++		clear_thread_flag(TIF_NOTIFY_RESUME);
++		tracehook_notify_resume(regs);
++	}
 +}
-+
-+#endif /* __KERNEL__ */
-+#endif /* __ASM_FUTEX_H */
 
