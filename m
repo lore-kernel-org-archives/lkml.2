@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2HNBSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:18:35 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40521 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab2HNBSd (ORCPT
+	id S1754113Ab2HNB3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:29:54 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:47450 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab2HNB3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:18:33 -0400
-X-Originating-IP: 217.70.178.146
-X-Originating-IP: 50.43.46.74
-Date: Mon, 13 Aug 2012 18:18:26 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Thai Bui <blquythai@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option
- DEBUG_INITCALL
-Message-ID: <20120814011826.GA2255@leaf>
-References: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
- <20120813212151.GA15429@phenom.dumpdata.com>
- <CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
- <5029823A.9020207@xenotime.net>
+	Mon, 13 Aug 2012 21:29:53 -0400
+Date: Mon, 13 Aug 2012 18:29:49 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk
+Subject: Re: [PATCH 1/2 v2] staging: comedi: new adl_pci7x3x driver
+Message-ID: <20120814012949.GA11859@kroah.com>
+References: <201208031028.18759.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5029823A.9020207@xenotime.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201208031028.18759.hartleys@visionengravers.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 03:39:54PM -0700, Randy Dunlap wrote:
-> On 08/13/2012 03:08 PM, Thai Bui wrote:
-> >Hi all,
-> >
-> >I am as part of a capstone group at Portland State University is working
-> >to tinify the kernel as small as possible. The ultimate goal is to make
-> >the kernel small enough to use on micro-controller (or under < 200k).
-> >This patch is one of them, it saves 176 bytes on a minimal configuration
-> >of the kernel (the bzImage file was reduced from 363264 bytes to 363264
-> >bytes applying this patch).
-> >
-> >Aside from the purpose of reducing the size of the kernel. We are also
-> >trying to clean up the kernel by making Kconfig options to compile out
-> >the stuffs that aren't used often.
+On Fri, Aug 03, 2012 at 10:28:18AM -0700, H Hartley Sweeten wrote:
+> Currently the ADLink PCI-7230 and PCI-7432 Isolated Digital
+> I/O Boards are supported using two drivers (adl_pci7230 and
+> adl_pci7432). These drivers are very similar and only differ
+> in the total number of di/do channels provided.
 > 
-> IMO the kernel already has too many kconfig options.
+> This driver combines the support for both boards into one
+> common driver. In addition, it adds PCI PnP support for the
+> other boards in the ADLink PCI-723x and PCI-743x series.
 > 
-> Also, personally I would not merge a patch that saves so little memory,
-> especially on what I consider a very useful option.
+> This driver only supports the comedi PCI auto config attach
+> mechanism. The legacy attach using the comedi_config utility
+> is not supported or required by this driver.
 
-I think Thai undersold his patch significantly; the *compressed* size
-went down by 176 bytes, and the uncompressed size went down more than
-that.  And that's the savings starting from a very minimal kernel, not
-starting from a defconfig kernel.
+I now get the following build warnings on my box with this patch
+applied:
 
-In any case, do you object to the introduction of a Kconfig option at
-all, or to that option defaulting to off?  In particular, would you
-object if the option only showed up if EMBEDDED, and defaulted to y?  At
-that point, you could reasonably expect that most users and distros will
-have it enabled, so you'll be able to count on asking people to enable
-it and send you the output.  Would that suffice?
+drivers/staging/comedi/drivers/adl_pci7x3x.c: In function ‘adl_pci7x3x_do_insn_bits’:
+drivers/staging/comedi/drivers/adl_pci7x3x.c:124:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+drivers/staging/comedi/drivers/adl_pci7x3x.c: In function ‘adl_pci7x3x_di_insn_bits’:
+drivers/staging/comedi/drivers/adl_pci7x3x.c:150:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
 
-The patch itself seems incredibly straightforward and non-invasive to
-me; it just stubs out the global variable and lets GCC fold away all the
-code.
+Care to send a follow-on patch to fix this up?
 
-At this point, the kernel is running out of major things to cut out to
-save space; getting from ~200k (the current smallest kernel possible) to
-much less than that will require a pile of patches that save anywhere
-from a few hundred bytes to a few kilobytes.  I certainly agree that
-those patches need to avoid introducing too much complexity.  However, I
-don't think it makes sense to object to a patch that saves space solely
-on the grounds that it doesn't save *more* space.  That would make it
-impossible to cut out small things, and small things add up.
+thanks,
 
-- Josh Triplett
+greg k-h
