@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2HNPCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:02:11 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:26947 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab2HNPCJ (ORCPT
+	id S1756456Ab2HNPF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:05:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40617 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab2HNPFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:02:09 -0400
-Message-ID: <502A685E.8090002@siemens.com>
-Date: Tue, 14 Aug 2012 17:01:50 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Yan Vugenfirer <yvugenfi@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v8] kvm: notify host when the guest is panicked
-References: <5021D235.4050800@cn.fujitsu.com> <20120813182132.GB25268@amt.cnet> <20120814085619.GA32708@redhat.com> <502A2B7A.3070801@siemens.com> <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
-In-Reply-To: <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Aug 2012 11:05:54 -0400
+From: Jiri Pirko <jiri@resnulli.us>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
+        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
+        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
+        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        bridge@lists.linux-foundation.org, fbl@redhat.com
+Subject: [patch net-next v2 00/15] net: introduce upper device lists and remove dev->master
+Date: Tue, 14 Aug 2012 17:05:33 +0200
+Message-Id: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-14 16:55, Yan Vugenfirer wrote:
-> 
-> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
-> 
->> On 2012-08-14 10:56, Daniel P. Berrange wrote:
->>> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
->>>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
->>>>> We can know the guest is panicked when the guest runs on xen.
->>>>> But we do not have such feature on kvm.
->>>>>
->>>>> Another purpose of this feature is: management app(for example:
->>>>> libvirt) can do auto dump when the guest is panicked. If management
->>>>> app does not do auto dump, the guest's user can do dump by hand if
->>>>> he sees the guest is panicked.
->>>>>
->>>>> We have three solutions to implement this feature:
->>>>> 1. use vmcall
->>>>> 2. use I/O port
->>>>> 3. use virtio-serial.
->>>>>
->>>>> We have decided to avoid touching hypervisor. The reason why I choose
->>>>> choose the I/O port is:
->>>>> 1. it is easier to implememt
->>>>> 2. it does not depend any virtual device
->>>>> 3. it can work when starting the kernel
->>>>
->>>> How about searching for the "Kernel panic - not syncing" string 
->>>> in the guests serial output? Say libvirtd could take an action upon
->>>> that?
->>>
->>> No, this is not satisfactory. It depends on the guest OS being
->>> configured to use the serial port for console output which we
->>> cannot mandate, since it may well be required for other purposes.
->>
-> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
-> 
-> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
+Hi all.
 
-What prevents writing the magic words to a second serial port in the
-same way via that callback?
+Recent discussion around
+"[net-next] bonding: don't allow the master to become its slave"
+forced me to think about upper<->lower device connections.
 
-Jan
+This patchset adds a possibility to record upper device linkage.
+All upper<->lower devices are converted to use this mechanism right after.
+That leads to dev->master removal because this info becomes redundant since
+"unique links" have the same value.
+
+After all changes, there is no longer possible to do:
+"bond->someotherdevice->samebond"
+
+Also I think that drivers like cxgb3, qlcnic, qeth would benefit by this
+in future by being able to get more appropriate info about l3 addresses.
+
+v1->v2:
+- s/unique/master/ better naming + stays closer to the history
+- fixed vlan err goto
+- original patch 15 (WARN_ON change) is squashed into the first patch
+- fixed netdev_unique_upper_dev_get_rcu() case of upper==NULL
+
+Jiri Pirko (15):
+  net: introduce upper device lists
+  macvlan: add link to upper device
+  vlan: add link to upper device
+  rtnetlink: remove usage of dev->master
+  team: remove usage of netdev_set_master()
+  bridge: remove usage of netdev_set_master()
+  netpoll: remove usage of dev->master
+  cxgb3: remove usage of dev->master
+  qlcnic: guard __vlan_find_dev_deep() by rcu_read_lock
+  qeth: ensure that __vlan_find_dev_deep() is called with rcu_read_lock
+  vlan: remove usage of dev->master in __vlan_find_dev_deep()
+  nes: remove usage of dev->master
+  bonding: remove usage of dev->master
+  net: remove no longer used netdev_set_bond_master() and
+    netdev_set_master()
+  net: kill dev->master
+
+ drivers/infiniband/hw/nes/nes.c                    |    8 +-
+ drivers/infiniband/hw/nes/nes_cm.c                 |    2 +-
+ drivers/net/bonding/bond_3ad.c                     |   30 +--
+ drivers/net/bonding/bond_alb.c                     |    6 +-
+ drivers/net/bonding/bond_main.c                    |   94 ++++----
+ drivers/net/bonding/bonding.h                      |   14 +-
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |   11 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |    2 +
+ drivers/net/macvlan.c                              |    9 +-
+ drivers/net/team/team.c                            |   13 +-
+ drivers/s390/net/qeth_l3_main.c                    |   21 +-
+ include/linux/netdevice.h                          |   22 +-
+ net/8021q/vlan.c                                   |   10 +-
+ net/8021q/vlan_core.c                              |   18 +-
+ net/bridge/br_if.c                                 |    6 +-
+ net/core/dev.c                                     |  239 +++++++++++++++++---
+ net/core/netpoll.c                                 |    8 +-
+ net/core/rtnetlink.c                               |   45 ++--
+ 18 files changed, 391 insertions(+), 167 deletions(-)
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+1.7.10.4
+
