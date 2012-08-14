@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487Ab2HNPuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:50:17 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:52616
+	id S1756066Ab2HNPuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:50:44 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:52618
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755524Ab2HNPt4 (ORCPT
+	by vger.kernel.org with ESMTP id S1754160Ab2HNPt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Aug 2012 11:49:56 -0400
 X-IronPort-AV: E=Sophos;i="4.77,766,1336341600"; 
-   d="scan'208";a="153065917"
+   d="scan'208";a="153065916"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] arch/powerpc/platforms/powernv/pci.c: Remove potential NULL dereferences
-Date: Tue, 14 Aug 2012 17:49:48 +0200
-Message-Id: <1344959388-19719-6-git-send-email-Julia.Lawall@lip6.fr>
+To: netdev@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/5] drivers/net/ethernet/ti/davinci_cpdma.c: Remove potential NULL dereference
+Date: Tue, 14 Aug 2012 17:49:47 +0200
+Message-Id: <1344959388-19719-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -50,40 +49,25 @@ statement S;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/powerpc/platforms/powernv/pci.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/ti/davinci_cpdma.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
-index be3cfc5..928e97b 100644
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -287,12 +287,13 @@ static int pnv_pci_read_config(struct pci_bus *bus,
- 			       int where, int size, u32 *val)
+diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
+index 3b5c457..d15c888 100644
+--- a/drivers/net/ethernet/ti/davinci_cpdma.c
++++ b/drivers/net/ethernet/ti/davinci_cpdma.c
+@@ -538,11 +538,12 @@ EXPORT_SYMBOL_GPL(cpdma_chan_create);
+ 
+ int cpdma_chan_destroy(struct cpdma_chan *chan)
  {
- 	struct pci_controller *hose = pci_bus_to_host(bus);
--	struct pnv_phb *phb = hose->private_data;
-+	struct pnv_phb *phb;
- 	u32 bdfn = (((uint64_t)bus->number) << 8) | devfn;
- 	s64 rc;
+-	struct cpdma_ctlr *ctlr = chan->ctlr;
++	struct cpdma_ctlr *ctlr;
+ 	unsigned long flags;
  
- 	if (hose == NULL)
- 		return PCIBIOS_DEVICE_NOT_FOUND;
-+	phb = hose->private_data;
+ 	if (!chan)
+ 		return -EINVAL;
++	ctlr = chan->ctlr;
  
- 	switch (size) {
- 	case 1: {
-@@ -331,11 +332,12 @@ static int pnv_pci_write_config(struct pci_bus *bus,
- 				int where, int size, u32 val)
- {
- 	struct pci_controller *hose = pci_bus_to_host(bus);
--	struct pnv_phb *phb = hose->private_data;
-+	struct pnv_phb *phb;
- 	u32 bdfn = (((uint64_t)bus->number) << 8) | devfn;
- 
- 	if (hose == NULL)
- 		return PCIBIOS_DEVICE_NOT_FOUND;
-+	phb = hose->private_data;
- 
- 	cfg_dbg("pnv_pci_write_config bus: %x devfn: %x +%x/%x -> %08x\n",
- 		bus->number, devfn, where, size, val);
+ 	spin_lock_irqsave(&ctlr->lock, flags);
+ 	if (chan->state != CPDMA_STATE_IDLE)
 
