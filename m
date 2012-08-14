@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2HNSwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 14:52:17 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:47709 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756069Ab2HNSwQ convert rfc822-to-8bit (ORCPT
+	id S1757339Ab2HNSxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 14:53:09 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49505 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757307Ab2HNSxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 14:52:16 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: efi_pstore: question about how to remove create_sysfs_entry()
- from a write callback.
-Thread-Topic: efi_pstore: question about how to remove create_sysfs_entry()
- from a write callback.
-Thread-Index: Ac16Npmt6jTfpP4+SGO2J5V3Hs4KkwAMhuYAAAddZ3A=
-Date: Tue, 14 Aug 2012 18:51:59 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4137FC07B@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D4137FBD89@USINDEM103.corp.hds.com>
- <CAGTjWtC2C_Q4mDHYD4p63YCkEAcYTgXcBYHemdTByrgBzNLT1A@mail.gmail.com>
-In-Reply-To: <CAGTjWtC2C_Q4mDHYD4p63YCkEAcYTgXcBYHemdTByrgBzNLT1A@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Aug 2012 14:53:07 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Marcelo Tosatti <mtosatti@redhat.com>,
+        Yan Vugenfirer <yvugenfi@redhat.com>
+Cc: kvm list <kvm@vger.kernel.org>, Jan Kiszka <jan.kiszka@siemens.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is panicked
+In-Reply-To: <20120814154237.GA21284@amt.cnet>
+References: <5021D235.4050800@cn.fujitsu.com> <20120813182132.GB25268@amt.cnet> <20120814085619.GA32708@redhat.com> <502A2B7A.3070801@siemens.com> <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com> <20120814154237.GA21284@amt.cnet>
+User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 14 Aug 2012 13:53:01 -0500
+Message-ID: <87boidgvaq.fsf@codemonkey.ws>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-14_04:2012-08-14,2012-08-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1208140184
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can we not serialize this with &efivars->lock if it is updated to disable interrupts?  A loop in the workqueue that locks, iterates through
-> ->get_next_variable, and compares against searches in
-> efivars->list should work, no?
+Marcelo Tosatti <mtosatti@redhat.com> writes:
 
-If my understanding is correct, your pseudo code is as follows.
+> On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
+>> 
+>> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
+>> 
+>> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
+>> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
+>> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
+>> >>>> We can know the guest is panicked when the guest runs on xen.
+>> >>>> But we do not have such feature on kvm.
+>> >>>> 
+>> >>>> Another purpose of this feature is: management app(for example:
+>> >>>> libvirt) can do auto dump when the guest is panicked. If management
+>> >>>> app does not do auto dump, the guest's user can do dump by hand if
+>> >>>> he sees the guest is panicked.
+>> >>>> 
+>> >>>> We have three solutions to implement this feature:
+>> >>>> 1. use vmcall
+>> >>>> 2. use I/O port
+>> >>>> 3. use virtio-serial.
+>> >>>> 
+>> >>>> We have decided to avoid touching hypervisor. The reason why I choose
+>> >>>> choose the I/O port is:
+>> >>>> 1. it is easier to implememt
+>> >>>> 2. it does not depend any virtual device
+>> >>>> 3. it can work when starting the kernel
+>> >>> 
+>> >>> How about searching for the "Kernel panic - not syncing" string 
+>> >>> in the guests serial output? Say libvirtd could take an action upon
+>> >>> that?
+>> >> 
+>> >> No, this is not satisfactory. It depends on the guest OS being
+>> >> configured to use the serial port for console output which we
+>> >> cannot mandate, since it may well be required for other purposes.
+>> > 
+>> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
+>> 
+>> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
+>> 
+>> Yan. 
+>
+> Considering whether a "panic-device" should cover other OSes is also 
+> something to consider. Even for Linux, is "panic" the only case which
+> should be reported via the mechanism? What about oopses without panic? 
+>
+> Is the mechanism general enough for supporting new events, etc.
 
-spin_lock_irqsave(&efivars_lock);
+Hi,
 
-do {
-	get_next_variable();
-	if (found new entry)
- 		efivars_create_sysfs_entries();
+I think this discussion is gone of the deep end.
 
-} while()
+Forget about !x86 platforms.  They have their own way to do this sort of
+thing.  Think of this feature like a status LED on a motherboard.  These
+are very common and usually controlled by IO ports.
 
-spin_lock_irqrestore(&efivars_lock);
+We're simply reserving a "status LED" for the guest to indicate that it
+has paniced.  Let's not over engineer this.
 
-But, memory is allocated dynamically with kzalloc() in efivars_create_sysfs_entries().
-I don't want to allocate memory  while holding spin_lock.
+Regards,
 
-Please let me know if I'm missing something.
+Anthony Liguori
 
-Seiji 
+>
+>> 
+>> > Well, we have more than a single serial port, even when leaving
+>> > virtio-serial aside...
+>> > 
+>> > Jan
+>> > 
+>> > -- 
+>> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+>> > Corporate Competence Center Embedded Linux
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
