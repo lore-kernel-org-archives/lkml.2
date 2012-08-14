@@ -1,84 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2HNPrI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:47:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54448 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2HNPrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:47:06 -0400
-Message-ID: <502A72EF.3030303@gmail.com>
-Date: Tue, 14 Aug 2012 23:46:55 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities
- registers
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
-In-Reply-To: <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756090Ab2HNPrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:47:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753388Ab2HNPry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:47:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120814151345.GB30856@linux-mips.org>
+References: <20120814151345.GB30856@linux-mips.org> <87d32us55c.fsf@rustcorp.com.au> <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk> <32504.1344953290@warthog.procyon.org.uk>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        Jonas Gorski <jonas.gorski@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH] MIPS: Fix module.c build for 32 bit
+Date: Tue, 14 Aug 2012 16:47:43 +0100
+Message-ID: <22516.1344959263@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-	No problem, will handle issues mentioned below.
-	Regards!
-	Gerry
-On 08/14/2012 12:25 PM, Bjorn Helgaas wrote:
-> On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> From: Jiang Liu <liuj97@gmail.com>
->>
->> As suggested by Bjorn Helgaas and Don Dutile in threads
->> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
->> to PCIe capabilities register in to way:
->> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
->>    repeatedly reading this register because it's read only.
->> 2) provide access functions for PCIe Capabilities registers to hide differences
->>    among PCIe base specifications, so the caller don't need to handle those
->>    differences.
->>
->> This patch set applies to
->> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
-> 
-> Would you mind rebasing this to v3.6-rc1?  I think you posted this
-> when my branch was still 3.5-based, and there are some upstream
-> changes that cause minor conflicts here.
-> 
-> You currently have:
-> 
->     int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
-> u16 set_bits, u16 clear_bits)
-> 
-> I think this is a bit awkward because the function name doesn't
-> suggest *how* the word will be changed, and the clearing happens
-> before the setting (opposite the parameter order).  Something like:
-> 
->     int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
->     int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
-> 
-> would be more obvious.  If you use "mask_and_set", I think the
-> function should do "(val & mask) | set" with the complement being at
-> the call site.  If you use "clear_and_set", I think it's OK to do
-> "(val & ~mask) | set" as in your current patch.
-> 
-> I know I suggested the "pci_pcie_capability_*" names, but they're
-> getting a bit unwieldy, especially if we do "mask_and_set" or similar.
->  There are already several "pcie_*" functions, so maybe we should
-> drop the leading "pci_" from these and just have:
-> 
->     pcie_capability_read_word
->     pcie_capability_write_word
->     pcie_capability_mask_and_set_word
-> 
-> Bjorn
-> 
+Ralf Baechle <ralf@linux-mips.org> wrote:
 
+> +extern int apply_r_mips_none(struct module *me, u32 *location, Elf_Addr v);
+
+This needs to be in a header file, not a .c file.
+
+David
