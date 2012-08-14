@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab2HNI4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:56:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab2HNI4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:56:32 -0400
-Date: Tue, 14 Aug 2012 09:56:19 +0100
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v8] kvm: notify host when the guest is panicked
-Message-ID: <20120814085619.GA32708@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <5021D235.4050800@cn.fujitsu.com>
- <20120813182132.GB25268@amt.cnet>
+	id S1755395Ab2HNI5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:57:39 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:50633 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755315Ab2HNI5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 04:57:37 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/nomadik: add kp_b_2 keyboard function group list
+Date: Tue, 14 Aug 2012 10:57:21 +0200
+Message-ID: <1344934641-16043-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120813182132.GB25268@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
-> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
-> > We can know the guest is panicked when the guest runs on xen.
-> > But we do not have such feature on kvm.
-> > 
-> > Another purpose of this feature is: management app(for example:
-> > libvirt) can do auto dump when the guest is panicked. If management
-> > app does not do auto dump, the guest's user can do dump by hand if
-> > he sees the guest is panicked.
-> > 
-> > We have three solutions to implement this feature:
-> > 1. use vmcall
-> > 2. use I/O port
-> > 3. use virtio-serial.
-> > 
-> > We have decided to avoid touching hypervisor. The reason why I choose
-> > choose the I/O port is:
-> > 1. it is easier to implememt
-> > 2. it does not depend any virtual device
-> > 3. it can work when starting the kernel
-> 
-> How about searching for the "Kernel panic - not syncing" string 
-> in the guests serial output? Say libvirtd could take an action upon
-> that?
+From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-No, this is not satisfactory. It depends on the guest OS being
-configured to use the serial port for console output which we
-cannot mandate, since it may well be required for other purposes.
+There is yet another way to mux the keyboard, so fix up that
+group.
 
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-nomadik-db8500.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Daniel
+diff --git a/drivers/pinctrl/pinctrl-nomadik-db8500.c b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+index 5f3e9d0..a39fb7a 100644
+--- a/drivers/pinctrl/pinctrl-nomadik-db8500.c
++++ b/drivers/pinctrl/pinctrl-nomadik-db8500.c
+@@ -505,6 +505,8 @@ static const unsigned kp_b_1_pins[] = { DB8500_PIN_F3, DB8500_PIN_F1,
+ 	DB8500_PIN_J3, DB8500_PIN_H2, DB8500_PIN_J2, DB8500_PIN_H1,
+ 	DB8500_PIN_F4, DB8500_PIN_E3, DB8500_PIN_E4, DB8500_PIN_D2,
+ 	DB8500_PIN_C1, DB8500_PIN_D3, DB8500_PIN_C2, DB8500_PIN_D5 };
++static const unsigned kp_b_2_pins[] = { DB8500_PIN_F3, DB8500_PIN_F1,
++	DB8500_PIN_G3, DB8500_PIN_G2, DB8500_PIN_F4, DB8500_PIN_E3};
+ static const unsigned sm_b_1_pins[] = { DB8500_PIN_C6, DB8500_PIN_B3,
+ 	DB8500_PIN_C4, DB8500_PIN_E6, DB8500_PIN_A3, DB8500_PIN_B6,
+ 	DB8500_PIN_D6, DB8500_PIN_B7, DB8500_PIN_D7, DB8500_PIN_D8,
+@@ -662,6 +664,7 @@ static const struct nmk_pingroup nmk_db8500_groups[] = {
+ 	DB8500_PIN_GROUP(spi3_b_1, NMK_GPIO_ALT_B),
+ 	DB8500_PIN_GROUP(msp1txrx_b_1, NMK_GPIO_ALT_B),
+ 	DB8500_PIN_GROUP(kp_b_1, NMK_GPIO_ALT_B),
++	DB8500_PIN_GROUP(kp_b_2, NMK_GPIO_ALT_B),
+ 	DB8500_PIN_GROUP(sm_b_1, NMK_GPIO_ALT_B),
+ 	DB8500_PIN_GROUP(smcs0_b_1, NMK_GPIO_ALT_B),
+ 	DB8500_PIN_GROUP(smcs1_b_1, NMK_GPIO_ALT_B),
+@@ -751,7 +754,7 @@ DB8500_FUNC_GROUPS(msp1, "msp1txrx_a_1", "msp1_a_1", "msp1txrx_b_1");
+ DB8500_FUNC_GROUPS(lcdb, "lcdb_a_1");
+ DB8500_FUNC_GROUPS(lcd, "lcdvsi0_a_1", "lcdvsi1_a_1", "lcd_d0_d7_a_1",
+ 	"lcd_d8_d11_a_1", "lcd_d12_d23_a_1", "lcd_b_1");
+-DB8500_FUNC_GROUPS(kp, "kp_a_1", "kp_b_1", "kp_c_1", "kp_oc1_1");
++DB8500_FUNC_GROUPS(kp, "kp_a_1", "kp_b_1", "kp_b_2", "kp_c_1", "kp_oc1_1");
+ DB8500_FUNC_GROUPS(mc2, "mc2_a_1", "mc2rstn_c_1");
+ DB8500_FUNC_GROUPS(ssp1, "ssp1_a_1");
+ DB8500_FUNC_GROUPS(ssp0, "ssp0_a_1");
 -- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+1.7.11.3
+
