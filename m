@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab2HNMfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:35:42 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45363 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab2HNMfl (ORCPT
+	id S1754960Ab2HNMfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:35:54 -0400
+Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:60584 "EHLO
+	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab2HNMfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:35:41 -0400
-Date: Tue, 14 Aug 2012 13:40:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ajay Garg <ajaygargnsit@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: How to hack syscall-table, in kernel 2.6+ ?
-Message-ID: <20120814134020.367361b5@pyramind.ukuu.org.uk>
-In-Reply-To: <CAHP4M8WV64UMor_oU4UNgGx7P0Zet_M3yJrAZaCR+yYQmmeEYw@mail.gmail.com>
-References: <CAHP4M8WV64UMor_oU4UNgGx7P0Zet_M3yJrAZaCR+yYQmmeEYw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 14 Aug 2012 08:35:48 -0400
+Message-Id: <502A623C020000A10000BACA@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 14 Aug 2012 14:35:40 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Q: Seeing the microcode revision in /proc/cpuinfo
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have already tried extracting the address of the "sys_call_table"
-> from "System.Map"; however, I am still not able to replace the
-> function-pointers with mine.
+Hi!
 
-Correct.
+After several reboots due to memory errors after excellent power-saving of Linux on a HP DL380G7 with Intel Xeon 5650 processors (all in on memory bank), I found out the errate "BD104" and "BD123". The former should be fixed in a microcode revision "15H".
 
-> Trying to do gives me page-faults, apparently meaning that the
-> syscall-table memory area is read-only.
+Now I wonder what microcode revision my CPUs currently have. /proc/cpuinfo doesn't show that, and the microcode update is a bit cryptic:
 
-Correct.
+kernel: [   44.422912] microcode: CPU23 sig=0x206c2, pf=0x1, revision=0x14
 
-The kernel is specifically designed to stop such uses by rootkits and
-trojans and other malware.
+Does that mean the revision is 0x14 BEFORE or AFTER the microcode update?
 
-If you are trying to patch the system call table you are doing something
-wrong. What are you actually trying to achieve ?
+Wouldn't you agree that seeing the microcode revision in /proc/cpuinfo would be nice?
+
+For those CPUs lacking the feature one could hard-wire the value "none" (which would be also "kind of true")...
+
+Regards,
+Ulrich
+(not subscribed, so please CC: you replies to me)
+
+
