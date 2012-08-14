@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2HNXWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:22:06 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35438 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389Ab2HNXWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:22:03 -0400
-Message-ID: <1344986638.4430.22.camel@footlong>
-Subject: [PATCH V3 0/3] tpm: Add new vTPM device driver for PPC64
-From: Ashley Lai <adlai@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
-        adlai@linux.vnet.ibm.com
-Date: Tue, 14 Aug 2012 18:23:58 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081423-7182-0000-0000-00000248EF64
+	id S1754204Ab2HNXXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:23:05 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20728 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab2HNXXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:23:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 173.50.127.139
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19xvnIgcN/5NMF6RCAVWLWgEKMO+PHaH9M=
+Date: Tue, 14 Aug 2012 19:22:56 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate
+ FreeAgent Dockstar
+Message-ID: <20120814232256.GX22226@titan.lakedaemon.net>
+References: <20120814193613.GS22226@titan.lakedaemon.net>
+ <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change log V3:
-- Replaced TPM_NO_EVENT_LOG macro with stubs
-- Removed tpm_noeventlog.c file 
-- Called of_node_put() before return in tpm_of.c
+On Tue, Aug 14, 2012 at 10:43:41PM +0200, Sebastian Hesselbarth wrote:
+> This add a DT compatible board specific setup for the Seagate
+> FreeAgent Dockstar.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+> v2: rebased on git://git.infradead.org/users/jcooper/linux.git fixes-for-v3.6
 
-Change log V2:
-- Removed unnecessary tpm_bios_log_setup and tpm_bios_log_teardown
-  functions in tpm_eventlog.h (patch 3/3).
-- Added more descriptions on vTPM (patch 1/3).
+patches [1/2] and [2/2] of this series applied to:
 
-These patches add support for IBM vTPM for PPC64. This new device driver
-works on firmware that supports vTPM (firmware release 740 or higher).
+  git://git.infradead.org/users/jcooper/linux.git boards-for-v3.7
 
-Tested on Power7+ system with firmware level ZM770_001.
+patch [2/2] depends upon:
 
-Applied to Kent Yoder tree at:
-https://github.com/shpedoikal/linux/tree/v3.6-rc1-tpmdd-staging
+  bda63c1 ARM: Kirkwood: fix Makefile.boot
 
-Ashley Lai (3):
-  drivers/char/tpm: Add new device driver to support IBM vTPM
-  PPC64: Add support for instantiating SML from Open Firmware
-  drivers/char/tpm: Add securityfs support for event log
+which should be in an upcoming v3.6-rc
 
- arch/powerpc/kernel/prom_init.c |   62 ++++
- drivers/char/tpm/Kconfig        |    8 +
- drivers/char/tpm/Makefile       |    6 +
- drivers/char/tpm/tpm.h          |   13 +-
- drivers/char/tpm/tpm_eventlog.h |   15 +
- drivers/char/tpm/tpm_ibmvtpm.c  |  749 +++++++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm_ibmvtpm.h  |   83 +++++
- drivers/char/tpm/tpm_of.c       |   73 ++++
- 8 files changed, 997 insertions(+), 12 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
- create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
- create mode 100644 drivers/char/tpm/tpm_of.c
+thx,
 
-
+Jason.
