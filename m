@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab2HNUoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:44:07 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62591 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab2HNUoE (ORCPT
+	id S1757502Ab2HNUqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:46:12 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:13228 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336Ab2HNUqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:44:04 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] ARM: kirkwood: DT descriptor for Seagate FreeAgent Dockstar
-Date: Tue, 14 Aug 2012 22:43:42 +0200
-Message-Id: <1344977022-29037-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <20120814193613.GS22226@titan.lakedaemon.net>
- <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 14 Aug 2012 16:46:10 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-132.messagelabs.com!1344977131!13216176!37
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: adl_pci7x3x: fix pointer-to-int-cast warning
+Date: Tue, 14 Aug 2012 13:45:53 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <gregkh@linuxfoundation.org>,
+        <abbotti@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208141345.54496.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the corresponding device tree descriptor for the
-Seagate FreeAgent Dockstar based on Kirkwood DT.
+This driver uses the void *private variable in the comedi_subdevice
+to pass the offset needed to read/write the appropriate register to
+get/set the channels for the subdevice.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+The adl_pci7x3x_do_insn_bits() and adl_pci7x3x_di_insn_bits() functions
+were retrieving this offset by casting the s->private value as an
+unsigned int. On 64-bit builds this results in a warning:
+
+warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+
+Fix these warnings by casting the void * to an unsigned long.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ian Abbott <abbotti@mev.co.uk>
 ---
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+ drivers/staging/comedi/drivers/adl_pci7x3x.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-v2: rebased on git://git.infradead.org/users/jcooper/linux.git fixes-for-v3.6
-
- arch/arm/boot/dts/kirkwood-dockstar.dts |   57 +++++++++++++++++++++++++++++++
- arch/arm/mach-kirkwood/Makefile.boot    |    1 +
- 2 files changed, 58 insertions(+)
- create mode 100644 arch/arm/boot/dts/kirkwood-dockstar.dts
-
-diff --git a/arch/arm/boot/dts/kirkwood-dockstar.dts b/arch/arm/boot/dts/kirkwood-dockstar.dts
-new file mode 100644
-index 0000000..08a5824
---- /dev/null
-+++ b/arch/arm/boot/dts/kirkwood-dockstar.dts
-@@ -0,0 +1,57 @@
-+/dts-v1/;
-+
-+/include/ "kirkwood.dtsi"
-+
-+/ {
-+	model = "Seagate FreeAgent Dockstar";
-+	compatible = "seagate,dockstar", "marvell,kirkwood-88f6281", "marvell,kirkwood";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x8000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200n8 earlyprintk root=/dev/sda1 rootdelay=10";
-+	};
-+
-+	ocp@f1000000 {
-+		serial@12000 {
-+			clock-frequency = <200000000>;
-+			status = "ok";
-+		};
-+
-+		nand@3000000 {
-+			status = "okay";
-+
-+			partition@0 {
-+				label = "u-boot";
-+				reg = <0x0000000 0x100000>;
-+				read-only;
-+			};
-+
-+			partition@100000 {
-+				label = "uImage";
-+				reg = <0x0100000 0x400000>;
-+			};
-+
-+			partition@500000 {
-+				label = "data";
-+				reg = <0x0500000 0xfb00000>;
-+			};
-+		};
-+	};
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+
-+		health {
-+			label = "status:green:health";
-+			gpios = <&gpio1 14 1>;
-+			linux,default-trigger = "default-on";
-+		};
-+		fault {
-+			label = "status:orange:fault";
-+			gpios = <&gpio1 15 1>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-kirkwood/Makefile.boot b/arch/arm/mach-kirkwood/Makefile.boot
-index e2ad358..ce1a285 100644
---- a/arch/arm/mach-kirkwood/Makefile.boot
-+++ b/arch/arm/mach-kirkwood/Makefile.boot
-@@ -12,3 +12,4 @@ dtb-$(CONFIG_MACH_TS219_DT)	+= kirkwood-ts219-6282.dtb
- dtb-$(CONFIG_MACH_GOFLEXNET_DT) += kirkwood-goflexnet.dtb
- dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lschlv2.dtb
- dbt-$(CONFIG_MACH_LSXL_DT) += kirkwood-lsxhl.dtb
-+dtb-$(CONFIG_MACH_DOCKSTAR_DT) += kirkwood-dockstar.dtb
+diff --git a/drivers/staging/comedi/drivers/adl_pci7x3x.c b/drivers/staging/comedi/drivers/adl_pci7x3x.c
+index 990670a..41963fb 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7x3x.c
++++ b/drivers/staging/comedi/drivers/adl_pci7x3x.c
+@@ -121,7 +121,7 @@ static int adl_pci7x3x_do_insn_bits(struct comedi_device *dev,
+ 				    struct comedi_insn *insn,
+ 				    unsigned int *data)
+ {
+-	unsigned int reg = (unsigned int)s->private;
++	unsigned long reg = (unsigned long)s->private;
+ 	unsigned int mask = data[0];
+ 	unsigned int bits = data[1];
+ 
+@@ -147,7 +147,7 @@ static int adl_pci7x3x_di_insn_bits(struct comedi_device *dev,
+ 				    struct comedi_insn *insn,
+ 				    unsigned int *data)
+ {
+-	unsigned int reg = (unsigned int)s->private;
++	unsigned long reg = (unsigned long)s->private;
+ 
+ 	data[1] = inl(dev->iobase + reg);
+ 
 -- 
-1.7.10.4
+1.7.11
 
