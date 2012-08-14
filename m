@@ -1,59 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab2HNTQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:16:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:32806 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab2HNTQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:16:19 -0400
-Date: Tue, 14 Aug 2012 21:16:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-In-Reply-To: <20120813233520.GG25632@google.com>
-Message-ID: <alpine.LFD.2.02.1208142055260.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org> <20120813233520.GG25632@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756692Ab2HNTUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 15:20:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab2HNTUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 15:20:54 -0400
+Date: Tue, 14 Aug 2012 16:19:27 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Yan Vugenfirer <yvugenfi@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is
+ panicked
+Message-ID: <20120814191927.GA6058@amt.cnet>
+References: <5021D235.4050800@cn.fujitsu.com>
+ <20120813182132.GB25268@amt.cnet>
+ <20120814085619.GA32708@redhat.com>
+ <502A2B7A.3070801@siemens.com>
+ <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
+ <20120814154237.GA21284@amt.cnet>
+ <87boidgvaq.fsf@codemonkey.ws>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87boidgvaq.fsf@codemonkey.ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012, Tejun Heo wrote:
-> On Wed, Aug 08, 2012 at 11:10:24AM -0700, Tejun Heo wrote:
-> > Timer internals are protected by irqsafe lock but the lock is
-> > naturally dropped and irq enabled while a timer is executed.  This
-> > makes dequeueing timer for execution and the actual execution
-> > non-atomic against IRQs.  No matter what the timer function does, IRQs
-> > can occur between timer dispatch and execution.  This means that an
-> > IRQ handler could interrupt any timer in progress and it's impossible
-> > for an IRQ handler to cancel and drain a timer.
+On Tue, Aug 14, 2012 at 01:53:01PM -0500, Anthony Liguori wrote:
+> Marcelo Tosatti <mtosatti@redhat.com> writes:
 > 
-> If nobody objects, I'll route this through wq/for-3.7 together with
-> "workqueue: use irqsafe timer in delayed_work" patchset.  If you
-> object, please scream.
+> > On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
+> >> 
+> >> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
+> >> 
+> >> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
+> >> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
+> >> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
+> >> >>>> We can know the guest is panicked when the guest runs on xen.
+> >> >>>> But we do not have such feature on kvm.
+> >> >>>> 
+> >> >>>> Another purpose of this feature is: management app(for example:
+> >> >>>> libvirt) can do auto dump when the guest is panicked. If management
+> >> >>>> app does not do auto dump, the guest's user can do dump by hand if
+> >> >>>> he sees the guest is panicked.
+> >> >>>> 
+> >> >>>> We have three solutions to implement this feature:
+> >> >>>> 1. use vmcall
+> >> >>>> 2. use I/O port
+> >> >>>> 3. use virtio-serial.
+> >> >>>> 
+> >> >>>> We have decided to avoid touching hypervisor. The reason why I choose
+> >> >>>> choose the I/O port is:
+> >> >>>> 1. it is easier to implememt
+> >> >>>> 2. it does not depend any virtual device
+> >> >>>> 3. it can work when starting the kernel
+> >> >>> 
+> >> >>> How about searching for the "Kernel panic - not syncing" string 
+> >> >>> in the guests serial output? Say libvirtd could take an action upon
+> >> >>> that?
+> >> >> 
+> >> >> No, this is not satisfactory. It depends on the guest OS being
+> >> >> configured to use the serial port for console output which we
+> >> >> cannot mandate, since it may well be required for other purposes.
+> >> > 
+> >> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
+> >> 
+> >> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
+> >> 
+> >> Yan. 
+> >
+> > Considering whether a "panic-device" should cover other OSes is also \
 
-Second thoughts.
+> > something to consider. Even for Linux, is "panic" the only case which
+> > should be reported via the mechanism? What about oopses without panic? 
+> >
+> > Is the mechanism general enough for supporting new events, etc.
+> 
+> Hi,
+> 
+> I think this discussion is gone of the deep end.
+> 
+> Forget about !x86 platforms.  They have their own way to do this sort of
+> thing.  
 
-Why the hell are you trying to rush stuff which affects a well
-maintained part of the kernel through your own tree w/o having the
-courtesy of contacting the maintainer politely instead of sending an
-ultimatum?
+The panic function in kernel/panic.c has the following options, which
+appear to be arch independent, on panic:
 
-You posted that series less than a week ago and there is no reason why
-you need to push hard on inclusion into next after a few days.
+- reboot 
+- blink
 
-If you really cared about my opinion you could have figured out that
-I'm on vacation.
+None are paravirtual interfaces however.
 
-Yours grumpy
+> Think of this feature like a status LED on a motherboard.  These
+> are very common and usually controlled by IO ports.
+> 
+> We're simply reserving a "status LED" for the guest to indicate that it
+> has paniced.  Let's not over engineer this.
 
-      tglx
+My concern is that you end up with state that is dependant on x86.
+
+Subject: [PATCH v8 3/6] add a new runstate: RUN_STATE_GUEST_PANICKED
+
+Having the ability to stop/restart the guest (and even introducing a 
+new VM runstate) is more than a status LED analogy.
+
+Can this new infrastructure be used by other architectures?
+
+Do you consider allowing support for Windows as overengineering?
+
+> Regards,
+> 
+> Anthony Liguori
+> 
+> >
+> >> 
+> >> > Well, we have more than a single serial port, even when leaving
+> >> > virtio-serial aside...
+> >> > 
+> >> > Jan
+> >> > 
+> >> > -- 
+> >> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+> >> > Corporate Competence Center Embedded Linux
+> >> > --
+> >> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> >> > the body of a message to majordomo@vger.kernel.org
+> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
