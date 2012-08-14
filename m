@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab2HNMRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:17:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60001 "EHLO mx2.suse.de"
+	id S1754607Ab2HNMRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:17:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60000 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab2HNMRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753695Ab2HNMRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Aug 2012 08:17:20 -0400
-Date: Tue, 14 Aug 2012 14:17:18 +0200
-Message-ID: <s5h628lu0q9.wl%tiwai@suse.de>
+Date: Tue, 14 Aug 2012 14:17:15 +0200
+Message-ID: <s5h7gt1u0qc.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
         STEricsson_nomadik_linux@list.st.com
-Subject: Re: [alsa-devel] [PATCH 08/22] ASoC: codecs: Enable AB8500 CODEC for	Device Tree
-In-Reply-To: <1344527268-5964-9-git-send-email-lee.jones@linaro.org>
+Subject: Re: [alsa-devel] [PATCH 03/22] ASoC: ab8500: Inform SoC Core that we	have our own I/O arrangements
+In-Reply-To: <1344527268-5964-4-git-send-email-lee.jones@linaro.org>
 References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-	<1344527268-5964-9-git-send-email-lee.jones@linaro.org>
+	<1344527268-5964-4-git-send-email-lee.jones@linaro.org>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,45 +27,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu,  9 Aug 2012 16:47:34 +0100,
+At Thu,  9 Aug 2012 16:47:29 +0100,
 Lee Jones wrote:
-> @@ -2407,6 +2464,30 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
->  	/* Setup AB8500 according to board-settings */
->  	pdata = (struct ab8500_platform_data *)dev_get_platdata(dev->parent);
->  
-> +	if (np) {
-> +		if (!pdata)
-> +			pdata = devm_kzalloc(dev,
-> +					sizeof(struct ab8500_platform_data),
-> +					GFP_KERNEL);
-> +
-> +		if (!pdata->codec)
+> 
+> If codec->control_data is not populated SoC Core assumes we want to
+> use regmap, which fails catastrophically, as we don't have one:
+> 
+> Unable to handle kernel NULL pointer dereference at virtual address 00000080
+> pgd = c0004000
+> [00000080] *pgd=00000000
+> Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+> Modules linked in:
+> CPU: 1    Not tainted  (3.5.0-rc6-00884-g0b2419e-dirty #130)
+> PC is at regmap_read+0x10/0x5c
+> LR is at hw_read+0x80/0x90
+> pc : [<c01a91b8>]    lr : [<c0216804>]    psr: 60000013
+> 
+> CC: alsa-devel@alsa-project.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-The NULL check of pdata must be before pdata->codec access.
+This was already fixed in ASoC core on Linus tree...
 
 
 Takashi
 
-> +			pdata->codec
-> +				= devm_kzalloc(dev,
-> +					sizeof(struct ab8500_codec_platform_data),
-> +					GFP_KERNEL);
-> +
-> +		if (!(pdata && pdata->codec))
-> +			return -ENOMEM;
-> +
-> +		ab8500_codec_of_probe(dev, np, pdata->codec);
-> +
-> +	} else {
-> +		if (!(pdata && pdata->codec)) {
-> +			dev_err(dev, "No codec platform data or DT found\n");
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
->  	/* Inform SoC Core that we have our own I/O arrangements. */
->  	codec->control_data = (void *)true;
+> ---
+>  sound/soc/codecs/ab8500-codec.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
+> index 3c79592..23b4018 100644
+> --- a/sound/soc/codecs/ab8500-codec.c
+> +++ b/sound/soc/codecs/ab8500-codec.c
+> @@ -2406,6 +2406,10 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 >  
+>  	/* Setup AB8500 according to board-settings */
+>  	pdata = (struct ab8500_platform_data *)dev_get_platdata(dev->parent);
+> +
+> +	/* Inform SoC Core that we have our own I/O arrangements. */
+> +	codec->control_data = (void *)true;
+> +
+>  	status = ab8500_audio_setup_mics(codec, &pdata->codec->amics);
+>  	if (status < 0) {
+>  		pr_err("%s: Failed to setup mics (%d)!\n", __func__, status);
 > -- 
 > 1.7.9.5
 > 
