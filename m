@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab2HNRjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:39:39 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56284 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab2HNRjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:39:37 -0400
-Message-ID: <502A8D4D.3080101@linux.vnet.ibm.com>
-Date: Tue, 14 Aug 2012 12:39:25 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1756763Ab2HNRnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:43:15 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:43811 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753825Ab2HNRnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 13:43:13 -0400
+Message-ID: <502A8DD6.90807@xenotime.net>
+Date: Tue, 14 Aug 2012 10:41:42 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH 0/7] zram/zsmalloc promotion
-References: <1344406340-14128-1-git-send-email-minchan@kernel.org> <20120814023530.GA9787@kroah.com> <5029E3EF.9080301@vflare.org>
-In-Reply-To: <5029E3EF.9080301@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Richard Weinberger <richard@nod.at>
+CC: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for July 26 (uml)
+References: <502A69FA.8040805@nod.at> <502A6759.3090802@nod.at> <15981.1344955883@warthog.procyon.org.uk> <502A613F.1090600@nod.at> <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk> <18600.1344956051@warthog.procyon.org.uk> <18933.1344956788@warthog.procyon.org.uk> <30102.1344957328@warthog.procyon.org.uk> <502A6BF8.6040804@nod.at>
+In-Reply-To: <502A6BF8.6040804@nod.at>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081417-5806-0000-0000-0000185E5354
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2012 12:36 AM, Nitin Gupta wrote:
-> On 08/13/2012 07:35 PM, Greg Kroah-Hartman wrote:
->> On Wed, Aug 08, 2012 at 03:12:13PM +0900, Minchan Kim wrote:
->>> This patchset promotes zram/zsmalloc from staging.
->>> Both are very clean and zram is used by many embedded product
->>> for a long time.
->>>
->>> [1-3] are patches not merged into linux-next yet but needed
->>> it as base for [4-5] which promotes zsmalloc.
->>> Greg, if you merged [1-3] already, skip them.
+On 08/14/2012 08:17 AM, Richard Weinberger wrote:
+
+> Am 14.08.2012 17:15, schrieb David Howells:
+>> How about this then?
 >>
->> I've applied 1-3 and now 4, but that's it, I can't apply the rest
->> without getting acks from the -mm maintainers, sorry.  Please work with
->> them to get those acks, and then I will be glad to apply the rest (after
->> you resend them of course...)
->>
+>> David
+>> ---
+>> diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
+>> index 9926e11..a4b0c10 100644
+>> --- a/arch/x86/um/Kconfig
+>> +++ b/arch/x86/um/Kconfig
+>> @@ -21,9 +21,11 @@ config 64BIT
+>>  config X86_32
+>>  	def_bool !64BIT
+>>  	select HAVE_AOUT
+>> +	select MODULES_USE_ELF_REL
+>>  
+>>  config X86_64
+>>  	def_bool 64BIT
+>> +	select MODULES_USE_ELF_RELA
+>>  
+>>  config RWSEM_XCHGADD_ALGORITHM
+>>  	def_bool X86_XADD && 64BIT
 > 
-> On a second thought, I think zsmalloc should stay in drivers/block/zram
-> since zram is now the only user of zsmalloc since zcache and ramster are
-> moving to another allocator.
+> Looks sane.
+> 
+> Acked-by: Richard Weinberger <richard@nod.at>
 
-The removal of zsmalloc from zcache has not been agreed upon
-yet.
 
-Dan _suggested_ removing zsmalloc as the persistent
-allocator for zcache in favor of zbud to solve "flaws" in
-zcache.  However, zbud has large deficiencies.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-A zero-filled 4k page will compress with LZO to 103 bytes.
-zbud can only store two compressed pages in each memory pool
-page, resulting in 95% fragmentation (i.e. 95% of the memory
-pool page goes unused).  While this might not be a typical
-case, it is the worst case and absolutely does happen.
+Thanks.
 
-zbud's design also effectively limits the useful page
-compression to 50%. If pages are compressed beyond that, the
-added space savings is lost in memory pool fragmentation.
-For example, if two pages compress to 30% of their original
-size, those two pages take up 60% of the zbud memory pool
-page, and 40% is lost to fragmentation because zbud can't
-store anything in the remaining space.
-
-To say it another way, for every two page cache pages that
-cleancache stores in zcache, zbud _must_ allocate a memory
-pool page, regardless of how well those pages compress.
-This reduces the efficiency of the page cache reclaim
-mechanism by half.
-
-I have posted some work (zsmalloc shrinker interface, user
-registered alloc/free functions for the zsmalloc memory
-pool) that begins to make zsmalloc a suitable replacement
-for zbud, but that work was put on hold until the path out
-of staging was established.
-
-I'm hoping to continue this work once the code is in
-mainline.  While zbud has deficiencies, it doesn't prevent
-zcache from having value as I have already demonstrated.
-However, replacing zsmalloc with zbud would step backward
-for the reasons mentioned above.
-
-I do not support the removal of zsmalloc from zcache.  As
-such, I think the zsmalloc code should remain independent.
-
-Seth
-
+-- 
+~Randy
