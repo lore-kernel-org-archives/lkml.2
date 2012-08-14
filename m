@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab2HNLgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 07:36:35 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:56355 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755815Ab2HNLge (ORCPT
+	id S1756112Ab2HNLoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 07:44:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58006 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940Ab2HNLoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 07:36:34 -0400
-Date: Tue, 14 Aug 2012 14:32:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Ajay Garg <ajaygargnsit@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: How to hack syscall-table, in kernel 2.6+ ?
-Message-ID: <20120814113246.GH11416@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <CAHP4M8WV64UMor_oU4UNgGx7P0Zet_M3yJrAZaCR+yYQmmeEYw@mail.gmail.com>
+	Tue, 14 Aug 2012 07:44:03 -0400
+Message-ID: <502A39FC.4070603@linutronix.de>
+Date: Tue, 14 Aug 2012 13:43:56 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mhjHhnbe5PrRcwjY"
-Content-Disposition: inline
-In-Reply-To: <CAHP4M8WV64UMor_oU4UNgGx7P0Zet_M3yJrAZaCR+yYQmmeEYw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
+        gdb-patches@sourceware.org
+Subject: Re: [RFC 5/5] uprobes: add global breakpoints
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <20120808131457.GA5309@redhat.com> <20120809171802.GB27835@linutronix.de> <20120813131623.GA5269@redhat.com>
+In-Reply-To: <20120813131623.GA5269@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/13/2012 03:16 PM, Oleg Nesterov wrote:
+> On 08/09, Sebastian Andrzej Siewior wrote:
+>>
+>> * Oleg Nesterov | 2012-08-08 15:14:57 [+0200]:
+>>
+>>>> What I miss right now is an interface to tell the user/gdb that there is a
+>>>> program that hit a global breakpoint and is waiting for further instructions.
+>>>> A "tail -f trace" does not work and may contain also a lot of other
+>>>> informations. I've been thinking about a poll()able file which returns pids of
+>>>> tasks which are put on hold. Other suggestions?
+>>>
+>>> Honestly, I am not sure this is that useful...
+>>
+>> How would you notify gdb that there is a new task that hit a breakpoint?
+>> Or learn yourself?
+>
+> But why do we need this?
 
---mhjHhnbe5PrRcwjY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Shouldn't we learn somehow that a process hits a breakpoint? The task
+was not yet monitored by gdb.
 
-On Tue, Aug 14, 2012 at 05:01:56PM +0530, Ajay Garg wrote:
-> Hi all.
->=20
-> It is well known that the syscall-table had stopped being exported
-> from version 2.6 onwards.
->=20
-> So, now as a developer, if I wish to hack into the syscall-table, and
-> change the syscall-function-pointers to my custom-function-pointers
-> (mainly for the reason of adding/preventing access to certain files,
-> via Kernel-Loadable-Modules), what is the recommended way?
->=20
-> I have already tried extracting the address of the "sys_call_table"
-> from "System.Map"; however, I am still not able to replace the
-> function-pointers with mine.
-> Trying to do gives me page-faults, apparently meaning that the
-> syscall-table memory area is read-only.
->=20
->=20
->=20
-> I will be grateful, if someone could point me to the recommended way
-> of doing this.
+> OK, you do not need to convince me, I try to never argue with
+> new features.
 
-Have you looked into selinux [1] ?
+If there is a simple mechanism, I would switch to it. Right now I think
+about using this "notification mechanism" to auto-exlude the listener
+(and its parents) from the list of possible targets. So I don't freeze
+the whole system while I have a breakpoint at malloc() in libc.
 
-[1] http://selinuxproject.org/page/Main_Page
+> However, I certainly dislike TASK_TRACED in uprobe_wait_traced().
+> And sleeping in ->handler() is not fair to other consumers.
 
---=20
-balbi
+I added it as the last task in current consumer. I could move it out of
+the consumer loop and freeze it after all consumer are handled but then
+I lose the filter member (which is currently NULL, I know).
 
---mhjHhnbe5PrRcwjY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> And I do not think you should modify ptrace_attach() at all.
+> gdb/user can wakeup the task after PTRACE_ATTACH itself.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I see. gdb / strace --pid $num" gdb does PTRACE_ATTACH and waits
+afterwords in wait() indefinitely for the SIGSTOP which is blocked
+since the process is already in TASK_TRACED. This is nice since the
+signals are blocked and are delivered once the task is unfrozed.
 
-iQIcBAEBAgAGBQJQKjddAAoJEIaOsuA1yqREztQP/3c7+KEzXOv9a3N9djWIknJa
-V/UleYNYRQIueJS7SnRTp7LmloLiyNDMngwMhpvnUaByomFeZ7N/wXbZ9s/BrHU0
-jjv9fSfyJAvQpVF6CeE5LQfFInJdsdmkePGvZDf3vJX4MSvpDE4/UNjc9uGPbEWO
-woR31gMTp4pHK/HOe72jsAwjMHx0YFSDDk/A8QolreRvoucjTE7uVK2rSngLn35P
-vmQKZVZIYf7FLAQx3M5p9A71rfgvqnh2dph5VaFPaMMsqo5tpGMXhDo3ZHre/FMU
-kSn4I9Evqm/tWGDH9UlCEHIMe92e94+oJWbR5w3ryIZPSlydkCY2J4t799sr0eDS
-NX4U1CkZ2fIneOOu7nYeHjt2hHPCY+qIcwH6KkbWUY8ZPORh1ghO6ZfbgN63uozj
-nrWXQTRP+1CRlzhgg2k7r1Jv1bMbexHzpqW4551XlXlhPlxaamO2WvGKIwiKU+rY
-FGbbAczntqQjuyGOBTS+KYhs7u/jH+qFJ1LpUrSov20Qd0w6Reg0D56ER1vUIYQj
-kY355aY90Q8WBBxCjS47/7Su3R/Q8YO/yuSRE7MZp2NUiUpbAOmjE10jV7QRI1dk
-9cIyEDkv1jyswjDJ2tE99fssPp2d8AzVDm71xB7s1QUpXQt1z7ZtSmugbfHTrc0m
-rpIwCMtUuXN+7mVrh85b
-=ggW7
------END PGP SIGNATURE-----
+> Oleg.
 
---mhjHhnbe5PrRcwjY--
+Sebastian
