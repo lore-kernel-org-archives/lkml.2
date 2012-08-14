@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2HNOX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:23:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9166 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756371Ab2HNOXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:23:54 -0400
-Message-ID: <502A5F70.3010607@parallels.com>
-Date: Tue, 14 Aug 2012 18:23:44 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1756436Ab2HNOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:24:29 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41703 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756368Ab2HNOYZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 10:24:25 -0400
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 7/8] fs, notify: Add procfs fdinfo helper v3
-References: <20120814140342.354405844@openvz.org> <20120814140620.374705810@openvz.org>
-In-Reply-To: <20120814140620.374705810@openvz.org>
+In-Reply-To: <20120814114856.GA17040@linux-mips.org>
+References: <1344862344-27434-1-git-send-email-chenhc@lemote.com>
+	<20120814114856.GA17040@linux-mips.org>
+Date: Tue, 14 Aug 2012 22:24:23 +0800
+X-Google-Sender-Auth: OdjvaVSow-eFKblR3wnQTBWGSpk
+Message-ID: <CAAhV-H7s0Fc0TVLaJoVWschvoZGnZtiQ1X1fS61H_+=a5Tc0Aw@mail.gmail.com>
+Subject: Re: [PATCH V2] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
+From: Huacai Chen <chenhc@lemote.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>,
+        Yong Zhang <yong.zhang@windriver.com>, stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2012 06:03 PM, Cyrill Gorcunov wrote:
-> This allow us to print out fsnotify details such as
-> watchee inode, device, mask and file handle.
-> 
-> For example for inotify objects the output is
-> 
->  | pos: 0
->  | flags:       02000000
->  | inotify wd:        3 ino:             9e7e sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 7e9e0000640d1b6d
->  | inotify wd:        2 ino:             a111 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 11a1000020542153
->  | inotify wd:        1 ino:            6b149 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 49b1060023552153
-> 
-> For fanotify it is like
-> 
->  | pos: 0
->  | flags:       02
->  | fanotify ino:            68f71 sdev:   800013 mask:        1 ignored_mask: 40000000 fhandle-bytes:        8 fhandle-type:        1 f_handle: 718f0600b9f42053
->  | fanotify mnt_id:       13 mask:        1 ignored_mask: 40000000
-> 
-> This feature is CONFIG_CHECKPOINT_RESTORE only. To minimize
-> impact on general fsnotify code the new functionality is gathered
-> in fs/notify/fdinfo.c file mostly.
-> 
-> v2:
->  - append missing colons to terms
-> v3:
->  - continue from pervious position in list on ->next
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Al Viro <viro@ZenIV.linux.org.uk>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: James Bottomley <jbottomley@parallels.com>
+On Tue, Aug 14, 2012 at 7:48 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
+> On Mon, Aug 13, 2012 at 08:52:24PM +0800, Huacai Chen wrote:
+>
+>> When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
+>> And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
+>> empty function but attempt to actually disable the nonboot cpus. Since
+>> system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
+>> disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
+>> poweroff failure.
+>
+>> diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+>> index e9a5fd7..69b17a9 100644
+>> --- a/arch/mips/kernel/process.c
+>> +++ b/arch/mips/kernel/process.c
+>> @@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
+>>                       }
+>>               }
+>>  #ifdef CONFIG_HOTPLUG_CPU
+>> -             if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
+>> -                 (system_state == SYSTEM_RUNNING ||
+>> -                  system_state == SYSTEM_BOOTING))
+>> +             if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+>
+> Looks good - but I'm wondering if the "!cpu_isset(cpu, cpu_callin_map)"
+> can be removed as well?
+For X86, IA64, ARM, SPARC64 and most other arch, "!cpu_online(cpu)" is
+the only condition of play_dead(). I keep "!cpu_isset(cpu,
+cpu_callin_map)" because this does't refuse poweroff and I don't know
+why the old condition of play_dead() is so complex.
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+>
+> Also, which -stable branches is this patch applicable?
+3.3, 3.4 and 3.5 branch can use it, 3.2 and earlier kernels should do
+some small changes.
 
+>
+>   Ralf
+>
