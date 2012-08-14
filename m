@@ -1,84 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2HNUum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:50:42 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55040 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757401Ab2HNUuk (ORCPT
+	id S1757543Ab2HNUvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:51:05 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:43734 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757401Ab2HNUvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:50:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <2226930.JeU38gc4Sp@dtor-d630.eng.vmware.com>
-References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
-	<1344807757-2217-3-git-send-email-rydberg@euromail.se>
-	<CAF8JNhJzu9wW52PbydVuH9y8TwOs=mPO0DJn0aJBpsh-wETzuQ@mail.gmail.com>
-	<2226930.JeU38gc4Sp@dtor-d630.eng.vmware.com>
-Date: Tue, 14 Aug 2012 13:50:38 -0700
-Message-ID: <CAF8JNh+sLixXBw7zLFnLSnhR8rq+=cxXm724yJoF9+v9-4fOyA@mail.gmail.com>
-Subject: Re: [PATCH 02/19] Input: Improve the events-per-packet estimate
-From: Ping Cheng <pinglinux@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Aug 2012 16:51:02 -0400
+From: Trevor Brandt <tjbrandt@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>, Eric Paris <eparis@redhat.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Trevor Brandt <tjbrandt@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Cc: team-fjord@googlegroups.com
+Subject: [PATCH] sched: Support compiling out real-time scheduling with REALTIME_SCHED.
+Date: Tue, 14 Aug 2012 13:50:09 -0700
+Message-Id: <1344977423-28900-1-git-send-email-tjbrandt@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <y>
+References: <y>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 12:53 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tuesday, August 14, 2012 12:32:21 PM Ping Cheng wrote:
->> On Sun, Aug 12, 2012 at 2:42 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > Many MT devices send a number of keys along with the mt information.
->> > This patch makes sure that there is room for them in the packet
->> > buffer.
->> >
->> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->> > ---
->> >
->> >  drivers/input/input.c | 10 +++++++---
->> >  1 file changed, 7 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/drivers/input/input.c b/drivers/input/input.c
->> > index 6e90705..8ebf116 100644
->> > --- a/drivers/input/input.c
->> > +++ b/drivers/input/input.c
->> > @@ -1777,6 +1777,9 @@ static unsigned int
->> > input_estimate_events_per_packet(struct input_dev *dev)>
->> >                 if (test_bit(i, dev->relbit))
->> >
->> >                         events++;
->> >
->> > +       /* Make room for KEY and MSC events */
->> > +       events += 7;
->>
->> Hi Henrik,
->>
->> It is nice to get rid of the redundant pieces and to incorporate
->> common functions. Thank you.
->>
->> I have a question about the code above though.  Why do we use 7
->> instead of going through the keys like:
->>
->>       for (i = 0; i < KEY_MAX; i++)
->>               if (test_bit(i, dev->keybit))
->>                       events++;
->
-> Because that would result in gross over-estimation for many devices -
-> my keyboard has 100+ keys but it never sends all of them in one event
-> frame, not even if I can get a cat to lay on it ;)
+Adds support for compiling out the real-time scheduler (SCHED_FIFO
+and SCHED_RR) to save space. Changes sched_set_stop_task to use
+SCHED_NORMAL rather than SCHED_FIFO, since the kernel only uses this
+function as a fake scheduling priority for userspace to read to avoid
+exposing the stop class to userspace. Bloat-o-meter gives a space
+savings of 1877 bytes with REALTIME_SCHED turned off.
 
-Thanks for the prompt reply. I thought you were on vacation ;-).
+Userspace works fine with REALTIME_SCHED turned off. Processes
+attempting to set a real-time scheduling policy get EINVAL, exactly
+the response that the sched_setscheduler manpage documents you will
+get if the "scheduling policy is not one of the recognized policies."
 
-So, what device are we talking about here? I thought it is a touch
-device with a few extra buttons, which are reported as key events. Am
-I missing something?
+Signed-off-by: Trevor Brandt <tjbrandt@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ init/Kconfig             |    8 ++++++++
+ kernel/sched/Makefile    |    3 ++-
+ kernel/sched/core.c      |   14 ++++++--------
+ kernel/sched/rt.c        |    2 --
+ kernel/sched/sched.h     |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/stop_task.c |    4 ++++
+ 6 files changed, 66 insertions(+), 11 deletions(-)
 
-If it is a touch device, we won't have too many buttons. So,
-test_bit(i, dev->keybit) won't be true for more than the number of
-buttons that declared by __set_bit().
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..768dc76 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -27,6 +27,13 @@ config IRQ_WORK
+ 	bool
+ 	depends on HAVE_IRQ_WORK
+ 
++config REALTIME_SCHED
++	bool "Realtime Scheduler" if EXPERT
++	default y
++	help
++	  This option enables support for the realtime scheduler and the
++	  corresponding scheduling classes SCHED_FIFO and SCHED_RR.
++
+ menu "General setup"
+ 
+ config EXPERIMENTAL
+@@ -753,6 +760,7 @@ config CFS_BANDWIDTH
+ 
+ config RT_GROUP_SCHED
+ 	bool "Group scheduling for SCHED_RR/FIFO"
++	depends on REALTIME_SCHED
+ 	depends on EXPERIMENTAL
+ 	depends on CGROUP_SCHED
+ 	default n
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 9a7dd35..a9bee25 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -11,7 +11,8 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
+ 
+-obj-y += core.o clock.o idle_task.o fair.o rt.o stop_task.o
++obj-y += core.o clock.o idle_task.o fair.o stop_task.o
++obj-$(CONFIG_REALTIME_SCHED) += rt.o
+ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 478a04c..3579286 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -85,6 +85,8 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+ 
++struct rt_bandwidth def_rt_bandwidth;
++
+ void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
+ {
+ 	unsigned long delta;
+@@ -959,19 +961,15 @@ static int irqtime_account_si_update(void)
+ 
+ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ {
+-	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
++	struct sched_param param = { .sched_priority = 0 };
+ 	struct task_struct *old_stop = cpu_rq(cpu)->stop;
+ 
+ 	if (stop) {
+ 		/*
+-		 * Make it appear like a SCHED_FIFO task, its something
++		 * Make it appear like a SCHED_NORMAL task, its something
+ 		 * userspace knows about and won't get confused about.
+-		 *
+-		 * Also, it will make PI more or less work without too
+-		 * much confusion -- but then, stop work should not
+-		 * rely on PI working anyway.
+ 		 */
+-		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
++		sched_setscheduler_nocheck(stop, SCHED_NORMAL, &param);
+ 
+ 		stop->sched_class = &stop_sched_class;
+ 	}
+@@ -983,7 +981,7 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ 		 * Reset it back to a normal scheduling class so that
+ 		 * it can die in pieces.
+ 		 */
+-		old_stop->sched_class = &rt_sched_class;
++		old_stop->sched_class = &fair_sched_class;
+ 	}
+ }
+ 
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index f42ae7f..4100803 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -9,8 +9,6 @@
+ 
+ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun);
+ 
+-struct rt_bandwidth def_rt_bandwidth;
+-
+ static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
+ {
+ 	struct rt_bandwidth *rt_b =
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..ed41cb7 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -47,6 +47,8 @@ extern __read_mostly int scheduler_running;
+  */
+ #define RUNTIME_INF	((u64)~0ULL)
+ 
++#ifdef CONFIG_REALTIME_SCHED
++
+ static inline int rt_policy(int policy)
+ {
+ 	if (policy == SCHED_FIFO || policy == SCHED_RR)
+@@ -59,6 +61,19 @@ static inline int task_has_rt_policy(struct task_struct *p)
+ 	return rt_policy(p->policy);
+ }
+ 
++#else /* CONFIG_REALTIME_SCHED */
++
++static inline int rt_policy(int policy)
++{
++	return 0;
++}
++static inline int task_has_rt_policy(struct task_struct *p)
++{
++	return 0;
++}
++
++#endif /* CONFIG_REALTIME_SCHED */
++
+ /*
+  * This is the priority-queue data structure of the RT scheduling class:
+  */
+@@ -190,8 +205,17 @@ extern void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b);
+ extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
+ extern void unthrottle_cfs_rq(struct cfs_rq *cfs_rq);
+ 
++#ifdef CONFIG_REALTIME_SCHED
+ extern void free_rt_sched_group(struct task_group *tg);
+ extern int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent);
++#else
++static inline void free_rt_sched_group(struct task_group *tg) { }
++static inline int alloc_rt_sched_group(struct task_group *tg,
++			struct task_group *parent)
++{
++	return 1;
++}
++#endif
+ extern void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
+ 		struct sched_rt_entity *rt_se, int cpu,
+ 		struct sched_rt_entity *parent);
+@@ -852,7 +876,11 @@ enum cpuacct_stat_index {
+    for (class = sched_class_highest; class; class = class->next)
+ 
+ extern const struct sched_class stop_sched_class;
++#ifdef CONFIG_REALTIME_SCHED
+ extern const struct sched_class rt_sched_class;
++#else
++static const struct sched_class rt_sched_class = { };
++#endif
+ extern const struct sched_class fair_sched_class;
+ extern const struct sched_class idle_sched_class;
+ 
+@@ -874,15 +902,29 @@ extern void sysrq_sched_debug_show(void);
+ extern void sched_init_granularity(void);
+ extern void update_max_interval(void);
+ extern void update_group_power(struct sched_domain *sd, int cpu);
++#ifdef CONFIG_REALTIME_SCHED
+ extern int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu);
+ extern void init_sched_rt_class(void);
++#else
++static inline int update_runtime(struct notifier_block *nfb,
++			unsigned long action, void *hcpu)
++{
++	return 0;
++}
++static inline void init_sched_rt_class(void) { }
++#endif
+ extern void init_sched_fair_class(void);
+ 
+ extern void resched_task(struct task_struct *p);
+ extern void resched_cpu(int cpu);
+ 
+ extern struct rt_bandwidth def_rt_bandwidth;
++#ifdef CONFIG_REALTIME_SCHED
+ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
++#else
++static inline void init_rt_bandwidth(struct rt_bandwidth *rt_b,
++			u64 period, u64 runtime) { }
++#endif
+ 
+ extern void update_cpu_load(struct rq *this_rq);
+ 
+@@ -1150,7 +1192,11 @@ extern void print_cfs_stats(struct seq_file *m, int cpu);
+ extern void print_rt_stats(struct seq_file *m, int cpu);
+ 
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
++#ifdef CONFIG_REALTIME_SCHED
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
++#else
++static inline void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq) { }
++#endif
+ extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ 
+ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index 7b386e8..5c29766 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -83,7 +83,11 @@ get_rr_interval_stop(struct rq *rq, struct task_struct *task)
+  * Simple, special scheduling class for the per-CPU stop tasks:
+  */
+ const struct sched_class stop_sched_class = {
++#ifdef CONFIG_REALTIME_SCHED
+ 	.next			= &rt_sched_class,
++#else
++	.next			= &fair_sched_class,
++#endif
+ 
+ 	.enqueue_task		= enqueue_task_stop,
+ 	.dequeue_task		= dequeue_task_stop,
+-- 
+1.7.9.5
 
-I would think we could play a keyboard (this keyboard does not have
-letters on it ;-) with ten fingers.
-
-Ping
