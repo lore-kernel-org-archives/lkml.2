@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab2HNI0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:26:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34883 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab2HNIZ7 (ORCPT
+	id S1754377Ab2HNI0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:26:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:38347 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab2HNI0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:25:59 -0400
+	Tue, 14 Aug 2012 04:26:43 -0400
+Message-ID: <502A0BB1.4030608@linux.vnet.ibm.com>
+Date: Tue, 14 Aug 2012 13:56:25 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1344527635-6163-8-git-send-email-lee.jones@linaro.org>
-References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
-	<1344527635-6163-8-git-send-email-lee.jones@linaro.org>
-Date: Tue, 14 Aug 2012 10:25:59 +0200
-Message-ID: <CACRpkdbYP3FNNC1nR9c6aYRsqpeaBJjQO4GKeuk05NUBkNcRpg@mail.gmail.com>
-Subject: Re: [PATCH 7/8] mfd: Use the AB8500's IRQ domain to convert hwirq to virq
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: tglx@linutronix.de, mingo@kernel.org, paulmck@linux.vnet.ibm.com,
+        josh@joshtriplett.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] preempt/hardirq.h: Fix comment about PREEMPT_ACTIVE bit
+ location
+References: <20120720192459.6149.14821.stgit@srivatsabhat.in.ibm.com> <1343706583.27983.28.camel@gandalf.stny.rr.com>
+In-Reply-To: <1343706583.27983.28.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+x-cbid: 12081408-9574-0000-0000-000003F818A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 5:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 07/31/2012 09:19 AM, Steven Rostedt wrote:
+> On Sat, 2012-07-21 at 00:54 +0530, Srivatsa S. Bhat wrote:
+>> PREEMPT_ACTIVE flag is bit 27, not 28. Fix the comment.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  include/linux/hardirq.h |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+>> index bb7f309..305f23c 100644
+>> --- a/include/linux/hardirq.h
+>> +++ b/include/linux/hardirq.h
+>> @@ -22,7 +22,7 @@
+>>   *
+>>   * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
+>>   * - bit 26 is the NMI_MASK
+>> - * - bit 28 is the PREEMPT_ACTIVE flag
+>> + * - bit 27 is the PREEMPT_ACTIVE flag
+> 
+> Sorry but in arch/x86/include/asm/thread_info.h we have:
+> 
+> #define PREEMPT_ACTIVE		0x10000000
+> 
+> Which happens to be the 28th bit, not 27th. Although, if an arch did not
+> define PREEMPT_ACTIVE it would be 27th.
+> 
+> Perhaps the correct thing to do is to say:
+> 
+>   By default the following bits are defined as:
+> 	[...]
+>   Different architectures may modify these.
+> 
+> And then add your change.
+> 
 
-> Before the AB8500 had its own IRQ domain, the IRQ handler would take
-> the fired local IRQ (hwirq) and add it to the irq_base to convert it
-> to an IRQ number which Linux would understand (virq). However, the
-> IRQ base is not always used anymore since we can make use of Linear
-> domains. It's better to use the AB8500 hwirq -> virq mapping helper
-> function to convert them instead. That's what we do here.
->
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Thanks a lot for your suggestions Steve! And sorry for the delay..
+I'll post the updated patch (which applies on latest Linus master) as a reply
+to this thread.
 
-This looks better that what was in there before so
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Regards,
+Srivatsa S. Bhat
 
-However:
-
-> @@ -501,8 +501,9 @@ static irqreturn_t ab8500_irq(int irq, void *dev)
->                 do {
->                         int bit = __ffs(value);
->                         int line = i * 8 + bit;
-> +                       int virq = ab8500_irq_get_virq(ab8500, line);
->
-> -                       handle_nested_irq(ab8500->irq_base + line);
-> +                       handle_nested_irq(virq);
->                         value &= ~(1 << bit);
-
-Still this ab8500_irq_get_virq() business. But is this a static local function
-in the ab8500-core.c now? Then it's fine, it's the kernel-wide interface
-that is the problem.
-
-Yours,
-Linus Walleij
