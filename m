@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab2HNEHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 00:07:51 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:40613 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2HNEHt (ORCPT
+	id S1751579Ab2HNEIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 00:08:54 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53403 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab2HNEIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 00:07:49 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-55-5029cf1325f6
-Message-id: <5029CE38.4000407@samsung.com>
-Date: Tue, 14 Aug 2012 13:04:08 +0900
-From: IAN CHEN <ian.cy.chen@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com, ian.cy.chen@samsung.com
-Subject: [PATCH v2] mmc: card: Skip secure option for MoviNAND.
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jAV3h85oBBn1TzC0u75rDZnHkfz+j
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBn7/1xlLpgqXrFi3jXmBsbjwl2MnBwSAiYSa//8YIaw
-	xSQu3FvPBmILCSxilGi/7dHFyAVkv2aUaLn6ihUkwSugJdG5cTJYA4uAqsSW7V9YQGw2AQ2J
-	7wefMILYogJhEoveH4CqF5T4MfkeC8ggEYGNjBKnO/aCOcwCjYwS895NB6sSFrCXmLbzGthq
-	ZgEdif2t06BseYnNa94yT2Dkm4Vk2CwkZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpec
-	n7uJERxez6R3MK5qsDjEKMDBqMTDW5ioGSDEmlhWXJl7iFGCg1lJhPd+D1CINyWxsiq1KD++
-	qDQntfgQozQHi5I4r4n3V38hgfTEktTs1NSC1CKYLBMHp1QDo4gzo/YH/cRSt5bKBf8M1+82
-	SLwx75K0v/K31UaBc4Ttly6/dvT0k6VHH/g0qfqsZ1T3O2+iPzU9h5Xt6Y0GQdOqoMXn9kzd
-	xRa5Y7FXqk3iAz4Wyf9CK1qzjhVJ35zG/DHL9elN//21hQsnTOj09t2w7fSRvnP7Uxv6+K6p
-	8C3NqQnsNr8sp8RSnJFoqMVcVJwIAIEiLB4rAgAA
-X-TM-AS-MML: No
+	Tue, 14 Aug 2012 00:08:52 -0400
+Message-ID: <1344917324.25753.0.camel@Cruz-Laptop>
+Subject: Re: [PATCH 5/5] Fixes a potential bug in android/logger.c
+From: Cruz Julian Bishop <cruzjbishop@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Ryan Mallon <rmallon@gmail.com>, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 14 Aug 2012 14:08:44 +1000
+In-Reply-To: <20120814020111.GB26758@kroah.com>
+References: <1343796860-7025-1-git-send-email-cruzjbishop@gmail.com>
+	 <1343796860-7025-6-git-send-email-cruzjbishop@gmail.com>
+	 <5019C0D4.5010403@gmail.com> <20120814020111.GB26758@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several MoviNAND, there are some known issue with secure option.
-For these specific MoviNAND device, we skip secure option.
+On Mon, 2012-08-13 at 19:01 -0700, Greg KH wrote:
+> On Thu, Aug 02, 2012 at 09:50:44AM +1000, Ryan Mallon wrote:
+> > On 01/08/12 14:54, Cruz Julian Bishop wrote:
+> > > Previously, when calling is_between(a, b, c), the calculation was wrong.
+> > > It counted C as between A and B if C was equal to B, but not A.
+> > > 
+> > > Example of this are:
+> > > 
+> > > is_between(1, 10, 10) = 1 (Expected: 0)
+> > > is_between(1, 10, 1) = 0 (Expected: 0)
+> > > is_between(20, 10, 10) = 1 (Expected: 0)
+> > > 
+> > > And so on and so forth.
+> > > 
+> > > Obviously, ten is not a number between one and ten - only two to eight are, so I made this patch :)
+> > 
+> > Is nine not a number between one and ten? :-p.
+> > 
+> > The question with a patch like this is whether the function's
+> > documentation, which says it returns 1 if a < c < b is wrong, or whether
+> > the implementation, which does a < c <= b is wrong. If the documentation
+> > is wrong, and something is relying on the current implementation, then
+> > this patch might actually break things.
+> 
+> I agree, which is correct?  I'd stick with the code for now, care to fix
+> the comment instead?
+> 
+> greg k-h
 
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
----
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 24 insertions(+), 1 deletions(-)
+Sure, I'll send a new patch for it soon
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index f1c84de..a01cc14 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
-struct request *req)
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SKIP_SECURE))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1716,6 +1717,7 @@ force_ro_fail:
- #define CID_MANFID_SANDISK	0x2
- #define CID_MANFID_TOSHIBA	0x11
- #define CID_MANFID_MICRON	0x13
-+#define CID_MANFID_SAMSUNG	0x15
 
- static const struct mmc_fixup blk_fixups[] =
- {
-@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
- 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
-
-+	/*
-+	 * Some issue about secure erase/secure trim for Samsung MoviNAND
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_MOVINAND_SECURE),
-+
- 	END_FIXUP
- };
-
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 111aca5..b639a92 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -239,6 +239,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
-multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
-bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SKIP_SECURE (1<<10)		/* Skip secure for erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
--- 
-1.7.0.4
