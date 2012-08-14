@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2HNAXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 20:23:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:42934 "EHLO ozlabs.org"
+	id S1754713Ab2HNAXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 20:23:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:37080 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab2HNAXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753901Ab2HNAXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Aug 2012 20:23:04 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to balloon pages
-In-Reply-To: <20120813084123.GF14081@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com> <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com> <20120813084123.GF14081@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        "David Howells" <dhowells@redhat.com>
+Subject: Re: linux-next: Tree for July 26 (uml)
+In-Reply-To: <502932A0.3060001@xenotime.net>
+References: <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 14 Aug 2012 09:29:49 +0930
-Message-ID: <87lihis5qi.fsf@rustcorp.com.au>
+Date: Tue, 14 Aug 2012 09:43:38 +0930
+Message-ID: <87a9xys53h.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012 11:41:23 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Fri, Aug 10, 2012 at 02:55:15PM -0300, Rafael Aquini wrote:
-> > +/*
-> > + * Populate balloon_mapping->a_ops->freepage method to help compaction on
-> > + * re-inserting an isolated page into the balloon page list.
-> > + */
-> > +void virtballoon_putbackpage(struct page *page)
-> > +{
-> > +	spin_lock(&pages_lock);
-> > +	list_add(&page->lru, &vb_ptr->pages);
-> > +	spin_unlock(&pages_lock);
+On Mon, 13 Aug 2012 10:00:16 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 07/26/2012 08:18 AM, Randy Dunlap wrote:
 > 
-> Could the following race trigger:
-> migration happens while module unloading is in progress,
-> module goes away between here and when the function
-> returns, then code for this function gets overwritten?
-> If yes we need locking external to module to prevent this.
-> Maybe add a spinlock to struct address_space?
+> > On 07/25/2012 10:04 PM, Stephen Rothwell wrote:
+> > 
+> >> Hi all,
+> >>
+> >> Please do not add anything to linux-next included branches/series that is
+> >> destined for v3.7 until after v3.6-rc1 is released.
+> >>
+> >> Reminder: do not rebase your branches before asking Linus to pull them ...
+> >>
+> >> Changes since 20120725:
+> >>
+> > 
+> > 
+> > 
+> > uml on x86_64 (defconfig) build fails with:
+> > 
+> >   CC      arch/x86/um/../kernel/module.o
+> > arch/x86/um/../kernel/module.c:96:5: error: redefinition of 'apply_relocate_add'
+> > include/linux/moduleloader.h:64:19: note: previous definition of 'apply_relocate_add' was here
+> > make[2]: *** [arch/x86/um/../kernel/module.o] Error 1
+> > 
+> > 
+> > 
+> 
+> 
+> 
+> Adding Rusty.
+> 
+> 
+> This build error is still happening for uml on x86_64
+> in linux-next 20120813.
 
-The balloon module cannot be unloaded until it has leaked all its pages,
-so I think this is safe:
-
-        static void remove_common(struct virtio_balloon *vb)
-        {
-        	/* There might be pages left in the balloon: free them. */
-        	while (vb->num_pages)
-        		leak_balloon(vb, vb->num_pages);
+No huge surprise, I'll punt this to David Howells :)
 
 Cheers,
 Rusty.
