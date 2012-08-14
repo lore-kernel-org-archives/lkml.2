@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2HNWpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:45:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33649 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2HNWpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:45:35 -0400
-Date: Wed, 15 Aug 2012 00:45:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+	id S1752817Ab2HNWrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:47:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab2HNWra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 18:47:30 -0400
+Date: Wed, 15 Aug 2012 01:48:16 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-In-Reply-To: <20120814215632.GE25632@google.com>
-Message-ID: <alpine.LFD.2.02.1208150005090.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org> <20120813233520.GG25632@google.com> <alpine.LFD.2.02.1208142055260.32033@ionos> <20120814192203.GY25632@google.com> <alpine.LFD.2.02.1208142243500.32033@ionos>
- <20120814215632.GE25632@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120814224816.GB29180@redhat.com>
+References: <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
+ <20120813084123.GF14081@redhat.com>
+ <20120814182244.GB13338@t510.redhat.com>
+ <20120814195139.GA28870@redhat.com>
+ <20120814195916.GC28870@redhat.com>
+ <20120814200830.GD22133@t510.redhat.com>
+ <20120814202401.GB28990@redhat.com>
+ <20120814202949.GF22133@t510.redhat.com>
+ <20120814204906.GD28990@redhat.com>
+ <20120814213412.GG22133@t510.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814213412.GG22133@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
-
-On Tue, 14 Aug 2012, Tejun Heo wrote:
-> On Tue, Aug 14, 2012 at 11:03:33PM +0200, Thomas Gleixner wrote:
-> > Why should -next have different rules to mainline?
+On Tue, Aug 14, 2012 at 06:34:13PM -0300, Rafael Aquini wrote:
+> On Tue, Aug 14, 2012 at 11:49:06PM +0300, Michael S. Tsirkin wrote:
+> > On Tue, Aug 14, 2012 at 05:29:50PM -0300, Rafael Aquini wrote:
+> > > On Tue, Aug 14, 2012 at 11:24:01PM +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Aug 14, 2012 at 05:08:31PM -0300, Rafael Aquini wrote:
+> > > > > On Tue, Aug 14, 2012 at 10:59:16PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > What if there is more than one balloon device?
+> > > > > > > > 
+> > > > > > > > Is it possible to load this driver twice, or are you foreseeing a future case
+> > > > > > > > where this driver will be able to manage several distinct memory balloons for
+> > > > > > > > the same guest?
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > Second.
+> > > > > > > It is easy to create several balloons they are just
+> > > > > > > pci devices.
+> > > > > >  
+> > > > > > 
+> > > > > > 
+> > > > > > and it might not be too important to make it work but
+> > > > > > at least would be nice not to have a crash in this
+> > > > > > setup.
+> > > > > >
+> > > > > Fair enough. For now, as I believe it's safe to assume we are only inflating one
+> > > > > balloon per guest, I'd like to propose this as a future enhancement. Sounds
+> > > > > good?
+> > > > >  
+> > > > 
+> > > > Since guest crashes when it's not the case, no it doesn't, sorry :(.
+> > > >
+> > > Ok, but right now this driver only takes care of 1 balloon per guest,
+> > 
+> > It does? Are you sure? There is no global state as far as I can see. So
+> > I can create 2 devices and driver will happily create two instances,
+> > each one can be inflated/deflated independently.
+> > 
+> > > so how
+> > > could this approach crash it? 
+> > 
+> > Add device. inflate. Add another device. inflate. deflate. unplug.
+> > Now you have pointer to freed memory and when mm touches
+> > page from first device, you ge use after free.
+> > 
+> > > Your point is a good thing to be on a to-do list for future enhancements, but
+> > > it's not a dealbreaker for the present balloon driver implementation, IMHO.
+> > > 
+> > 
+> > Yes it looks like a dealbreaker to me.
 > 
-> It's faster paced and trees revert.  The message specifically was a
-
-Nonsense. It's a tree which gets stuff which is cooked and not a tree
-for random experimental crap. Period.
-
-> ping for objection and I was waiting for further response and would
-> have waited until early next week (and written another "applied"
-> message which would be another chance to veto).  And even if that
-> isn't enough for whatever reason and you or anyone else object it
-> afterwards, it'll get reverted / reouted differently / whatever.
+> Sorry. You're right, I'm wrong.
 > 
-> As for subsystem boundary, at least I cross them and let others cross
-> if the changes aren't significant and the proposed changes are likely
-> to be be used only in that tree for the devel window.  The timer
-> change seems borderline to me.  It isn't trivial but doesn't seem all
-> that invasive to me.
+> I'll get back to the scracthpad to overcome this constraint. I believe the way
+> this patch was at its v4 revision (wrt this particular case) could possibly
+> address this concern of yours.
 
-It does not matter at all whether you think it's invasive or
-not. There is a reason why we have maintainers for different parts of
-the kernel who are responsible for deciding what's invasive.
+Almost. We still have a global balloon_mapping. The only reason for
+it to exist seems solely to detect balloon mappings, so it
+can just be replaced by a flag in the mapping, or in mapping
+ops, or elsewhere. Also, please add APIs to mm so we can
+avoid doing internal mm stuff like
 
-And we have very well worked out mechanisms regarding cross tree
-changes, i.e. providing minimal trees to pull for other maintainers.
+INIT_RADIX_TREE(&balloon_mapping->page_tree, GFP_ATOMIC | __GFP_NOWARN);
 
-> I don't think any critical protocol is breached here.
+in the driver. It should be
+alloc_address_mapping(&virtio_balloon_aops);
+free_address_mapping
 
-May I recommend that you make yourself familiar with the way how this
-community works?
+Make page->mapping use rcu, and sync rcu in
+free_address_mapping.
 
-> If you're upset about the style of the ping, I apologize.  I'll try
-> to be more sensitive when pinging you.
-
-It's not about me. You are trying to play the system.
-
-Thanks,
-
-	tglx
-
-
+-- 
+MST
