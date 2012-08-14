@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2HNJYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 05:24:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51371 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab2HNJYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 05:24:05 -0400
-Date: Tue, 14 Aug 2012 10:23:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jim Schutt <jaschut@sandia.gov>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Improve hugepage allocation success rates under
- load V3
-Message-ID: <20120814092358.GJ4177@suse.de>
-References: <1344520165-24419-1-git-send-email-mgorman@suse.de>
- <5023FE83.4090200@sandia.gov>
- <20120809204630.GJ12690@suse.de>
- <50243BE0.9060007@sandia.gov>
- <20120810110225.GO12690@suse.de>
- <502542C7.8050306@sandia.gov>
- <20120812202257.GA4177@suse.de>
- <50296522.2000809@sandia.gov>
+	id S1755516Ab2HNJcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 05:32:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50049 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab2HNJct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 05:32:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: wei_wang@realsil.com.cn
+Subject: Re: [PATCH 1/2] drivers/mfd: Add realtek pcie card reader driver
+Date: Tue, 14 Aug 2012 09:32:26 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, sameo@linux.intel.com, bp@alien8.de
+References: <1344922213-19581-1-git-send-email-wei_wang@realsil.com.cn>
+In-Reply-To: <1344922213-19581-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50296522.2000809@sandia.gov>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208140932.27276.arnd@arndb.de>
+X-Provags-ID: V02:K0:2EWLEaj567UAc2OIIwMqMipx1Y9wMQfssciNc3CNPWE
+ OdgATg2h++1TTEeUXbjvp84twuEd1D1xSwZV6WeHu1+WglhKbf
+ x6A0eWa53D12eHBRqzVuKD1pdOwvB7UDZjHgZisueJXLuEkh3M
+ m+pwKSEIiQJoNxhW/yiTHL2MJJYMcwSECC4DdhxwrKicRwGJ3O
+ yCC7Kdd/uB5pvZm+8wCCN4QGnjFvhMvHsPtbT9RgAAYXf7W/zd
+ OKG7I7/VtevZ4kmjOC95gx3KnExcNNq/QdXacecElpniZERuR8
+ rcT3Pg5Yb1rgotR4Ecfru9j/HLDtdhzIAc+J1BpdYGcutrxV3K
+ REtnMcgDdZipM7LO1hEU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 02:35:46PM -0600, Jim Schutt wrote:
-> Hi Mel,
+On Tuesday 14 August 2012, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> On 08/12/2012 02:22 PM, Mel Gorman wrote:
+> Realtek PCI-E card reader driver adapts requests from upper-level
+> sdmmc/memstick layer to the real physical card reader.
 > 
-> >
-> >I went through the patch again but only found the following which is a
-> >weak candidate. Still, can you retest with the following patch on top and
-> >CONFIG_PROVE_LOCKING set please?
-> >
-> 
-> I've gotten in several hours of testing on this patch with
-> no issues at all, and no output from CONFIG_PROVE_LOCKING
-> (I'm assuming it would show up on a serial console).  So,
-> it seems to me this patch has done the trick.
-> 
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 
-Super.
+When you post a new version of patches, please add a version number in the
+subject line, like " [PATCH v3 1/2] drivers/mfd: Add realtek pcie card
+reader driver", to make it easier for people to know what has changed.
+It's also helpful to have a "[PATCH 0/XX]" as 'git format-patch
+--cover-letter' generates and list the changes to the previous versions
+of your patch in there. Best combine this with 'git send-email --thread
+--no-chain-reply', so all patches are sent in the same email thread as
+the introductory mail.
 
-> CPU utilization is staying under control, and write-out rate
-> is good.
-> 
+Finally, when you get an 'Acked-by' or 'Reviewed-by' tag from someone,
+please add that below your Signed-off-by.
 
-Even better.
+Your patches both look fine now, so you can add my
 
-> You can add my Tested-by: as you see fit.  If you work
-> up any refinements and would like me to test, please
-> let me know.
-> 
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
-I'll be adding your Tested-by and I'll keep you cc'd on the series. It'll
-look a little different because I'm expect to adjust it slightly to match
-Andrew's tree but there should be no major surprises and my expectation is
-that testing a -rc kernel after it gets merged is all that is necessary. I'm
-planning to backport this to -stable but it'll remain to be seen if I can
-convince the relevant maintainers that it should be merged.
-
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
+	Arnd
