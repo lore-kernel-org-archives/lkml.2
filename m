@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2HNWUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:20:10 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60419 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2HNWUI (ORCPT
+	id S1752392Ab2HNWVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:21:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46594 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2HNWVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:20:08 -0400
+	Tue, 14 Aug 2012 18:21:51 -0400
+Date: Wed, 15 Aug 2012 02:21:47 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
+ providers
+Message-ID: <20120814222147.GA21674@moon>
+References: <20120814140342.354405844@openvz.org>
+ <20120814140620.033884909@openvz.org>
+ <20120814183142.GH23464@ZenIV.linux.org.uk>
+ <20120814183558.GA1551@moon>
+ <20120814195649.GB31043@moon>
+ <20120814212721.GJ23464@ZenIV.linux.org.uk>
+ <20120814215616.GC31043@moon>
 MIME-Version: 1.0
-In-Reply-To: <1343530554.5373.3.camel@phoenix>
-References: <1343530482.5373.2.camel@phoenix>
-	<1343530554.5373.3.camel@phoenix>
-Date: Wed, 15 Aug 2012 00:20:07 +0200
-Message-ID: <CACRpkdYQZfun29PQxq1r1y1s04FJKzcmUENTh0mt4t3szRLcgg@mail.gmail.com>
-Subject: Re: [PATCH RFT 2/2] gpio: gpio-pch: Use spinlock for register access protection
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814215616.GC31043@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 29, 2012 at 4:55 AM, Axel Lin <axel.lin@gmail.com> wrote:
+On Wed, Aug 15, 2012 at 01:56:16AM +0400, Cyrill Gorcunov wrote:
+> > >  struct file_operations {
+> > >  	struct module *owner;
+> > > +	struct seq_operations *fdinfo_ops;
+> > 
+> > IDGI.  Why on the earth do you need the whole iterator?  All it takes
+> > is show_fdinfo(struct seq_file *m, struct file *f); have ->show() in
+> > your iterator (one going through the files) call that sucker for the
+> > file we are trying to show.
+> > 
+> > I think you are severely overdesigning that thing...
+> 
+> Hmm, in very first versions I've been using one ->show method, but
+> then I thought that this is not very correlate with seq-files idea
+> where for each record show/next sequence is called. I'll update (this
+> for sure will make code simplier, and I'll have to check for seq-file
+> overflow after seq_printf call to not continue printing data for too
+> long if buffer already out of space).
 
-> gpio_chip.can_sleep is 0, but current code uses mutex in pch_gpio_set
-> pch_gpio_get and pch_gpio_direction_input functions.
-> Thus those functions are not callable from interrupt context.
-> This patch converts mutex into spinlock.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Applied to my devel branch for the next merge window...
-
-Yours,
-Linus Walleij
+Al, I'll cook the whole series tomorrow and resend it for review,
+also I guess the new show_fdinfo() member in file-operations should
+be guarded with CONFIG_PROC_FS, right?
