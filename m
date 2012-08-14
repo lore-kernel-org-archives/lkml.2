@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2HNWVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:21:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46594 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2HNWVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:21:51 -0400
-Date: Wed, 15 Aug 2012 02:21:47 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
- providers
-Message-ID: <20120814222147.GA21674@moon>
-References: <20120814140342.354405844@openvz.org>
- <20120814140620.033884909@openvz.org>
- <20120814183142.GH23464@ZenIV.linux.org.uk>
- <20120814183558.GA1551@moon>
- <20120814195649.GB31043@moon>
- <20120814212721.GJ23464@ZenIV.linux.org.uk>
- <20120814215616.GC31043@moon>
+	id S1752474Ab2HNWWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:22:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41318 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095Ab2HNWWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 18:22:40 -0400
+Date: Wed, 15 Aug 2012 00:22:38 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
+Subject: Re: Bug in UDF, setting larger file size when data in ICB
+Message-ID: <20120814222238.GO7122@quack.suse.cz>
+References: <500D6B87.7070700@mev.co.uk>
+ <500D7F39.2000506@mev.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120814215616.GC31043@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <500D7F39.2000506@mev.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:56:16AM +0400, Cyrill Gorcunov wrote:
-> > >  struct file_operations {
-> > >  	struct module *owner;
-> > > +	struct seq_operations *fdinfo_ops;
-> > 
-> > IDGI.  Why on the earth do you need the whole iterator?  All it takes
-> > is show_fdinfo(struct seq_file *m, struct file *f); have ->show() in
-> > your iterator (one going through the files) call that sucker for the
-> > file we are trying to show.
-> > 
-> > I think you are severely overdesigning that thing...
+On Mon 23-07-12 17:43:37, Ian Abbott wrote:
+> On 2012-07-23 16:19, Ian Abbott wrote:
+> >Hi folks,
+> >
+> >in fs/udf/inode.c, udf_setsize(), if the new size is larger than the old
+> >size and the old data is in the ICB and the new size still fits in the
+> >ICB (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB and iinfo->i_lenAlloc
+> >= newsize), udf_extend_file() is called which promptly calls BUG()
+> >because it does not like this i_alloc_type value.
+> >
+> >I think the simplest fix would be to add a 'goto' after the assignment
+> >to iinfo->i_lenAlloc, bypassing the call to udf_extend_file().
 > 
-> Hmm, in very first versions I've been using one ->show method, but
-> then I thought that this is not very correlate with seq-files idea
-> where for each record show/next sequence is called. I'll update (this
-> for sure will make code simplier, and I'll have to check for seq-file
-> overflow after seq_printf call to not continue printing data for too
-> long if buffer already out of space).
+> Jan is on vacation until early August, so I submitted my own patch:
+> 
+> Date: Mon, 23 Jul 2012 17:39:29 +0100
+> Subject: [PATCH] udf: fix udf_setsize() for file data in ICB
+> Message-ID: <1343061569-3629-1-git-send-email-abbotti@mev.co.uk>
+  Thanks for the patch. I've added it to my tree and will send it to Linus
+soon.
 
-Al, I'll cook the whole series tomorrow and resend it for review,
-also I guess the new show_fdinfo() member in file-operations should
-be guarded with CONFIG_PROC_FS, right?
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
