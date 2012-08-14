@@ -1,187 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab2HNQll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:41:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582Ab2HNQli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756701Ab2HNQli (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 14 Aug 2012 12:41:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52489 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab2HNQlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 12:41:36 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
         Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/5] mm: have order > 0 compaction start near a pageblock with free pages
-Date: Tue, 14 Aug 2012 17:41:31 +0100
-Message-Id: <1344962492-1914-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 0/5] Improve hugepage allocation success rates under load V4
+Date: Tue, 14 Aug 2012 17:41:27 +0100
+Message-Id: <1344962492-1914-1-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1344962492-1914-1-git-send-email-mgorman@suse.de>
-References: <1344962492-1914-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit [7db8889a: mm: have order > 0 compaction start off where it left]
-introduced a caching mechanism to reduce the amount work the free page
-scanner does in compaction. However, it has a problem. Consider two process
-simultaneously scanning free pages
+Changelog since V3
+o Add patch to backoff compaction in the event of lock contention
+o Rebase to mmotm, cope with the removal of __GFP_NO_KSWAPD
+o Removed RFC
 
-				    			C
-Process A		M     S     			F
-		|---------------------------------------|
-Process B		M 	FS
+Changelog since V2
+o Capture !MIGRATE_MOVABLE pages where possible
+o Document the treatment of MIGRATE_MOVABLE pages while capturing
+o Expand changelogs
 
-C is zone->compact_cached_free_pfn
-S is cc->start_pfree_pfn
-M is cc->migrate_pfn
-F is cc->free_pfn
+Changelog since V1
+o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
+o Expanded changelogs a little
 
-In this diagram, Process A has just reached its migrate scanner, wrapped
-around and updated compact_cached_free_pfn accordingly.
+Allocation success rates have been far lower since 3.4 due to commit
+[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
+commit was introduced for good reasons and it was known in advance that
+the success rates would suffer but it was justified on the grounds that
+the high allocation success rates were achieved by aggressive reclaim.
+Success rates are expected to suffer even more in 3.6 due to commit
+[7db8889a: mm: have order > 0 compaction start off where it left] which
+testing has shown to severely reduce allocation success rates under load -
+to 0% in one case.
 
-Simultaneously, Process B finishes isolating in a block and updates
-compact_cached_free_pfn again to the location of its free scanner.
+This series aims to improve the allocation success rates without regressing
+the benefits of commit fe2c2a10. The series is based on latest mmotm and
+takes into account the __GFP_NO_KSWAPD flag is going away.
 
-Process A moves to "end_of_zone - one_pageblock" and runs this check
+Patch 1 updates a stale comment seeing as I was in the general area.
 
-                if (cc->order > 0 && (!cc->wrapped ||
-                                      zone->compact_cached_free_pfn >
-                                      cc->start_free_pfn))
-                        pfn = min(pfn, zone->compact_cached_free_pfn);
+Patch 2 updates reclaim/compaction to reclaim pages scaled on the number
+	of recent failures.
 
-compact_cached_free_pfn is above where it started so the free scanner skips
-almost the entire space it should have scanned. When there are multiple
-processes compacting it can end in a situation where the entire zone is
-not being scanned at all.  Further, it is possible for two processes to
-ping-pong update to compact_cached_free_pfn which is just random.
+Patch 3 captures suitable high-order pages freed by compaction to reduce
+	races with parallel allocation requests.
 
-Overall, the end result wrecks allocation success rates.
+Patch 4 fixes the upstream commit [7db8889a: mm: have order > 0 compaction
+	start off where it left] to enable compaction again
 
-There is not an obvious way around this problem without introducing new
-locking and state so this patch takes a different approach.
+Patch 5 identifies when compacion is taking too long due to contention
+	and aborts.
 
-First, it gets rid of the skip logic because it's not clear that it matters
-if two free scanners happen to be in the same block but with racing updates
-it's too easy for it to skip over blocks it should not.
+STRESS-HIGHALLOC
+		 3.6-rc1-akpm	  full-series
+Pass 1          36.00 ( 0.00%)    51.00 (15.00%)
+Pass 2          42.00 ( 0.00%)    63.00 (21.00%)
+while Rested    86.00 ( 0.00%)    86.00 ( 0.00%)
 
-Second, it updates compact_cached_free_pfn in a more limited set of
-circumstances.
+From
+http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
+I know that the allocation success rates in 3.3.6 was 78% in comparison to
+36% in in the current akpm tree. With the full series applied, the success
+rates are up to around 51% with some variability in the results. This is
+not as high a success rate but it does not reclaim excessively which is
+a key point.
 
-If a scanner has wrapped, it updates compact_cached_free_pfn to the end
-	of the zone. When a wrapped scanner isolates a page, it updates
-	compact_cached_free_pfn to point to the highest pageblock it
-	can isolate pages from.
+MMTests Statistics: vmstat
+Page Ins                                     3050912     3078892
+Page Outs                                    8033528     8039096
+Swap Ins                                           0           0
+Swap Outs                                          0           0
 
-If a scanner has not wrapped when it has finished isolated pages it
-	checks if compact_cached_free_pfn is pointing to the end of the
-	zone. If so, the value is updated to point to the highest
-	pageblock that pages were isolated from. This value will not
-	be updated again until a free page scanner wraps and resets
-	compact_cached_free_pfn.
+Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
+there were 71881 pages swapped out.
 
-This is not optimal and it can still race but the compact_cached_free_pfn
-will be pointing to or very near a pageblock with free pages.
+Direct pages scanned                           70942      122976
+Kswapd pages scanned                         1366300     1520122
+Kswapd pages reclaimed                       1366214     1484629
+Direct pages reclaimed                         70936      105716
+Kswapd efficiency                                99%         97%
+Kswapd velocity                             1072.550    1182.615
+Direct efficiency                                99%         85%
+Direct velocity                               55.690      95.672
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
----
- mm/compaction.c |   54 ++++++++++++++++++++++++++++--------------------------
- 1 file changed, 28 insertions(+), 26 deletions(-)
+The kswapd velocity changes very little as expected. kswapd velocity
+is around the 1000 pages/sec mark where as in kernel 3.3.6 with the high
+allocation success rates it was 8140 pages/second. Direct velocity is higher
+as a result of patch 2 of the series but this is expected and is acceptable.
+The direct reclaim and kswapd velocities change very little.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index a806a9c..c2d0958 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -437,6 +437,20 @@ static bool suitable_migration_target(struct page *page)
- }
- 
- /*
-+ * Returns the start pfn of the last page block in a zone.  This is the starting
-+ * point for full compaction of a zone.  Compaction searches for free pages from
-+ * the end of each zone, while isolate_freepages_block scans forward inside each
-+ * page block.
-+ */
-+static unsigned long start_free_pfn(struct zone *zone)
-+{
-+	unsigned long free_pfn;
-+	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+	free_pfn &= ~(pageblock_nr_pages-1);
-+	return free_pfn;
-+}
-+
-+/*
-  * Based on information in the current compact_control, find blocks
-  * suitable for isolating free pages from and then isolate them.
-  */
-@@ -475,17 +489,6 @@ static void isolate_freepages(struct zone *zone,
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
- 
--		/*
--		 * Skip ahead if another thread is compacting in the area
--		 * simultaneously. If we wrapped around, we can only skip
--		 * ahead if zone->compact_cached_free_pfn also wrapped to
--		 * above our starting point.
--		 */
--		if (cc->order > 0 && (!cc->wrapped ||
--				      zone->compact_cached_free_pfn >
--				      cc->start_free_pfn))
--			pfn = min(pfn, zone->compact_cached_free_pfn);
--
- 		if (!pfn_valid(pfn))
- 			continue;
- 
-@@ -528,7 +531,15 @@ static void isolate_freepages(struct zone *zone,
- 		 */
- 		if (isolated) {
- 			high_pfn = max(high_pfn, pfn);
--			if (cc->order > 0)
-+
-+			/*
-+			 * If the free scanner has wrapped, update
-+			 * compact_cached_free_pfn to point to the highest
-+			 * pageblock with free pages. This reduces excessive
-+			 * scanning of full pageblocks near the end of the
-+			 * zone
-+			 */
-+			if (cc->order > 0 && cc->wrapped)
- 				zone->compact_cached_free_pfn = high_pfn;
- 		}
- 	}
-@@ -538,6 +549,11 @@ static void isolate_freepages(struct zone *zone,
- 
- 	cc->free_pfn = high_pfn;
- 	cc->nr_freepages = nr_freepages;
-+
-+	/* If compact_cached_free_pfn is reset then set it now */
-+	if (cc->order > 0 && !cc->wrapped &&
-+			zone->compact_cached_free_pfn == start_free_pfn(zone))
-+		zone->compact_cached_free_pfn = high_pfn;
- }
- 
- /*
-@@ -625,20 +641,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 	return ISOLATE_SUCCESS;
- }
- 
--/*
-- * Returns the start pfn of the last page block in a zone.  This is the starting
-- * point for full compaction of a zone.  Compaction searches for free pages from
-- * the end of each zone, while isolate_freepages_block scans forward inside each
-- * page block.
-- */
--static unsigned long start_free_pfn(struct zone *zone)
--{
--	unsigned long free_pfn;
--	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	free_pfn &= ~(pageblock_nr_pages-1);
--	return free_pfn;
--}
--
- static int compact_finished(struct zone *zone,
- 			    struct compact_control *cc)
- {
+If these get accepted for merging then there is a difficulty in how they
+should be handled.  Commit [7db8889a: mm: have order > 0 compaction start
+off where it left] is broken but it is already in 3.6-rc1 and needs to
+be fixed. However, if just patch 4 from this series is applied then Jim
+Schutt's workload is known to break again as his workload also requires
+patch 5. While it would be preferred to have all these patches in 3.6 to
+improve compaction in general, it would at least be acceptable if just
+patches 4 and 5 were merged to 3.6 to fix a known problem without breaking
+compaction completely. On the face of it, that would force __GFP_NO_KSWAPD
+patches to be merged at the same time but I can do a version of this series
+with __GFP_NO_KSWAPD change reverted and then rebase it on top of this
+series. That might be best overall because I note that the __GFP_NO_KSWAPD
+patch should have removed deferred_compaction from page_alloc.c but it
+didn't but fixing that causes collisions with this series.
+
+ include/linux/compaction.h |    4 +-
+ include/linux/mm.h         |    1 +
+ mm/compaction.c            |  245 +++++++++++++++++++++++++++++++++-----------
+ mm/internal.h              |    2 +
+ mm/page_alloc.c            |   78 ++++++++++----
+ mm/vmscan.c                |   10 ++
+ 6 files changed, 256 insertions(+), 84 deletions(-)
+
 -- 
 1.7.9.2
 
