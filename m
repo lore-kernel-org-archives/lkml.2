@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2HNQ1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:27:43 -0400
+	id S1756870Ab2HNQ2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:28:31 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab2HNQ0X (ORCPT
+	with ESMTP id S1756733Ab2HNQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:26:23 -0400
+	Tue, 14 Aug 2012 12:25:59 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 14/16] net,rds: use new hashtable implementation
-Date: Tue, 14 Aug 2012 18:24:48 +0200
-Message-Id: <1344961490-4068-15-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 10/16] dlm: use new hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:44 +0200
+Message-Id: <1344961490-4068-11-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
 References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
@@ -32,302 +32,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch rds to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in rds.
+Switch dlm to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the dlm.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- net/rds/bind.c       |   20 +++++-----
- net/rds/connection.c |  102 ++++++++++++++++++++++----------------------------
- 2 files changed, 55 insertions(+), 67 deletions(-)
+ fs/dlm/lowcomms.c |   47 +++++++++++++----------------------------------
+ 1 files changed, 13 insertions(+), 34 deletions(-)
 
-diff --git a/net/rds/bind.c b/net/rds/bind.c
-index 637bde5..a99e524 100644
---- a/net/rds/bind.c
-+++ b/net/rds/bind.c
-@@ -36,16 +36,16 @@
- #include <linux/if_arp.h>
- #include <linux/jhash.h>
- #include <linux/ratelimit.h>
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index 522a69f..e36dad2 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -55,6 +55,7 @@
+ #include <net/sctp/sctp.h>
+ #include <net/sctp/user.h>
+ #include <net/ipv6.h>
 +#include <linux/hashtable.h>
- #include "rds.h"
  
--#define BIND_HASH_SIZE 1024
--static struct hlist_head bind_hash_table[BIND_HASH_SIZE];
-+#define BIND_HASH_BITS 10
-+static DEFINE_HASHTABLE(bind_hash_table, BIND_HASH_BITS);
- static DEFINE_SPINLOCK(rds_bind_lock);
+ #include "dlm_internal.h"
+ #include "lowcomms.h"
+@@ -62,7 +63,7 @@
+ #include "config.h"
  
--static struct hlist_head *hash_to_bucket(__be32 addr, __be16 port)
-+static u32 rds_hash(__be32 addr, __be16 port)
+ #define NEEDED_RMEM (4*1024*1024)
+-#define CONN_HASH_SIZE 32
++#define CONN_HASH_BITS 5
+ 
+ /* Number of messages to send before rescheduling */
+ #define MAX_SEND_MSG_COUNT 25
+@@ -158,34 +159,21 @@ static int dlm_allow_conn;
+ static struct workqueue_struct *recv_workqueue;
+ static struct workqueue_struct *send_workqueue;
+ 
+-static struct hlist_head connection_hash[CONN_HASH_SIZE];
++static struct hlist_head connection_hash[CONN_HASH_BITS];
+ static DEFINE_MUTEX(connections_lock);
+ static struct kmem_cache *con_cache;
+ 
+ static void process_recv_sockets(struct work_struct *work);
+ static void process_send_sockets(struct work_struct *work);
+ 
+-
+-/* This is deliberately very simple because most clusters have simple
+-   sequential nodeids, so we should be able to go straight to a connection
+-   struct in the array */
+-static inline int nodeid_hash(int nodeid)
+-{
+-	return nodeid & (CONN_HASH_SIZE-1);
+-}
+-
+ static struct connection *__find_con(int nodeid)
  {
--	return bind_hash_table + (jhash_2words((u32)addr, (u32)port, 0) &
--				  (BIND_HASH_SIZE - 1));
-+	return jhash_2words((u32)addr, (u32)port, 0);
- }
+-	int r;
+ 	struct hlist_node *h;
+ 	struct connection *con;
  
- static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
-@@ -53,12 +53,12 @@ static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
- {
- 	struct rds_sock *rs;
- 	struct hlist_node *node;
--	struct hlist_head *head = hash_to_bucket(addr, port);
-+	u32 key = rds_hash(addr, port);
- 	u64 cmp;
- 	u64 needle = ((u64)be32_to_cpu(addr) << 32) | be16_to_cpu(port);
- 
- 	rcu_read_lock();
--	hlist_for_each_entry_rcu(rs, node, head, rs_bound_node) {
-+	hash_for_each_possible_rcu(bind_hash_table, rs, node, rs_bound_node, key) {
- 		cmp = ((u64)be32_to_cpu(rs->rs_bound_addr) << 32) |
- 		      be16_to_cpu(rs->rs_bound_port);
- 
-@@ -74,13 +74,13 @@ static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
- 		 * make sure our addr and port are set before
- 		 * we are added to the list, other people
- 		 * in rcu will find us as soon as the
--		 * hlist_add_head_rcu is done
-+		 * hash_add_rcu is done
- 		 */
- 		insert->rs_bound_addr = addr;
- 		insert->rs_bound_port = port;
- 		rds_sock_addref(insert);
- 
--		hlist_add_head_rcu(&insert->rs_bound_node, head);
-+		hash_add_rcu(bind_hash_table, &insert->rs_bound_node, key);
- 	}
+-	r = nodeid_hash(nodeid);
+-
+-	hlist_for_each_entry(con, h, &connection_hash[r], list) {
++	hash_for_each_possible(connection_hash, con, h, list, nodeid)
+ 		if (con->nodeid == nodeid)
+ 			return con;
+-	}
  	return NULL;
  }
-@@ -152,7 +152,7 @@ void rds_remove_bound(struct rds_sock *rs)
- 		  rs, &rs->rs_bound_addr,
- 		  ntohs(rs->rs_bound_port));
  
--		hlist_del_init_rcu(&rs->rs_bound_node);
-+		hash_del_rcu(&rs->rs_bound_node);
- 		rds_sock_put(rs);
- 		rs->rs_bound_addr = 0;
- 	}
-diff --git a/net/rds/connection.c b/net/rds/connection.c
-index 9e07c75..5b09ee1 100644
---- a/net/rds/connection.c
-+++ b/net/rds/connection.c
-@@ -34,28 +34,24 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/export.h>
-+#include <linux/hashtable.h>
- #include <net/inet_hashtables.h>
- 
- #include "rds.h"
- #include "loop.h"
- 
- #define RDS_CONNECTION_HASH_BITS 12
--#define RDS_CONNECTION_HASH_ENTRIES (1 << RDS_CONNECTION_HASH_BITS)
--#define RDS_CONNECTION_HASH_MASK (RDS_CONNECTION_HASH_ENTRIES - 1)
- 
- /* converting this to RCU is a chore for another day.. */
- static DEFINE_SPINLOCK(rds_conn_lock);
- static unsigned long rds_conn_count;
--static struct hlist_head rds_conn_hash[RDS_CONNECTION_HASH_ENTRIES];
-+static DEFINE_HASHTABLE(rds_conn_hash, RDS_CONNECTION_HASH_BITS);
- static struct kmem_cache *rds_conn_slab;
- 
--static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
-+static unsigned long rds_conn_hashfn(__be32 laddr, __be32 faddr)
+@@ -196,7 +184,6 @@ static struct connection *__find_con(int nodeid)
+ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
  {
- 	/* Pass NULL, don't need struct net for hash */
--	unsigned long hash = inet_ehashfn(NULL,
--					  be32_to_cpu(laddr), 0,
--					  be32_to_cpu(faddr), 0);
--	return &rds_conn_hash[hash & RDS_CONNECTION_HASH_MASK];
-+	return inet_ehashfn(NULL,  be32_to_cpu(laddr), 0,  be32_to_cpu(faddr), 0);
+ 	struct connection *con = NULL;
+-	int r;
+ 
+ 	con = __find_con(nodeid);
+ 	if (con || !alloc)
+@@ -206,8 +193,7 @@ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
+ 	if (!con)
+ 		return NULL;
+ 
+-	r = nodeid_hash(nodeid);
+-	hlist_add_head(&con->list, &connection_hash[r]);
++	hash_add(connection_hash, &con->list, nodeid);
+ 
+ 	con->nodeid = nodeid;
+ 	mutex_init(&con->sock_mutex);
+@@ -235,11 +221,8 @@ static void foreach_conn(void (*conn_func)(struct connection *c))
+ 	struct hlist_node *h, *n;
+ 	struct connection *con;
+ 
+-	for (i = 0; i < CONN_HASH_SIZE; i++) {
+-		hlist_for_each_entry_safe(con, h, n, &connection_hash[i], list){
+-			conn_func(con);
+-		}
+-	}
++	hash_for_each_safe(connection_hash, i, h, n, con, list)
++		conn_func(con);
  }
  
- #define rds_conn_info_set(var, test, suffix) do {		\
-@@ -64,14 +60,14 @@ static struct hlist_head *rds_conn_bucket(__be32 laddr, __be32 faddr)
- } while (0)
+ static struct connection *nodeid2con(int nodeid, gfp_t allocation)
+@@ -262,12 +245,10 @@ static struct connection *assoc2con(int assoc_id)
  
- /* rcu read lock must be held or the connection spinlock */
--static struct rds_connection *rds_conn_lookup(struct hlist_head *head,
--					      __be32 laddr, __be32 faddr,
-+static struct rds_connection *rds_conn_lookup(__be32 laddr, __be32 faddr,
- 					      struct rds_transport *trans)
- {
- 	struct rds_connection *conn, *ret = NULL;
- 	struct hlist_node *pos;
-+	unsigned long key = rds_conn_hashfn(laddr, faddr);
+ 	mutex_lock(&connections_lock);
  
--	hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
-+	hash_for_each_possible_rcu(rds_conn_hash, conn, pos, c_hash_node, key) {
- 		if (conn->c_faddr == faddr && conn->c_laddr == laddr &&
- 				conn->c_trans == trans) {
- 			ret = conn;
-@@ -117,13 +113,12 @@ static struct rds_connection *__rds_conn_create(__be32 laddr, __be32 faddr,
- 				       int is_outgoing)
- {
- 	struct rds_connection *conn, *parent = NULL;
--	struct hlist_head *head = rds_conn_bucket(laddr, faddr);
- 	struct rds_transport *loop_trans;
- 	unsigned long flags;
- 	int ret;
- 
- 	rcu_read_lock();
--	conn = rds_conn_lookup(head, laddr, faddr, trans);
-+	conn = rds_conn_lookup(laddr, faddr, trans);
- 	if (conn && conn->c_loopback && conn->c_trans != &rds_loop_transport &&
- 	    !is_outgoing) {
- 		/* This is a looped back IB connection, and we're
-@@ -224,13 +219,15 @@ static struct rds_connection *__rds_conn_create(__be32 laddr, __be32 faddr,
- 		/* Creating normal conn */
- 		struct rds_connection *found;
- 
--		found = rds_conn_lookup(head, laddr, faddr, trans);
-+		found = rds_conn_lookup(laddr, faddr, trans);
- 		if (found) {
- 			trans->conn_free(conn->c_transport_data);
- 			kmem_cache_free(rds_conn_slab, conn);
- 			conn = found;
- 		} else {
--			hlist_add_head_rcu(&conn->c_hash_node, head);
-+			unsigned long key = rds_conn_hashfn(laddr, faddr);
-+
-+			hash_add_rcu(rds_conn_hash, &conn->c_hash_node, key);
- 			rds_cong_add_conn(conn);
- 			rds_conn_count++;
- 		}
-@@ -303,7 +300,7 @@ void rds_conn_shutdown(struct rds_connection *conn)
- 	 * conn - the reconnect is always triggered by the active peer. */
- 	cancel_delayed_work_sync(&conn->c_conn_w);
- 	rcu_read_lock();
--	if (!hlist_unhashed(&conn->c_hash_node)) {
-+	if (hash_hashed(&conn->c_hash_node)) {
- 		rcu_read_unlock();
- 		rds_queue_reconnect(conn);
- 	} else {
-@@ -329,7 +326,7 @@ void rds_conn_destroy(struct rds_connection *conn)
- 
- 	/* Ensure conn will not be scheduled for reconnect */
- 	spin_lock_irq(&rds_conn_lock);
--	hlist_del_init_rcu(&conn->c_hash_node);
-+	hash_del(&conn->c_hash_node);
- 	spin_unlock_irq(&rds_conn_lock);
- 	synchronize_rcu();
- 
-@@ -375,7 +372,6 @@ static void rds_conn_message_info(struct socket *sock, unsigned int len,
- 				  struct rds_info_lengths *lens,
- 				  int want_send)
- {
--	struct hlist_head *head;
- 	struct hlist_node *pos;
- 	struct list_head *list;
- 	struct rds_connection *conn;
-@@ -388,27 +384,24 @@ static void rds_conn_message_info(struct socket *sock, unsigned int len,
- 
- 	rcu_read_lock();
- 
--	for (i = 0, head = rds_conn_hash; i < ARRAY_SIZE(rds_conn_hash);
--	     i++, head++) {
--		hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
--			if (want_send)
--				list = &conn->c_send_queue;
--			else
--				list = &conn->c_retrans;
--
--			spin_lock_irqsave(&conn->c_lock, flags);
--
--			/* XXX too lazy to maintain counts.. */
--			list_for_each_entry(rm, list, m_conn_item) {
--				total++;
--				if (total <= len)
--					rds_inc_info_copy(&rm->m_inc, iter,
--							  conn->c_laddr,
--							  conn->c_faddr, 0);
+-	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
+-		hlist_for_each_entry(con, h, &connection_hash[i], list) {
+-			if (con->sctp_assoc == assoc_id) {
+-				mutex_unlock(&connections_lock);
+-				return con;
 -			}
--
--			spin_unlock_irqrestore(&conn->c_lock, flags);
-+	hash_for_each_rcu(rds_conn_hash, i, pos, conn, c_hash_node) {
-+		if (want_send)
-+			list = &conn->c_send_queue;
-+		else
-+			list = &conn->c_retrans;
-+
-+		spin_lock_irqsave(&conn->c_lock, flags);
-+
-+		/* XXX too lazy to maintain counts.. */
-+		list_for_each_entry(rm, list, m_conn_item) {
-+			total++;
-+			if (total <= len)
-+				rds_inc_info_copy(&rm->m_inc, iter,
-+						  conn->c_laddr,
-+						  conn->c_faddr, 0);
++	hash_for_each(connection_hash, i, h, con, list) {
++		if (con->sctp_assoc == assoc_id) {
++			mutex_unlock(&connections_lock);
++			return con;
  		}
-+
-+		spin_unlock_irqrestore(&conn->c_lock, flags);
  	}
- 	rcu_read_unlock();
- 
-@@ -438,7 +431,6 @@ void rds_for_each_conn_info(struct socket *sock, unsigned int len,
- 			  size_t item_len)
- {
- 	uint64_t buffer[(item_len + 7) / 8];
--	struct hlist_head *head;
- 	struct hlist_node *pos;
- 	struct rds_connection *conn;
- 	size_t i;
-@@ -448,23 +440,19 @@ void rds_for_each_conn_info(struct socket *sock, unsigned int len,
- 	lens->nr = 0;
- 	lens->each = item_len;
- 
--	for (i = 0, head = rds_conn_hash; i < ARRAY_SIZE(rds_conn_hash);
--	     i++, head++) {
--		hlist_for_each_entry_rcu(conn, pos, head, c_hash_node) {
--
--			/* XXX no c_lock usage.. */
--			if (!visitor(conn, buffer))
--				continue;
--
--			/* We copy as much as we can fit in the buffer,
--			 * but we count all items so that the caller
--			 * can resize the buffer. */
--			if (len >= item_len) {
--				rds_info_copy(iter, buffer, item_len);
--				len -= item_len;
--			}
--			lens->nr++;
-+	hash_for_each_rcu(rds_conn_hash, i, pos, conn, c_hash_node) {
-+		/* XXX no c_lock usage.. */
-+		if (!visitor(conn, buffer))
-+			continue;
-+
-+		/* We copy as much as we can fit in the buffer,
-+		 * but we count all items so that the caller
-+		 * can resize the buffer. */
-+		if (len >= item_len) {
-+			rds_info_copy(iter, buffer, item_len);
-+			len -= item_len;
- 		}
-+		lens->nr++;
- 	}
- 	rcu_read_unlock();
- }
-@@ -518,6 +506,8 @@ int rds_conn_init(void)
- 	rds_info_register_func(RDS_INFO_RETRANS_MESSAGES,
- 			       rds_conn_message_info_retrans);
- 
-+	hash_init(rds_conn_hash);
-+
- 	return 0;
+ 	mutex_unlock(&connections_lock);
+@@ -1644,7 +1625,7 @@ static void free_conn(struct connection *con)
+ 	close_connection(con, true);
+ 	if (con->othercon)
+ 		kmem_cache_free(con_cache, con->othercon);
+-	hlist_del(&con->list);
++	hash_del(&con->list);
+ 	kmem_cache_free(con_cache, con);
  }
  
-@@ -525,8 +515,6 @@ void rds_conn_exit(void)
+@@ -1673,10 +1654,8 @@ int dlm_lowcomms_start(void)
  {
- 	rds_loop_exit();
+ 	int error = -EINVAL;
+ 	struct connection *con;
+-	int i;
  
--	WARN_ON(!hlist_empty(rds_conn_hash));
--
- 	kmem_cache_destroy(rds_conn_slab);
+-	for (i = 0; i < CONN_HASH_SIZE; i++)
+-		INIT_HLIST_HEAD(&connection_hash[i]);
++	hash_init(connection_hash);
  
- 	rds_info_deregister_func(RDS_INFO_CONNECTIONS, rds_conn_info);
+ 	init_local();
+ 	if (!dlm_local_count) {
 -- 
 1.7.8.6
 
