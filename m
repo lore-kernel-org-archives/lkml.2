@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab2HNLFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 07:05:14 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58619 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab2HNLFM (ORCPT
+	id S1755551Ab2HNLHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 07:07:09 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43948 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2HNLHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 07:05:12 -0400
+	Tue, 14 Aug 2012 07:07:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <50284383.7020100@gmail.com>
+In-Reply-To: <5028447E.7000208@gmail.com>
 References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
-	<1344783205-2384-7-git-send-email-dh.herrmann@googlemail.com>
-	<50284383.7020100@gmail.com>
-Date: Tue, 14 Aug 2012 13:05:10 +0200
-Message-ID: <CANq1E4Q+UvZ_koC0BbHrTrqaut96KV244JdHvHKxVWB6-9VFEw@mail.gmail.com>
-Subject: Re: [PATCH 06/11] fblog: open fb on registration
+	<1344783205-2384-8-git-send-email-dh.herrmann@googlemail.com>
+	<5028447E.7000208@gmail.com>
+Date: Tue, 14 Aug 2012 13:07:06 +0200
+Message-ID: <CANq1E4TawZ7d=dvKjCi_r3ai9yo3kyMMYJAPh_0wV4T68Xpqng@mail.gmail.com>
+Subject: Re: [PATCH 07/11] fblog: allow selecting fbs via sysfs and module-parameters
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: Ryan Mallon <rmallon@gmail.com>
 Cc: linux-fbdev@vger.kernel.org,
@@ -30,92 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Ryan
 
-On Mon, Aug 13, 2012 at 2:00 AM, Ryan Mallon <rmallon@gmail.com> wrote:
+On Mon, Aug 13, 2012 at 2:04 AM, Ryan Mallon <rmallon@gmail.com> wrote:
 > On 13/08/12 00:53, David Herrmann wrote:
->>  /*
->> + * fblog_open/close()
->> + * These functions manage access to the underlying framebuffer. While opened, we
->> + * have a valid reference to the fb and can use it for drawing operations. When
->> + * the fb is unregistered, we drop our reference and close the fb so it can get
->> + * deleted properly. We also mark it as dead so no further fblog_open() call
->> + * will succeed.
->> + * Both functions must be called with the fb->info->lock mutex held! But make
->> + * sure to lock it _before_ locking the fblog-registration-lock. Otherwise, we
->> + * will dead-lock with fb-registration.
->> + */
->> +
->> +static int fblog_open(struct fblog_fb *fb)
+>> +static ssize_t fblog_dev_active_show(struct device *dev,
+>> +                                  struct device_attribute *attr,
+>> +                                  char *buf)
 >> +{
->> +     int ret;
+>> +     struct fblog_fb *fb = to_fblog_dev(dev);
 >> +
->> +     mutex_lock(&fb->lock);
->> +
->> +     if (test_bit(FBLOG_KILLED, &fb->flags)) {
->> +             ret = -ENODEV;
->> +             goto unlock;
->> +     }
->> +
->> +     if (test_bit(FBLOG_OPEN, &fb->flags)) {
->> +             ret = 0;
->> +             goto unlock;
->> +     }
->> +
->> +     if (!try_module_get(fb->info->fbops->owner)) {
->> +             ret = -ENODEV;
->> +             goto out_killed;
->> +     }
->> +
->> +     if (fb->info->fbops->fb_open && fb->info->fbops->fb_open(fb->info, 0)) {
+>> +     return snprintf(buf, PAGE_SIZE, "%d\n",
+>> +                     !!test_bit(FBLOG_OPEN, &fb->flags));
 >
-> Should propagate the error here:
+> Nitpick. sprintf is okay here, %d is rarely longer than PAGE_SIZE :-).
 >
->         if (fb->info->fbops->fb_open) {
->                 ret = fb->info->fbops->fb_open(fb->info, 0);
->                 if (ret)
->                         gotou out_unref;
->         }
-
-Nice catch, thanks.
-
->> +/*
->>   * fblog framebuffer list
->>   * The fblog_fbs[] array contains all currently registered framebuffers. If a
->>   * framebuffer is in that list, we always must make sure that we own a reference
->> @@ -77,6 +147,7 @@ static void fblog_do_unregister(struct fb_info *info)
->>
->>       fblog_fbs[info->node] = NULL;
->>
->> +     fblog_close(fb, true);
->>       device_del(&fb->dev);
->>       put_device(&fb->dev);
+>> +}
+>> +
+>> +static ssize_t fblog_dev_active_store(struct device *dev,
+>> +                                   struct device_attribute *attr,
+>> +                                   const char *buf,
+>> +                                   size_t count)
+>> +{
+>> +     struct fblog_fb *fb = to_fblog_dev(dev);
+>> +     unsigned long num;
+>> +     int ret = 0;
+>> +
+>> +     num = simple_strtoul(buf, NULL, 10);
 >
-> device_unregister?
-
-Heh, you already mentioned this in the previous patch. I definitely
-need to fix that.
-
->>  }
->> @@ -99,6 +170,7 @@ static void fblog_do_register(struct fb_info *info, bool force)
->>               return;
->>
->>       fb->info = info;
->> +     mutex_init(&fb->lock);
->>       __module_get(THIS_MODULE);
->>       device_initialize(&fb->dev);
->>       fb->dev.class = fb_class;
->> @@ -113,6 +185,8 @@ static void fblog_do_register(struct fb_info *info, bool force)
->>               put_device(&fb->dev);
+> kstrtoul is preferred these days I think, it also catches errors.
+>
+>> +
+>> +     mutex_lock(&fb->info->lock);
+>> +     if (num)
+>> +             ret = fblog_open(fb);
+>> +     else
+>> +             fblog_close(fb, false);
+>> +     mutex_unlock(&fb->info->lock);
+>> +
+>> +     return ret ? ret : count;
+>
+> Nitpick, you can use gcc's shortcut form of the ? operator here:
+>
+>         return ret ?: count;
+>
+>> @@ -186,7 +228,20 @@ static void fblog_do_register(struct fb_info *info, bool force)
 >>               return;
 >>       }
->> +
->> +     fblog_open(fb);
->>  }
+>>
+>> -     fblog_open(fb);
+>> +     ret = device_create_file(&fb->dev, &dev_attr_active);
+>> +     if (ret) {
+>> +             pr_err("fblog: cannot create sysfs entry");
 >
-> This function should really return an errno value.
+> Shouldn't need the "fblog: " prefix, since you have pr_fmt defined.
+>
+>> +             /* do not open fb if we cannot create control file */
+>> +             do_open = false;
+>> +     }
+>> +
+>> +     if (!activate_on_hotplug)
+>> +             do_open = false;
+>> +     if (main_only && info->node != 0)
+>> +             do_open = false;
+>> +
+>> +     if (do_open)
+>> +             fblog_open(fb);
+>>  }
+>>
+>>  static void fblog_register(struct fb_info *info, bool force)
 
-I never used the return value in my code but as mentioned in the
-previous patches, fblog_scan() should check them. So yes, I will add
-this.
-
-Thanks!
+All four fixes make sense, thanks!
 David
