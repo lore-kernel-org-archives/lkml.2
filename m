@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab2HNSMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 14:12:34 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51602 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab2HNSLm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 14:11:42 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH v2 3/6] workqueue: change value of lcpu in __queue_delayed_work_on()
-Date: Wed, 15 Aug 2012 03:10:13 +0900
-Message-Id: <1344967816-1136-4-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1344967816-1136-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1344967816-1136-1-git-send-email-js1304@gmail.com>
+	id S1757200Ab2HNSRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 14:17:25 -0400
+Received: from fieldses.org ([174.143.236.118]:56861 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754871Ab2HNSRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 14:17:23 -0400
+Date: Tue, 14 Aug 2012 14:16:14 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 00/16] generic hashtable implementation
+Message-ID: <20120814181614.GA15099@fieldses.org>
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We assign cpu id into work struct's data field in __queue_delayed_work_on().
-In current implementation, when work is come in first time,
-current running cpu id is assigned.
-If we do __queue_delayed_work_on() with CPU A on CPU B,
-__queue_work() invoked in delayed_work_timer_fn() go into
-the following sub-optimal path in case of WQ_NON_REENTRANT.
+On Tue, Aug 14, 2012 at 06:24:34PM +0200, Sasha Levin wrote:
+>   SUNRPC/cache: use new hashtable implementation
+..
+>   lockd: use new hashtable implementation
 
-	gcwq = get_gcwq(cpu);
-	if (wq->flags & WQ_NON_REENTRANT &&
-		(last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
+FWIW, these look fine (and I ran them through some nfs tests and didn't
+see any problems).
 
-Change lcpu to @cpu and rechange lcpu to local cpu if lcpu is WORK_CPU_UNBOUND.
-It is sufficient to prevent to go into sub-optimal path.
-
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6a17ab0..f55ac26 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1358,9 +1358,10 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
- 	if (!(wq->flags & WQ_UNBOUND)) {
- 		struct global_cwq *gcwq = get_work_gcwq(work);
- 
--		if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
-+		lcpu = cpu;
-+		if (gcwq)
- 			lcpu = gcwq->cpu;
--		else
-+		if (lcpu == WORK_CPU_UNBOUND)
- 			lcpu = raw_smp_processor_id();
- 	} else {
- 		lcpu = WORK_CPU_UNBOUND;
--- 
-1.7.9.5
-
+--b.
