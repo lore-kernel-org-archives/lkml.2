@@ -1,196 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab2HNW7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:59:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38575 "EHLO
+	id S1753691Ab2HNXAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:00:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47460 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab2HNW7K (ORCPT
+	with ESMTP id S1752158Ab2HNXAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:59:10 -0400
-From: Anthony Liguori <anthony@codemonkey.ws>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Wen Congyang <wency@cn.fujitsu.com>
-Cc: Yan Vugenfirer <yvugenfi@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is panicked
-In-Reply-To: <20120814205339.GA14172@amt.cnet>
-References: <5021D235.4050800@cn.fujitsu.com> <20120813182132.GB25268@amt.cnet> <20120814085619.GA32708@redhat.com> <502A2B7A.3070801@siemens.com> <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com> <20120814154237.GA21284@amt.cnet> <87boidgvaq.fsf@codemonkey.ws> <20120814191927.GA6058@amt.cnet> <87txw5clmh.fsf@codemonkey.ws> <20120814205339.GA14172@amt.cnet>
-User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 14 Aug 2012 17:59:06 -0500
-Message-ID: <877gt16pxh.fsf@codemonkey.ws>
+	Tue, 14 Aug 2012 19:00:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAB=NE6Wad1yNhUrvJZn0p62gZHAhpTjYaf5qNjjkdOboOiQ=Xg@mail.gmail.com>
+References: <CAB=NE6W_SQUJmAXaLesyRShtQ=Urz=w5Ks5jEXq_50bRge+PWQ@mail.gmail.com>
+ <CA+icZUU9qT9H2jy_H8_6Bk1XUbuV0N6_pGRoQbSJhnikewTc0Q@mail.gmail.com>
+ <CAB=NE6V=4J7yKbPdb4gVT6BBjdewhYRNEwrNdMd4XE5Ocg4SeQ@mail.gmail.com> <CAB=NE6Wad1yNhUrvJZn0p62gZHAhpTjYaf5qNjjkdOboOiQ=Xg@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Tue, 14 Aug 2012 16:00:17 -0700
+X-Google-Sender-Auth: FqEKPUlRxenDtVO6eLxrfkTCDJI
+Message-ID: <CAB=NE6UztqzdJ20GV+bV3jZ-083h8NgX-+AXsyFYJ--V93_=_g@mail.gmail.com>
+Subject: Re: Backports mailing list
+To: sedat.dilek@gmail.com
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        lf_driver_backport@lists.linux-foundation.org,
+        Julia Lawall <julia.lawall@lip6.fr>, Jesper Andersen <jespera@diku.dk>,
+        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo Tosatti <mtosatti@redhat.com> writes:
-
-> On Tue, Aug 14, 2012 at 02:35:34PM -0500, Anthony Liguori wrote:
->> Marcelo Tosatti <mtosatti@redhat.com> writes:
->> 
->> > On Tue, Aug 14, 2012 at 01:53:01PM -0500, Anthony Liguori wrote:
->> >> Marcelo Tosatti <mtosatti@redhat.com> writes:
->> >> 
->> >> > On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
->> >> >> 
->> >> >> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
->> >> >> 
->> >> >> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
->> >> >> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
->> >> >> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
->> >> >> >>>> We can know the guest is panicked when the guest runs on xen.
->> >> >> >>>> But we do not have such feature on kvm.
->> >> >> >>>> 
->> >> >> >>>> Another purpose of this feature is: management app(for example:
->> >> >> >>>> libvirt) can do auto dump when the guest is panicked. If management
->> >> >> >>>> app does not do auto dump, the guest's user can do dump by hand if
->> >> >> >>>> he sees the guest is panicked.
->> >> >> >>>> 
->> >> >> >>>> We have three solutions to implement this feature:
->> >> >> >>>> 1. use vmcall
->> >> >> >>>> 2. use I/O port
->> >> >> >>>> 3. use virtio-serial.
->> >> >> >>>> 
->> >> >> >>>> We have decided to avoid touching hypervisor. The reason why I choose
->> >> >> >>>> choose the I/O port is:
->> >> >> >>>> 1. it is easier to implememt
->> >> >> >>>> 2. it does not depend any virtual device
->> >> >> >>>> 3. it can work when starting the kernel
->> >> >> >>> 
->> >> >> >>> How about searching for the "Kernel panic - not syncing" string 
->> >> >> >>> in the guests serial output? Say libvirtd could take an action upon
->> >> >> >>> that?
->> >> >> >> 
->> >> >> >> No, this is not satisfactory. It depends on the guest OS being
->> >> >> >> configured to use the serial port for console output which we
->> >> >> >> cannot mandate, since it may well be required for other purposes.
->> >> >> > 
->> >> >> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
->> >> >> 
->> >> >> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
->> >> >> 
->> >> >> Yan. 
->> >> >
->> >> > Considering whether a "panic-device" should cover other OSes is also \
->> >
->> >> > something to consider. Even for Linux, is "panic" the only case which
->> >> > should be reported via the mechanism? What about oopses without panic? 
->> >> >
->> >> > Is the mechanism general enough for supporting new events, etc.
->> >> 
->> >> Hi,
->> >> 
->> >> I think this discussion is gone of the deep end.
->> >> 
->> >> Forget about !x86 platforms.  They have their own way to do this sort of
->> >> thing.  
->> >
->> > The panic function in kernel/panic.c has the following options, which
->> > appear to be arch independent, on panic:
->> >
->> > - reboot 
->> > - blink
->> 
->> Not sure the semantics of blink but that might be a good place for a
->> pvops hook.
->> 
->> >
->> > None are paravirtual interfaces however.
->> >
->> >> Think of this feature like a status LED on a motherboard.  These
->> >> are very common and usually controlled by IO ports.
->> >> 
->> >> We're simply reserving a "status LED" for the guest to indicate that it
->> >> has paniced.  Let's not over engineer this.
->> >
->> > My concern is that you end up with state that is dependant on x86.
->> >
->> > Subject: [PATCH v8 3/6] add a new runstate: RUN_STATE_GUEST_PANICKED
->> >
->> > Having the ability to stop/restart the guest (and even introducing a 
->> > new VM runstate) is more than a status LED analogy.
->> 
->> I must admit, I don't know why a new runstate is necessary/useful.  The
->> kernel shouldn't have to care about the difference between a halted guest
->> and a panicked guest.  That level of information belongs in userspace IMHO.
->> 
->> > Can this new infrastructure be used by other architectures?
->> 
->> I guess I don't understand why the kernel side of this isn't anything
->> more than a paravirt op hook that does a single outb() with the
->> remaining logic handled 100% in QEMU.
+On Tue, Aug 14, 2012 at 9:33 AM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+> On Tue, Aug 14, 2012 at 9:00 AM, Luis R. Rodriguez <mcgrof@frijolero.org> wrote:
+>> For more details please see:
+>>
+>> http://www.do-not-panic.com/2012/08/automatically-backporting-linux-kernel.html
+>> http://www.do-not-panic.com/2012/08/optimizing-backporting-collateral.html
+>>
+>>   Luis
 >
-> From the patch description:
->
-> "Another purpose of this feature is: management app(for example:
-> libvirt) can do auto dump when the guest is panicked. If management
-> app does not do auto dump, the guest's user can do dump by hand if
-> he sees the guest is panicked."
+> All that said, please use the shiny new mailing list:
+> backports@vger.kernel.org  for  patches for compat / compat-drivers.
 
-Why does this mandated another runstate?  QEMU can simply mark the VCPUs
-as stopped and raise a QMP event.  The kernel doesn't care if the VCPUs
-are stopped or panicked.
+Furthermore, the project git tree has changed to be renamed to
+compat-drivers as well now, and the new wiki page should be used
+moving forward:
 
-> Wen, auto dump means dump of guest memory?
->
-> In that case, the notification should obviously stop the guest 
-> otherwise the guest might be reset by the time memdump from QEMU 
-> monitor runs.
->
-> But kexec supports dumping of memory already (i suppose it can 
-> do automatic dump+{reboot,shutdown}).
->
->> > Do you consider allowing support for Windows as overengineering?
->> 
->> I don't think there is a way to hook BSOD on Windows so attempting to
->> engineer something that works with Windows seems odd, no?
->
-> Unsure about hooking at BSOD time. But Windows has configurable 
-> memory dump/reset/reboot, so yes it should not necessary.
+https://backports.wiki.kernel.org
+git://github.com/mcgrof/compat-drivers.git
 
-Do you mean it's not necessary to hook BSOD?
-
-I've very often gotten asked: We know 1 person is experiencing this
-crash condition, can we figure out from the host how many other VMs are
-experiencing this crash too instead of waiting for a user to complain?
-
-That's the primary use-case for this notification IMHO.  Just a simple
-status LED from the guest to indicate that it's in a bad state.
-
-Regards,
-
-Anthony Liguori
-
->
->> 
->> Regards,
->> 
->> Anthony Liguori
->> 
->> >
->> >> Regards,
->> >> 
->> >> Anthony Liguori
->> >> 
->> >> >
->> >> >> 
->> >> >> > Well, we have more than a single serial port, even when leaving
->> >> >> > virtio-serial aside...
->> >> >> > 
->> >> >> > Jan
->> >> >> > 
->> >> >> > -- 
->> >> >> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
->> >> >> > Corporate Competence Center Embedded Linux
->> >> >> > --
->> >> >> > To unsubscribe from this list: send the line "unsubscribe kvm" in
->> >> >> > the body of a message to majordomo@vger.kernel.org
->> >> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Luis
