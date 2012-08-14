@@ -1,144 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab2HNQWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:22:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50646 "EHLO mx2.suse.de"
+	id S1755930Ab2HNQXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:23:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab2HNQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:21:58 -0400
-Date: Tue, 14 Aug 2012 18:21:55 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-Message-ID: <20120814162144.GC6905@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-5-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344517279-30646-5-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751976Ab2HNQXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 12:23:03 -0400
+Subject: Re: [PATCH] select GENERIC_ATOMIC64 for c6x/score/unicore32 archs
+From: Mark Salter <msalter@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        linux-c6x-dev@linux-c6x.org, Lennox Wu <lennox.wu@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Date: Tue, 14 Aug 2012 12:22:49 -0400
+In-Reply-To: <20120814153413.GA18601@localhost>
+References: <20120814153413.GA18601@localhost>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1344961371.30830.43.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-08-12 17:01:12, Glauber Costa wrote:
-> This patch adds the basic infrastructure for the accounting of the slab
-> caches. To control that, the following files are created:
+On Tue, 2012-08-14 at 23:34 +0800, Fengguang Wu wrote:
+> Sorry I have no compilers for build testing these changes, however the
+> risk looks low and it's much better than to leave the arch broken,
+> considering that Eric will do atomic64_t in the core fs/namespace.c
+> code.
 > 
->  * memory.kmem.usage_in_bytes
->  * memory.kmem.limit_in_bytes
->  * memory.kmem.failcnt
->  * memory.kmem.max_usage_in_bytes
-> 
-> They have the same meaning of their user memory counterparts. They
-> reflect the state of the "kmem" res_counter.
-> 
-> The code is not enabled until a limit is set. This can be tested by the
-> flag "kmem_accounted". This means that after the patch is applied, no
-> behavioral changes exists for whoever is still using memcg to control
-> their memory usage.
-> 
-> We always account to both user and kernel resource_counters. This
-> effectively means that an independent kernel limit is in place when the
-> limit is set to a lower value than the user memory. A equal or higher
-> value means that the user limit will always hit first, meaning that kmem
-> is effectively unlimited.
-
-Well, it contributes to the user limit so it is not unlimited. It just
-falls under a different limit and it tends to contribute less. This can
-be quite confusing.  I am still not sure whether we should mix the two
-things together. If somebody wants to limit the kernel memory he has to
-touch the other limit anyway.  Do you have a strong reason to mix the
-user and kernel counters?
-My impression was that kernel allocation should simply fail while user
-allocations might reclaim as well. Why should we reclaim just because of
-the kernel allocation (which is unreclaimable from hard limit reclaim
-point of view)?
-I also think that the whole thing would get much simpler if those two
-are split. Anyway if this is really a must then this should be
-documented here.
- 
-One nit bellow.
-
-> People who want to track kernel memory but not limit it, can set this
-> limit to a very high number (like RESOURCE_MAX - 1page - that no one
-> will ever hit, or equal to the user memory)
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > ---
->  mm/memcontrol.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 68 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b0e29f4..54e93de 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -4046,8 +4059,23 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
->  			break;
->  		if (type == _MEM)
->  			ret = mem_cgroup_resize_limit(memcg, val);
-> -		else
-> +		else if (type == _MEMSWAP)
->  			ret = mem_cgroup_resize_memsw_limit(memcg, val);
-> +		else if (type == _KMEM) {
-> +			ret = res_counter_set_limit(&memcg->kmem, val);
-> +			if (ret)
-> +				break;
-> +			/*
-> +			 * Once enabled, can't be disabled. We could in theory
-> +			 * disable it if we haven't yet created any caches, or
-> +			 * if we can shrink them all to death.
-> +			 *
-> +			 * But it is not worth the trouble
-> +			 */
-> +			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
-> +				memcg->kmem_accounted = true;
-> +		} else
-> +			return -EINVAL;
->  		break;
-
-This doesn't check for the hierachy so kmem_accounted might not be in 
-sync with it's parents. mem_cgroup_create (below) needs to copy
-kmem_accounted down from the parent and the above needs to check if this
-is a similar dance like mem_cgroup_oom_control_write.
-
-[...]
-
-> @@ -5033,6 +5098,7 @@ mem_cgroup_create(struct cgroup *cont)
->  	if (parent && parent->use_hierarchy) {
->  		res_counter_init(&memcg->res, &parent->res);
->  		res_counter_init(&memcg->memsw, &parent->memsw);
-> +		res_counter_init(&memcg->kmem, &parent->kmem);
->  		/*
->  		 * We increment refcnt of the parent to ensure that we can
->  		 * safely access it on res_counter_charge/uncharge.
-> @@ -5043,6 +5109,7 @@ mem_cgroup_create(struct cgroup *cont)
->  	} else {
->  		res_counter_init(&memcg->res, NULL);
->  		res_counter_init(&memcg->memsw, NULL);
-> +		res_counter_init(&memcg->kmem, NULL);
->  	}
->  	memcg->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&memcg->oom_notify);
-> -- 
-> 1.7.11.2
+> Andrew: the arch maintainers have been CCed. Best is the maintainers
+> respond, test and perhaps take the corresponding change. Let's see how
+> this will work out..
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+>  arch/c6x/Kconfig       |    1 +
 
--- 
-Michal Hocko
-SUSE Labs
+The c6x port also needs this:
+
+C6X: add L*_CACHE_SHIFT defines
+    
+C6X currently lacks L*_CACHE_SHIFT defines which are used in a few
+places in the generic kernel. This patch adds those missing defines.
+    
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+
+diff --git a/arch/c6x/include/asm/cache.h b/arch/c6x/include/asm/cache.h
+index 6d521d9..feff1d7 100644
+--- a/arch/c6x/include/asm/cache.h
++++ b/arch/c6x/include/asm/cache.h
+@@ -1,7 +1,7 @@
+ /*
+  *  Port on Texas Instruments TMS320C6x architecture
+  *
+- *  Copyright (C) 2005, 2006, 2009, 2010 Texas Instruments Incorporated
++ *  Copyright (C) 2005, 2006, 2009, 2010, 2012 Texas Instruments Incorporated
+  *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
+  *
+  *  This program is free software; you can redistribute it and/or modify
+@@ -16,9 +16,14 @@
+ /*
+  * Cache line size
+  */
+-#define L1D_CACHE_BYTES   64
+-#define L1P_CACHE_BYTES   32
+-#define L2_CACHE_BYTES   128
++#define L1D_CACHE_SHIFT   6
++#define L1D_CACHE_BYTES   (1 << L1D_CACHE_SHIFT)
++
++#define L1P_CACHE_SHIFT   5
++#define L1P_CACHE_BYTES   (1 << L1P_CACHE_SHIFT)
++
++#define L2_CACHE_SHIFT    7
++#define L2_CACHE_BYTES    (1 << L2_CACHE_SHIFT)
+ 
+ /*
+  * L2 used as cache
+@@ -29,7 +34,8 @@
+  * For practical reasons the L1_CACHE_BYTES defines should not be smaller than
+  * the L2 line size
+  */
+-#define L1_CACHE_BYTES        L2_CACHE_BYTES
++#define L1_CACHE_SHIFT        L2_CACHE_SHIFT
++#define L1_CACHE_BYTES        (1 << L2_CACHE_SHIFT)
+ 
+ #define L2_CACHE_ALIGN_LOW(x) \
+        (((x) & ~(L2_CACHE_BYTES - 1)))
+
+
+
