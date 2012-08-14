@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2HNXBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:01:11 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:59198 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab2HNXBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:01:08 -0400
-Date: Tue, 14 Aug 2012 16:00:55 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Jiri Pirko <jiri@resnulli.us>, <netdev@vger.kernel.org>,
-        <davem@davemloft.net>, <edumazet@google.com>, <faisal.latif@intel.com>,
-        <roland@kernel.org>, <sean.hefty@intel.com>,
-        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
-        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
-        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
-        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
-        <linux390@de.ibm.com>, <therbert@google.com>,
-        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
-        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
-        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
-        <fbl@redhat.com>
-Subject: Re: [patch net-next v2 01/15] net: introduce upper device lists
-Message-ID: <20120814160055.1e948456@nehalam.linuxnetplumber.net>
-In-Reply-To: <1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
-	<1344956748-2099-2-git-send-email-jiri@resnulli.us>
-	<1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753871Ab2HNXBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:01:07 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:41606 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab2HNXBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:01:06 -0400
+Date: Tue, 14 Aug 2012 16:01:00 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
+ timers
+Message-ID: <20120814230100.GF25632@google.com>
+References: <1344449428-24962-1-git-send-email-tj@kernel.org>
+ <20120813233520.GG25632@google.com>
+ <alpine.LFD.2.02.1208142055260.32033@ionos>
+ <20120814192203.GY25632@google.com>
+ <alpine.LFD.2.02.1208142243500.32033@ionos>
+ <20120814215632.GE25632@google.com>
+ <alpine.LFD.2.02.1208150005090.32033@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1208150005090.32033@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012 23:33:44 +0100
-Ben Hutchings <bhutchings@solarflare.com> wrote:
+Hello, Thomas.
 
-> On Tue, 2012-08-14 at 17:05 +0200, Jiri Pirko wrote:
-> > This lists are supposed to serve for storing pointers to all upper devices.
-> > Eventually it will replace dev->master pointer which is used for
-> > bonding, bridge, team but it cannot be used for vlan, macvlan where
-> > there might be multiple upper present. In case the upper link is
-> > replacement for dev->master, it is marked with "master" flag.
+On Wed, Aug 15, 2012 at 12:45:24AM +0200, Thomas Gleixner wrote:
+> And we have very well worked out mechanisms regarding cross tree
+> changes, i.e. providing minimal trees to pull for other maintainers.
+
+If you look at the review branches, they're actually structured that
+way so that the timer part can be pulled separately.  If the
+maintainer wants to do that, sure.  If the maintainer thinks routing
+through another tree is fine, that's okay too.  Subsystem boundaries
+are all good and great but it's not some absolute barrier which can't
+be crossed at any cost.
+
+> > If you're upset about the style of the ping, I apologize.  I'll try
+> > to be more sensitive when pinging you.
 > 
-> Something I found interesting is that the dev->master pointer and now
-> netdev_master_upper_dev_get{,_rcu}() are hardly used by the stackled
-> drivers that set the master.  They also have to set an rx_handler on the
-> lower device (which is itself mutually exclusive) which gets its own
-> context pointer (rx_handler_data).
-> 
-> Instead, the master pointer is mostly used by device drivers to find out
-> about a bridge or bonding device above *their* devices.  And that seems
-> to work only for those specific device drivers, not e.g. openvswitch or
-> team.  I wonder if we could find a better way to encapsulate the things
-> they want do do, in a later step (not holding up this change!).
+> It's not about me. You are trying to play the system.
 
-The concept is master is very useful to user level config things like
-Vyatta for seeing parent/child relationship. Since is in ABI now, it
-must stay.
+Thomas, I wasn't trying to get it through behind your back.  You have
+been notified clearly multiple times and have ample opportunities to
+object and suggest different ways if you don't like whatever is going
+on.
 
+I probably should have written "if the maintainer doesn't object, I
+think it would be easier to route these through wq/for-3.7 as it will
+be the only user for now, blah blah blah" instead and maybe I
+misjudged the character of the changes or the subsystem.  That said, I
+think you're inferring too much.
+
+Thanks.
+
+-- 
+tejun
