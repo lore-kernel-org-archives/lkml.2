@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2HNNOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:14:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14720 "EHLO mga11.intel.com"
+	id S1756118Ab2HNNOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:14:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63347 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755329Ab2HNNOc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:14:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,766,1336374000"; 
-   d="scan'208";a="200676092"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>, infinipath <infinipath@intel.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
- return code
-Thread-Topic: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
- return code
-Thread-Index: AQHNehyXz9LGAtUWWk6CmO70T4Zf55dZSMjA
-Date: Tue, 14 Aug 2012 13:14:30 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC0D4F1553@FMSMSX108.amr.corp.intel.com>
-References: <1344949115-13266-1-git-send-email-Julia.Lawall@lip6.fr>
- <1344949115-13266-6-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1344949115-13266-6-git-send-email-Julia.Lawall@lip6.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755398Ab2HNNOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 09:14:37 -0400
+Date: Tue, 14 Aug 2012 10:14:00 -0300
+From: Flavio Leitner <fbl@redhat.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
+        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
+        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
+        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
+        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Subject: Re: [patch net-next 01/16] net: introduce upper device lists
+Message-ID: <20120814101400.0ef7aaa9@obelix.rh>
+In-Reply-To: <20120814122433.GB1661@minipsycho.brq.redhat.com>
+References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
+	<1344871635-1052-2-git-send-email-jiri@resnulli.us>
+	<20120813145217.38748c4f@obelix.rh>
+	<20120814122433.GB1661@minipsycho.brq.redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
-> return code
-> 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Tue, 14 Aug 2012 14:24:33 +0200
+Jiri Pirko <jiri@resnulli.us> wrote:
 
-Acked-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+> Mon, Aug 13, 2012 at 07:52:17PM CEST, fbl@redhat.com wrote:
+> >On Mon, 13 Aug 2012 17:27:00 +0200
+> >Jiri Pirko <jiri@resnulli.us> wrote:
+> >> +	/*
+> >> +	 * To prevent loops, check if dev is not upper device to upper_dev.
+> >> +	 */
+> >> +	if (__netdev_has_upper_dev(upper_dev, dev, true))
+> >> +		return -EBUSY;
+> >> +
+> >> +	if (__netdev_find_upper(dev, upper_dev))
+> >> +		return -EEXIST;
+> >
+> >__netdev_has_upper_dev() can go all the way up finding the device and
+> >the __netdev_find_upper() just check the first level.
+> 
+> 
+> I do not think this ordering is somewhat inportant.
+
+it's not the order, see below:
+
+> >I think it would be better to use:
+> >__netdev_find_upper_dev(,,deep=true/false)
+> >__netdev_has_upper(,)
+
+It's their names.  Currently, the function ..._find_... look at
+one level only, while the function ..._has_... does one or more
+levels.  I think it's better to swap 'has' and 'find' in their names:
+
+__netdev_find_upper_dev(,,deep=true/false) <-- find in all levels
+__netdev_has_upper(,)  <-- check only the one level.
+
+fbl
