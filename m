@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab2HNMDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:03:44 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:45117 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab2HNMDm (ORCPT
+	id S1754172Ab2HNMH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:07:58 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36712 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752002Ab2HNMH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:03:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120814011826.GA2255@leaf>
-References: <1344891431-30869-1-git-send-email-blquythai@gmail.com>
-	<20120813212151.GA15429@phenom.dumpdata.com>
-	<CAKkTMC5SP6LgWbhtkU_HCBUAfArGuHXtp4mcwi2tFTjZOwVQbA@mail.gmail.com>
-	<5029823A.9020207@xenotime.net>
-	<20120814011826.GA2255@leaf>
-Date: Tue, 14 Aug 2012 08:03:41 -0400
-Message-ID: <CA+5PVA6dzzP=go8M=gDRN79DovC6QiuA3sy=2bdgmn3vdZp_zw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] boot: Put initcall_debug into its own Kconfig option DEBUG_INITCALL
-From: Josh Boyer <jwboyer@gmail.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Thai Bui <blquythai@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Aug 2012 08:07:57 -0400
+Message-ID: <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 14 Aug 2012 13:07:51 +0100
+In-Reply-To: <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
+References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
+	 <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 9:18 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Mon, Aug 13, 2012 at 03:39:54PM -0700, Randy Dunlap wrote:
->> On 08/13/2012 03:08 PM, Thai Bui wrote:
->> >Hi all,
->> >
->> >I am as part of a capstone group at Portland State University is working
->> >to tinify the kernel as small as possible. The ultimate goal is to make
->> >the kernel small enough to use on micro-controller (or under < 200k).
->> >This patch is one of them, it saves 176 bytes on a minimal configuration
->> >of the kernel (the bzImage file was reduced from 363264 bytes to 363264
->> >bytes applying this patch).
->> >
->> >Aside from the purpose of reducing the size of the kernel. We are also
->> >trying to clean up the kernel by making Kconfig options to compile out
->> >the stuffs that aren't used often.
->>
->> IMO the kernel already has too many kconfig options.
->>
->> Also, personally I would not merge a patch that saves so little memory,
->> especially on what I consider a very useful option.
->
-> I think Thai undersold his patch significantly; the *compressed* size
-> went down by 176 bytes, and the uncompressed size went down more than
-> that.  And that's the savings starting from a very minimal kernel, not
-> starting from a defconfig kernel.
->
-> In any case, do you object to the introduction of a Kconfig option at
-> all, or to that option defaulting to off?  In particular, would you
-> object if the option only showed up if EMBEDDED, and defaulted to y?  At
-> that point, you could reasonably expect that most users and distros will
-> have it enabled, so you'll be able to count on asking people to enable
-> it and send you the output.  Would that suffice?
+On Tue, 2012-08-14 at 18:48 +0900, Chanho Min wrote:
+> We don't need to unlock the queue before put_device in scsi_request_fn()
+> If we trigger the ->remove() function, It occur a oops from the caller.
+> So sdev reference count should not be dropped to zero here.
+> Also It was added before scsi_device_dev_release() was moved
+> to user context, so it is outdated.
 
-Hiding it behind EMBEDDED might be a start.  From a distro perspective,
-we actually use this particular option quite often so keeping the
-ability to use it as you describe is important.
+None of this sounds to be correct.  The user context comment is
+irrelevant because if we happen to be in user context, all the release
+functions will occur in line.  I also don't see why the sdev reference
+couldn't drop to zero here.
 
-> The patch itself seems incredibly straightforward and non-invasive to
-> me; it just stubs out the global variable and lets GCC fold away all the
-> code.
->
-> At this point, the kernel is running out of major things to cut out to
-> save space; getting from ~200k (the current smallest kernel possible) to
-> much less than that will require a pile of patches that save anywhere
-> from a few hundred bytes to a few kilobytes.  I certainly agree that
-> those patches need to avoid introducing too much complexity.  However, I
-> don't think it makes sense to object to a patch that saves space solely
-> on the grounds that it doesn't save *more* space.  That would make it
-> impossible to cut out small things, and small things add up.
+The reason I think we could remove the lock drop is because the queue
+reference cannot drop to zero here because the block layer is holding a
+reference to run the queue.  It's only the queue ->release function that
+would take the queue lock and therefore we're safe to hold it.
 
-If you're really going to pursue that, I'd suggest hiding the removals
-behind a new option that most people won't set.
+James
 
-josh
+
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
+> Reviewed-by: Bart Van Assche <bvanassche@acm.org>
+> ---
+>  drivers/scsi/scsi_lib.c |    4 ----
+>  1 files changed, 0 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index ffd7773..cb2185a 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1626,11 +1626,7 @@ out_delay:
+>  	if (sdev->device_busy == 0)
+>  		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+>  out:
+> -	/* must be careful here...if we trigger the ->remove() function
+> -	 * we cannot be holding the q lock */
+> -	spin_unlock_irq(q->queue_lock);
+>  	put_device(&sdev->sdev_gendev);
+> -	spin_lock_irq(q->queue_lock);
+>  }
+> 
+>  u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
+
+
