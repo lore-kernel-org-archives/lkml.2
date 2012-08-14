@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2HNPqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:46:21 -0400
-Received: from seven.medozas.de ([5.9.24.206]:50584 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab2HNPqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:46:19 -0400
-Date: Tue, 14 Aug 2012 17:46:17 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: =?UTF-8?Q?Martin-=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
-cc: Jonathan Nieder <jrnieder@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, debian-kernel@lists.debian.org
-Subject: Re: [PATCH] scripts/package/builddeb: upgrade to current practices
-In-Reply-To: <CAPZXPQc02=6FnTb_RmgfpW+A4=N_huZW1FUYdjJ=Nt0Y3pqZ+A@mail.gmail.com>
-Message-ID: <alpine.LNX.2.01.1208141710580.18667@frira.zrqbmnf.qr>
-References: <1342547874.5129.2.camel@henna.lan> <20120717193951.GA15208@burratino> <CAPZXPQc02=6FnTb_RmgfpW+A4=N_huZW1FUYdjJ=Nt0Y3pqZ+A@mail.gmail.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1755449Ab2HNPrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:47:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54448 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab2HNPrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:47:06 -0400
+Message-ID: <502A72EF.3030303@gmail.com>
+Date: Tue, 14 Aug 2012 23:46:55 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities
+ registers
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+In-Reply-To: <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tuesday 2012-07-17 21:46, Martin-Éric Racine wrote:
->>> @@ -188,17 +188,17 @@ This is a packacked upstream version of the Linux kernel.
->>>  The sources may be found at most Linux ftp sites, including:
->>>  ftp://ftp.kernel.org/pub/linux/kernel
->>>
->>> -Copyright: 1991 - 2009 Linus Torvalds and others.
->>> +Copyright: 1991-2012 Linus Torvalds and others.
->>>
->>> -The git repository for mainline kernel development is at:
->>> -git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
->>> +The GIT repository for mainline kernel development is at:
->>> +git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+Hi Bjorn,
+	No problem, will handle issues mentioned below.
+	Regards!
+	Gerry
+On 08/14/2012 12:25 PM, Bjorn Helgaas wrote:
+> On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> From: Jiang Liu <liuj97@gmail.com>
 >>
->> I personally like to spell it as "Git". ;-)
->
->That works for me too. Actually, what's the official spelling for it?
-
-The acronymic usage of "GIT" to mean Global Information Tracker has
-not caught on. Therefore most likely "Git"; like "Linux", a noun, a
-name.
+>> As suggested by Bjorn Helgaas and Don Dutile in threads
+>> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+>> to PCIe capabilities register in to way:
+>> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+>>    repeatedly reading this register because it's read only.
+>> 2) provide access functions for PCIe Capabilities registers to hide differences
+>>    among PCIe base specifications, so the caller don't need to handle those
+>>    differences.
+>>
+>> This patch set applies to
+>> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+> 
+> Would you mind rebasing this to v3.6-rc1?  I think you posted this
+> when my branch was still 3.5-based, and there are some upstream
+> changes that cause minor conflicts here.
+> 
+> You currently have:
+> 
+>     int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
+> u16 set_bits, u16 clear_bits)
+> 
+> I think this is a bit awkward because the function name doesn't
+> suggest *how* the word will be changed, and the clearing happens
+> before the setting (opposite the parameter order).  Something like:
+> 
+>     int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
+>     int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
+> 
+> would be more obvious.  If you use "mask_and_set", I think the
+> function should do "(val & mask) | set" with the complement being at
+> the call site.  If you use "clear_and_set", I think it's OK to do
+> "(val & ~mask) | set" as in your current patch.
+> 
+> I know I suggested the "pci_pcie_capability_*" names, but they're
+> getting a bit unwieldy, especially if we do "mask_and_set" or similar.
+>  There are already several "pcie_*" functions, so maybe we should
+> drop the leading "pci_" from these and just have:
+> 
+>     pcie_capability_read_word
+>     pcie_capability_write_word
+>     pcie_capability_mask_and_set_word
+> 
+> Bjorn
+> 
 
