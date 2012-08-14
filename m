@@ -1,183 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2HMX4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 19:56:54 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:63821 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab2HMX4w (ORCPT
+	id S1755290Ab2HNAKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 20:10:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50387 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755223Ab2HNAKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 19:56:52 -0400
-Subject: mmotm 2012-08-13-16-55 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Mon, 13 Aug 2012 16:56:50 -0700
-Message-Id: <20120813235651.00A13100047@wpzn3.hot.corp.google.com>
+	Mon, 13 Aug 2012 20:10:10 -0400
+Date: Mon, 13 Aug 2012 17:10:05 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH wq/for-3.7] workqueue: add missing wmb() in
+ clear_work_data()
+Message-ID: <20120814001005.GI25632@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2012-08-13-16-55 has been uploaded to
+>From 23657bb192f14b789e4c478def8f11ecc95b4f6c Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Mon, 13 Aug 2012 17:08:19 -0700
 
-   http://www.ozlabs.org/~akpm/mmotm/
+Any operation which clears PENDING should be preceded by a wmb to
+guarantee that the next PENDING owner sees all the changes made before
+PENDING release.
 
-mmotm-readme.txt says
+There are only two places where PENDING is cleared -
+set_work_cpu_and_clear_pending() and clear_work_data().  The caller of
+the former already does smp_wmb() but the latter doesn't have any.
 
-README for mm-of-the-moment:
+Move the wmb above set_work_cpu_and_clear_pending() into it and add
+one to clear_work_data().
 
-http://www.ozlabs.org/~akpm/mmotm/
+There hasn't been any report related to this issue, and, given how
+clear_work_data() is used, it is extremely unlikely to have caused any
+actual problems on any architecture.
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+Fix for another theoretical wmb problem.  Will push through
+wq/for-3.7.
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+Thanks.
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+ kernel/workqueue.c |   19 ++++++++++++-------
+ 1 files changed, 12 insertions(+), 7 deletions(-)
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 11723c5..4fef952 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -570,11 +570,19 @@ static void set_work_cwq(struct work_struct *work,
+ static void set_work_cpu_and_clear_pending(struct work_struct *work,
+ 					   unsigned int cpu)
+ {
++	/*
++	 * The following wmb is paired with the implied mb in
++	 * test_and_set_bit(PENDING) and ensures all updates to @work made
++	 * here are visible to and precede any updates by the next PENDING
++	 * owner.
++	 */
++	smp_wmb();
+ 	set_work_data(work, (unsigned long)cpu << WORK_OFFQ_CPU_SHIFT, 0);
+ }
+ 
+ static void clear_work_data(struct work_struct *work)
+ {
++	smp_wmb();	/* see set_work_cpu_and_clear_pending() */
+ 	set_work_data(work, WORK_STRUCT_NO_CPU, 0);
+ }
+ 
+@@ -2182,14 +2190,11 @@ __acquires(&gcwq->lock)
+ 		wake_up_worker(pool);
+ 
+ 	/*
+-	 * Record the last CPU and clear PENDING.  The following wmb is
+-	 * paired with the implied mb in test_and_set_bit(PENDING) and
+-	 * ensures all updates to @work made here are visible to and
+-	 * precede any updates by the next PENDING owner.  Also, clear
+-	 * PENDING inside @gcwq->lock so that PENDING and queued state
+-	 * changes happen together while IRQ is disabled.
++	 * Record the last CPU and clear PENDING which should be the last
++	 * update to @work.  Also, do this inside @gcwq->lock so that
++	 * PENDING and queued state changes happen together while IRQ is
++	 * disabled.
+ 	 */
+-	smp_wmb();
+ 	set_work_cpu_and_clear_pending(work, gcwq->cpu);
+ 
+ 	spin_unlock_irq(&gcwq->lock);
+-- 
+1.7.7.3
 
-A git tree which contains the memory management portion of this tree is
-maintained at https://github.com/mstsxfx/memcg-devel.git by Michal Hocko. 
-It contains the patches which are between the "#NEXT_PATCHES_START mm" and
-"#NEXT_PATCHES_END" markers, from the series file,
-http://www.ozlabs.org/~akpm/mmotm/series.
-
-
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.cmpxchg.org/linux-mmotm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
-
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.6-rc1:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  linux-next.patch
-  i-need-old-gcc.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-* cs5535-clockevt-typo-its-mfgpt-not-mfpgt.patch
-* mm-change-nr_ptes-bug_on-to-warn_on.patch
-* documentation-update-mount-option-in-filesystem-vfattxt.patch
-* cciss-fix-incorrect-scsi-status-reporting.patch
-* acpi_memhotplugc-fix-memory-leak-when-memory-device-is-unbound-from-the-module-acpi_memhotplug.patch
-* acpi_memhotplugc-free-memory-device-if-acpi_memory_enable_device-failed.patch
-* acpi_memhotplugc-remove-memory-info-from-list-before-freeing-it.patch
-* acpi_memhotplugc-dont-allow-to-eject-the-memory-device-if-it-is-being-used.patch
-* acpi_memhotplugc-bind-the-memory-device-when-the-driver-is-being-loaded.patch
-* acpi_memhotplugc-auto-bind-the-memory-device-which-is-hotplugged-before-the-driver-is-loaded.patch
-* arch-x86-platform-iris-irisc-register-a-platform-device-and-a-platform-driver.patch
-* arch-x86-include-asm-spinlockh-fix-comment.patch
-* mn10300-only-add-mmem-funcs-to-kbuild_cflags-if-gcc-supports-it.patch
-* dma-dmaengine-lower-the-priority-of-failed-to-get-dma-channel-message.patch
-* pcmcia-move-unbind-rebind-into-dev_pm_opscomplete.patch
-* ppc-e500_tlb-memset-clears-nothing.patch
-  cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-* timeconstpl-remove-deprecated-defined-array.patch
-* time-dont-inline-export_symbol-functions.patch
-* thermal-add-generic-cpufreq-cooling-implementation.patch
-* hwmon-exynos4-move-thermal-sensor-driver-to-driver-thermal-directory.patch
-* thermal-exynos5-add-exynos5-thermal-sensor-driver-support.patch
-* thermal-exynos-register-the-tmu-sensor-with-the-kernel-thermal-layer.patch
-* arm-exynos-add-thermal-sensor-driver-platform-data-support.patch
-* ocfs2-use-find_last_bit.patch
-* ocfs2-use-bitmap_weight.patch
-* drivers-scsi-atp870uc-fix-bad-use-of-udelay.patch
-* vfs-increment-iversion-when-a-file-is-truncated.patch
-* fs-push-rcu_barrier-from-deactivate_locked_super-to-filesystems.patch
-* mm-slab-remove-duplicate-check.patch
-* slab-do-not-call-compound_head-in-page_get_cache.patch
-* mm-slab_commonc-fix-warning.patch
-  mm.patch
-* mm-remove-__gfp_no_kswapd.patch
-* remove-__gfp_no_kswapd-fixes.patch
-* remove-__gfp_no_kswapd-fixes-fix.patch
-* x86-pat-remove-the-dependency-on-vm_pgoff-in-track-untrack-pfn-vma-routines.patch
-* x86-pat-separate-the-pfn-attribute-tracking-for-remap_pfn_range-and-vm_insert_pfn.patch
-* x86-pat-separate-the-pfn-attribute-tracking-for-remap_pfn_range-and-vm_insert_pfn-fix.patch
-* mm-x86-pat-rework-linear-pfn-mmap-tracking.patch
-* mm-introduce-arch-specific-vma-flag-vm_arch_1.patch
-* mm-kill-vma-flag-vm_insertpage.patch
-* mm-kill-vma-flag-vm_can_nonlinear.patch
-* mm-use-mm-exe_file-instead-of-first-vm_executable-vma-vm_file.patch
-* mm-kill-vma-flag-vm_executable-and-mm-num_exe_file_vmas.patch
-* mm-prepare-vm_dontdump-for-using-in-drivers.patch
-* mm-kill-vma-flag-vm_reserved-and-mm-reserved_vm-counter.patch
-* mm-kill-vma-flag-vm_reserved-and-mm-reserved_vm-counter-fix.patch
-* frv-kill-used-but-uninitialized-variable.patch
-* ipc-mqueue-remove-unnecessary-rb_init_node-calls.patch
-* rbtree-reference-documentation-rbtreetxt-for-usage-instructions.patch
-* rbtree-empty-nodes-have-no-color.patch
-* rbtree-empty-nodes-have-no-color-fix.patch
-* rbtree-fix-incorrect-rbtree-node-insertion-in-fs-proc-proc_sysctlc.patch
-* rbtree-move-some-implementation-details-from-rbtreeh-to-rbtreec.patch
-* rbtree-move-some-implementation-details-from-rbtreeh-to-rbtreec-fix.patch
-* rbtree-performance-and-correctness-test.patch
-* rbtree-performance-and-correctness-test-fix.patch
-* rbtree-break-out-of-rb_insert_color-loop-after-tree-rotation.patch
-* rbtree-adjust-root-color-in-rb_insert_color-only-when-necessary.patch
-* rbtree-low-level-optimizations-in-rb_insert_color.patch
-* rbtree-adjust-node-color-in-__rb_erase_color-only-when-necessary.patch
-* rbtree-optimize-case-selection-logic-in-__rb_erase_color.patch
-* rbtree-low-level-optimizations-in-__rb_erase_color.patch
-* rbtree-coding-style-adjustments.patch
-* rbtree-rb_erase-updates-and-comments.patch
-* rbtree-optimize-fetching-of-sibling-node.patch
-* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid.patch
-* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid-fix.patch
-* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists.patch
-* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists-checkpatch-fixes.patch
-* fat-exportfs-move-nfs-support-code.patch
-* fat-exportfs-fix-dentry-reconnection.patch
-* ipc-semc-alternatives-to-preempt_disable.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  mutex-subsystem-synchro-test-module.patch
-  mutex-subsystem-synchro-test-module-fix.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  prio_tree-debugging-patch.patch
-  single_open-seq_release-leak-diagnostics.patch
-  add-a-refcount-check-in-dput.patch
