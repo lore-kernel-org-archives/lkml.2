@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab2HNTrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:47:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45617 "EHLO mx1.redhat.com"
+	id S1753801Ab2HNTsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 15:48:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25939 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab2HNTrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:47:51 -0400
-Date: Tue, 14 Aug 2012 22:48:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120814194837.GA28863@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
- <20120813082619.GE14081@redhat.com>
- <20120814174404.GA13338@t510.redhat.com>
- <20120814193525.GB28840@redhat.com>
+	id S1751887Ab2HNTsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 15:48:53 -0400
+Date: Tue, 14 Aug 2012 15:48:35 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH v3 2/6] floppy: do put_disk on current dr if
+ blk_init_queue fails
+Message-ID: <20120814194835.GE5760@redhat.com>
+References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
+ <1344881787-6422-3-git-send-email-herton.krzesinski@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120814193525.GB28840@redhat.com>
+In-Reply-To: <1344881787-6422-3-git-send-email-herton.krzesinski@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 10:35:25PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 14, 2012 at 02:44:05PM -0300, Rafael Aquini wrote:
-> > On Mon, Aug 13, 2012 at 11:26:19AM +0300, Michael S. Tsirkin wrote:
-> > > > +static inline bool movable_balloon_page(struct page *page)
-> > > > +{
-> > > > +	return (page->mapping && page->mapping == balloon_mapping);
-> > > 
-> > > I am guessing this needs smp_read_barrier_depends, and maybe
-> > > ACCESS_ONCE ...
-> > > 
-> > 
-> > I'm curious about your guessing here. Could you ellaborate it further, please?
-> > 
-> > 
-> > > > +#else
-> > > > +static inline bool isolate_balloon_page(struct page *page) { return false; }
-> > > > +static inline void putback_balloon_page(struct page *page) { return false; }
-> > > > +static inline bool movable_balloon_page(struct page *page) { return false; }
-> > > > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && CONFIG_COMPACTION */
-> > > > +
-> > > 
-> > > This does mean that only one type of balloon is useable at a time.
-> > > I wonder whether using a flag in address_space structure instead
-> > > is possible ...
-> > 
-> > This means we are only introducing this feature for virtio_balloon by now.
-> > Despite the flagging address_space stuff is something we surely can look in the
-> > future, I quite didn't get how we could be using two different types of balloon
-> > devices at the same time for the same system. Could you ellaborate it a little
-> > more, please?
-> > 
+On Mon, Aug 13, 2012 at 03:16:23PM -0300, Herton Ronaldo Krzesinski wrote:
+> If blk_init_queue fails, we do not call put_disk on the current dr
+> (dr is decremented first in the error handling loop).
 > 
-> E.g. kvm can emulate hyperv so it could in theory have hyperv balloon.
-> This is mm stuff it is best not to tie it to specific drivers.
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> ---
+>  drivers/block/floppy.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> index c8d9e68..1e09e99 100644
+> --- a/drivers/block/floppy.c
+> +++ b/drivers/block/floppy.c
+> @@ -4151,6 +4151,7 @@ static int __init do_floppy_init(void)
+>  
+>  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
+>  		if (!disks[dr]->queue) {
+> +			put_disk(disks[dr]);
+>  			err = -ENOMEM;
+>  			goto out_put_disk;
+>  		}
 
-But of course I agree this is not top priority, no need
-to block submission on this, just nice to have.
+I think it will create conflict with patch 6. Will it not call put_disk()
+twice on disks[dr].
 
-> > > > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > > > +bool isolate_balloon_page(struct page *page)
-> > > > +{
-> > > > +	if (WARN_ON(!movable_balloon_page(page)))
-> > > 
-> > > Looks like this actually can happen if the page is leaked
-> > > between previous movable_balloon_page and here.
-> > > 
-> > > > +		return false;
-> > 
-> > Yes, it surely can happen, and it does not harm to catch it here, print a warn and
-> > return.
-> 
-> If it is legal, why warn? For that matter why test here at all?
-> 
-> > While testing it, I wasn't lucky to see this small window opening, though.
+Why are we retaining this patch given the fact that we will loop through
+all the drives and queues in out_put_disk.
+
+Thanks
+Vivek
