@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab2HNQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:26:26 -0400
+	id S1756890Ab2HNQ0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:26:39 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582Ab2HNQ0U (ORCPT
+	with ESMTP id S1752652Ab2HNQ0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:26:20 -0400
+	Tue, 14 Aug 2012 12:26:34 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 13/16] lockd: use new hashtable implementation
-Date: Tue, 14 Aug 2012 18:24:47 +0200
-Message-Id: <1344961490-4068-14-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 15/16] openvswitch: use new hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:49 +0200
+Message-Id: <1344961490-4068-16-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
 References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
@@ -32,133 +32,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch lockd to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in lockd.
+Switch openvswitch to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in openvswitch.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- fs/lockd/svcsubs.c |   58 +++++++++++++++++++++++++--------------------------
- 1 files changed, 28 insertions(+), 30 deletions(-)
+ net/openvswitch/vport.c |   30 +++++++++++++-----------------
+ 1 files changed, 13 insertions(+), 17 deletions(-)
 
-diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
-index 0deb5f6..26c90c8 100644
---- a/fs/lockd/svcsubs.c
-+++ b/fs/lockd/svcsubs.c
-@@ -20,6 +20,7 @@
- #include <linux/lockd/share.h>
- #include <linux/module.h>
- #include <linux/mount.h>
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 6140336..3484120 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -27,6 +27,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/compat.h>
 +#include <linux/hashtable.h>
  
- #define NLMDBG_FACILITY		NLMDBG_SVCSUBS
+ #include "vport.h"
+ #include "vport-internal_dev.h"
+@@ -39,8 +40,8 @@ static const struct vport_ops *vport_ops_list[] = {
+ };
  
-@@ -28,8 +29,7 @@
-  * Global file hash table
+ /* Protected by RCU read lock for reading, RTNL lock for writing. */
+-static struct hlist_head *dev_table;
+-#define VPORT_HASH_BUCKETS 1024
++#define VPORT_HASH_BITS 10
++static DEFINE_HASHTABLE(dev_table, VPORT_HASH_BITS);
+ 
+ /**
+  *	ovs_vport_init - initialize vport subsystem
+@@ -49,10 +50,7 @@ static struct hlist_head *dev_table;
   */
- #define FILE_HASH_BITS		7
--#define FILE_NRHASH		(1<<FILE_HASH_BITS)
--static struct hlist_head	nlm_files[FILE_NRHASH];
-+static DEFINE_HASHTABLE(nlm_files, FILE_HASH_BITS);
- static DEFINE_MUTEX(nlm_file_mutex);
+ int ovs_vport_init(void)
+ {
+-	dev_table = kzalloc(VPORT_HASH_BUCKETS * sizeof(struct hlist_head),
+-			    GFP_KERNEL);
+-	if (!dev_table)
+-		return -ENOMEM;
++	hash_init(dev_table);
  
- #ifdef NFSD_DEBUG
-@@ -68,7 +68,7 @@ static inline unsigned int file_hash(struct nfs_fh *f)
- 	int i;
- 	for (i=0; i<NFS2_FHSIZE;i++)
- 		tmp += f->data[i];
--	return tmp & (FILE_NRHASH - 1);
-+	return tmp;
+ 	return 0;
+ }
+@@ -67,12 +65,6 @@ void ovs_vport_exit(void)
+ 	kfree(dev_table);
  }
  
- /*
-@@ -86,17 +86,17 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
- {
- 	struct hlist_node *pos;
- 	struct nlm_file	*file;
--	unsigned int	hash;
-+	unsigned int	key;
- 	__be32		nfserr;
- 
- 	nlm_debug_print_fh("nlm_lookup_file", f);
- 
--	hash = file_hash(f);
-+	key = file_hash(f);
- 
- 	/* Lock file table */
- 	mutex_lock(&nlm_file_mutex);
- 
--	hlist_for_each_entry(file, pos, &nlm_files[hash], f_list)
-+	hash_for_each_possible(nlm_files, file, pos, f_list, file_hash(f))
- 		if (!nfs_compare_fh(&file->f_handle, f))
- 			goto found;
- 
-@@ -123,7 +123,7 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
- 		goto out_free;
- 	}
- 
--	hlist_add_head(&file->f_list, &nlm_files[hash]);
-+	hash_add(nlm_files, &file->f_list, key);
- 
- found:
- 	dprintk("lockd: found file %p (count %d)\n", file, file->f_count);
-@@ -147,8 +147,8 @@ static inline void
- nlm_delete_file(struct nlm_file *file)
- {
- 	nlm_debug_print_file("closing file", file);
--	if (!hlist_unhashed(&file->f_list)) {
--		hlist_del(&file->f_list);
-+	if (hash_hashed(&file->f_list)) {
-+		hash_del(&file->f_list);
- 		nlmsvc_ops->fclose(file->f_file);
- 		kfree(file);
- 	} else {
-@@ -253,27 +253,25 @@ nlm_traverse_files(void *data, nlm_host_match_fn_t match,
- 	int i, ret = 0;
- 
- 	mutex_lock(&nlm_file_mutex);
--	for (i = 0; i < FILE_NRHASH; i++) {
--		hlist_for_each_entry_safe(file, pos, next, &nlm_files[i], f_list) {
--			if (is_failover_file && !is_failover_file(data, file))
--				continue;
--			file->f_count++;
--			mutex_unlock(&nlm_file_mutex);
+-static struct hlist_head *hash_bucket(const char *name)
+-{
+-	unsigned int hash = full_name_hash(name, strlen(name));
+-	return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
+-}
 -
--			/* Traverse locks, blocks and shares of this file
--			 * and update file->f_locks count */
--			if (nlm_inspect_file(data, file, match))
--				ret = 1;
--
--			mutex_lock(&nlm_file_mutex);
--			file->f_count--;
--			/* No more references to this file. Let go of it. */
--			if (list_empty(&file->f_blocks) && !file->f_locks
--			 && !file->f_shares && !file->f_count) {
--				hlist_del(&file->f_list);
--				nlmsvc_ops->fclose(file->f_file);
--				kfree(file);
--			}
-+	hash_for_each_safe(nlm_files, i, pos, next, file, f_list) {
-+		if (is_failover_file && !is_failover_file(data, file))
-+			continue;
-+		file->f_count++;
-+		mutex_unlock(&nlm_file_mutex);
+ /**
+  *	ovs_vport_locate - find a port that has already been created
+  *
+@@ -82,11 +74,11 @@ static struct hlist_head *hash_bucket(const char *name)
+  */
+ struct vport *ovs_vport_locate(const char *name)
+ {
+-	struct hlist_head *bucket = hash_bucket(name);
+ 	struct vport *vport;
+ 	struct hlist_node *node;
++	int key = full_name_hash(name, strlen(name));
+ 
+-	hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
++	hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
+ 		if (!strcmp(name, vport->ops->get_name(vport)))
+ 			return vport;
+ 
+@@ -170,14 +162,18 @@ struct vport *ovs_vport_add(const struct vport_parms *parms)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(vport_ops_list); i++) {
+ 		if (vport_ops_list[i]->type == parms->type) {
++			int key;
++			const char *name;
 +
-+		/* Traverse locks, blocks and shares of this file
-+		 * and update file->f_locks count */
-+		if (nlm_inspect_file(data, file, match))
-+			ret = 1;
-+
-+		mutex_lock(&nlm_file_mutex);
-+		file->f_count--;
-+		/* No more references to this file. Let go of it. */
-+		if (list_empty(&file->f_blocks) && !file->f_locks
-+		 && !file->f_shares && !file->f_count) {
-+			hash_del(&file->f_list);
-+			nlmsvc_ops->fclose(file->f_file);
-+			kfree(file);
+ 			vport = vport_ops_list[i]->create(parms);
+ 			if (IS_ERR(vport)) {
+ 				err = PTR_ERR(vport);
+ 				goto out;
+ 			}
+ 
+-			hlist_add_head_rcu(&vport->hash_node,
+-					   hash_bucket(vport->ops->get_name(vport)));
++			name = vport->ops->get_name(vport);
++			key = full_name_hash(name, strlen(name));
++			hash_add_rcu(dev_table, &vport->hash_node, key);
+ 			return vport;
  		}
  	}
- 	mutex_unlock(&nlm_file_mutex);
+@@ -218,7 +214,7 @@ void ovs_vport_del(struct vport *vport)
+ {
+ 	ASSERT_RTNL();
+ 
+-	hlist_del_rcu(&vport->hash_node);
++	hash_del_rcu(&vport->hash_node);
+ 
+ 	vport->ops->destroy(vport);
+ }
 -- 
 1.7.8.6
 
