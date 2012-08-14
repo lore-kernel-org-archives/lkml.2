@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab2HNI23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:28:29 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40030 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab2HNI20 (ORCPT
+	id S1754548Ab2HNI3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:29:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56877 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab2HNI27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:28:26 -0400
-Message-ID: <502A0C19.6010007@linux.vnet.ibm.com>
-Date: Tue, 14 Aug 2012 13:58:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 14 Aug 2012 04:28:59 -0400
+Message-ID: <502A0C43.2000906@linutronix.de>
+Date: Tue, 14 Aug 2012 10:28:51 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: tglx@linutronix.de, mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        josh@joshtriplett.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] preempt/hardirq.h: Clarify PREEMPT_ACTIVE bit location
-References: <20120720192459.6149.14821.stgit@srivatsabhat.in.ibm.com> <1343706583.27983.28.camel@gandalf.stny.rr.com>
-In-Reply-To: <1343706583.27983.28.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Roland McGrath <roland@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stan_shebs@mentor.com
+Subject: Re: [PATCH v2 2/5] x86/uprobes: implement x86 specific arch_uprobe_*_step
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-3-git-send-email-bigeasy@linutronix.de> <20120808125709.GA4504@redhat.com> <50226700.9000606@linutronix.de> <20120808145345.GA8171@redhat.com> <20120809044356.GA3163@in.ibm.com> <20120809170953.GA27835@linutronix.de> <20120813132443.GB5269@redhat.com>
+In-Reply-To: <20120813132443.GB5269@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081408-5564-0000-0000-00000402DCA0
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/13/2012 03:24 PM, Oleg Nesterov wrote:
+> On 08/09, Sebastian Andrzej Siewior wrote:
+>>
+>> v1..v2: re-use auprobe->fixups for fixups
+>
+> Yes, but
+>
+>> @@ -46,6 +46,8 @@ struct arch_uprobe_task {
+>>   #ifdef CONFIG_X86_64
+>>   	unsigned long			saved_scratch_register;
+>>   #endif
+>> +#define UPROBE_CLEAR_TF			(1<<  0)
+>> +	unsigned int			restore_flags;
+>>   };
+>
+> this patch still adds restore_flags into arch_uprobe_task.
 
-By default, the PREEMPT_ACTIVE flag is bit 27, but different
-architectures can override that. Update the comment to reflect
-this fact.
+Yes, but
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+>>   static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
+>>   {
+>> -	bool fix_ip = true, fix_call = false;	/* defaults */
+>> +	bool fix_ip = true, fix_call = false, fix_tf = false;	/* defaults */
+>>   	int reg;
+>>
+>>   	insn_get_opcode(insn);	/* should be a nop */
+>>
+>>   	switch (OPCODE1(insn)) {
+>> +	case 0x9d:
+>> +		/* popf */
+>> +		fix_tf = true;
+>> +		break;
+>>   	case 0xc3:		/* ret/lret */
+>>   	case 0xcb:
+>>   	case 0xc2:
+>> @@ -277,6 +284,8 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
+>>   		auprobe->fixups |= UPROBE_FIX_IP;
+>>   	if (fix_call)
+>>   		auprobe->fixups |= UPROBE_FIX_CALL;
+>> +	if (fix_tf)
+>> +		auprobe->fixups |= UPROBE_TF_CHANGES;
+>>   }
+>
+> I won't insist, but do we really need fix_tf? "case 0x9d" could simply
+> add UPROBE_TF_CHANGES.
 
- include/linux/hardirq.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+if it is not 0x9d (in most cases) we need to decide on per-process
+basis (not per-breakpoint) whether the task has gdb watching it or not.
+So this code is evaluated once (by the time the breakpoint is
+installed) but it may be executed two times: once with gdb and once
+without it. On first execution the SIGTRAP will wakeup gdb, on the
+second the SIGTRAP will terminate the program because there is no TRAP
+handler installed.
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 305f23c..483aa60 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -20,10 +20,15 @@
-  * hardirq nesting. An arch may choose to give less than 10 bits.
-  * m68k expects it to be 8.
-  *
-+ * By default, the bits are defined as shown below:
-+ *
-  * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
-  * - bit 26 is the NMI_MASK
-  * - bit 27 is the PREEMPT_ACTIVE flag
-  *
-+ * However, different architectures may override them. (For example,
-+ * x86 defines bit 28 as the PREEMPT_ACTIVE flag).
-+ *
-  * PREEMPT_MASK: 0x000000ff
-  * SOFTIRQ_MASK: 0x0000ff00
-  * HARDIRQ_MASK: 0x03ff0000
+> Oleg.
 
-
+Sebastian
