@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab2HNEMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 00:12:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53972 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2HNEMu (ORCPT
+	id S1751918Ab2HNE0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 00:26:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55751 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab2HNE0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 00:12:50 -0400
-Date: Mon, 13 Aug 2012 21:12:48 -0700 (PDT)
-Message-Id: <20120813.211248.127125657316651796.davem@davemloft.net>
-To: mcgrof@frijolero.org
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        lf_driver_backport@lists.linux-foundation.org, julia.lawall@lip6.fr,
-        jespera@diku.dk, ozancag@gmail.com, hauke@hauke-m.de
-Subject: Re: Backports mailing list
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAB=NE6W_SQUJmAXaLesyRShtQ=Urz=w5Ks5jEXq_50bRge+PWQ@mail.gmail.com>
-References: <CAB=NE6W_SQUJmAXaLesyRShtQ=Urz=w5Ks5jEXq_50bRge+PWQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Aug 2012 00:26:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 13 Aug 2012 21:25:55 -0700
+Message-ID: <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 13 Aug 2012 13:42:53 -0700
+On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> From: Jiang Liu <liuj97@gmail.com>
+>
+> As suggested by Bjorn Helgaas and Don Dutile in threads
+> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+> to PCIe capabilities register in to way:
+> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+>    repeatedly reading this register because it's read only.
+> 2) provide access functions for PCIe Capabilities registers to hide differences
+>    among PCIe base specifications, so the caller don't need to handle those
+>    differences.
+>
+> This patch set applies to
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
 
-> I was hoping we can get a mailing list set up on vger for the
-> project, perhaps backports@vger.kernel.org, so we don't flood the
-> other mailing lists with random kernel backport junk. Please let me
-> know if this is reasonable.
+Would you mind rebasing this to v3.6-rc1?  I think you posted this
+when my branch was still 3.5-based, and there are some upstream
+changes that cause minor conflicts here.
 
-It would have been so much easier if you simply just asked for this
-instead of giving me a life story of all of these projects to read.
+You currently have:
 
-backports@vger.kernel.org has been created
+    int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
+u16 set_bits, u16 clear_bits)
+
+I think this is a bit awkward because the function name doesn't
+suggest *how* the word will be changed, and the clearing happens
+before the setting (opposite the parameter order).  Something like:
+
+    int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
+    int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
+
+would be more obvious.  If you use "mask_and_set", I think the
+function should do "(val & mask) | set" with the complement being at
+the call site.  If you use "clear_and_set", I think it's OK to do
+"(val & ~mask) | set" as in your current patch.
+
+I know I suggested the "pci_pcie_capability_*" names, but they're
+getting a bit unwieldy, especially if we do "mask_and_set" or similar.
+ There are already several "pcie_*" functions, so maybe we should
+drop the leading "pci_" from these and just have:
+
+    pcie_capability_read_word
+    pcie_capability_write_word
+    pcie_capability_mask_and_set_word
+
+Bjorn
