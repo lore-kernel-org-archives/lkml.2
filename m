@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2HNGUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 02:20:49 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43630 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2HNGUs (ORCPT
+	id S1753625Ab2HNGa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 02:30:27 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:53883 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751950Ab2HNGaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 02:20:48 -0400
-X-AuditID: 9c93016f-b7c98ae0000013b4-c9-5029ee3ebeb3
-Date: Tue, 14 Aug 2012 15:22:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH 0/7] zram/zsmalloc promotion
-Message-ID: <20120814062246.GB31621@bbox>
-References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
- <20120814023530.GA9787@kroah.com>
+	Tue, 14 Aug 2012 02:30:21 -0400
+X-IronPort-AV: E=Sophos;i="4.77,764,1336341600"; 
+   d="scan'208";a="169830734"
+Date: Tue, 14 Aug 2012 08:30:18 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media/video/mx2_emmaprp.c: use devm_kzalloc and
+ devm_clk_get
+In-Reply-To: <5029AC92.2060408@redhat.com>
+Message-ID: <alpine.DEB.2.02.1208140819400.1973@localhost6.localdomain6>
+References: <1344104607-18805-1-git-send-email-Julia.Lawall@lip6.fr> <20120806142323.GO4352@mwanda> <20120806142650.GT4403@mwanda> <501FD69D.7070702@metafoo.de> <alpine.DEB.2.02.1208101558100.2011@hadrien> <50295A43.30305@redhat.com>
+ <alpine.DEB.2.02.1208132219060.2355@localhost6.localdomain6> <5029AC92.2060408@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814023530.GA9787@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+> Well, I've massively applied hundreds of patches today, but not much
+> on this driver. Maybe it is better for you to wait for a couple of
+> days for these to be at -next, or use, instead, our tree as the basis for
+> it:
+> 	git://linuxtv.org/media_tree.git staging/for_v3.7
 
-On Mon, Aug 13, 2012 at 07:35:30PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Aug 08, 2012 at 03:12:13PM +0900, Minchan Kim wrote:
-> > This patchset promotes zram/zsmalloc from staging.
-> > Both are very clean and zram is used by many embedded product
-> > for a long time.
-> > 
-> > [1-3] are patches not merged into linux-next yet but needed
-> > it as base for [4-5] which promotes zsmalloc.
-> > Greg, if you merged [1-3] already, skip them.
-> 
-> I've applied 1-3 and now 4, but that's it, I can't apply the rest
+I cloned this, but it doesn't seem to contain the file:
 
-Thanks!
+>:~: cd staging/for_v3.7/
+>:for_v3.7: ls drivers/media/video/mx2_emmaprp.c
+ls: cannot access drivers/media/video/mx2_emmaprp.c: No such file or 
+directory
 
-> without getting acks from the -mm maintainers, sorry.  Please work with
-
-Nitin suggested zsmalloc could be in /lib or /zram out of /mm but I want
-to confirm it from akpm so let's wait his opinion.
-
-Anyway, another question. zram would be under driver/blocks.
-Do I need ACK from Jens for that?
-
-> them to get those acks, and then I will be glad to apply the rest (after
-> you resend them of course...)
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+julia
