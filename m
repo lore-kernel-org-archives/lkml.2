@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab2HNQAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:00:30 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59402 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab2HNQA3 convert rfc822-to-8bit (ORCPT
+	id S1755882Ab2HNQBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:01:05 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36241 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2HNQBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:00:29 -0400
+	Tue, 14 Aug 2012 12:01:02 -0400
+From: =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozancag@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        artem.bityutskiy@linux.intel.com,
+        =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozancag@gmail.com>
+Subject: [PATCH] kbuild: Remove useless warning while appending KCFLAGS
+Date: Tue, 14 Aug 2012 19:00:54 +0300
+Message-Id: <1344960054-26557-1-git-send-email-ozancag@gmail.com>
+X-Mailer: git-send-email 1.7.11.2
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUU9qT9H2jy_H8_6Bk1XUbuV0N6_pGRoQbSJhnikewTc0Q@mail.gmail.com>
-References: <CAB=NE6W_SQUJmAXaLesyRShtQ=Urz=w5Ks5jEXq_50bRge+PWQ@mail.gmail.com>
- <CA+icZUU9qT9H2jy_H8_6Bk1XUbuV0N6_pGRoQbSJhnikewTc0Q@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Tue, 14 Aug 2012 09:00:07 -0700
-X-Google-Sender-Auth: G9WQ5TGnW9QUZPuMC7fLEJw91G8
-Message-ID: <CAB=NE6V=4J7yKbPdb4gVT6BBjdewhYRNEwrNdMd4XE5Ocg4SeQ@mail.gmail.com>
-Subject: Re: Backports mailing list
-To: sedat.dilek@gmail.com
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        lf_driver_backport@lists.linux-foundation.org,
-        Julia Lawall <julia.lawall@lip6.fr>, Jesper Andersen <jespera@diku.dk>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 2:34 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Mon, Aug 13, 2012 at 10:42 PM, Luis R. Rodriguez
-> <mcgrof@frijolero.org> wrote:
->> David,
->>
->> The compat [0] / compat-wireless [1] [2] projects have received quite
->> a bit of love of the years to the point we now have 3 subsystems
->> backported: Ethernet, Bluetooth and 802.11. Ozan Çağlayan, a Linux
->> Foundation Google Summer of Code student is folding in right now drm
->> driver support. At the request of the community, specifically those
->> part of the Linux Foundation driver working group [3], we are going to
->> be renaming the project to compat-drivers soon after drm is integrated
->> and will be housing documentation under the kernel.org infrastructure
->> [4] under this new name. It'll take some time for us to migrate the
->> documentation / releases but do not see major issues with that, it
->> will just take a bit of time but hope to have it done for the next
->> stable release based on the next kernel stable release. At this time
->> for patches we do have a Linux Foundation mailing list but have had
->> issues with it for a while now so we keep using linux-wireless for
->> patches. Given that our focus is to always prioritize upstream and
->> always try to work with solutions that ensure vendors are focusing on
->> upstream solutions and prioritizing upstream [5] I was hoping we can
->> get a mailing list set up on vger for the project, perhaps
->> backports@vger.kernel.org, so we don't flood the other mailing lists
->> with random kernel backport junk. Please let me know if this is
->> reasonable.
->>
->> [0] https://github.com/mcgrof/compat
->> [1] http://wireless.kernel.org/en/users/Download/
->> [2] http://wireless.kernel.org/en/users/Download/stable/
->> [3] http://www.linuxfoundation.org/collaborate/workgroups/driver-backport/group
->> [4] https://backports.wiki.kernel.org
->> [5] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
->>
->
-> Hi,
->
-> I am wondering why people are not consistent in naming - here again a
-> good example.
->
-> The workgroup at Linux Foundation is called "driver-backport".
-> You (Luis) are talking about a rename to "compat-drivers".
-> And then the ML and wiki have the name "backports".
->
-> So "backports" is for me is a bit confusing!
-> That reminds me when I first read about "AAArgh64!!!" stuff which was
-> in the end called mips64 to keep consistency to other existing arches.
->
-> So, just to fool the world a bit more:
-> What about "linux-backports" or why didn't you keep the "driver-backport" name?
->
-> Just my 0.02EUR.
+This is a respin of an older patch sent by Sam Ravnborg:
+  http://www.gossamer-threads.com/lists/linux/kernel/1530602
 
-To start off with the compat-drivers name came as a recommendation
-from the workgroup and it follows the old name evolution:
-compat-wireless --> compat-drivers. The reason for not having a long
-similar alias for the mailing list is vger.kernel.org already implies
-Linux kernel so backports is nice and short. Another reason is that
-the backporting project already has 2 target source code projects:
+This patch removes the annoying warning:
 
-  * compat - a shared module
-  * compat-drivers - the drivers we pull and backport
+Makefile:708: "WARNING: Appending $KCFLAGS (-Wno-sign-compare) from command
+line to kernel $CFLAGS"
 
-When folks send patches they can prepend their patches with the
-project name as a prefix to the patch.
+which is printed every time I use KCFLAFS. The commit which introduced the
+warning:
 
-For more details please see:
+69ee0b3 kbuild: do not pick up CFLAGS from the environment
 
-http://www.do-not-panic.com/2012/08/automatically-backporting-linux-kernel.html
-http://www.do-not-panic.com/2012/08/optimizing-backporting-collateral.html
+tells about the problems when people have CFLAGS in their environment,
+then switches to KCFLAFS which should be enough to solve the issue, but
+it anyway introduces a warning. Drop this warning.
 
-  Luis
+Signed-off-by: Ozan Çağlayan <ozancag@gmail.com>
+---
+ Makefile | 19 +++----------------
+ 1 file changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 0d718ed..34751eb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -648,22 +648,9 @@ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
+ endif
+ 
+ # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
+-# But warn user when we do so
+-warn-assign = \
+-$(warning "WARNING: Appending $$K$(1) ($(K$(1))) from $(origin K$(1)) to kernel $$$(1)")
+-
+-ifneq ($(KCPPFLAGS),)
+-        $(call warn-assign,CPPFLAGS)
+-        KBUILD_CPPFLAGS += $(KCPPFLAGS)
+-endif
+-ifneq ($(KAFLAGS),)
+-        $(call warn-assign,AFLAGS)
+-        KBUILD_AFLAGS += $(KAFLAGS)
+-endif
+-ifneq ($(KCFLAGS),)
+-        $(call warn-assign,CFLAGS)
+-        KBUILD_CFLAGS += $(KCFLAGS)
+-endif
++KBUILD_CPPFLAGS += $(KCPPFLAGS)
++KBUILD_AFLAGS += $(KAFLAGS)
++KBUILD_CFLAGS += $(KCFLAGS)
+ 
+ # Use --build-id when available.
+ LDFLAGS_BUILD_ID = $(patsubst -Wl$(comma)%,%,\
+-- 
+1.7.11.2
+
