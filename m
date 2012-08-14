@@ -1,181 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab2HNSXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 14:23:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757100Ab2HNSXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 14:23:09 -0400
-Date: Tue, 14 Aug 2012 15:22:45 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120814182244.GB13338@t510.redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
+	id S1757290Ab2HNSXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 14:23:45 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:10179 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757218Ab2HNSXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 14:23:43 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-131.messagelabs.com!1344968607!24010270!30
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>
+Date: Tue, 14 Aug 2012 13:23:37 -0500
+Subject: RE: [PATCH 1/2 v2] staging: comedi: new adl_pci7x3x driver
+Thread-Topic: [PATCH 1/2 v2] staging: comedi: new adl_pci7x3x driver
+Thread-Index: Ac15+wsdLkSpdA/KQ166evQ7E1ysswATmqrQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AAE97981@AUSP01VMBX24.collaborationhost.net>
+References: <201208031028.18759.hartleys@visionengravers.com>
+ <20120814012949.GA11859@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206AAE977F3@AUSP01VMBX24.collaborationhost.net>
+ <502A134C.4000406@mev.co.uk>
+In-Reply-To: <502A134C.4000406@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120813084123.GF14081@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7EINoNC017530
 
-On Mon, Aug 13, 2012 at 11:41:23AM +0300, Michael S. Tsirkin wrote:
-> > @@ -141,7 +151,10 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> >  		set_page_pfns(vb->pfns + vb->num_pfns, page);
-> >  		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
-> >  		totalram_pages--;
-> > +		spin_lock(&pages_lock);
-> >  		list_add(&page->lru, &vb->pages);
-> 
-> If list_add above is reordered with mapping assignment below,
-> then nothing bad happens because balloon_mapping takes
-> pages_lock.
-> 
-> > +		page->mapping = balloon_mapping;
-> > +		spin_unlock(&pages_lock);
-> >  	}
-> >  
-> >  	/* Didn't get any?  Oh well. */
-> > @@ -149,6 +162,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> >  		return;
-> >  
-> >  	tell_host(vb, vb->inflate_vq);
-> > +	mutex_unlock(&balloon_lock);
-> >  }
-> >  
-> >  static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
-> > @@ -169,10 +183,22 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
-> >  	/* We can only do one array worth at a time. */
-> >  	num = min(num, ARRAY_SIZE(vb->pfns));
-> >  
-> > +	mutex_lock(&balloon_lock);
-> >  	for (vb->num_pfns = 0; vb->num_pfns < num;
-> >  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> > +		/*
-> > +		 * We can race against virtballoon_isolatepage() and end up
-> > +		 * stumbling across a _temporarily_ empty 'pages' list.
-> > +		 */
-> > +		spin_lock(&pages_lock);
-> > +		if (unlikely(list_empty(&vb->pages))) {
-> > +			spin_unlock(&pages_lock);
-> > +			break;
-> > +		}
-> >  		page = list_first_entry(&vb->pages, struct page, lru);
-> > +		page->mapping = NULL;
-> 
-> Unlike the case above, here
-> if = NULL write above is reordered with list_del below,
-> then isolate_page can run on a page that is not
-> on lru.
-> 
-> So I think this needs a wmb().
-> And maybe a comment above explaining why it is safe?
+On Tuesday, August 14, 2012 1:59 AM, Ian Abbott wrote:
+> On 2012-08-14 02:36, H Hartley Sweeten wrote:
+>> On Monday, August 13, 2012 6:30 PM, Greg KH wrote:
+>>> On Fri, Aug 03, 2012 at 10:28:18AM -0700, H Hartley Sweeten wrote:
+>>>> Currently the ADLink PCI-7230 and PCI-7432 Isolated Digital
+>>>> I/O Boards are supported using two drivers (adl_pci7230 and
+>>>> adl_pci7432). These drivers are very similar and only differ
+>>>> in the total number of di/do channels provided.
+>>>>
+>>>> This driver combines the support for both boards into one
+>>>> common driver. In addition, it adds PCI PnP support for the
+>>>> other boards in the ADLink PCI-723x and PCI-743x series.
+>>>>
+>>>> This driver only supports the comedi PCI auto config attach
+>>>> mechanism. The legacy attach using the comedi_config utility
+>>>> is not supported or required by this driver.
+>>>
+>>> I now get the following build warnings on my box with this patch
+>>> applied:
+>>>
+>>> drivers/staging/comedi/drivers/adl_pci7x3x.c: In function â€˜adl_pci7x3x_do_insn_bitsâ€™:
+>>> drivers/staging/comedi/drivers/adl_pci7x3x.c:124:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+>>> drivers/staging/comedi/drivers/adl_pci7x3x.c: In function â€˜adl_pci7x3x_di_insn_bitsâ€™:
+>>> drivers/staging/comedi/drivers/adl_pci7x3x.c:150:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+>>
+>> Hmm.. My build does not have the [-Wpointer-to-int-cast] for some reason
+>> so I didn't see this. I was trying to save having to allocate any private data but
+>> I guess it's cleaner if I do.  BTW, there is another comedi driver that does this
+>> but I can't recall which one of the top of my head...
+>
+> You could always cast to unsigned long as that is the same size as a 
+> pointer, at least in the Linux kernel.
 
-Good point. Presumably, this nit has potential to explain your guessing on the
-read barrier stuff at movable_balloon_page() on the other patch.
+Ah, so it's a 32/64-bit issue... My build setup is only 32-bit that's why I
+didn't see it.
 
- 
-> >  		list_del(&page->lru);
-> 
-> I wonder why changing page->lru here is safe against
-> races with unmap_and_move in the previous patch.
+The acl7225b driver is the other one that passes the register offset
+in the s->private pointer. That one does cast the pointer to an
+unsigned long.
 
-leak_balloon() doesn't race against unmap_and_move() because the later works on
-an isolated page set. So, theoretically, pages being dequeued from balloon page
-list here are either migrated (already) or they were not isolated yet.
+I assume this will fix the warning in the adl_pci7x3x driver. Patch
+coming shortly.
 
+Regards,
+Hartley
 
-> > +/*
-> > + * '*vb_ptr' allows virtballoon_migratepage() & virtballoon_putbackpage() to
-> > + * access pertinent elements from struct virtio_balloon
-> > + */
-> 
-> What if there is more than one balloon device?
-
-Is it possible to load this driver twice, or are you foreseeing a future case
-where this driver will be able to manage several distinct memory balloons for
-the same guest?
-
-
-> > +	/* Init the ballooned page->mapping special balloon_mapping */
-> > +	balloon_mapping = kmalloc(sizeof(*balloon_mapping), GFP_KERNEL);
-> > +	if (!balloon_mapping) {
-> > +		err = -ENOMEM;
-> > +		goto out_free_vb;
-> > +	}
-> 
-> Can balloon_mapping be dereferenced at this point?
-> Then what happens?
-
-Since there's no balloon page enqueued for this balloon driver yet, there's no
-chance of balloon_mapping being dereferenced at this point.
-
- 
-> > +
-> > +	INIT_RADIX_TREE(&balloon_mapping->page_tree, GFP_ATOMIC | __GFP_NOWARN);
-> > +	INIT_LIST_HEAD(&balloon_mapping->i_mmap_nonlinear);
-> > +	spin_lock_init(&balloon_mapping->tree_lock);
-> > +	balloon_mapping->a_ops = &virtio_balloon_aops;
-> >  
-> >  	err = init_vqs(vb);
-> >  	if (err)
-> > @@ -373,6 +493,7 @@ out_del_vqs:
-> >  	vdev->config->del_vqs(vdev);
-> >  out_free_vb:
-> >  	kfree(vb);
-> > +	kfree(balloon_mapping);
-> 
-> No need to set it to NULL? It seems if someone else allocates a mapping
-> and gets this chunk of memory by chance, the logic in mm will get
-> confused.
-
-Good point. It surely doesn't hurt be asured of this sort of safety.
-
-> >  out:
-> >  	return err;
-> >  }
-> > @@ -397,6 +518,7 @@ static void __devexit virtballoon_remove(struct virtio_device *vdev)
-> >  	kthread_stop(vb->thread);
-> >  	remove_common(vb);
-> >  	kfree(vb);
-> > +	kfree(balloon_mapping);
-> 
-> Neither here?
-
-ditto.
-
- 
-> >  }
-> >  
-> >  #ifdef CONFIG_PM
-> > diff --git a/include/linux/virtio_balloon.h b/include/linux/virtio_balloon.h
-> > index 652dc8b..930f1b7 100644
-> > --- a/include/linux/virtio_balloon.h
-> > +++ b/include/linux/virtio_balloon.h
-> > @@ -56,4 +56,8 @@ struct virtio_balloon_stat {
-> >  	u64 val;
-> >  } __attribute__((packed));
-> >  
-> > +#if !defined(CONFIG_COMPACTION)
-> > +struct address_space *balloon_mapping;
-> > +#endif
-> > +
-> 
-> Anyone including this header will get a different copy of
-> balloon_mapping. Besides, need to be ifdef KERNEL.
-
-Good point. I'll move this hunk to the balloon driver itself.
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
