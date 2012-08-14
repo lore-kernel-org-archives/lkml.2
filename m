@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab2HNK7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:59:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37009 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2HNK7s (ORCPT
+	id S1753065Ab2HNLAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 07:00:45 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64454 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2HNLAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:59:48 -0400
+	Tue, 14 Aug 2012 07:00:43 -0400
 MIME-Version: 1.0
-Date: Tue, 14 Aug 2012 12:59:48 +0200
-Message-ID: <CAAv8mH3kukd-ii04hQbMZGj7iTwQhpFDwFtnz0h3JBMe6gaGxA@mail.gmail.com>
-Subject: Mmap on SSD (directly mapping the device vs. mapping a file)
-From: Daniel Noack <fsf.deathman@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20120314150533.GA8757@fifo99.com>
+References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
+	<20120312201421.GA3459@fifo99.com>
+	<4F5F41AF.1090907@codeaurora.org>
+	<20120314150533.GA8757@fifo99.com>
+Date: Tue, 14 Aug 2012 13:00:42 +0200
+Message-ID: <CACRpkdbNVV6keGj3mCG4D8ohY4dySEwDreRV5JPrW+Vq8tM6jw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
+ DMA APIs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Ravi Kumar V <kumarrav@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        gregkh@linuxfoundation.org, Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, folks!
+On Wed, Mar 14, 2012 at 4:05 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> On Tue, Mar 13, 2012 at 06:16:39PM +0530, Ravi Kumar V wrote:
+>>
+>> There is a MSM DMA driver in arch/arm/mach-msm/ which is not in
+>> dmaengine framework standards, but that driver is been used by
+>> client drivers nand, eMMC and serial drivers. Now if we implement
+>> the whole dma driver using dmaengine framework then nand, eMMC like
+>> drivers will be failed as they are using old dma driver API's, so
+>> instead of implementing new driver from scratch we are keeping the
+>> old dma API's as it is and using those API's in new dmaengine
+>> framework.So that we can convert clients drivers to use dma engine
+>> framework.
+>
+> Did you investigate converting the drivers (nand, eMMC, serial) ? It
+> seems like there would be a 1:1 mapping between the API's , so it might
+> only be a find->replace operation.
 
-First of all I have to say sorry that I'm not a subscriber of the list now,
-but I will subscribe in the near future (need an extra email account for it
-;) ). It would be nice if you could put me on CC for an answer to my
-question.
+The eMMC i.e. drivers/mmc/host/msm_sdcc.c should preferably
+not be converted, instead switch the platforms over to using
+drivers/mmc/host/mmci.c which is already very well enabled for
+DMA engine.
 
-Like you can see on the subject I experimented a little bit with mmap in the
-last time. I've written a little B+tree library which uses mmap to store
-the tree to a file or the whole device (means it is also possible to map
-the hwole device (i.e. /dev/sdb)). I used msync after every successfull
-change on the tree. Next thing I did was to use this for a little benchmark
-on performance of different storage devices (ramdisk, HDD, and a very fast
-flashcard directly atteched to the PCIe bus). I recognized that in allmost
-all cases when directly mapping teh device without a filesystem the
-file-mapped version was a little bit slower. But when I tried it on an SSD
-device the file-mapped version was an order of magnitude faster. I also
-tried secure erase and did the benchmarks many times and in many
-configurations, but I came to the same results. Can anyone explain me
-what's happening here or have I something missed. Is this behavior correct?
+Augment it with Qualcomm silicon differences as needed, I do
+not think they will be major.
 
-Thanks,
-Daniel
+Yours,
+Linus Walleij
