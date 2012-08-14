@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab2HNRyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:18 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55168 "EHLO
+	id S1757096Ab2HNRyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55147 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756858Ab2HNRxJ (ORCPT
+	with ESMTP id S1756843Ab2HNRxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Aug 2012 13:53:09 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2 14/31] arm64: DMA mapping API
-Date: Tue, 14 Aug 2012 18:52:15 +0100
-Message-Id: <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v2 13/31] arm64: Device specific operations
+Date: Tue, 14 Aug 2012 18:52:14 +0100
+Message-Id: <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:50.0979 (UTC) FILETIME=[E6F57330:01CD7A45]
-X-MC-Unique: 112081418530707901
+X-OriginalArrivalTime: 14 Aug 2012 17:54:50.0635 (UTC) FILETIME=[E6C0F5B0:01CD7A45]
+X-MC-Unique: 112081418530705401
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHxgbF017368
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHxv0v017372
 
-This patch adds support for the DMA mapping API. It uses dma_map_ops for
-flexibility and it currently supports swiotlb. This patch could be
-simplified further if the DMA accesses are coherent (not mandated by the
-architecture) or if corresponding hooks are placed in the generic
-swiotlb code to deal with cache maintenance.
+This patch adds several definitions for device communication, including
+I/O accessors and ioremap(). The __raw_* accessors are implemented as
+inline asm to avoid compiler generation of post-indexed accesses (less
+efficient to emulate in a virtualised environment).
 
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/dma-mapping.h |  124 ++++++++++++++++++++
- arch/arm64/mm/dma-mapping.c          |  208 ++++++++++++++++++++++++++++++++++
- 2 files changed, 332 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/dma-mapping.h
- create mode 100644 arch/arm64/mm/dma-mapping.c
+ arch/arm64/include/asm/device.h |   26 ++++
+ arch/arm64/include/asm/fb.h     |   34 +++++
+ arch/arm64/include/asm/io.h     |  263 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/io.c          |   64 ++++++++++
+ arch/arm64/mm/ioremap.c         |   84 +++++++++++++
+ 5 files changed, 471 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm64/include/asm/device.h
+ create mode 100644 arch/arm64/include/asm/fb.h
+ create mode 100644 arch/arm64/include/asm/io.h
+ create mode 100644 arch/arm64/kernel/io.c
+ create mode 100644 arch/arm64/mm/ioremap.c
 
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
 new file mode 100644
-index 0000000..538f4b4
+index 0000000..0d8453c
 --- /dev/null
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -0,0 +1,124 @@
++++ b/arch/arm64/include/asm/device.h
+@@ -0,0 +1,26 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -60,126 +67,336 @@ index 0000000..538f4b4
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_DMA_MAPPING_H
-+#define __ASM_DMA_MAPPING_H
++#ifndef __ASM_DEVICE_H
++#define __ASM_DEVICE_H
++
++struct dev_archdata {
++	struct dma_map_ops *dma_ops;
++};
++
++struct pdev_archdata {
++};
++
++#endif
+diff --git a/arch/arm64/include/asm/fb.h b/arch/arm64/include/asm/fb.h
+new file mode 100644
+index 0000000..adb88a6
+--- /dev/null
++++ b/arch/arm64/include/asm/fb.h
+@@ -0,0 +1,34 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_FB_H_
++#define __ASM_FB_H_
++
++#include <linux/fb.h>
++#include <linux/fs.h>
++#include <asm/page.h>
++
++static inline void fb_pgprotect(struct file *file, struct vm_area_struct *vma,
++				unsigned long off)
++{
++	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
++}
++
++static inline int fb_is_primary_device(struct fb_info *info)
++{
++	return 0;
++}
++
++#endif /* __ASM_FB_H_ */
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+new file mode 100644
+index 0000000..48fa83f
+--- /dev/null
++++ b/arch/arm64/include/asm/io.h
+@@ -0,0 +1,263 @@
++/*
++ * Based on arch/arm/include/asm/io.h
++ *
++ * Copyright (C) 1996-2000 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_IO_H
++#define __ASM_IO_H
 +
 +#ifdef __KERNEL__
 +
 +#include <linux/types.h>
-+#include <linux/vmalloc.h>
 +
-+#include <asm-generic/dma-coherent.h>
-+
-+#define ARCH_HAS_DMA_GET_REQUIRED_MASK
-+
-+extern struct dma_map_ops *dma_ops;
-+
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	if (unlikely(!dev) || !dev->archdata.dma_ops)
-+		return dma_ops;
-+	else
-+		return dev->archdata.dma_ops;
-+}
-+
-+#include <asm-generic/dma-mapping-common.h>
-+
-+static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	return (dma_addr_t)paddr;
-+}
-+
-+static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-+{
-+	return (phys_addr_t)dev_addr;
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dev_addr)
-+{
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+	return ops->mapping_error(dev, dev_addr);
-+}
-+
-+static inline int dma_supported(struct device *dev, u64 mask)
-+{
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+	return ops->dma_supported(dev, mask);
-+}
-+
-+static inline int dma_set_mask(struct device *dev, u64 mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, mask))
-+		return -EIO;
-+	*dev->dma_mask = mask;
-+
-+	return 0;
-+}
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	if (!dev->dma_mask)
-+		return 0;
-+
-+	return addr + size - 1 <= *dev->dma_mask;
-+}
-+
-+static inline void dma_mark_clean(void *addr, size_t size)
-+{
-+}
-+
-+static inline void *dma_alloc_coherent(struct device *dev, size_t size,
-+				       dma_addr_t *dma_handle, gfp_t flags)
-+{
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+	void *vaddr;
-+
-+	if (dma_alloc_from_coherent(dev, size, dma_handle, &vaddr))
-+		return vaddr;
-+
-+	vaddr = ops->alloc(dev, size, dma_handle, flags, NULL);
-+	debug_dma_alloc_coherent(dev, size, *dma_handle, vaddr);
-+	return vaddr;
-+}
-+
-+static inline void dma_free_coherent(struct device *dev, size_t size,
-+				     void *vaddr, dma_addr_t dev_addr)
-+{
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+
-+	if (dma_release_from_coherent(dev, get_order(size), vaddr))
-+		return;
-+
-+	debug_dma_free_coherent(dev, size, vaddr, dev_addr);
-+	ops->free(dev, size, vaddr, dev_addr, NULL);
-+}
++#include <asm/byteorder.h>
++#include <asm/barrier.h>
++#include <asm/pgtable.h>
 +
 +/*
-+ * There is no dma_cache_sync() implementation, so just return NULL here.
++ * Generic IO read/write.  These perform native-endian accesses.
 + */
-+static inline void *dma_alloc_noncoherent(struct device *dev, size_t size,
-+					  dma_addr_t *handle, gfp_t flags)
++static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
 +{
-+	return NULL;
++	asm volatile("strb %w0, [%1]" : : "r" (val), "r" (addr));
 +}
 +
-+static inline void dma_free_noncoherent(struct device *dev, size_t size,
-+					void *cpu_addr, dma_addr_t handle)
++static inline void __raw_writew(u16 val, volatile void __iomem *addr)
 +{
++	asm volatile("strh %w0, [%1]" : : "r" (val), "r" (addr));
 +}
++
++static inline void __raw_writel(u32 val, volatile void __iomem *addr)
++{
++	asm volatile("str %w0, [%1]" : : "r" (val), "r" (addr));
++}
++
++static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
++{
++	asm volatile("str %0, [%1]" : : "r" (val), "r" (addr));
++}
++
++static inline u8 __raw_readb(const volatile void __iomem *addr)
++{
++	u8 val;
++	asm volatile("ldrb %w0, [%1]" : "=r" (val) : "r" (addr));
++	return val;
++}
++
++static inline u16 __raw_readw(const volatile void __iomem *addr)
++{
++	u16 val;
++	asm volatile("ldrh %w0, [%1]" : "=r" (val) : "r" (addr));
++	return val;
++}
++
++static inline u32 __raw_readl(const volatile void __iomem *addr)
++{
++	u32 val;
++	asm volatile("ldr %w0, [%1]" : "=r" (val) : "r" (addr));
++	return val;
++}
++
++static inline u64 __raw_readq(const volatile void __iomem *addr)
++{
++	u64 val;
++	asm volatile("ldr %0, [%1]" : "=r" (val) : "r" (addr));
++	return val;
++}
++
++/* IO barriers */
++#define __iormb()		rmb()
++#define __iowmb()		wmb()
++
++#define mmiowb()		do { } while (0)
++
++/*
++ * Relaxed I/O memory access primitives. These follow the Device memory
++ * ordering rules but do not guarantee any ordering relative to Normal memory
++ * accesses.
++ */
++#define readb_relaxed(c)	({ u8  __v = __raw_readb(c); __v; })
++#define readw_relaxed(c)	({ u16 __v = le16_to_cpu((__force __le16)__raw_readw(c)); __v; })
++#define readl_relaxed(c)	({ u32 __v = le32_to_cpu((__force __le32)__raw_readl(c)); __v; })
++
++#define writeb_relaxed(v,c)	((void)__raw_writeb((v),(c)))
++#define writew_relaxed(v,c)	((void)__raw_writew((__force u16)cpu_to_le16(v),(c)))
++#define writel_relaxed(v,c)	((void)__raw_writel((__force u32)cpu_to_le32(v),(c)))
++
++/*
++ * I/O memory access primitives. Reads are ordered relative to any
++ * following Normal memory access. Writes are ordered relative to any prior
++ * Normal memory access.
++ */
++#define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
++#define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
++#define readl(c)		({ u32 __v = readl_relaxed(c); __iormb(); __v; })
++
++#define writeb(v,c)		({ __iowmb(); writeb_relaxed((v),(c)); })
++#define writew(v,c)		({ __iowmb(); writew_relaxed((v),(c)); })
++#define writel(v,c)		({ __iowmb(); writel_relaxed((v),(c)); })
++
++/*
++ *  I/O port access primitives.
++ */
++#define IO_SPACE_LIMIT		0xffff
++
++/*
++ * We currently don't have any platform with PCI support, so just leave this
++ * defined to 0 until needed.
++ */
++#define PCI_IOBASE		((void __iomem *)0)
++
++static inline u8 inb(unsigned long addr)
++{
++	return readb(addr + PCI_IOBASE);
++}
++
++static inline u16 inw(unsigned long addr)
++{
++	return readw(addr + PCI_IOBASE);
++}
++
++static inline u32 inl(unsigned long addr)
++{
++	return readl(addr + PCI_IOBASE);
++}
++
++static inline void outb(u8 b, unsigned long addr)
++{
++	writeb(b, addr + PCI_IOBASE);
++}
++
++static inline void outw(u16 b, unsigned long addr)
++{
++	writew(b, addr + PCI_IOBASE);
++}
++
++static inline void outl(u32 b, unsigned long addr)
++{
++	writel(b, addr + PCI_IOBASE);
++}
++
++#define inb_p(addr)	inb(addr)
++#define inw_p(addr)	inw(addr)
++#define inl_p(addr)	inl(addr)
++
++#define outb_p(x, addr)	outb((x), (addr))
++#define outw_p(x, addr)	outw((x), (addr))
++#define outl_p(x, addr)	outl((x), (addr))
++
++static inline void insb(unsigned long addr, void *buffer, int count)
++{
++	u8 *buf = buffer;
++	while (count--)
++		*buf++ = __raw_readb(addr + PCI_IOBASE);
++}
++
++static inline void insw(unsigned long addr, void *buffer, int count)
++{
++	u16 *buf = buffer;
++	while (count--)
++		*buf++ = __raw_readw(addr + PCI_IOBASE);
++}
++
++static inline void insl(unsigned long addr, void *buffer, int count)
++{
++	u32 *buf = buffer;
++	while (count--)
++		*buf++ = __raw_readl(addr + PCI_IOBASE);
++}
++
++static inline void outsb(unsigned long addr, const void *buffer, int count)
++{
++	const u8 *buf = buffer;
++	while (count--)
++		__raw_writeb(*buf++, addr + PCI_IOBASE);
++}
++
++static inline void outsw(unsigned long addr, const void *buffer, int count)
++{
++	const u16 *buf = buffer;
++	while (count--)
++		__raw_writew(*buf++, addr + PCI_IOBASE);
++}
++
++static inline void outsl(unsigned long addr, const void *buffer, int count)
++{
++	const u32 *buf = buffer;
++	while (count--)
++		__raw_writel(*buf++, addr + PCI_IOBASE);
++}
++
++#define insb_p(port,to,len)	insb(port,to,len)
++#define insw_p(port,to,len)	insw(port,to,len)
++#define insl_p(port,to,len)	insl(port,to,len)
++
++#define outsb_p(port,from,len)	outsb(port,from,len)
++#define outsw_p(port,from,len)	outsw(port,from,len)
++#define outsl_p(port,from,len)	outsl(port,from,len)
++
++/*
++ * String version of I/O memory access operations.
++ */
++extern void __memcpy_fromio(void *, const volatile void __iomem *, size_t);
++extern void __memcpy_toio(volatile void __iomem *, const void *, size_t);
++extern void __memset_io(volatile void __iomem *, int, size_t);
++
++#define memset_io(c,v,l)	__memset_io((c),(v),(l))
++#define memcpy_fromio(a,c,l)	__memcpy_fromio((a),(c),(l))
++#define memcpy_toio(c,a,l)	__memcpy_toio((c),(a),(l))
++
++/*
++ * I/O memory mapping functions.
++ */
++extern void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot);
++extern void __iounmap(volatile void __iomem *addr);
++
++#define PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY)
++#define PROT_DEVICE_nGnRE	(PROT_DEFAULT | PTE_XN | PTE_ATTRINDX(MT_DEVICE_nGnRE))
++#define PROT_NORMAL_NC		(PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL_NC))
++
++#define ioremap(addr, size)		__ioremap((addr), (size), PROT_DEVICE_nGnRE)
++#define ioremap_nocache(addr, size)	__ioremap((addr), (size), PROT_DEVICE_nGnRE)
++#define ioremap_wc(addr, size)		__ioremap((addr), (size), PROT_NORMAL_NC)
++#define iounmap				__iounmap
++
++#define ARCH_HAS_IOREMAP_WC
++#include <asm-generic/iomap.h>
++
++/*
++ * More restrictive address range checking than the default implementation
++ * (PHYS_OFFSET and PHYS_MASK taken into account).
++ */
++#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
++extern int valid_phys_addr_range(unsigned long addr, size_t size);
++extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
++
++extern int devmem_is_allowed(unsigned long pfn);
++
++/*
++ * Convert a physical pointer to a virtual kernel pointer for /dev/mem
++ * access
++ */
++#define xlate_dev_mem_ptr(p)	__va(p)
++
++/*
++ * Convert a virtual cached pointer to an uncached pointer
++ */
++#define xlate_dev_kmem_ptr(p)	p
 +
 +#endif	/* __KERNEL__ */
-+#endif	/* __ASM_DMA_MAPPING_H */
-diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
++#endif	/* __ASM_IO_H */
+diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
 new file mode 100644
-index 0000000..4e5871d
+index 0000000..7d37ead
 --- /dev/null
-+++ b/arch/arm64/mm/dma-mapping.c
-@@ -0,0 +1,208 @@
++++ b/arch/arm64/kernel/io.c
+@@ -0,0 +1,64 @@
 +/*
-+ * SWIOTLB-based DMA API implementation
++ * Based on arch/arm/kernel/io.c
 + *
 + * Copyright (C) 2012 ARM Ltd.
-+ * Author: Catalin Marinas <catalin.marinas@arm.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -194,193 +411,140 @@ index 0000000..4e5871d
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/gfp.h>
 +#include <linux/export.h>
-+#include <linux/slab.h>
-+#include <linux/dma-mapping.h>
++#include <linux/types.h>
++#include <linux/io.h>
++
++/*
++ * Copy data from IO memory space to "real" memory space.
++ */
++void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
++{
++	unsigned char *t = to;
++	while (count) {
++		count--;
++		*t = readb(from);
++		t++;
++		from++;
++	}
++}
++EXPORT_SYMBOL(__memcpy_fromio);
++
++/*
++ * Copy data from "real" memory space to IO memory space.
++ */
++void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
++{
++	const unsigned char *f = from;
++	while (count) {
++		count--;
++		writeb(*f, to);
++		f++;
++		to++;
++	}
++}
++EXPORT_SYMBOL(__memcpy_toio);
++
++/*
++ * "memset" on IO memory space.
++ */
++void __memset_io(volatile void __iomem *dst, int c, size_t count)
++{
++	while (count) {
++		count--;
++		writeb(c, dst);
++		dst++;
++	}
++}
++EXPORT_SYMBOL(__memset_io);
+diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
+new file mode 100644
+index 0000000..1725cd6
+--- /dev/null
++++ b/arch/arm64/mm/ioremap.c
+@@ -0,0 +1,84 @@
++/*
++ * Based on arch/arm/mm/ioremap.c
++ *
++ * (C) Copyright 1995 1996 Linus Torvalds
++ * Hacked for ARM by Phil Blundell <philb@gnu.org>
++ * Hacked to allow all architectures to build, and various cleanups
++ * by Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/export.h>
++#include <linux/mm.h>
 +#include <linux/vmalloc.h>
-+#include <linux/swiotlb.h>
++#include <linux/io.h>
 +
-+#include <asm/cacheflush.h>
-+
-+struct dma_map_ops *dma_ops;
-+EXPORT_SYMBOL(dma_ops);
-+
-+static void *arm64_swiotlb_alloc_coherent(struct device *dev, size_t size,
-+					  dma_addr_t *dma_handle, gfp_t flags,
-+					  struct dma_attrs *attrs)
++static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
++				      pgprot_t prot, void *caller)
 +{
-+	struct page *page, **map;
-+	void *ptr;
-+	int order = get_order(size);
-+	int i;
++	unsigned long last_addr;
++	unsigned long offset = phys_addr & ~PAGE_MASK;
++	int err;
++	unsigned long addr;
++	struct vm_struct *area;
 +
-+	if (dev->coherent_dma_mask != DMA_BIT_MASK(64))
-+		flags |= GFP_DMA;
++	/*
++	 * Page align the mapping address and size, taking account of any
++	 * offset.
++	 */
++	phys_addr &= PAGE_MASK;
++	size = PAGE_ALIGN(size + offset);
 +
-+	ptr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
-+	if (!ptr)
-+		goto no_mem;
-+	map = kmalloc(sizeof(struct page *) << order, flags & ~GFP_DMA);
-+	if (!map)
-+		goto no_map;
++	/*
++	 * Don't allow wraparound, zero size or outside PHYS_MASK.
++	 */
++	last_addr = phys_addr + size - 1;
++	if (!size || last_addr < phys_addr || (last_addr & ~PHYS_MASK))
++		return NULL;
 +
-+	/* remove any dirty cache lines on the kernel alias */
-+	dmac_flush_range(ptr, ptr + size);
++	/*
++	 * Don't allow RAM to be mapped.
++	 */
++	if (WARN_ON(pfn_valid(__phys_to_pfn(phys_addr))))
++		return NULL;
 +
-+	/* create a coherent mapping */
-+	page = virt_to_page(ptr);
-+	for (i = 0; i < (size >> PAGE_SHIFT); i++)
-+		map[i] = page + i;
-+	ptr = vmap(map, size >> PAGE_SHIFT, VM_MAP,
-+		   pgprot_dmacoherent(pgprot_default)); kfree(map);
-+	if (!ptr)
-+		goto no_map;
++	area = get_vm_area_caller(size, VM_IOREMAP, caller);
++	if (!area)
++		return NULL;
++	addr = (unsigned long)area->addr;
 +
-+	return ptr;
++	err = ioremap_page_range(addr, addr + size, phys_addr, prot);
++	if (err) {
++		vunmap((void *)addr);
++		return NULL;
++	}
 +
-+no_map:
-+	swiotlb_free_coherent(dev, size, ptr, *dma_handle);
-+no_mem:
-+	*dma_handle = ~0;
-+	return NULL;
++	return (void __iomem *)(offset + addr);
 +}
 +
-+static void arm64_swiotlb_free_coherent(struct device *dev, size_t size,
-+					void *vaddr, dma_addr_t dma_handle,
-+					struct dma_attrs *attrs)
++void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot)
 +{
-+	vunmap(vaddr);
-+	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
++	return __ioremap_caller(phys_addr, size, prot,
++				__builtin_return_address(0));
 +}
++EXPORT_SYMBOL(__ioremap);
 +
-+static dma_addr_t arm64_swiotlb_map_page(struct device *dev,
-+					 struct page *page,
-+					 unsigned long offset, size_t size,
-+					 enum dma_data_direction dir,
-+					 struct dma_attrs *attrs)
++void __iounmap(volatile void __iomem *io_addr)
 +{
-+	dma_addr_t dev_addr;
++	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
 +
-+	dev_addr = swiotlb_map_page(dev, page, offset, size, dir, attrs);
-+	dmac_map_area(phys_to_virt(dma_to_phys(dev, dev_addr)), size, dir);
-+
-+	return dev_addr;
++	vunmap(addr);
 +}
-+
-+
-+static void arm64_swiotlb_unmap_page(struct device *dev, dma_addr_t dev_addr,
-+				     size_t size, enum dma_data_direction dir,
-+				     struct dma_attrs *attrs)
-+{
-+	dmac_unmap_area(phys_to_virt(dma_to_phys(dev, dev_addr)), size, dir);
-+	swiotlb_unmap_page(dev, dev_addr, size, dir, attrs);
-+}
-+
-+static int arm64_swiotlb_map_sg_attrs(struct device *dev,
-+				      struct scatterlist *sgl, int nelems,
-+				      enum dma_data_direction dir,
-+				      struct dma_attrs *attrs)
-+{
-+	struct scatterlist *sg;
-+	int i, ret;
-+
-+	ret = swiotlb_map_sg_attrs(dev, sgl, nelems, dir, attrs);
-+	for_each_sg(sgl, sg, ret, i)
-+		dmac_map_area(phys_to_virt(dma_to_phys(dev, sg->dma_address)),
-+			      sg->length, dir);
-+
-+	return ret;
-+}
-+
-+static void arm64_swiotlb_unmap_sg_attrs(struct device *dev,
-+					 struct scatterlist *sgl, int nelems,
-+					 enum dma_data_direction dir,
-+					 struct dma_attrs *attrs)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+
-+	for_each_sg(sgl, sg, nelems, i)
-+		dmac_unmap_area(phys_to_virt(dma_to_phys(dev, sg->dma_address)),
-+				sg->length, dir);
-+	swiotlb_unmap_sg_attrs(dev, sgl, nelems, dir, attrs);
-+}
-+
-+static void arm64_swiotlb_sync_single_for_cpu(struct device *dev,
-+					      dma_addr_t dev_addr,
-+					      size_t size,
-+					      enum dma_data_direction dir)
-+{
-+	dmac_unmap_area(phys_to_virt(dma_to_phys(dev, dev_addr)), size, dir);
-+	swiotlb_sync_single_for_cpu(dev, dev_addr, size, dir);
-+}
-+
-+static void arm64_swiotlb_sync_single_for_device(struct device *dev,
-+						 dma_addr_t dev_addr,
-+						 size_t size,
-+						 enum dma_data_direction dir)
-+{
-+	swiotlb_sync_single_for_device(dev, dev_addr, size, dir);
-+	dmac_map_area(phys_to_virt(dma_to_phys(dev, dev_addr)), size, dir);
-+}
-+
-+static void arm64_swiotlb_sync_sg_for_cpu(struct device *dev,
-+					  struct scatterlist *sgl, int nelems,
-+					  enum dma_data_direction dir)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+
-+	for_each_sg(sgl, sg, nelems, i)
-+		dmac_unmap_area(phys_to_virt(dma_to_phys(dev, sg->dma_address)),
-+				sg->length, dir);
-+	swiotlb_sync_sg_for_cpu(dev, sgl, nelems, dir);
-+}
-+
-+static void arm64_swiotlb_sync_sg_for_device(struct device *dev,
-+					     struct scatterlist *sgl,
-+					     int nelems,
-+					     enum dma_data_direction dir)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+
-+	swiotlb_sync_sg_for_device(dev, sgl, nelems, dir);
-+	for_each_sg(sgl, sg, nelems, i)
-+		dmac_map_area(phys_to_virt(dma_to_phys(dev, sg->dma_address)),
-+			      sg->length, dir);
-+}
-+
-+static struct dma_map_ops arm64_swiotlb_dma_ops = {
-+	.alloc = arm64_swiotlb_alloc_coherent,
-+	.free = arm64_swiotlb_free_coherent,
-+	.map_page = arm64_swiotlb_map_page,
-+	.unmap_page = arm64_swiotlb_unmap_page,
-+	.map_sg = arm64_swiotlb_map_sg_attrs,
-+	.unmap_sg = arm64_swiotlb_unmap_sg_attrs,
-+	.sync_single_for_cpu = arm64_swiotlb_sync_single_for_cpu,
-+	.sync_single_for_device = arm64_swiotlb_sync_single_for_device,
-+	.sync_sg_for_cpu = arm64_swiotlb_sync_sg_for_cpu,
-+	.sync_sg_for_device = arm64_swiotlb_sync_sg_for_device,
-+	.dma_supported = swiotlb_dma_supported,
-+	.mapping_error = swiotlb_dma_mapping_error,
-+};
-+
-+void __init swiotlb_init_with_default_size(size_t default_size, int verbose);
-+
-+void __init arm64_swiotlb_init(size_t max_size)
-+{
-+	dma_ops = &arm64_swiotlb_dma_ops;
-+	swiotlb_init_with_default_size(min((size_t)SZ_64M, max_size), 1);
-+}
-+
-+#define PREALLOC_DMA_DEBUG_ENTRIES	4096
-+
-+static int __init dma_debug_do_init(void)
-+{
-+	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
-+	return 0;
-+}
-+fs_initcall(dma_debug_do_init);
++EXPORT_SYMBOL(__iounmap);
 
