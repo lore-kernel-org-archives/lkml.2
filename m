@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab2HNPRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:17:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25364 "EHLO mga11.intel.com"
+	id S1756685Ab2HNPRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:17:33 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756508Ab2HNPRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:17:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,766,1336374000"; 
-   d="scan'208";a="200758916"
-Date: Tue, 14 Aug 2012 23:17:04 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mn10300: select generic atomic64_t support
-Message-ID: <20120814151704.GA17668@localhost>
+	id S1752380Ab2HNPRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:17:14 -0400
+Message-ID: <502A6BF8.6040804@nod.at>
+Date: Tue, 14 Aug 2012 17:17:12 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Howells <dhowells@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for July 26 (uml)
+References: <502A69FA.8040805@nod.at> <502A6759.3090802@nod.at> <15981.1344955883@warthog.procyon.org.uk> <502A613F.1090600@nod.at> <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk> <18600.1344956051@warthog.procyon.org.uk> <18933.1344956788@warthog.procyon.org.uk> <30102.1344957328@warthog.procyon.org.uk>
+In-Reply-To: <30102.1344957328@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1B9ECB9B1B5FB94E2CFFE3F7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rationals from Eric:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1B9ECB9B1B5FB94E2CFFE3F7
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-So I just looked a little deeper and it appears architectures that do
-not support atomic64_t are broken.
+Am 14.08.2012 17:15, schrieb David Howells:
+> How about this then?
+>=20
+> David
+> ---
+> diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
+> index 9926e11..a4b0c10 100644
+> --- a/arch/x86/um/Kconfig
+> +++ b/arch/x86/um/Kconfig
+> @@ -21,9 +21,11 @@ config 64BIT
+>  config X86_32
+>  	def_bool !64BIT
+>  	select HAVE_AOUT
+> +	select MODULES_USE_ELF_REL
+> =20
+>  config X86_64
+>  	def_bool 64BIT
+> +	select MODULES_USE_ELF_RELA
+> =20
+>  config RWSEM_XCHGADD_ALGORITHM
+>  	def_bool X86_XADD && 64BIT
 
-The generic atomic64 support came in 2009 to support the perf subsystem
-with the expectation that all architectures would implement atomic64
-support.
+Looks sane.
 
-Furthermore upon inspection of the kernel atomic64_t is used in a fair
-number of places beyond the performance counters:
+Acked-by: Richard Weinberger <richard@nod.at>
 
-block/blk-cgroup.c
-drivers/acpi/apei/
-drivers/block/rbd.c
-drivers/crypto/nx/nx.h
-drivers/gpu/drm/radeon/radeon.h
-drivers/infiniband/hw/ipath/
-drivers/infiniband/hw/qib/
-drivers/staging/octeon/
-fs/xfs/
-include/linux/perf_event.h
-include/net/netfilter/nf_conntrack_acct.h
-kernel/events/
-kernel/trace/
-net/mac80211/key.h
-net/rds/
+Thanks,
+//richard
 
-The block control group, infiniband, xfs, crypto, 802.11, netfilter.
-Nothing quite so fundamental as fs/namespace.c but definitely in
-multiplatform-code that should work, and is already broken on those
-architecutres.
 
-Looking at the implementation of atomic64_add_return in lib/atomic64.c
-the code looks as efficient as these kinds of things get.
+--------------enig1B9ECB9B1B5FB94E2CFFE3F7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Which leads me to the conclusion that we need atomic64 support on all
-architectures.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- arch/mn10300/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+iQEcBAEBAgAGBQJQKmv4AAoJEN9758yqZn9ebaAH/1dOgLeyMCJ5hVEaMw1QmnXq
+0rSNc6wv0zi0BRRuv3XLrzddDq//ouEkMTDRTMdA0Vk8qNi5XTSonTr4fxoyRiLk
+FY4AWweNn7rjNpaFVy+07BRsr47g3h+MWoYSrGq/MiCZy5A33DUR9QtGslxIxN9X
+3Ym5zGIRkUquhGoYRBADX279q3ctHelT68L0tcoavSJU8wBQi4A1JHnRIZ7eUobQ
+kE9E/TGUcyg1Yc1tOB8TCJd42Qsxw+skJZNYZilE6QnOLyfhIuI7j1eoRDySDnOD
+DLRh2wTYZOiurTbHOUIKJZx0nc79jZkdXamOZWVYWFJUAYy0jS4x0N8hGO+kI2M=
+=h7xw
+-----END PGP SIGNATURE-----
 
---- linux.orig/arch/mn10300/Kconfig	2012-08-03 15:36:21.391560778 +0800
-+++ linux/arch/mn10300/Kconfig	2012-08-14 22:53:14.751795832 +0800
-@@ -8,6 +8,7 @@ config MN10300
- 	select HAVE_ARCH_KGDB
- 	select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
- 	select GENERIC_CLOCKEVENTS
-+	select GENERIC_ATOMIC64
- 
- config AM33_2
- 	def_bool n
+--------------enig1B9ECB9B1B5FB94E2CFFE3F7--
