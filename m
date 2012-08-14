@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2HNCAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 22:00:30 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:45096 "EHLO
+	id S1755194Ab2HNCBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 22:01:15 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58518 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754458Ab2HNCA3 (ORCPT
+	by vger.kernel.org with ESMTP id S1755146Ab2HNCBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 22:00:29 -0400
-X-Sasl-enc: /QaXXuRcV7pQk1qErAQez79+r/da3app7URMlzckG3jW 1344909628
-Date: Mon, 13 Aug 2012 19:00:27 -0700
+	Mon, 13 Aug 2012 22:01:13 -0400
+X-Sasl-enc: 1rTzVg8sR+JtZEOc8DfEuPWhUdLZyM4Bq3UwInNmWOm/ 1344909672
+Date: Mon, 13 Aug 2012 19:01:11 -0700
 From: Greg KH <greg@kroah.com>
-To: Cruz Julian Bishop <cruzjbishop@gmail.com>
-Cc: swetland@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] Redocument some functions in android/logger.c
-Message-ID: <20120814020027.GA26758@kroah.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Cruz Julian Bishop <cruzjbishop@gmail.com>, swetland@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] Fixes a potential bug in android/logger.c
+Message-ID: <20120814020111.GB26758@kroah.com>
 References: <1343796860-7025-1-git-send-email-cruzjbishop@gmail.com>
- <1343796860-7025-5-git-send-email-cruzjbishop@gmail.com>
+ <1343796860-7025-6-git-send-email-cruzjbishop@gmail.com>
+ <5019C0D4.5010403@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1343796860-7025-5-git-send-email-cruzjbishop@gmail.com>
+In-Reply-To: <5019C0D4.5010403@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:54:19PM +1000, Cruz Julian Bishop wrote:
-> I will document the rest later if they remain unchanged
-> Normally, I would do them all at once, but I don't have the chance to do them all at the moment
+On Thu, Aug 02, 2012 at 09:50:44AM +1000, Ryan Mallon wrote:
+> On 01/08/12 14:54, Cruz Julian Bishop wrote:
+> > Previously, when calling is_between(a, b, c), the calculation was wrong.
+> > It counted C as between A and B if C was equal to B, but not A.
+> > 
+> > Example of this are:
+> > 
+> > is_between(1, 10, 10) = 1 (Expected: 0)
+> > is_between(1, 10, 1) = 0 (Expected: 0)
+> > is_between(20, 10, 10) = 1 (Expected: 0)
+> > 
+> > And so on and so forth.
+> > 
+> > Obviously, ten is not a number between one and ten - only two to eight are, so I made this patch :)
 > 
-> Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
-> ---
->  drivers/staging/android/logger.c |   90 +++++++++++++++++++++++++-------------
->  1 file changed, 60 insertions(+), 30 deletions(-)
+> Is nine not a number between one and ten? :-p.
 > 
-> diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-> index 1d5ed47..226d8b5 100644
-> --- a/drivers/staging/android/logger.c
-> +++ b/drivers/staging/android/logger.c
-> @@ -78,15 +78,20 @@ struct logger_reader {
->  	size_t			r_off;
->  };
->  
-> -/* logger_offset - returns index 'n' into the log via (optimized) modulus */
-> +/**
-> + * logger_offset() - returns index 'n' into the log via (optimized) modulus
-> + * @log:	The log being referenced
-> + * @n:		The index number being referenced
-> + */
->  static size_t logger_offset(struct logger_log *log, size_t n)
+> The question with a patch like this is whether the function's
+> documentation, which says it returns 1 if a < c < b is wrong, or whether
+> the implementation, which does a < c <= b is wrong. If the documentation
+> is wrong, and something is relying on the current implementation, then
+> this patch might actually break things.
 
-There is no need to document static functions in this style, unless you
-really feel it is needed.
-
-For simple things like this, it isn't needed at all, so I'm not going to
-apply this patch, sorry.
+I agree, which is correct?  I'd stick with the code for now, care to fix
+the comment instead?
 
 greg k-h
