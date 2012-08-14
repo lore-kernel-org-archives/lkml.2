@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab2HNC7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 22:59:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28748 "EHLO mga14.intel.com"
+	id S1755389Ab2HNC7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 22:59:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6148 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab2HNC7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 22:59:33 -0400
+	id S1755145Ab2HNC7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 22:59:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,763,1336374000"; 
-   d="scan'208";a="180665473"
+   d="scan'208";a="180665649"
+Message-ID: <5029BF28.5030101@intel.com>
+Date: Mon, 13 Aug 2012 19:59:52 -0700
 From: John Fastabend <john.r.fastabend@intel.com>
-Subject: [net PATCH v2 2/2] net: netprio: fd passed in SCM_RIGHTS datagram not
-	set correctly
-To: viro@ZenIV.linux.org.uk, nhorman@tuxdriver.com
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        joe@perches.com
-Date: Mon, 13 Aug 2012 19:43:27 -0700
-Message-ID: <20120814024326.6983.97403.stgit@jf-dev1-dcblab>
-In-Reply-To: <20120814024320.6983.92222.stgit@jf-dev1-dcblab>
-References: <20120814024320.6983.92222.stgit@jf-dev1-dcblab>
-User-Agent: StGIT/0.14.3
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: nhorman@tuxdriver.com, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [net PATCH v1 1/2] net: netprio: fix files lock and remove useless
+ d_path bits
+References: <20120814013939.3144.13167.stgit@jf-dev1-dcblab> <20120814022951.GF23464@ZenIV.linux.org.uk>
+In-Reply-To: <20120814022951.GF23464@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A socket fd passed in a SCM_RIGHTS datagram was not getting
-updated with the new tasks cgrp prioidx. This leaves IO on
-the socket tagged with the old tasks priority.
+On 8/13/2012 7:29 PM, Al Viro wrote:
+> On Mon, Aug 13, 2012 at 06:39:39PM -0700, John Fastabend wrote:
+>> -			path = d_path(&file->f_path, tmp, PAGE_SIZE);
+>
+> What's using tmp after that patch and do you still need to bother
+> allocating it?
+>
 
-To fix this add a check in the scm recvmsg path to update the
-sock cgrp prioidx with the new tasks value.
-
-Thanks to Al Viro for catching this.
-
-CC: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
----
-
- net/core/scm.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 8f6ccfd..a14d9e2 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -249,6 +249,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
- 	struct file **fp = scm->fp->fp;
- 	int __user *cmfptr;
- 	int err = 0, i;
-+	__u32 prioidx = task_netprioidx(current);
- 
- 	if (MSG_CMSG_COMPAT & msg->msg_flags) {
- 		scm_detach_fds_compat(msg, scm);
-@@ -265,6 +266,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
- 	for (i=0, cmfptr=(__force int __user *)CMSG_DATA(cm); i<fdmax;
- 	     i++, cmfptr++)
- 	{
-+		struct socket *sock;
- 		int new_fd;
- 		err = security_file_receive(fp[i]);
- 		if (err)
-@@ -281,6 +283,9 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
- 		}
- 		/* Bump the usage count and install the file. */
- 		get_file(fp[i]);
-+		sock = sock_from_file(fp[i], &err);
-+		if (sock)
-+			sock->sk->sk_cgrp_prioidx = prioidx;
- 		fd_install(new_fd, fp[i]);
- 	}
- 
-
+nothing removed it in v2.
