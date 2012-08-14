@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab2HNNMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:12:00 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58639 "EHLO mail.skyhub.de"
+	id S1756012Ab2HNNOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:14:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14720 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754206Ab2HNNL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:11:59 -0400
-Date: Tue, 14 Aug 2012 15:12:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Q: Seeing the microcode revision in /proc/cpuinfo
-Message-ID: <20120814131211.GA25921@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>,
-	linux-kernel@vger.kernel.org
-References: <502A623C020000A10000BACA@gwsmtp1.uni-regensburg.de>
+	id S1755329Ab2HNNOc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 09:14:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,766,1336374000"; 
+   d="scan'208";a="200676092"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, infinipath <infinipath@intel.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        "Hefty, Sean" <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
+ return code
+Thread-Topic: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
+ return code
+Thread-Index: AQHNehyXz9LGAtUWWk6CmO70T4Zf55dZSMjA
+Date: Tue, 14 Aug 2012 13:14:30 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC0D4F1553@FMSMSX108.amr.corp.intel.com>
+References: <1344949115-13266-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1344949115-13266-6-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1344949115-13266-6-git-send-email-Julia.Lawall@lip6.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <502A623C020000A10000BACA@gwsmtp1.uni-regensburg.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 02:35:40PM +0200, Ulrich Windl wrote:
-> Hi!
+> Subject: [PATCH 5/5] drivers/infiniband/hw/qib/qib_iba7322.c: fix error
+> return code
 > 
-> After several reboots due to memory errors after excellent power-saving of Linux on a HP DL380G7 with Intel Xeon 5650 processors (all in on memory bank), I found out the errate "BD104" and "BD123". The former should be fixed in a microcode revision "15H".
-> 
-> Now I wonder what microcode revision my CPUs currently have. /proc/cpuinfo doesn't show that, and the microcode update is a bit cryptic:
-> 
-> kernel: [   44.422912] microcode: CPU23 sig=0x206c2, pf=0x1, revision=0x14
-> 
-> Does that mean the revision is 0x14 BEFORE or AFTER the microcode update?
-> 
-> Wouldn't you agree that seeing the microcode revision in /proc/cpuinfo would be nice?
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Well, you must be using an old-ish kernel because the microcode revision
-infact *is* in /proc/cpuinfo:
-
-processor       : 1
-...
-stepping        : 0
-microcode       : 0x5000028
-
-This is on 3.6-rc1 and that functionality is upstream since 3.2.
-
-HTH.
-
--- 
-Regards/Gruss,
-Boris.
+Acked-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
