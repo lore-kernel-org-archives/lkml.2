@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2HNXuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:50:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45113 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab2HNXuO (ORCPT
+	id S1754815Ab2HNXwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:52:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54645 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab2HNXwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:50:14 -0400
-Date: Tue, 14 Aug 2012 16:50:13 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 07/31] arm64: Process management
-Message-ID: <20120814235013.GC19607@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-8-git-send-email-catalin.marinas@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344966752-16102-8-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 Aug 2012 19:52:13 -0400
+Date: Tue, 14 Aug 2012 16:52:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: <a.zummo@towertech.it>, <sameo@linux.intel.com>,
+        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
+        <kyle.manna@fuel7.com>, <rtc-linux@googlegroups.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
+Message-Id: <20120814165211.daf24c81.akpm@linux-foundation.org>
+In-Reply-To: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
+References: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 26 Jul 2012 12:05:19 +0530
+Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
 
-On Tue, Aug 14, 2012 at 06:52:08PM +0100, Catalin Marinas wrote:
+> TPS65910 PMIC is a MFD with RTC as one of the device.
+> Adding RTC driver for supporting RTC device present
+> inside TPS65910 PMIC.
+> 
+> Only support for RTC alarm is implemented as part of this patch.
 
-> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> new file mode 100644
-> index 0000000..c4a4e1c
-> --- /dev/null
-> +++ b/arch/arm64/kernel/process.c
-> @@ -0,0 +1,416 @@
+It needs a build fix:
 
-[...]
-> +/*
-> + * Function pointers to optional machine specific functions
-> + */
-> +void (*pm_power_off)(void);
-> +EXPORT_SYMBOL(pm_power_off);
-> +
-> +void (*pm_restart)(const char *cmd);
-> +EXPORT_SYMBOL_GPL(pm_restart);
-[...]
-> +void (*pm_idle)(void) = default_idle;
-> +EXPORT_SYMBOL(pm_idle);
+drivers/rtc/rtc-tps65910.c: In function 'tps65910_rtc_suspend':
+drivers/rtc/rtc-tps65910.c:313: error: request for member 'irqstat' in something not a structure or union
+drivers/rtc/rtc-tps65910.c: In function 'tps65910_rtc_resume':
+drivers/rtc/rtc-tps65910.c:327: error: request for member 'irqstat' in something not a structure or union
 
-Does it really make sense to export these to modules?
-
-I find the powerpc way of having a machine descriptor structure with these
-(and other) function pointers in it a bit cleaner, since it gives you
-one place to plug it all in. I'd recommend that you consider doing that
-here as well, for these three and potentially other cases in the future.
-
-(See arch/powerpc/include/asm/machdep.h, struct machdep_calls).
-
-> +void machine_halt(void)
-> +{
-> +	machine_shutdown();
-> +	while (1);
-> +}
-> +
-> +void machine_power_off(void)
-> +{
-> +	machine_shutdown();
-> +	if (pm_power_off)
-> +		pm_power_off();
-> +}
-
-Printing something here along the lines of "System halted, OK to power off"
-is useful.
+--- a/drivers/rtc/rtc-tps65910.c~rtc-tps65910-add-rtc-driver-for-tps65910-pmic-rtc-fix
++++ a/drivers/rtc/rtc-tps65910.c
+@@ -310,7 +310,7 @@ static int tps65910_rtc_suspend(struct p
+ 
+ 	/* Store current list of enabled interrupts*/
+ 	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS,
+-		&tps->rtc.irqstat);
++		&tps->rtc->irqstat);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -324,7 +324,7 @@ static int tps65910_rtc_resume(struct pl
+ 
+ 	/* Restore list of enabled interrupts before suspend */
+ 	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS,
+-		tps->rtc.irqstat);
++		tps->rtc->irqstat);
+ }
+ 
+ static const struct dev_pm_ops tps65910_rtc_pm_ops = {
 
 
--Olof
+but it still has problems:
+
+drivers/rtc/rtc-tps65910.c:331: warning: initialization from incompatible pointer type
+drivers/rtc/rtc-tps65910.c:332: warning: initialization from incompatible pointer type
+
+fix and resend, please?
