@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab2HNNiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:38:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25712 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab2HNNiM (ORCPT
+	id S1752408Ab2HNNih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:38:37 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:59057 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab2HNNif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:38:12 -0400
-Date: Tue, 14 Aug 2012 09:28:03 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Miller <davem@davemloft.net>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        xen-devel@lists.xensource.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, konrad@darnok.org,
-        akpm@linux-foundation.org
-Subject: Re: [Xen-devel] [PATCH] netvm: check for page == NULL when
- propogating the skb->pfmemalloc flag
-Message-ID: <20120814132803.GC10880@phenom.dumpdata.com>
-References: <20120807085554.GF29814@suse.de>
- <20120808.155046.820543563969484712.davem@davemloft.net>
- <20120813154144.GA24868@phenom.dumpdata.com>
- <20120814100522.GL4177@suse.de>
+	Tue, 14 Aug 2012 09:38:35 -0400
+Message-ID: <502A541C.6090100@snapgear.com>
+Date: Tue, 14 Aug 2012 23:35:24 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814100522.GL4177@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <geert@linux-m68k.org>, <ebiederm@xmission.com>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [PATCH] m68k: select CONFIG_GENERIC_ATOMIC64 for all m68k CPU
+ types
+References: <1344919533-9357-1-git-send-email-gerg@snapgear.com> <20120814051507.GA10244@localhost>
+In-Reply-To: <20120814051507.GA10244@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 11:05:22AM +0100, Mel Gorman wrote:
-> On Mon, Aug 13, 2012 at 11:41:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
-> > > From: Mel Gorman <mgorman@suse.de>
-> > > Date: Tue, 7 Aug 2012 09:55:55 +0100
-> > > 
-> > > > Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
-> > > > for the following bug triggered by a xen network driver
-> > >  ...
-> > > > The problem is that the xenfront driver is passing a NULL page to
-> > > > __skb_fill_page_desc() which was unexpected. This patch checks that
-> > > > there is a page before dereferencing.
-> > > > 
-> > > > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > > 
-> > > That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
-> > > It's the only driver passing NULL here.
-> > 
-> > It looks to be passing a valid page pointer (at least by looking
-> > at the code) so I am not sure how it got turned in a NULL.
-> > 
-> 
-> Are we looking at different code bases? I see this and I was assuming it
-> was the source of the bug.
-> 
-> 	__skb_fill_page_desc(skb, 0, NULL, 0, 0);
+On 08/14/2012 03:15 PM, Fengguang Wu wrote:
+> On Tue, Aug 14, 2012 at 02:45:33PM +1000, gerg@snapgear.com wrote:
+>> From: Greg Ungerer <gerg@uclinux.org>
+>>
+>> There is no specific atomic64 support code for any m68k CPUs, so we should
+>> select CONFIG_GENERIC_ATOMC64 for all. Remove the existing per CPU selection
+>> of this and select it for all m68k.
+>>
+>> Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+>
+> Thanks for the complete solution!
 
-Yes! Well, that is embarrassing. I was looking at the first invocation of 
-__skb_fill_page_desc (which is in xennet_alloc_rx_buffers) <sigh>
+I'll carry it in the m68knommu git tree, and push to Linus with my
+next set of fixes.
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
+Regards
+Greg
+
+
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
