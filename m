@@ -1,120 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab2HNDRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 23:17:38 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:54607 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754041Ab2HNDRh (ORCPT
+	id S1755345Ab2HNDVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 23:21:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45423 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753366Ab2HNDU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 23:17:37 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I936eI542M1432Izz1202hzz8275bhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH V2 18/18] Tools: hv: Properly manage open streams
-Thread-Topic: [PATCH V2 18/18] Tools: hv: Properly manage open streams
-Thread-Index: AQHNeXPUkkDzMuXbo0iYEt6rFaDZqJdYjYGAgAASGtA=
-Date: Tue, 14 Aug 2012 03:17:28 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236BF917@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
-	 <1344877627-21779-1-git-send-email-kys@microsoft.com>
-	 <1344877627-21779-18-git-send-email-kys@microsoft.com>
- <1344909469.824.167.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1344909469.824.167.camel@deadeye.wl.decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT001.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	Mon, 13 Aug 2012 23:20:59 -0400
+Message-ID: <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue
+ on do_floppy_init error handling
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Date: Tue, 14 Aug 2012 04:20:39 +0100
+In-Reply-To: <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
+	 <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-UsxMOd631+8ZWR0R7gzZ"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7E3HibY013820
 
 
+--=-UsxMOd631+8ZWR0R7gzZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> Sent: Monday, August 13, 2012 9:58 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
-> apw@canonical.com
-> Subject: Re: [PATCH V2 18/18] Tools: hv: Properly manage open streams
-> 
-> On Mon, 2012-08-13 at 10:07 -0700, K. Y. Srinivasan wrote:
-> > Close the open streams properly.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Reviewed-by: Olaf Hering <olaf@aepfle.de>
-> > Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-> 
-> This isn't reviewed by me, I'm the author!
+On Mon, 2012-08-13 at 15:16 -0300, Herton Ronaldo Krzesinski wrote:
+> After commit 3f9a5aa ("floppy: Cleanup disk->queue before caling
+> put_disk() if add_disk() was never called"), if something fails in the
+> add_disk loop, we unconditionally set disks[dr]->queue to NULL. But
+> that's wrong, since we may have succesfully done an add_disk on some of
+> the drives previously in the loop, and in this case we would end up with
+> an extra reference to the disks[dr]->queue.
+>=20
+> Add a new global array to mark "registered" disks, and use that to check
+> if we did an add_disk on one of the disks already. Using an array to
+> track added disks also will help to simplify/cleanup code later, as
+> suggested by Vivek Goyal.
+[...]
 
-I am truly sorry for this confusion. I was cleaning up the code based on the
-last set of comments I got from Olaf and I did not realize that you had authored
-this very patch! Perhaps we can drop this patch from this set.
+It's totally ridiculous that a driver should have to do this.  Any
+registered disk should have the GENHD_FL_UP flag set... so why can't
+genhd check it?  It doesn't look like floppy is the only driver affected
+by this problem, either.  So I suggest the following general fix
+(untested):
 
-Regards,
+---
+Subject: genhd: Make put_disk() safe for disks that have not been registere=
+d
 
-K. Y
+Since commit 9f53d2f ('block: fix __blkdev_get and add_disk race
+condition'), add_disk() adds a reference to disk->queue, which is then
+dropped by disk_release().  But if a disk is destroyed without being
+registered through add_disk() (or if add_disk() fails at the first
+hurdle) then we have a reference imbalance.
+
+Use the GENHD_FL_UP flag to tell whether this extra reference has been
+added.  Remove the incomplete workaround from the floppy driver.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: stable@vger.kernel.org
+---
+ block/genhd.c          |    6 +++---
+ drivers/block/floppy.c |   16 +---------------
+ 2 files changed, 4 insertions(+), 18 deletions(-)
+
+diff --git a/block/genhd.c b/block/genhd.c
+index cac7366..6201212 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -587,8 +587,6 @@ void add_disk(struct gendisk *disk)
+ 	WARN_ON(disk->minors && !(disk->major || disk->first_minor));
+ 	WARN_ON(!disk->minors && !(disk->flags & GENHD_FL_EXT_DEVT));
+=20
+-	disk->flags |=3D GENHD_FL_UP;
+-
+ 	retval =3D blk_alloc_devt(&disk->part0, &devt);
+ 	if (retval) {
+ 		WARN_ON(1);
+@@ -596,6 +594,8 @@ void add_disk(struct gendisk *disk)
+ 	}
+ 	disk_to_dev(disk)->devt =3D devt;
+=20
++	disk->flags |=3D GENHD_FL_UP;
++
+ 	/* ->major and ->first_minor aren't supposed to be
+ 	 * dereferenced from here on, but set them just in case.
+ 	 */
+@@ -1105,7 +1105,7 @@ static void disk_release(struct device *dev)
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
+-	if (disk->queue)
++	if (disk->queue && disk->flags & GENHD_FL_UP)
+ 		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index a7d6347..cf27922 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4325,14 +4325,8 @@ out_unreg_blkdev:
+ out_put_disk:
+ 	while (dr--) {
+ 		del_timer_sync(&motor_off_timer[dr]);
+-		if (disks[dr]->queue) {
++		if (disks[dr]->queue)
+ 			blk_cleanup_queue(disks[dr]->queue);
+-			/*
+-			 * put_disk() is not paired with add_disk() and
+-			 * will put queue reference one extra time. fix it.
+-			 */
+-			disks[dr]->queue =3D NULL;
+-		}
+ 		put_disk(disks[dr]);
+ 	}
+ 	return err;
+@@ -4560,14 +4554,6 @@ static void __exit floppy_module_exit(void)
+ 		}
+ 		blk_cleanup_queue(disks[drive]->queue);
+=20
+-		/*
+-		 * These disks have not called add_disk().  Don't put down
+-		 * queue reference in put_disk().
+-		 */
+-		if (!(allowed_drive_mask & (1 << drive)) ||
+-		    fdc_state[FDC(drive)].version =3D=3D FDC_NONE)
+-			disks[drive]->queue =3D NULL;
+-
+ 		put_disk(disks[drive]);
+ 	}
+=20
 
 
-> 
-> Ben.
-> 
-> > ---
-> >  tools/hv/hv_kvp_daemon.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> > index c8e1013..ca6424f 100644
-> > --- a/tools/hv/hv_kvp_daemon.c
-> > +++ b/tools/hv/hv_kvp_daemon.c
-> > @@ -160,7 +160,7 @@ static void kvp_update_file(int pool)
-> >  				sizeof(struct kvp_record),
-> >  				kvp_file_info[pool].num_records, filep);
-> >
-> > -	fflush(filep);
-> > +	fclose(filep);
-> >  	kvp_release_lock(pool);
-> >  }
-> >
-> > @@ -206,7 +206,7 @@ static void kvp_update_mem_state(int pool)
-> >  	kvp_file_info[pool].num_blocks = num_blocks;
-> >  	kvp_file_info[pool].records = record;
-> >  	kvp_file_info[pool].num_records = records_read;
-> > -
-> > +	fclose(filep);
-> >  	kvp_release_lock(pool);
-> >  }
-> >  static int kvp_file_init(void)
-> 
-> --
-> Ben Hutchings
-> I say we take off; nuke the site from orbit.  It's the only way to be sure.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+Ben Hutchings
+I say we take off; nuke the site from orbit.  It's the only way to be sure.
+
+--=-UsxMOd631+8ZWR0R7gzZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUCnEB+e/yOyVhhEJAQqjjw/9HiPEHBx2oh3AvHJ1VvbR5P8QXcruOjuX
+wu3a6heC9K3f2lYt5ibpy68QO+9ImOaKw2z9gjTgMWLUr7kn0ewhrQ4k5xh4xuQN
+jEKkXWerK00t2DwvsGL64jgPZSB09T9hUa03I3Q2bzQv8Y9VEn3zTRt7SCD6w6n2
+Nbkvt/KiDU/1tdaB0djpuy+P1a3RWCuhKMh3rPdpTVVwSqo3bosPtyeShS+V1Tfc
+GZfAjTGnOVS6+8mJLNh/kG7p9Tp2Tz+YS1sT8vHFa2v4+26pjsbp0lX0rMxRfzyU
+HS+Oltqh+Ajh2eWkQogEW42VlH6d8L7TYekuwBCu9m6tEmg9iYLngKOFh/vvW79K
+WlDNfHEQ6FzP74M7siVTqOh+OT+GKZvBYcBUFcSDvAb+DpzfAYMZAFCmS0qeevDh
+TTlNGn9Kl6ib4RaWlA3OZcp6TI8exK95pWJggRQpLcwUhvTWXfcuQ+LpjyD0ohnY
+FOWdTg7VVxwQETT+RX0aGC1G6fW79IX8IXGQCNxSwIr3m8ICwczM1v+YR3qIkb1p
+p3oILa8rZW8reN6KauLzzNzjbL5jwnYa1IpETCKexl2axmRUSDadCgXk2fKNCOW9
+Et+TkVEB7zxHPjFk4EISP2U7yTgGQQgGbejb0DkuYcCVZcrJKGtDxJtB7mExJSqc
+nGeDrhic7og=
+=ESOB
+-----END PGP SIGNATURE-----
+
+--=-UsxMOd631+8ZWR0R7gzZ--
