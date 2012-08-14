@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2HNQ2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:28:31 -0400
+	id S1756711Ab2HNQZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:25:07 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733Ab2HNQZ7 (ORCPT
+	with ESMTP id S1751773Ab2HNQZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:25:59 -0400
+	Tue, 14 Aug 2012 12:25:02 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 10/16] dlm: use new hashtable implementation
-Date: Tue, 14 Aug 2012 18:24:44 +0200
-Message-Id: <1344961490-4068-11-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 02/16] user_ns: use new hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:36 +0200
+Message-Id: <1344961490-4068-3-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
 References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
@@ -32,142 +32,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch dlm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the dlm.
+Switch user_ns to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in user_ns.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- fs/dlm/lowcomms.c |   47 +++++++++++++----------------------------------
- 1 files changed, 13 insertions(+), 34 deletions(-)
+ kernel/user.c |   33 +++++++++++++--------------------
+ 1 files changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 522a69f..e36dad2 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -55,6 +55,7 @@
- #include <net/sctp/sctp.h>
- #include <net/sctp/user.h>
- #include <net/ipv6.h>
+diff --git a/kernel/user.c b/kernel/user.c
+index b815fef..d10c484 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -16,6 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/export.h>
+ #include <linux/user_namespace.h>
 +#include <linux/hashtable.h>
  
- #include "dlm_internal.h"
- #include "lowcomms.h"
-@@ -62,7 +63,7 @@
- #include "config.h"
+ /*
+  * userns count is 1 for root user, 1 for init_uts_ns,
+@@ -52,13 +53,9 @@ EXPORT_SYMBOL_GPL(init_user_ns);
+  */
  
- #define NEEDED_RMEM (4*1024*1024)
--#define CONN_HASH_SIZE 32
-+#define CONN_HASH_BITS 5
+ #define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
+-#define UIDHASH_SZ	(1 << UIDHASH_BITS)
+-#define UIDHASH_MASK		(UIDHASH_SZ - 1)
+-#define __uidhashfn(uid)	(((uid >> UIDHASH_BITS) + uid) & UIDHASH_MASK)
+-#define uidhashentry(uid)	(uidhash_table + __uidhashfn((__kuid_val(uid))))
  
- /* Number of messages to send before rescheduling */
- #define MAX_SEND_MSG_COUNT 25
-@@ -158,34 +159,21 @@ static int dlm_allow_conn;
- static struct workqueue_struct *recv_workqueue;
- static struct workqueue_struct *send_workqueue;
+ static struct kmem_cache *uid_cachep;
+-struct hlist_head uidhash_table[UIDHASH_SZ];
++static DEFINE_HASHTABLE(uidhash_table, UIDHASH_BITS)
  
--static struct hlist_head connection_hash[CONN_HASH_SIZE];
-+static struct hlist_head connection_hash[CONN_HASH_BITS];
- static DEFINE_MUTEX(connections_lock);
- static struct kmem_cache *con_cache;
- 
- static void process_recv_sockets(struct work_struct *work);
- static void process_send_sockets(struct work_struct *work);
- 
--
--/* This is deliberately very simple because most clusters have simple
--   sequential nodeids, so we should be able to go straight to a connection
--   struct in the array */
--static inline int nodeid_hash(int nodeid)
--{
--	return nodeid & (CONN_HASH_SIZE-1);
--}
--
- static struct connection *__find_con(int nodeid)
+ /*
+  * The uidhash_lock is mostly taken from process context, but it is
+@@ -84,22 +81,22 @@ struct user_struct root_user = {
+ /*
+  * These routines must be called with the uidhash spinlock held!
+  */
+-static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
++static void uid_hash_insert(struct user_struct *up)
  {
--	int r;
+-	hlist_add_head(&up->uidhash_node, hashent);
++	hash_add(uidhash_table, &up->uidhash_node, __kuid_val(up->uid));
+ }
+ 
+ static void uid_hash_remove(struct user_struct *up)
+ {
+-	hlist_del_init(&up->uidhash_node);
++	hash_del(&up->uidhash_node);
+ }
+ 
+-static struct user_struct *uid_hash_find(kuid_t uid, struct hlist_head *hashent)
++static struct user_struct *uid_hash_find(kuid_t uid)
+ {
+ 	struct user_struct *user;
  	struct hlist_node *h;
- 	struct connection *con;
  
--	r = nodeid_hash(nodeid);
--
--	hlist_for_each_entry(con, h, &connection_hash[r], list) {
-+	hash_for_each_possible(connection_hash, con, h, list, nodeid)
- 		if (con->nodeid == nodeid)
- 			return con;
--	}
- 	return NULL;
+-	hlist_for_each_entry(user, h, hashent, uidhash_node) {
++	hash_for_each_possible(uidhash_table, user, h, uidhash_node, __kuid_val(uid)) {
+ 		if (uid_eq(user->uid, uid)) {
+ 			atomic_inc(&user->__count);
+ 			return user;
+@@ -135,7 +132,7 @@ struct user_struct *find_user(kuid_t uid)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&uidhash_lock, flags);
+-	ret = uid_hash_find(uid, uidhashentry(uid));
++	ret = uid_hash_find(uid);
+ 	spin_unlock_irqrestore(&uidhash_lock, flags);
+ 	return ret;
  }
+@@ -156,11 +153,10 @@ void free_uid(struct user_struct *up)
  
-@@ -196,7 +184,6 @@ static struct connection *__find_con(int nodeid)
- static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
+ struct user_struct *alloc_uid(kuid_t uid)
  {
- 	struct connection *con = NULL;
--	int r;
+-	struct hlist_head *hashent = uidhashentry(uid);
+ 	struct user_struct *up, *new;
  
- 	con = __find_con(nodeid);
- 	if (con || !alloc)
-@@ -206,8 +193,7 @@ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- 	if (!con)
- 		return NULL;
+ 	spin_lock_irq(&uidhash_lock);
+-	up = uid_hash_find(uid, hashent);
++	up = uid_hash_find(uid);
+ 	spin_unlock_irq(&uidhash_lock);
  
--	r = nodeid_hash(nodeid);
--	hlist_add_head(&con->list, &connection_hash[r]);
-+	hash_add(connection_hash, &con->list, nodeid);
- 
- 	con->nodeid = nodeid;
- 	mutex_init(&con->sock_mutex);
-@@ -235,11 +221,8 @@ static void foreach_conn(void (*conn_func)(struct connection *c))
- 	struct hlist_node *h, *n;
- 	struct connection *con;
- 
--	for (i = 0; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry_safe(con, h, n, &connection_hash[i], list){
--			conn_func(con);
--		}
--	}
-+	hash_for_each_safe(connection_hash, i, h, n, con, list)
-+		conn_func(con);
- }
- 
- static struct connection *nodeid2con(int nodeid, gfp_t allocation)
-@@ -262,12 +245,10 @@ static struct connection *assoc2con(int assoc_id)
- 
- 	mutex_lock(&connections_lock);
- 
--	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry(con, h, &connection_hash[i], list) {
--			if (con->sctp_assoc == assoc_id) {
--				mutex_unlock(&connections_lock);
--				return con;
--			}
-+	hash_for_each(connection_hash, i, h, con, list) {
-+		if (con->sctp_assoc == assoc_id) {
-+			mutex_unlock(&connections_lock);
-+			return con;
+ 	if (!up) {
+@@ -176,13 +172,13 @@ struct user_struct *alloc_uid(kuid_t uid)
+ 		 * on adding the same user already..
+ 		 */
+ 		spin_lock_irq(&uidhash_lock);
+-		up = uid_hash_find(uid, hashent);
++		up = uid_hash_find(uid);
+ 		if (up) {
+ 			key_put(new->uid_keyring);
+ 			key_put(new->session_keyring);
+ 			kmem_cache_free(uid_cachep, new);
+ 		} else {
+-			uid_hash_insert(new, hashent);
++			uid_hash_insert(new);
+ 			up = new;
  		}
- 	}
- 	mutex_unlock(&connections_lock);
-@@ -1644,7 +1625,7 @@ static void free_conn(struct connection *con)
- 	close_connection(con, true);
- 	if (con->othercon)
- 		kmem_cache_free(con_cache, con->othercon);
--	hlist_del(&con->list);
-+	hash_del(&con->list);
- 	kmem_cache_free(con_cache, con);
- }
+ 		spin_unlock_irq(&uidhash_lock);
+@@ -196,17 +192,14 @@ out_unlock:
  
-@@ -1673,10 +1654,8 @@ int dlm_lowcomms_start(void)
+ static int __init uid_cache_init(void)
  {
- 	int error = -EINVAL;
- 	struct connection *con;
--	int i;
+-	int n;
+-
+ 	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
+ 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
  
--	for (i = 0; i < CONN_HASH_SIZE; i++)
--		INIT_HLIST_HEAD(&connection_hash[i]);
-+	hash_init(connection_hash);
+-	for(n = 0; n < UIDHASH_SZ; ++n)
+-		INIT_HLIST_HEAD(uidhash_table + n);
++	hash_init(uidhash_table);
  
- 	init_local();
- 	if (!dlm_local_count) {
+ 	/* Insert the root user immediately (init already runs as root) */
+ 	spin_lock_irq(&uidhash_lock);
+-	uid_hash_insert(&root_user, uidhashentry(GLOBAL_ROOT_UID));
++	uid_hash_insert(&root_user);
+ 	spin_unlock_irq(&uidhash_lock);
+ 
+ 	return 0;
 -- 
 1.7.8.6
 
