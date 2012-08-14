@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab2HNK3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:29:16 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:54160 "EHLO smtp.ispras.ru"
+	id S1756031Ab2HNKaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:30:06 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:54163 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755680Ab2HNK3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:29:14 -0400
+	id S1755928Ab2HNK3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 06:29:15 -0400
 From: Ilya Shchepetkov <shchepetkov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH 4/5] sungem: Call netif_carrier_off() after register_netdev()
-Date: Tue, 14 Aug 2012 14:28:54 +0400
-Message-Id: <1344940135-17079-5-git-send-email-shchepetkov@ispras.ru>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "David S. Miller" <davem@davemloft.net>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH 5/5] net/hyperv: Call netif_carrier_off() after register_netdev()
+Date: Tue, 14 Aug 2012 14:28:55 +0400
+Message-Id: <1344940135-17079-6-git-send-email-shchepetkov@ispras.ru>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
 References: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
@@ -32,31 +35,33 @@ Found by Linux Driver Verification project (linuxtesting.org).
 
 Signed-off-by: Ilya Shchepetkov <shchepetkov@ispras.ru>
 ---
- drivers/net/ethernet/sun/sungem.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/net/hyperv/netvsc_drv.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/sungem.c b/drivers/net/ethernet/sun/sungem.c
-index 9ae12d0..c57c9f6 100644
---- a/drivers/net/ethernet/sun/sungem.c
-+++ b/drivers/net/ethernet/sun/sungem.c
-@@ -2909,7 +2909,6 @@ static int __devinit gem_init_one(struct pci_dev *pdev,
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 8c5a1c4..5734ad0 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -416,9 +416,6 @@ static int netvsc_probe(struct hv_device *dev,
+ 	if (!net)
+ 		return -ENOMEM;
  
- 	gp->lstate = link_down;
- 	gp->timer_ticks = 0;
--	netif_carrier_off(dev);
- 
- 	gp->regs = ioremap(gemreg_base, gemreg_len);
- 	if (!gp->regs) {
-@@ -2988,6 +2987,9 @@ static int __devinit gem_init_one(struct pci_dev *pdev,
- 		goto err_out_free_consistent;
+-	/* Set initial state */
+-	netif_carrier_off(net);
+-
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = dev;
+ 	hv_set_drvdata(dev, net);
+@@ -441,6 +438,9 @@ static int netvsc_probe(struct hv_device *dev,
+ 		goto out;
  	}
  
-+	/* Turn off carrier */
-+	netif_carrier_off(dev);
++	/* Set initial state */
++	netif_carrier_off(net);
 +
- 	/* Undo the get_cell with appropriate locking (we could use
- 	 * ndo_init/uninit but that would be even more clumsy imho)
- 	 */
+ 	/* Notify the netvsc driver of the new device */
+ 	device_info.ring_size = ring_size;
+ 	ret = rndis_filter_device_add(dev, &device_info);
 -- 
 1.7.7
 
