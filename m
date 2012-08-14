@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2HNX1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:27:44 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60682 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab2HNX1n (ORCPT
+	id S1754524Ab2HNX3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:29:10 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62429 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab2HNX3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:27:43 -0400
-Date: Tue, 14 Aug 2012 16:27:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-Message-ID: <20120814232738.GG25632@google.com>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org>
- <alpine.LFD.2.02.1208131720070.32033@ionos>
- <20120814191549.GX25632@google.com>
- <alpine.LFD.2.02.1208142118060.32033@ionos>
- <20120814214009.GD25632@google.com>
- <alpine.LFD.2.02.1208150045360.32033@ionos>
+	Tue, 14 Aug 2012 19:29:07 -0400
+Date: Tue, 14 Aug 2012 16:29:07 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 03/31] arm64: Exception handling
+Message-ID: <20120814232907.GB19607@quad.lixom.net>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-4-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208150045360.32033@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344966752-16102-4-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
+Hi,
 
-On Wed, Aug 15, 2012 at 01:12:01AM +0200, Thomas Gleixner wrote:
-> Just for the record. The thread evolved from here:
-> 
->   <tj>    * mod_delayed_work() can't be used from IRQ handlers.
-> 
-> My answer was:
-> 
->   <tglx>  This function does not exist. So what?
-> 
-> Which was completely appropriate as this function does not exist
-> though you used it as a primary argument for your patches.
+This one is a bit denser, so just a quick first pass with a couple of minor
+comments. I'll revisit the rest.
 
-I read it as "so, what's wrong with not having mod_delayed_work()?",
-so the response.
+On Tue, Aug 14, 2012 at 06:52:04PM +0100, Catalin Marinas wrote:
 
-It exists in wq/for-3.7 and cancel_delayed_work() (the one without
-preceding __) + queue() users have been already converted.
+> +el1_sp_pc:
+> +	/*
+> +	 *Stack or PC alignment exception handling
+> +	 */
+> +	mrs	x0, far_el1
+> +	mov	x1, x25
+> +	mov	x2, sp
+> +	b	do_sp_pc_abort
+> +el1_undef:
+> +	/*
+> +	 *Undefined instruction
+> +	 */
 
-  http://thread.gmane.org/gmane.linux.kernel/1334546
+Nit: Missing spaces in the comment here and the one above.
 
-> Can you please sit down for a little while and think about your own
-> snarkiness and your own tiring behaviour against other kernel
-> maintainers?
+> +el0_undef:
+> +	/*
+> +	 *Undefined instruction
+> +	 */
+> +	mov	x0, sp
+> +	b	do_undefinstr
 
-Believe it or not, I tend to work pretty well with other maintainers
-and developers.  You start responding with words like "mess" and
-"crap" with condescension sprinkled and expect the conversation to not
-escalate?  Let's just stay technical, okay?
+Here too.
 
-Thanks.
+> diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
+> new file mode 100644
+> index 0000000..8712a8e
+> --- /dev/null
+> +++ b/arch/arm64/kernel/traps.c
+[...]
+> +DEFINE_SPINLOCK(die_lock);
 
--- 
-tejun
+Should probably be static.
+
