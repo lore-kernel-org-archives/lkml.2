@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab2HNPJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:09:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756623Ab2HNPJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:09:28 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <18933.1344956788@warthog.procyon.org.uk>
-References: <18933.1344956788@warthog.procyon.org.uk> <502A6759.3090802@nod.at> <15981.1344955883@warthog.procyon.org.uk> <502A613F.1090600@nod.at> <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk> <18600.1344956051@warthog.procyon.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: linux-next: Tree for July 26 (uml)
-Date: Tue, 14 Aug 2012 16:09:08 +0100
-Message-ID: <19002.1344956948@warthog.procyon.org.uk>
+	id S1756654Ab2HNPKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:10:43 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33776 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557Ab2HNPGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:06:14 -0400
+From: Jiri Pirko <jiri@resnulli.us>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
+        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
+        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
+        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        bridge@lists.linux-foundation.org, fbl@redhat.com
+Subject: [patch net-next v2 06/15] bridge: remove usage of netdev_set_master()
+Date: Tue, 14 Aug 2012 17:05:39 +0200
+Message-Id: <1344956748-2099-7-git-send-email-jiri@resnulli.us>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
+References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+---
+ net/bridge/br_if.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> > I think arch/x86/um/Kconfig makes more sense.
-> ...
-> It doesn't exist.  Should I create it?
+diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+index e1144e1..8bea645 100644
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -148,7 +148,7 @@ static void del_nbp(struct net_bridge_port *p)
+ 	netdev_rx_handler_unregister(dev);
+ 	synchronize_net();
+ 
+-	netdev_set_master(dev, NULL);
++	netdev_upper_dev_unlink(dev, br->dev);
+ 
+ 	br_multicast_del_port(p);
+ 
+@@ -364,7 +364,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
+ 	if (br_netpoll_info(br) && ((err = br_netpoll_enable(p))))
+ 		goto err3;
+ 
+-	err = netdev_set_master(dev, br->dev);
++	err = netdev_master_upper_dev_link(dev, br->dev);
+ 	if (err)
+ 		goto err3;
+ 
+@@ -403,7 +403,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
+ 	return 0;
+ 
+ err4:
+-	netdev_set_master(dev, NULL);
++	netdev_upper_dev_unlink(dev, br->dev);
+ err3:
+ 	sysfs_remove_link(br->ifobj, p->dev->name);
+ err2:
+-- 
+1.7.10.4
 
-Bah.  Helps if I read your message more closely.
-
-David
