@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab2HNBvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:51:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63852 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab2HNBtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:49:55 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@redhat.com,
-        lauro.venancio@openbossa.org, jak@jak-linux.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/6] workqueue: make all workqueues non-reentrant
-Date: Mon, 13 Aug 2012 18:49:41 -0700
-Message-Id: <1344908986-18152-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1344908986-18152-1-git-send-email-tj@kernel.org>
-References: <1344908986-18152-1-git-send-email-tj@kernel.org>
+	id S1754808Ab2HNBzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:55:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42206 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab2HNBzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 21:55:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,763,1336374000"; 
+   d="scan'208";a="185987853"
+From: John Fastabend <john.r.fastabend@intel.com>
+Subject: [net PATCH v1 1/2] net: netprio: fix files lock and remove useless
+	d_path bits
+To: viro@ZenIV.linux.org.uk, nhorman@tuxdriver.com
+Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        joe@perches.com
+Date: Mon, 13 Aug 2012 18:39:39 -0700
+Message-ID: <20120814013939.3144.13167.stgit@jf-dev1-dcblab>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default, each per-cpu part of a bound workqueue operates separately
-and a work item may be executing concurrently on different CPUs.  The
-behavior avoids some cross-cpu traffic but leads to subtle weirdities
-and not-so-subtle contortions in the API.
+Add lock to prevent a race with a file closing and also remove
+useless and ugly sscanf code. The extra code was never needed
+and the case it supposedly protected against is in fact handled
+correctly by sock_from_file as pointed out by Al Viro.
 
-* There's no sane usefulness in allowing a single work item to be
-  executed concurrently on multiple CPUs.  People just get the
-  behavior unintentionally and get surprised after learning about it.
-  Most either explicitly synchronize or use non-reentrant/ordered
-  workqueue but this is error-prone.
-
-* flush_work() can't wait for multiple instances of the same work item
-  on different CPUs.  If a work item is executing on cpu0 and then
-  queued on cpu1, flush_work() can only wait for the one on cpu1.
-
-  Unfortunately, work items can easily cross CPU boundaries
-  unintentionally when the queueing thread gets migrated.  This means
-  that if multiple queuers compete, flush_work() can't even guarantee
-  that the instance queued right before it is finished before
-  returning.
-
-* flush_work_sync() was added to work around some of the deficiencies
-  of flush_work().  In addition to the usual flushing, it ensures that
-  all currently executing instances are finished before returning.
-  This operation is expensive as it has to walk all CPUs and at the
-  same time fails to address competing queuer case.
-
-  Incorrectly using flush_work() when flush_work_sync() is necessary
-  is an easy error to make and can lead to bugs which are difficult to
-  reproduce.
-
-* Similar problems exist for flush_delayed_work[_sync]().
-
-Other than the cross-cpu access concern, there's no benefit in
-allowing parallel execution and it's plain silly to have this level of
-contortion for workqueue which is widely used from core code to
-extremely obscure drivers.
-
-This patch makes all workqueues non-reentrant.  If a work item is
-executing on a different CPU when queueing is requested, it is always
-queued to that CPU.  This guarantees that any given work item can be
-executing on one CPU at maximum and if a work item is queued and
-executing, both are on the same CPU.
-
-The only behavior change which may affect workqueue users negatively
-is that non-reentrancy overrides the affinity specified by
-queue_work_on().  On a reentrant workqueue, the affinity specified by
-queue_work_on() is always followed.  Now, if the work item is
-executing on one of the CPUs, the work item will be queued there
-regardless of the requested affinity.  I've reviewed all workqueue
-users which request explicit affinity, and, fortunately, none seems to
-be crazy enough to exploit parallel execution of the same work item.
-
-This adds an additional busy_hash lookup if the work item was
-previously queued on a different CPU.  This shouldn't be noticeable
-under any sane workload.  Work item queueing isn't a very
-high-frequency operation and they don't jump across CPUs all the time.
-In a micro benchmark to exaggerate this difference - measuring the
-time it takes for two work items to repeatedly jump between two CPUs a
-number (10M) of times with busy_hash table densely populated, the
-difference was around 3%.
-
-While the overhead is measureable, it is only visible in pathological
-cases and the difference isn't huge.  This change brings much needed
-sanity to workqueue and makes its behavior consistent with timer.  I
-think this is the right tradeoff to make.
-
-This enables significant simplification of workqueue API.
-Simplification patches will follow.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+CC: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
 ---
- kernel/workqueue.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 7413242..26f048b 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1216,14 +1216,15 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 			cpu = raw_smp_processor_id();
+ net/core/netprio_cgroup.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index ed0c043..0323ec3 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -296,29 +296,22 @@ void net_prio_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ 			continue;
+ 		}
  
- 		/*
--		 * It's multi cpu.  If @wq is non-reentrant and @work
--		 * was previously on a different cpu, it might still
--		 * be running there, in which case the work needs to
--		 * be queued on that cpu to guarantee non-reentrance.
-+		 * It's multi cpu.  If @work was previously on a different
-+		 * cpu, it might still be running there, in which case the
-+		 * work needs to be queued on that cpu to guarantee
-+		 * non-reentrancy.
- 		 */
- 		gcwq = get_gcwq(cpu);
--		if (wq->flags & WQ_NON_REENTRANT &&
--		    (last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
-+		last_gcwq = get_work_gcwq(work);
-+
-+		if (last_gcwq && last_gcwq != gcwq) {
- 			struct worker *worker;
+-		rcu_read_lock();
++		spin_lock(&files->file_lock);
+ 		fdt = files_fdtable(files);
+ 		for (fd = 0; fd < fdt->max_fds; fd++) {
+-			char *path;
+ 			struct file *file;
+ 			struct socket *sock;
+-			unsigned long s;
+-			int rv, err = 0;
++			int err;
  
- 			spin_lock(&last_gcwq->lock);
--- 
-1.7.7.3
+ 			file = fcheck_files(files, fd);
+ 			if (!file)
+ 				continue;
+ 
+-			path = d_path(&file->f_path, tmp, PAGE_SIZE);
+-			rv = sscanf(path, "socket:[%lu]", &s);
+-			if (rv <= 0)
+-				continue;
+-
+ 			sock = sock_from_file(file, &err);
+-			if (!err)
++			if (sock)
+ 				sock_update_netprioidx(sock->sk, p);
+ 		}
+-		rcu_read_unlock();
++		spin_unlock(&files->file_lock);
+ 		task_unlock(p);
+ 	}
+ 	kfree(tmp);
 
