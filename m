@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab2HNNOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 09:14:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab2HNNOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 09:14:37 -0400
-Date: Tue, 14 Aug 2012 10:14:00 -0300
-From: Flavio Leitner <fbl@redhat.com>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, edumazet@google.com,
-        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
-        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
-        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
-        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: [patch net-next 01/16] net: introduce upper device lists
-Message-ID: <20120814101400.0ef7aaa9@obelix.rh>
-In-Reply-To: <20120814122433.GB1661@minipsycho.brq.redhat.com>
-References: <1344871635-1052-1-git-send-email-jiri@resnulli.us>
-	<1344871635-1052-2-git-send-email-jiri@resnulli.us>
-	<20120813145217.38748c4f@obelix.rh>
-	<20120814122433.GB1661@minipsycho.brq.redhat.com>
+	id S1750984Ab2HNNVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 09:21:02 -0400
+Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:39724 "EHLO
+	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab2HNNVA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 09:21:00 -0400
+Message-Id: <502A6CD5020000A10000BADA@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 14 Aug 2012 15:20:53 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Borislav Petkov" <bp@alien8.de>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Antw: Re: Q: Seeing the microcode revision in /proc/cpuinfo
+References: <502A623C020000A10000BACA@gwsmtp1.uni-regensburg.de>
+ <20120814131211.GA25921@x1.osrc.amd.com>
+In-Reply-To: <20120814131211.GA25921@x1.osrc.amd.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012 14:24:33 +0200
-Jiri Pirko <jiri@resnulli.us> wrote:
+Hi Borislav,
 
-> Mon, Aug 13, 2012 at 07:52:17PM CEST, fbl@redhat.com wrote:
-> >On Mon, 13 Aug 2012 17:27:00 +0200
-> >Jiri Pirko <jiri@resnulli.us> wrote:
-> >> +	/*
-> >> +	 * To prevent loops, check if dev is not upper device to upper_dev.
-> >> +	 */
-> >> +	if (__netdev_has_upper_dev(upper_dev, dev, true))
-> >> +		return -EBUSY;
-> >> +
-> >> +	if (__netdev_find_upper(dev, upper_dev))
-> >> +		return -EEXIST;
-> >
-> >__netdev_has_upper_dev() can go all the way up finding the device and
-> >the __netdev_find_upper() just check the first level.
+probably my edge is not bleeding that much than yours ;-)
+
+I don't see "microcode" in 3.0.34-0.7-default for an AMD Opteron, and not in  2.6.32.59-0.3-default for the Intel Xeon. Both are kernels of SLES11 xon x86_64. The first one is the latest you can get for SLES11 SP2.
+
+In openSUSE 12.1 (kernel 3.1.10) it's also still missing.
+
+Anyway, it's nice to see that others also thought this feature is useful.
+
+Thanks & best regards,
+Ulrich
+
+>>> Borislav Petkov <bp@alien8.de> schrieb am 14.08.2012 um 15:12 in Nachricht
+<20120814131211.GA25921@x1.osrc.amd.com>:
+> On Tue, Aug 14, 2012 at 02:35:40PM +0200, Ulrich Windl wrote:
+> > Hi!
+> > 
+> > After several reboots due to memory errors after excellent power-saving of 
+> Linux on a HP DL380G7 with Intel Xeon 5650 processors (all in on memory 
+> bank), I found out the errate "BD104" and "BD123". The former should be fixed 
+> in a microcode revision "15H".
+> > 
+> > Now I wonder what microcode revision my CPUs currently have. /proc/cpuinfo 
+> doesn't show that, and the microcode update is a bit cryptic:
+> > 
+> > kernel: [   44.422912] microcode: CPU23 sig=0x206c2, pf=0x1, revision=0x14
+> > 
+> > Does that mean the revision is 0x14 BEFORE or AFTER the microcode update?
+> > 
+> > Wouldn't you agree that seeing the microcode revision in /proc/cpuinfo 
+> would be nice?
 > 
+> Well, you must be using an old-ish kernel because the microcode revision
+> infact *is* in /proc/cpuinfo:
 > 
-> I do not think this ordering is somewhat inportant.
+> processor       : 1
+> ...
+> stepping        : 0
+> microcode       : 0x5000028
+> 
+> This is on 3.6-rc1 and that functionality is upstream since 3.2.
+> 
+> HTH.
+> 
+> -- 
+> Regards/Gruss,
+> Boris.
+> 
 
-it's not the order, see below:
+ 
+ 
 
-> >I think it would be better to use:
-> >__netdev_find_upper_dev(,,deep=true/false)
-> >__netdev_has_upper(,)
-
-It's their names.  Currently, the function ..._find_... look at
-one level only, while the function ..._has_... does one or more
-levels.  I think it's better to swap 'has' and 'find' in their names:
-
-__netdev_find_upper_dev(,,deep=true/false) <-- find in all levels
-__netdev_has_upper(,)  <-- check only the one level.
-
-fbl
