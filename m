@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab2HNTA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:00:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41620 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066Ab2HNTAZ (ORCPT
+	id S1757373Ab2HNTH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 15:07:58 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:32894 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757252Ab2HNTH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:00:25 -0400
-Date: Tue, 14 Aug 2012 12:00:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] workqueue: change value of lcpu in
- __queue_delayed_work_on()
-Message-ID: <20120814190020.GW25632@google.com>
-References: <Yes>
- <1344967816-1136-1-git-send-email-js1304@gmail.com>
- <1344967816-1136-4-git-send-email-js1304@gmail.com>
+	Tue, 14 Aug 2012 15:07:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344967816-1136-4-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5029F8F6.1080207@samsung.com>
+References: <5029F8F6.1080207@samsung.com>
+Date: Wed, 15 Aug 2012 04:07:54 +0900
+Message-ID: <CAELcNGSbwHVweznM2Lxa1-XrX5jbro13iW0n0oVVXqv-MeD8og@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: card: Skip secure option for MoviNAND.
+From: Jae hoon Chung <jh80.chung@gmail.com>
+To: IAN CHEN <ian.cy.chen@samsung.com>
+Cc: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
+        subhashj@codeaurora.org, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        d.j.shin@samsung.com, jongtae22.kim@samsung.com,
+        kyungmin.park@samsung.com, jh80.chung@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 03:10:13AM +0900, Joonsoo Kim wrote:
-> We assign cpu id into work struct's data field in __queue_delayed_work_on().
-> In current implementation, when work is come in first time,
-> current running cpu id is assigned.
-> If we do __queue_delayed_work_on() with CPU A on CPU B,
-> __queue_work() invoked in delayed_work_timer_fn() go into
-> the following sub-optimal path in case of WQ_NON_REENTRANT.
-> 
-> 	gcwq = get_gcwq(cpu);
-> 	if (wq->flags & WQ_NON_REENTRANT &&
-> 		(last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
-> 
-> Change lcpu to @cpu and rechange lcpu to local cpu if lcpu is WORK_CPU_UNBOUND.
-> It is sufficient to prevent to go into sub-optimal path.
-> 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 6a17ab0..f55ac26 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1358,9 +1358,10 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
->  	if (!(wq->flags & WQ_UNBOUND)) {
->  		struct global_cwq *gcwq = get_work_gcwq(work);
->  
-> -		if (gcwq && gcwq->cpu != WORK_CPU_UNBOUND)
-> +		lcpu = cpu;
-> +		if (gcwq)
->  			lcpu = gcwq->cpu;
-> -		else
-> +		if (lcpu == WORK_CPU_UNBOUND)
->  			lcpu = raw_smp_processor_id();
+Looks good to me
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
 
-Can you please add a comment explanining what's going on?
-
--- 
-tejun
+2012/8/14 IAN CHEN <ian.cy.chen@samsung.com>:
+> For several MoviNAND, there are some known issue with secure option.
+> For these specific MoviNAND device, we skip secure option.
+>
+> You could refer this discussion in XDA developers.
+> http://forum.xda-developers.com/showthread.php?t=1644364
+> https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+>
+> Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+> ---
+>  drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
+>  include/linux/mmc/card.h |    1 +
+>  2 files changed, 24 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index f1c84de..8d2de7e 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
+> struct request *req)
+>                 /* complete ongoing async transfer before issuing discard */
+>                 if (card->host->areq)
+>                         mmc_blk_issue_rw_rq(mq, NULL);
+> -               if (req->cmd_flags & REQ_SECURE)
+> +               if (req->cmd_flags & REQ_SECURE &&
+> +                       !(card->quirks & MMC_QUIRK_SECURE_MODE_BROKEN))
+>                         ret = mmc_blk_issue_secdiscard_rq(mq, req);
+>                 else
+>                         ret = mmc_blk_issue_discard_rq(mq, req);
+> @@ -1716,6 +1717,7 @@ force_ro_fail:
+>  #define CID_MANFID_SANDISK     0x2
+>  #define CID_MANFID_TOSHIBA     0x11
+>  #define CID_MANFID_MICRON      0x13
+> +#define CID_MANFID_SAMSUNG     0x15
+>
+>  static const struct mmc_fixup blk_fixups[] =
+>  {
+> @@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
+>         MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
+>                   MMC_QUIRK_LONG_READ_TIME),
+>
+> +       /*
+> +        * Some issue about secure erase/secure trim for Samsung MoviNAND
+> +        */
+> +       MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +       MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
+> +                 MMC_QUIRK_SECURE_MODE_BROKEN),
+> +
+>         END_FIXUP
+>  };
+>
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 111aca5..e7ec522 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -239,6 +239,7 @@ struct mmc_card {
+>  #define MMC_QUIRK_BLK_NO_CMD23 (1<<7)          /* Avoid CMD23 for regular
+> multiblock */
+>  #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)  /* Avoid sending 512
+> bytes in */
+>  #define MMC_QUIRK_LONG_READ_TIME (1<<9)                /* Data read time > CSD says */
+> +#define MMC_QUIRK_SECURE_MODE_BROKEN (1<<10)   /* Skip secure for
+> erase/trim */
+>                                                 /* byte mode */
+>         unsigned int    poweroff_notify_state;  /* eMMC4.5 notify feature */
+>  #define MMC_NO_POWER_NOTIFICATION      0
+> --
+> 1.7.0.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
