@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab2HNBu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:50:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48650 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab2HNBt7 (ORCPT
+	id S1755017Ab2HNBvS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:51:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63852 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab2HNBtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:49:59 -0400
+	Mon, 13 Aug 2012 21:49:55 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@redhat.com,
         lauro.venancio@openbossa.org, jak@jak-linux.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/6] workqueue: gut system_nrt[_freezable]_wq()
-Date: Mon, 13 Aug 2012 18:49:43 -0700
-Message-Id: <1344908986-18152-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/6] workqueue: make all workqueues non-reentrant
+Date: Mon, 13 Aug 2012 18:49:41 -0700
+Message-Id: <1344908986-18152-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1344908986-18152-1-git-send-email-tj@kernel.org>
 References: <1344908986-18152-1-git-send-email-tj@kernel.org>
@@ -22,103 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all workqueues are non-reentrant, system[_freezable]_wq() are
-equivalent to system_nrt[_freezable]_wq().  Replace the latter with
-wrappers around system[_freezable]_wq().  The wrapping goes through
-inline functions so that __deprecated can be added easily.
+By default, each per-cpu part of a bound workqueue operates separately
+and a work item may be executing concurrently on different CPUs.  The
+behavior avoids some cross-cpu traffic but leads to subtle weirdities
+and not-so-subtle contortions in the API.
+
+* There's no sane usefulness in allowing a single work item to be
+  executed concurrently on multiple CPUs.  People just get the
+  behavior unintentionally and get surprised after learning about it.
+  Most either explicitly synchronize or use non-reentrant/ordered
+  workqueue but this is error-prone.
+
+* flush_work() can't wait for multiple instances of the same work item
+  on different CPUs.  If a work item is executing on cpu0 and then
+  queued on cpu1, flush_work() can only wait for the one on cpu1.
+
+  Unfortunately, work items can easily cross CPU boundaries
+  unintentionally when the queueing thread gets migrated.  This means
+  that if multiple queuers compete, flush_work() can't even guarantee
+  that the instance queued right before it is finished before
+  returning.
+
+* flush_work_sync() was added to work around some of the deficiencies
+  of flush_work().  In addition to the usual flushing, it ensures that
+  all currently executing instances are finished before returning.
+  This operation is expensive as it has to walk all CPUs and at the
+  same time fails to address competing queuer case.
+
+  Incorrectly using flush_work() when flush_work_sync() is necessary
+  is an easy error to make and can lead to bugs which are difficult to
+  reproduce.
+
+* Similar problems exist for flush_delayed_work[_sync]().
+
+Other than the cross-cpu access concern, there's no benefit in
+allowing parallel execution and it's plain silly to have this level of
+contortion for workqueue which is widely used from core code to
+extremely obscure drivers.
+
+This patch makes all workqueues non-reentrant.  If a work item is
+executing on a different CPU when queueing is requested, it is always
+queued to that CPU.  This guarantees that any given work item can be
+executing on one CPU at maximum and if a work item is queued and
+executing, both are on the same CPU.
+
+The only behavior change which may affect workqueue users negatively
+is that non-reentrancy overrides the affinity specified by
+queue_work_on().  On a reentrant workqueue, the affinity specified by
+queue_work_on() is always followed.  Now, if the work item is
+executing on one of the CPUs, the work item will be queued there
+regardless of the requested affinity.  I've reviewed all workqueue
+users which request explicit affinity, and, fortunately, none seems to
+be crazy enough to exploit parallel execution of the same work item.
+
+This adds an additional busy_hash lookup if the work item was
+previously queued on a different CPU.  This shouldn't be noticeable
+under any sane workload.  Work item queueing isn't a very
+high-frequency operation and they don't jump across CPUs all the time.
+In a micro benchmark to exaggerate this difference - measuring the
+time it takes for two work items to repeatedly jump between two CPUs a
+number (10M) of times with busy_hash table densely populated, the
+difference was around 3%.
+
+While the overhead is measureable, it is only visible in pathological
+cases and the difference isn't huge.  This change brings much needed
+sanity to workqueue and makes its behavior consistent with timer.  I
+think this is the right tradeoff to make.
+
+This enables significant simplification of workqueue API.
+Simplification patches will follow.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/workqueue.h |   23 ++++++++++++++---------
- kernel/workqueue.c        |   12 ++----------
- 2 files changed, 16 insertions(+), 19 deletions(-)
+ kernel/workqueue.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index b2716b6..b0a678b 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -297,10 +297,6 @@ enum {
-  * system_long_wq is similar to system_wq but may host long running
-  * works.  Queue flushing might take relatively long.
-  *
-- * system_nrt_wq is non-reentrant and guarantees that any given work
-- * item is never executed in parallel by multiple CPUs.  Queue
-- * flushing might take relatively long.
-- *
-  * system_unbound_wq is unbound workqueue.  Workers are not bound to
-  * any specific CPU, not concurrency managed, and all queued works are
-  * executed immediately as long as max_active limit is not reached and
-@@ -308,16 +304,25 @@ enum {
-  *
-  * system_freezable_wq is equivalent to system_wq except that it's
-  * freezable.
-- *
-- * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
-- * it's freezable.
-  */
- extern struct workqueue_struct *system_wq;
- extern struct workqueue_struct *system_long_wq;
--extern struct workqueue_struct *system_nrt_wq;
- extern struct workqueue_struct *system_unbound_wq;
- extern struct workqueue_struct *system_freezable_wq;
--extern struct workqueue_struct *system_nrt_freezable_wq;
-+
-+static inline struct workqueue_struct *__system_nrt_wq(void)
-+{
-+	return system_wq;
-+}
-+
-+static inline struct workqueue_struct *__system_nrt_freezable_wq(void)
-+{
-+	return system_freezable_wq;
-+}
-+
-+/* equivlalent to system_wq and system_freezable_wq, deprecated */
-+#define system_nrt_wq			__system_nrt_wq()
-+#define system_nrt_freezable_wq		__system_nrt_freezable_wq()
- 
- extern struct workqueue_struct *
- __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 938adc0..ce39467 100644
+index 7413242..26f048b 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -269,16 +269,12 @@ struct workqueue_struct {
+@@ -1216,14 +1216,15 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 			cpu = raw_smp_processor_id();
  
- struct workqueue_struct *system_wq __read_mostly;
- struct workqueue_struct *system_long_wq __read_mostly;
--struct workqueue_struct *system_nrt_wq __read_mostly;
- struct workqueue_struct *system_unbound_wq __read_mostly;
- struct workqueue_struct *system_freezable_wq __read_mostly;
--struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_wq);
- EXPORT_SYMBOL_GPL(system_long_wq);
--EXPORT_SYMBOL_GPL(system_nrt_wq);
- EXPORT_SYMBOL_GPL(system_unbound_wq);
- EXPORT_SYMBOL_GPL(system_freezable_wq);
--EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
+ 		/*
+-		 * It's multi cpu.  If @wq is non-reentrant and @work
+-		 * was previously on a different cpu, it might still
+-		 * be running there, in which case the work needs to
+-		 * be queued on that cpu to guarantee non-reentrance.
++		 * It's multi cpu.  If @work was previously on a different
++		 * cpu, it might still be running there, in which case the
++		 * work needs to be queued on that cpu to guarantee
++		 * non-reentrancy.
+ 		 */
+ 		gcwq = get_gcwq(cpu);
+-		if (wq->flags & WQ_NON_REENTRANT &&
+-		    (last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
++		last_gcwq = get_work_gcwq(work);
++
++		if (last_gcwq && last_gcwq != gcwq) {
+ 			struct worker *worker;
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/workqueue.h>
-@@ -3847,16 +3843,12 @@ static int __init init_workqueues(void)
- 
- 	system_wq = alloc_workqueue("events", 0, 0);
- 	system_long_wq = alloc_workqueue("events_long", 0, 0);
--	system_nrt_wq = alloc_workqueue("events_nrt", WQ_NON_REENTRANT, 0);
- 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
- 					    WQ_UNBOUND_MAX_ACTIVE);
- 	system_freezable_wq = alloc_workqueue("events_freezable",
- 					      WQ_FREEZABLE, 0);
--	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
--			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
--	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
--	       !system_unbound_wq || !system_freezable_wq ||
--		!system_nrt_freezable_wq);
-+	BUG_ON(!system_wq || !system_long_wq || !system_unbound_wq ||
-+	       !system_freezable_wq);
- 	return 0;
- }
- early_initcall(init_workqueues);
+ 			spin_lock(&last_gcwq->lock);
 -- 
 1.7.7.3
 
