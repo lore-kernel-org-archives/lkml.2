@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2HNX0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:26:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41549 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab2HNX0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:26:30 -0400
-Message-ID: <1344986787.4683.370.camel@ul30vt.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 14 Aug 2012 17:26:27 -0600
-In-Reply-To: <20120814230417.GC29180@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
-	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
-	 <1344540375.3441.228.camel@ul30vt.home> <20120812093336.GC1421@redhat.com>
-	 <502A462A.1000600@redhat.com> <1344981675.4683.338.camel@ul30vt.home>
-	 <20120814230417.GC29180@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754430Ab2HNX1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:27:44 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60682 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab2HNX1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:27:43 -0400
+Date: Tue, 14 Aug 2012 16:27:38 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
+Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
+ timers
+Message-ID: <20120814232738.GG25632@google.com>
+References: <1344449428-24962-1-git-send-email-tj@kernel.org>
+ <alpine.LFD.2.02.1208131720070.32033@ionos>
+ <20120814191549.GX25632@google.com>
+ <alpine.LFD.2.02.1208142118060.32033@ionos>
+ <20120814214009.GD25632@google.com>
+ <alpine.LFD.2.02.1208150045360.32033@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1208150045360.32033@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 02:04 +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 14, 2012 at 04:01:15PM -0600, Alex Williamson wrote:
-> > On Tue, 2012-08-14 at 15:35 +0300, Avi Kivity wrote:
-> > > On 08/12/2012 12:33 PM, Michael S. Tsirkin wrote:
-> > > >> 
-> > > >> Michael, would the interface be more acceptable to you if we added
-> > > >> separate ioctls to allocate and free some representation of an irq
-> > > >> source ID, gsi pair?  For instance, an ioctl might return an idr entry
-> > > >> for an irq source ID/gsi object which would then be passed as a
-> > > >> parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
-> > > >> representing the source id/gsi isn't magically freed on it's own.  This
-> > > >> would also allow us to deassign/close one end and reconfigure it later.
-> > > >> Thanks,
-> > > >> 
-> > > >> Alex
-> > > > 
-> > > > It's acceptable to me either way. I was only pointing out that as
-> > > > designed, the interface looks simple at first but then you find out some
-> > > > subtle limitations which are implementation driven. This gives
-> > > > an overall feeling the abstraction is too low level.
-> > > > 
-> > > > If we compare to the existing irqfd, isn't the difference
-> > > > simply that irqfd deasserts immediately ATM, while we
-> > > > want to delay this until later?
-> > > > 
-> > > > If yes, then along the lines that you proposed, and combining with my
-> > > > idea of tracking deasserts, how do you like the following:
-> > > > 
-> > > > /* Keep line asserted until guest has handled the interrupt. */
-> > > > #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
-> > > > /* Notify after line is deasserted. */
-> > > > #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
-> > > > 
-> > > > 	struct kvm_irqfd {
-> > > > 		__u32 fd;
-> > > > 		__u32 gsi;
-> > > > 		__u32 flags;
-> > > > 		/* eventfd to notify when line is deasserted */
-> > > > 		__u32 deassert_eventfd;
-> > > > 		__u8  pad[16];
-> > > > 	};
-> > > > 
-> > > > now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
-> > > > effective for level interrupts.
-> > > > 
-> > > > Notes about lifetime of objects:
-> > > > 	- closing deassert_eventfd does nothing (we can keep
-> > > > 	  reference to it from irqfd so no need for
-> > > >           complex polling/flushing scheme)
-> > > > 	- closing irqfd or deasserting dis-associates
-> > > > 	  deassert_eventfd automatically
-> > > > 	- source id is internal to irqfd and goes away with it
-> > > > 
-> > > > it looks harder to misuse and fits what we want to do nicely,
-> > > > and needs less code to implement.
-> > > > 
-> > > > Avi, what do you think?
-> > > 
-> > > I think given all the complexity in the separate ioctl approach that
-> > > this makes sense.  There are no lifetime issues or code to match the two
-> > > eventfds.  Alex, would this API simplify the code?
-> > 
-> > It does though I'm concerned that it's a very specific solution that
-> > only addresses this problem.  Generic userspace eoi/ack is not
-> > addressed.  The latest version using separate ioctls does a lot of
-> > simplification by exposing irq sourceids.  The bulk of the code there is
-> > duplicating what irqfd does just so we can catch the POLLHUP for
-> > cleanup.  If there was an easier way to do that, we don't care about
-> > POLLIN/POLLOUT, much of the code could be removed.  Alternatively we
-> > could make some common infrastructure to simplify both irqfd and
-> > irq_ackfd, but how to frame the helpers isn't easy.
-> 
-> There is way easier with a single ioctl.  Don't you see?
-> 
-> As ack_eventfd pointer becomes part of the irqfd structure now, you
-> simply drop the reference together with irqfd.
-> In other words you do not care that ack eventfd goes
-> away anymore. So no need for POLLHUP handlers, no
-> separate DEASSERT that can race with that, etc.
-> 
-> So all this code just goes away, and it goes away completely, together
-> with managing source IDs (source ID comes an internal optimization to
-> avoid spurious EOIs, so no need to expose it to userspace anymore).
-> 
-> So all we are left with is minimal:
-> 1. change irqfds to use a separate source id (can do this
->    unconditionally for all irqfds)
-> 2. check deassert on ack, if set register ack notifier
-> 3. in ack notifier check deassert eventfd, if set signal it
-> 4. (optionally) add a flag in irqfd, set on assert, test and clear
->    on deassert, and only signal eventfd if it was set
-> 
-> on top of that we could try to do
-> 5. allocate some more source IDs and if they are free try to use them as
->    an optimization to avoid atomics
+Hello, Thomas.
 
-Yes, I understand.  It's simple, it's also very specific to this
-problem, and doesn't address generic ack notification.  All of which
-I've noted before and I continue to note that v8 offers simplifications
-while retaining flexibility.  Least amount of code doesn't really buy us
-much if we end up needing to invent new interfaces down the road because
-we've created such a specific solution here.  Thanks,
+On Wed, Aug 15, 2012 at 01:12:01AM +0200, Thomas Gleixner wrote:
+> Just for the record. The thread evolved from here:
+> 
+>   <tj>    * mod_delayed_work() can't be used from IRQ handlers.
+> 
+> My answer was:
+> 
+>   <tglx>  This function does not exist. So what?
+> 
+> Which was completely appropriate as this function does not exist
+> though you used it as a primary argument for your patches.
 
-Alex
+I read it as "so, what's wrong with not having mod_delayed_work()?",
+so the response.
 
+It exists in wq/for-3.7 and cancel_delayed_work() (the one without
+preceding __) + queue() users have been already converted.
+
+  http://thread.gmane.org/gmane.linux.kernel/1334546
+
+> Can you please sit down for a little while and think about your own
+> snarkiness and your own tiring behaviour against other kernel
+> maintainers?
+
+Believe it or not, I tend to work pretty well with other maintainers
+and developers.  You start responding with words like "mess" and
+"crap" with condescension sprinkled and expect the conversation to not
+escalate?  Let's just stay technical, okay?
+
+Thanks.
+
+-- 
+tejun
