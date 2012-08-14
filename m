@@ -1,223 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab2HNUnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:43:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33194 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab2HNUnf (ORCPT
+	id S1757506Ab2HNUoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:44:03 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62591 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757483Ab2HNUoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:43:35 -0400
-Date: Tue, 14 Aug 2012 22:43:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-In-Reply-To: <20120814191549.GX25632@google.com>
-Message-ID: <alpine.LFD.2.02.1208142118060.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org> <alpine.LFD.2.02.1208131720070.32033@ionos> <20120814191549.GX25632@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 14 Aug 2012 16:44:00 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate FreeAgent Dockstar
+Date: Tue, 14 Aug 2012 22:43:41 +0200
+Message-Id: <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120814193613.GS22226@titan.lakedaemon.net>
+References: <20120814193613.GS22226@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012, Tejun Heo wrote:
-> On Tue, Aug 14, 2012 at 08:55:16PM +0200, Thomas Gleixner wrote:
-> > > * mod_delayed_work() can't be used from IRQ handlers.
-> > 
-> > This function does not exist. So what?
-> 
-> It makes the workqueue users messy.  It's difficult to get completely
-> correct and subtle errors are difficult to detect / verify.
+This add a DT compatible board specific setup for the Seagate
+FreeAgent Dockstar.
 
-Ah, the function which does not exist makes the users
-messy. Interesting observation.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+
+v2: rebased on git://git.infradead.org/users/jcooper/linux.git fixes-for-v3.6
+
+ arch/arm/mach-kirkwood/Kconfig          |    7 ++++
+ arch/arm/mach-kirkwood/Makefile         |    1 +
+ arch/arm/mach-kirkwood/board-dockstar.c |   61 +++++++++++++++++++++++++++++++
+ arch/arm/mach-kirkwood/board-dt.c       |    4 ++
+ arch/arm/mach-kirkwood/common.h         |    6 +++
+ 5 files changed, 79 insertions(+)
+ create mode 100644 arch/arm/mach-kirkwood/board-dockstar.c
+
+diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
+index ca5c15a..4eaeb93 100644
+--- a/arch/arm/mach-kirkwood/Kconfig
++++ b/arch/arm/mach-kirkwood/Kconfig
+@@ -94,6 +94,13 @@ config MACH_TS219_DT
+ 	  or MV6282. If you have the wrong one, the buttons will not
+ 	  work.
  
-> > > * __cancel_delayed_work() can't use the usual try_to_grab_pending()
-> > >   which handles all three states but instead only deals with the first
-> > >   state using a separate implementation.  There's no way to make a
-> > >   delayed_work not pending from IRQ handlers.
-> > 
-> > And why is that desired and justifies the mess you are trying to
-> > create in the timer code?
-> 
-> Because API forcing its users to be messy is stupid.
-
-That's not an answer to my question. Let me rephrase:
-
-Why is it required to cancel delayed work from interupt handlers? Is
-it just because people are doing stupid things or is there are real
-requirement?
-
-No API forces users to be messy. Most of the mess originates from
-using the wrong mechanisms and then trying to work around that.
-
-If you are trying to clean up mess which originates from there, then
-you are just nurturing the abuse instead of fixing the underlying
-design problems in the affected code pathes.
++config MACH_DOCKSTAR_DT
++	bool "Seagate FreeAgent Dockstar (Flattened Device Tree)"
++	select ARCH_KIRKWOOD_DT
++	help
++	  Say 'Y' here if you want your kernel to support the
++	  Seagate FreeAgent Dockstar (Flattened Device Tree).
++
+ config MACH_GOFLEXNET_DT
+ 	bool "Seagate GoFlex Net (Flattened Device Tree)"
+ 	select ARCH_KIRKWOOD_DT
+diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
+index 055c85a..42e48cf 100644
+--- a/arch/arm/mach-kirkwood/Makefile
++++ b/arch/arm/mach-kirkwood/Makefile
+@@ -26,5 +26,6 @@ obj-$(CONFIG_MACH_ICONNECT_DT)		+= board-iconnect.o
+ obj-$(CONFIG_MACH_DLINK_KIRKWOOD_DT)	+= board-dnskw.o
+ obj-$(CONFIG_MACH_IB62X0_DT)		+= board-ib62x0.o
+ obj-$(CONFIG_MACH_TS219_DT)		+= board-ts219.o tsx1x-common.o
++obj-$(CONFIG_MACH_DOCKSTAR_DT)		+= board-dockstar.o
+ obj-$(CONFIG_MACH_GOFLEXNET_DT)		+= board-goflexnet.o
+ obj-$(CONFIG_MACH_LSXL_DT)		+= board-lsxl.o
+diff --git a/arch/arm/mach-kirkwood/board-dockstar.c b/arch/arm/mach-kirkwood/board-dockstar.c
+new file mode 100644
+index 0000000..6b9560b
+--- /dev/null
++++ b/arch/arm/mach-kirkwood/board-dockstar.c
+@@ -0,0 +1,61 @@
++/*
++ * arch/arm/mach-kirkwood/board-dockstar.c
++ *
++ * Seagate FreeAgent Dockstar Board Init for drivers not converted to
++ * flattened device tree yet.
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ *
++ * Copied and modified for Seagate GoFlex Net support by
++ * Joshua Coombs <josh.coombs@gmail.com> based on ArchLinux ARM's
++ * GoFlex kernel patches.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/ata_platform.h>
++#include <linux/mv643xx_eth.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_fdt.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++#include <linux/gpio.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <mach/kirkwood.h>
++#include <mach/bridge-regs.h>
++#include <plat/mvsdio.h>
++#include "common.h"
++#include "mpp.h"
++
++static struct mv643xx_eth_platform_data dockstar_ge00_data = {
++	.phy_addr	= MV643XX_ETH_PHY_ADDR(0),
++};
++
++static unsigned int dockstar_mpp_config[] __initdata = {
++	MPP29_GPIO,	/* USB Power Enable */
++	MPP46_GPIO,	/* LED green */
++	MPP47_GPIO,	/* LED orange */
++	0
++};
++
++void __init dockstar_init(void)
++{
++	/*
++	 * Basic setup. Needs to be called early.
++	 */
++	kirkwood_mpp_conf(dockstar_mpp_config);
++
++	if (gpio_request(29, "USB Power Enable") != 0 ||
++	    gpio_direction_output(29, 1) != 0)
++		pr_err("can't setup GPIO 29 (USB Power Enable)\n");
++	kirkwood_ehci_init();
++
++	kirkwood_ge00_init(&dockstar_ge00_data);
++}
+diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
+index e4eb450..4693fad 100644
+--- a/arch/arm/mach-kirkwood/board-dt.c
++++ b/arch/arm/mach-kirkwood/board-dt.c
+@@ -81,6 +81,9 @@ static void __init kirkwood_dt_init(void)
+ 	if (of_machine_is_compatible("qnap,ts219"))
+ 		qnap_dt_ts219_init();
  
-> > > * The context / behavior differences among cancel_delayed_work(),
-> > >   __cancel_delayed_work(), cancel_delayed_work_sync() are subtle and
-> > >   confusing (the first two are mostly historical tho).
-> > 
-> > We have a lot of subtle differences in interfaces for similar
-> > reasons.
-> 
-> And we should work to make them better.
-
-No objection, but not for the price of cluttering common and hot code
-pathes with conditionals and special cases. There are always
-situations where it's justified to have a special function which is
-tailored for a particular context instead of making the common case
-slow and ugly.
-
-> > > This patchset implements irqsafe timers.  For an irqsafe timer, IRQ is
-> > > not enabled from dispatch till the end of its execution making it safe
-> > > to drain the timer regardless of context.  This will enable cleaning
-> > > up delayed_work interface.
-> > 
-> > By burdening crap on the timer code. We had a similar context case
-> > handling in the original hrtimers code and Linus went berserk on it.
-> > There is no real good reason to reinvent it in a different flavour.
-> > 
-> > Your general approach about workqueues seems to be adding hacks into
-> > other sensitive code paths [ see __schedule() ]. Can we please stop
-> > that? workqueues are not so special to justify that.
-> 
-> The schedule thing worked out pretty well, didn't it?  If it improves
-
-You know my opinion about it. It's still a fricking nightmare for RT
-and aside of that I still don't see a proper justification for having
-it in the guts of the scheduler.
-
-> the kernel in general, I don't see why timer shouldn't participate in
-> it.  Timer ain't that special either.  However, it does suck to add
-
-I didn't say that timers are special and timers have been improved all
-the time to make the life of their users simpler. Just there is a
-subtle difference between making the life simpler and adding stuff
-which is designed to work around shortcomings in other parts of the
-kernel.
-
-> one-off feature which isn't used by anyone else but I couldn't find a
-> better way.
->  
-> So, if you can think of something better, sure.  Let's see.
-> 
-> > Right now delayed work arms a timer, whose callback enqueues the work
-> > and wakes the worker thread, which then executes the work.
-> > 
-> > So what about changing delayed_work into:
-> > 
-> > struct delayed_work {
-> >        struct work_struct work;
-> >        unsigned long expires;
-> > };
-> > 
-> > Now when delayed work gets scheduled it gets enqueued into a separate
-> > list in the workqueue core with the proper worker lock held. Then
-> > check the expiry time of the new work against the current expiry time
-> > of a timer in the worker itself.
-> 
-> Work items aren't assigned to worker on queue.  It's a shared worker
-> pool.  Workers take work items when they can.
-
-Then add it to the worker pool. It's an implementation detail not a
-design problem.
-
-> > If the new expiry time is after the
-> > current expiry time, nothing to do. If the new expiry is before the
-> > current expiry time or the timer is not armed, then (re)arm the timer.
-> > 
-> > When the timer expires it wakes the worker and that evaluates the
-> > delayed list for expired works and executes them and rearms the timer
-> > if necessary.
-> 
-> How are you gonna decide which worker a delayed work item should be
-> queued on?  What if the work item before it takes a very long time to
-> finish?  Do we migrate those work items to a different worker?
-
-You're the expert on those worker details :)
-
-> > To cancel delayed work you don't have to worry about the timer
-> > callback being executed at all, simply because the timer callback is
-> > just a wakeup of the worker and not fiddling with the work itself. If
-> > the work is removed before the worker thread runs, life goes on as
-> > usual.
-> > 
-> > So all you have to do is to remove the work from the delayed list. If
-> > the timer is armed, just leave it alone and let it fire. Canceling
-> > delayed work is probably not a high frequency operation.
-> > 
-> > In fact that would make cancel_delayed_work and cancel_work basically
-> > the same operation.
-> > 
-> > I have no idea how many concurrent delayed works are on the fly, so I
-> > can't tell whether a simple ordered list is sufficient or if you need
-> > a tree which is better suited for a large number of sorted items. But
-> > that's a trivial to solve detail.
-> 
-> Aside from work <-> worker association confusion, you're basically
-> suggesting for workqueue to implement its own tvec_base in suboptimal
-> way.  Doesn't make much sense to me.
-
-Your approach of adding a special case timer for workqueues which
-burdens all other users and opens another cans of worms of subtle bugs
-in the timer code does not make any sense to me.
-
-Further I did not say that you need to implement your own tvec_base
-code into workqueues for that.
-
-First of all you did not answer my question whether the delayed timer
-based works are frequent enough to require something else than a
-simple linked list which is evaluated by a worker thread for the next
-expiry and the code which adds a new work just checks the cached next
-expiry value. If you have the requirement of serving tons of those
-delayed works, then you have the choice of using a set of ready to use
-library function which just needs a litte tweakage to work with
-jiffies instead of nsec based values.
-
-Secondly and what's worse you are completely ignoring the fact that
-the problem you are trying to solve is due to the disconnection of the
-delayed work (pending on a timer) and the workqueue core.
-
-The reason why you can't cancel/modify stuff is due to the locking
-issues which arise due to del_timer_sync() in the current design.
-
-So instead of thinking about the shortcomings of your own design you
-want to force extra cases into the core timer code as you see fit. 
-
-And looking at the use cases:
-
- block/blk-core.c                    |    6 ++----
- block/blk-throttle.c                |    7 +------
- drivers/block/floppy.c              |    3 +--
- drivers/infiniband/core/mad.c       |   14 +++++---------
- drivers/input/keyboard/qt2160.c     |    3 +--
- drivers/input/mouse/synaptics_i2c.c |    7 +------
- net/core/link_watch.c               |   21 ++++++---------------
-
-It's not that impressive and I really want to see a detailed analysis
-why all of this is necessary in the first place before we add special
-cases to the core timer infrastucture.
-
-You can strike drivers/block/floppy.c, drivers/input/keyboard/qt2160.c
-and drivers/input/mouse/synaptics_i2c.c from that argument list as
-they are really not interesting at all either due to being obsolete or
-a complete mess to begin with.
-
-For the others please bring up proper arguments why we need this
-special casing and why those things can't do with other mechanisms.
-
-Thanks,
-
-	tglx
-
-
++	if (of_machine_is_compatible("seagate,dockstar"))
++		dockstar_init();
++
+ 	if (of_machine_is_compatible("seagate,goflexnet"))
+ 		goflexnet_init();
+ 
+@@ -98,6 +101,7 @@ static const char *kirkwood_dt_board_compat[] = {
+ 	"iom,iconnect",
+ 	"raidsonic,ib-nas62x0",
+ 	"qnap,ts219",
++	"seagate,dockstar",
+ 	"seagate,goflexnet",
+ 	"buffalo,lsxl",
+ 	NULL
+diff --git a/arch/arm/mach-kirkwood/common.h b/arch/arm/mach-kirkwood/common.h
+index 304dd1a..dc73ff3 100644
+--- a/arch/arm/mach-kirkwood/common.h
++++ b/arch/arm/mach-kirkwood/common.h
+@@ -82,6 +82,12 @@ void ib62x0_init(void);
+ static inline void ib62x0_init(void) {};
+ #endif
+ 
++#ifdef CONFIG_MACH_DOCKSTAR_DT
++void dockstar_init(void);
++#else
++static inline void dockstar_init(void) {};
++#endif
++
+ #ifdef CONFIG_MACH_GOFLEXNET_DT
+ void goflexnet_init(void);
+ #else
+-- 
+1.7.10.4
 
