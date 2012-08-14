@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab2HNKFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:05:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53355 "EHLO mx2.suse.de"
+	id S1755737Ab2HNKKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36158 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755587Ab2HNKFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:05:30 -0400
-Date: Tue, 14 Aug 2012 11:05:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Miller <davem@davemloft.net>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        xen-devel@lists.xensource.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, konrad@darnok.org,
-        akpm@linux-foundation.org
-Subject: Re: [Xen-devel] [PATCH] netvm: check for page == NULL when
- propogating the skb->pfmemalloc flag
-Message-ID: <20120814100522.GL4177@suse.de>
-References: <20120807085554.GF29814@suse.de>
- <20120808.155046.820543563969484712.davem@davemloft.net>
- <20120813154144.GA24868@phenom.dumpdata.com>
+	id S1755680Ab2HNKKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 06:10:19 -0400
+Date: Tue, 14 Aug 2012 13:10:15 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120814101014.GF11194@redhat.com>
+References: <1343848002.6698.38.camel@bling.home>
+ <20120812074936.GA1421@redhat.com>
+ <1344876495.4683.47.camel@ul30vt.home>
+ <20120813165938.GA19139@redhat.com>
+ <1344881845.4683.95.camel@ul30vt.home>
+ <20120813194938.GB19139@redhat.com>
+ <1344890905.4683.120.camel@ul30vt.home>
+ <20120813215043.GA15639@redhat.com>
+ <1344896532.4683.170.camel@ul30vt.home>
+ <20120813225213.GB1931@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120813154144.GA24868@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120813225213.GB1931@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 11:41:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
-> > From: Mel Gorman <mgorman@suse.de>
-> > Date: Tue, 7 Aug 2012 09:55:55 +0100
-> > 
-> > > Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
-> > > for the following bug triggered by a xen network driver
-> >  ...
-> > > The problem is that the xenfront driver is passing a NULL page to
-> > > __skb_fill_page_desc() which was unexpected. This patch checks that
-> > > there is a page before dereferencing.
-> > > 
-> > > Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > 
-> > That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
-> > It's the only driver passing NULL here.
+On Tue, Aug 14, 2012 at 01:52:13AM +0300, Michael S. Tsirkin wrote:
+> > Using the EOI as a trigger to de-assert and potentially re-assert may be
+> > a hack, but it's about as close as we can come to following the behavior
+> > of hardware.
+> > It's actually quite similar to an apic re-sampling inputs
+> > except we don't have a physical line to read and see that it's still
+> > asserted.  We emulate this by de-asserting it and letting it re-assert
+> > if necessary.  The emulation to the guest isn't perfect, but it's a lot
+> > closer than immediately de-asserting the pin.
+> > I think the discussion
+> > below describes why I do this versus something that might be even closer
+> > to actual hardware.
 > 
-> It looks to be passing a valid page pointer (at least by looking
-> at the code) so I am not sure how it got turned in a NULL.
+> Sorry I don't understand what "quite similar" means.  If deassert on ack
+> is "closer" somehow show me some software that needs it.
 > 
+This is incorrect question to ask. The correct one is "is there guest
+visible effect" and the answer is yes. If guest reads ioapic irr before
+eoi it will incorrectly read zero. Now when we know what is guest visible
+effect we can think about whether we can live with it. But it looks like
+we can't since this have more serious implications. If interrupt is masked
+in ioapic during irq delivery interrupt will be never delivered after unmask.
 
-Are we looking at different code bases? I see this and I was assuming it
-was the source of the bug.
-
-	__skb_fill_page_desc(skb, 0, NULL, 0, 0);
-
--- 
-Mel Gorman
-SUSE Labs
+--
+			Gleb.
