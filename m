@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab2HNKYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:24:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46575 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab2HNKYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:24:13 -0400
-Message-ID: <502A2740.9000206@ti.com>
-Date: Tue, 14 Aug 2012 12:24:00 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1755899Ab2HNKYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:24:37 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8555 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab2HNKYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 06:24:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 14 Aug 2012 03:24:30 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <rabin.vincent@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: disable supply regulator if it is enabled for boot-on
+Date: Tue, 14 Aug 2012 15:37:28 +0530
+Message-ID: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv2 0/4] Add device tree data for omap5
-References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
+If supply regulator is enabled because of boot-on (not always-on)
+then disable regulator need to be call if regulator have some
+user or full constraint has been enabled.
+This will make sure that reference count of supply regulator
+is in sync with child regulator's state.
 
-On 08/13/2012 12:05 PM, Sourav Poddar wrote:
-> The following patch series add i2c support for omap5.
-> As well as enable I2C based devices like pressure and temperature
-> through device tree. Also add onchip keypad dts data.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reported-by: Rabin Vincent <rabin.vincent@gmail.com>
+---
+ drivers/regulator/core.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-That series does not seems to apply on top of 3.6-rc1, what based did
-you use?
-
-Benoit
-
-
-> 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> 
-> Sourav Poddar (4):
->   arm/dts: omap5-evm: Add I2C support
->   arm/dts: omap5-evm: Add tmp102 sensor support
->   arm/dts: omap5-evm: Add keypad data
->   arm/dts: omap5-evm: Add bmp085 sensor support
-> 
->  arch/arm/boot/dts/omap5-evm.dts |   30 +++++++++++++++++++++++++++++
->  arch/arm/boot/dts/omap5.dtsi    |   40 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 70 insertions(+), 0 deletions(-)
-> 
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 0fffeae..4632909 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3614,8 +3614,11 @@ static int __init regulator_init_complete(void)
+ 
+ 		mutex_lock(&rdev->mutex);
+ 
+-		if (rdev->use_count)
++		if (rdev->use_count) {
++			if (rdev->supply && c->boot_on)
++				regulator_disable(rdev->supply);
+ 			goto unlock;
++		}
+ 
+ 		/* If we can't read the status assume it's on. */
+ 		if (ops->is_enabled)
+@@ -3634,6 +3637,8 @@ static int __init regulator_init_complete(void)
+ 			if (ret != 0) {
+ 				rdev_err(rdev, "couldn't disable: %d\n", ret);
+ 			}
++			if (rdev->supply)
++				regulator_disable(rdev->supply);
+ 		} else {
+ 			/* The intention is that in future we will
+ 			 * assume that full constraints are provided
+-- 
+1.7.1.1
 
