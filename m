@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab2HNK2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:28:05 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8882 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755858Ab2HNK2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:28:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 14 Aug 2012 03:22:34 -0700
-Message-ID: <502A243F.6050904@nvidia.com>
-Date: Tue, 14 Aug 2012 15:41:11 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rabin Vincent <rabin@rab.in>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: "regulator: Enable supply regulator if child rail is enabled"
- broken?
-References: <CAH+eYFAJ0FSiZoDiyYJsEg1j-cAhG7DkCwFNJGe5vBNpiUM7ug@mail.gmail.com> <502A11A0.7070906@nvidia.com> <CAH+eYFAu7kM7TSTd=WeoXz_NSUWGY5EmFwcb7a-p1kh_Lxrifw@mail.gmail.com>
-In-Reply-To: <CAH+eYFAu7kM7TSTd=WeoXz_NSUWGY5EmFwcb7a-p1kh_Lxrifw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755926Ab2HNK3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:29:14 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:54147 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752983Ab2HNK3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 06:29:12 -0400
+From: Ilya Shchepetkov <shchepetkov@ispras.ru>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH 0/5] Call netif_carrier_off() after register_netdev()
+Date: Tue, 14 Aug 2012 14:28:50 +0400
+Message-Id: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 August 2012 02:45 PM, Rabin Vincent wrote:
-> 2012/8/14 Laxman Dewangan<ldewangan@nvidia.com>:
->> Yaah, It is missing the regulator_disable() in regulator_init_complete() for
->> some cases.
->> Please let me know if I need to send patch for fixing this issue.
-> Yes, please do.
-I sent a patch. Please confirm whether this resolves the issue addressed 
-by you or not.
+Hi,
+
+There are several patches on the subject:
+	
+	31bde1ceaa873bcaecd49e829bfabceacc4c512d
+	c55ad8e56b983f03589b38b4504b5d1f41161ff8
+	e826eafa65c6f1f7c8db5a237556cebac57ebcc5
+	0d672e9f8ac320c6d1ea9103db6df7f99ea20361
+	6a3c869a6021f4abcd69aa5fbb15c63f69eb36fe
+
+In 2008, David Miller wrote in his commit:
+(b47300168e770b60ab96c8924854c3b0eb4260eb)
+
+>net: Do not fire linkwatch events until the device is registered.
+
+>Several device drivers try to do things like netif_carrier_off()
+>before register_netdev() is invoked.  This is bogus, but too many
+>drivers do this to fix them all up in one go.
+
+But I don't understand what will happen in this case?
+
+Thanks,
+Ilya
