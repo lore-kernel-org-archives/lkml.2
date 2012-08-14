@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2HNPGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:06:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56018 "EHLO
+	id S1756594Ab2HNPGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:06:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40617 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab2HNPGL (ORCPT
+	with ESMTP id S1756573Ab2HNPGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:06:11 -0400
+	Tue, 14 Aug 2012 11:06:18 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next v2 05/15] team: remove usage of netdev_set_master()
-Date: Tue, 14 Aug 2012 17:05:38 +0200
-Message-Id: <1344956748-2099-6-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next v2 07/15] netpoll: remove usage of dev->master
+Date: Tue, 14 Aug 2012 17:05:40 +0200
+Message-Id: <1344956748-2099-8-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
 References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
@@ -32,49 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/net/team/team.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ net/core/netpoll.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index ba10c46..dabddc5 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1040,10 +1040,11 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index b4c90e4..1f457a6 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -207,12 +207,16 @@ static void netpoll_poll_dev(struct net_device *dev)
+ 
+ 	if (dev->flags & IFF_SLAVE) {
+ 		if (dev->npinfo) {
+-			struct net_device *bond_dev = dev->master;
++			struct net_device *bond_dev;
+ 			struct sk_buff *skb;
++
++			rcu_read_lock();
++			bond_dev = netdev_master_upper_dev_get_rcu(dev);
+ 			while ((skb = skb_dequeue(&dev->npinfo->arp_tx))) {
+ 				skb->dev = bond_dev;
+ 				skb_queue_tail(&bond_dev->npinfo->arp_tx, skb);
+ 			}
++			rcu_read_unlock();
  		}
  	}
  
--	err = netdev_set_master(port_dev, dev);
-+	err = netdev_master_upper_dev_link(port_dev, dev);
- 	if (err) {
--		netdev_err(dev, "Device %s failed to set master\n", portname);
--		goto err_set_master;
-+		netdev_err(dev, "Device %s failed to set upper link\n",
-+			   portname);
-+		goto err_set_upper_link;
+@@ -795,7 +799,7 @@ int netpoll_setup(struct netpoll *np)
+ 		return -ENODEV;
  	}
  
- 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
-@@ -1076,9 +1077,9 @@ err_option_port_add:
- 	netdev_rx_handler_unregister(port_dev);
- 
- err_handler_register:
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 
--err_set_master:
-+err_set_upper_link:
- 	team_port_disable_netpoll(port);
- 
- err_enable_netpoll:
-@@ -1121,7 +1122,7 @@ static int team_port_del(struct team *team, struct net_device *port_dev)
- 	team_port_disable(team, port);
- 	list_del_rcu(&port->list);
- 	netdev_rx_handler_unregister(port_dev);
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 	team_port_disable_netpoll(port);
- 	vlan_vids_del_by_dev(port_dev, dev);
- 	dev_close(port_dev);
+-	if (ndev->master) {
++	if (netdev_master_upper_dev_get(ndev)) {
+ 		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
+ 		err = -EBUSY;
+ 		goto put;
 -- 
 1.7.10.4
 
