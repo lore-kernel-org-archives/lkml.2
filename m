@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2HNOsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:48:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59157 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2HNOsU (ORCPT
+	id S1754127Ab2HNOs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:48:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45669 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab2HNOsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:48:20 -0400
-Date: Tue, 14 Aug 2012 22:48:08 +0800
-From: Aaron Lu <aaron.lwe@gmail.com>
-To: Sergei Trofimovich <slyich@gmail.com>
-Cc: Aaron Lu <ziqian.lu@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Holger Macht <holger@homac.de>, Lin Ming <minggr@gmail.com>,
-        Jeff Garzik <jgarzik@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: bisected regression: v3.6-rc1: resume from s2ram does not
- restore ata_piix (v3.5 worked)
-Message-ID: <20120814144804.GA23416@localhost.localdomain>
-References: <CA2E3DE2DD06CA4FA11644750E4E292F102ACD65@SHSMSX102.ccr.corp.intel.com>
- <20120814080952.GA4981@localhost.localdomain>
- <20120814114420.2e844ea1@sf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814114420.2e844ea1@sf>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Tue, 14 Aug 2012 10:48:22 -0400
+Date: Tue, 14 Aug 2012 15:52:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Alan Cox <alan@linux.intel.com>, Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] Powerpc 8xx CPM_UART delay in receive
+Message-ID: <20120814155227.018988da@pyramind.ukuu.org.uk>
+In-Reply-To: <201208141426.q7EEQSPc003956@localhost.localdomain>
+References: <201208141426.q7EEQSPc003956@localhost.localdomain>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 11:44:20AM +0300, Sergei Trofimovich wrote:
-> > The only problem I can see is the offending commit didn't do a gtm for
-> > IDE channel during init. It was used to be done in
-> > ata_acpi_associate_ide_port.
-> > 
-> > So can you please test if the following code fix your problem? Thanks.
+On Tue, 14 Aug 2012 16:26:28 +0200
+Christophe Leroy <christophe.leroy@c-s.fr> wrote:
+
+> Hello,
 > 
-> Unfortunately, nothing changed. The same hangup after resume.
-> Did the bisected patch change the way kernel relies on ACPI
-> information? I have some complains in dmesg output about it
-> (attached whole dmesg) like that:
+> I'm not sure who to address this Patch to either
 > 
-> ACPI Exception: AE_AML_PACKAGE_LIMIT, Index (0x0000000000000004) is beyond end of object (20120711/exoparg2-418)
-> ACPI Error: Method parse/execution failed [\_SB_.C003.C09A._DOD] (Node ffff88007b82c988), AE_AML_PACKAGE_LIMIT (20120711/psparse-536)
-> ACPI Exception: AE_AML_PACKAGE_LIMIT, Evaluating _DOD (20120711/video-1149)
+> It fixes a delay issue with CPM UART driver on Powerpc MPC8xx.
+> The problem is that with the actual code, the driver waits 32 IDLE patterns before returning the received data to the upper level. It means for instance about 1 second at 300 bauds.
+> This fix limits to one byte the waiting period.
 
+Take a look how the 8250 does it - I think you want to set the value
+based upon the data rate. Your patch will break it for everyone doing
+high seed I/O.
 
-> ata1: ACPI get timing mode failed (AE 0x1001)
-Do you see this error message when using a working kernel?
-
-And here is another try:
-
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 902b5a4..fd9ecf7 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -60,17 +60,7 @@ acpi_handle ata_ap_acpi_handle(struct ata_port *ap)
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		return NULL;
- 
--	/*
--	 * If acpi bind operation has already happened, we can get the handle
--	 * for the port by checking the corresponding scsi_host device's
--	 * firmware node, otherwise we will need to find out the handle from
--	 * its parent's acpi node.
--	 */
--	if (ap->scsi_host)
--		return DEVICE_ACPI_HANDLE(&ap->scsi_host->shost_gendev);
--	else
--		return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev),
--				ap->port_no);
-+	return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev), ap->port_no);
- }
- EXPORT_SYMBOL(ata_ap_acpi_handle);
- 
-@@ -1101,6 +1091,9 @@ static int ata_acpi_bind_host(struct ata_port *ap, acpi_handle *handle)
- 	if (!*handle)
- 		return -ENODEV;
- 
-+	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
-+		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
-+
- 	return 0;
- }
-
-Thanks,
-Aaron
+Alan
