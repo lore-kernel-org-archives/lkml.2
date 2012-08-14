@@ -1,159 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab2HNDJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 23:09:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab2HNDJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 23:09:47 -0400
-Message-ID: <1344913783.4683.204.camel@ul30vt.home>
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 13 Aug 2012 21:09:43 -0600
-In-Reply-To: <20120813230005.GA2015@redhat.com>
-References: <20120724203628.21081.56884.stgit@bling.home>
-	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
-	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
-	 <1344540375.3441.228.camel@ul30vt.home> <50276B11.8020708@redhat.com>
-	 <1344893641.4683.146.camel@ul30vt.home> <20120813220609.GA1931@redhat.com>
-	 <1344897665.4683.179.camel@ul30vt.home> <20120813230005.GA2015@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754919Ab2HNDN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 23:13:28 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:57158
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753649Ab2HNDN0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Aug 2012 23:13:26 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -18
+X-BigFish: VS-18(zz98dI9371I13ddR542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH V2 02/18] Drivers: hv: Add KVP definitions for IP
+ address injection
+Thread-Topic: [PATCH V2 02/18] Drivers: hv: Add KVP definitions for IP
+ address injection
+Thread-Index: AQHNeXQwVqOoL7QwhkKLjgxvXqp5WpdYiAmAgAAS5pA=
+Date: Tue, 14 Aug 2012 02:56:38 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9236BF8D0@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-2-git-send-email-kys@microsoft.com>
+ <20120814013815.GA29829@kroah.com>
+In-Reply-To: <20120814013815.GA29829@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-14 at 02:00 +0300, Michael S. Tsirkin wrote:
-> On Mon, Aug 13, 2012 at 04:41:05PM -0600, Alex Williamson wrote:
-> > On Tue, 2012-08-14 at 01:06 +0300, Michael S. Tsirkin wrote:
-> > > On Mon, Aug 13, 2012 at 03:34:01PM -0600, Alex Williamson wrote:
-> > > > On Sun, 2012-08-12 at 11:36 +0300, Avi Kivity wrote:
-> > > > > On 08/09/2012 10:26 PM, Alex Williamson wrote:
-> > > > > > On Mon, 2012-08-06 at 13:40 +0300, Avi Kivity wrote:
-> > > > > >> On 08/06/2012 01:38 PM, Avi Kivity wrote:
-> > > > > >> 
-> > > > > >> > Regarding the implementation, instead of a linked list, would an array
-> > > > > >> > of counters parallel to the bitmap make it simpler?
-> > > > > >> 
-> > > > > >> Or even, replace the bitmap with an array of counters.
-> > > > > > 
-> > > > > > I'm not sure a counter array is what we're really after.  That gives us
-> > > > > > reference counting for the irq source IDs, but not the key->gsi lookup.
-> > > > > 
-> > > > > You can look up the gsi while registering the eoifd, so it's accessible
-> > > > > as eoifd->gsi instead of eoifd->source->gsi.  The irqfd can go away
-> > > > > while the eoifd is still active, but is this a problem?
-> > > > 
-> > > > In my opinion, no, but Michael disagrees.
-> > > > 
-> > > > > > It also highlights another issue, that we have a limited set of source
-> > > > > > IDs.  Looks like we have BITS_PER_LONG IDs, with two already used, one
-> > > > > > for the shared userspace ID and another for the PIT.  How happy are we
-> > > > > > going to be with a limit of 62 level interrupts in use at one time?
-> > > > > 
-> > > > > When we start being unhappy we can increase that number.  On the other
-> > > > > hand more locks and lists makes me unhappy now.
-> > > > 
-> > > > Yep, good point.  My latest version removes the source ID object lock
-> > > > and list (and objects).  I still have a lock and list for the ack
-> > > > notification, but it's hard not to unless we combine them into one
-> > > > mega-irqfd ioctl as Michael suggests.
-> > > >
-> > > > > > It's arguably a reasonable number since the most virtualization friendly
-> > > > > > devices (sr-iov VFs) don't even support this kind of interrupt.  It's
-> > > > > > also very wasteful allocating an entire source ID for a single GSI
-> > > > > > within that source ID.  PCI supports interrupts A, B, C, and D, which,
-> > > > > > in the most optimal config, each go to different GSIs.  So we could
-> > > > > > theoretically be more efficient in our use and allocation of irq source
-> > > > > > IDs if we tracked use by the source ID, gsi pair.
-> > > > > 
-> > > > > There are, in one userspace, just three gsis available for PCI links, so
-> > > > > you're compressing the source id space by 3.
-> > > > 
-> > > > I imagine there's a way to put each PCI interrupt pin on a GSI, but
-> > > > still only 4, not a great expansion of source ID space.  I like
-> > > > Michael's idea of re-using source IDs if we run out better.
-> > > > 
-> > > > > > That probably makes it less practical to replace anything at the top
-> > > > > > level with a counter array.  The key that we pass back is currently the
-> > > > > > actual source ID, but we don't specify what it is, so we could split it
-> > > > > > and have it encode a 16bit source ID plus 16 bit GSI.  It could also be
-> > > > > > an idr entry.
-> > > > > 
-> > > > > We can fix those kinds of problems by adding another layer of
-> > > > > indirection.  But I doubt they will be needed.  I don't see people
-> > > > > assigning 60 legacy devices to one guest.
-> > > > 
-> > > > Yep, we can ignore it for now and put it in the hands of userspace to
-> > > > re-use IDs if needed.
-> > > > 
-> > > > > > Michael, would the interface be more acceptable to you if we added
-> > > > > > separate ioctls to allocate and free some representation of an irq
-> > > > > > source ID, gsi pair?  For instance, an ioctl might return an idr entry
-> > > > > > for an irq source ID/gsi object which would then be passed as a
-> > > > > > parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
-> > > > > > representing the source id/gsi isn't magically freed on it's own.  This
-> > > > > > would also allow us to deassign/close one end and reconfigure it later.
-> > > > > > Thanks,
-> > > > > 
-> > > > > Another option is to push the responsibility for allocating IDs for the
-> > > > > association to userspace.  Let userspace both create the irqfd and the
-> > > > > eoifd with the same ID, the kernel matches them at registration time and
-> > > > > copies the gsi/sourceid from the first to the second eventfd.
-> > > > 
-> > > > Aside from the copying gsi/sourceid bit, you've just described my latest
-> > > > attempt at this series.  Specifying both a sourceid and gsi also allows
-> > > > userspace to make better use of the sourceid address space (use more
-> > > > than one gsi if userspace wants the complexity of managing them).
-> > > > Thanks,
-> > > > 
-> > > > Alex
-> > > 
-> > > Turns out per device source ID is a bug copied from existing
-> > > device assignment. I am amazed we did not notice before.
-> > > There we have small # of devices so it's not a problem but there's no
-> > > reason just not to have a source ID for all irqfds.
-> > > So the problem goes away, and there is no limit on # of level irqfds,
-> > > and no need to manage IDs in userspace at all.
-> > > You can still have cookies in userspace if you like but do not map them
-> > > to source IDs.
-> > 
-> > IMHO it's not a bug, it's an implementation decision.  They could be
-> > shared, but that doesn't make it wrong to not share them.  Given that we
-> > have 32 memory slots, the only way you could hit this would be to have a
-> > lot of really slow devices that don't direct-map any BARs.  A reason to
-> > not have the same source id for everything is that I think we can do ack
-> > notification filtering more easily using separate source ids (as is done
-> > in the first patch of the v8 series).
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, August 13, 2012 9:38 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com;
+> ben@decadent.org.uk
+> Subject: Re: [PATCH V2 02/18] Drivers: hv: Add KVP definitions for IP address
+> injection
 > 
-> Just a thought: can filtering read and clear the irqfd counter?
-
-Sorry, what's "the irqfd counter"?  The eventfd counter?  As I have it
-in the patch series, the filtering happens where the irq ack notifier
-calls the individual notifier callbacks.  That's not irqfd/eventfd
-specific, so it doesn't have access to the eventfd counter there.
-Taking the filtering into the into the actual callbacks seems to require
-locking or maybe your proposed test and clear interface (which still
-requires locking).
-
-> >  As the code is today, I agree,
-> > there's probably no advantage to using multiple source IDs.  Thanks,
-> > 
-> > Alex
+> On Mon, Aug 13, 2012 at 10:06:51AM -0700, K. Y. Srinivasan wrote:
+> > Add the necessary definitions for supporting the IP injection functionality.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: Olaf Hering <olaf@aepfle.de>
+> > Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+> > ---
+> >  drivers/hv/hv_util.c     |    4 +-
+> >  include/linux/hyperv.h   |   76
+> ++++++++++++++++++++++++++++++++++++++++++++-
+> >  tools/hv/hv_kvp_daemon.c |    2 +-
+> >  3 files changed, 77 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> > index d3ac6a4..a0667de 100644
+> > --- a/drivers/hv/hv_util.c
+> > +++ b/drivers/hv/hv_util.c
+> > @@ -263,7 +263,7 @@ static int util_probe(struct hv_device *dev,
+> >  		(struct hv_util_service *)dev_id->driver_data;
+> >  	int ret;
+> >
+> > -	srv->recv_buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> > +	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
+> >  	if (!srv->recv_buffer)
+> >  		return -ENOMEM;
+> >  	if (srv->util_init) {
+> > @@ -274,7 +274,7 @@ static int util_probe(struct hv_device *dev,
+> >  		}
+> >  	}
+> >
+> > -	ret = vmbus_open(dev->channel, 2 * PAGE_SIZE, 2 * PAGE_SIZE, NULL,
+> 0,
+> > +	ret = vmbus_open(dev->channel, 4 * PAGE_SIZE, 4 * PAGE_SIZE, NULL,
+> 0,
+> >  			srv->util_cb, dev->channel);
+> >  	if (ret)
+> >  		goto error;
+> > diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> > index 68ed7f7..11afc4e 100644
+> > --- a/include/linux/hyperv.h
+> > +++ b/include/linux/hyperv.h
+> > @@ -122,12 +122,53 @@
+> >  #define REG_U32 4
+> >  #define REG_U64 8
+> >
+> > +/*
+> > + * As we look at expanding the KVP functionality to include
+> > + * IP injection functionality, we need to maintain binary
+> > + * compatibility with older daemons.
+> > + *
+> > + * The KVP opcodes are defined by the host and it was unfortunate
+> > + * that I chose to treat the registration operation as part of the
+> > + * KVP operations defined by the host.
+> > + * Here is the level of compatibility
+> > + * (between the user level daemon and the kernel KVP driver) that we
+> > + * will implement:
+> > + *
+> > + * An older daemon will always be supported on a newer driver.
+> > + * A given user level daemon will require a minimal version of the
+> > + * kernel driver.
+> > + * If we cannot handle the version differences, we will fail gracefully
+> > + * (this can happen when we have a user level daemon that is more
+> > + * advanced than the KVP driver.
+> > + *
+> > + * We will use values used in this handshake for determining if we have
+> > + * workable user level daemon and the kernel driver. We begin by taking the
+> > + * registration opcode out of the KVP opcode namespace. We will however,
+> > + * maintain compatibility with the existing user-level daemon code.
+> > + */
+> > +
+> > +/*
+> > + * Daemon code not supporting IP injection (legacy daemon).
+> > + */
+> > +
+> > +#define KVP_OP_REGISTER	4
 > 
-> I think one point worth addressing is, Gleb wanted
-> to get eoifd without irqfd at all and that works for
-> timer interrupt.
+> Huh?
+> 
+> > +/*
+> > + * Daemon code supporting IP injection.
+> > + * The KVP opcode field is used to communicate the
+> > + * registration information; so define a namespace that
+> > + * will be distinct from the host defined KVP opcode.
+> > + */
+> > +
+> > +#define KVP_OP_REGISTER1 100
+> > +
+> >  enum hv_kvp_exchg_op {
+> >  	KVP_OP_GET = 0,
+> >  	KVP_OP_SET,
+> >  	KVP_OP_DELETE,
+> >  	KVP_OP_ENUMERATE,
+> > -	KVP_OP_REGISTER,
+> > +	KVP_OP_GET_IP_INFO,
+> > +	KVP_OP_SET_IP_INFO,
+> 
+> So you overloaded the command and somehow think that is ok?  How is that
+> supposed to work?  Why not just always keep it there, but fail if it is
+> called as you know you have a mismatch?
+> 
+> Otherwise, again, you just broke older tools on a newer kernel.
+> 
+> Or am I missing something here?
 
-Right, that's what I'm referring to with the modular components vs
-pulling eoifd into irqfd.  One gives us interfaces that can easily be
-extended or already supports a more generic eoifd, the other gives us a
-very specific use case and we'll have to come up with something else for
-non-irqfd related eois.  Thanks,
+Greg,
 
-Alex
+The registration operation occurs when the daemon first starts up. I should have established
+a distinct namespace for the daemon versions that would not overlap with the host
+defined KVP operations initially. Unfortunately when I first implemented KVP, I did not know
+about the new KVP verbs and so selected a value that ended up colliding with the new KVP 
+operations. To maintain compatibility with older daemons, I have to support this old registration 
+value, which is what you are seeing here. Since the initial driver/daemon handshake phase does
+not overlap with the normal functioning of the KVP stack, we can use the old daemon 
+registration value to distinguish that the daemon does not support IP injection. The current
+implementation does support a compatible environment for older daemons.
+
+Regards,
+
+K. Y 
+
 
