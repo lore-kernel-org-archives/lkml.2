@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab2HNKN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23419 "EHLO mx1.redhat.com"
+	id S1755822Ab2HNKSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:18:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53892 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755718Ab2HNKN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:13:57 -0400
-Date: Tue, 14 Aug 2012 13:13:53 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120814101353.GA9738@redhat.com>
-References: <20120812074936.GA1421@redhat.com>
- <1344876495.4683.47.camel@ul30vt.home>
- <20120813165938.GA19139@redhat.com>
- <1344881845.4683.95.camel@ul30vt.home>
- <20120813194938.GB19139@redhat.com>
- <1344890905.4683.120.camel@ul30vt.home>
- <20120813215043.GA15639@redhat.com>
- <1344896532.4683.170.camel@ul30vt.home>
- <20120813225213.GB1931@redhat.com>
- <20120814101014.GF11194@redhat.com>
+	id S1752940Ab2HNKSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 06:18:16 -0400
+Date: Tue, 14 Aug 2012 11:18:07 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad@darnok.org,
+        Ian.Campbell@eu.citrix.com, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] netvm: check for page == NULL when propogating the
+ skb->pfmemalloc flag
+Message-ID: <20120814101807.GM4177@suse.de>
+References: <20120807085554.GF29814@suse.de>
+ <20120808.155046.820543563969484712.davem@davemloft.net>
+ <20120813102604.GC4177@suse.de>
+ <20120813104745.GE4177@suse.de>
+ <50294DF0.8040206@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120814101014.GF11194@redhat.com>
+In-Reply-To: <50294DF0.8040206@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 01:10:15PM +0300, Gleb Natapov wrote:
-> On Tue, Aug 14, 2012 at 01:52:13AM +0300, Michael S. Tsirkin wrote:
-> > > Using the EOI as a trigger to de-assert and potentially re-assert may be
-> > > a hack, but it's about as close as we can come to following the behavior
-> > > of hardware.
-> > > It's actually quite similar to an apic re-sampling inputs
-> > > except we don't have a physical line to read and see that it's still
-> > > asserted.  We emulate this by de-asserting it and letting it re-assert
-> > > if necessary.  The emulation to the guest isn't perfect, but it's a lot
-> > > closer than immediately de-asserting the pin.
-> > > I think the discussion
-> > > below describes why I do this versus something that might be even closer
-> > > to actual hardware.
-> > 
-> > Sorry I don't understand what "quite similar" means.  If deassert on ack
-> > is "closer" somehow show me some software that needs it.
-> > 
-> This is incorrect question to ask. The correct one is "is there guest
-> visible effect" and the answer is yes. If guest reads ioapic irr before
-> eoi it will incorrectly read zero. Now when we know what is guest visible
-> effect we can think about whether we can live with it. But it looks like
-> we can't since this have more serious implications. If interrupt is masked
-> in ioapic during irq delivery interrupt will be never delivered after unmask.
+On Mon, Aug 13, 2012 at 11:56:48AM -0700, Jeremy Fitzhardinge wrote:
+> On 08/13/2012 03:47 AM, Mel Gorman wrote:
+> > Resending to correct Jeremy's address.
+> >
+> > On Wed, Aug 08, 2012 at 03:50:46PM -0700, David Miller wrote:
+> >> From: Mel Gorman <mgorman@suse.de>
+> >> Date: Tue, 7 Aug 2012 09:55:55 +0100
+> >>
+> >>> Commit [c48a11c7: netvm: propagate page->pfmemalloc to skb] is responsible
+> >>> for the following bug triggered by a xen network driver
+> >>  ...
+> >>> The problem is that the xenfront driver is passing a NULL page to
+> >>> __skb_fill_page_desc() which was unexpected. This patch checks that
+> >>> there is a page before dereferencing.
+> >>>
+> >>> Reported-and-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >> That call to __skb_fill_page_desc() in xen-netfront.c looks completely bogus.
+> >> It's the only driver passing NULL here.
+> >>
+> >> That whole song and dance figuring out what to do with the head
+> >> fragment page, depending upon whether the length is greater than the
+> >> RX_COPY_THRESHOLD, is completely unnecessary.
+> >>
+> >> Just use something like a call to __pskb_pull_tail(skb, len) and all
+> >> that other crap around that area can simply be deleted.
+> > I looked at this for a while but I did not see how __pskb_pull_tail()
+> > could be used sensibly but I'm simily not familiar with writing network
+> > device drivers or Xen.
+> >
+> > This messing with RX_COPY_THRESHOLD seems to be related to how the frontend
+> > and backend communicate (maybe some fixed limitation of the xenbus). The
+> > existing code looks like it is trying to take the fragments received and
+> > pass them straight to the backend without copying by passing the fragments
+> > to the backend without copying. I worry that if I try converting this to
+> > __pskb_pull_tail() that it would either hit the limitation of xenbus or
+> > introduce copying where it is not wanted.
+> >
+> > I'm going to have to punt this to Jeremy and the other Xen folk as I'm not
+> > sure what the original intention was and I don't have a Xen setup anywhere
+> > to test any patch. Jeremy, xen folk? 
 > 
-Can be probably solved using mask notifiers, although I'd rather delete
-them than add new users.
+> It's been a while since I've looked at that stuff, but as I remember,
+> the issue is that since the packet ring memory is shared with another
+> domain which may be untrustworthy, we want to make copies of the headers
+> before making any decisions based on them so that the other domain can't
+> change them after header processing but before they're actually sent. 
+> (The packet payload is considered less important, but of course the same
+> issue applies if you're using some kind of content-aware packet filter.)
+> 
+> So that's the rationale for always copying RX_COPY_THRESHOLD, even if
+> the packet is larger than that amount.  As far as I know, changing this
+> behaviour wouldn't break the ring protocol, but it does introduce a
+> potential security issue.
+> 
 
---
-			Gleb.
+David,
+
+This leaves us somewhat in a pickle. If I'm reading this right (which I may
+not be) it means that using __pskb_pull_tail() will work in the ideal case
+but potentially introduces a subtle issue in the future. This bug could be
+"fixed" in the driver by partially reverting [01c68026: xen: netfront:
+convert to SKB paged frag API.]. That could be viewed as sweeping the
+problem under the carpet but it does contain the problem to the xen-netfront
+driver. A new helper could be created like __skb_clear_page_desc but that
+is overkill for one driver and feels as ugly.
+
+-- 
+Mel Gorman
+SUSE Labs
