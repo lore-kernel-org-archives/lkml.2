@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2HNIkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 04:40:49 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35077 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab2HNIkr (ORCPT
+	id S1754993Ab2HNIma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 04:42:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57002 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab2HNIm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 04:40:47 -0400
+	Tue, 14 Aug 2012 04:42:28 -0400
+Date: Tue, 14 Aug 2012 10:42:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: viresh kumar <viresh.kumar@linaro.org>
+cc: linux-tip-commits@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        namhyung@kernel.org, paulmck@linux.vnet.ibm.com,
+        Amit Kucheria <amit.kucheria@linaro.org>, steve.bannister@arm.com
+Subject: Re: [tip:smp/hotplug] watchdog: Use hotplug thread infrastructure
+In-Reply-To: <CAOh2x=ny-76y0S=Nukz-Gz7OUZT19evXSVUWmFG2KdLoHcN6wQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1208141041310.32033@ionos>
+References: <20120716103948.563736676@linutronix.de> <tip-bcd951cf10f24e341defcd002c15a1f4eea13ddb@git.kernel.org> <CAOh2x=ny-76y0S=Nukz-Gz7OUZT19evXSVUWmFG2KdLoHcN6wQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1344527268-5964-4-git-send-email-lee.jones@linaro.org>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-	<1344527268-5964-4-git-send-email-lee.jones@linaro.org>
-Date: Tue, 14 Aug 2012 10:40:46 +0200
-Message-ID: <CACRpkdY9L_-RwV6xWV9ta+qubWce0ZH0+FXaCHkeaWRvSYUhKQ@mail.gmail.com>
-Subject: Re: [PATCH 03/22] ASoC: ab8500: Inform SoC Core that we have our own
- I/O arrangements
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 5:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Tue, 14 Aug 2012, viresh kumar wrote:
 
-> If codec->control_data is not populated SoC Core assumes we want to
-> use regmap, which fails catastrophically, as we don't have one:
->
-> Unable to handle kernel NULL pointer dereference at virtual address 00000080
-> pgd = c0004000
-> [00000080] *pgd=00000000
-> Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-> Modules linked in:
-> CPU: 1    Not tainted  (3.5.0-rc6-00884-g0b2419e-dirty #130)
-> PC is at regmap_read+0x10/0x5c
-> LR is at hw_read+0x80/0x90
-> pc : [<c01a91b8>]    lr : [<c0216804>]    psr: 60000013
->
-> CC: alsa-devel@alsa-project.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> On Mon, Aug 13, 2012 at 8:43 PM, tip-bot for Thomas Gleixner
+> <tglx@linutronix.de> wrote:
+> > Commit-ID:  bcd951cf10f24e341defcd002c15a1f4eea13ddb
+> > Gitweb:     http://git.kernel.org/tip/bcd951cf10f24e341defcd002c15a1f4eea13ddb
+> > Author:     Thomas Gleixner <tglx@linutronix.de>
+> > AuthorDate: Mon, 16 Jul 2012 10:42:38 +0000
+> > Committer:  Thomas Gleixner <tglx@linutronix.de>
+> > CommitDate: Mon, 13 Aug 2012 17:01:07 +0200
+> >
+> > watchdog: Use hotplug thread infrastructure
+> 
+> Hi Thomas,
+> 
+> I am maintaining http://git.linaro.org/gitweb?p=arm/big.LITTLE/mp.git;a=summary
+> linaro tree for big.LITTLE MP work. I had a branch
+> per-cpu-thread-hotplug-v3-fixed
+> with your stuff in it + Paul's fix.
+> 
+> I was rebasing it over 3.6-rc1 and got conflicts, actually a routine is added in
+> kernel/watchdog.c file, which uses functions removed in your patch:
+> 
+> 
+> commit 45226e944ce071d0231949f2fea90969437cd2dc
+> Author: Sameer Nanda <snanda@chromium.org>
+> Date:   Mon Jul 30 14:40:00 2012 -0700
+> 
+>     NMI watchdog: fix for lockup detector breakage on resume
 
-No clue on this one, have to refer to Mark...
+This patch got reverted in mainline. See commit commit 300d3739
+(Revert "NMI watchdog: fix for lockup detector breakage on resume")
 
-Linus Walleij
+So nothing to fix there.
+
+Thanks,
+
+	tglx
+
