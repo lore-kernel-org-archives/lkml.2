@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab2HNKeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:34:19 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:46390 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752750Ab2HNKeR (ORCPT
+	id S1755891Ab2HNKlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:41:14 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:53457 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab2HNKlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:34:17 -0400
+	Tue, 14 Aug 2012 06:41:13 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q7EAedSs009182, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <cjb@laptop.org>, <arnd@arndb.de>, <sameo@linux.intel.com>
+CC: <bp@alien8.de>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v2 0/2] Add modules to support realtek PCIE card reader
+Date: Tue, 14 Aug 2012 18:40:36 +0800
+Message-ID: <cover.1344939464.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <502A2740.9000206@ti.com>
-References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
-	<502A2740.9000206@ti.com>
-Date: Tue, 14 Aug 2012 16:04:16 +0530
-Message-ID: <CAKdam56A+Fa2pLT2fnV3sHq--PUwjdUX1U4_4JM=_g9KWoW3kw@mail.gmail.com>
-Subject: Re: [PATCHv2 0/4] Add device tree data for omap5
-From: "Poddar, Sourav" <sourav.poddar@ti.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-On Tue, Aug 14, 2012 at 3:54 PM, Benoit Cousson <b-cousson@ti.com> wrote:
-> Hi Sourav,
->
-> On 08/13/2012 12:05 PM, Sourav Poddar wrote:
->> The following patch series add i2c support for omap5.
->> As well as enable I2C based devices like pressure and temperature
->> through device tree. Also add onchip keypad dts data.
->
-> That series does not seems to apply on top of 3.6-rc1, what based did
-> you use?
->
-My Bad. Send it on top of the testing branch (3.5-rc7).
-Will rebase and send it on a 3.6-rc1.
-> Benoit
->
->
->>
->> Cc: Benoit Cousson <b-cousson@ti.com>
->> Cc: Felipe Balbi <balbi@ti.com>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>
->> Sourav Poddar (4):
->>   arm/dts: omap5-evm: Add I2C support
->>   arm/dts: omap5-evm: Add tmp102 sensor support
->>   arm/dts: omap5-evm: Add keypad data
->>   arm/dts: omap5-evm: Add bmp085 sensor support
->>
->>  arch/arm/boot/dts/omap5-evm.dts |   30 +++++++++++++++++++++++++++++
->>  arch/arm/boot/dts/omap5.dtsi    |   40 +++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 70 insertions(+), 0 deletions(-)
->>
->
+Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
+
+Wei WANG (2):
+  drivers/mfd: Add realtek pcie card reader driver
+  drivers/mmc: Add realtek pcie sdmmc host driver
+
+ drivers/mfd/Kconfig               |    9 +
+ drivers/mfd/Makefile              |    4 +
+ drivers/mfd/rts5209.c             |  102 +++
+ drivers/mfd/rts5229.c             |  117 +++
+ drivers/mfd/rtsx_pcr.c            | 1464 +++++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h            |   31 +
+ drivers/mmc/host/Kconfig          |    7 +
+ drivers/mmc/host/Makefile         |    2 +
+ drivers/mmc/host/rtsx_pci_sdmmc.c | 1348 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rtsx_common.h   |   47 ++
+ include/linux/mfd/rtsx_pci.h      |  692 ++++++++++++++++++
+ 11 files changed, 3823 insertions(+)
+ create mode 100644 drivers/mfd/rts5209.c
+ create mode 100644 drivers/mfd/rts5229.c
+ create mode 100644 drivers/mfd/rtsx_pcr.c
+ create mode 100644 drivers/mfd/rtsx_pcr.h
+ create mode 100644 drivers/mmc/host/rtsx_pci_sdmmc.c
+ create mode 100644 include/linux/mfd/rtsx_common.h
+ create mode 100644 include/linux/mfd/rtsx_pci.h
+
+-- 
+1.7.9.5
+
