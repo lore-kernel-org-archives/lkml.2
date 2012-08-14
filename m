@@ -1,630 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab2HNRxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:53:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55073 "EHLO
+	id S1756863Ab2HNRxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:53:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54911 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab2HNRxI (ORCPT
+	with ESMTP id S1756760Ab2HNRxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:08 -0400
+	Tue, 14 Aug 2012 13:53:04 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 08/31] arm64: CPU support
-Date: Tue, 14 Aug 2012 18:52:09 +0100
-Message-Id: <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v2 00/31] AArch64 Linux kernel port
+Date: Tue, 14 Aug 2012 18:52:01 +0100
+Message-Id: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
-In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:48.0572 (UTC) FILETIME=[E5862BC0:01CD7A45]
-X-MC-Unique: 112081418530606701
+X-OriginalArrivalTime: 14 Aug 2012 17:54:45.0291 (UTC) FILETIME=[E39187B0:01CD7A45]
+X-MC-Unique: 112081418530207801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI3Di5017426
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EI3RT0017430
 
-This patch adds AArch64 CPU specific functionality. It assumes that the
-implementation is generic to AArch64 and does not require specific
-identification. Different CPU implementations may require the setting of
-various ACTLR_EL1 bits but such information is not currently available
-and it should ideally be pushed to firmware.
+This is the 2nd version of the set of patches implementing Linux kernel
+support for the 64-bit ARM architecture (AArch64). Thanks to all who
+provided feedback on the previous version.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm64/include/asm/cputype.h   |   49 +++++++++
- arch/arm64/include/asm/proc-fns.h  |   51 ++++++++++
- arch/arm64/include/asm/processor.h |  174 ++++++++++++++++++++++++++++++++
- arch/arm64/include/asm/procinfo.h  |   44 ++++++++
- arch/arm64/mm/proc-syms.c          |   31 ++++++
- arch/arm64/mm/proc.S               |  193 ++++++++++++++++++++++++++++++++++++
- 6 files changed, 542 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/cputype.h
- create mode 100644 arch/arm64/include/asm/proc-fns.h
- create mode 100644 arch/arm64/include/asm/processor.h
- create mode 100644 arch/arm64/include/asm/procinfo.h
- create mode 100644 arch/arm64/mm/proc-syms.c
- create mode 100644 arch/arm64/mm/proc.S
+The Linux kernel patches are available on this tree:
 
-diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-new file mode 100644
-index 0000000..ef54125
---- /dev/null
-+++ b/arch/arm64/include/asm/cputype.h
-@@ -0,0 +1,49 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_CPUTYPE_H
-+#define __ASM_CPUTYPE_H
-+
-+#define ID_MIDR_EL1		"midr_el1"
-+#define ID_CTR_EL0		"ctr_el0"
-+
-+#define ID_AA64PFR0_EL1		"id_aa64pfr0_el1"
-+#define ID_AA64DFR0_EL1		"id_aa64dfr0_el1"
-+#define ID_AA64AFR0_EL1		"id_aa64afr0_el1"
-+#define ID_AA64ISAR0_EL1	"id_aa64isar0_el1"
-+#define ID_AA64MMFR0_EL1	"id_aa64mmfr0_el1"
-+
-+#define read_cpuid(reg) ({						\
-+	u64 __val;							\
-+	asm("mrs	%0, " reg : "=r" (__val));			\
-+	__val;								\
-+})
-+
-+/*
-+ * The CPU ID never changes at run time, so we might as well tell the
-+ * compiler that it's constant.  Use this function to read the CPU ID
-+ * rather than directly reading processor_id or read_cpuid() directly.
-+ */
-+static inline u32 __attribute_const__ read_cpuid_id(void)
-+{
-+	return read_cpuid(ID_MIDR_EL1);
-+}
-+
-+static inline u32 __attribute_const__ read_cpuid_cachetype(void)
-+{
-+	return read_cpuid(ID_CTR_EL0);
-+}
-+
-+#endif
-diff --git a/arch/arm64/include/asm/proc-fns.h b/arch/arm64/include/asm/proc-fns.h
-new file mode 100644
-index 0000000..520331b
---- /dev/null
-+++ b/arch/arm64/include/asm/proc-fns.h
-@@ -0,0 +1,51 @@
-+/*
-+ * Based on arch/arm/include/asm/proc-fns.h
-+ *
-+ * Copyright (C) 1997-1999 Russell King
-+ * Copyright (C) 2000 Deep Blue Solutions Ltd
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_PROCFNS_H
-+#define __ASM_PROCFNS_H
-+
-+#ifdef __KERNEL__
-+#ifndef __ASSEMBLY__
-+
-+#include <asm/page.h>
-+
-+struct mm_struct;
-+
-+extern void cpu_proc_init(void);
-+extern void cpu_proc_fin(void);
-+extern void cpu_do_idle(void);
-+extern void cpu_do_switch_mm(unsigned long pgd_phys, struct mm_struct *mm);
-+extern void cpu_reset(unsigned long addr) __attribute__((noreturn));
-+
-+#include <asm/memory.h>
-+
-+#define cpu_switch_mm(pgd,mm) cpu_do_switch_mm(virt_to_phys(pgd),mm)
-+
-+#define cpu_get_pgd()					\
-+({							\
-+	unsigned long pg;				\
-+	asm("mrs	%0, ttbr0_el1\n"		\
-+	    : "=r" (pg));				\
-+	pg &= ~0xffff000000003ffful;			\
-+	(pgd_t *)phys_to_virt(pg);			\
-+})
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* __KERNEL__ */
-+#endif /* __ASM_PROCFNS_H */
-diff --git a/arch/arm64/include/asm/processor.h b/arch/arm64/include/asm/processor.h
-new file mode 100644
-index 0000000..ebf2b22
---- /dev/null
-+++ b/arch/arm64/include/asm/processor.h
-@@ -0,0 +1,174 @@
-+/*
-+ * Based on arch/arm/include/asm/processor.h
-+ *
-+ * Copyright (C) 1995-1999 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_PROCESSOR_H
-+#define __ASM_PROCESSOR_H
-+
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr() ({ __label__ _l; _l: &&_l;})
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/string.h>
-+
-+#include <asm/fpsimd.h>
-+#include <asm/hw_breakpoint.h>
-+#include <asm/ptrace.h>
-+#include <asm/types.h>
-+
-+#ifdef __KERNEL__
-+#define STACK_TOP_MAX		TASK_SIZE_64
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define AARCH32_VECTORS_BASE	0xffff0000
-+#define STACK_TOP		(test_thread_flag(TIF_32BIT) ? \
-+				AARCH32_VECTORS_BASE : STACK_TOP_MAX)
-+#else
-+#define STACK_TOP		STACK_TOP_MAX
-+#endif /* CONFIG_AARCH32_EMULATION */
-+#endif /* __KERNEL__ */
-+
-+struct debug_info {
-+	/* Have we suspended stepping by a debugger? */
-+	int			suspended_step;
-+	/* Allow breakpoints and watchpoints to be disabled for this thread. */
-+	int			bps_disabled;
-+	int			wps_disabled;
-+	/* Hardware breakpoints pinned to this task. */
-+	struct perf_event	*hbp[ARM_MAX_HBP_SLOTS];
-+};
-+
-+struct cpu_context {
-+	unsigned long x19;
-+	unsigned long x20;
-+	unsigned long x21;
-+	unsigned long x22;
-+	unsigned long x23;
-+	unsigned long x24;
-+	unsigned long x25;
-+	unsigned long x26;
-+	unsigned long x27;
-+	unsigned long x28;
-+	unsigned long fp;
-+	unsigned long sp;
-+	unsigned long pc;
-+};
-+
-+struct thread_struct {
-+	struct cpu_context	cpu_context;	/* cpu context */
-+	unsigned long		tp_value;
-+	struct fpsimd_state	fpsimd_state;
-+	unsigned long		fault_address;	/* fault info */
-+	struct debug_info	debug;		/* debugging */
-+};
-+
-+#define INIT_THREAD  {	}
-+
-+static inline void start_thread_common(struct pt_regs *regs, unsigned long pc)
-+{
-+	memset(regs, 0, sizeof(*regs));
-+	regs->syscallno = ~0UL;
-+	regs->pc = pc;
-+}
-+
-+static inline void start_thread(struct pt_regs *regs, unsigned long pc,
-+				unsigned long sp)
-+{
-+	unsigned long *stack = (unsigned long *)sp;
-+
-+	start_thread_common(regs, pc);
-+	regs->pstate = PSR_MODE_EL0t;
-+	regs->sp = sp;
-+	regs->regs[2] = stack[2];	/* x2 (envp) */
-+	regs->regs[1] = stack[1];	/* x1 (argv) */
-+	regs->regs[0] = stack[0];	/* x0 (argc) */
-+}
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+static inline void compat_start_thread(struct pt_regs *regs, unsigned long pc,
-+				       unsigned long sp)
-+{
-+	unsigned int *stack = (unsigned int *)sp;
-+
-+	start_thread_common(regs, pc);
-+	regs->pstate = COMPAT_PSR_MODE_USR;
-+	if (pc & 1)
-+		regs->pstate |= COMPAT_PSR_T_BIT;
-+	regs->compat_sp = sp;
-+	regs->regs[2] = stack[2];	/* x2 (envp) */
-+	regs->regs[1] = stack[1];	/* x1 (argv) */
-+	regs->regs[0] = stack[0];	/* x0 (argc) */
-+}
-+#endif
-+
-+/* Forward declaration, a strange C thing */
-+struct task_struct;
-+
-+/* Free all resources held by a thread. */
-+extern void release_thread(struct task_struct *);
-+
-+/* Prepare to copy thread state - unlazy all lazy status */
-+#define prepare_to_copy(tsk)	do { } while (0)
-+
-+unsigned long get_wchan(struct task_struct *p);
-+
-+#define cpu_relax()			barrier()
-+
-+/* Thread switching */
-+extern struct task_struct *cpu_switch_to(struct task_struct *prev,
-+					 struct task_struct *next);
-+
-+/*
-+ * Create a new kernel thread
-+ */
-+extern int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
-+
-+#define task_pt_regs(p) \
-+	((struct pt_regs *)(THREAD_START_SP + task_stack_page(p)) - 1)
-+
-+#define KSTK_EIP(tsk)	task_pt_regs(tsk)->pc
-+#define KSTK_ESP(tsk)	task_pt_regs(tsk)->sp
-+
-+/*
-+ * Prefetching support
-+ */
-+#define ARCH_HAS_PREFETCH
-+static inline void prefetch(const void *ptr)
-+{
-+	asm volatile("prfm pldl1keep, %a0\n" : : "p" (ptr));
-+}
-+
-+#define ARCH_HAS_PREFETCHW
-+static inline void prefetchw(const void *ptr)
-+{
-+	asm volatile("prfm pstl1keep, %a0\n" : : "p" (ptr));
-+}
-+
-+#define ARCH_HAS_SPINLOCK_PREFETCH
-+static inline void spin_lock_prefetch(const void *x)
-+{
-+	prefetchw(x);
-+}
-+
-+#define HAVE_ARCH_PICK_MMAP_LAYOUT
-+
-+#endif
-+
-+#endif /* __ASM_PROCESSOR_H */
-diff --git a/arch/arm64/include/asm/procinfo.h b/arch/arm64/include/asm/procinfo.h
-new file mode 100644
-index 0000000..81fece9
---- /dev/null
-+++ b/arch/arm64/include/asm/procinfo.h
-@@ -0,0 +1,44 @@
-+/*
-+ * Based on arch/arm/include/asm/procinfo.h
-+ *
-+ * Copyright (C) 1996-1999 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_PROCINFO_H
-+#define __ASM_PROCINFO_H
-+
-+#ifdef __KERNEL__
-+
-+/*
-+ * Note!  struct processor is always defined if we're
-+ * using MULTI_CPU, otherwise this entry is unused,
-+ * but still exists.
-+ *
-+ * NOTE! The following structure is defined by assembly
-+ * language, NOT C code.  For more information, check:
-+ *  arch/arm/mm/proc-*.S and arch/arm/kernel/head.S
-+ */
-+struct proc_info_list {
-+	unsigned int		cpu_val;
-+	unsigned int		cpu_mask;
-+	unsigned long		__cpu_flush;		/* used by head.S */
-+	const char		*cpu_name;
-+};
-+
-+#else	/* __KERNEL__ */
-+#include <asm/elf.h>
-+#warning "Please include asm/elf.h instead"
-+#endif	/* __KERNEL__ */
-+#endif
-diff --git a/arch/arm64/mm/proc-syms.c b/arch/arm64/mm/proc-syms.c
-new file mode 100644
-index 0000000..2d99ef9
---- /dev/null
-+++ b/arch/arm64/mm/proc-syms.c
-@@ -0,0 +1,31 @@
-+/*
-+ * Based on arch/arm/mm/proc-syms.c
-+ *
-+ * Copyright (C) 2000-2002 Russell King
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/mm.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/proc-fns.h>
-+#include <asm/tlbflush.h>
-+#include <asm/page.h>
-+
-+EXPORT_SYMBOL(__cpuc_flush_kern_all);
-+EXPORT_SYMBOL(__cpuc_flush_user_all);
-+EXPORT_SYMBOL(__cpuc_flush_user_range);
-+EXPORT_SYMBOL(__cpuc_coherent_kern_range);
-+EXPORT_SYMBOL(__cpuc_flush_dcache_area);
-diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
-new file mode 100644
-index 0000000..453f517
---- /dev/null
-+++ b/arch/arm64/mm/proc.S
-@@ -0,0 +1,193 @@
-+/*
-+ * Based on arch/arm/mm/proc.S
-+ *
-+ * Copyright (C) 2001 Deep Blue Solutions Ltd.
-+ * Copyright (C) 2012 ARM Ltd.
-+ * Author: Catalin Marinas <catalin.marinas@arm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/hwcap.h>
-+#include <asm/pgtable-hwdef.h>
-+#include <asm/pgtable.h>
-+
-+#include "proc-macros.S"
-+
-+#ifndef CONFIG_SMP
-+/* PTWs cacheable, inner/outer WBWA not shareable */
-+#define TCR_FLAGS	TCR_IRGN_WBWA | TCR_ORGN_WBWA
-+#else
-+/* PTWs cacheable, inner/outer WBWA shareable */
-+#define TCR_FLAGS	TCR_IRGN_WBWA | TCR_ORGN_WBWA | TCR_SHARED
-+#endif
-+
-+#define MAIR(attr, mt)	((attr) << ((mt) * 8))
-+
-+ENTRY(cpu_proc_init)
-+	ret
-+ENDPROC(cpu_proc_init)
-+
-+ENTRY(cpu_proc_fin)
-+	ret
-+ENDPROC(cpu_proc_fin)
-+
-+/*
-+ *	cpu_reset(loc)
-+ *
-+ *	Perform a soft reset of the system.  Put the CPU into the same state
-+ *	as it would be if it had been reset, and branch to what would be the
-+ *	reset vector. It must be executed with the flat identity mapping.
-+ *
-+ *	- loc   - location to jump to for soft reset
-+ */
-+	.align	5
-+ENTRY(cpu_reset)
-+	mrs	x1, sctlr_el1
-+	bic	x1, x1, #1
-+	msr	sctlr_el1, x1			// disable the MMU
-+	isb
-+	ret	x0
-+ENDPROC(cpu_reset)
-+
-+/*
-+ *	cpu_do_idle()
-+ *
-+ *	Idle the processor (wait for interrupt).
-+ */
-+ENTRY(cpu_do_idle)
-+	dsb	sy				// WFI may enter a low-power mode
-+	wfi
-+	ret
-+ENDPROC(cpu_do_idle)
-+
-+/*
-+ *	cpu_switch_mm(pgd_phys, tsk)
-+ *
-+ *	Set the translation table base pointer to be pgd_phys.
-+ *
-+ *	- pgd_phys - physical address of new TTB
-+ */
-+ENTRY(cpu_do_switch_mm)
-+	mmid	w1, x1				// get mm->context.id
-+	bfi	x0, x1, #48, #16		// set the ASID
-+	msr	ttbr0_el1, x0			// set TTBR0
-+	isb
-+	ret
-+ENDPROC(cpu_do_switch_mm)
-+
-+cpu_name:
-+	.ascii	"AArch64 Processor"
-+	.align
-+
-+	.section ".text.init", #alloc, #execinstr
-+
-+/*
-+ *	__cpu_setup
-+ *
-+ *	Initialise the processor for turning the MMU on.  Return in x0 the
-+ *	value of the SCTLR_EL1 register.
-+ */
-+__cpu_setup:
-+#ifdef CONFIG_SMP
-+	/* TODO: only do this for certain CPUs */
-+	/*
-+	 * Enable SMP/nAMP mode.
-+	 */
-+	mrs	x0, actlr_el1
-+	tbnz	x0, #6, 1f			// already enabled?
-+	orr	x0, x0, #1 << 6
-+	msr	actlr_el1, x0
-+1:
-+#endif
-+	/*
-+	 * Preserve the link register across the function call.
-+	 */
-+	mov	x28, lr
-+	bl	__cpuc_flush_dcache_all
-+	mov	lr, x28
-+	ic	iallu				// I+BTB cache invalidate
-+	dsb	sy
-+
-+	mov	x0, #3 << 20
-+	msr	cpacr_el1, x0			// Enable FP/ASIMD
-+	mov	x0, #1
-+	msr	oslar_el1, x0			// Set the debug OS lock
-+	tlbi	vmalle1is			// invalidate I + D TLBs
-+	/*
-+	 * Memory region attributes for LPAE:
-+	 *
-+	 *   n = AttrIndx[2:0]
-+	 *			n	MAIR
-+	 *   DEVICE_nGnRnE	000	00000000
-+	 *   DEVICE_nGnRE	001	00000100
-+	 *   DEVICE_GRE		010	00001100
-+	 *   NORMAL_NC		011	01000100
-+	 *   NORMAL		100	11111111
-+	 */
-+	ldr	x5, =MAIR(0x00, MT_DEVICE_nGnRnE) | \
-+		     MAIR(0x04, MT_DEVICE_nGnRE) | \
-+		     MAIR(0x0c, MT_DEVICE_GRE) | \
-+		     MAIR(0x44, MT_NORMAL_NC) | \
-+		     MAIR(0xff, MT_NORMAL)
-+	msr	mair_el1, x5
-+	/*
-+	 * Prepare SCTLR
-+	 */
-+	adr	x5, crval
-+	ldp	w5, w6, [x5]
-+	mrs	x0, sctlr_el1
-+	bic	x0, x0, x5			// clear bits
-+	orr	x0, x0, x6			// set bits
-+	/*
-+	 * Set/prepare TCR and TTBR. We use 512GB (39-bit) address range for
-+	 * both user and kernel.
-+	 */
-+	ldr	x10, =TCR_TxSZ(VA_BITS) | TCR_FLAGS | TCR_IPS_40BIT | \
-+		      TCR_ASID16 | (1 << 31)
-+#ifdef CONFIG_ARM64_64K_PAGES
-+	orr	x10, x10, TCR_TG0_64K
-+	orr	x10, x10, TCR_TG1_64K
-+#endif
-+	msr	tcr_el1, x10
-+	ret					// return to head.S
-+ENDPROC(__cpu_setup)
-+
-+	/*
-+	 *                 n n            T
-+	 *       U E      WT T UD     US IHBS
-+	 *       CE0      XWHW CZ     ME TEEA S
-+	 * .... .IEE .... NEAI TE.I ..AD DEN0 ACAM
-+	 * 0011 0... 1101 ..0. ..0. 10.. .... .... < hardware reserved
-+	 * .... .100 .... 01.1 11.1 ..01 0001 1101 < software settings
-+	 */
-+	.type	crval, #object
-+crval:
-+	.word	0x030802e2			// clear
-+	.word	0x0405d11d			// set
-+
-+	.section ".proc.info.init", #alloc, #execinstr
-+
-+	.type	__v8_proc_info, #object
-+__v8_proc_info:
-+	.long	0x000f0000			// Required ID value
-+	.long	0x000f0000			// Mask for ID
-+	b	__cpu_setup
-+	nop
-+	.quad	cpu_name
-+	.long	0
-+	.size	__v8_proc_info, . - __v8_proc_info
+git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
+
+The "master" branch in the above repository tracks the development
+history.
+
+Main changes from the previous version (for the full log see the
+"master" branch above):
+
+- Kernel port directory and related functions renamed to "arm64".
+  "uname -m" reports "aarch64" as per the official name.
+- NO_BOOTMEM enabled.
+- "mem=" is now used for limiting the amount of memory rather than
+  specifying the memory banks (already done via FDT).
+- struct mem_type removed as static definitions are enough for
+  ioremap().
+- Support for ZONE_DMA32.
+- Replaced "user_debug" with "/proc/sys/debug/exception-trace".
+- Added a generic defconfig file.
+- More clean-up (comments, code) and bug-fixes.
+
+The generic patches were dropped from this series as they have been pushed
+separately (and most of them already merged into mainline).
+
+
+Background to the 64-bit ARM architecture:
+
+ARM introduced AArch64 as part of the ARMv8 architecture and consists of
+a substantially revised exception model (with 4 exception levels: EL0 -
+user, EL1 - kernel, EL2 - hypervisor, EL3 - secure monitor), new A64
+instruction set based on larger register file, new FP/SIMD instructions.
+The new ABI is LP64 and takes advantage of the larger register file. It
+also mandates FP.
+
+AArch64 documentation currently available (publicly, though
+click-through agreement required):
+
+- Instruction Set Overview:
+http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
+
+- ABI (PCS, ELF, DWARF, C++):
+http://infocenter.arm.com/help/topic/com.arm.doc.ihi0059a/index.html
+
+
+Regards,
+
+Catalin
+
+
+Catalin Marinas (23):
+  arm64: Assembly macros and definitions
+  arm64: Kernel booting and initialisation
+  arm64: Exception handling
+  arm64: MMU definitions
+  arm64: MMU initialisation
+  arm64: MMU fault handling and page table management
+  arm64: Process management
+  arm64: CPU support
+  arm64: Cache maintenance routines
+  arm64: TLB maintenance functionality
+  arm64: Atomic operations
+  arm64: Device specific operations
+  arm64: DMA mapping API
+  arm64: SMP support
+  arm64: ELF definitions
+  arm64: System calls handling
+  arm64: Signal handling support
+  arm64: User access library functions
+  arm64: Floating point and SIMD
+  arm64: Add support for /proc/sys/debug/exception-trace
+  arm64: Miscellaneous header files
+  arm64: Build infrastructure
+  arm64: MAINTAINERS update
+
+Marc Zyngier (3):
+  arm64: IRQ handling
+  arm64: Miscellaneous library functions
+  arm64: Generic timers support
+
+Will Deacon (5):
+  arm64: VDSO support
+  arm64: 32-bit (compat) applications support
+  arm64: Debugging support
+  arm64: Performance counters support
+  arm64: Loadable modules
+
+ Documentation/arm64/booting.txt               |  141 +++
+ Documentation/arm64/memory.txt                |   69 ++
+ MAINTAINERS                                   |    6 +
+ arch/arm64/Kconfig                            |  261 +++++
+ arch/arm64/Kconfig.debug                      |   27 +
+ arch/arm64/Makefile                           |   71 ++
+ arch/arm64/boot/.gitignore                    |    2 +
+ arch/arm64/boot/Makefile                      |   38 +
+ arch/arm64/boot/install.sh                    |   52 +
+ arch/arm64/configs/generic_defconfig          |   85 ++
+ arch/arm64/include/asm/Kbuild                 |   51 +
+ arch/arm64/include/asm/asm-offsets.h          |    1 +
+ arch/arm64/include/asm/assembler.h            |  109 ++
+ arch/arm64/include/asm/atomic.h               |  306 ++++++
+ arch/arm64/include/asm/auxvec.h               |   22 +
+ arch/arm64/include/asm/barrier.h              |   52 +
+ arch/arm64/include/asm/bitops.h               |   74 ++
+ arch/arm64/include/asm/bitsperlong.h          |   23 +
+ arch/arm64/include/asm/byteorder.h            |   21 +
+ arch/arm64/include/asm/cache.h                |   32 +
+ arch/arm64/include/asm/cacheflush.h           |  209 ++++
+ arch/arm64/include/asm/cachetype.h            |   48 +
+ arch/arm64/include/asm/cmpxchg.h              |  180 ++++
+ arch/arm64/include/asm/compat.h               |  232 +++++
+ arch/arm64/include/asm/compiler.h             |   30 +
+ arch/arm64/include/asm/cputype.h              |   49 +
+ arch/arm64/include/asm/debug-monitors.h       |   88 ++
+ arch/arm64/include/asm/device.h               |   26 +
+ arch/arm64/include/asm/dma-mapping.h          |  124 +++
+ arch/arm64/include/asm/elf.h                  |  176 ++++
+ arch/arm64/include/asm/exception.h            |   23 +
+ arch/arm64/include/asm/exec.h                 |   23 +
+ arch/arm64/include/asm/fb.h                   |   34 +
+ arch/arm64/include/asm/fcntl.h                |   29 +
+ arch/arm64/include/asm/fpsimd.h               |   64 ++
+ arch/arm64/include/asm/futex.h                |  134 +++
+ arch/arm64/include/asm/hardirq.h              |   52 +
+ arch/arm64/include/asm/hw_breakpoint.h        |  137 +++
+ arch/arm64/include/asm/hwcap.h                |   57 +
+ arch/arm64/include/asm/io.h                   |  263 +++++
+ arch/arm64/include/asm/irq.h                  |    8 +
+ arch/arm64/include/asm/irqflags.h             |   91 ++
+ arch/arm64/include/asm/memblock.h             |   21 +
+ arch/arm64/include/asm/memory.h               |  144 +++
+ arch/arm64/include/asm/mmu.h                  |   27 +
+ arch/arm64/include/asm/mmu_context.h          |  152 +++
+ arch/arm64/include/asm/module.h               |   23 +
+ arch/arm64/include/asm/page.h                 |   67 ++
+ arch/arm64/include/asm/param.h                |   23 +
+ arch/arm64/include/asm/perf_event.h           |   22 +
+ arch/arm64/include/asm/pgalloc.h              |  113 ++
+ arch/arm64/include/asm/pgtable-2level-hwdef.h |   43 +
+ arch/arm64/include/asm/pgtable-2level-types.h |   60 ++
+ arch/arm64/include/asm/pgtable-3level-hwdef.h |   50 +
+ arch/arm64/include/asm/pgtable-3level-types.h |   66 ++
+ arch/arm64/include/asm/pgtable-hwdef.h        |   94 ++
+ arch/arm64/include/asm/pgtable.h              |  328 ++++++
+ arch/arm64/include/asm/pmu.h                  |   82 ++
+ arch/arm64/include/asm/proc-fns.h             |   51 +
+ arch/arm64/include/asm/processor.h            |  174 ++++
+ arch/arm64/include/asm/procinfo.h             |   44 +
+ arch/arm64/include/asm/prom.h                 |    1 +
+ arch/arm64/include/asm/ptrace.h               |  206 ++++
+ arch/arm64/include/asm/setup.h                |   26 +
+ arch/arm64/include/asm/shmparam.h             |   28 +
+ arch/arm64/include/asm/sigcontext.h           |   69 ++
+ arch/arm64/include/asm/siginfo.h              |   23 +
+ arch/arm64/include/asm/signal.h               |   24 +
+ arch/arm64/include/asm/signal32.h             |   54 +
+ arch/arm64/include/asm/smp.h                  |   69 ++
+ arch/arm64/include/asm/sparsemem.h            |   24 +
+ arch/arm64/include/asm/spinlock.h             |  199 ++++
+ arch/arm64/include/asm/spinlock_types.h       |   38 +
+ arch/arm64/include/asm/stacktrace.h           |   29 +
+ arch/arm64/include/asm/stat.h                 |   63 ++
+ arch/arm64/include/asm/statfs.h               |   23 +
+ arch/arm64/include/asm/syscall.h              |  101 ++
+ arch/arm64/include/asm/syscalls.h             |   40 +
+ arch/arm64/include/asm/system_misc.h          |   54 +
+ arch/arm64/include/asm/thread_info.h          |  124 +++
+ arch/arm64/include/asm/timex.h                |   32 +
+ arch/arm64/include/asm/tlb.h                  |  190 ++++
+ arch/arm64/include/asm/tlbflush.h             |  123 +++
+ arch/arm64/include/asm/traps.h                |   30 +
+ arch/arm64/include/asm/uaccess.h              |  377 +++++++
+ arch/arm64/include/asm/ucontext.h             |   30 +
+ arch/arm64/include/asm/unistd.h               |   27 +
+ arch/arm64/include/asm/unistd32.h             |  758 ++++++++++++++
+ arch/arm64/include/asm/vdso.h                 |   41 +
+ arch/arm64/include/asm/vdso_datapage.h        |   43 +
+ arch/arm64/kernel/.gitignore                  |    1 +
+ arch/arm64/kernel/Makefile                    |   27 +
+ arch/arm64/kernel/arm64ksyms.c                |   55 +
+ arch/arm64/kernel/asm-offsets.c               |  108 ++
+ arch/arm64/kernel/debug-monitors.c            |  288 ++++++
+ arch/arm64/kernel/elf.c                       |   41 +
+ arch/arm64/kernel/entry-fpsimd.S              |   80 ++
+ arch/arm64/kernel/entry.S                     |  695 +++++++++++++
+ arch/arm64/kernel/fpsimd.c                    |  106 ++
+ arch/arm64/kernel/head.S                      |  521 ++++++++++
+ arch/arm64/kernel/hw_breakpoint.c             |  880 ++++++++++++++++
+ arch/arm64/kernel/io.c                        |   64 ++
+ arch/arm64/kernel/irq.c                       |   84 ++
+ arch/arm64/kernel/kuser32.S                   |   77 ++
+ arch/arm64/kernel/module.c                    |  456 ++++++++
+ arch/arm64/kernel/perf_event.c                | 1368 +++++++++++++++++++++++++
+ arch/arm64/kernel/process.c                   |  416 ++++++++
+ arch/arm64/kernel/ptrace.c                    |  834 +++++++++++++++
+ arch/arm64/kernel/setup.c                     |  357 +++++++
+ arch/arm64/kernel/signal.c                    |  436 ++++++++
+ arch/arm64/kernel/signal32.c                  |  876 ++++++++++++++++
+ arch/arm64/kernel/smp.c                       |  469 +++++++++
+ arch/arm64/kernel/stacktrace.c                |  127 +++
+ arch/arm64/kernel/sys.c                       |  138 +++
+ arch/arm64/kernel/sys32.S                     |  283 +++++
+ arch/arm64/kernel/sys_compat.c                |  177 ++++
+ arch/arm64/kernel/time.c                      |   65 ++
+ arch/arm64/kernel/traps.c                     |  357 +++++++
+ arch/arm64/kernel/vdso.c                      |  261 +++++
+ arch/arm64/kernel/vdso/.gitignore             |    2 +
+ arch/arm64/kernel/vdso/Makefile               |   63 ++
+ arch/arm64/kernel/vdso/gen_vdso_offsets.sh    |   15 +
+ arch/arm64/kernel/vdso/gettimeofday.S         |  242 +++++
+ arch/arm64/kernel/vdso/note.S                 |   28 +
+ arch/arm64/kernel/vdso/sigreturn.S            |   37 +
+ arch/arm64/kernel/vdso/vdso.S                 |   33 +
+ arch/arm64/kernel/vdso/vdso.lds.S             |  100 ++
+ arch/arm64/kernel/vmlinux.lds.S               |  146 +++
+ arch/arm64/lib/Makefile                       |    5 +
+ arch/arm64/lib/bitops.c                       |   25 +
+ arch/arm64/lib/clear_page.S                   |   39 +
+ arch/arm64/lib/clear_user.S                   |   58 ++
+ arch/arm64/lib/copy_from_user.S               |   66 ++
+ arch/arm64/lib/copy_in_user.S                 |   63 ++
+ arch/arm64/lib/copy_page.S                    |   46 +
+ arch/arm64/lib/copy_to_user.S                 |   61 ++
+ arch/arm64/lib/delay.c                        |   55 +
+ arch/arm64/lib/getuser.S                      |   75 ++
+ arch/arm64/lib/putuser.S                      |   73 ++
+ arch/arm64/lib/strncpy_from_user.S            |   50 +
+ arch/arm64/lib/strnlen_user.S                 |   47 +
+ arch/arm64/mm/Kconfig                         |    5 +
+ arch/arm64/mm/Makefile                        |    6 +
+ arch/arm64/mm/cache.S                         |  279 +++++
+ arch/arm64/mm/context.c                       |  159 +++
+ arch/arm64/mm/copypage.c                      |   34 +
+ arch/arm64/mm/dma-mapping.c                   |  208 ++++
+ arch/arm64/mm/extable.c                       |   17 +
+ arch/arm64/mm/fault.c                         |  534 ++++++++++
+ arch/arm64/mm/flush.c                         |  132 +++
+ arch/arm64/mm/init.c                          |  416 ++++++++
+ arch/arm64/mm/ioremap.c                       |   84 ++
+ arch/arm64/mm/mm.h                            |    2 +
+ arch/arm64/mm/mmap.c                          |  144 +++
+ arch/arm64/mm/mmu.c                           |  395 +++++++
+ arch/arm64/mm/pgd.c                           |   49 +
+ arch/arm64/mm/proc-macros.S                   |   55 +
+ arch/arm64/mm/proc-syms.c                     |   31 +
+ arch/arm64/mm/proc.S                          |  193 ++++
+ arch/arm64/mm/tlb.S                           |   71 ++
+ drivers/clocksource/Kconfig                   |    5 +
+ drivers/clocksource/Makefile                  |    1 +
+ drivers/clocksource/arm_generic.c             |  309 ++++++
+ include/clocksource/arm_generic.h             |   21 +
+ init/Kconfig                                  |    3 +-
+ kernel/sysctl.c                               |    2 +-
+ lib/Kconfig.debug                             |    6 +-
+ tools/perf/perf.h                             |    6 +
+ 168 files changed, 22089 insertions(+), 4 deletions(-)
 
