@@ -1,128 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2HNOXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:23:48 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:42474 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756365Ab2HNOXm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:23:42 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 14/14] ASoC: twl4030: Support for DT booted kernel
-Date: Tue, 14 Aug 2012 17:22:42 +0300
-Message-Id: <1344954162-7985-15-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1756418Ab2HNOX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:23:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9166 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756371Ab2HNOXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 10:23:54 -0400
+Message-ID: <502A5F70.3010607@parallels.com>
+Date: Tue, 14 Aug 2012 18:23:44 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 7/8] fs, notify: Add procfs fdinfo helper v3
+References: <20120814140342.354405844@openvz.org> <20120814140620.374705810@openvz.org>
+In-Reply-To: <20120814140620.374705810@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel has been booted with DT blob the platform data is NULL for
-the driver.
-We need to construct the pdata based on the DT information for runtime use.
+On 08/14/2012 06:03 PM, Cyrill Gorcunov wrote:
+> This allow us to print out fsnotify details such as
+> watchee inode, device, mask and file handle.
+> 
+> For example for inotify objects the output is
+> 
+>  | pos: 0
+>  | flags:       02000000
+>  | inotify wd:        3 ino:             9e7e sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 7e9e0000640d1b6d
+>  | inotify wd:        2 ino:             a111 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 11a1000020542153
+>  | inotify wd:        1 ino:            6b149 sdev:   800013 mask:  800afce ignored_mask:        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 49b1060023552153
+> 
+> For fanotify it is like
+> 
+>  | pos: 0
+>  | flags:       02
+>  | fanotify ino:            68f71 sdev:   800013 mask:        1 ignored_mask: 40000000 fhandle-bytes:        8 fhandle-type:        1 f_handle: 718f0600b9f42053
+>  | fanotify mnt_id:       13 mask:        1 ignored_mask: 40000000
+> 
+> This feature is CONFIG_CHECKPOINT_RESTORE only. To minimize
+> impact on general fsnotify code the new functionality is gathered
+> in fs/notify/fdinfo.c file mostly.
+> 
+> v2:
+>  - append missing colons to terms
+> v3:
+>  - continue from pervious position in list on ->next
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: James Bottomley <jbottomley@parallels.com>
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- sound/soc/codecs/twl4030.c |   57 +++++++++++++++++++++++++++++++++++++------
- 1 files changed, 49 insertions(+), 8 deletions(-)
-
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 8b13d50..f13c91a 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -26,6 +26,8 @@
- #include <linux/pm.h>
- #include <linux/i2c.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/i2c/twl.h>
- #include <linux/slab.h>
- #include <linux/gpio.h>
-@@ -295,13 +297,59 @@ static inline void twl4030_reset_registers(struct snd_soc_codec *codec)
- 
- }
- 
--static void twl4030_init_chip(struct snd_soc_codec *codec)
-+static void twl4030_setup_pdata_of(struct twl4030_codec_data *pdata,
-+				   struct device_node *node)
-+{
-+	int value;
-+
-+	of_property_read_u32(node, "ti,digimic_delay",
-+			     &pdata->digimic_delay);
-+	of_property_read_u32(node, "ti,ramp_delay_value",
-+			     &pdata->ramp_delay_value);
-+	of_property_read_u32(node, "ti,offset_cncl_path",
-+			     &pdata->offset_cncl_path);
-+	if (!of_property_read_u32(node, "ti,hs_extmute", &value))
-+		pdata->hs_extmute = value;
-+
-+	pdata->hs_extmute_gpio = of_get_named_gpio(node,
-+						   "ti,hs_extmute_gpio", 0);
-+	if (gpio_is_valid(pdata->hs_extmute_gpio))
-+		pdata->hs_extmute = 1;
-+}
-+
-+static struct twl4030_codec_data *twl4030_get_pdata(struct snd_soc_codec *codec)
- {
- 	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
-+	struct device_node *twl4030_codec_node = NULL;
-+
-+#ifdef CONFIG_OF
-+	twl4030_codec_node = of_find_node_by_name(codec->dev->parent->of_node,
-+						  "codec");
-+#endif
-+
-+	if (!pdata && twl4030_codec_node) {
-+		pdata = devm_kzalloc(codec->dev,
-+				     sizeof(struct twl4030_codec_data),
-+				     GFP_KERNEL);
-+		if (!pdata) {
-+			dev_err(codec->dev, "Can not allocate memory\n");
-+			return NULL;
-+		}
-+		twl4030_setup_pdata_of(pdata, twl4030_codec_node);
-+	}
-+
-+	return pdata;
-+}
-+
-+static void twl4030_init_chip(struct snd_soc_codec *codec)
-+{
-+	struct twl4030_codec_data *pdata;
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
- 	u8 reg, byte;
- 	int i = 0;
- 
-+	pdata = twl4030_get_pdata(codec);
-+
- 	if (pdata && pdata->hs_extmute &&
- 	    gpio_is_valid(pdata->hs_extmute_gpio)) {
- 		int ret;
-@@ -2284,13 +2332,6 @@ static struct snd_soc_codec_driver soc_codec_dev_twl4030 = {
- 
- static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
--
--	if (!pdata) {
--		dev_err(&pdev->dev, "platform_data is missing\n");
--		return -EINVAL;
--	}
--
- 	return snd_soc_register_codec(&pdev->dev, &soc_codec_dev_twl4030,
- 			twl4030_dai, ARRAY_SIZE(twl4030_dai));
- }
--- 
-1.7.8.6
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 
