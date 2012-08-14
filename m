@@ -1,53 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab2HNRyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:54:55 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55440 "EHLO
+	id S1757263Ab2HNRyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:54:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54970 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901Ab2HNRxO (ORCPT
+	with ESMTP id S1756789Ab2HNRxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:53:14 -0400
+	Tue, 14 Aug 2012 13:53:05 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 25/31] arm64: Performance counters support
-Date: Tue, 14 Aug 2012 18:52:26 +0100
-Message-Id: <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 04/31] arm64: MMU definitions
+Date: Tue, 14 Aug 2012 18:52:05 +0100
+Message-Id: <1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
 References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 14 Aug 2012 17:54:55.0697 (UTC) FILETIME=[E9C55C10:01CD7A45]
-X-MC-Unique: 112081418531207301
+X-OriginalArrivalTime: 14 Aug 2012 17:54:46.0916 (UTC) FILETIME=[E4897C40:01CD7A45]
+X-MC-Unique: 112081418530304601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHtl6q017299
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q7EHuDOG017306
 
-From: Will Deacon <will.deacon@arm.com>
+The virtual memory layout is described in
+Documentation/arm64/memory.txt. This patch adds the MMU definitions for
+the 4KB and 64KB translation table configurations. The SECTION_SIZE is
+2MB with 4KB page and 512MB with 64KB page configuration.
 
-This patch adds support for the AArch64 performance counters.
+PHYS_OFFSET is calculated at run-time and stored in a variable (no
+run-time code patching at this stage).
+
+On the current implementation, both user and kernel address spaces are
+512G (39-bit) each with a maximum of 256G for the RAM linear mapping.
+Linux uses 3 levels of translation tables with the 4K page configuration
+and 2 levels with the 64K configuration. Extending the memory space
+beyond 39-bit with the 4K pages or 42-bit with 64K pages requires an
+additional level of translation tables.
+
+The SPARSEMEM configuration is global to all AArch64 platforms and
+allows for 1GB sections with SPARSEMEM_VMEMMAP enabled by default.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm64/include/asm/perf_event.h |   22 +
- arch/arm64/include/asm/pmu.h        |   82 +++
- arch/arm64/kernel/perf_event.c      | 1368 +++++++++++++++++++++++++++++++++++
- tools/perf/perf.h                   |    6 +
- 4 files changed, 1478 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm64/include/asm/perf_event.h
- create mode 100644 arch/arm64/include/asm/pmu.h
- create mode 100644 arch/arm64/kernel/perf_event.c
+ Documentation/arm64/memory.txt                |   69 +++++
+ arch/arm64/include/asm/memory.h               |  144 +++++++++++
+ arch/arm64/include/asm/mmu.h                  |   27 ++
+ arch/arm64/include/asm/pgtable-2level-hwdef.h |   43 ++++
+ arch/arm64/include/asm/pgtable-2level-types.h |   60 +++++
+ arch/arm64/include/asm/pgtable-3level-hwdef.h |   50 ++++
+ arch/arm64/include/asm/pgtable-3level-types.h |   66 +++++
+ arch/arm64/include/asm/pgtable-hwdef.h        |   94 +++++++
+ arch/arm64/include/asm/pgtable.h              |  328 +++++++++++++++++++++++++
+ arch/arm64/include/asm/sparsemem.h            |   24 ++
+ 10 files changed, 905 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/arm64/memory.txt
+ create mode 100644 arch/arm64/include/asm/memory.h
+ create mode 100644 arch/arm64/include/asm/mmu.h
+ create mode 100644 arch/arm64/include/asm/pgtable-2level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-2level-types.h
+ create mode 100644 arch/arm64/include/asm/pgtable-3level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-3level-types.h
+ create mode 100644 arch/arm64/include/asm/pgtable-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable.h
+ create mode 100644 arch/arm64/include/asm/sparsemem.h
 
-diff --git a/arch/arm64/include/asm/perf_event.h b/arch/arm64/include/asm/perf_event.h
+diff --git a/Documentation/arm64/memory.txt b/Documentation/arm64/memory.txt
 new file mode 100644
-index 0000000..a6fffd5
+index 0000000..7210af7
 --- /dev/null
-+++ b/arch/arm64/include/asm/perf_event.h
-@@ -0,0 +1,22 @@
++++ b/Documentation/arm64/memory.txt
+@@ -0,0 +1,69 @@
++		     Memory Layout on AArch64 Linux
++		     ==============================
++
++Author: Catalin Marinas <catalin.marinas@arm.com>
++Date  : 20 February 2012
++
++This document describes the virtual memory layout used by the AArch64
++Linux kernel. The architecture allows up to 4 levels of translation
++tables with a 4KB page size and up to 3 levels with a 64KB page size.
++
++AArch64 Linux uses 3 levels of translation tables with the 4KB page
++configuration, allowing 39-bit (512GB) virtual addresses for both user
++and kernel. With 64KB pages, only 2 levels of translation tables are
++used but the memory layout is the same.
++
++User addresses have bits 63:39 set to 0 while the kernel addresses have
++the same bits set to 1. TTBRx selection is given by bit 63 of the
++virtual address. The swapper_pg_dir contains only kernel (global)
++mappings while the user pgd contains only user (non-global) mappings.
++The swapper_pgd_dir address is written to TTBR1 and never written to
++TTBR0.
++
++
++AArch64 Linux memory layout:
++
++Start			End			Size		Use
++-----------------------------------------------------------------------
++0000000000000000	0000007fffffffff	 512GB		user
++
++ffffff8000000000	ffffffbbfffeffff	~240GB		vmalloc
++
++ffffffbbffff0000	ffffffbcffffffff	  64KB		[guard page]
++
++ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
++
++ffffffbe00000000	ffffffbffbffffff	  ~8GB		[guard, future vmmemap]
++
++ffffffbffc000000	ffffffbfffffffff	  64MB		modules
++
++ffffffc000000000	ffffffffffffffff	 256GB		memory
++
++
++Translation table lookup with 4KB pages:
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |         |         |         |         |
++ |                 |         |         |         |         v
++ |                 |         |         |         |   [11:0]  in-page offset
++ |                 |         |         |         +-> [20:12] L3 index
++ |                 |         |         +-----------> [29:21] L2 index
++ |                 |         +---------------------> [38:30] L1 index
++ |                 +-------------------------------> [47:39] L0 index (not used)
++ +-------------------------------------------------> [63] TTBR0/1
++
++
++Translation table lookup with 64KB pages:
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |    |               |              |
++ |                 |    |               |              v
++ |                 |    |               |            [15:0]  in-page offset
++ |                 |    |               +----------> [28:16] L3 index
++ |                 |    +--------------------------> [41:29] L2 index (only 38:29 used)
++ |                 +-------------------------------> [47:42] L1 index (not used)
++ +-------------------------------------------------> [63] TTBR0/1
+diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
+new file mode 100644
+index 0000000..3cfdc4b
+--- /dev/null
++++ b/arch/arm64/include/asm/memory.h
+@@ -0,0 +1,144 @@
++/*
++ * Based on arch/arm/include/asm/memory.h
++ *
++ * Copyright (C) 2000-2002 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ * Note: this file should not be included by non-asm/.h files
++ */
++#ifndef __ASM_MEMORY_H
++#define __ASM_MEMORY_H
++
++#include <linux/compiler.h>
++#include <linux/const.h>
++#include <linux/types.h>
++#include <asm/sizes.h>
++
++/*
++ * Allow for constants defined here to be used from assembly code
++ * by prepending the UL suffix only with actual C code compilation.
++ */
++#define UL(x) _AC(x, UL)
++
++/*
++ * PAGE_OFFSET - the virtual address of the start of the kernel image.
++ * VA_BITS - the maximum number of bits for virtual addresses.
++ * TASK_SIZE - the maximum size of a user space task.
++ * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area.
++ * The module space lives between the addresses given by TASK_SIZE
++ * and PAGE_OFFSET - it must be within 128MB of the kernel text.
++ */
++#define PAGE_OFFSET		UL(0xffffffc000000000)
++#define MODULES_END		(PAGE_OFFSET)
++#define MODULES_VADDR		(MODULES_END - SZ_64M)
++#define VA_BITS			(39)
++#define TASK_SIZE_64		(UL(1) << VA_BITS)
++
++#ifdef CONFIG_AARCH32_EMULATION
++#define TASK_SIZE_32		UL(0x100000000)
++#define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
++				TASK_SIZE_32 : TASK_SIZE_64)
++#else
++#define TASK_SIZE		TASK_SIZE_64
++#endif /* CONFIG_AARCH32_EMULATION */
++
++#define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 4))
++
++#if TASK_SIZE_64 > MODULES_VADDR
++#error Top of 64-bit user space clashes with start of module space
++#endif
++
++/*
++ * Physical vs virtual RAM address space conversion.  These are
++ * private definitions which should NOT be used outside memory.h
++ * files.  Use virt_to_phys/phys_to_virt/__pa/__va instead.
++ */
++#define __virt_to_phys(x)	(((phys_addr_t)(x) - PAGE_OFFSET + PHYS_OFFSET))
++#define __phys_to_virt(x)	((unsigned long)((x) - PHYS_OFFSET + PAGE_OFFSET))
++
++/*
++ * Convert a physical address to a Page Frame Number and back
++ */
++#define	__phys_to_pfn(paddr)	((unsigned long)((paddr) >> PAGE_SHIFT))
++#define	__pfn_to_phys(pfn)	((phys_addr_t)(pfn) << PAGE_SHIFT)
++
++/*
++ * Convert a page to/from a physical address
++ */
++#define page_to_phys(page)	(__pfn_to_phys(page_to_pfn(page)))
++#define phys_to_page(phys)	(pfn_to_page(__phys_to_pfn(phys)))
++
++/*
++ * Memory types available.
++ */
++#define MT_DEVICE_nGnRnE	0
++#define MT_DEVICE_nGnRE		1
++#define MT_DEVICE_GRE		2
++#define MT_NORMAL_NC		3
++#define MT_NORMAL		4
++
++#ifndef __ASSEMBLY__
++
++extern phys_addr_t		memstart_addr;
++/* PHYS_OFFSET - the physical address of the start of memory. */
++#define PHYS_OFFSET		({ memstart_addr; })
++
++/*
++ * PFNs are used to describe any physical page; this means
++ * PFN 0 == physical address 0.
++ *
++ * This is the PFN of the first RAM page in the kernel
++ * direct-mapped view.  We assume this is the first page
++ * of RAM in the mem_map as well.
++ */
++#define PHYS_PFN_OFFSET	(PHYS_OFFSET >> PAGE_SHIFT)
++
++/*
++ * Note: Drivers should NOT use these.  They are the wrong
++ * translation for translating DMA addresses.  Use the driver
++ * DMA support - see dma-mapping.h.
++ */
++static inline phys_addr_t virt_to_phys(const volatile void *x)
++{
++	return __virt_to_phys((unsigned long)(x));
++}
++
++static inline void *phys_to_virt(phys_addr_t x)
++{
++	return (void *)(__phys_to_virt(x));
++}
++
++/*
++ * Drivers should NOT use these either.
++ */
++#define __pa(x)			__virt_to_phys((unsigned long)(x))
++#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
++#define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++
++/*
++ *  virt_to_page(k)	convert a _valid_ virtual address to struct page *
++ *  virt_addr_valid(k)	indicates whether a virtual address is valid
++ */
++#define ARCH_PFN_OFFSET		PHYS_PFN_OFFSET
++
++#define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
++#define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
++				 ((void *)(kaddr) < (void *)high_memory))
++
++#endif
++
++#include <asm-generic/memory_model.h>
++
++#endif
+diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
+new file mode 100644
+index 0000000..981498a
+--- /dev/null
++++ b/arch/arm64/include/asm/mmu.h
+@@ -0,0 +1,27 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -63,23 +315,25 @@ index 0000000..a6fffd5
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#ifndef __ASM_MMU_H
++#define __ASM_MMU_H
 +
-+#ifndef __ASM_PERF_EVENT_H
-+#define __ASM_PERF_EVENT_H
++typedef struct {
++	unsigned int id;
++	spinlock_t id_lock;
++	void *vdso;
++} mm_context_t;
 +
-+/* It's quiet around here... */
++#define ASID(mm)	((mm)->context.id & 0xffff)
 +
 +#endif
-diff --git a/arch/arm64/include/asm/pmu.h b/arch/arm64/include/asm/pmu.h
+diff --git a/arch/arm64/include/asm/pgtable-2level-hwdef.h b/arch/arm64/include/asm/pgtable-2level-hwdef.h
 new file mode 100644
-index 0000000..e6f0878
+index 0000000..0a8ed3f
 --- /dev/null
-+++ b/arch/arm64/include/asm/pmu.h
-@@ -0,0 +1,82 @@
++++ b/arch/arm64/include/asm/pgtable-2level-hwdef.h
+@@ -0,0 +1,43 @@
 +/*
-+ * Based on arch/arm/include/asm/pmu.h
-+ *
-+ * Copyright (C) 2009 picoChip Designs Ltd, Jamie Iles
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -94,83 +348,42 @@ index 0000000..e6f0878
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#ifndef __ASM_PMU_H
-+#define __ASM_PMU_H
++#ifndef __ASM_PGTABLE_2LEVEL_HWDEF_H
++#define __ASM_PGTABLE_2LEVEL_HWDEF_H
 +
-+#ifdef CONFIG_HW_PERF_EVENTS
-+
-+/* The events for a given PMU register set. */
-+struct pmu_hw_events {
-+	/*
-+	 * The events that are active on the PMU for the given index.
-+	 */
-+	struct perf_event	**events;
-+
-+	/*
-+	 * A 1 bit for an index indicates that the counter is being used for
-+	 * an event. A 0 means that the counter can be used.
-+	 */
-+	unsigned long           *used_mask;
-+
-+	/*
-+	 * Hardware lock to serialize accesses to PMU registers. Needed for the
-+	 * read/modify/write sequences.
-+	 */
-+	raw_spinlock_t		pmu_lock;
-+};
-+
-+struct arm_pmu {
-+	struct pmu		pmu;
-+	cpumask_t		active_irqs;
-+	const char		*name;
-+	irqreturn_t		(*handle_irq)(int irq_num, void *dev);
-+	void			(*enable)(struct hw_perf_event *evt, int idx);
-+	void			(*disable)(struct hw_perf_event *evt, int idx);
-+	int			(*get_event_idx)(struct pmu_hw_events *hw_events,
-+						 struct hw_perf_event *hwc);
-+	int			(*set_event_filter)(struct hw_perf_event *evt,
-+						    struct perf_event_attr *attr);
-+	u32			(*read_counter)(int idx);
-+	void			(*write_counter)(int idx, u32 val);
-+	void			(*start)(void);
-+	void			(*stop)(void);
-+	void			(*reset)(void *);
-+	int			(*map_event)(struct perf_event *event);
-+	int			num_events;
-+	atomic_t		active_events;
-+	struct mutex		reserve_mutex;
-+	u64			max_period;
-+	struct platform_device	*plat_device;
-+	struct pmu_hw_events	*(*get_hw_events)(void);
-+};
-+
-+#define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
-+
-+int __init armpmu_register(struct arm_pmu *armpmu, char *name, int type);
-+
-+u64 armpmu_event_update(struct perf_event *event,
-+			struct hw_perf_event *hwc,
-+			int idx);
-+
-+int armpmu_event_set_period(struct perf_event *event,
-+			    struct hw_perf_event *hwc,
-+			    int idx);
-+
-+#endif /* CONFIG_HW_PERF_EVENTS */
-+#endif /* __ASM_PMU_H */
-diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-new file mode 100644
-index 0000000..ecbf2d8
---- /dev/null
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -0,0 +1,1368 @@
 +/*
-+ * PMU support
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ *
-+ * This code is based heavily on the ARMv7 perf event code.
++ * With LPAE and 64KB pages, there are 2 levels of page tables. Each level has
++ * 8192 entries of 8 bytes each, occupying a 64KB page. Levels 0 and 1 are not
++ * used. The 2nd level table (PGD for Linux) can cover a range of 4TB, each
++ * entry representing 512MB. The user and kernel address spaces are limited to
++ * 512GB and therefore we only use 1024 entries in the PGD.
++ */
++#define PTRS_PER_PTE		8192
++#define PTRS_PER_PGD		1024
++
++/*
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
++ */
++#define PGDIR_SHIFT		29
++#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
++
++/*
++ * section address mask and size definitions.
++ */
++#define SECTION_SHIFT		29
++#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-2level-types.h b/arch/arm64/include/asm/pgtable-2level-types.h
+new file mode 100644
+index 0000000..3c3ca7d
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-2level-types.h
+@@ -0,0 +1,60 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -184,1369 +397,641 @@ index 0000000..ecbf2d8
 + * You should have received a copy of the GNU General Public License
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#define pr_fmt(fmt) "hw perfevents: " fmt
++#ifndef __ASM_PGTABLE_2LEVEL_TYPES_H
++#define __ASM_PGTABLE_2LEVEL_TYPES_H
 +
-+#include <linux/bitmap.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/export.h>
-+#include <linux/perf_event.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+#include <linux/uaccess.h>
++typedef u64 pteval_t;
++typedef u64 pgdval_t;
++typedef pgdval_t pmdval_t;
 +
-+#include <asm/cputype.h>
-+#include <asm/irq.h>
-+#include <asm/irq_regs.h>
-+#include <asm/pmu.h>
-+#include <asm/stacktrace.h>
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
 +
 +/*
-+ * ARMv8 supports a maximum of 32 events.
-+ * The cycle counter is included in this total.
++ * These are used to make use of C type-checking..
 + */
-+#define ARMPMU_MAX_HWEVENTS		32
-+
-+static DEFINE_PER_CPU(struct perf_event * [ARMPMU_MAX_HWEVENTS], hw_events);
-+static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(ARMPMU_MAX_HWEVENTS)], used_mask);
-+static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
-+
-+#define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))
-+
-+/* Set at runtime when we know what CPU type we are. */
-+static struct arm_pmu *cpu_pmu;
-+
-+int
-+armpmu_get_max_events(void)
-+{
-+	int max_events = 0;
-+
-+	if (cpu_pmu != NULL)
-+		max_events = cpu_pmu->num_events;
-+
-+	return max_events;
-+}
-+EXPORT_SYMBOL_GPL(armpmu_get_max_events);
-+
-+int perf_num_counters(void)
-+{
-+	return armpmu_get_max_events();
-+}
-+EXPORT_SYMBOL_GPL(perf_num_counters);
-+
-+#define HW_OP_UNSUPPORTED		0xFFFF
-+
-+#define C(_x) \
-+	PERF_COUNT_HW_CACHE_##_x
-+
-+#define CACHE_OP_UNSUPPORTED		0xFFFF
-+
-+static int
-+armpmu_map_cache_event(const unsigned (*cache_map)
-+				      [PERF_COUNT_HW_CACHE_MAX]
-+				      [PERF_COUNT_HW_CACHE_OP_MAX]
-+				      [PERF_COUNT_HW_CACHE_RESULT_MAX],
-+		       u64 config)
-+{
-+	unsigned int cache_type, cache_op, cache_result, ret;
-+
-+	cache_type = (config >>  0) & 0xff;
-+	if (cache_type >= PERF_COUNT_HW_CACHE_MAX)
-+		return -EINVAL;
-+
-+	cache_op = (config >>  8) & 0xff;
-+	if (cache_op >= PERF_COUNT_HW_CACHE_OP_MAX)
-+		return -EINVAL;
-+
-+	cache_result = (config >> 16) & 0xff;
-+	if (cache_result >= PERF_COUNT_HW_CACHE_RESULT_MAX)
-+		return -EINVAL;
-+
-+	ret = (int)(*cache_map)[cache_type][cache_op][cache_result];
-+
-+	if (ret == CACHE_OP_UNSUPPORTED)
-+		return -ENOENT;
-+
-+	return ret;
-+}
-+
-+static int
-+armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
-+{
-+	int mapping = (*event_map)[config];
-+	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
-+}
-+
-+static int
-+armpmu_map_raw_event(u32 raw_event_mask, u64 config)
-+{
-+	return (int)(config & raw_event_mask);
-+}
-+
-+static int map_cpu_event(struct perf_event *event,
-+			 const unsigned (*event_map)[PERF_COUNT_HW_MAX],
-+			 const unsigned (*cache_map)
-+					[PERF_COUNT_HW_CACHE_MAX]
-+					[PERF_COUNT_HW_CACHE_OP_MAX]
-+					[PERF_COUNT_HW_CACHE_RESULT_MAX],
-+			 u32 raw_event_mask)
-+{
-+	u64 config = event->attr.config;
-+
-+	switch (event->attr.type) {
-+	case PERF_TYPE_HARDWARE:
-+		return armpmu_map_event(event_map, config);
-+	case PERF_TYPE_HW_CACHE:
-+		return armpmu_map_cache_event(cache_map, config);
-+	case PERF_TYPE_RAW:
-+		return armpmu_map_raw_event(raw_event_mask, config);
-+	}
-+
-+	return -ENOENT;
-+}
-+
-+int
-+armpmu_event_set_period(struct perf_event *event,
-+			struct hw_perf_event *hwc,
-+			int idx)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	s64 left = local64_read(&hwc->period_left);
-+	s64 period = hwc->sample_period;
-+	int ret = 0;
-+
-+	if (unlikely(left <= -period)) {
-+		left = period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		ret = 1;
-+	}
-+
-+	if (unlikely(left <= 0)) {
-+		left += period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		ret = 1;
-+	}
-+
-+	if (left > (s64)armpmu->max_period)
-+		left = armpmu->max_period;
-+
-+	local64_set(&hwc->prev_count, (u64)-left);
-+
-+	armpmu->write_counter(idx, (u64)(-left) & 0xffffffff);
-+
-+	perf_event_update_userpage(event);
-+
-+	return ret;
-+}
-+
-+u64
-+armpmu_event_update(struct perf_event *event,
-+		    struct hw_perf_event *hwc,
-+		    int idx)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	u64 delta, prev_raw_count, new_raw_count;
-+
-+again:
-+	prev_raw_count = local64_read(&hwc->prev_count);
-+	new_raw_count = armpmu->read_counter(idx);
-+
-+	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+			     new_raw_count) != prev_raw_count)
-+		goto again;
-+
-+	delta = (new_raw_count - prev_raw_count) & armpmu->max_period;
-+
-+	local64_add(delta, &event->count);
-+	local64_sub(delta, &hwc->period_left);
-+
-+	return new_raw_count;
-+}
-+
-+static void
-+armpmu_read(struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/* Don't read disabled counters! */
-+	if (hwc->idx < 0)
-+		return;
-+
-+	armpmu_event_update(event, hwc, hwc->idx);
-+}
-+
-+static void
-+armpmu_stop(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/*
-+	 * ARM pmu always has to update the counter, so ignore
-+	 * PERF_EF_UPDATE, see comments in armpmu_start().
-+	 */
-+	if (!(hwc->state & PERF_HES_STOPPED)) {
-+		armpmu->disable(hwc, hwc->idx);
-+		barrier(); /* why? */
-+		armpmu_event_update(event, hwc, hwc->idx);
-+		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static void
-+armpmu_start(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	/*
-+	 * ARM pmu always has to reprogram the period, so ignore
-+	 * PERF_EF_RELOAD, see the comment below.
-+	 */
-+	if (flags & PERF_EF_RELOAD)
-+		WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
-+
-+	hwc->state = 0;
-+	/*
-+	 * Set the period again. Some counters can't be stopped, so when we
-+	 * were stopped we simply disabled the IRQ source and the counter
-+	 * may have been left counting. If we don't do this step then we may
-+	 * get an interrupt too soon or *way* too late if the overflow has
-+	 * happened since disabling.
-+	 */
-+	armpmu_event_set_period(event, hwc, hwc->idx);
-+	armpmu->enable(hwc, hwc->idx);
-+}
-+
-+static void
-+armpmu_del(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx = hwc->idx;
-+
-+	WARN_ON(idx < 0);
-+
-+	armpmu_stop(event, PERF_EF_UPDATE);
-+	hw_events->events[idx] = NULL;
-+	clear_bit(idx, hw_events->used_mask);
-+
-+	perf_event_update_userpage(event);
-+}
-+
-+static int
-+armpmu_add(struct perf_event *event, int flags)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	struct hw_perf_event *hwc = &event->hw;
-+	int idx;
-+	int err = 0;
-+
-+	perf_pmu_disable(event->pmu);
-+
-+	/* If we don't have a space for the counter then finish early. */
-+	idx = armpmu->get_event_idx(hw_events, hwc);
-+	if (idx < 0) {
-+		err = idx;
-+		goto out;
-+	}
-+
-+	/*
-+	 * If there is an event in the counter we are going to use then make
-+	 * sure it is disabled.
-+	 */
-+	event->hw.idx = idx;
-+	armpmu->disable(hwc, idx);
-+	hw_events->events[idx] = event;
-+
-+	hwc->state = PERF_HES_STOPPED | PERF_HES_UPTODATE;
-+	if (flags & PERF_EF_START)
-+		armpmu_start(event, PERF_EF_RELOAD);
-+
-+	/* Propagate our changes to the userspace mapping. */
-+	perf_event_update_userpage(event);
-+
-+out:
-+	perf_pmu_enable(event->pmu);
-+	return err;
-+}
-+
-+static int
-+validate_event(struct pmu_hw_events *hw_events,
-+	       struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event fake_event = event->hw;
-+	struct pmu *leader_pmu = event->group_leader->pmu;
-+
-+	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
-+		return 1;
-+
-+	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
-+}
-+
-+static int
-+validate_group(struct perf_event *event)
-+{
-+	struct perf_event *sibling, *leader = event->group_leader;
-+	struct pmu_hw_events fake_pmu;
-+	DECLARE_BITMAP(fake_used_mask, ARMPMU_MAX_HWEVENTS);
-+
-+	/*
-+	 * Initialise the fake PMU. We only need to populate the
-+	 * used_mask for the purposes of validation.
-+	 */
-+	memset(fake_used_mask, 0, sizeof(fake_used_mask));
-+	fake_pmu.used_mask = fake_used_mask;
-+
-+	if (!validate_event(&fake_pmu, leader))
-+		return -EINVAL;
-+
-+	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
-+		if (!validate_event(&fake_pmu, sibling))
-+			return -EINVAL;
-+	}
-+
-+	if (!validate_event(&fake_pmu, event))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static void
-+armpmu_release_hardware(struct arm_pmu *armpmu)
-+{
-+	int i, irq, irqs;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+
-+	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+
-+	for (i = 0; i < irqs; ++i) {
-+		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-+			continue;
-+		irq = platform_get_irq(pmu_device, i);
-+		if (irq >= 0)
-+			free_irq(irq, armpmu);
-+	}
-+}
-+
-+static int
-+armpmu_reserve_hardware(struct arm_pmu *armpmu)
-+{
-+	int i, err, irq, irqs;
-+	struct platform_device *pmu_device = armpmu->plat_device;
-+
-+	if (!pmu_device) {
-+		pr_err("no PMU device registered\n");
-+		return -ENODEV;
-+	}
-+
-+	irqs = min(pmu_device->num_resources, num_possible_cpus());
-+	if (irqs < 1) {
-+		pr_err("no irqs for PMUs defined\n");
-+		return -ENODEV;
-+	}
-+
-+	for (i = 0; i < irqs; ++i) {
-+		err = 0;
-+		irq = platform_get_irq(pmu_device, i);
-+		if (irq < 0)
-+			continue;
-+
-+		/*
-+		 * If we have a single PMU interrupt that we can't shift,
-+		 * assume that we're running on a uniprocessor machine and
-+		 * continue. Otherwise, continue without this interrupt.
-+		 */
-+		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-+			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-+				    irq, i);
-+			continue;
-+		}
-+
-+		err = request_irq(irq, armpmu->handle_irq,
-+				  IRQF_NOBALANCING,
-+				  "arm-pmu", armpmu);
-+		if (err) {
-+			pr_err("unable to request IRQ%d for ARM PMU counters\n",
-+				irq);
-+			armpmu_release_hardware(armpmu);
-+			return err;
-+		}
-+
-+		cpumask_set_cpu(i, &armpmu->active_irqs);
-+	}
-+
-+	return 0;
-+}
-+
-+static void
-+hw_perf_event_destroy(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	atomic_t *active_events	 = &armpmu->active_events;
-+	struct mutex *pmu_reserve_mutex = &armpmu->reserve_mutex;
-+
-+	if (atomic_dec_and_mutex_lock(active_events, pmu_reserve_mutex)) {
-+		armpmu_release_hardware(armpmu);
-+		mutex_unlock(pmu_reserve_mutex);
-+	}
-+}
-+
-+static int
-+event_requires_mode_exclusion(struct perf_event_attr *attr)
-+{
-+	return attr->exclude_idle || attr->exclude_user ||
-+	       attr->exclude_kernel || attr->exclude_hv;
-+}
-+
-+static int
-+__hw_perf_event_init(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int mapping, err;
-+
-+	mapping = armpmu->map_event(event);
-+
-+	if (mapping < 0) {
-+		pr_debug("event %x:%llx not supported\n", event->attr.type,
-+			 event->attr.config);
-+		return mapping;
-+	}
-+
-+	/*
-+	 * We don't assign an index until we actually place the event onto
-+	 * hardware. Use -1 to signify that we haven't decided where to put it
-+	 * yet. For SMP systems, each core has it's own PMU so we can't do any
-+	 * clever allocation or constraints checking at this point.
-+	 */
-+	hwc->idx		= -1;
-+	hwc->config_base	= 0;
-+	hwc->config		= 0;
-+	hwc->event_base		= 0;
-+
-+	/*
-+	 * Check whether we need to exclude the counter from certain modes.
-+	 */
-+	if ((!armpmu->set_event_filter ||
-+	     armpmu->set_event_filter(hwc, &event->attr)) &&
-+	     event_requires_mode_exclusion(&event->attr)) {
-+		pr_debug("ARM performance counters do not support mode exclusion\n");
-+		return -EPERM;
-+	}
-+
-+	/*
-+	 * Store the event encoding into the config_base field.
-+	 */
-+	hwc->config_base	    |= (unsigned long)mapping;
-+
-+	if (!hwc->sample_period) {
-+		/*
-+		 * For non-sampling runs, limit the sample_period to half
-+		 * of the counter width. That way, the new counter value
-+		 * is far less likely to overtake the previous one unless
-+		 * you have some serious IRQ latency issues.
-+		 */
-+		hwc->sample_period  = armpmu->max_period >> 1;
-+		hwc->last_period    = hwc->sample_period;
-+		local64_set(&hwc->period_left, hwc->sample_period);
-+	}
-+
-+	err = 0;
-+	if (event->group_leader != event) {
-+		err = validate_group(event);
-+		if (err)
-+			return -EINVAL;
-+	}
-+
-+	return err;
-+}
-+
-+static int armpmu_event_init(struct perf_event *event)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-+	int err = 0;
-+	atomic_t *active_events = &armpmu->active_events;
-+
-+	if (armpmu->map_event(event) == -ENOENT)
-+		return -ENOENT;
-+
-+	event->destroy = hw_perf_event_destroy;
-+
-+	if (!atomic_inc_not_zero(active_events)) {
-+		mutex_lock(&armpmu->reserve_mutex);
-+		if (atomic_read(active_events) == 0)
-+			err = armpmu_reserve_hardware(armpmu);
-+
-+		if (!err)
-+			atomic_inc(active_events);
-+		mutex_unlock(&armpmu->reserve_mutex);
-+	}
-+
-+	if (err)
-+		return err;
-+
-+	err = __hw_perf_event_init(event);
-+	if (err)
-+		hw_perf_event_destroy(event);
-+
-+	return err;
-+}
-+
-+static void armpmu_enable(struct pmu *pmu)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(pmu);
-+	struct pmu_hw_events *hw_events = armpmu->get_hw_events();
-+	int enabled = bitmap_weight(hw_events->used_mask, armpmu->num_events);
-+
-+	if (enabled)
-+		armpmu->start();
-+}
-+
-+static void armpmu_disable(struct pmu *pmu)
-+{
-+	struct arm_pmu *armpmu = to_arm_pmu(pmu);
-+	armpmu->stop();
-+}
-+
-+static void __init armpmu_init(struct arm_pmu *armpmu)
-+{
-+	atomic_set(&armpmu->active_events, 0);
-+	mutex_init(&armpmu->reserve_mutex);
-+
-+	armpmu->pmu = (struct pmu) {
-+		.pmu_enable	= armpmu_enable,
-+		.pmu_disable	= armpmu_disable,
-+		.event_init	= armpmu_event_init,
-+		.add		= armpmu_add,
-+		.del		= armpmu_del,
-+		.start		= armpmu_start,
-+		.stop		= armpmu_stop,
-+		.read		= armpmu_read,
-+	};
-+}
-+
-+int __init armpmu_register(struct arm_pmu *armpmu, char *name, int type)
-+{
-+	armpmu_init(armpmu);
-+	return perf_pmu_register(&armpmu->pmu, name, type);
-+}
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
++
++#define pte_val(x)      ((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)     ((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif	/* STRICT_MM_TYPECHECKS */
++
++#include <asm-generic/pgtable-nopmd.h>
++
++#endif	/* __ASM_PGTABLE_2LEVEL_TYPES_H */
+diff --git a/arch/arm64/include/asm/pgtable-3level-hwdef.h b/arch/arm64/include/asm/pgtable-3level-hwdef.h
+new file mode 100644
+index 0000000..3dbf941
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-3level-hwdef.h
+@@ -0,0 +1,50 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_3LEVEL_HWDEF_H
++#define __ASM_PGTABLE_3LEVEL_HWDEF_H
 +
 +/*
-+ * ARMv8 PMUv3 Performance Events handling code.
-+ * Common event types.
++ * With LPAE and 4KB pages, there are 3 levels of page tables. Each level has
++ * 512 entries of 8 bytes each, occupying a 4K page. The first level table
++ * covers a range of 512GB, each entry representing 1GB. The user and kernel
++ * address spaces are limited to 512GB each.
 + */
-+enum armv8_pmuv3_perf_types {
-+	/* Required events. */
-+	ARMV8_PMUV3_PERFCTR_PMNC_SW_INCR			= 0x00,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL			= 0x03,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS			= 0x04,
-+	ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED			= 0x10,
-+	ARMV8_PMUV3_PERFCTR_CLOCK_CYCLES			= 0x11,
-+	ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED			= 0x12,
-+
-+	/* At least one of the following is required. */
-+	ARMV8_PMUV3_PERFCTR_INSTR_EXECUTED			= 0x08,
-+	ARMV8_PMUV3_PERFCTR_OP_SPEC				= 0x1B,
-+
-+	/* Common architectural events. */
-+	ARMV8_PMUV3_PERFCTR_MEM_READ				= 0x06,
-+	ARMV8_PMUV3_PERFCTR_MEM_WRITE				= 0x07,
-+	ARMV8_PMUV3_PERFCTR_EXC_TAKEN				= 0x09,
-+	ARMV8_PMUV3_PERFCTR_EXC_EXECUTED			= 0x0A,
-+	ARMV8_PMUV3_PERFCTR_CID_WRITE				= 0x0B,
-+	ARMV8_PMUV3_PERFCTR_PC_WRITE				= 0x0C,
-+	ARMV8_PMUV3_PERFCTR_PC_IMM_BRANCH			= 0x0D,
-+	ARMV8_PMUV3_PERFCTR_PC_PROC_RETURN			= 0x0E,
-+	ARMV8_PMUV3_PERFCTR_MEM_UNALIGNED_ACCESS		= 0x0F,
-+	ARMV8_PMUV3_PERFCTR_TTBR_WRITE				= 0x1C,
-+
-+	/* Common microarchitectural events. */
-+	ARMV8_PMUV3_PERFCTR_L1_ICACHE_REFILL			= 0x01,
-+	ARMV8_PMUV3_PERFCTR_ITLB_REFILL				= 0x02,
-+	ARMV8_PMUV3_PERFCTR_DTLB_REFILL				= 0x05,
-+	ARMV8_PMUV3_PERFCTR_MEM_ACCESS				= 0x13,
-+	ARMV8_PMUV3_PERFCTR_L1_ICACHE_ACCESS			= 0x14,
-+	ARMV8_PMUV3_PERFCTR_L1_DCACHE_WB			= 0x15,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_ACCESS			= 0x16,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_REFILL			= 0x17,
-+	ARMV8_PMUV3_PERFCTR_L2_CACHE_WB				= 0x18,
-+	ARMV8_PMUV3_PERFCTR_BUS_ACCESS				= 0x19,
-+	ARMV8_PMUV3_PERFCTR_MEM_ERROR				= 0x1A,
-+	ARMV8_PMUV3_PERFCTR_BUS_CYCLES				= 0x1D,
-+
-+	/*
-+	 * This isn't an architected event.
-+	 * We detect this event number and use the cycle counter instead.
-+	 */
-+	ARMV8_PMUV3_PERFCTR_CPU_CYCLES				= 0xFF,
-+};
-+
-+/* PMUv3 HW events mapping. */
-+static const unsigned armv8_pmuv3_perf_map[PERF_COUNT_HW_MAX] = {
-+	[PERF_COUNT_HW_CPU_CYCLES]		= ARMV8_PMUV3_PERFCTR_CPU_CYCLES,
-+	[PERF_COUNT_HW_INSTRUCTIONS]		= ARMV8_PMUV3_PERFCTR_INSTR_EXECUTED,
-+	[PERF_COUNT_HW_CACHE_REFERENCES]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+	[PERF_COUNT_HW_CACHE_MISSES]		= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_BRANCH_MISSES]		= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+	[PERF_COUNT_HW_BUS_CYCLES]		= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+};
-+
-+static const unsigned armv8_pmuv3_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-+						[PERF_COUNT_HW_CACHE_OP_MAX]
-+						[PERF_COUNT_HW_CACHE_RESULT_MAX] = {
-+	[C(L1D)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(L1I)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(LL)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(DTLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(ITLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(BPU)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+};
++#define PTRS_PER_PTE		512
++#define PTRS_PER_PMD		512
++#define PTRS_PER_PGD		512
 +
 +/*
-+ * Perf Events' indices
++ * PGDIR_SHIFT determines the size a top-level page table entry can map.
 + */
-+#define	ARMV8_IDX_CYCLE_COUNTER	0
-+#define	ARMV8_IDX_COUNTER0	1
-+#define	ARMV8_IDX_COUNTER_LAST	(ARMV8_IDX_CYCLE_COUNTER + cpu_pmu->num_events - 1)
-+
-+#define	ARMV8_MAX_COUNTERS	32
-+#define	ARMV8_COUNTER_MASK	(ARMV8_MAX_COUNTERS - 1)
++#define PGDIR_SHIFT		30
++#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
++#define PGDIR_MASK		(~(PGDIR_SIZE-1))
 +
 +/*
-+ * ARMv8 low level PMU access
++ * PMD_SHIFT determines the size a middle-level page table entry can map.
 + */
++#define PMD_SHIFT		21
++#define PMD_SIZE		(_AC(1, UL) << PMD_SHIFT)
++#define PMD_MASK		(~(PMD_SIZE-1))
 +
 +/*
-+ * Perf Event to low level counters mapping
++ * section address mask and size definitions.
 + */
-+#define	ARMV8_IDX_TO_COUNTER(x)	\
-+	(((x) - ARMV8_IDX_COUNTER0) & ARMV8_COUNTER_MASK)
++#define SECTION_SHIFT		21
++#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
++#define SECTION_MASK		(~(SECTION_SIZE-1))
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable-3level-types.h b/arch/arm64/include/asm/pgtable-3level-types.h
+new file mode 100644
+index 0000000..4489615
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-3level-types.h
+@@ -0,0 +1,66 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_3LEVEL_TYPES_H
++#define __ASM_PGTABLE_3LEVEL_TYPES_H
++
++typedef u64 pteval_t;
++typedef u64 pmdval_t;
++typedef u64 pgdval_t;
++
++#undef STRICT_MM_TYPECHECKS
++
++#ifdef STRICT_MM_TYPECHECKS
 +
 +/*
-+ * Per-CPU PMCR: config reg
++ * These are used to make use of C type-checking..
 + */
-+#define ARMV8_PMCR_E		(1 << 0) /* Enable all counters */
-+#define ARMV8_PMCR_P		(1 << 1) /* Reset all counters */
-+#define ARMV8_PMCR_C		(1 << 2) /* Cycle counter reset */
-+#define ARMV8_PMCR_D		(1 << 3) /* CCNT counts every 64th cpu cycle */
-+#define ARMV8_PMCR_X		(1 << 4) /* Export to ETM */
-+#define ARMV8_PMCR_DP		(1 << 5) /* Disable CCNT if non-invasive debug*/
-+#define	ARMV8_PMCR_N_SHIFT	11	 /* Number of counters supported */
-+#define	ARMV8_PMCR_N_MASK	0x1f
-+#define	ARMV8_PMCR_MASK		0x3f	 /* Mask for writable bits */
++typedef struct { pteval_t pte; } pte_t;
++typedef struct { pmdval_t pmd; } pmd_t;
++typedef struct { pgdval_t pgd; } pgd_t;
++typedef struct { pteval_t pgprot; } pgprot_t;
 +
++#define pte_val(x)      ((x).pte)
++#define pmd_val(x)      ((x).pmd)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)   ((x).pgprot)
++
++#define __pte(x)        ((pte_t) { (x) } )
++#define __pmd(x)        ((pmd_t) { (x) } )
++#define __pgd(x)	((pgd_t) { (x) } )
++#define __pgprot(x)     ((pgprot_t) { (x) } )
++
++#else	/* !STRICT_MM_TYPECHECKS */
++
++typedef pteval_t pte_t;
++typedef pmdval_t pmd_t;
++typedef pgdval_t pgd_t;
++typedef pteval_t pgprot_t;
++
++#define pte_val(x)	(x)
++#define pmd_val(x)	(x)
++#define pgd_val(x)	(x)
++#define pgprot_val(x)	(x)
++
++#define __pte(x)	(x)
++#define __pmd(x)	(x)
++#define __pgd(x)	(x)
++#define __pgprot(x)	(x)
++
++#endif	/* STRICT_MM_TYPECHECKS */
++
++#include <asm-generic/pgtable-nopud.h>
++
++#endif	/* __ASM_PGTABLE_3LEVEL_TYPES_H */
+diff --git a/arch/arm64/include/asm/pgtable-hwdef.h b/arch/arm64/include/asm/pgtable-hwdef.h
+new file mode 100644
+index 0000000..561fb08
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable-hwdef.h
+@@ -0,0 +1,94 @@
 +/*
-+ * PMOVSR: counters overflow flag status reg
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#define	ARMV8_OVSR_MASK		0xffffffff	/* Mask for writable bits */
-+#define	ARMV8_OVERFLOWED_MASK	ARMV8_OVSR_MASK
-+
-+/*
-+ * PMXEVTYPER: Event selection reg
-+ */
-+#define	ARMV8_EVTYPE_MASK	0xc00000ff	/* Mask for writable bits */
-+#define	ARMV8_EVTYPE_EVENT	0xff		/* Mask for EVENT bits */
-+
-+/*
-+ * Event filters for PMUv3
-+ */
-+#define	ARMV8_EXCLUDE_EL1	(1 << 31)
-+#define	ARMV8_EXCLUDE_EL0	(1 << 30)
-+#define	ARMV8_INCLUDE_EL2	(1 << 27)
-+
-+static inline u32 armv8pmu_pmcr_read(void)
-+{
-+	u32 val;
-+	asm volatile("mrs %0, pmcr_el0" : "=r" (val));
-+	return val;
-+}
-+
-+static inline void armv8pmu_pmcr_write(u32 val)
-+{
-+	val &= ARMV8_PMCR_MASK;
-+	isb();
-+	asm volatile("msr pmcr_el0, %0" :: "r" (val));
-+}
-+
-+static inline int armv8pmu_has_overflowed(u32 pmovsr)
-+{
-+	return pmovsr & ARMV8_OVERFLOWED_MASK;
-+}
-+
-+static inline int armv8pmu_counter_valid(int idx)
-+{
-+	return idx >= ARMV8_IDX_CYCLE_COUNTER && idx <= ARMV8_IDX_COUNTER_LAST;
-+}
-+
-+static inline int armv8pmu_counter_has_overflowed(u32 pmnc, int idx)
-+{
-+	int ret = 0;
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u checking wrong counter %d overflow status\n",
-+			smp_processor_id(), idx);
-+	} else {
-+		counter = ARMV8_IDX_TO_COUNTER(idx);
-+		ret = pmnc & BIT(counter);
-+	}
-+
-+	return ret;
-+}
-+
-+static inline int armv8pmu_select_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u selecting wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmselr_el0, %0" :: "r" (counter));
-+	isb();
-+
-+	return idx;
-+}
-+
-+static inline u32 armv8pmu_read_counter(int idx)
-+{
-+	u32 value = 0;
-+
-+	if (!armv8pmu_counter_valid(idx))
-+		pr_err("CPU%u reading wrong counter %d\n",
-+			smp_processor_id(), idx);
-+	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
-+		asm volatile("mrs %0, pmccntr_el0" : "=r" (value));
-+	else if (armv8pmu_select_counter(idx) == idx)
-+		asm volatile("mrs %0, pmxevcntr_el0" : "=r" (value));
-+
-+	return value;
-+}
-+
-+static inline void armv8pmu_write_counter(int idx, u32 value)
-+{
-+	if (!armv8pmu_counter_valid(idx))
-+		pr_err("CPU%u writing wrong counter %d\n",
-+			smp_processor_id(), idx);
-+	else if (idx == ARMV8_IDX_CYCLE_COUNTER)
-+		asm volatile("msr pmccntr_el0, %0" :: "r" (value));
-+	else if (armv8pmu_select_counter(idx) == idx)
-+		asm volatile("msr pmxevcntr_el0, %0" :: "r" (value));
-+}
-+
-+static inline void armv8pmu_write_evtype(int idx, u32 val)
-+{
-+	if (armv8pmu_select_counter(idx) == idx) {
-+		val &= ARMV8_EVTYPE_MASK;
-+		asm volatile("msr pmxevtyper_el0, %0" :: "r" (val));
-+	}
-+}
-+
-+static inline int armv8pmu_enable_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u enabling wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmcntenset_el0, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_disable_counter(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u disabling wrong PMNC counter %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmcntenclr_el0, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_enable_intens(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u enabling wrong PMNC counter IRQ enable %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmintenset_el1, %0" :: "r" (BIT(counter)));
-+	return idx;
-+}
-+
-+static inline int armv8pmu_disable_intens(int idx)
-+{
-+	u32 counter;
-+
-+	if (!armv8pmu_counter_valid(idx)) {
-+		pr_err("CPU%u disabling wrong PMNC counter IRQ enable %d\n",
-+			smp_processor_id(), idx);
-+		return -EINVAL;
-+	}
-+
-+	counter = ARMV8_IDX_TO_COUNTER(idx);
-+	asm volatile("msr pmintenclr_el1, %0" :: "r" (BIT(counter)));
-+	isb();
-+	/* Clear the overflow flag in case an interrupt is pending. */
-+	asm volatile("msr pmovsclr_el0, %0" :: "r" (BIT(counter)));
-+	isb();
-+	return idx;
-+}
-+
-+static inline u32 armv8pmu_getreset_flags(void)
-+{
-+	u32 value;
-+
-+	/* Read */
-+	asm volatile("mrs %0, pmovsclr_el0" : "=r" (value));
-+
-+	/* Write to clear flags */
-+	value &= ARMV8_OVSR_MASK;
-+	asm volatile("msr pmovsclr_el0, %0" :: "r" (value));
-+
-+	return value;
-+}
-+
-+static void armv8pmu_enable_event(struct hw_perf_event *hwc, int idx)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	/*
-+	 * Enable counter and interrupt, and set the counter to count
-+	 * the event that we're interested in.
-+	 */
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+
-+	/*
-+	 * Disable counter
-+	 */
-+	armv8pmu_disable_counter(idx);
-+
-+	/*
-+	 * Set event (if destined for PMNx counters).
-+	 */
-+	armv8pmu_write_evtype(idx, hwc->config_base);
-+
-+	/*
-+	 * Enable interrupt for this counter
-+	 */
-+	armv8pmu_enable_intens(idx);
-+
-+	/*
-+	 * Enable counter
-+	 */
-+	armv8pmu_enable_counter(idx);
-+
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static void armv8pmu_disable_event(struct hw_perf_event *hwc, int idx)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	/*
-+	 * Disable counter and interrupt
-+	 */
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+
-+	/*
-+	 * Disable counter
-+	 */
-+	armv8pmu_disable_counter(idx);
-+
-+	/*
-+	 * Disable interrupt for this counter
-+	 */
-+	armv8pmu_disable_intens(idx);
-+
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static irqreturn_t armv8pmu_handle_irq(int irq_num, void *dev)
-+{
-+	u32 pmovsr;
-+	struct perf_sample_data data;
-+	struct pmu_hw_events *cpuc;
-+	struct pt_regs *regs;
-+	int idx;
-+
-+	/*
-+	 * Get and reset the IRQ flags
-+	 */
-+	pmovsr = armv8pmu_getreset_flags();
-+
-+	/*
-+	 * Did an overflow occur?
-+	 */
-+	if (!armv8pmu_has_overflowed(pmovsr))
-+		return IRQ_NONE;
-+
-+	/*
-+	 * Handle the counter(s) overflow(s)
-+	 */
-+	regs = get_irq_regs();
-+
-+	cpuc = &__get_cpu_var(cpu_hw_events);
-+	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
-+		struct perf_event *event = cpuc->events[idx];
-+		struct hw_perf_event *hwc;
-+
-+		/* Ignore if we don't have an event. */
-+		if (!event)
-+			continue;
-+
-+		/*
-+		 * We have a single interrupt for all counters. Check that
-+		 * each counter has overflowed before we process it.
-+		 */
-+		if (!armv8pmu_counter_has_overflowed(pmovsr, idx))
-+			continue;
-+
-+		hwc = &event->hw;
-+		armpmu_event_update(event, hwc, idx);
-+		perf_sample_data_init(&data, 0, hwc->last_period);
-+		if (!armpmu_event_set_period(event, hwc, idx))
-+			continue;
-+
-+		if (perf_event_overflow(event, &data, regs))
-+			cpu_pmu->disable(hwc, idx);
-+	}
-+
-+	/*
-+	 * Handle the pending perf events.
-+	 *
-+	 * Note: this call *must* be run with interrupts disabled. For
-+	 * platforms that can have the PMU interrupts raised as an NMI, this
-+	 * will not work.
-+	 */
-+	irq_work_run();
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void armv8pmu_start(void)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+	/* Enable all counters */
-+	armv8pmu_pmcr_write(armv8pmu_pmcr_read() | ARMV8_PMCR_E);
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static void armv8pmu_stop(void)
-+{
-+	unsigned long flags;
-+	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
-+
-+	raw_spin_lock_irqsave(&events->pmu_lock, flags);
-+	/* Disable all counters */
-+	armv8pmu_pmcr_write(armv8pmu_pmcr_read() & ~ARMV8_PMCR_E);
-+	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
-+}
-+
-+static int armv8pmu_get_event_idx(struct pmu_hw_events *cpuc,
-+				  struct hw_perf_event *event)
-+{
-+	int idx;
-+	unsigned long evtype = event->config_base & ARMV8_EVTYPE_EVENT;
-+
-+	/* Always place a cycle counter into the cycle counter. */
-+	if (evtype == ARMV8_PMUV3_PERFCTR_CPU_CYCLES) {
-+		if (test_and_set_bit(ARMV8_IDX_CYCLE_COUNTER, cpuc->used_mask))
-+			return -EAGAIN;
-+
-+		return ARMV8_IDX_CYCLE_COUNTER;
-+	}
-+
-+	/*
-+	 * For anything other than a cycle counter, try and use
-+	 * the events counters
-+	 */
-+	for (idx = ARMV8_IDX_COUNTER0; idx < cpu_pmu->num_events; ++idx) {
-+		if (!test_and_set_bit(idx, cpuc->used_mask))
-+			return idx;
-+	}
-+
-+	/* The counters are all in use. */
-+	return -EAGAIN;
-+}
-+
-+/*
-+ * Add an event filter to a given event. This will only work for PMUv2 PMUs.
-+ */
-+static int armv8pmu_set_event_filter(struct hw_perf_event *event,
-+				     struct perf_event_attr *attr)
-+{
-+	unsigned long config_base = 0;
-+
-+	if (attr->exclude_idle)
-+		return -EPERM;
-+	if (attr->exclude_user)
-+		config_base |= ARMV8_EXCLUDE_EL0;
-+	if (attr->exclude_kernel)
-+		config_base |= ARMV8_EXCLUDE_EL1;
-+	if (!attr->exclude_hv)
-+		config_base |= ARMV8_INCLUDE_EL2;
-+
-+	/*
-+	 * Install the filter into config_base as this is used to
-+	 * construct the event type.
-+	 */
-+	event->config_base = config_base;
-+
-+	return 0;
-+}
-+
-+static void armv8pmu_reset(void *info)
-+{
-+	u32 idx, nb_cnt = cpu_pmu->num_events;
-+
-+	/* The counter and interrupt enable registers are unknown at reset. */
-+	for (idx = ARMV8_IDX_CYCLE_COUNTER; idx < nb_cnt; ++idx)
-+		armv8pmu_disable_event(NULL, idx);
-+
-+	/* Initialize & Reset PMNC: C and P bits. */
-+	armv8pmu_pmcr_write(ARMV8_PMCR_P | ARMV8_PMCR_C);
-+
-+	/* Disable access from userspace. */
-+	asm volatile("msr pmuserenr_el0, %0" :: "r" (0));
-+}
-+
-+static int armv8_pmuv3_map_event(struct perf_event *event)
-+{
-+	return map_cpu_event(event, &armv8_pmuv3_perf_map,
-+				&armv8_pmuv3_perf_cache_map, 0xFF);
-+}
-+
-+static struct arm_pmu armv8pmu = {
-+	.handle_irq		= armv8pmu_handle_irq,
-+	.enable			= armv8pmu_enable_event,
-+	.disable		= armv8pmu_disable_event,
-+	.read_counter		= armv8pmu_read_counter,
-+	.write_counter		= armv8pmu_write_counter,
-+	.get_event_idx		= armv8pmu_get_event_idx,
-+	.start			= armv8pmu_start,
-+	.stop			= armv8pmu_stop,
-+	.reset			= armv8pmu_reset,
-+	.max_period		= (1LLU << 32) - 1,
-+};
-+
-+static u32 __init armv8pmu_read_num_pmnc_events(void)
-+{
-+	u32 nb_cnt;
-+
-+	/* Read the nb of CNTx counters supported from PMNC */
-+	nb_cnt = (armv8pmu_pmcr_read() >> ARMV8_PMCR_N_SHIFT) & ARMV8_PMCR_N_MASK;
-+
-+	/* Add the CPU cycles counter and return */
-+	return nb_cnt + 1;
-+}
-+
-+static struct arm_pmu *__init armv8_pmuv3_pmu_init(void)
-+{
-+	armv8pmu.name			= "arm/armv8-pmuv3";
-+	armv8pmu.map_event		= armv8_pmuv3_map_event;
-+	armv8pmu.num_events		= armv8pmu_read_num_pmnc_events();
-+	armv8pmu.set_event_filter	= armv8pmu_set_event_filter;
-+	return &armv8pmu;
-+}
-+
-+/*
-+ * Ensure the PMU has sane values out of reset.
-+ * This requires SMP to be available, so exists as a separate initcall.
-+ */
-+static int __init
-+cpu_pmu_reset(void)
-+{
-+	if (cpu_pmu && cpu_pmu->reset)
-+		return on_each_cpu(cpu_pmu->reset, NULL, 1);
-+	return 0;
-+}
-+arch_initcall(cpu_pmu_reset);
-+
-+/*
-+ * PMU platform driver and devicetree bindings.
-+ */
-+static struct of_device_id armpmu_of_device_ids[] = {
-+	{.compatible = "arm,armv8-pmuv3"},
-+	{},
-+};
-+
-+static int __devinit armpmu_device_probe(struct platform_device *pdev)
-+{
-+	if (!cpu_pmu)
-+		return -ENODEV;
-+
-+	cpu_pmu->plat_device = pdev;
-+	return 0;
-+}
-+
-+static struct platform_driver armpmu_driver = {
-+	.driver		= {
-+		.name	= "arm-pmu",
-+		.of_match_table = armpmu_of_device_ids,
-+	},
-+	.probe		= armpmu_device_probe,
-+};
-+
-+static int __init register_pmu_driver(void)
-+{
-+	return platform_driver_register(&armpmu_driver);
-+}
-+device_initcall(register_pmu_driver);
-+
-+static struct pmu_hw_events *armpmu_get_cpu_events(void)
-+{
-+	return &__get_cpu_var(cpu_hw_events);
-+}
-+
-+static void __init cpu_pmu_init(struct arm_pmu *armpmu)
-+{
-+	int cpu;
-+	for_each_possible_cpu(cpu) {
-+		struct pmu_hw_events *events = &per_cpu(cpu_hw_events, cpu);
-+		events->events = per_cpu(hw_events, cpu);
-+		events->used_mask = per_cpu(used_mask, cpu);
-+		raw_spin_lock_init(&events->pmu_lock);
-+	}
-+	armpmu->get_hw_events = armpmu_get_cpu_events;
-+}
-+
-+static int __init init_hw_perf_events(void)
-+{
-+	u64 dfr = read_cpuid(ID_AA64DFR0_EL1);
-+
-+	switch ((dfr >> 8) & 0xf) {
-+	case 0x1:	/* PMUv3 */
-+		cpu_pmu = armv8_pmuv3_pmu_init();
-+		break;
-+	}
-+
-+	if (cpu_pmu) {
-+		pr_info("enabled with %s PMU driver, %d counters available\n",
-+			cpu_pmu->name, cpu_pmu->num_events);
-+		cpu_pmu_init(cpu_pmu);
-+		armpmu_register(cpu_pmu, "cpu", PERF_TYPE_RAW);
-+	} else {
-+		pr_info("no hardware support available\n");
-+	}
-+
-+	return 0;
-+}
-+early_initcall(init_hw_perf_events);
-+
-+/*
-+ * Callchain handling code.
-+ */
-+struct frame_tail {
-+	struct frame_tail   __user *fp;
-+	unsigned long	    lr;
-+} __attribute__((packed));
-+
-+/*
-+ * Get the return address for a single stackframe and return a pointer to the
-+ * next frame tail.
-+ */
-+static struct frame_tail __user *
-+user_backtrace(struct frame_tail __user *tail,
-+	       struct perf_callchain_entry *entry)
-+{
-+	struct frame_tail buftail;
-+	unsigned long err;
-+
-+	/* Also check accessibility of one struct frame_tail beyond */
-+	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
-+		return NULL;
-+
-+	pagefault_disable();
-+	err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
-+	pagefault_enable();
-+
-+	if (err)
-+		return NULL;
-+
-+	perf_callchain_store(entry, buftail.lr);
-+
-+	/*
-+	 * Frame pointers should strictly progress back up the stack
-+	 * (towards higher addresses).
-+	 */
-+	if (tail >= buftail.fp)
-+		return NULL;
-+
-+	return buftail.fp;
-+}
-+
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs)
-+{
-+	struct frame_tail __user *tail;
-+
-+	tail = (struct frame_tail __user *)regs->regs[29];
-+
-+	while (entry->nr < PERF_MAX_STACK_DEPTH &&
-+	       tail && !((unsigned long)tail & 0xf))
-+		tail = user_backtrace(tail, entry);
-+}
-+
-+/*
-+ * Gets called by walk_stackframe() for every stackframe. This will be called
-+ * whist unwinding the stackframe and is like a subroutine return so we use
-+ * the PC.
-+ */
-+static int callchain_trace(struct stackframe *frame, void *data)
-+{
-+	struct perf_callchain_entry *entry = data;
-+	perf_callchain_store(entry, frame->pc);
-+	return 0;
-+}
-+
-+void perf_callchain_kernel(struct perf_callchain_entry *entry,
-+			   struct pt_regs *regs)
-+{
-+	struct stackframe frame;
-+
-+	frame.fp = regs->regs[29];
-+	frame.sp = regs->sp;
-+	frame.pc = regs->pc;
-+	walk_stackframe(&frame, callchain_trace, entry);
-+}
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..8c36763 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -88,6 +88,12 @@ void get_term_dimensions(struct winsize *ws);
- #define CPUINFO_PROC	"Processor"
- #endif
- 
-+#ifdef __aarch64__
-+#include "../../arch/arm64/include/asm/unistd.h"
-+#define rmb()		asm volatile("dmb ld" ::: "memory")
-+#define cpu_relax()	asm volatile("yield" ::: "memory")
++#ifndef __ASM_PGTABLE_HWDEF_H
++#define __ASM_PGTABLE_HWDEF_H
++
++#ifdef CONFIG_ARM64_64K_PAGES
++#include <asm/pgtable-2level-hwdef.h>
++#else
++#include <asm/pgtable-3level-hwdef.h>
 +#endif
 +
- #ifdef __mips__
- #include "../../arch/mips/include/asm/unistd.h"
- #define rmb()		asm volatile(					\
++/*
++ * Hardware page table definitions.
++ *
++ * Level 2 descriptor (PMD).
++ */
++#define PMD_TYPE_MASK		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_FAULT		(_AT(pmdval_t, 0) << 0)
++#define PMD_TYPE_TABLE		(_AT(pmdval_t, 3) << 0)
++#define PMD_TYPE_SECT		(_AT(pmdval_t, 1) << 0)
++
++/*
++ * Section
++ */
++#define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
++#define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
++#define PMD_SECT_NG		(_AT(pmdval_t, 1) << 11)
++#define PMD_SECT_XN		(_AT(pmdval_t, 1) << 54)
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define PMD_ATTRINDX(t)		(_AT(pmdval_t, (t)) << 2)
++#define PMD_ATTRINDX_MASK	(_AT(pmdval_t, 7) << 2)
++
++/*
++ * Level 3 descriptor (PTE).
++ */
++#define PTE_TYPE_MASK		(_AT(pteval_t, 3) << 0)
++#define PTE_TYPE_FAULT		(_AT(pteval_t, 0) << 0)
++#define PTE_TYPE_PAGE		(_AT(pteval_t, 3) << 0)
++#define PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
++#define PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
++#define PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
++#define PTE_AF			(_AT(pteval_t, 1) << 10)	/* Access Flag */
++#define PTE_NG			(_AT(pteval_t, 1) << 11)	/* nG */
++#define PTE_XN			(_AT(pteval_t, 1) << 54)	/* XN */
++
++/*
++ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
++ */
++#define PTE_ATTRINDX(t)		(_AT(pteval_t, (t)) << 2)
++#define PTE_ATTRINDX_MASK	(_AT(pteval_t, 7) << 2)
++
++/*
++ * 40-bit physical address supported.
++ */
++#define PHYS_MASK_SHIFT		(40)
++#define PHYS_MASK		((1UL << PHYS_MASK_SHIFT) - 1)
++
++/*
++ * TCR flags.
++ */
++#define TCR_TxSZ(x)		(((64 - (x)) << 16) | ((64 - (x)) << 0))
++#define TCR_IRGN_NC		((0 << 8) | (0 << 24))
++#define TCR_IRGN_WBWA		((1 << 8) | (1 << 24))
++#define TCR_IRGN_WT		((2 << 8) | (2 << 24))
++#define TCR_IRGN_WBnWA		((3 << 8) | (3 << 24))
++#define TCR_IRGN_MASK		((3 << 8) | (3 << 24))
++#define TCR_ORGN_NC		((0 << 10) | (0 << 26))
++#define TCR_ORGN_WBWA		((1 << 10) | (1 << 26))
++#define TCR_ORGN_WT		((2 << 10) | (2 << 26))
++#define TCR_ORGN_WBnWA		((3 << 10) | (3 << 26))
++#define TCR_ORGN_MASK		((3 << 10) | (3 << 26))
++#define TCR_SHARED		((3 << 12) | (3 << 28))
++#define TCR_TG0_64K		(1 << 14)
++#define TCR_TG1_64K		(1 << 30)
++#define TCR_IPS_40BIT		(2 << 32)
++#define TCR_ASID16		(1 << 36)
++
++#endif
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+new file mode 100644
+index 0000000..6981da0
+--- /dev/null
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -0,0 +1,328 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_PGTABLE_H
++#define __ASM_PGTABLE_H
++
++#include <asm/proc-fns.h>
++
++#include <asm/memory.h>
++#include <asm/pgtable-hwdef.h>
++
++/*
++ * Software defined PTE bits definition.
++ */
++#define PTE_VALID		(_AT(pteval_t, 1) << 0)	/* pte_present() check */
++#define PTE_FILE		(_AT(pteval_t, 1) << 2)	/* only when !pte_present() */
++#define PTE_DIRTY		(_AT(pteval_t, 1) << 55)
++#define PTE_SPECIAL		(_AT(pteval_t, 1) << 56)
++
++/*
++ * VMALLOC and SPARSEMEM_VMEMMAP ranges.
++ */
++#define VMALLOC_START		UL(0xffffff8000000000)
++#define VMALLOC_END		(PAGE_OFFSET - UL(0x400000000) - SZ_64K)
++
++#define vmemmap			((struct page *)(VMALLOC_END + SZ_64K))
++
++#define FIRST_USER_ADDRESS	0
++
++#ifndef __ASSEMBLY__
++extern void __pte_error(const char *file, int line, unsigned long val);
++extern void __pmd_error(const char *file, int line, unsigned long val);
++extern void __pgd_error(const char *file, int line, unsigned long val);
++
++#define pte_ERROR(pte)		__pte_error(__FILE__, __LINE__, pte_val(pte))
++#ifndef CONFIG_ARM64_64K_PAGES
++#define pmd_ERROR(pmd)		__pmd_error(__FILE__, __LINE__, pmd_val(pmd))
++#endif
++#define pgd_ERROR(pgd)		__pgd_error(__FILE__, __LINE__, pgd_val(pgd))
++
++/*
++ * The pgprot_* and protection_map entries will be fixed up at runtime to
++ * include the cachable and bufferable bits based on memory policy, as well as
++ * any architecture dependent bits like global/ASID and SMP shared mapping
++ * bits.
++ */
++#define _PAGE_DEFAULT		PTE_TYPE_PAGE | PTE_AF
++
++extern pgprot_t pgprot_default;
++
++#define _MOD_PROT(p, b)	__pgprot(pgprot_val(p) | (b))
++
++#define PAGE_NONE		_MOD_PROT(pgprot_default, PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_SHARED		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN)
++#define PAGE_SHARED_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG)
++#define PAGE_COPY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_COPY_EXEC		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
++#define PAGE_READONLY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define PAGE_READONLY_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
++#define PAGE_KERNEL		_MOD_PROT(pgprot_default, PTE_XN | PTE_DIRTY)
++#define PAGE_KERNEL_EXEC	_MOD_PROT(pgprot_default, PTE_DIRTY)
++
++#define __PAGE_NONE		__pgprot(_PAGE_DEFAULT | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_SHARED		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN)
++#define __PAGE_SHARED_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG)
++#define __PAGE_COPY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_COPY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
++#define __PAGE_READONLY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
++#define __PAGE_READONLY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
++
++#endif /* __ASSEMBLY__ */
++
++#define __P000  __PAGE_NONE
++#define __P001  __PAGE_READONLY
++#define __P010  __PAGE_COPY
++#define __P011  __PAGE_COPY
++#define __P100  __PAGE_READONLY_EXEC
++#define __P101  __PAGE_READONLY_EXEC
++#define __P110  __PAGE_COPY_EXEC
++#define __P111  __PAGE_COPY_EXEC
++
++#define __S000  __PAGE_NONE
++#define __S001  __PAGE_READONLY
++#define __S010  __PAGE_SHARED
++#define __S011  __PAGE_SHARED
++#define __S100  __PAGE_READONLY_EXEC
++#define __S101  __PAGE_READONLY_EXEC
++#define __S110  __PAGE_SHARED_EXEC
++#define __S111  __PAGE_SHARED_EXEC
++
++#ifndef __ASSEMBLY__
++/*
++ * ZERO_PAGE is a global shared page that is always zero: used
++ * for zero-mapped memory areas etc..
++ */
++extern struct page *empty_zero_page;
++#define ZERO_PAGE(vaddr)	(empty_zero_page)
++
++#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
++
++#define pfn_pte(pfn,prot)	(__pte(((phys_addr_t)(pfn) << PAGE_SHIFT) | pgprot_val(prot)))
++
++#define pte_none(pte)		(!pte_val(pte))
++#define pte_clear(mm,addr,ptep)	set_pte(ptep, __pte(0))
++#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
++#define pte_offset_kernel(dir,addr)	(pmd_page_vaddr(*(dir)) + __pte_index(addr))
++
++#define pte_offset_map(dir,addr)	pte_offset_kernel((dir), (addr))
++#define pte_offset_map_nested(dir,addr)	pte_offset_kernel((dir), (addr))
++#define pte_unmap(pte)			do { } while (0)
++#define pte_unmap_nested(pte)		do { } while (0)
++
++/*
++ * The following only work if pte_present(). Undefined behaviour otherwise.
++ */
++#define pte_present(pte)	(pte_val(pte) & PTE_VALID)
++#define pte_dirty(pte)		(pte_val(pte) & PTE_DIRTY)
++#define pte_young(pte)		(pte_val(pte) & PTE_AF)
++#define pte_special(pte)	(pte_val(pte) & PTE_SPECIAL)
++#define pte_write(pte)		(!(pte_val(pte) & PTE_RDONLY))
++#define pte_exec(pte)		(!(pte_val(pte) & PTE_XN))
++
++#define pte_present_exec_user(pte) \
++	((pte_val(pte) & (PTE_VALID | PTE_USER | PTE_XN)) == \
++	 (PTE_VALID | PTE_USER))
++
++#define PTE_BIT_FUNC(fn,op) \
++static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
++
++PTE_BIT_FUNC(wrprotect, |= PTE_RDONLY);
++PTE_BIT_FUNC(mkwrite,   &= ~PTE_RDONLY);
++PTE_BIT_FUNC(mkclean,   &= ~PTE_DIRTY);
++PTE_BIT_FUNC(mkdirty,   |= PTE_DIRTY);
++PTE_BIT_FUNC(mkold,     &= ~PTE_AF);
++PTE_BIT_FUNC(mkyoung,   |= PTE_AF);
++PTE_BIT_FUNC(mkspecial, |= PTE_SPECIAL);
++
++static inline void set_pte(pte_t *ptep, pte_t pte)
++{
++	*ptep = pte;
++}
++
++extern void __sync_icache_dcache(pte_t pteval);
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pte)
++{
++	if (pte_present_exec_user(pte))
++		__sync_icache_dcache(pte);
++	set_pte(ptep, pte);
++}
++
++/*
++ * Huge pte definitions.
++ */
++#define pte_huge(pte)		((pte_val(pte) & PTE_TYPE_MASK) == PTE_TYPE_HUGEPAGE)
++#define pte_mkhuge(pte)		(__pte((pte_val(pte) & ~PTE_TYPE_MASK) | PTE_TYPE_HUGEPAGE))
++
++#define __pgprot_modify(prot,mask,bits)		\
++	__pgprot((pgprot_val(prot) & ~(mask)) | (bits))
++
++#define __HAVE_ARCH_PTE_SPECIAL
++
++/*
++ * Mark the prot value as uncacheable and unbufferable.
++ */
++#define pgprot_noncached(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
++#define pgprot_writecombine(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_GRE))
++#define pgprot_dmacoherent(prot) \
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
++#define __HAVE_PHYS_MEM_ACCESS_PROT
++struct file;
++extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
++				     unsigned long size, pgprot_t vma_prot);
++
++#define pmd_none(pmd)		(!pmd_val(pmd))
++#define pmd_present(pmd)	(pmd_val(pmd))
++
++#define pmd_bad(pmd)		(!(pmd_val(pmd) & 2))
++
++static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
++{
++	*pmdp = pmd;
++	dsb();
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	set_pmd(pmdp, __pmd(0));
++}
++
++static inline pte_t *pmd_page_vaddr(pmd_t pmd)
++{
++	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
++}
++
++#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define mk_pte(page,prot)	pfn_pte(page_to_pfn(page),prot)
++
++#ifndef CONFIG_ARM64_64K_PAGES
++
++#define pud_none(pud)		(!pud_val(pud))
++#define pud_bad(pud)		(!(pud_val(pud) & 2))
++#define pud_present(pud)	(pud_val(pud))
++
++static inline void set_pud(pud_t *pudp, pud_t pud)
++{
++	*pudp = pud;
++	dsb();
++}
++
++static inline void pud_clear(pud_t *pudp)
++{
++	set_pud(pudp, __pud(0));
++}
++
++static inline pmd_t *pud_page_vaddr(pud_t pud)
++{
++	return __va(pud_val(pud) & PHYS_MASK & (s32)PAGE_MASK);
++}
++
++#endif	/* CONFIG_ARM64_64K_PAGES */
++
++/* to find an entry in a page-table-directory */
++#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
++
++#define pgd_offset(mm, addr)	((mm)->pgd+pgd_index(addr))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
++
++/* Find an entry in the second-level page table.. */
++#ifndef CONFIG_ARM64_64K_PAGES
++#define pmd_index(addr)		(((addr) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
++static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
++{
++	return (pmd_t *)pud_page_vaddr(*pud) + pmd_index(addr);
++}
++#endif
++
++/* Find an entry in the third-level page table.. */
++#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	const pteval_t mask = PTE_USER | PTE_XN | PTE_RDONLY;
++	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
++	return pte;
++}
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
++extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
++
++#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
++#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
++
++/*
++ * Encode and decode a swap entry:
++ *	bits 0-1:	present (must be zero)
++ *	bit  2:		PTE_FILE
++ *	bits 3-8:	swap type
++ *	bits 9-63:	swap offset
++ */
++#define __SWP_TYPE_SHIFT	3
++#define __SWP_TYPE_BITS		6
++#define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
++#define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
++
++#define __swp_type(x)		(((x).val >> __SWP_TYPE_SHIFT) & __SWP_TYPE_MASK)
++#define __swp_offset(x)		((x).val >> __SWP_OFFSET_SHIFT)
++#define __swp_entry(type,offset) ((swp_entry_t) { ((type) << __SWP_TYPE_SHIFT) | ((offset) << __SWP_OFFSET_SHIFT) })
++
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++
++/*
++ * Ensure that there are not more swap files than can be encoded in the kernel
++ * the PTEs.
++ */
++#define MAX_SWAPFILES_CHECK() BUILD_BUG_ON(MAX_SWAPFILES_SHIFT > __SWP_TYPE_BITS)
++
++/*
++ * Encode and decode a file entry:
++ *	bits 0-1:	present (must be zero)
++ *	bit  2:		PTE_FILE
++ *	bits 3-63:	file offset / PAGE_SIZE
++ */
++#define pte_file(pte)		(pte_val(pte) & PTE_FILE)
++#define pte_to_pgoff(x)		(pte_val(x) >> 3)
++#define pgoff_to_pte(x)		__pte(((x) << 3) | PTE_FILE)
++
++#define PTE_FILE_MAX_BITS	61
++
++extern int kern_addr_valid(unsigned long addr);
++
++#include <asm-generic/pgtable.h>
++
++/*
++ * remap a physical page `pfn' of size `size' with page protection `prot'
++ * into virtual address `from'
++ */
++#define io_remap_pfn_range(vma,from,pfn,size,prot) \
++		remap_pfn_range(vma, from, pfn, size, prot)
++
++#define pgtable_cache_init() do { } while (0)
++
++#endif /* !__ASSEMBLY__ */
++
++#endif /* __ASM_PGTABLE_H */
+diff --git a/arch/arm64/include/asm/sparsemem.h b/arch/arm64/include/asm/sparsemem.h
+new file mode 100644
+index 0000000..1be62bc
+--- /dev/null
++++ b/arch/arm64/include/asm/sparsemem.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#ifndef __ASM_SPARSEMEM_H
++#define __ASM_SPARSEMEM_H
++
++#ifdef CONFIG_SPARSEMEM
++#define MAX_PHYSMEM_BITS	40
++#define SECTION_SIZE_BITS	30
++#endif
++
++#endif
 
