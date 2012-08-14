@@ -1,75 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab2HNUqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 16:46:12 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:13228 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab2HNUqK (ORCPT
+	id S1757516Ab2HNUr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 16:47:59 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34951 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756336Ab2HNUr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 16:46:10 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-132.messagelabs.com!1344977131!13216176!37
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.2; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: adl_pci7x3x: fix pointer-to-int-cast warning
-Date: Tue, 14 Aug 2012 13:45:53 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <gregkh@linuxfoundation.org>,
-        <abbotti@mev.co.uk>
+	Tue, 14 Aug 2012 16:47:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201208141345.54496.hartleys@visionengravers.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D4137FC0DF@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4137FBD89@USINDEM103.corp.hds.com>
+ <CAGTjWtC2C_Q4mDHYD4p63YCkEAcYTgXcBYHemdTByrgBzNLT1A@mail.gmail.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D4137FC07B@USINDEM103.corp.hds.com> <A5ED84D3BB3A384992CBB9C77DEDA4D4137FC0DF@USINDEM103.corp.hds.com>
+From: Mike Waychison <mikew@google.com>
+Date: Tue, 14 Aug 2012 13:47:35 -0700
+Message-ID: <CAGTjWtCrE3v+q0nKtM-Nx5PKDQ6CVGjU=uF0Gp=W97u9bHAjgg@mail.gmail.com>
+Subject: Re: efi_pstore: question about how to remove create_sysfs_entry()
+ from a write callback.
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver uses the void *private variable in the comedi_subdevice
-to pass the offset needed to read/write the appropriate register to
-get/set the channels for the subdevice.
+On Tue, Aug 14, 2012 at 12:29 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> Mike,
+>
+> Previous pseudo code was not correct.
+> More precisely, it is as follows.
+> But, we still need to alloc memory dynamically in the part of <Save information about new entry>
+> because a workqueue can't know how many new entries in advance.
+>
+>  spin_lock_irqsave(&efivars_lock);
+>
+>  do {
+>         get_next_variable();
+>         if (found new entry)
+>                 <Save information about new entry>
 
-The adl_pci7x3x_do_insn_bits() and adl_pci7x3x_di_insn_bits() functions
-were retrieving this offset by casting the s->private value as an
-unsigned int. On 64-bit builds this results in a warning:
+If the work item is changed to instead do a loop, storage for this may
+be saved elsewhere, either the stack (though 1KiB is sorta pushing it)
+or on the heap.
 
-warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+>
+>  } while()
+>
+>  spin_lock_irqrestore(&efivars_lock);
+>
+>   efivars_create_sysfs_entries();
 
-Fix these warnings by casting the void * to an unsigned long.
+Something like this (pseudo) may work:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/drivers/adl_pci7x3x.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+/* Loop until we have all entries in efivars. */
+while (1) {
+  variable_name = kzalloc(1024, GFP_KERNEL );
+  spin_lock_irqsave(&efivars->lock);
+  bool found = false;
+  while (1) {
+     ret = ops->get_next_variable(variable_name)
+     if (ret == EFI_NOT_FOUND)
+        break;
+     if (!variable_is_already_present(variable, &efivars->list) {
+       found = true;
+       break;
+     }
+  }
+  if (!found) {
+    kfree(variable_name);
+    break;
+  }
+  <Register in sysfs>
+}
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci7x3x.c b/drivers/staging/comedi/drivers/adl_pci7x3x.c
-index 990670a..41963fb 100644
---- a/drivers/staging/comedi/drivers/adl_pci7x3x.c
-+++ b/drivers/staging/comedi/drivers/adl_pci7x3x.c
-@@ -121,7 +121,7 @@ static int adl_pci7x3x_do_insn_bits(struct comedi_device *dev,
- 				    struct comedi_insn *insn,
- 				    unsigned int *data)
- {
--	unsigned int reg = (unsigned int)s->private;
-+	unsigned long reg = (unsigned long)s->private;
- 	unsigned int mask = data[0];
- 	unsigned int bits = data[1];
- 
-@@ -147,7 +147,7 @@ static int adl_pci7x3x_di_insn_bits(struct comedi_device *dev,
- 				    struct comedi_insn *insn,
- 				    unsigned int *data)
- {
--	unsigned int reg = (unsigned int)s->private;
-+	unsigned long reg = (unsigned long)s->private;
- 
- 	data[1] = inl(dev->iobase + reg);
- 
--- 
-1.7.11
 
+If we are calling into pstore_info ops though from interrupt context,
+it seems we'll need to fix the immediate problem of updating the
+locking throughout to be interrupt safe.
+
+
+>
+> Seiji
+>
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Seiji Aguchi
+>> Sent: Tuesday, August 14, 2012 2:52 PM
+>> To: Mike Waychison
+>> Cc: linux-kernel@vger.kernel.org; Luck, Tony (tony.luck@intel.com); Matthew Garrett (mjg@redhat.com); dzickus@redhat.com; dle-
+>> develop@lists.sourceforge.net; Satoru Moriya
+>> Subject: RE: efi_pstore: question about how to remove create_sysfs_entry() from a write callback.
+>>
+>> > Can we not serialize this with &efivars->lock if it is updated to
+>> > disable interrupts?  A loop in the workqueue that locks, iterates
+>> > through
+>> > ->get_next_variable, and compares against searches in
+>> > efivars->list should work, no?
+>>
+>> If my understanding is correct, your pseudo code is as follows.
+>>
+>> spin_lock_irqsave(&efivars_lock);
+>>
+>> do {
+>>       get_next_variable();
+>>       if (found new entry)
+>>               efivars_create_sysfs_entries();
+>>
+>> } while()
+>>
+>> spin_lock_irqrestore(&efivars_lock);
+>>
+>> But, memory is allocated dynamically with kzalloc() in efivars_create_sysfs_entries().
+>> I don't want to allocate memory  while holding spin_lock.
+>>
+>> Please let me know if I'm missing something.
+>>
+>> Seiji
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More
+>> majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
