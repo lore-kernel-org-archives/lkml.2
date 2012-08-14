@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab2HNQmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:42:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab2HNQlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:41:36 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/5] mm: vmscan: Scale number of pages reclaimed by reclaim/compaction based on failures
-Date: Tue, 14 Aug 2012 17:41:29 +0100
-Message-Id: <1344962492-1914-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1344962492-1914-1-git-send-email-mgorman@suse.de>
-References: <1344962492-1914-1-git-send-email-mgorman@suse.de>
+	id S1753428Ab2HNQtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:49:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34860 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2HNQtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 12:49:10 -0400
+Message-ID: <502A817C.4000601@wwwdotorg.org>
+Date: Tue, 14 Aug 2012 10:49:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>, w.sang@pengutronix.de
+CC: khali@linux-fr.org, swarren@nvidia.com, olof@lixom.net,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: I2_M_NOSTART functionality not supported
+ in Tegra20
+References: <1344935949-26709-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1344935949-26709-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If allocation fails after compaction then compaction may be deferred for
-a number of allocation attempts. If there are subsequent failures,
-compact_defer_shift is increased to defer for longer periods. This patch
-uses that information to scale the number of pages reclaimed with
-compact_defer_shift until allocations succeed again. The rationale is
-that reclaiming the normal number of pages still allowed compaction to
-fail and its success depends on the number of pages. If it's failing,
-reclaim more pages until it succeeds again.
+On 08/14/2012 03:19 AM, Laxman Dewangan wrote:
+> Tegra20 i2c controller does not support the continue transfer
+> which implements the I2C_M_NOSTART functionality of i2c
+> protocol mangling.
+> Removing the I2C_M_NOSTART functionality for Tegra20.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Reported-by: Stephen Warren <swarren@nvidia.com>
 
-Note that this is not implying that VM reclaim is not reclaiming enough
-pages or that its logic is broken. try_to_free_pages() always asks for
-SWAP_CLUSTER_MAX pages to be reclaimed regardless of order and that is
-what it does. Direct reclaim stops normally with this check.
+Tested-by: Stephen Warren <swarren@wwwdotorg.org>
 
-	if (sc->nr_reclaimed >= sc->nr_to_reclaim)
-		goto out;
-
-should_continue_reclaim delays when that check is made until a minimum number
-of pages for reclaim/compaction are reclaimed. It is possible that this patch
-could instead set nr_to_reclaim in try_to_free_pages() and drive it from
-there but that's behaves differently and not necessarily for the better. If
-driven from do_try_to_free_pages(), it is also possible that priorities
-will rise. When they reach DEF_PRIORITY-2, it will also start stalling
-and setting pages for immediate reclaim which is more disruptive than not
-desirable in this case. That is a more wide-reaching change that could
-cause another regression related to THP requests causing interactive jitter.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
----
- mm/vmscan.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8d01243..0dd35ef 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1743,6 +1743,7 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
- {
- 	unsigned long pages_for_compaction;
- 	unsigned long inactive_lru_pages;
-+	struct zone *zone;
- 
- 	/* If not in reclaim/compaction mode, stop */
- 	if (!in_reclaim_compaction(sc))
-@@ -1776,6 +1777,15 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
- 	 * inactive lists are large enough, continue reclaiming
- 	 */
- 	pages_for_compaction = (2UL << sc->order);
-+
-+	/*
-+	 * If compaction is deferred for sc->order then scale the number of
-+	 * pages reclaimed based on the number of consecutive allocation
-+	 * failures
-+	 */
-+	zone = lruvec_zone(lruvec);
-+	if (zone->compact_order_failed <= sc->order)
-+		pages_for_compaction <<= zone->compact_defer_shift;
- 	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
- 	if (nr_swap_pages > 0)
- 		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
--- 
-1.7.9.2
-
+Note that if I take Laxman's I2C driver clock patches through the Tegra
+tree, and Wolfram takes this patch through the I2C tree, there will be a
+very slight conflict, since adjacent lines are touched. However, the
+resolution is simple and obvious, so I think that's fine.
