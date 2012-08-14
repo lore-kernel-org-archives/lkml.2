@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab2HNRfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:35:38 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48239 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2HNRfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:35:36 -0400
-Date: Tue, 14 Aug 2012 10:35:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Marc Dietrich <marvin24@gmx.de>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, mingo@redhat.com,
-        lauro.venancio@openbossa.org, jak@jak-linux.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alasdair Kergon <agk@redhat.com>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Rob Clark <rob@ti.com>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Sage Weil <sage@inktank.com>
-Subject: Re: [PATCH 6/6] workqueue: deprecate WQ_NON_REENTRANT
-Message-ID: <20120814173531.GP25632@google.com>
-References: <1344908986-18152-1-git-send-email-tj@kernel.org>
- <1344908986-18152-7-git-send-email-tj@kernel.org>
- <2904218.ZgtLmH5Irc@ax5200p>
+	id S1756691Ab2HNRjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:39:39 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:56284 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818Ab2HNRjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 13:39:37 -0400
+Message-ID: <502A8D4D.3080101@linux.vnet.ibm.com>
+Date: Tue, 14 Aug 2012 12:39:25 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2904218.ZgtLmH5Irc@ax5200p>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH 0/7] zram/zsmalloc promotion
+References: <1344406340-14128-1-git-send-email-minchan@kernel.org> <20120814023530.GA9787@kroah.com> <5029E3EF.9080301@vflare.org>
+In-Reply-To: <5029E3EF.9080301@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081417-5806-0000-0000-0000185E5354
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 08/14/2012 12:36 AM, Nitin Gupta wrote:
+> On 08/13/2012 07:35 PM, Greg Kroah-Hartman wrote:
+>> On Wed, Aug 08, 2012 at 03:12:13PM +0900, Minchan Kim wrote:
+>>> This patchset promotes zram/zsmalloc from staging.
+>>> Both are very clean and zram is used by many embedded product
+>>> for a long time.
+>>>
+>>> [1-3] are patches not merged into linux-next yet but needed
+>>> it as base for [4-5] which promotes zsmalloc.
+>>> Greg, if you merged [1-3] already, skip them.
+>>
+>> I've applied 1-3 and now 4, but that's it, I can't apply the rest
+>> without getting acks from the -mm maintainers, sorry.  Please work with
+>> them to get those acks, and then I will be glad to apply the rest (after
+>> you resend them of course...)
+>>
+> 
+> On a second thought, I think zsmalloc should stay in drivers/block/zram
+> since zram is now the only user of zsmalloc since zcache and ramster are
+> moving to another allocator.
 
-On Tue, Aug 14, 2012 at 07:24:59PM +0200, Marc Dietrich wrote:
-> the nvec driver had its own workqueue because we found that it reduced some 
-> timimg induced protocol errors. I just tested your patch which uses the system 
-> workqueue and I failed to reproduce these protocol errors under stress 
-> testing, so I think it's ok.
+The removal of zsmalloc from zcache has not been agreed upon
+yet.
 
-Thanks, there shouldn't be any difference whether you use system_wq or
-your own.
+Dan _suggested_ removing zsmalloc as the persistent
+allocator for zcache in favor of zbud to solve "flaws" in
+zcache.  However, zbud has large deficiencies.
 
-> Because this is a single patch affecting many drivers, is this going through 
-> linux-next or some subsystem tree? Maybe it would have been better to split it 
-> in one patch per driver. Otherwise ...
+A zero-filled 4k page will compress with LZO to 103 bytes.
+zbud can only store two compressed pages in each memory pool
+page, resulting in 95% fragmentation (i.e. 95% of the memory
+pool page goes unused).  While this might not be a typical
+case, it is the worst case and absolutely does happen.
 
-I generally think it's better to do quick one time conversion for
-things like this, but this patch is rather borderline.  It might be
-better to separate out the non trivialones and route them separately.
-I'll think more about it.
+zbud's design also effectively limits the useful page
+compression to 50%. If pages are compressed beyond that, the
+added space savings is lost in memory pool fragmentation.
+For example, if two pages compress to 30% of their original
+size, those two pages take up 60% of the zbud memory pool
+page, and 40% is lost to fragmentation because zbud can't
+store anything in the remaining space.
 
-Thanks.
+To say it another way, for every two page cache pages that
+cleancache stores in zcache, zbud _must_ allocate a memory
+pool page, regardless of how well those pages compress.
+This reduces the efficiency of the page cache reclaim
+mechanism by half.
 
--- 
-tejun
+I have posted some work (zsmalloc shrinker interface, user
+registered alloc/free functions for the zsmalloc memory
+pool) that begins to make zsmalloc a suitable replacement
+for zbud, but that work was put on hold until the path out
+of staging was established.
+
+I'm hoping to continue this work once the code is in
+mainline.  While zbud has deficiencies, it doesn't prevent
+zcache from having value as I have already demonstrated.
+However, replacing zsmalloc with zbud would step backward
+for the reasons mentioned above.
+
+I do not support the removal of zsmalloc from zcache.  As
+such, I think the zsmalloc code should remain independent.
+
+Seth
+
