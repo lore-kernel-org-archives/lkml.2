@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab2HNW3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:29:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab2HNW3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:29:17 -0400
-Date: Wed, 15 Aug 2012 00:29:15 +0200
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Kamal Mostafa <kamal@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Dann Frazier <dann.frazier@canonical.com>,
-        Massimo Morana <massimo.morana@canonical.com>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mq: INFO: possible circular locking dependency detected
-Message-ID: <20120814222915.GP7122@quack.suse.cz>
-References: <501D0093.2090108@gmail.com>
- <20120805170856.GC8954@localhost>
- <20120807050412.GA23960@localhost>
- <20120807063955.GX23464@ZenIV.linux.org.uk>
- <20120808071738.GA20090@localhost>
- <20120808075439.GA20645@localhost>
- <20120814220927.GN7122@quack.suse.cz>
- <20120814221331.GK23464@ZenIV.linux.org.uk>
+	id S1752370Ab2HNWdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:33:54 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:63158 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750968Ab2HNWdw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 18:33:52 -0400
+Message-ID: <1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [patch net-next v2 01/15] net: introduce upper device lists
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jiri Pirko <jiri@resnulli.us>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <edumazet@google.com>,
+        <faisal.latif@intel.com>, <roland@kernel.org>, <sean.hefty@intel.com>,
+        <hal.rosenstock@gmail.com>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
+        <divy@chelsio.com>, <jitendra.kalsaria@qlogic.com>,
+        <sony.chacko@qlogic.com>, <linux-driver@qlogic.com>, <kaber@trash.net>,
+        <ursula.braun@de.ibm.com>, <blaschka@linux.vnet.ibm.com>,
+        <linux390@de.ibm.com>, <shemminger@vyatta.com>, <therbert@google.com>,
+        <xiyou.wangcong@gmail.com>, <joe@perches.com>,
+        <gregory.v.rose@intel.com>, <john.r.fastabend@intel.com>,
+        <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <bridge@lists.linux-foundation.org>,
+        <fbl@redhat.com>
+Date: Tue, 14 Aug 2012 23:33:44 +0100
+In-Reply-To: <1344956748-2099-2-git-send-email-jiri@resnulli.us>
+References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
+	 <1344956748-2099-2-git-send-email-jiri@resnulli.us>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814221331.GK23464@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-08-12 23:13:31, Al Viro wrote:
-> On Wed, Aug 15, 2012 at 12:09:27AM +0200, Jan Kara wrote:
-> >   OK, this is a theoretical deadlock since mqueue (virtual) filesystem cannot
-> > really be frozen. But we should convert the mqueue code to deal with new
-> > lock ordering of i_mutex and mnt_want_write() anyway to make lockdep happy
-> > if anything... That file somehow escaped my conversion efforts. I'll send a
-> > fix tomorrow.
-> 
-> It's fixed in commit 98d11eacde966041ac7357d99d4079db7173dd40 (in vfs.git)
-  OK, I see. Thanks!
+On Tue, 2012-08-14 at 17:05 +0200, Jiri Pirko wrote:
+> This lists are supposed to serve for storing pointers to all upper devices.
+> Eventually it will replace dev->master pointer which is used for
+> bonding, bridge, team but it cannot be used for vlan, macvlan where
+> there might be multiple upper present. In case the upper link is
+> replacement for dev->master, it is marked with "master" flag.
 
-								Honza
+Something I found interesting is that the dev->master pointer and now
+netdev_master_upper_dev_get{,_rcu}() are hardly used by the stackled
+drivers that set the master.  They also have to set an rx_handler on the
+lower device (which is itself mutually exclusive) which gets its own
+context pointer (rx_handler_data).
+
+Instead, the master pointer is mostly used by device drivers to find out
+about a bridge or bonding device above *their* devices.  And that seems
+to work only for those specific device drivers, not e.g. openvswitch or
+team.  I wonder if we could find a better way to encapsulate the things
+they want do do, in a later step (not holding up this change!).
+
+[...]
+> +static int __netdev_upper_dev_link(struct net_device *dev,
+> +                                  struct net_device *upper_dev, bool master)
+> +{
+> +       struct netdev_upper *upper;
+> +
+> +       ASSERT_RTNL();
+> +
+> +       if (dev == upper_dev)
+> +               return -EBUSY;
+> +       /*
+> +        * To prevent loops, check if dev is not upper device to upper_dev.
+> +        */
+> +       if (__netdev_has_upper_dev(upper_dev, dev, true))
+> +               return -EBUSY;
+[...]
+
+I think we will also need to limit the depth of the device stack so we
+don't run out of stack space here.  __netif_receive() implements a kind
+of tail recursion whenever a packet is passed up, but
+__netdev_has_upper_dev() can't avoid doing real recursion (without the
+addition of a flag to net_device so it can mark its progress).
+
+Ben.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
