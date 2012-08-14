@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2HNObg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:31:36 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756172Ab2HNObe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:31:34 -0400
-Message-ID: <502A613F.1090600@nod.at>
-Date: Tue, 14 Aug 2012 16:31:27 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1752372Ab2HNOd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:33:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57881 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2HNOd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 10:33:56 -0400
+Date: Tue, 14 Aug 2012 11:33:48 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [PATCH v3 3/6] floppy: avoid leaking extra reference to queue on
+ do_floppy_init error handling
+Message-ID: <20120814143346.GC5277@herton-Z68MA-D2H-B3>
+References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
+ <1344881787-6422-4-git-send-email-herton.krzesinski@canonical.com>
+ <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: linux-next: Tree for July 26 (uml)
-References: <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk>
-In-Reply-To: <15532.1344954413@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig95FD8DA7F5FAB50EAB9478D6"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344914439.824.178.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig95FD8DA7F5FAB50EAB9478D6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 14, 2012 at 04:20:39AM +0100, Ben Hutchings wrote:
+> It's totally ridiculous that a driver should have to do this.  Any
+> registered disk should have the GENHD_FL_UP flag set... so why can't
+> genhd check it?  It doesn't look like floppy is the only driver affected
+> by this problem, either.  So I suggest the following general fix
+> (untested):
+> 
+> ---
+> Subject: genhd: Make put_disk() safe for disks that have not been registered
+> 
+> Since commit 9f53d2f ('block: fix __blkdev_get and add_disk race
+> condition'), add_disk() adds a reference to disk->queue, which is then
+> dropped by disk_release().  But if a disk is destroyed without being
+> registered through add_disk() (or if add_disk() fails at the first
+> hurdle) then we have a reference imbalance.
+> 
+> Use the GENHD_FL_UP flag to tell whether this extra reference has been
+> added.  Remove the incomplete workaround from the floppy driver.
 
-Am 14.08.2012 16:26, schrieb David Howells:
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
->=20
->>>>   CC      arch/x86/um/../kernel/module.o
->>>> arch/x86/um/../kernel/module.c:96:5: error: redefinition of 'apply_r=
-elocate_add'
->>>> include/linux/moduleloader.h:64:19: note: previous definition of 'ap=
-ply_relocate_add' was here
->>>> make[2]: *** [arch/x86/um/../kernel/module.o] Error 1
->=20
-> Hmmm...  I'm not sure how to deal with this.  The problem is that UML d=
-oesn't
-> draw the:
->=20
-> 	select MODULES_USE_ELF_REL if X86_32
-> 	select MODULES_USE_ELF_RELA if X86_64
->=20
-> definitions from arch/foo/Kconfig that tell it what modules will look l=
-ike.
->=20
-> Should I just enable both REL and RELA in UML, or is there a better way=
- to do
-> this?
+Indeed this is a more sane/right approach.
 
-Is there no way to get this information from the UML subarch?
-Which is currently X86_32 or X86_64.
+Acked-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-Thanks,
-//richard
+Just the changelog is pointing to the wrong commit as already noted by
+Stanislaw.
 
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Cc: stable@vger.kernel.org
 
---------------enig95FD8DA7F5FAB50EAB9478D6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQKmFAAAoJEN9758yqZn9eMQsIAIfhSZNfzO9od5/7oE/DTinR
-pClB9vwteHAj2wzYvpG9t3E1F1TP4tChWeIEP/1of2ToQpCsSOo0vJFjf7X2c+63
-L8199lMnVQsqeAMgtbY6Q3jJ+SI0GIEPgheiHu+lO1znl8hNGu0o3eg4nrXWhkco
-oVAtUbucwzDy0OFrXKZD0h7fLcrrocdN4Z3C75pAEZeB3lXYsG77XX9rz5pBloDN
-htWZ61RQBoSJhAxeeV5r4WEKVNg0Wxkbc2QoFqi8WKxg6zvHgPtsfnP/h29zKaso
-rS5WTouAqP7e/YIBbA8VQr+lhAzuPMJDiSrdoEJLDLj95SDFEmESoGvBsjGiDbE=
-=p0wF
------END PGP SIGNATURE-----
-
---------------enig95FD8DA7F5FAB50EAB9478D6--
+-- 
+[]'s
+Herton
