@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2HNGry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 02:47:54 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49652 "EHLO
+	id S1754647Ab2HNGrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 02:47:53 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49644 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753604Ab2HNGrr (ORCPT
+	by vger.kernel.org with ESMTP id S1752704Ab2HNGrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 02:47:47 -0400
+	Tue, 14 Aug 2012 02:47:46 -0400
 X-IronPort-AV: E=Sophos;i="4.77,764,1336341600"; 
-   d="scan'208";a="169831631"
+   d="scan'208";a="169831630"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] drivers/tty/moxa.c: fix error return code
-Date: Tue, 14 Aug 2012 08:47:35 +0200
-Message-Id: <1344926858-1162-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Felipe Balbi <balbi@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] drivers/usb/gadget/s3c-hsotg.c: fix error return code
+Date: Tue, 14 Aug 2012 08:47:34 +0200
+Message-Id: <1344926858-1162-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1344926858-1162-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1344926858-1162-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -55,19 +57,35 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/tty/moxa.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/gadget/s3c-hsotg.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
-index 89cc934..8b510c5 100644
---- a/drivers/tty/moxa.c
-+++ b/drivers/tty/moxa.c
-@@ -967,6 +967,7 @@ static int __devinit moxa_pci_probe(struct pci_dev *pdev,
- 	board->basemem = ioremap_nocache(pci_resource_start(pdev, 2), 0x4000);
- 	if (board->basemem == NULL) {
- 		dev_err(&pdev->dev, "can't remap io space 2\n");
-+		retval = -ENOMEM;
- 		goto err_reg;
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index b13e0bb..0bb617e 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -3599,6 +3599,7 @@ static int __devinit s3c_hsotg_probe(struct platform_device *pdev)
+ 
+ 	if (hsotg->num_of_eps == 0) {
+ 		dev_err(dev, "wrong number of EPs (zero)\n");
++		ret = -EINVAL;
+ 		goto err_supplies;
+ 	}
+ 
+@@ -3606,6 +3607,7 @@ static int __devinit s3c_hsotg_probe(struct platform_device *pdev)
+ 		      GFP_KERNEL);
+ 	if (!eps) {
+ 		dev_err(dev, "cannot get memory\n");
++		ret = -ENOMEM;
+ 		goto err_supplies;
+ 	}
+ 
+@@ -3622,6 +3624,7 @@ static int __devinit s3c_hsotg_probe(struct platform_device *pdev)
+ 						     GFP_KERNEL);
+ 	if (!hsotg->ctrl_req) {
+ 		dev_err(dev, "failed to allocate ctrl req\n");
++		ret = -ENOMEM;
+ 		goto err_ep_mem;
  	}
  
 
