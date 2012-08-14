@@ -1,170 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab2HNWya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:54:30 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:15943
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752664Ab2HNWy1 (ORCPT
+	id S1753562Ab2HNW7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:59:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38575 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab2HNW7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:54:27 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I148cI1432Izz1202hzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah)
-X-WSS-ID: 0M8ROYI-02-3MT-02
-X-M-MSG: 
-Date: Tue, 14 Aug 2012 17:54:16 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Dave Young <dyoung@redhat.com>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Chao Wang <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH V2 0/5] x86: Create direct mappings for E820_RAM only
-Message-ID: <20120814225416.GB32453@jshin-Toonie>
-References: <1344894424-4434-1-git-send-email-jacob.shin@amd.com>
- <502A0D9F.4010509@redhat.com>
+	Tue, 14 Aug 2012 18:59:10 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Wen Congyang <wency@cn.fujitsu.com>
+Cc: Yan Vugenfirer <yvugenfi@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is panicked
+In-Reply-To: <20120814205339.GA14172@amt.cnet>
+References: <5021D235.4050800@cn.fujitsu.com> <20120813182132.GB25268@amt.cnet> <20120814085619.GA32708@redhat.com> <502A2B7A.3070801@siemens.com> <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com> <20120814154237.GA21284@amt.cnet> <87boidgvaq.fsf@codemonkey.ws> <20120814191927.GA6058@amt.cnet> <87txw5clmh.fsf@codemonkey.ws> <20120814205339.GA14172@amt.cnet>
+User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 14 Aug 2012 17:59:06 -0500
+Message-ID: <877gt16pxh.fsf@codemonkey.ws>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <502A0D9F.4010509@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 04:34:39PM +0800, Dave Young wrote:
-> On 08/14/2012 05:46 AM, Jacob Shin wrote:
-> 
-> > Currently kernel direct mappings are created for all pfns between
-> > [ 0 to max_low_pfn ) and [ 4GB to max_pfn ). When we introduce memory
-> > holes, we end up mapping memory ranges that are not backed by physical
-> > DRAM. This is fine for lower memory addresses which can be marked as UC
-> > by fixed/variable range MTRRs, however we run in to trouble with high
-> > addresses.
-> > 
-> > The following patchset creates direct mappings only for E820_RAM regions
-> > between 0 ~ max_low_pfn and 4GB ~ max_pfn. And leaves non-E820_RAM and
-> > memory holes unmapped.
-> 
-> 
-> Hi,
-> 
-> Chaowang did some kdump test in a kvm guest with this patchset, 2nd
-> kenrel just reboot after some ACPI printk, see below dmesg of 2nd kernel:
+Marcelo Tosatti <mtosatti@redhat.com> writes:
 
-Hello, thanks for testing, since I have not tested under KVM .. I also have
-not tested passing in user supplied memory maps as your kernel log suggests.
+> On Tue, Aug 14, 2012 at 02:35:34PM -0500, Anthony Liguori wrote:
+>> Marcelo Tosatti <mtosatti@redhat.com> writes:
+>> 
+>> > On Tue, Aug 14, 2012 at 01:53:01PM -0500, Anthony Liguori wrote:
+>> >> Marcelo Tosatti <mtosatti@redhat.com> writes:
+>> >> 
+>> >> > On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
+>> >> >> 
+>> >> >> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
+>> >> >> 
+>> >> >> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
+>> >> >> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
+>> >> >> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
+>> >> >> >>>> We can know the guest is panicked when the guest runs on xen.
+>> >> >> >>>> But we do not have such feature on kvm.
+>> >> >> >>>> 
+>> >> >> >>>> Another purpose of this feature is: management app(for example:
+>> >> >> >>>> libvirt) can do auto dump when the guest is panicked. If management
+>> >> >> >>>> app does not do auto dump, the guest's user can do dump by hand if
+>> >> >> >>>> he sees the guest is panicked.
+>> >> >> >>>> 
+>> >> >> >>>> We have three solutions to implement this feature:
+>> >> >> >>>> 1. use vmcall
+>> >> >> >>>> 2. use I/O port
+>> >> >> >>>> 3. use virtio-serial.
+>> >> >> >>>> 
+>> >> >> >>>> We have decided to avoid touching hypervisor. The reason why I choose
+>> >> >> >>>> choose the I/O port is:
+>> >> >> >>>> 1. it is easier to implememt
+>> >> >> >>>> 2. it does not depend any virtual device
+>> >> >> >>>> 3. it can work when starting the kernel
+>> >> >> >>> 
+>> >> >> >>> How about searching for the "Kernel panic - not syncing" string 
+>> >> >> >>> in the guests serial output? Say libvirtd could take an action upon
+>> >> >> >>> that?
+>> >> >> >> 
+>> >> >> >> No, this is not satisfactory. It depends on the guest OS being
+>> >> >> >> configured to use the serial port for console output which we
+>> >> >> >> cannot mandate, since it may well be required for other purposes.
+>> >> >> > 
+>> >> >> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
+>> >> >> 
+>> >> >> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
+>> >> >> 
+>> >> >> Yan. 
+>> >> >
+>> >> > Considering whether a "panic-device" should cover other OSes is also \
+>> >
+>> >> > something to consider. Even for Linux, is "panic" the only case which
+>> >> > should be reported via the mechanism? What about oopses without panic? 
+>> >> >
+>> >> > Is the mechanism general enough for supporting new events, etc.
+>> >> 
+>> >> Hi,
+>> >> 
+>> >> I think this discussion is gone of the deep end.
+>> >> 
+>> >> Forget about !x86 platforms.  They have their own way to do this sort of
+>> >> thing.  
+>> >
+>> > The panic function in kernel/panic.c has the following options, which
+>> > appear to be arch independent, on panic:
+>> >
+>> > - reboot 
+>> > - blink
+>> 
+>> Not sure the semantics of blink but that might be a good place for a
+>> pvops hook.
+>> 
+>> >
+>> > None are paravirtual interfaces however.
+>> >
+>> >> Think of this feature like a status LED on a motherboard.  These
+>> >> are very common and usually controlled by IO ports.
+>> >> 
+>> >> We're simply reserving a "status LED" for the guest to indicate that it
+>> >> has paniced.  Let's not over engineer this.
+>> >
+>> > My concern is that you end up with state that is dependant on x86.
+>> >
+>> > Subject: [PATCH v8 3/6] add a new runstate: RUN_STATE_GUEST_PANICKED
+>> >
+>> > Having the ability to stop/restart the guest (and even introducing a 
+>> > new VM runstate) is more than a status LED analogy.
+>> 
+>> I must admit, I don't know why a new runstate is necessary/useful.  The
+>> kernel shouldn't have to care about the difference between a halted guest
+>> and a panicked guest.  That level of information belongs in userspace IMHO.
+>> 
+>> > Can this new infrastructure be used by other architectures?
+>> 
+>> I guess I don't understand why the kernel side of this isn't anything
+>> more than a paravirt op hook that does a single outb() with the
+>> remaining logic handled 100% in QEMU.
+>
+> From the patch description:
+>
+> "Another purpose of this feature is: management app(for example:
+> libvirt) can do auto dump when the guest is panicked. If management
+> app does not do auto dump, the guest's user can do dump by hand if
+> he sees the guest is panicked."
 
-Looking into this, it seems like we get a page fault while trying to set up
-fixmap for the APIC. I think the fixmap is set up even before we get to
-setup_arch(), and it is sitting in memory that is not marked as usable by
-your user supplied e820.
+Why does this mandated another runstate?  QEMU can simply mark the VCPUs
+as stopped and raise a QMP event.  The kernel doesn't care if the VCPUs
+are stopped or panicked.
 
-Could you give V3 a try? I just sent it out a minute ago, this version
-won't try to remap what has already been mapped as part of the boot process
-before we get to setup_arch, it'll just take what its given.
+> Wen, auto dump means dump of guest memory?
+>
+> In that case, the notification should obviously stop the guest 
+> otherwise the guest might be reset by the time memdump from QEMU 
+> monitor runs.
+>
+> But kexec supports dumping of memory already (i suppose it can 
+> do automatic dump+{reboot,shutdown}).
+>
+>> > Do you consider allowing support for Windows as overengineering?
+>> 
+>> I don't think there is a way to hook BSOD on Windows so attempting to
+>> engineer something that works with Windows seems odd, no?
+>
+> Unsure about hooking at BSOD time. But Windows has configurable 
+> memory dump/reset/reboot, so yes it should not necessary.
 
-> 
-> After a crash:
-> [snip]
-> I'm in purgatory
-> [    0.000000] Initializing cgroup subsys cpuset
-> [    0.000000] Initializing cgroup subsys cpu
-> [    0.000000] Linux version 3.5.0-0.23.el7.bz846531.x86_64 (mockbuild@)
-> (gcc version 4.7.1 20120720 (Red Hat 4.7.1-5) (GCC) ) #1 SMP Mon Aug 13
-> 22:17:46 EDT 2012
-> [    0.000000] Command line:
-> BOOT_IMAGE=/vmlinuz-3.5.0-0.23.el7.bz846531.x86_64
-> root=/dev/mapper/vg_none-lv_root ro rd.md=0 rd.lvm.lv=vg_none/lv_swap
-> rd.dm=0 rd.lvm.lv=vg_none/lv_root rd.luks=0 LANG=en_US.UTF-8
-> console=ttyS0,115200  SYSFONT=True KEYTABLE=us earlyprintk=serial
-> irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off
-> earlyprintk=serial memmap=exactmap memmap=567K@64K
-> memmap=261552K@589824K elfcorehdr=851376K
-> [    0.000000] e820: BIOS-provided physical RAM map:
-> [    0.000000] BIOS-e820: [mem 0x0000000000000100-0x000000000009dbff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000000009dc00-0x000000000009ffff]
-> reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff]
-> reserved
-> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000003fffdfff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000003fffe000-0x000000003fffffff]
-> reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff]
-> reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff]
-> reserved
-> [    0.000000] bootconsole [earlyser0] enabled
-> [    0.000000] ERROR: earlyprintk= earlyser already used
-> [    0.000000] e820: last_pfn = 0x3fffe max_arch_pfn = 0x400000000
-> [    0.000000] NX (Execute Disable) protection: active
-> [    0.000000] e820: user-defined physical RAM map:
-> [    0.000000] user: [mem 0x0000000000010000-0x000000000009dbff] usable
-> [    0.000000] user: [mem 0x0000000024000000-0x0000000033f6bfff] usable
-> [    0.000000] DMI 2.4 present.
-> [    0.000000] No AGP bridge found
-> [    0.000000] e820: last_pfn = 0x33f6c max_arch_pfn = 0x400000000
-> [    0.000000] PAT not supported by CPU.
-> [    0.000000] found SMP MP-table at [mem 0x000fdae0-0x000fdaef] mapped
-> at [ffff8800000fdae0]
-> [    0.000000] init_memory_mapping: [mem 0x24000000-0x33f6bfff]
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> [    0.000000] RAMDISK: [mem 0x3378a000-0x33f58fff]
-> [    0.000000] ACPI: RSDP 00000000000fd980 00014 (v00 BOCHS )
-> [    0.000000] ACPI: RSDT 000000003fffe5b0 00038 (v01 BOCHS  BXPCRSDT
-> 00000001 BXPC 00000001)
-> [    0.000000] ACPI: FACP 000000003fffff80 00074 (v01 BOCHS  BXPCFACP
-> 00000001 BXPC 00000001)
-> [    0.000000] ACPI: DSDT 000000003fffe5f0 01121 (v01   BXPC   BXDSDT
-> 00000001 INTL 20100528)
-> [    0.000000] ACPI: FACS 000000003fffff40 00040
-> [    0.000000] ACPI: SSDT 000000003ffffea0 0009E (v01 BOCHS  BXPCSSDT
-> 00000001 BXPC 00000001)
-> [    0.000000] ACPI: APIC 000000003ffffdb0 00078 (v01 BOCHS  BXPCAPIC
-> 00000001 BXPC 00000001)
-> [    0.000000] ACPI: HPET 000000003ffffd70 00038 (v01 BOCHS  BXPCHPET
-> 00000001 BXPC 00000001)
-> [    0.000000] ACPI: SSDT 000000003ffff720 00644 (v01   BXPC BXSSDTPC
-> 00000001 INTL 20100528)
-> 
-> ====2nd kernel reboot here=====
-> 
-> 
-> > 
-> > This revision of the patchset attempts to resolve comments and concerns
-> > from the following threads:
-> > 
-> > https://lkml.org/lkml/2012/8/11/95
-> > 
-> > and
-> > 
-> > https://lkml.org/lkml/2011/12/16/486
-> > 
-> > Jacob Shin (5):
-> >   x86: Only direct map addresses that are marked as E820_RAM
-> >   x86: find_early_table_space based on memory ranges that are being
-> >     mapped
-> >   x86: Keep track of direct mapped pfn ranges
-> >   x86: Fixup code testing if a pfn is direct mapped
-> >   x86: Move enabling of PSE and PGE out of init_memory_mapping
-> > 
-> >  arch/x86/include/asm/page_types.h |    9 +++
-> >  arch/x86/kernel/amd_gart_64.c     |    4 +-
-> >  arch/x86/kernel/cpu/amd.c         |    6 +-
-> >  arch/x86/kernel/setup.c           |  118 ++++++++++++++++++++++++++++++++-----
-> >  arch/x86/mm/init.c                |   72 +++++++++++-----------
-> >  arch/x86/mm/init_64.c             |    3 +-
-> >  arch/x86/platform/efi/efi.c       |    8 +--
-> >  arch/x86/platform/efi/efi_64.c    |    2 +
-> >  8 files changed, 157 insertions(+), 65 deletions(-)
-> > 
-> 
-> 
-> 
-> -- 
-> Thanks
-> Dave
-> 
+Do you mean it's not necessary to hook BSOD?
 
+I've very often gotten asked: We know 1 person is experiencing this
+crash condition, can we figure out from the host how many other VMs are
+experiencing this crash too instead of waiting for a user to complain?
+
+That's the primary use-case for this notification IMHO.  Just a simple
+status LED from the guest to indicate that it's in a bad state.
+
+Regards,
+
+Anthony Liguori
+
+>
+>> 
+>> Regards,
+>> 
+>> Anthony Liguori
+>> 
+>> >
+>> >> Regards,
+>> >> 
+>> >> Anthony Liguori
+>> >> 
+>> >> >
+>> >> >> 
+>> >> >> > Well, we have more than a single serial port, even when leaving
+>> >> >> > virtio-serial aside...
+>> >> >> > 
+>> >> >> > Jan
+>> >> >> > 
+>> >> >> > -- 
+>> >> >> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+>> >> >> > Corporate Competence Center Embedded Linux
+>> >> >> > --
+>> >> >> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> >> >> > the body of a message to majordomo@vger.kernel.org
+>> >> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
