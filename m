@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2HNLb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 07:31:58 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40543 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab2HNLb5 (ORCPT
+	id S1756094Ab2HNLeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 07:34:24 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62471 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815Ab2HNLeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 07:31:57 -0400
+	Tue, 14 Aug 2012 07:34:23 -0400
 MIME-Version: 1.0
-Date: Tue, 14 Aug 2012 17:01:56 +0530
-Message-ID: <CAHP4M8WV64UMor_oU4UNgGx7P0Zet_M3yJrAZaCR+yYQmmeEYw@mail.gmail.com>
-Subject: How to hack syscall-table, in kernel 2.6+ ?
-From: Ajay Garg <ajaygargnsit@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20120809185029.GC24328@opensource.wolfsonmicro.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+	<20120809185029.GC24328@opensource.wolfsonmicro.com>
+Date: Tue, 14 Aug 2012 13:34:22 +0200
+Message-ID: <CACRpkdZMyR3FXcoRHEAuoyx8B6+4sMuKjeRdg9+TD14XzqO7Yg@mail.gmail.com>
+Subject: Re: [PATCH 00/22] mop500 related Audio reorganisation and fixups
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ola LILJA2 <ola.o.lilja@stericsson.com>, Ola Lilja <olalilja@yahoo.se>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, arnd@arndb.de
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all.
+On Thu, Aug 9, 2012 at 8:50 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-It is well known that the syscall-table had stopped being exported
-from version 2.6 onwards.
+> On Thu, Aug 09, 2012 at 04:47:26PM +0100, Lee Jones wrote:
+>> Another fine instalment of Audio fixes and Device Tree enablement
+>> surrounding the mop500 sound driver. Hopefully containing all of
+>> the recommendations suggested by Mark Brown.
+>
+> Can we have some review of this from the ARM side please?  It's pretty
+> big...
 
-So, now as a developer, if I wish to hack into the syscall-table, and
-change the syscall-function-pointers to my custom-function-pointers
-(mainly for the reason of adding/preventing access to certain files,
-via Kernel-Loadable-Modules), what is the recommended way?
+I looked over it, merged two patches to ux500 fixes and ACKed these
+I understand. For the patches mainly dealing with ALSA SoC I get
+confused so would prefer to have Ola Lilja comment on those once
+he's available.
 
-I have already tried extracting the address of the "sys_call_table"
-from "System.Map"; however, I am still not able to replace the
-function-pointers with mine.
-Trying to do gives me page-faults, apparently meaning that the
-syscall-table memory area is read-only.
-
-
-
-I will be grateful, if someone could point me to the recommended way
-of doing this.
-
-
-Thanks and Regards,
-Ajay
+Yours,
+Linus Walleij
