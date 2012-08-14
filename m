@@ -1,34 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab2HNPrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:47:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56621 "EHLO mx1.redhat.com"
+	id S1756359Ab2HNPsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:48:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47826 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388Ab2HNPry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:47:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120814151345.GB30856@linux-mips.org>
-References: <20120814151345.GB30856@linux-mips.org> <87d32us55c.fsf@rustcorp.com.au> <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk> <32504.1344953290@warthog.procyon.org.uk>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        Jonas Gorski <jonas.gorski@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH] MIPS: Fix module.c build for 32 bit
-Date: Tue, 14 Aug 2012 16:47:43 +0100
-Message-ID: <22516.1344959263@warthog.procyon.org.uk>
+	id S1753132Ab2HNPsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 11:48:33 -0400
+Date: Tue, 14 Aug 2012 12:42:37 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Yan Vugenfirer <yvugenfi@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v8] kvm: notify host when the guest is panicked
+Message-ID: <20120814154237.GA21284@amt.cnet>
+References: <5021D235.4050800@cn.fujitsu.com>
+ <20120813182132.GB25268@amt.cnet>
+ <20120814085619.GA32708@redhat.com>
+ <502A2B7A.3070801@siemens.com>
+ <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ralf Baechle <ralf@linux-mips.org> wrote:
+On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
+> 
+> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
+> 
+> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
+> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
+> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
+> >>>> We can know the guest is panicked when the guest runs on xen.
+> >>>> But we do not have such feature on kvm.
+> >>>> 
+> >>>> Another purpose of this feature is: management app(for example:
+> >>>> libvirt) can do auto dump when the guest is panicked. If management
+> >>>> app does not do auto dump, the guest's user can do dump by hand if
+> >>>> he sees the guest is panicked.
+> >>>> 
+> >>>> We have three solutions to implement this feature:
+> >>>> 1. use vmcall
+> >>>> 2. use I/O port
+> >>>> 3. use virtio-serial.
+> >>>> 
+> >>>> We have decided to avoid touching hypervisor. The reason why I choose
+> >>>> choose the I/O port is:
+> >>>> 1. it is easier to implememt
+> >>>> 2. it does not depend any virtual device
+> >>>> 3. it can work when starting the kernel
+> >>> 
+> >>> How about searching for the "Kernel panic - not syncing" string 
+> >>> in the guests serial output? Say libvirtd could take an action upon
+> >>> that?
+> >> 
+> >> No, this is not satisfactory. It depends on the guest OS being
+> >> configured to use the serial port for console output which we
+> >> cannot mandate, since it may well be required for other purposes.
+> > 
+> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
+> 
+> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
+> 
+> Yan. 
 
-> +extern int apply_r_mips_none(struct module *me, u32 *location, Elf_Addr v);
+Considering whether a "panic-device" should cover other OSes is also 
+something to consider. Even for Linux, is "panic" the only case which
+should be reported via the mechanism? What about oopses without panic? 
 
-This needs to be in a header file, not a .c file.
+Is the mechanism general enough for supporting new events, etc.
 
-David
+> 
+> > Well, we have more than a single serial port, even when leaving
+> > virtio-serial aside...
+> > 
+> > Jan
+> > 
+> > -- 
+> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+> > Corporate Competence Center Embedded Linux
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
