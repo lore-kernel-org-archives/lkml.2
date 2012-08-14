@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2HNKBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 06:01:49 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:32541
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752645Ab2HNKBr (ORCPT
+	id S1755659Ab2HNKDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 06:03:14 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:34968 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755435Ab2HNKDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 06:01:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah107ah)
-Date: Tue, 14 Aug 2012 18:01:41 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>, <leoli@freescale.com>
-Subject: Re: [PATCH 2/4] fsl_pmc: Add API to enable device as wakeup event
- source
-Message-ID: <20120814100141.GB21028@localhost.localdomain>
-References: <1344329006-10645-1-git-send-email-chenhui.zhao@freescale.com>
- <1344329006-10645-2-git-send-email-chenhui.zhao@freescale.com>
- <CAOZdJXXdgS5x2ZkuXb4wHckdqLzSM2xy-eYU3+28d_=JH3euxg@mail.gmail.com>
+	Tue, 14 Aug 2012 06:03:13 -0400
+Date: Tue, 14 Aug 2012 12:59:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv2 2/4] arm/dts: omap5-evm: Add tmp102 sensor support
+Message-ID: <20120814095923.GB11416@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com>
+ <1344852313-30484-3-git-send-email-sourav.poddar@ti.com>
+ <502A20DD.5030707@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aVD9QWMuhilNxW9f"
 Content-Disposition: inline
-In-Reply-To: <CAOZdJXXdgS5x2ZkuXb4wHckdqLzSM2xy-eYU3+28d_=JH3euxg@mail.gmail.com>
+In-Reply-To: <502A20DD.5030707@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 08:19:43AM -0500, Tabi Timur-B04825 wrote:
-> On Tue, Aug 7, 2012 at 3:43 AM, Zhao Chenhui <chenhui.zhao@freescale.com> wrote:
-> 
-> > +int mpc85xx_pmc_set_wake(struct device *dev, bool enable)
-> > +{
-> > +       int ret = 0;
-> > +       struct device_node *clk_np;
-> > +       const u32 *prop;
-> > +       u32 pmcdr_mask;
-> > +
-> > +       if (!pmc_regs) {
-> > +               pr_err("%s: PMC is unavailable\n", __func__);
-> 
-> You have a 'struct device', so please use dev_err instead.
-> 
-> > +               return -ENODEV;
-> > +       }
-> > +
-> > +       if (enable && !device_may_wakeup(dev))
-> > +               return -EINVAL;
-> > +
-> > +       clk_np = of_parse_phandle(dev->of_node, "fsl,pmc-handle", 0);
-> > +       if (!clk_np)
-> > +               return -EINVAL;
-> > +
-> > +       prop = of_get_property(clk_np, "fsl,pmcdr-mask", NULL);
-> > +       if (!prop) {
-> > +               ret = -EINVAL;
-> > +               goto out;
-> > +       }
-> > +       pmcdr_mask = be32_to_cpup(prop);
-> > +
-> > +       if (enable)
-> > +               /* clear to enable clock in low power mode */
-> > +               clrbits32(&pmc_regs->pmcdr, pmcdr_mask);
-> > +       else
-> > +               setbits32(&pmc_regs->pmcdr, pmcdr_mask);
-> > +
-> > +out:
-> > +       of_node_put(clk_np);
-> > +       return ret;
-> > +}
-> > +EXPORT_SYMBOL_GPL(mpc85xx_pmc_set_wake);
-> 
-> Use EXPORT_SYMBOL, not EXPORT_SYMBOL_GPL.
-> 
-> > +
-> > +/**
-> > + * mpc85xx_pmc_set_lossless_ethernet - enable lossless ethernet
-> > + * in (deep) sleep mode
-> > + * @enable: True to enable event generation; false to disable
-> > + */
-> > +void mpc85xx_pmc_set_lossless_ethernet(int enable)
-> 
-> Should this be 'bool enable'?
-> 
-> > @@ -21,6 +22,17 @@ struct device_node;
-> >
-> >  extern void fsl_rstcr_restart(char *cmd);
-> >
-> > +#ifdef CONFIG_FSL_PMC
-> > +extern int mpc85xx_pmc_set_wake(struct device *dev, bool enable);
-> > +extern void mpc85xx_pmc_set_lossless_ethernet(int enable);
-> 
-> Don't use 'extern' for functions.
-> 
 
-Why? I think there is no difference.
+--aVD9QWMuhilNxW9f
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--Chenhui
+On Tue, Aug 14, 2012 at 11:56:45AM +0200, Benoit Cousson wrote:
+> On 08/13/2012 12:05 PM, Sourav Poddar wrote:
+> > Add tmp102 temperature sensor data in omap5 evm dts file.
+> >=20
+> > Tested on omap5430 evm with 3.5 custom kernel.
+> >=20
+> > Cc: Benoit Cousson <b-cousson@ti.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > Acked-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> > ---
+> >  arch/arm/boot/dts/omap5-evm.dts |    9 +++++++++
+> >  1 files changed, 9 insertions(+), 0 deletions(-)
+> >=20
+> > diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-=
+evm.dts
+> > index 200c39a..45a8aeb 100644
+> > --- a/arch/arm/boot/dts/omap5-evm.dts
+> > +++ b/arch/arm/boot/dts/omap5-evm.dts
+> > @@ -18,3 +18,12 @@
+> >  		reg =3D <0x80000000 0x40000000>; /* 1 GB */
+> >  	};
+> >  };
+> > +
+> > +&i2c4 {
+> > +	clock-frequency =3D <400000>;
+>=20
+> Have you checked if we cannot run at faster speed? Reducing the speed
+> will impact every devices on the bus.
+> It might be needed, I just wanted to be sure.
+>=20
+> You should maybe just add a small comment to explain what the device is
+> doing with potentially a link to the HW spec if available.
+>=20
+> The same comments are applicable to the bmp085 patch.
 
+that sort of information should be placed on
+Documentation/devicetree/bindings/*/$device.txt, right ? Why should we
+replicate it on all dts files ? Besides, there are only two such entries
+on all ARM DTS files. Do we really want to make dts files bigger with
+links to documentation which can even be moved at any time to other
+location by the manufacturer's choice ? Will anyone actually keep track
+of such links to make sure they aren't broken ? And even if someone does
+track those links, do we really want to keep sending such patches for
+the dts files ?
+
+--=20
+balbi
+
+--aVD9QWMuhilNxW9f
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQKiF7AAoJEIaOsuA1yqREh28P/0xhK3vmuH4f8+glpT+QJGQU
+cA/y3F/BS2655o3kyEUpSVeylvhY237alABksiDUSoddGuxGdfoHTwmTGTUp4UZf
+2cr0kz83eRvGQBnMqU0PbujI6c6UZqde23Bv1QhsMy4jD3jlJSjWgaSLbh8BHzx8
+6W1jK+yAXeauVK9+d88Cpv8/pzoYjCNeVKRYb3LEpWFf51iDsg1Pu2+C0RSU14Hi
+gvUfNn3TqgleABQ5MX5HSemFn6icMoefUyy9nUHm+arPUcBsuvSmVLJr3xG6Iqbc
+5dAiSI0BztQLRh+kEcMNBmvybzZINtcCRBbo1TtKAkwIrQcxwhNY7A2Es3mnPej+
+fS/h/dqBIKpfrRBg9QV8P5f3w6E8OgpYMXYmgYm0BUNteNa4ENAlNAOK9uL+fN3B
+VwIqARNanC/q0lmHS52kTrpJ4kVxR4glYl7v6o/jK/xI2ralx4kw7QEkJB2/bJ14
+sYaNyQk1qDpsHZg7BACDD1uw7rw4lZNGUFEgvSChTDlED1pSTLRHQjv84CvDGxM7
+xcXW6GWngbJhXKwP8/+o0jDsFKZNsn2b1pXFL1m76mvKj1GvUDHB0t04r5uW4HjE
+yPvm1asb/thS3ufcCeEnRfzKhiAQgfGgaEhX3zBzSYJoWX7ut7cEsAM4SznumFkc
+gvQd3WeaSUsfJG2wzsEa
+=1ORa
+-----END PGP SIGNATURE-----
+
+--aVD9QWMuhilNxW9f--
