@@ -1,195 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2HNXw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:52:28 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51847 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab2HNXwX (ORCPT
+	id S1754956Ab2HNXwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:52:47 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40907 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab2HNXwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:52:23 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
-        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
-	<1344961490-4068-3-git-send-email-levinsasha928@gmail.com>
-Date: Tue, 14 Aug 2012 16:52:03 -0700
-In-Reply-To: <1344961490-4068-3-git-send-email-levinsasha928@gmail.com> (Sasha
-	Levin's message of "Tue, 14 Aug 2012 18:24:36 +0200")
-Message-ID: <87txw5hw0s.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 14 Aug 2012 19:52:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/uZ6hA1c38WwhoCN0yShGNUKLZoaIhnd8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2787]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <alpine.LFD.2.02.1208150134070.32033@ionos>
+References: <1344449428-24962-1-git-send-email-tj@kernel.org>
+	<alpine.LFD.2.02.1208131720070.32033@ionos>
+	<20120814191549.GX25632@google.com>
+	<alpine.LFD.2.02.1208142118060.32033@ionos>
+	<20120814214009.GD25632@google.com>
+	<alpine.LFD.2.02.1208150045360.32033@ionos>
+	<20120814232738.GG25632@google.com>
+	<alpine.LFD.2.02.1208150134070.32033@ionos>
+Date: Tue, 14 Aug 2012 16:52:42 -0700
+X-Google-Sender-Auth: 51tQsGiVrj7x-p94F6a068pt-sU
+Message-ID: <CAOS58YMOie06+Q0xkzyOwvGd-oeVHLFvrewU7UP_4ES2r4hK+g@mail.gmail.com>
+Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe timers
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <levinsasha928@gmail.com> writes:
+Hello,
 
-> Switch user_ns to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in user_ns.
+On Tue, Aug 14, 2012 at 4:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Do you really expect that I follow all of kernel dev posts within a
+> day of returning from a two weeks vacation?
 
-Two concerns here.
-1) When adding a new entry you recompute the hash where previously that
-   was not done.  I believe that will slow down adding of new entries.
+The head message says on what it's based on and the git branch. I
+can't read your mind or know your current state. You could have asked
+using a proper sentence.
 
-2) Using hash_32 for uids is an interesting choice.  hash_32 discards
-   the low bits.  Last I checked for uids the low bits were the bits
-   that were most likely to be different and had the most entropy.
+We can continue this, but I don't think this is leading any place
+productive. I'm replying to your other reply about the suggestion
+about implementing workqueue's own timerlist. Let's just talk about
+that. Please.
 
-   I'm not certain how multiplying by the GOLDEN_RATION_PRIME_32 will
-   affect things but I would be surprised if it shifted all of the
-   randomness from the low bits to the high bits.
+Thanks.
 
-And just a nit.  struct user is essentially orthogonal to the user namespace
-at this point, making the description of the patch a little weird.
-
-Eric
-
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  kernel/user.c |   33 +++++++++++++--------------------
->  1 files changed, 13 insertions(+), 20 deletions(-)
->
-> diff --git a/kernel/user.c b/kernel/user.c
-> index b815fef..d10c484 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -16,6 +16,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/export.h>
->  #include <linux/user_namespace.h>
-> +#include <linux/hashtable.h>
->  
->  /*
->   * userns count is 1 for root user, 1 for init_uts_ns,
-> @@ -52,13 +53,9 @@ EXPORT_SYMBOL_GPL(init_user_ns);
->   */
->  
->  #define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
-> -#define UIDHASH_SZ	(1 << UIDHASH_BITS)
-> -#define UIDHASH_MASK		(UIDHASH_SZ - 1)
-> -#define __uidhashfn(uid)	(((uid >> UIDHASH_BITS) + uid) & UIDHASH_MASK)
-> -#define uidhashentry(uid)	(uidhash_table + __uidhashfn((__kuid_val(uid))))
->  
->  static struct kmem_cache *uid_cachep;
-> -struct hlist_head uidhash_table[UIDHASH_SZ];
-> +static DEFINE_HASHTABLE(uidhash_table, UIDHASH_BITS)
->  
->  /*
->   * The uidhash_lock is mostly taken from process context, but it is
-> @@ -84,22 +81,22 @@ struct user_struct root_user = {
->  /*
->   * These routines must be called with the uidhash spinlock held!
->   */
-> -static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
-> +static void uid_hash_insert(struct user_struct *up)
->  {
-> -	hlist_add_head(&up->uidhash_node, hashent);
-> +	hash_add(uidhash_table, &up->uidhash_node, __kuid_val(up->uid));
->  }
->  
->  static void uid_hash_remove(struct user_struct *up)
->  {
-> -	hlist_del_init(&up->uidhash_node);
-> +	hash_del(&up->uidhash_node);
->  }
->  
-> -static struct user_struct *uid_hash_find(kuid_t uid, struct hlist_head *hashent)
-> +static struct user_struct *uid_hash_find(kuid_t uid)
->  {
->  	struct user_struct *user;
->  	struct hlist_node *h;
->  
-> -	hlist_for_each_entry(user, h, hashent, uidhash_node) {
-> +	hash_for_each_possible(uidhash_table, user, h, uidhash_node, __kuid_val(uid)) {
->  		if (uid_eq(user->uid, uid)) {
->  			atomic_inc(&user->__count);
->  			return user;
-> @@ -135,7 +132,7 @@ struct user_struct *find_user(kuid_t uid)
->  	unsigned long flags;
->  
->  	spin_lock_irqsave(&uidhash_lock, flags);
-> -	ret = uid_hash_find(uid, uidhashentry(uid));
-> +	ret = uid_hash_find(uid);
->  	spin_unlock_irqrestore(&uidhash_lock, flags);
->  	return ret;
->  }
-> @@ -156,11 +153,10 @@ void free_uid(struct user_struct *up)
->  
->  struct user_struct *alloc_uid(kuid_t uid)
->  {
-> -	struct hlist_head *hashent = uidhashentry(uid);
->  	struct user_struct *up, *new;
->  
->  	spin_lock_irq(&uidhash_lock);
-> -	up = uid_hash_find(uid, hashent);
-> +	up = uid_hash_find(uid);
->  	spin_unlock_irq(&uidhash_lock);
->  
->  	if (!up) {
-> @@ -176,13 +172,13 @@ struct user_struct *alloc_uid(kuid_t uid)
->  		 * on adding the same user already..
->  		 */
->  		spin_lock_irq(&uidhash_lock);
-> -		up = uid_hash_find(uid, hashent);
-> +		up = uid_hash_find(uid);
->  		if (up) {
->  			key_put(new->uid_keyring);
->  			key_put(new->session_keyring);
->  			kmem_cache_free(uid_cachep, new);
->  		} else {
-> -			uid_hash_insert(new, hashent);
-> +			uid_hash_insert(new);
->  			up = new;
->  		}
->  		spin_unlock_irq(&uidhash_lock);
-> @@ -196,17 +192,14 @@ out_unlock:
->  
->  static int __init uid_cache_init(void)
->  {
-> -	int n;
-> -
->  	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
->  			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
->  
-> -	for(n = 0; n < UIDHASH_SZ; ++n)
-> -		INIT_HLIST_HEAD(uidhash_table + n);
-> +	hash_init(uidhash_table);
->  
->  	/* Insert the root user immediately (init already runs as root) */
->  	spin_lock_irq(&uidhash_lock);
-> -	uid_hash_insert(&root_user, uidhashentry(GLOBAL_ROOT_UID));
-> +	uid_hash_insert(&root_user);
->  	spin_unlock_irq(&uidhash_lock);
->  
->  	return 0;
+-- 
+tejun
