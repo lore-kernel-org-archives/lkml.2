@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab2HNJmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 05:42:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44915 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2HNJmP (ORCPT
+	id S1755555Ab2HNJnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 05:43:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60657 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab2HNJnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 05:42:15 -0400
+	Tue, 14 Aug 2012 05:43:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
+Date: Tue, 14 Aug 2012 09:42:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org> <1344527635-6163-6-git-send-email-lee.jones@linaro.org> <CACRpkdZ7bMBytyDppV2sB1d1sUbDpPRqAQVOq8k4UOYdmg+Mkw@mail.gmail.com>
+In-Reply-To: <CACRpkdZ7bMBytyDppV2sB1d1sUbDpPRqAQVOq8k4UOYdmg+Mkw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50283D7A.4090309@gmail.com>
-References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com>
-	<1344783205-2384-4-git-send-email-dh.herrmann@googlemail.com>
-	<50283D7A.4090309@gmail.com>
-Date: Tue, 14 Aug 2012 11:42:13 +0200
-Message-ID: <CANq1E4Q1YHw7HJ7bu41PPnk6MhzZ7UTjM-sXBbVuNuA5GjeE7Q@mail.gmail.com>
-Subject: Re: [PATCH 03/11] fblog: new framebuffer kernel log dummy driver
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208140942.54773.arnd@arndb.de>
+X-Provags-ID: V02:K0:UIVU/bLPxwqh88pVMcU2sNDNSDC9nuTWtRRXdfRuBfm
+ iqXbvJhj+6bdUg2AxqXxKoUgkt2TF+kx8xRZdt9eV+GUSqAH4T
+ 6uErWihQTBsoz/k/EES9/5fHiWMmBRBZ+A1PIjuUEQqihO58SG
+ T0OAz+uKr/LLmx/UEtYXJiY0EbtjJUSL5NQhpB2mvEeYE/XxM2
+ HWuQ+paGqoeegMPZWnQ+G3jhklfjTNvMLbIrBnbWcaYL66eu7h
+ pjib9lr6Vkcl+tgW7pS6to+clXsZ7fpniIS2OcTRVCm3ZCP4aJ
+ Wy5pZ6X6WQzllQ1B+sXZsfVc6d+b5MHTpWRsl2w6d5/A907SzS
+ wCrNMBdWSjwp6Pd+/mfs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan
+On Tuesday 14 August 2012, Linus Walleij wrote:
+> 
+> On Thu, Aug 9, 2012 at 5:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > +static struct irq_domain *db8500_irq_domain;
+> 
+> So this is a good idea.
+> 
+> > +int db8500_irq_get_virq(int irq);
+> 
+> And I'm sceptic about this business. Why isn't this physical-to virtual
+> mapping business confined to the core MFD driver? But enlighten me.
+> 
 
-On Mon, Aug 13, 2012 at 1:34 AM, Ryan Mallon <rmallon@gmail.com> wrote:
-> >  config VGA_CONSOLE
-> >       bool "VGA text console" if EXPERT || !X86
-> > -     depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV &&
-> > !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE ||
-> > ARCH_INTEGRATOR || ARCH_NETWINDER)
-> > +     depends on VT && !4xx && !8xx && !SPARC && !M68K && !PARISC &&
-> > !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM ||
-> > ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
-> >       default y
-> >       help
-> >         Saying Y here will allow you to use Linux in text mode through a
-> > @@ -45,7 +45,7 @@ config VGACON_SOFT_SCROLLBACK_SIZE
-> >        screenfuls of scrollback buffer
->
-> You could just place all of the CONFIG_VT options inside an if VT and
-> then the new fblog options in the else case rather than modifying all of
-> the (already overly long) depends statements.
+I believe MFD does not (yet) know about IRQ domains. The wm8994
+and 88pm80x drivers do this slightly different by exporting
+a foo_request_irq() function that performs the mapping.
 
-Indeed, that sounds better.
+Traditionally, an MFD would add an offset to the local IRQ number
+to put the VIRQ into the IRQ resource, but this doesn't work when
+you have domains other than legacy.
 
-> > +config FBLOG
-> > +     tristate "Framebuffer Kernel Log Driver"
-> > +     depends on !VT && FB
-> > +     default n
->
-> Default n is not required, all options are default n unless otherwise
-> specified. I don't think you need the dependency on FB either, since
-> this file should only get included if CONFIG_FB is set?
-
-I will remove the default-line, but the FB-dependency is required. The
-"console/" directory includes also drivers like vgacon which do not
-depend on FB so it gets always included.
-
-> > +     help
-> > +       This driver displays all kernel log messages on all connected
-> > +       framebuffers. It is mutually exclusive with
-> > CONFIG_FRAMEBUFFER_CONSOLE
-> > +       and CONFIG_VT. It was mainly created for debugging purposes when
-> > +       CONFIG_VT is not selected but you still want kernel boot
-> > messages on
-> > +       the screen.
->
-> Do command line options exist to specify screens to write the debug log
-> to? It might be a useful feature to have.
-
-See patch-7. However, I am not entirely happy with it. I will probably
-have to rethink the parameters.
-
-Thanks for reviewing. I will fix all these in the next series.
-Regards
-David
+	Arnd
