@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2HNOGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:06:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62509 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab2HNOG1 (ORCPT
+	id S1755300Ab2HNOGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:06:46 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55680 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753375Ab2HNOG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:06:27 -0400
-Message-Id: <20120814140620.285660958@openvz.org>
+	Tue, 14 Aug 2012 10:06:28 -0400
+Message-Id: <20120814140620.456133962@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 14 Aug 2012 18:03:48 +0400
+Date: Tue, 14 Aug 2012 18:03:50 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -17,78 +17,145 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 6/8] fs, exportfs: Add export_encode_inode_fh helper
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 8/8] fdinfo: Show sigmask for signalfd fd
 References: <20120814140342.354405844@openvz.org>
-Content-Disposition: inline; filename=seq-fs-exportfs-ino-2
+Content-Disposition: inline; filename=seq-fdinfo-signalfd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To provide fsnotify object inodes being watched without
-binding to alphabetical path we need to encode them with
-exportfs help. This patch adds a helper which operates
-with plain inodes directly.
-
-This feature is CONFIG_CHECKPOINT_RESTORE only.
-
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: James Bottomley <jbottomley@parallels.com>
 ---
- fs/exportfs/expfs.c      |   21 +++++++++++++++++++++
- include/linux/exportfs.h |    4 ++++
- 2 files changed, 25 insertions(+)
+ fs/proc/array.c         |    2 -
+ fs/signalfd.c           |   63 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/proc_fs.h |    3 ++
+ 3 files changed, 67 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.git/fs/exportfs/expfs.c
+Index: linux-2.6.git/fs/proc/array.c
 ===================================================================
---- linux-2.6.git.orig/fs/exportfs/expfs.c
-+++ linux-2.6.git/fs/exportfs/expfs.c
-@@ -302,6 +302,27 @@ out:
- 	return error;
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -220,7 +220,7 @@ static inline void task_state(struct seq
+ 	seq_putc(m, '\n');
  }
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+int export_encode_inode_fh(struct inode *inode, struct fid *fid, int *max_len)
-+{
-+	int len = *max_len;
-+	int type = FILEID_INO32_GEN;
-+
-+	if (len < 2) {
-+		*max_len = 2;
-+		return 255;
-+	}
-+
-+	len = 2;
-+	fid->i32.ino = inode->i_ino;
-+	fid->i32.gen = inode->i_generation;
-+	*max_len = len;
-+
-+	return type;
-+}
-+EXPORT_SYMBOL_GPL(export_encode_inode_fh);
-+#endif
-+
- /**
-  * export_encode_fh - default export_operations->encode_fh function
-  * @inode:   the object to encode
-Index: linux-2.6.git/include/linux/exportfs.h
+-static void render_sigset_t(struct seq_file *m, const char *header,
++void render_sigset_t(struct seq_file *m, const char *header,
+ 				sigset_t *set)
+ {
+ 	int i;
+Index: linux-2.6.git/fs/signalfd.c
 ===================================================================
---- linux-2.6.git.orig/include/linux/exportfs.h
-+++ linux-2.6.git/include/linux/exportfs.h
-@@ -177,6 +177,10 @@ struct export_operations {
- 	int (*commit_metadata)(struct inode *inode);
+--- linux-2.6.git.orig/fs/signalfd.c
++++ linux-2.6.git/fs/signalfd.c
+@@ -29,6 +29,7 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
++#include <linux/proc_fs.h>
+ 
+ void signalfd_cleanup(struct sighand_struct *sighand)
+ {
+@@ -46,6 +47,7 @@ void signalfd_cleanup(struct sighand_str
+ }
+ 
+ struct signalfd_ctx {
++	seqcount_t cnt;
+ 	sigset_t sigmask;
  };
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+extern int export_encode_inode_fh(struct inode *inode, struct fid *fid, int *max_len);
-+#endif
+@@ -259,6 +261,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -ENOMEM;
+ 
+ 		ctx->sigmask = sigmask;
++		seqcount_init(&ctx->cnt);
+ 
+ 		/*
+ 		 * When we call this, the initialization must be complete, since
+@@ -279,7 +282,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -EINVAL;
+ 		}
+ 		spin_lock_irq(&current->sighand->siglock);
++		write_seqcount_begin(&ctx->cnt);
+ 		ctx->sigmask = sigmask;
++		write_seqcount_end(&ctx->cnt);
+ 		spin_unlock_irq(&current->sighand->siglock);
+ 
+ 		wake_up(&current->sighand->signalfd_wqh);
+@@ -294,3 +299,61 @@ SYSCALL_DEFINE3(signalfd, int, ufd, sigs
+ {
+ 	return sys_signalfd4(ufd, user_mask, sizemask, 0);
+ }
 +
- extern int exportfs_encode_fh(struct dentry *dentry, struct fid *fid,
- 	int *max_len, int connectable);
- extern struct dentry *exportfs_decode_fh(struct vfsmount *mnt, struct fid *fid,
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
++
++static void *seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct proc_fdinfo_extra *extra = m->private;
++	return *pos == 0 ? extra->f_file : NULL;
++}
++
++static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++
++static int seq_show(struct seq_file *m, void *v)
++{
++	struct signalfd_ctx *ctx = ((struct file *)v)->private_data;
++	sigset_t sigmask;
++	unsigned seq;
++
++	do {
++		seq = read_seqcount_begin(&ctx->cnt);
++		sigmask = ctx->sigmask;
++	} while (read_seqcount_retry(&ctx->cnt, seq));
++
++	signotset(&sigmask);
++	render_sigset_t(m, "sigmask:\t", &sigmask);
++	return 0;
++}
++
++static void seq_stop(struct seq_file *p, void *v) { }
++
++static const struct seq_operations signalfd_fdinfo_ops = {
++	.start	= seq_start,
++	.next	= seq_next,
++	.stop	= seq_stop,
++	.show	= seq_show,
++};
++
++static int is_signalfd_file(struct file *file)
++{
++	return file->f_op == &signalfd_fops;
++}
++
++static struct proc_fdinfo_driver signalfd_fdinfo = {
++	.name	= "signalfd",
++	.ops	= &signalfd_fdinfo_ops,
++	.probe	= is_signalfd_file,
++};
++
++static int __init signalfd_init(void)
++{
++	return proc_register_fdinfo_driver(&signalfd_fdinfo);
++}
++fs_initcall(signalfd_init);
++
++#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
+Index: linux-2.6.git/include/linux/proc_fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/proc_fs.h
++++ linux-2.6.git/include/linux/proc_fs.h
+@@ -316,4 +316,7 @@ static inline struct net *PDE_NET(struct
+ 	return pde->parent->data;
+ }
+ 
++#include <asm/signal.h>
++
++void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
+ #endif /* _LINUX_PROC_FS_H */
 
