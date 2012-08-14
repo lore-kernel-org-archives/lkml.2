@@ -1,143 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081Ab2HNEGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 00:06:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab2HNEGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 00:06:10 -0400
-Date: Tue, 14 Aug 2012 07:06:08 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH repost] kvm: drop parameter validation
-Message-ID: <20120814040608.GA16588@redhat.com>
-References: <20120813104358.GA16458@redhat.com>
- <20120813143053.GC11194@redhat.com>
- <20120813205932.GA15395@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120813205932.GA15395@amt.cnet>
+	id S1751388Ab2HNEHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 00:07:51 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40613 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2HNEHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 00:07:49 -0400
+X-AuditID: cbfee61b-b7faf6d00000476a-55-5029cf1325f6
+Message-id: <5029CE38.4000407@samsung.com>
+Date: Tue, 14 Aug 2012 13:04:08 +0900
+From: IAN CHEN <ian.cy.chen@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
+        subhashj@codeaurora.org, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
+        jh80.chung@samsung.com, ian.cy.chen@samsung.com
+Subject: [PATCH v2] mmc: card: Skip secure option for MoviNAND.
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jAV3h85oBBn1TzC0u75rDZnHkfz+j
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBn7/1xlLpgqXrFi3jXmBsbjwl2MnBwSAiYSa//8YIaw
+	xSQu3FvPBmILCSxilGi/7dHFyAVkv2aUaLn6ihUkwSugJdG5cTJYA4uAqsSW7V9YQGw2AQ2J
+	7wefMILYogJhEoveH4CqF5T4MfkeC8ggEYGNjBKnO/aCOcwCjYwS895NB6sSFrCXmLbzGthq
+	ZgEdif2t06BseYnNa94yT2Dkm4Vk2CwkZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpec
+	n7uJERxez6R3MK5qsDjEKMDBqMTDW5ioGSDEmlhWXJl7iFGCg1lJhPd+D1CINyWxsiq1KD++
+	qDQntfgQozQHi5I4r4n3V38hgfTEktTs1NSC1CKYLBMHp1QDo4gzo/YH/cRSt5bKBf8M1+82
+	SLwx75K0v/K31UaBc4Ttly6/dvT0k6VHH/g0qfqsZ1T3O2+iPzU9h5Xt6Y0GQdOqoMXn9kzd
+	xRa5Y7FXqk3iAz4Wyf9CK1qzjhVJ35zG/DHL9elN//21hQsnTOj09t2w7fSRvnP7Uxv6+K6p
+	8C3NqQnsNr8sp8RSnJFoqMVcVJwIAIEiLB4rAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 05:59:32PM -0300, Marcelo Tosatti wrote:
-> On Mon, Aug 13, 2012 at 05:30:53PM +0300, Gleb Natapov wrote:
-> > On Mon, Aug 13, 2012 at 01:43:58PM +0300, Michael S. Tsirkin wrote:
-> > > We validate irq pin number when routing is setup, so
-> > > code handling illegal irq # in pic and ioapic on each injection
-> > > is never called.
-> > > Drop it.
-> > > 
-> > I would leave BUG_ON there for a while.
-> 
-> Which BUG_ON?
-> 
-I mean changing if() to BUG_ON().
+For several MoviNAND, there are some known issue with secure option.
+For these specific MoviNAND device, we skip secure option.
 
-BUG_ON (!(irq >= 0 && irq < PIC_NUM_PINS))
+Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+---
+ drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
+ include/linux/mmc/card.h |    1 +
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
-> > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > > 
-> > > Reposting, applies without changes to kvm/next.
-> > > 
-> > >  arch/x86/kvm/i8259.c | 16 +++++++---------
-> > >  virt/kvm/ioapic.c    | 35 +++++++++++++++++------------------
-> > >  2 files changed, 24 insertions(+), 27 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-> > > index 1df8fb9..277ec0d 100644
-> > > --- a/arch/x86/kvm/i8259.c
-> > > +++ b/arch/x86/kvm/i8259.c
-> > > @@ -190,17 +190,15 @@ void kvm_pic_update_irq(struct kvm_pic *s)
-> > >  
-> > >  int kvm_pic_set_irq(struct kvm_pic *s, int irq, int irq_source_id, int level)
-> > >  {
-> > > -	int ret = -1;
-> > > +	int ret, irq_level;
-> > >  
-> > >  	pic_lock(s);
-> > > -	if (irq >= 0 && irq < PIC_NUM_PINS) {
-> > > -		int irq_level = __kvm_irq_line_state(&s->irq_states[irq],
-> > > -						     irq_source_id, level);
-> > > -		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
-> > > -		pic_update_irq(s);
-> > > -		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
-> > > -				      s->pics[irq >> 3].imr, ret == 0);
-> > > -	}
-> > > +	irq_level = __kvm_irq_line_state(&s->irq_states[irq],
-> > > +					 irq_source_id, level);
-> > > +	ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
-> > > +	pic_update_irq(s);
-> > > +	trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
-> > > +			      s->pics[irq >> 3].imr, ret == 0);
-> > >  	pic_unlock(s);
-> > >  
-> > >  	return ret;
-> > > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> > > index ef61d52..4d824c7 100644
-> > > --- a/virt/kvm/ioapic.c
-> > > +++ b/virt/kvm/ioapic.c
-> > > @@ -197,28 +197,27 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-> > >  	u32 old_irr;
-> > >  	u32 mask = 1 << irq;
-> > >  	union kvm_ioapic_redirect_entry entry;
-> > > -	int ret = 1;
-> > > +	int ret, irq_level;
-> > >  
-> > >  	spin_lock(&ioapic->lock);
-> > >  	old_irr = ioapic->irr;
-> > > -	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
-> > > -		int irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
-> > > -						     irq_source_id, level);
-> > > -		entry = ioapic->redirtbl[irq];
-> > > -		irq_level ^= entry.fields.polarity;
-> > > -		if (!irq_level)
-> > > -			ioapic->irr &= ~mask;
-> > > -		else {
-> > > -			int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
-> > > -			ioapic->irr |= mask;
-> > > -			if ((edge && old_irr != ioapic->irr) ||
-> > > -			    (!edge && !entry.fields.remote_irr))
-> > > -				ret = ioapic_service(ioapic, irq);
-> > > -			else
-> > > -				ret = 0; /* report coalesced interrupt */
-> > > -		}
-> > > -		trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
-> > > +	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
-> > > +					 irq_source_id, level);
-> > > +	entry = ioapic->redirtbl[irq];
-> > > +	irq_level ^= entry.fields.polarity;
-> > > +	if (!irq_level) {
-> > > +		ioapic->irr &= ~mask;
-> > > +		ret = 1;
-> > > +	} else {
-> > > +		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
-> > > +		ioapic->irr |= mask;
-> > > +		if ((edge && old_irr != ioapic->irr) ||
-> > > +		    (!edge && !entry.fields.remote_irr))
-> > > +			ret = ioapic_service(ioapic, irq);
-> > > +		else
-> > > +			ret = 0; /* report coalesced interrupt */
-> > >  	}
-> > > +	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
-> > >  	spin_unlock(&ioapic->lock);
-> > >  
-> > >  	return ret;
-> > > -- 
-> > > MST
-> > 
-> > --
-> > 			Gleb.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index f1c84de..a01cc14 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
+struct request *req)
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+-		if (req->cmd_flags & REQ_SECURE)
++		if (req->cmd_flags & REQ_SECURE &&
++			!(card->quirks & MMC_QUIRK_SKIP_SECURE))
+ 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
+ 		else
+ 			ret = mmc_blk_issue_discard_rq(mq, req);
+@@ -1716,6 +1717,7 @@ force_ro_fail:
+ #define CID_MANFID_SANDISK	0x2
+ #define CID_MANFID_TOSHIBA	0x11
+ #define CID_MANFID_MICRON	0x13
++#define CID_MANFID_SAMSUNG	0x15
 
---
-			Gleb.
+ static const struct mmc_fixup blk_fixups[] =
+ {
+@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
+ 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
+ 		  MMC_QUIRK_LONG_READ_TIME),
+
++	/*
++	 * Some issue about secure erase/secure trim for Samsung MoviNAND
++	 */
++	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_MOVINAND_SECURE),
++
+ 	END_FIXUP
+ };
+
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 111aca5..b639a92 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -239,6 +239,7 @@ struct mmc_card {
+ #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
+multiblock */
+ #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
+bytes in */
+ #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
++#define MMC_QUIRK_SKIP_SECURE (1<<10)		/* Skip secure for erase/trim */
+ 						/* byte mode */
+ 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
+ #define MMC_NO_POWER_NOTIFICATION	0
+-- 
+1.7.0.4
