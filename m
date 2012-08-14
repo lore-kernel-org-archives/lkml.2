@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab2HNCCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 22:02:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53301 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab2HNCCq (ORCPT
+	id S1755242Ab2HNCDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 22:03:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63288 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab2HNCDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 22:02:46 -0400
-Date: Mon, 13 Aug 2012 19:02:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Cruz Julian Bishop <cruzjbishop@gmail.com>
-Cc: swetland@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Android: Small documentation changes and a bug fix
-Message-ID: <20120814020242.GC26758@kroah.com>
-References: <1343796860-7025-1-git-send-email-cruzjbishop@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343796860-7025-1-git-send-email-cruzjbishop@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Aug 2012 22:03:46 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-6f-5029b2004fd6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Feng Tang <feng.tang@intel.com>
+Subject: [PATCH] perf script: Fix a NULL pointer dereference
+Date: Tue, 14 Aug 2012 10:57:03 +0900
+Message-Id: <1344909423-26384-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 01, 2012 at 02:54:15PM +1000, Cruz Julian Bishop wrote:
-> Hi,
-> 
-> This set of patches completes more documentation in android/logger.c, as well as fixing a bug there and a comment formatting issue in android/ashmem.c.
-> 
-> Sorry if kernel-doc was not supposed to be applied to driver files - If it isn't, I'll be sure to remember that for next time. :)
-> 
-> Cruz Julian Bishop (5):
->   Fix comment/license formatting in android/ashmem.c
->   Complete documentation of logger_entry in android/logger.h
->   Finish documentation of two structs in android/logger.c
->   Redocument some functions in android/logger.c
->   Fixes a potential bug in android/logger.c
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-In the future, please use a better subject line.  Something like:
-	staging: android: logger: fix finish documentation of structure foo
+If 'perf script --gen-script' was called with a perf.data which
+contains no tracepoint event, it'd segfault due to NULL pevent
+pointer. Fix it.
 
-As it is, I had to go and edit your subjects, and wrap your changelog
-comments (72 columns please).  In the future, I might not.
+Cc: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/trace-event-parse.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-thanks,
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 4cb7f3831f78..a5a554efeb50 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -293,7 +293,7 @@ struct event_format *trace_find_next_event(struct pevent *pevent,
+ {
+ 	static int idx;
+ 
+-	if (!pevent->events)
++	if (!pevent || !pevent->events)
+ 		return NULL;
+ 
+ 	if (!event) {
+-- 
+1.7.11.2
 
-greg k-h
