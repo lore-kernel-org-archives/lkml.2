@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab2HNTvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 15:51:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60354 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab2HNTvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 15:51:13 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 14 Aug 2012 12:51:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Cousson <b-cousson@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH] Documentation: dt: hwmon: Update for tmp102
-Message-ID: <20120814195115.GA17168@roeck-us.net>
-References: <1344961412-13622-1-git-send-email-sourav.poddar@ti.com>
+	id S1755284Ab2HNTvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 15:51:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab2HNTvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 15:51:33 -0400
+Date: Tue, 14 Aug 2012 22:52:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120814195227.GB28870@redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <292b1b52e863a05b299f94bda69a61371011ac19.1344619987.git.aquini@redhat.com>
+ <20120813082619.GE14081@redhat.com>
+ <20120814174404.GA13338@t510.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344961412-13622-1-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120814174404.GA13338@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 09:53:32PM +0530, Sourav Poddar wrote:
-> Add Documentation for tmp102 temperature sensor.
+On Tue, Aug 14, 2012 at 02:44:05PM -0300, Rafael Aquini wrote:
+> On Mon, Aug 13, 2012 at 11:26:19AM +0300, Michael S. Tsirkin wrote:
+> > > +static inline bool movable_balloon_page(struct page *page)
+> > > +{
+> > > +	return (page->mapping && page->mapping == balloon_mapping);
+> > 
+> > I am guessing this needs smp_read_barrier_depends, and maybe
+> > ACCESS_ONCE ...
+> > 
 > 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
->  Documentation/devicetree/bindings/hwmon/tmp102.txt |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/tmp102.txt
+> I'm curious about your guessing here. Could you ellaborate it further, please?
+
+well balloon_mapping can change dynamically.
+
+
+I think actually rcu is a good fit here.
+
 > 
-> diff --git a/Documentation/devicetree/bindings/hwmon/tmp102.txt b/Documentation/devicetree/bindings/hwmon/tmp102.txt
-> new file mode 100644
-> index 0000000..df1342b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/tmp102.txt
-> @@ -0,0 +1,11 @@
-> +TMP102 Temperature sensor
-> +
-> +Required properties:
-> +- compatible: ti,tmp102
-> +
-> +Example:
-> +
-> +tmp102@48 {
-> +        compatible = "ti,tmp102";
-> +        reg = <0x48>;
-> +};
-> -- 
-
-It would be simpler to just add a single line to
-	Documentation/devicetree/bindings/i2c/trivial-devices.txt
-
-Guenter
+> > > +#else
+> > > +static inline bool isolate_balloon_page(struct page *page) { return false; }
+> > > +static inline void putback_balloon_page(struct page *page) { return false; }
+> > > +static inline bool movable_balloon_page(struct page *page) { return false; }
+> > > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && CONFIG_COMPACTION */
+> > > +
+> > 
+> > This does mean that only one type of balloon is useable at a time.
+> > I wonder whether using a flag in address_space structure instead
+> > is possible ...
+> 
+> This means we are only introducing this feature for virtio_balloon by now.
+> Despite the flagging address_space stuff is something we surely can look in the
+> future, I quite didn't get how we could be using two different types of balloon
+> devices at the same time for the same system. Could you ellaborate it a little
+> more, please?
+> 
+> 
+> > > +/* __isolate_lru_page() counterpart for a ballooned page */
+> > > +bool isolate_balloon_page(struct page *page)
+> > > +{
+> > > +	if (WARN_ON(!movable_balloon_page(page)))
+> > 
+> > Looks like this actually can happen if the page is leaked
+> > between previous movable_balloon_page and here.
+> > 
+> > > +		return false;
+> 
+> Yes, it surely can happen, and it does not harm to catch it here, print a warn and
+> return. While testing it, I wasn't lucky to see this small window opening, though.
