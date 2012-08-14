@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab2HNQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:24:58 -0400
+	id S1756729Ab2HNQZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:25:10 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617Ab2HNQYy (ORCPT
+	with ESMTP id S1756682Ab2HNQZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:24:54 -0400
+	Tue, 14 Aug 2012 12:25:07 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,73 +22,119 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 00/16] generic hashtable implementation
-Date: Tue, 14 Aug 2012 18:24:34 +0200
-Message-Id: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 03/16] mm,ksm: use new hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:37 +0200
+Message-Id: <1344961490-4068-4-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are quite a few places in the kernel which implement a hashtable
-in a very similar way. Instead of having implementations of a hashtable
-all over the kernel, we can re-use the code.
+Switch ksm to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the ksm module.
 
-New changes since the RFC:
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ mm/ksm.c |   33 +++++++++++++++------------------
+ 1 files changed, 15 insertions(+), 18 deletions(-)
 
- - Addressed last comments about previous patches.
- - RCU support.
- - Simplified the case where the hashtable is allocated statically, which is
- the common case.
- - A lot more places converted to use the new hashtable.
-
-
-Sasha Levin (16):
-  hashtable: introduce a small and naive hashtable
-  user_ns: use new hashtable implementation
-  mm,ksm: use new hashtable implementation
-  workqueue: use new hashtable implementation
-  mm/huge_memory: use new hashtable implementation
-  tracepoint: use new hashtable implementation
-  net,9p: use new hashtable implementation
-  block,elevator: use new hashtable implementation
-  SUNRPC/cache: use new hashtable implementation
-  dlm: use new hashtable implementation
-  net,l2tp: use new hashtable implementation
-  dm: use new hashtable implementation
-  lockd: use new hashtable implementation
-  net,rds: use new hashtable implementation
-  openvswitch: use new hashtable implementation
-  tracing output: use new hashtable implementation
-
- block/blk.h                                        |    2 +-
- block/elevator.c                                   |   23 +--
- drivers/md/dm-snap.c                               |   24 +--
- drivers/md/persistent-data/dm-block-manager.c      |    1 -
- .../persistent-data/dm-persistent-data-internal.h  |   19 --
- .../md/persistent-data/dm-transaction-manager.c    |   30 +--
- fs/dlm/lowcomms.c                                  |   47 +---
- fs/lockd/svcsubs.c                                 |   58 ++--
- include/linux/elevator.h                           |    5 +-
- include/linux/hashtable.h                          |  284 ++++++++++++++++++++
- kernel/trace/trace_output.c                        |   20 +-
- kernel/tracepoint.c                                |   27 +--
- kernel/user.c                                      |   33 +--
- kernel/workqueue.c                                 |   86 +-----
- mm/huge_memory.c                                   |   57 +---
- mm/ksm.c                                           |   33 +--
- net/9p/error.c                                     |   21 +-
- net/l2tp/l2tp_core.c                               |  132 ++++------
- net/l2tp/l2tp_core.h                               |    8 +-
- net/l2tp/l2tp_debugfs.c                            |   19 +-
- net/openvswitch/vport.c                            |   30 +--
- net/rds/bind.c                                     |   20 +-
- net/rds/connection.c                               |  102 +++----
- net/sunrpc/cache.c                                 |   20 +-
- 24 files changed, 573 insertions(+), 528 deletions(-)
- delete mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
- create mode 100644 include/linux/hashtable.h
-
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 47c8853..5cb602e 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -33,7 +33,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/swap.h>
+ #include <linux/ksm.h>
+-#include <linux/hash.h>
++#include <linux/hashtable.h>
+ #include <linux/freezer.h>
+ #include <linux/oom.h>
+ 
+@@ -156,9 +156,8 @@ struct rmap_item {
+ static struct rb_root root_stable_tree = RB_ROOT;
+ static struct rb_root root_unstable_tree = RB_ROOT;
+ 
+-#define MM_SLOTS_HASH_SHIFT 10
+-#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+-static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
++#define MM_SLOTS_HASH_BITS 10
++static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
+ 
+ static struct mm_slot ksm_mm_head = {
+ 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
+@@ -275,26 +274,21 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
+ 
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+ {
+-	struct mm_slot *mm_slot;
+-	struct hlist_head *bucket;
+ 	struct hlist_node *node;
++	struct mm_slot *slot;
++
++	hash_for_each_possible(mm_slots_hash, slot, node, link, (unsigned long)mm) 
++		if (slot->mm == mm)
++			return slot;
+ 
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+-	hlist_for_each_entry(mm_slot, node, bucket, link) {
+-		if (mm == mm_slot->mm)
+-			return mm_slot;
+-	}
+ 	return NULL;
+ }
+ 
+ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+ 				    struct mm_slot *mm_slot)
+ {
+-	struct hlist_head *bucket;
+-
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+ 	mm_slot->mm = mm;
+-	hlist_add_head(&mm_slot->link, bucket);
++	hash_add(mm_slots_hash, &mm_slot->link, (unsigned long)mm);
+ }
+ 
+ static inline int in_stable_tree(struct rmap_item *rmap_item)
+@@ -647,7 +641,7 @@ static int unmerge_and_remove_all_rmap_items(void)
+ 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
+ 						struct mm_slot, mm_list);
+ 		if (ksm_test_exit(mm)) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1385,7 +1379,7 @@ next_mm:
+ 		 * or when all VM_MERGEABLE areas have been unmapped (and
+ 		 * mmap_sem then protects against race with MADV_MERGEABLE).
+ 		 */
+-		hlist_del(&slot->link);
++		hash_del(&slot->link);
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1548,7 +1542,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	mm_slot = get_mm_slot(mm);
+ 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
+ 		if (!mm_slot->rmap_list) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			easy_to_free = 1;
+ 		} else {
+@@ -2024,6 +2018,9 @@ static int __init ksm_init(void)
+ 	 */
+ 	hotplug_memory_notifier(ksm_memory_callback, 100);
+ #endif
++
++	hash_init(mm_slots_hash);
++
+ 	return 0;
+ 
+ out_free:
 -- 
 1.7.8.6
 
