@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2HNJ5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 05:57:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47846 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab2HNJ47 (ORCPT
+	id S1755621Ab2HNJ7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 05:59:04 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:56858
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752394Ab2HNJ7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 05:56:59 -0400
-Message-ID: <502A20DD.5030707@ti.com>
-Date: Tue, 14 Aug 2012 11:56:45 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 14 Aug 2012 05:59:03 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Tue, 14 Aug 2012 17:58:59 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: <galak@kernel.crashing.org>
+CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>, <leoli@freescale.com>,
+        <B04825@freescale.com>
+Subject: Re: [PATCH 2/4] fsl_pmc: Add API to enable device as wakeup event
+ source
+Message-ID: <20120814095859.GA21028@localhost.localdomain>
+References: <1344329006-10645-1-git-send-email-chenhui.zhao@freescale.com>
+ <1344329006-10645-2-git-send-email-chenhui.zhao@freescale.com>
+ <CAOZdJXXdgS5x2ZkuXb4wHckdqLzSM2xy-eYU3+28d_=JH3euxg@mail.gmail.com>
 MIME-Version: 1.0
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv2 2/4] arm/dts: omap5-evm: Add tmp102 sensor support
-References: <1344852313-30484-1-git-send-email-sourav.poddar@ti.com> <1344852313-30484-3-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1344852313-30484-3-git-send-email-sourav.poddar@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAOZdJXXdgS5x2ZkuXb4wHckdqLzSM2xy-eYU3+28d_=JH3euxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 12:05 PM, Sourav Poddar wrote:
-> Add tmp102 temperature sensor data in omap5 evm dts file.
+On Sat, Aug 11, 2012 at 08:19:43AM -0500, Tabi Timur-B04825 wrote:
+> On Tue, Aug 7, 2012 at 3:43 AM, Zhao Chenhui <chenhui.zhao@freescale.com> wrote:
 > 
-> Tested on omap5430 evm with 3.5 custom kernel.
+> > +               return -EINVAL;
+> > +
+> > +       prop = of_get_property(clk_np, "fsl,pmcdr-mask", NULL);
+> > +       if (!prop) {
+> > +               ret = -EINVAL;
+> > +               goto out;
+> > +       }
+> > +       pmcdr_mask = be32_to_cpup(prop);
+> > +
+> > +       if (enable)
+> > +               /* clear to enable clock in low power mode */
+> > +               clrbits32(&pmc_regs->pmcdr, pmcdr_mask);
+> > +       else
+> > +               setbits32(&pmc_regs->pmcdr, pmcdr_mask);
+> > +
+> > +out:
+> > +       of_node_put(clk_np);
+> > +       return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(mpc85xx_pmc_set_wake);
 > 
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
->  arch/arm/boot/dts/omap5-evm.dts |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
+> Use EXPORT_SYMBOL, not EXPORT_SYMBOL_GPL.
 > 
-> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-> index 200c39a..45a8aeb 100644
-> --- a/arch/arm/boot/dts/omap5-evm.dts
-> +++ b/arch/arm/boot/dts/omap5-evm.dts
-> @@ -18,3 +18,12 @@
->  		reg = <0x80000000 0x40000000>; /* 1 GB */
->  	};
->  };
-> +
-> +&i2c4 {
-> +	clock-frequency = <400000>;
 
-Have you checked if we cannot run at faster speed? Reducing the speed
-will impact every devices on the bus.
-It might be needed, I just wanted to be sure.
+Hi kumar,
 
-You should maybe just add a small comment to explain what the device is
-doing with potentially a link to the HW spec if available.
+Is that ok with upstream?
 
-The same comments are applicable to the bmp085 patch.
-
-Regards,
-Benoit
+-Chenhui
 
