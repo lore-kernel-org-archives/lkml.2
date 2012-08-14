@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab2HNWrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 18:47:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab2HNWra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 18:47:30 -0400
-Date: Wed, 15 Aug 2012 01:48:16 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120814224816.GB29180@redhat.com>
-References: <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <20120814182244.GB13338@t510.redhat.com>
- <20120814195139.GA28870@redhat.com>
- <20120814195916.GC28870@redhat.com>
- <20120814200830.GD22133@t510.redhat.com>
- <20120814202401.GB28990@redhat.com>
- <20120814202949.GF22133@t510.redhat.com>
- <20120814204906.GD28990@redhat.com>
- <20120814213412.GG22133@t510.redhat.com>
+	id S1753291Ab2HNWsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 18:48:05 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:53266 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751863Ab2HNWsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 18:48:01 -0400
+Message-ID: <1344984477.2690.85.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 0/5] Call netif_carrier_off() after register_netdev()
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <shchepetkov@ispras.ru>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ldv-project@ispras.ru>
+Date: Tue, 14 Aug 2012 23:47:57 +0100
+In-Reply-To: <20120814.140019.1016184364798213214.davem@davemloft.net>
+References: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
+	 <20120814.140019.1016184364798213214.davem@davemloft.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814213412.GG22133@t510.redhat.com>
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 06:34:13PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 14, 2012 at 11:49:06PM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 14, 2012 at 05:29:50PM -0300, Rafael Aquini wrote:
-> > > On Tue, Aug 14, 2012 at 11:24:01PM +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Aug 14, 2012 at 05:08:31PM -0300, Rafael Aquini wrote:
-> > > > > On Tue, Aug 14, 2012 at 10:59:16PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > What if there is more than one balloon device?
-> > > > > > > > 
-> > > > > > > > Is it possible to load this driver twice, or are you foreseeing a future case
-> > > > > > > > where this driver will be able to manage several distinct memory balloons for
-> > > > > > > > the same guest?
-> > > > > > > > 
-> > > > > > > 
-> > > > > > > Second.
-> > > > > > > It is easy to create several balloons they are just
-> > > > > > > pci devices.
-> > > > > >  
-> > > > > > 
-> > > > > > 
-> > > > > > and it might not be too important to make it work but
-> > > > > > at least would be nice not to have a crash in this
-> > > > > > setup.
-> > > > > >
-> > > > > Fair enough. For now, as I believe it's safe to assume we are only inflating one
-> > > > > balloon per guest, I'd like to propose this as a future enhancement. Sounds
-> > > > > good?
-> > > > >  
-> > > > 
-> > > > Since guest crashes when it's not the case, no it doesn't, sorry :(.
-> > > >
-> > > Ok, but right now this driver only takes care of 1 balloon per guest,
-> > 
-> > It does? Are you sure? There is no global state as far as I can see. So
-> > I can create 2 devices and driver will happily create two instances,
-> > each one can be inflated/deflated independently.
-> > 
-> > > so how
-> > > could this approach crash it? 
-> > 
-> > Add device. inflate. Add another device. inflate. deflate. unplug.
-> > Now you have pointer to freed memory and when mm touches
-> > page from first device, you ge use after free.
-> > 
-> > > Your point is a good thing to be on a to-do list for future enhancements, but
-> > > it's not a dealbreaker for the present balloon driver implementation, IMHO.
-> > > 
-> > 
-> > Yes it looks like a dealbreaker to me.
+On Tue, 2012-08-14 at 14:00 -0700, David Miller wrote:
+> From: Ilya Shchepetkov <shchepetkov@ispras.ru>
+> Date: Tue, 14 Aug 2012 14:28:50 +0400
 > 
-> Sorry. You're right, I'm wrong.
+> > Hi,
+> > 
+> > There are several patches on the subject:
+> > 	
+> > 	31bde1ceaa873bcaecd49e829bfabceacc4c512d
+> > 	c55ad8e56b983f03589b38b4504b5d1f41161ff8
+> > 	e826eafa65c6f1f7c8db5a237556cebac57ebcc5
+> > 	0d672e9f8ac320c6d1ea9103db6df7f99ea20361
+> > 	6a3c869a6021f4abcd69aa5fbb15c63f69eb36fe
+> > 
+> > In 2008, David Miller wrote in his commit:
+> > (b47300168e770b60ab96c8924854c3b0eb4260eb)
+> > 
+> >>net: Do not fire linkwatch events until the device is registered.
+> > 
+> >>Several device drivers try to do things like netif_carrier_off()
+> >>before register_netdev() is invoked.  This is bogus, but too many
+> >>drivers do this to fix them all up in one go.
+> > 
+> > But I don't understand what will happen in this case?
 > 
-> I'll get back to the scracthpad to overcome this constraint. I believe the way
-> this patch was at its v4 revision (wrt this particular case) could possibly
-> address this concern of yours.
+> Sigh... I would strongly suggest that when you don't understand
+> something you leave it alone until you do.
+> 
+> You can't do the netif_carrier_off() after the device register because
+> at the precise moment the device is registered it can be openned in
+> parallel on another cpu and thus cause the entire carrier state
+> to be changed.
+> 
+> Therefore if you do the netif_carrier_off() afterwards, it might
+> be overwriting state changes made in another context.
+> 
+> Please just leave this code alone.
 
-Almost. We still have a global balloon_mapping. The only reason for
-it to exist seems solely to detect balloon mappings, so it
-can just be replaced by a flag in the mapping, or in mapping
-ops, or elsewhere. Also, please add APIs to mm so we can
-avoid doing internal mm stuff like
+But if you do it beforehand then it doesn't have the intended effect.
+(Supposed to be fixed by 22604c866889c4b2e12b73cbf1683bda1b72a313, which
+had to be reverted: c276e098d3ee33059b4a1c747354226cec58487c.)
 
-INIT_RADIX_TREE(&balloon_mapping->page_tree, GFP_ATOMIC | __GFP_NOWARN);
+So you have to do it after, but without dropping the RTNL lock in
+between.
 
-in the driver. It should be
-alloc_address_mapping(&virtio_balloon_aops);
-free_address_mapping
-
-Make page->mapping use rcu, and sync rcu in
-free_address_mapping.
+Ben.
 
 -- 
-MST
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
