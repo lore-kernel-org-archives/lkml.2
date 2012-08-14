@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2HNQYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 12:24:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44469 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab2HNQYk (ORCPT
+	id S1756676Ab2HNQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 12:24:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39086 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab2HNQYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 12:24:40 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Sourav Poddar <sourav.poddar@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCHv3 4/4] arm/dts: omap5-evm: Add bmp085 sensor support
-Date: Tue, 14 Aug 2012 21:54:33 +0530
-Message-ID: <1344961473-13675-5-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1344961473-13675-1-git-send-email-sourav.poddar@ti.com>
-References: <1344961473-13675-1-git-send-email-sourav.poddar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 14 Aug 2012 12:24:54 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 00/16] generic hashtable implementation
+Date: Tue, 14 Aug 2012 18:24:34 +0200
+Message-Id: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bmp085 pressure sensor data in omap5 evm dts file.
+There are quite a few places in the kernel which implement a hashtable
+in a very similar way. Instead of having implementations of a hashtable
+all over the kernel, we can re-use the code.
 
-Tested on omap5430 evm with 3.5 custom kernel.
+New changes since the RFC:
 
-Cc: Benoit Cousson <b-cousson@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
- arch/arm/boot/dts/omap5-evm.dts |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ - Addressed last comments about previous patches.
+ - RCU support.
+ - Simplified the case where the hashtable is allocated statically, which is
+ the common case.
+ - A lot more places converted to use the new hashtable.
 
-diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
-index 8835026..378ccc2 100644
---- a/arch/arm/boot/dts/omap5-evm.dts
-+++ b/arch/arm/boot/dts/omap5-evm.dts
-@@ -40,3 +40,13 @@
- 		reg = <0x48>;
- 	};
- };
-+
-+&i2c2 {
-+	clock-frequency = <400000>;
-+
-+	/* Pressure Sensor */
-+	bmp085@77 {
-+		compatible = "bosch,bmp085";
-+		reg = <0x77>;
-+	};
-+};
+
+Sasha Levin (16):
+  hashtable: introduce a small and naive hashtable
+  user_ns: use new hashtable implementation
+  mm,ksm: use new hashtable implementation
+  workqueue: use new hashtable implementation
+  mm/huge_memory: use new hashtable implementation
+  tracepoint: use new hashtable implementation
+  net,9p: use new hashtable implementation
+  block,elevator: use new hashtable implementation
+  SUNRPC/cache: use new hashtable implementation
+  dlm: use new hashtable implementation
+  net,l2tp: use new hashtable implementation
+  dm: use new hashtable implementation
+  lockd: use new hashtable implementation
+  net,rds: use new hashtable implementation
+  openvswitch: use new hashtable implementation
+  tracing output: use new hashtable implementation
+
+ block/blk.h                                        |    2 +-
+ block/elevator.c                                   |   23 +--
+ drivers/md/dm-snap.c                               |   24 +--
+ drivers/md/persistent-data/dm-block-manager.c      |    1 -
+ .../persistent-data/dm-persistent-data-internal.h  |   19 --
+ .../md/persistent-data/dm-transaction-manager.c    |   30 +--
+ fs/dlm/lowcomms.c                                  |   47 +---
+ fs/lockd/svcsubs.c                                 |   58 ++--
+ include/linux/elevator.h                           |    5 +-
+ include/linux/hashtable.h                          |  284 ++++++++++++++++++++
+ kernel/trace/trace_output.c                        |   20 +-
+ kernel/tracepoint.c                                |   27 +--
+ kernel/user.c                                      |   33 +--
+ kernel/workqueue.c                                 |   86 +-----
+ mm/huge_memory.c                                   |   57 +---
+ mm/ksm.c                                           |   33 +--
+ net/9p/error.c                                     |   21 +-
+ net/l2tp/l2tp_core.c                               |  132 ++++------
+ net/l2tp/l2tp_core.h                               |    8 +-
+ net/l2tp/l2tp_debugfs.c                            |   19 +-
+ net/openvswitch/vport.c                            |   30 +--
+ net/rds/bind.c                                     |   20 +-
+ net/rds/connection.c                               |  102 +++----
+ net/sunrpc/cache.c                                 |   20 +-
+ 24 files changed, 573 insertions(+), 528 deletions(-)
+ delete mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
+ create mode 100644 include/linux/hashtable.h
+
 -- 
-1.7.1
+1.7.8.6
 
