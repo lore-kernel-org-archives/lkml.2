@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab2HNPGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 11:06:04 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40617 "EHLO
+	id S1756543Ab2HNPGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 11:06:11 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56018 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab2HNPF6 (ORCPT
+	with ESMTP id S1756520Ab2HNPGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 11:05:58 -0400
+	Tue, 14 Aug 2012 11:06:04 -0400
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next v2 01/15] net: introduce upper device lists
-Date: Tue, 14 Aug 2012 17:05:34 +0200
-Message-Id: <1344956748-2099-2-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next v2 03/15] vlan: add link to upper device
+Date: Tue, 14 Aug 2012 17:05:36 +0200
+Message-Id: <1344956748-2099-4-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
 References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
@@ -30,333 +30,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This lists are supposed to serve for storing pointers to all upper devices.
-Eventually it will replace dev->master pointer which is used for
-bonding, bridge, team but it cannot be used for vlan, macvlan where
-there might be multiple upper present. In case the upper link is
-replacement for dev->master, it is marked with "master" flag.
-
-New upper device list resolves this limitation. Also, the information
-stored in lists is used for preventing looping setups like
-"bond->somethingelse->samebond"
-
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- include/linux/netdevice.h |   14 +++
- net/core/dev.c            |  236 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 246 insertions(+), 4 deletions(-)
+ net/8021q/vlan.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index a9db4f3..95345d4 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1173,6 +1173,8 @@ struct net_device {
- 					  * which this device is member of.
- 					  */
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 9096bcb..2dca0fa 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+ 	 */
+ 	unregister_netdevice_queue(dev, head);
  
-+	struct list_head	upper_dev_list; /* List of upper devices */
++	netdev_upper_dev_unlink(real_dev, dev);
 +
- 	/* Interface address info used in eth_type_trans() */
- 	unsigned char		*dev_addr;	/* hw address, (before bcast
- 						   because most packets are
-@@ -2611,6 +2613,18 @@ extern int		netdev_max_backlog;
- extern int		netdev_tstamp_prequeue;
- extern int		weight_p;
- extern int		bpf_jit_enable;
-+
-+extern bool netdev_has_upper_dev(struct net_device *dev,
-+				 struct net_device *upper_dev);
-+extern bool netdev_has_any_upper_dev(struct net_device *dev);
-+extern struct net_device *netdev_master_upper_dev_get(struct net_device *dev);
-+extern struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev);
-+extern int netdev_upper_dev_link(struct net_device *dev,
-+				 struct net_device *upper_dev);
-+extern int netdev_master_upper_dev_link(struct net_device *dev,
-+					struct net_device *upper_dev);
-+extern void netdev_upper_dev_unlink(struct net_device *dev,
-+				    struct net_device *upper_dev);
- extern int		netdev_set_master(struct net_device *dev, struct net_device *master);
- extern int netdev_set_bond_master(struct net_device *dev,
- 				  struct net_device *master);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 1f06df8..d7fd235 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4425,6 +4425,229 @@ static int __init dev_proc_init(void)
- #endif	/* CONFIG_PROC_FS */
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
  
+@@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
+ 	if (err < 0)
+ 		goto out_uninit_applicant;
  
-+struct netdev_upper {
-+	struct net_device *dev;
-+	bool master;
-+	struct list_head list;
-+	struct rcu_head rcu;
-+};
++	err = netdev_upper_dev_link(real_dev, dev);
++	if (err)
++		goto out_uninit_applicant;
 +
-+static bool __netdev_has_upper_dev(struct net_device *dev,
-+				   struct net_device *upper_dev,
-+				   bool deep)
-+{
-+	struct netdev_upper *upper;
-+
-+	list_for_each_entry(upper, &dev->upper_dev_list, list) {
-+		if (upper->dev == upper_dev)
-+			return true;
-+		if (deep && __netdev_has_upper_dev(upper->dev, upper_dev, deep))
-+			return true;
-+	}
-+	return false;
-+}
-+
-+static struct netdev_upper *__netdev_find_upper(struct net_device *dev,
-+						struct net_device *upper_dev)
-+{
-+	struct netdev_upper *upper;
-+
-+	list_for_each_entry(upper, &dev->upper_dev_list, list) {
-+		if (upper->dev == upper_dev)
-+			return upper;
-+	}
-+	return NULL;
-+}
-+
-+/**
-+ * netdev_has_upper_dev - Check if device is linked to an upper device
-+ * @dev: device
-+ * @upper_dev: upper device to check
-+ *
-+ * Find out if a device is linked to specified upper device and return true
-+ * in case it is. The caller must hold the RTNL semaphore.
-+ */
-+bool netdev_has_upper_dev(struct net_device *dev,
-+			  struct net_device *upper_dev)
-+{
-+	ASSERT_RTNL();
-+
-+	return __netdev_has_upper_dev(dev, upper_dev, false);
-+}
-+EXPORT_SYMBOL(netdev_has_upper_dev);
-+
-+/**
-+ * netdev_has_any_upper_dev - Check if device is linked to some device
-+ * @dev: device
-+ *
-+ * Find out if a device is linked to an upper device and return true in case
-+ * it is. The caller must hold the RTNL semaphore.
-+ */
-+bool netdev_has_any_upper_dev(struct net_device *dev)
-+{
-+	ASSERT_RTNL();
-+
-+	return !list_empty(&dev->upper_dev_list);
-+}
-+EXPORT_SYMBOL(netdev_has_any_upper_dev);
-+
-+/**
-+ * netdev_master_upper_dev_get - Get master upper device
-+ * @dev: device
-+ *
-+ * Find a master upper device and return pointer to it or NULL in case
-+ * it's not there. The caller must hold the RTNL semaphore.
-+ */
-+struct net_device *netdev_master_upper_dev_get(struct net_device *dev)
-+{
-+	struct netdev_upper *upper;
-+
-+	ASSERT_RTNL();
-+
-+	if (list_empty(&dev->upper_dev_list))
-+		return NULL;
-+
-+	upper = list_first_entry(&dev->upper_dev_list,
-+				 struct netdev_upper, list);
-+	if (likely(upper->master))
-+		return upper->dev;
-+	return NULL;
-+}
-+EXPORT_SYMBOL(netdev_master_upper_dev_get);
-+
-+/**
-+ * netdev_master_upper_dev_get_rcu - Get master upper device
-+ * @dev: device
-+ *
-+ * Find a master upper device and return pointer to it or NULL in case
-+ * it's not there. The caller must hold the RCU read lock.
-+ */
-+struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev)
-+{
-+	struct netdev_upper *upper;
-+
-+	upper = list_first_or_null_rcu(&dev->upper_dev_list,
-+				       struct netdev_upper, list);
-+	if (upper && likely(upper->master))
-+		return upper->dev;
-+	return NULL;
-+}
-+EXPORT_SYMBOL(netdev_master_upper_dev_get_rcu);
-+
-+static int __netdev_upper_dev_link(struct net_device *dev,
-+				   struct net_device *upper_dev, bool master)
-+{
-+	struct netdev_upper *upper;
-+
-+	ASSERT_RTNL();
-+
-+	if (dev == upper_dev)
-+		return -EBUSY;
-+	/*
-+	 * To prevent loops, check if dev is not upper device to upper_dev.
-+	 */
-+	if (__netdev_has_upper_dev(upper_dev, dev, true))
-+		return -EBUSY;
-+
-+	if (__netdev_find_upper(dev, upper_dev))
-+		return -EEXIST;
-+
-+	if (master && netdev_master_upper_dev_get(dev))
-+		return -EBUSY;
-+
-+	upper = kmalloc(sizeof(*upper), GFP_KERNEL);
-+	if (!upper)
-+		return -ENOMEM;
-+
-+	upper->dev = upper_dev;
-+	upper->master = master;
-+
-+	/*
-+	 * Ensure that master upper link is always the first item in the list.
-+	 */
-+	if (master)
-+		list_add_rcu(&upper->list, &dev->upper_dev_list);
-+	else
-+		list_add_tail_rcu(&upper->list, &dev->upper_dev_list);
-+	dev_hold(upper_dev);
-+
-+	return 0;
-+}
-+/**
-+ * netdev_upper_dev_link - Add a link to the upper device
-+ * @dev: device
-+ * @upper_dev: new upper device
-+ *
-+ * Adds a link to device which is upper to this one. The caller must hold
-+ * the RTNL semaphore. On a failure a negative errno code is returned.
-+ * On success the reference counts are adjusted and the function
-+ * returns zero.
-+ */
-+int netdev_upper_dev_link(struct net_device *dev,
-+			  struct net_device *upper_dev)
-+{
-+	return __netdev_upper_dev_link(dev, upper_dev, false);
-+}
-+EXPORT_SYMBOL(netdev_upper_dev_link);
-+
-+/**
-+ * netdev_master_upper_dev_link - Add a master link to the upper device
-+ * @dev: device
-+ * @upper_dev: new upper device
-+ *
-+ * Adds a link to device which is upper to this one. In this case, only
-+ * one master upper device can be linked, although other non-master devices
-+ * might be linked as well. The caller must hold the RTNL semaphore.
-+ * On a failure a negative errno code is returned. On success the reference
-+ * counts are adjusted and the function returns zero.
-+ */
-+int netdev_master_upper_dev_link(struct net_device *dev,
-+				 struct net_device *upper_dev)
-+{
-+	return __netdev_upper_dev_link(dev, upper_dev, true);
-+}
-+EXPORT_SYMBOL(netdev_master_upper_dev_link);
-+
-+/**
-+ * netdev_upper_free_rcu - Frees a upper device list item via the RCU pointer
-+ * @entry: the entry's RCU field
-+ *
-+ * This function is designed to be used as a callback to the call_rcu()
-+ * function so that the memory allocated to the netdev upper device list item
-+ * can be released safely.
-+ */
-+static void netdev_upper_free_rcu(struct rcu_head *entry)
-+{
-+	struct netdev_upper *upper;
-+
-+	upper = container_of(entry, struct netdev_upper, rcu);
-+	kfree(upper);
-+}
-+
-+/**
-+ * netdev_upper_dev_unlink - Removes a link to upper device
-+ * @dev: device
-+ * @upper_dev: new upper device
-+ *
-+ * Removes a link to device which is upper to this one. The caller must hold
-+ * the RTNL semaphore.
-+ */
-+void netdev_upper_dev_unlink(struct net_device *dev,
-+			     struct net_device *upper_dev)
-+{
-+	struct netdev_upper *upper;
-+
-+	ASSERT_RTNL();
-+
-+	upper = __netdev_find_upper(dev, upper_dev);
-+	if (!upper)
-+		return;
-+	list_del_rcu(&upper->list);
-+	dev_put(upper_dev);
-+	call_rcu(&upper->rcu, netdev_upper_free_rcu);
-+}
-+EXPORT_SYMBOL(netdev_upper_dev_unlink);
-+
- /**
-  *	netdev_set_master	-	set up master pointer
-  *	@slave: slave device
-@@ -4438,19 +4661,23 @@ static int __init dev_proc_init(void)
- int netdev_set_master(struct net_device *slave, struct net_device *master)
- {
- 	struct net_device *old = slave->master;
-+	int err;
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+-		goto out_uninit_applicant;
++		goto out_upper_dev_unlink;
  
- 	ASSERT_RTNL();
+ 	/* Account for reference in struct vlan_dev_priv */
+ 	dev_hold(real_dev);
+@@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
  
- 	if (master) {
- 		if (old)
- 			return -EBUSY;
--		dev_hold(master);
-+		err = netdev_master_upper_dev_link(slave, master);
-+		if (err)
-+			return err;
- 	}
- 
- 	slave->master = master;
- 
- 	if (old)
--		dev_put(old);
-+		netdev_upper_dev_unlink(slave, master);
-+
  	return 0;
- }
- EXPORT_SYMBOL(netdev_set_master);
-@@ -5297,8 +5524,8 @@ static void rollback_registered_many(struct list_head *head)
- 		if (dev->netdev_ops->ndo_uninit)
- 			dev->netdev_ops->ndo_uninit(dev);
  
--		/* Notifier chain MUST detach us from master device. */
--		WARN_ON(dev->master);
-+		/* Notifier chain MUST detach us all upper devices. */
-+		WARN_ON(netdev_has_any_upper_dev(dev));
- 
- 		/* Remove entries from kobject tree */
- 		netdev_unregister_kobject(dev);
-@@ -5999,6 +6226,7 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
- 	INIT_LIST_HEAD(&dev->napi_list);
- 	INIT_LIST_HEAD(&dev->unreg_list);
- 	INIT_LIST_HEAD(&dev->link_watch_list);
-+	INIT_LIST_HEAD(&dev->upper_dev_list);
- 	dev->priv_flags = IFF_XMIT_DST_RELEASE;
- 	setup(dev);
- 
++out_upper_dev_unlink:
++	netdev_upper_dev_unlink(real_dev, dev);
+ out_uninit_applicant:
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
 -- 
 1.7.10.4
 
