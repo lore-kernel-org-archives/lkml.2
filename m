@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab2HNX0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:26:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44657 "EHLO mx2.suse.de"
+	id S1754617Ab2HNX0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41549 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab2HNXZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:25:58 -0400
-Date: Wed, 15 Aug 2012 09:25:23 +1000
-From: NeilBrown <neilb@suse.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH 01/16] hashtable: introduce a small and naive hashtable
-Message-ID: <20120815092523.00a909ef@notabene.brown>
-In-Reply-To: <1344961490-4068-2-git-send-email-levinsasha928@gmail.com>
-References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
-	<1344961490-4068-2-git-send-email-levinsasha928@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1754448Ab2HNX0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:26:30 -0400
+Message-ID: <1344986787.4683.370.camel@ul30vt.home>
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 14 Aug 2012 17:26:27 -0600
+In-Reply-To: <20120814230417.GC29180@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+	 <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com>
+	 <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com>
+	 <1344540375.3441.228.camel@ul30vt.home> <20120812093336.GC1421@redhat.com>
+	 <502A462A.1000600@redhat.com> <1344981675.4683.338.camel@ul30vt.home>
+	 <20120814230417.GC29180@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/WaPYDSkmDZTaSUO/RNup8tR"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/WaPYDSkmDZTaSUO/RNup8tR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-08-15 at 02:04 +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 14, 2012 at 04:01:15PM -0600, Alex Williamson wrote:
+> > On Tue, 2012-08-14 at 15:35 +0300, Avi Kivity wrote:
+> > > On 08/12/2012 12:33 PM, Michael S. Tsirkin wrote:
+> > > >> 
+> > > >> Michael, would the interface be more acceptable to you if we added
+> > > >> separate ioctls to allocate and free some representation of an irq
+> > > >> source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > > >> for an irq source ID/gsi object which would then be passed as a
+> > > >> parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > > >> representing the source id/gsi isn't magically freed on it's own.  This
+> > > >> would also allow us to deassign/close one end and reconfigure it later.
+> > > >> Thanks,
+> > > >> 
+> > > >> Alex
+> > > > 
+> > > > It's acceptable to me either way. I was only pointing out that as
+> > > > designed, the interface looks simple at first but then you find out some
+> > > > subtle limitations which are implementation driven. This gives
+> > > > an overall feeling the abstraction is too low level.
+> > > > 
+> > > > If we compare to the existing irqfd, isn't the difference
+> > > > simply that irqfd deasserts immediately ATM, while we
+> > > > want to delay this until later?
+> > > > 
+> > > > If yes, then along the lines that you proposed, and combining with my
+> > > > idea of tracking deasserts, how do you like the following:
+> > > > 
+> > > > /* Keep line asserted until guest has handled the interrupt. */
+> > > > #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
+> > > > /* Notify after line is deasserted. */
+> > > > #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
+> > > > 
+> > > > 	struct kvm_irqfd {
+> > > > 		__u32 fd;
+> > > > 		__u32 gsi;
+> > > > 		__u32 flags;
+> > > > 		/* eventfd to notify when line is deasserted */
+> > > > 		__u32 deassert_eventfd;
+> > > > 		__u8  pad[16];
+> > > > 	};
+> > > > 
+> > > > now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
+> > > > effective for level interrupts.
+> > > > 
+> > > > Notes about lifetime of objects:
+> > > > 	- closing deassert_eventfd does nothing (we can keep
+> > > > 	  reference to it from irqfd so no need for
+> > > >           complex polling/flushing scheme)
+> > > > 	- closing irqfd or deasserting dis-associates
+> > > > 	  deassert_eventfd automatically
+> > > > 	- source id is internal to irqfd and goes away with it
+> > > > 
+> > > > it looks harder to misuse and fits what we want to do nicely,
+> > > > and needs less code to implement.
+> > > > 
+> > > > Avi, what do you think?
+> > > 
+> > > I think given all the complexity in the separate ioctl approach that
+> > > this makes sense.  There are no lifetime issues or code to match the two
+> > > eventfds.  Alex, would this API simplify the code?
+> > 
+> > It does though I'm concerned that it's a very specific solution that
+> > only addresses this problem.  Generic userspace eoi/ack is not
+> > addressed.  The latest version using separate ioctls does a lot of
+> > simplification by exposing irq sourceids.  The bulk of the code there is
+> > duplicating what irqfd does just so we can catch the POLLHUP for
+> > cleanup.  If there was an easier way to do that, we don't care about
+> > POLLIN/POLLOUT, much of the code could be removed.  Alternatively we
+> > could make some common infrastructure to simplify both irqfd and
+> > irq_ackfd, but how to frame the helpers isn't easy.
+> 
+> There is way easier with a single ioctl.  Don't you see?
+> 
+> As ack_eventfd pointer becomes part of the irqfd structure now, you
+> simply drop the reference together with irqfd.
+> In other words you do not care that ack eventfd goes
+> away anymore. So no need for POLLHUP handlers, no
+> separate DEASSERT that can race with that, etc.
+> 
+> So all this code just goes away, and it goes away completely, together
+> with managing source IDs (source ID comes an internal optimization to
+> avoid spurious EOIs, so no need to expose it to userspace anymore).
+> 
+> So all we are left with is minimal:
+> 1. change irqfds to use a separate source id (can do this
+>    unconditionally for all irqfds)
+> 2. check deassert on ack, if set register ack notifier
+> 3. in ack notifier check deassert eventfd, if set signal it
+> 4. (optionally) add a flag in irqfd, set on assert, test and clear
+>    on deassert, and only signal eventfd if it was set
+> 
+> on top of that we could try to do
+> 5. allocate some more source IDs and if they are free try to use them as
+>    an optimization to avoid atomics
 
-On Tue, 14 Aug 2012 18:24:35 +0200 Sasha Levin <levinsasha928@gmail.com>
-wrote:
+Yes, I understand.  It's simple, it's also very specific to this
+problem, and doesn't address generic ack notification.  All of which
+I've noted before and I continue to note that v8 offers simplifications
+while retaining flexibility.  Least amount of code doesn't really buy us
+much if we end up needing to invent new interfaces down the road because
+we've created such a specific solution here.  Thanks,
 
+Alex
 
-> +static inline void hash_init_size(struct hlist_head *hashtable, int bits)
-> +{
-> +	int i;
-> +
-> +	for (i =3D 0; i < HASH_SIZE(bits); i++)
-> +		INIT_HLIST_HEAD(hashtable + i);
-> +}
-
-This seems like an inefficient way to do "memset(hashtable, 0, ...);".
-And in many cases it isn't needed as the hash table is static and initialis=
-ed
-to zero.
-I note that in the SUNRPC/cache patch you call hash_init(), but in the lockd
-patch you don't.  You don't actually need to in either case.
-
-I realise that any optimisation here is for code that is only executed once
-per boot, so no big deal, and even the presence of extra code making the
-kernel bigger is unlikely to be an issue.  But I'd at least like to see
-consistency: Either use hash_init everywhere, even when not needed, or only
-use it where absolutely needed which might be no-where because static tables
-are already initialised, and dynamic tables can use GFP_ZERO.
-
-And if you keep hash_init_size I would rather see a memset(0)....
-
-Thanks,
-NeilBrown
-
---Sig_/WaPYDSkmDZTaSUO/RNup8tR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUCreYznsnt1WYoG5AQJjuA//cxInQBsHXHRtWYyYJpxwOX9hqpSDNaZ2
-37aTlFSGjdhr1yn+RcwmtWh9nEj+oHEFlds46gW/woLpGFSXuCPD85CDtZDjPSpL
-7VNXdZ1i3+EEPR0K2vjMaUs1cpdz2KIx8KZjIXfQVnARaZNfts7EuaTCpGM+5bac
-G4CX6uoFtPc/A4LVEiYbowLzhUG+GmxcofMjd9ZJ4Ug0Xg4sl8xXtYg8YDkSn3LJ
-zef9ltlJ1WxLSTtBm6+jyH25Xlb31P7TT3BUgNcStSz9Jak2wdggbUE79iOb3GJL
-sP6/meXapGELz7IE8PVo/cdYdfBcskH6M8ai8pNNYTguSh/2VSRnjR1hPqXhgUYn
-FDKLL8galmS5OxQMwv4mb3zhUIHIiTT7tWBq6eYXo3xUzInU5VufAyLIcpRX3fXm
-VNLnnDOyaoWJCP/fUDrmHskSWPhLQA5/1YtiSI1NYwbY2C+OCybFHYixcWe5CT4w
-YvQ2TTweApDjk5JRndjiO0/j4++kAYvQ8KwC7oo7CUK13dH/9h8rxzV3H4zAhxkh
-4F6FzPEagR1CzKpSkJEA46DJQNIdAbbyCM0VkHORy7gTUa0MA3MsjW8dOKSnBnux
-xsx1GI08WW16NEf1TyGrkqdE/caa4WtDDoLNG3cpwLTZNlMACcZOHXQmgeQu3Ija
-TqL1y22gF/Q=
-=lYgD
------END PGP SIGNATURE-----
-
---Sig_/WaPYDSkmDZTaSUO/RNup8tR--
