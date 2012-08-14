@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab2HNRG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 13:06:58 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:38493 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753594Ab2HNRG4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 13:06:56 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Date: Tue, 14 Aug 2012 19:06:51 +0200
-Subject: RE: [RFC 4/4] remoteproc: Add driver for STE Modem
-Thread-Topic: [RFC 4/4] remoteproc: Add driver for STE Modem
-Thread-Index: Ac1ap6tN5oXVNupeRxWWaMy5FJggwgfUyTZw
-Message-ID: <81C3A93C17462B4BBD7E272753C1057923B924C92E@EXDCVYMBSTM005.EQ1STM.local>
-References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
- <1340375470-13097-5-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=WgbbG2nHH7+rm6CoR=VhiXVQT3-2VqJYLswmg9EshWu_=EA@mail.gmail.com>
- <81C3A93C17462B4BBD7E272753C10579232F86BE52@EXDCVYMBSTM005.EQ1STM.local>
- <CAK=Wgbb_pAx9Kfwbh23k=62vQUx5vnVpwe3q50BY=KwAkLC=ng@mail.gmail.com>
-In-Reply-To: <CAK=Wgbb_pAx9Kfwbh23k=62vQUx5vnVpwe3q50BY=KwAkLC=ng@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755753Ab2HNRLa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 13:11:30 -0400
+Received: from luna.vmars.tuwien.ac.at ([128.130.39.29]:52666 "EHLO
+	mail.vmars.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2HNRL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 13:11:28 -0400
+Message-ID: <502A86B7.8010402@vmars.tuwien.ac.at>
+Date: Tue, 14 Aug 2012 19:11:19 +0200
+From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] apple_gmux: Add support for newer hardware
+References: <1344898369-4944-1-git-send-email-mjg@redhat.com> <1344898369-4944-2-git-send-email-mjg@redhat.com> <20120814004625.GB18992@thinkpad-t410> <502A5B40.9010303@vmars.tuwien.ac.at> <502A667B.2060100@vmars.tuwien.ac.at> <20120814151543.GD18992@thinkpad-t410>
+In-Reply-To: <20120814151543.GD18992@thinkpad-t410>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
->>> It seems to me that a char device will solve these issues: we can use
->>> ioctl to control the power, if the user crashes we'll know about it
->>> via the release handler, and if the remote processor crashes we can
->>> let the user know by sending it a notification for it to read via the fd.
-
-How about skipping definition of ioctls and simply call rproc_boot() upon
-open and rproc_shutdown() upon close, this is perhaps quirky, but simpler.
-I'd also like to use a char-misc device, then we get the device 
-node with proper name automatically from existing udev rules.
-
->> In this case we need a way to make the virtio-drivers release the
->> virtio-queues in order to decrement the refcount, right?
-...
->> So it seems that we need to force an unregistration of the virtio devices,
->> in order to make it release its queues.
-...
-> Yeah, no code is needed; something like this should do the trick:
+On 08/14/2012 05:15 PM, Seth Forshee wrote:
+> On Tue, Aug 14, 2012 at 04:53:47PM +0200, Bernhard Froemel wrote:
+>> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
+>> 
+>> Only in relation to Seth's future apple-gmux patch series about 
+>> vgaswitcheroo and restoring the gmux device configuration across 
+>> suspend/resume [1]: On resume the gmux registers 0x28 (DDC) and
+>> 0x10 (SWITCH_DISPLAY) (i.e., the first two writes) are not
+>> restored (result: the screen remains black after
+>> suspend/resume).
+>> 
+>> Of course, this does not happen with my patch proposal ;) 
+>> Unfortunately, I have not the time to sort this out in the next
+>> couple of days -- on the other hand this is probably not a
+>> problem w.r.t. this patch, but needs to be taken care of in
+>> Seth's patch series.
 > 
-> root@omap4430-panda:/sys/bus/virtio/drivers/virtio_console# echo
-> virtio1 > unbind
+> The patch adding support for switcheroo *does* restore those
+> registers on resume. Are you saying that isn't happening when you
+> use it?
+Yes, the 8bit writes don't seem to get all through with Matthew's
+patch, but they do with mine.
 
-Looking on this once more after vacation I prefer if the ste-rproc driver
-could enforce shutdown if we use the char-device.
-In our case user-space will detect modem crashes and power off
-the device. So if user-space uses char-device to request power off,
-it feels like kernel space should do everything possible to really
-trigger the shutdown, including unbinding the virtio devices.
-Depending on additional "echo .../virtio > unbind" seems like an
-unnecessary extra dependency. 
+Just tested manual switching (/sys/kernel/debug/vgaswitcheroo/switch,
+from IGD to DIS) -> doesn't work either; even locks up my system:
 
+> [  123.680062] hda-intel: spurious response 0x407381:0x0, last
+> cmd=0x770883 [  123.680070] hda-intel: spurious response
+> 0x9000094:0x0, last cmd=0x770883 [  123.680073] hda-intel: spurious
+> response 0x185600f0:0x0, last cmd=0x770883 [  123.680076]
+> hda-intel: spurious response 0x4:0x0, last cmd=0x770883 [
+> 123.680079] hda-intel: spurious response 0xb0a0908:0x0, last
+> cmd=0x770883 [  123.680082] hda-intel: spurious response
+> 0x407381:0x0, last cmd=0x770883 [  123.680084] hda-intel: spurious
+> response 0x9000094:0x0, last cmd=0x770883 [  123.680087] hda-intel:
+> spurious response 0x185600f0:0x0, last cmd=0x770883
 
-Alternatively, we could let user-space handle the power switch
-for the modem directly. Remoteproc could simply notify user-space
-(e.g. using gen-netlink) when rproc usage count has dropped to zero.
-And this could trigger power-down. This would be more aligned with
-our existing solution for power control.
+While comparing our patches, I discovered that mine isnt' a good
+reference here, because in my ready and complete function variants I
+didn't write/read the correct ioports (forgot about the offset; so
+they were only slightly delaying execution). After I fixed that (and a
+status-bit semantic mixup), the results appear similar :/
+Need to play around further..
 
-Regards,
-Sjur
+Bernhard
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlAqhrcACgkQ6iVUjPs37JnhtwCePUp7sLQW+GhBFOkFbkjr6Yrh
+VAsAoJ3TjtJu2gQpayFc6iP5nBQfdAPG
+=ziXd
+-----END PGP SIGNATURE-----
