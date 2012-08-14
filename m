@@ -1,233 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2HNBtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Aug 2012 21:49:55 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44182 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2HNBtx (ORCPT
+	id S1754787Ab2HNBuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Aug 2012 21:50:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49110 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab2HNBt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Aug 2012 21:49:53 -0400
+	Mon, 13 Aug 2012 21:49:57 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, mingo@redhat.com,
-        lauro.venancio@openbossa.org, jak@jak-linux.org
-Subject: [PATCHSET] workqueue: make all workqueues non-reentrant
-Date: Mon, 13 Aug 2012 18:49:40 -0700
-Message-Id: <1344908986-18152-1-git-send-email-tj@kernel.org>
+        lauro.venancio@openbossa.org, jak@jak-linux.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/6] workqueue: gut flush[_delayed]_work_sync()
+Date: Mon, 13 Aug 2012 18:49:42 -0700
+Message-Id: <1344908986-18152-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1344908986-18152-1-git-send-email-tj@kernel.org>
+References: <1344908986-18152-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Now that all workqueues are non-reentrant, flush[_delayed]_work_sync()
+are equivalent to flush[_delayed]_work().  Drop the separate
+implementation and make them thin wrappers around
+flush[_delayed]_work().
 
-Unless explicitly specified, a workqueued is reentrant, which might
-not even be the correct term.  If a work item is executing on a CPU
-but not pending anywhere, the work item can be queued on a different
-CPU, and that CPU might start executing the work item whether the
-previous execution on the first CPU is finished or not.  In short,
-while a work item can be queued on only one CPU, it may be executing
-concurrently on any subset of the CPUs in the system.
+* start_flush_work() no longer takes @wait_executing as the only left
+  user - flush_work() - always sets it to %true.
 
-This behavior in itself is already confusing and error-prone; however,
-this causes much worse complication in flush operations.  Because a
-given work item could be executing on any number of CPUs, even if no
-further queueing happens after invocation, flush_work() can't
-guarantee that the work item is idle on return without checking all
-CPUs.  Being a relatively common operation, checking all CPUs on each
-invocation was deemed too costly.  It only verifies the instance
-queued last and there's a separate version which checks all CPUs -
-flush_work_sync().
+* __cancel_work_timer() uses flush_work() instead of wait_on_work().
 
-Also, due to the way last CPU is tracked, if there are parallel
-queueing operations, the following sequence
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/workqueue.h |   14 +++++-
+ kernel/workqueue.c        |  122 ++++-----------------------------------------
+ 2 files changed, 22 insertions(+), 114 deletions(-)
 
-	schedule_work(A);
-	flush_work(A);
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 6cd8f91..b2716b6 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -412,11 +412,9 @@ extern int keventd_up(void);
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+ 
+ extern bool flush_work(struct work_struct *work);
+-extern bool flush_work_sync(struct work_struct *work);
+ extern bool cancel_work_sync(struct work_struct *work);
+ 
+ extern bool flush_delayed_work(struct delayed_work *dwork);
+-extern bool flush_delayed_work_sync(struct delayed_work *work);
+ extern bool cancel_delayed_work(struct delayed_work *dwork);
+ extern bool cancel_delayed_work_sync(struct delayed_work *dwork);
+ 
+@@ -441,6 +439,18 @@ static inline bool __deprecated __cancel_delayed_work(struct delayed_work *work)
+ 	return ret;
+ }
+ 
++/* used to be different but now identical to flush_work(), deprecated */
++static inline bool flush_work_sync(struct work_struct *work)
++{
++	return flush_work(work);
++}
++
++/* used to be different but now identical to flush_delayed_work(), deprecated */
++static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
++{
++	return flush_delayed_work(dwork);
++}
++
+ #ifndef CONFIG_SMP
+ static inline long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
+ {
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 26f048b..938adc0 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2780,8 +2780,7 @@ reflush:
+ }
+ EXPORT_SYMBOL_GPL(drain_workqueue);
+ 
+-static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+-			     bool wait_executing)
++static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr)
+ {
+ 	struct worker *worker = NULL;
+ 	struct global_cwq *gcwq;
+@@ -2803,13 +2802,12 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+ 		cwq = get_work_cwq(work);
+ 		if (unlikely(!cwq || gcwq != cwq->pool->gcwq))
+ 			goto already_gone;
+-	} else if (wait_executing) {
++	} else {
+ 		worker = find_worker_executing_work(gcwq, work);
+ 		if (!worker)
+ 			goto already_gone;
+ 		cwq = worker->current_cwq;
+-	} else
+-		goto already_gone;
++	}
+ 
+ 	insert_wq_barrier(cwq, barr, work, worker);
+ 	spin_unlock_irq(&gcwq->lock);
+@@ -2836,15 +2834,8 @@ already_gone:
+  * flush_work - wait for a work to finish executing the last queueing instance
+  * @work: the work to flush
+  *
+- * Wait until @work has finished execution.  This function considers
+- * only the last queueing instance of @work.  If @work has been
+- * enqueued across different CPUs on a non-reentrant workqueue or on
+- * multiple workqueues, @work might still be executing on return on
+- * some of the CPUs from earlier queueing.
+- *
+- * If @work was queued only on a non-reentrant, ordered or unbound
+- * workqueue, @work is guaranteed to be idle on return if it hasn't
+- * been requeued since flush started.
++ * Wait until @work has finished execution.  @work is guaranteed to be idle
++ * on return if it hasn't been requeued since flush started.
+  *
+  * RETURNS:
+  * %true if flush_work() waited for the work to finish execution,
+@@ -2857,85 +2848,15 @@ bool flush_work(struct work_struct *work)
+ 	lock_map_acquire(&work->lockdep_map);
+ 	lock_map_release(&work->lockdep_map);
+ 
+-	if (start_flush_work(work, &barr, true)) {
++	if (start_flush_work(work, &barr)) {
+ 		wait_for_completion(&barr.done);
+ 		destroy_work_on_stack(&barr.work);
+ 		return true;
+-	} else
+-		return false;
+-}
+-EXPORT_SYMBOL_GPL(flush_work);
+-
+-static bool wait_on_cpu_work(struct global_cwq *gcwq, struct work_struct *work)
+-{
+-	struct wq_barrier barr;
+-	struct worker *worker;
+-
+-	spin_lock_irq(&gcwq->lock);
+-
+-	worker = find_worker_executing_work(gcwq, work);
+-	if (unlikely(worker))
+-		insert_wq_barrier(worker->current_cwq, &barr, work, worker);
+-
+-	spin_unlock_irq(&gcwq->lock);
+-
+-	if (unlikely(worker)) {
+-		wait_for_completion(&barr.done);
+-		destroy_work_on_stack(&barr.work);
+-		return true;
+-	} else
++	} else {
+ 		return false;
+-}
+-
+-static bool wait_on_work(struct work_struct *work)
+-{
+-	bool ret = false;
+-	int cpu;
+-
+-	might_sleep();
+-
+-	lock_map_acquire(&work->lockdep_map);
+-	lock_map_release(&work->lockdep_map);
+-
+-	for_each_gcwq_cpu(cpu)
+-		ret |= wait_on_cpu_work(get_gcwq(cpu), work);
+-	return ret;
+-}
+-
+-/**
+- * flush_work_sync - wait until a work has finished execution
+- * @work: the work to flush
+- *
+- * Wait until @work has finished execution.  On return, it's
+- * guaranteed that all queueing instances of @work which happened
+- * before this function is called are finished.  In other words, if
+- * @work hasn't been requeued since this function was called, @work is
+- * guaranteed to be idle on return.
+- *
+- * RETURNS:
+- * %true if flush_work_sync() waited for the work to finish execution,
+- * %false if it was already idle.
+- */
+-bool flush_work_sync(struct work_struct *work)
+-{
+-	struct wq_barrier barr;
+-	bool pending, waited;
+-
+-	/* we'll wait for executions separately, queue barr only if pending */
+-	pending = start_flush_work(work, &barr, false);
+-
+-	/* wait for executions to finish */
+-	waited = wait_on_work(work);
+-
+-	/* wait for the pending one */
+-	if (pending) {
+-		wait_for_completion(&barr.done);
+-		destroy_work_on_stack(&barr.work);
+ 	}
+-
+-	return pending || waited;
+ }
+-EXPORT_SYMBOL_GPL(flush_work_sync);
++EXPORT_SYMBOL_GPL(flush_work);
+ 
+ static bool __cancel_work_timer(struct work_struct *work, bool is_dwork)
+ {
+@@ -2949,14 +2870,14 @@ static bool __cancel_work_timer(struct work_struct *work, bool is_dwork)
+ 		 * would be waiting for before retrying.
+ 		 */
+ 		if (unlikely(ret == -ENOENT))
+-			wait_on_work(work);
++			flush_work(work);
+ 	} while (unlikely(ret < 0));
+ 
+ 	/* tell other tasks trying to grab @work to back off */
+ 	mark_work_canceling(work);
+ 	local_irq_restore(flags);
+ 
+-	wait_on_work(work);
++	flush_work(work);
+ 	clear_work_data(work);
+ 	return ret;
+ }
+@@ -3009,29 +2930,6 @@ bool flush_delayed_work(struct delayed_work *dwork)
+ EXPORT_SYMBOL(flush_delayed_work);
+ 
+ /**
+- * flush_delayed_work_sync - wait for a dwork to finish
+- * @dwork: the delayed work to flush
+- *
+- * Delayed timer is cancelled and the pending work is queued for
+- * execution immediately.  Other than timer handling, its behavior
+- * is identical to flush_work_sync().
+- *
+- * RETURNS:
+- * %true if flush_work_sync() waited for the work to finish execution,
+- * %false if it was already idle.
+- */
+-bool flush_delayed_work_sync(struct delayed_work *dwork)
+-{
+-	local_irq_disable();
+-	if (del_timer_sync(&dwork->timer))
+-		__queue_work(dwork->cpu,
+-			     get_work_cwq(&dwork->work)->wq, &dwork->work);
+-	local_irq_enable();
+-	return flush_work_sync(&dwork->work);
+-}
+-EXPORT_SYMBOL(flush_delayed_work_sync);
+-
+-/**
+  * cancel_delayed_work - cancel a delayed work
+  * @dwork: delayed_work to cancel
+  *
+-- 
+1.7.7.3
 
-can't guarantee that the instance queued right above is finished.  If
-someone else queues A on another CPU inbetween, flush_work() either
-becomes noop or flushes that instance which may finish earlier than
-the one from the above.
-
-In the end, workqueue is a pain in the ass to get completely correct
-and the breakages are very subtle.  Depending on queueing pattern,
-assuming non-reentrancy might work fine most of the time.  The effect
-of using flush_work() where flush_work_sync() should be used could be
-a lot more subtle.  flush_work() becoming noop would happen extremely
-rarely for most users but it definitely is there.
-
-A tool which is used as widely as workqueue shouldn't be this
-difficult and error-prone.  This is just silly.
-
-Timer does the right thing.  It *always* checks whether a timer is
-still executing on the previous CPU and queues it there if so much
-like how WQ_NON_REENTRANT makes workqueue behave.  WQ_NON_REENTRANT
-guarantees that any given work item is executing on only one CPU at
-maximum and if both pending and executing, both are on the same CPU.
-This makes the behaviors of work item execution and flush_work() much
-more sane and flush_work_sync() unnecessary.
-
-This patchset enforces WQ_NON_REENTRANT behavior on all workqueues and
-simplifies workqueue API accordingly.
-
-This adds an additional busy_hash lookup if the work item was
-previously queued on a different CPU.  This shouldn't be noticeable
-under any sane workload.  Work item queueing isn't a very
-high-frequency operation and they don't jump across CPUs all the time.
-In a micro benchmark to exaggerate this difference - measuring the
-time it takes for two work items to repeatedly jump between two CPUs a
-number (10M) of times with busy_hash table densely populated, the
-difference was around 3%.
-
-While the overhead is measureable, it is only visible in pathological
-cases and the difference isn't huge.  This change brings much needed
-sanity to workqueue and makes its behavior consistent with timer.  I
-think this is the right tradeoff to make.
-
-This patchset contains the following six patches.
-
- 0001-workqueue-make-all-workqueues-non-reentrant.patch
- 0002-workqueue-gut-flush-_delayed-_work_sync.patch
- 0003-workqueue-gut-system_nrt-_freezable-_wq.patch
- 0004-workqueue-deprecate-flush-_delayed-_work_sync.patch
- 0005-workqueue-deprecate-system_nrt-_freezable-_wq.patch
- 0006-workqueue-deprecate-WQ_NON_REENTRANT.patch
-
-0001 makes all workqueues non-reentrant.
-
-0002-0003 simplify workqueue API accordingly.
-
-0004-0006 deprecate now unnecessary parts of workqueue API and convert
-their users.  Most conversions are straight-forward but 0006 contains
-some non-trivial ones.  If you work on NFC and drivers/staging/nvec,
-please review them.
-
-This patchset is on top of
-
-  wq/for-3.7 1265057fa02c7bed3b6d9ddc8a2048065a370364
-+ [1] "timer: clean up initializers and implement irqsafe" patchset
-+ [2] "workqueue: use irqsafe timer in delayed_work" patchset
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-always-nrt
-
-Thanks.  diffstat follows.
-
- Documentation/workqueue.txt                     |   14 --
- arch/arm/mach-pxa/sharpsl_pm.c                  |    4 
- arch/arm/plat-omap/mailbox.c                    |    2 
- arch/sh/drivers/push-switch.c                   |    2 
- block/blk-throttle.c                            |    7 -
- block/genhd.c                                   |   10 -
- drivers/block/xen-blkfront.c                    |    4 
- drivers/cdrom/gdrom.c                           |    2 
- drivers/char/sonypi.c                           |    2 
- drivers/char/tpm/tpm.c                          |    4 
- drivers/firewire/core-transaction.c             |    3 
- drivers/gpu/drm/drm_crtc_helper.c               |    6 
- drivers/gpu/drm/exynos/exynos_drm_g2d.c         |    2 
- drivers/gpu/drm/i915/i915_dma.c                 |    6 
- drivers/gpu/drm/nouveau/nouveau_gpio.c          |    2 
- drivers/gpu/drm/radeon/radeon_irq_kms.c         |    2 
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c              |    2 
- drivers/hid/hid-picolcd.c                       |    2 
- drivers/hid/hid-wiimote-ext.c                   |    2 
- drivers/input/touchscreen/wm831x-ts.c           |    2 
- drivers/isdn/mISDN/hwchannel.c                  |    4 
- drivers/leds/leds-lm3533.c                      |    6 
- drivers/leds/leds-lp8788.c                      |    2 
- drivers/leds/leds-wm8350.c                      |    2 
- drivers/macintosh/ams/ams-core.c                |    2 
- drivers/md/dm-crypt.c                           |   10 -
- drivers/md/dm-kcopyd.c                          |    3 
- drivers/md/dm-mpath.c                           |    2 
- drivers/md/dm-raid1.c                           |    5 
- drivers/md/dm-stripe.c                          |    2 
- drivers/md/dm.c                                 |    3 
- drivers/media/dvb/dvb-core/dvb_net.c            |    4 
- drivers/media/dvb/mantis/mantis_evm.c           |    2 
- drivers/media/dvb/mantis/mantis_uart.c          |    2 
- drivers/media/video/bt8xx/bttv-driver.c         |    2 
- drivers/media/video/cx18/cx18-driver.c          |    2 
- drivers/media/video/cx231xx/cx231xx-cards.c     |    2 
- drivers/media/video/cx23885/cx23885-input.c     |    6 
- drivers/media/video/cx88/cx88-mpeg.c            |    2 
- drivers/media/video/em28xx/em28xx-cards.c       |    2 
- drivers/media/video/omap24xxcam.c               |    6 
- drivers/media/video/saa7134/saa7134-core.c      |    2 
- drivers/media/video/saa7134/saa7134-empress.c   |    2 
- drivers/media/video/tm6000/tm6000-cards.c       |    2 
- drivers/mfd/menelaus.c                          |    4 
- drivers/misc/ioc4.c                             |    2 
- drivers/mmc/core/host.c                         |    4 
- drivers/mmc/host/dw_mmc.c                       |    3 
- drivers/mtd/mtdoops.c                           |    4 
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c |    2 
- drivers/net/ethernet/neterion/vxge/vxge-main.c  |    2 
- drivers/net/ethernet/sun/cassini.c              |    2 
- drivers/net/ethernet/sun/niu.c                  |    2 
- drivers/net/virtio_net.c                        |   12 -
- drivers/net/wireless/hostap/hostap_ap.c         |    4 
- drivers/net/wireless/hostap/hostap_hw.c         |   10 -
- drivers/nfc/pn533.c                             |    5 
- drivers/power/collie_battery.c                  |    2 
- drivers/power/tosa_battery.c                    |    2 
- drivers/power/wm97xx_battery.c                  |    2 
- drivers/power/z2_battery.c                      |    2 
- drivers/regulator/core.c                        |    2 
- drivers/scsi/arcmsr/arcmsr_hba.c                |    4 
- drivers/scsi/ipr.c                              |    2 
- drivers/scsi/pmcraid.c                          |    2 
- drivers/scsi/qla2xxx/qla_target.c               |    2 
- drivers/staging/nvec/nvec.c                     |   10 -
- drivers/staging/nvec/nvec.h                     |    2 
- drivers/staging/omapdrm/omap_drv.c              |    3 
- drivers/tty/hvc/hvsi.c                          |    2 
- drivers/tty/ipwireless/hardware.c               |    2 
- drivers/tty/ipwireless/network.c                |    4 
- drivers/tty/serial/kgdboc.c                     |    2 
- drivers/tty/serial/omap-serial.c                |    2 
- drivers/tty/tty_ldisc.c                         |    6 
- drivers/usb/atm/speedtch.c                      |    2 
- drivers/usb/atm/ueagle-atm.c                    |    2 
- drivers/usb/gadget/u_ether.c                    |    2 
- drivers/usb/host/ohci-hcd.c                     |    2 
- drivers/usb/otg/isp1301_omap.c                  |    2 
- fs/affs/super.c                                 |    2 
- fs/dlm/ast.c                                    |    5 
- fs/gfs2/lock_dlm.c                              |    2 
- fs/gfs2/main.c                                  |    2 
- fs/gfs2/super.c                                 |    2 
- fs/hfs/inode.c                                  |    2 
- fs/ncpfs/inode.c                                |    6 
- fs/ocfs2/cluster/quorum.c                       |    2 
- fs/xfs/xfs_super.c                              |    4 
- fs/xfs/xfs_sync.c                               |    2 
- include/linux/workqueue.h                       |   37 ++++-
- kernel/srcu.c                                   |    4 
- kernel/workqueue.c                              |  150 +++---------------------
- net/9p/trans_fd.c                               |    2 
- net/ceph/messenger.c                            |    2 
- net/dsa/dsa.c                                   |    2 
- net/nfc/core.c                                  |    6 
- net/nfc/hci/core.c                              |    8 -
- net/nfc/hci/shdlc.c                             |    4 
- net/nfc/llcp/llcp.c                             |   18 --
- security/keys/gc.c                              |    8 -
- security/keys/key.c                             |    2 
- sound/i2c/other/ak4113.c                        |    2 
- sound/i2c/other/ak4114.c                        |    2 
- sound/pci/oxygen/oxygen_lib.c                   |    8 -
- sound/soc/codecs/wm8350.c                       |    2 
- sound/soc/codecs/wm8753.c                       |    2 
- sound/soc/soc-core.c                            |    6 
- virt/kvm/eventfd.c                              |    2 
- 109 files changed, 221 insertions(+), 351 deletions(-)
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1340224 
-[2] http://thread.gmane.org/gmane.linux.kernel/1340333
