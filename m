@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab2HNSIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 14:08:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60312 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818Ab2HNSII (ORCPT
+	id S1757188Ab2HNSIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 14:08:34 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35992 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756850Ab2HNSIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 14:08:08 -0400
+	Tue, 14 Aug 2012 14:08:10 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
 Cc: David Daney <david.daney@cavium.com>
-Subject: [PATCH 0/2] Align MIPS swapper_pg_dir for faster code.
-Date: Tue, 14 Aug 2012 11:07:59 -0700
-Message-Id: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 1/2] vmlinux.lds.h: Allow architectures to add sections to the front of .bss
+Date: Tue, 14 Aug 2012 11:08:00 -0700
+Message-Id: <1344967681-13179-2-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-The MIPS swapper_pg_dir needs 64K alignment for faster TLB refills in
-kernel mappings.  There are two parts to the patch set:
+Follow-on MIPS patch will put an object here that needs 64K alignment
+to minimize padding.
 
-1) Modify generic vmlinux.lds.h to allow architectures to place
-   additional sections at the start of .bss.  This allows alignment
-   constraints to be met with minimal holes added for padding.
-   Putting this in common code should reduce the risk of future
-   changes to the linker scripts not being propagated to MIPS (or any
-   other architecture that needs something like this).
+For those architectures that don't define BSS_FIRST_SECTIONS, there is
+no change.
 
-2) Align the MIPS swapper_pg_dir.
-
-Since the initial use of the code is for MIPS, perhaps both parts
-could be merged by Ralf's tree (after collecting any Acked-bys).
-
-David Daney (2):
-  vmlinux.lds.h: Allow architectures to add sections to the front of
-    .bss
-  MIPS: Align swapper_pg_dir to 64K for better TLB Refill code.
-
- arch/mips/kernel/vmlinux.lds.S    |   21 +++++++++++++++++++--
- arch/mips/mm/init.c               |   17 +++++++++--------
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
  include/asm-generic/vmlinux.lds.h |    9 +++++++++
- 3 files changed, 37 insertions(+), 10 deletions(-)
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 4e2e1cc..d1ea7ce 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -530,9 +530,18 @@
+ 		*(.scommon)						\
+ 	}
+ 
++/*
++ * Allow archectures to redefine BSS_FIRST_SECTIONS to add extra
++ * sections to the front of bss.
++ */
++#ifndef BSS_FIRST_SECTIONS
++#define BSS_FIRST_SECTIONS
++#endif
++
+ #define BSS(bss_align)							\
+ 	. = ALIGN(bss_align);						\
+ 	.bss : AT(ADDR(.bss) - LOAD_OFFSET) {				\
++		BSS_FIRST_SECTIONS					\
+ 		*(.bss..page_aligned)					\
+ 		*(.dynbss)						\
+ 		*(.bss)							\
 -- 
 1.7.2.3
 
