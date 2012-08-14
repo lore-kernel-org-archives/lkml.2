@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab2HNMls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:41:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab2HNMlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:41:47 -0400
-Message-ID: <502A462A.1000600@redhat.com>
-Date: Tue, 14 Aug 2012 15:35:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-References: <20120724203628.21081.56884.stgit@bling.home> <20120724204320.21081.32333.stgit@bling.home> <501F99A8.9050006@redhat.com> <501F9E99.9010109@redhat.com> <501F9F27.708@redhat.com> <1344540375.3441.228.camel@ul30vt.home> <20120812093336.GC1421@redhat.com>
-In-Reply-To: <20120812093336.GC1421@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755090Ab2HNMqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:46:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26446 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab2HNMqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 08:46:36 -0400
+X-Authority-Analysis: v=2.0 cv=Hun06jvS c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ae7MPIGovj8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=tYNMMJoXDhy72iSMQagA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1344948394.6724.3.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] preempt/hardirq.h: Clarify PREEMPT_ACTIVE bit location
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 14 Aug 2012 08:46:34 -0400
+In-Reply-To: <alpine.LFD.2.02.1208141216120.32033@ionos>
+References: <20120720192459.6149.14821.stgit@srivatsabhat.in.ibm.com>
+	 <1343706583.27983.28.camel@gandalf.stny.rr.com>
+	 <502A0C19.6010007@linux.vnet.ibm.com>
+	 <alpine.LFD.2.02.1208141216120.32033@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2012 12:33 PM, Michael S. Tsirkin wrote:
->> 
->> Michael, would the interface be more acceptable to you if we added
->> separate ioctls to allocate and free some representation of an irq
->> source ID, gsi pair?  For instance, an ioctl might return an idr entry
->> for an irq source ID/gsi object which would then be passed as a
->> parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
->> representing the source id/gsi isn't magically freed on it's own.  This
->> would also allow us to deassign/close one end and reconfigure it later.
->> Thanks,
->> 
->> Alex
+On Tue, 2012-08-14 at 12:18 +0200, Thomas Gleixner wrote:
+> On Tue, 14 Aug 2012, Srivatsa S. Bhat wrote:
 > 
-> It's acceptable to me either way. I was only pointing out that as
-> designed, the interface looks simple at first but then you find out some
-> subtle limitations which are implementation driven. This gives
-> an overall feeling the abstraction is too low level.
+> > 
+> > By default, the PREEMPT_ACTIVE flag is bit 27, but different
+> > architectures can override that. Update the comment to reflect
+> > this fact.
 > 
-> If we compare to the existing irqfd, isn't the difference
-> simply that irqfd deasserts immediately ATM, while we
-> want to delay this until later?
+> Is there any sensible reason why architectures need to override that?
+> I can't find one.
 > 
-> If yes, then along the lines that you proposed, and combining with my
-> idea of tracking deasserts, how do you like the following:
-> 
-> /* Keep line asserted until guest has handled the interrupt. */
-> #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
-> /* Notify after line is deasserted. */
-> #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
-> 
-> 	struct kvm_irqfd {
-> 		__u32 fd;
-> 		__u32 gsi;
-> 		__u32 flags;
-> 		/* eventfd to notify when line is deasserted */
-> 		__u32 deassert_eventfd;
-> 		__u8  pad[16];
-> 	};
-> 
-> now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
-> effective for level interrupts.
-> 
-> Notes about lifetime of objects:
-> 	- closing deassert_eventfd does nothing (we can keep
-> 	  reference to it from irqfd so no need for
->           complex polling/flushing scheme)
-> 	- closing irqfd or deasserting dis-associates
-> 	  deassert_eventfd automatically
-> 	- source id is internal to irqfd and goes away with it
-> 
-> it looks harder to misuse and fits what we want to do nicely,
-> and needs less code to implement.
-> 
-> Avi, what do you think?
+> If there is none, then we should just remove all the overrides from
+> the arch code instead. If there is a reason, then it should be
+> documented.
 
-I think given all the complexity in the separate ioctl approach that
-this makes sense.  There are no lifetime issues or code to match the two
-eventfds.  Alex, would this API simplify the code?
+IIRC, when I added the NMI bits to implement 'in_nmi()' I tried to make
+this work across archs. But I found that bits in the preempt count have
+been hard coded in assembly all over the place, and to clean it up
+looked to be a nightmare.
 
-Yet another option was raised in the past, and that was exiling ioapic
-and pic to userspace.  This moves the entire issue to userspace.  The
-cost is a new interface that implements the APIC bus (betweem APIC and
-IOAPIC) and the INTACK sequence (between APIC and PIC), and potential
-for performance regressions due to the PIC, IOAPIC, and PIT being in
-userspace.  We would still have to keep the IOAPIC/PIC in the kernel,
-but no new features would be added.
+It probably should be done, but I didn't have the time to do it then.
+Perhaps we can revisit it.
 
-However, this is a huge job.  We could discuss this to death too but I
-have the feeling the end result will be to choose the shorter path --
-adding irqackfd/deassertfd/whateverwecallitfd.
+In fact, looking at all the archs, I believe all archs override the
+PREEMPT_ACTIVE bit, and not one of them uses the default (bit 27).
+
+-- Steve
 
 
--- 
-error compiling committee.c: too many arguments to function
