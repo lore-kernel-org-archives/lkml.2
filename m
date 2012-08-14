@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2HNXMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:12:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33748 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2HNXMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:12:08 -0400
-Date: Wed, 15 Aug 2012 01:12:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-In-Reply-To: <20120814214009.GD25632@google.com>
-Message-ID: <alpine.LFD.2.02.1208150045360.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org> <alpine.LFD.2.02.1208131720070.32033@ionos> <20120814191549.GX25632@google.com> <alpine.LFD.2.02.1208142118060.32033@ionos> <20120814214009.GD25632@google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1754084Ab2HNXWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:22:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35438 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752389Ab2HNXWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:22:03 -0400
+Message-ID: <1344986638.4430.22.camel@footlong>
+Subject: [PATCH V3 0/3] tpm: Add new vTPM device driver for PPC64
+From: Ashley Lai <adlai@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        rcj@linux.vnet.ibm.com, key@linux.vnet.ibm.com, adlai@us.ibm.com,
+        adlai@linux.vnet.ibm.com
+Date: Tue, 14 Aug 2012 18:23:58 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081423-7182-0000-0000-00000248EF64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+Change log V3:
+- Replaced TPM_NO_EVENT_LOG macro with stubs
+- Removed tpm_noeventlog.c file 
+- Called of_node_put() before return in tpm_of.c
 
-On Tue, 14 Aug 2012, Tejun Heo wrote:
-> On Tue, Aug 14, 2012 at 10:43:30PM +0200, Thomas Gleixner wrote:
-> > > It makes the workqueue users messy.  It's difficult to get completely
-> > > correct and subtle errors are difficult to detect / verify.
-> > 
-> > Ah, the function which does not exist makes the users
-> > messy. Interesting observation.
-> 
-> Can we get a little less snarky please?  It's tiring.
+Change log V2:
+- Removed unnecessary tpm_bios_log_setup and tpm_bios_log_teardown
+  functions in tpm_eventlog.h (patch 3/3).
+- Added more descriptions on vTPM (patch 1/3).
 
-Can you please try to answer my questions instead of throwing random
-blurb into my direction?
+These patches add support for IBM vTPM for PPC64. This new device driver
+works on firmware that supports vTPM (firmware release 740 or higher).
 
-Just for the record. The thread evolved from here:
+Tested on Power7+ system with firmware level ZM770_001.
 
-  <tj>    * mod_delayed_work() can't be used from IRQ handlers.
+Applied to Kent Yoder tree at:
+https://github.com/shpedoikal/linux/tree/v3.6-rc1-tpmdd-staging
 
-My answer was:
+Ashley Lai (3):
+  drivers/char/tpm: Add new device driver to support IBM vTPM
+  PPC64: Add support for instantiating SML from Open Firmware
+  drivers/char/tpm: Add securityfs support for event log
 
-  <tglx>  This function does not exist. So what?
+ arch/powerpc/kernel/prom_init.c |   62 ++++
+ drivers/char/tpm/Kconfig        |    8 +
+ drivers/char/tpm/Makefile       |    6 +
+ drivers/char/tpm/tpm.h          |   13 +-
+ drivers/char/tpm/tpm_eventlog.h |   15 +
+ drivers/char/tpm/tpm_ibmvtpm.c  |  749 +++++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm_ibmvtpm.h  |   83 +++++
+ drivers/char/tpm/tpm_of.c       |   73 ++++
+ 8 files changed, 997 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
+ create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
+ create mode 100644 drivers/char/tpm/tpm_of.c
 
-Which was completely appropriate as this function does not exist
-though you used it as a primary argument for your patches.
 
-Now your answer to my reply was:
-
-  <tj>    It makes the workqueue users messy.  It's difficult to get
-          completely correct and subtle errors are difficult to
-          detect / verify.
-
-Can you please point out any relevance to my question which would have
-me prevented from writing the following?
-
-  <tglx>  Ah, the function which does not exist makes the users
-  	  messy. Interesting observation.
-
-So instead of saying, that you wrote an utter nonsense reply you
-accuse me of being obnoxious:
-
-  <tj>    Can we get a little less snarky please?  It's tiring.
-
-Can you please sit down for a little while and think about your own
-snarkiness and your own tiring behaviour against other kernel
-maintainers?
-
-Thanks,
-
-	tglx
