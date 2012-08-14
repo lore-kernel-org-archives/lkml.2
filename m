@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab2HNMgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 08:36:15 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:24954 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab2HNMgN convert rfc822-to-8bit (ORCPT
+	id S1754840Ab2HNMiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 08:38:21 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56865 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab2HNMiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 08:36:13 -0400
-From: <Sathya.Perla@Emulex.Com>
-To: <shchepetkov@ispras.ru>, <yevgenyp@mellanox.co.il>
-CC: <davem@davemloft.net>, <amirv@mellanox.com>, <ogerlitz@mellanox.com>,
-        <alexg@mellanox.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ldv-project@ispras.ru>
-Subject: RE: [PATCH 3/5] net/mlx4_en: Call netif_carrier_off() after
- register_netdev()
-Thread-Topic: [PATCH 3/5] net/mlx4_en: Call netif_carrier_off() after
- register_netdev()
-Thread-Index: AQHNegfYrwaJEAtF5EmS57T9A8F4rpdZO+pA
-Date: Tue, 14 Aug 2012 12:36:12 +0000
-Message-ID: <CF9D1877D81D214CB0CA0669EFAE020C066A09@CMEXMB1.ad.emulex.com>
-References: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
- <1344940135-17079-4-git-send-email-shchepetkov@ispras.ru>
-In-Reply-To: <1344940135-17079-4-git-send-email-shchepetkov@ispras.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.142.128]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Aug 2012 08:38:20 -0400
 MIME-Version: 1.0
+In-Reply-To: <201208131436.11122.arnd@arndb.de>
+References: <CACRpkdaixT=Zn69x9_b9G2nQFm4cu2S5Uo23ww909MJFH2yWwQ@mail.gmail.com>
+	<201208131436.11122.arnd@arndb.de>
+Date: Tue, 14 Aug 2012 14:38:19 +0200
+Message-ID: <CACRpkdbRKfGSuY5A7BRH3rY0vMPxsKYBuzmqWZJNBawQMsAqog@mail.gmail.com>
+Subject: Re: [GIT PULL] gpio fixes for v3.6-rc1
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Shawn Guo <shawn.guo@linaro.org>, Daniel Mack <zonque@gmail.com>,
+        Axel Lin <axel.lin@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Sean Paul <seanpaul@chromium.org>, Julia Lawall <Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On
->Behalf Of Ilya Shchepetkov
+On Mon, Aug 13, 2012 at 4:36 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 10 August 2012, Linus Walleij wrote:
+>> Daniel Mack (1):
+>>       GPIO: gpio-pxa: fix devicetree functions
+>>
 >
->For carrier detection to work properly when binding the driver with a
->cable unplugged, netif_carrier_off() should be called after
->register_netdev(), not before.
+> Unfortunately, this one caused a build regression, see the fix below.
+> I also wonder why pxa_irq_domain_ops isn't static.
 >
->Calling netif_carrier_off() before register_netdev() was causing the
->network interface to miss a linkwatch pending event leading to an
->inconsistent state if the link is not up when interface is initialized.
+>         Arnd
+>
+> 8<----
+> GPIO: gpio-pxa: fix building without CONFIG_OF
+>
+> Patch 7212157267 "GPIO: gpio-pxa: fix devicetree functions" added an
+> "xlate" function pointer to the irq_domain_ops, but this function
+> is nor declared or defined anywhere when CONFIG_OF is disabled, causing
+> the build error:
+>
+> drivers/gpio/gpio-pxa.c:532:11: error: 'irq_domain_xlate_twocell' undeclared here (not in a function)
+>
+> Extending the DT-only code section to cover the irq_domain_ops
+> and the pxa_gpio_dt_ids solves this problem and makes it clearer
+> which code is actually used without DT.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-ndo_open() may be called as soon register_netdev() completes...
-When netif_carrier_off() is called *after* register_netdev(), isn't there
-a possibility of a ndo_open()->netif_carrier_on() call racing this call, causing
-incorrect results?
+Thanks, applied this to my fixes branch.
+
+Yours,
+Linus Walleij
