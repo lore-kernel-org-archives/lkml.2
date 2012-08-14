@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab2HNOZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 10:25:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41241 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab2HNOZE (ORCPT
+	id S1756319Ab2HNOZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 10:25:54 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:54834 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756166Ab2HNOXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 10:25:04 -0400
-Date: Tue, 14 Aug 2012 10:15:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 14 Aug 2012 10:23:19 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Tero Kristo <t-kristo@ti.com>, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Benoit Cousson <b-cousson@ti.com>,
         linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.6-rc1-tag
-Message-ID: <20120814141513.GA17776@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Subject: [PATCH v2 12/14] ASoC: twl4030: Convert to use devm_kzalloc
+Date: Tue, 14 Aug 2012 17:22:40 +0300
+Message-Id: <1344954162-7985-13-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1344954162-7985-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Allocate the private data with devm_kzalloc.
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ sound/soc/codecs/twl4030.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Hey Linus,
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 27ccea4..413e698 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -2231,7 +2231,8 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
+ {
+ 	struct twl4030_priv *twl4030;
+ 
+-	twl4030 = kzalloc(sizeof(struct twl4030_priv), GFP_KERNEL);
++	twl4030 = devm_kzalloc(codec->dev, sizeof(struct twl4030_priv),
++			       GFP_KERNEL);
+ 	if (twl4030 == NULL) {
+ 		dev_err(codec->dev, "Can not allocate memory\n");
+ 		return -ENOMEM;
+@@ -2253,7 +2254,6 @@ static int twl4030_soc_remove(struct snd_soc_codec *codec)
+ 	/* Reset registers to their chip default before leaving */
+ 	twl4030_reset_registers(codec);
+ 	twl4030_set_bias_level(codec, SND_SOC_BIAS_OFF);
+-	kfree(twl4030);
+ 
+ 	if (pdata && pdata->hs_extmute && gpio_is_valid(pdata->hs_extmute_gpio))
+ 		gpio_free(pdata->hs_extmute_gpio);
+-- 
+1.7.8.6
 
-Please pull this tag:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.6-rc1-tag
-
-which has just one tiny fix - way back in v3.5 we added a mechanism to populate
-back pages that were released (they overlapped with MMIO regions), but neglected to
-reserve the proper amount of virtual space for extend_brk to work properly. Coincidentally
-some other commit aligned the _brk space to larger area so I didn't trigger this until
-it was run on a machine with more than 2GB of MMIO space.
-
- arch/x86/xen/p2m.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-Konrad Rzeszutek Wilk (1):
-      xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
-
-
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQKl1rAAoJEFjIrFwIi8fJIzQIAM7KCWmrmf3pMFClEoeRzDB/
-Ywtut3KZvbP+h35LGJvHBLURishtGRrmuW1aubb/J1TyE+z++6p/IEzArYZ6BjOY
-eNFqCCPV8atQYJe1kRpHW1pJggHjIsQ7w3KP7bM6+0ROG3EXtgUh2oBybKN5YfWX
-vz7Ol6RteTq1ElbQ1TrhyxN/4EkWHof8pViR677ofWhjKajRdF2aP5MF3oggAqg1
-C8tZFkD9D0tf+JQKO00HSVmIGcY63EsceOt9+RuARQzI8zecyS9me3/99gWGsHSx
-mDBigjxzWGfSTZC9R84WUmyLL98pIjNutdLvvsyfSBz+akd8xaOqWMWLpvBdwLU=
-=wRra
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
