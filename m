@@ -1,69 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab2HNXBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:01:07 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41606 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2HNXBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:01:06 -0400
-Date: Tue, 14 Aug 2012 16:01:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe
- timers
-Message-ID: <20120814230100.GF25632@google.com>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org>
- <20120813233520.GG25632@google.com>
- <alpine.LFD.2.02.1208142055260.32033@ionos>
- <20120814192203.GY25632@google.com>
- <alpine.LFD.2.02.1208142243500.32033@ionos>
- <20120814215632.GE25632@google.com>
- <alpine.LFD.2.02.1208150005090.32033@ionos>
+	id S1753038Ab2HNXDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 19:03:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab2HNXDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 19:03:15 -0400
+Date: Wed, 15 Aug 2012 02:04:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v7 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120814230417.GC29180@redhat.com>
+References: <20120724203628.21081.56884.stgit@bling.home>
+ <20120724204320.21081.32333.stgit@bling.home>
+ <501F99A8.9050006@redhat.com>
+ <501F9E99.9010109@redhat.com>
+ <501F9F27.708@redhat.com>
+ <1344540375.3441.228.camel@ul30vt.home>
+ <20120812093336.GC1421@redhat.com>
+ <502A462A.1000600@redhat.com>
+ <1344981675.4683.338.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208150005090.32033@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344981675.4683.338.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
-
-On Wed, Aug 15, 2012 at 12:45:24AM +0200, Thomas Gleixner wrote:
-> And we have very well worked out mechanisms regarding cross tree
-> changes, i.e. providing minimal trees to pull for other maintainers.
-
-If you look at the review branches, they're actually structured that
-way so that the timer part can be pulled separately.  If the
-maintainer wants to do that, sure.  If the maintainer thinks routing
-through another tree is fine, that's okay too.  Subsystem boundaries
-are all good and great but it's not some absolute barrier which can't
-be crossed at any cost.
-
-> > If you're upset about the style of the ping, I apologize.  I'll try
-> > to be more sensitive when pinging you.
+On Tue, Aug 14, 2012 at 04:01:15PM -0600, Alex Williamson wrote:
+> On Tue, 2012-08-14 at 15:35 +0300, Avi Kivity wrote:
+> > On 08/12/2012 12:33 PM, Michael S. Tsirkin wrote:
+> > >> 
+> > >> Michael, would the interface be more acceptable to you if we added
+> > >> separate ioctls to allocate and free some representation of an irq
+> > >> source ID, gsi pair?  For instance, an ioctl might return an idr entry
+> > >> for an irq source ID/gsi object which would then be passed as a
+> > >> parameter in struct kvm_irqfd and struct kvm_eoifd so that the object
+> > >> representing the source id/gsi isn't magically freed on it's own.  This
+> > >> would also allow us to deassign/close one end and reconfigure it later.
+> > >> Thanks,
+> > >> 
+> > >> Alex
+> > > 
+> > > It's acceptable to me either way. I was only pointing out that as
+> > > designed, the interface looks simple at first but then you find out some
+> > > subtle limitations which are implementation driven. This gives
+> > > an overall feeling the abstraction is too low level.
+> > > 
+> > > If we compare to the existing irqfd, isn't the difference
+> > > simply that irqfd deasserts immediately ATM, while we
+> > > want to delay this until later?
+> > > 
+> > > If yes, then along the lines that you proposed, and combining with my
+> > > idea of tracking deasserts, how do you like the following:
+> > > 
+> > > /* Keep line asserted until guest has handled the interrupt. */
+> > > #define KVM_IRQFD_FLAG_DEASSERT_ON_ACK (1 << 1)
+> > > /* Notify after line is deasserted. */
+> > > #define KVM_IRQFD_FLAG_DEASSERT_EVENTFD (2 << 1)
+> > > 
+> > > 	struct kvm_irqfd {
+> > > 		__u32 fd;
+> > > 		__u32 gsi;
+> > > 		__u32 flags;
+> > > 		/* eventfd to notify when line is deasserted */
+> > > 		__u32 deassert_eventfd;
+> > > 		__u8  pad[16];
+> > > 	};
+> > > 
+> > > now the only limitation is that KVM_IRQFD_FLAG_DEASSERT_ON_ACK is only
+> > > effective for level interrupts.
+> > > 
+> > > Notes about lifetime of objects:
+> > > 	- closing deassert_eventfd does nothing (we can keep
+> > > 	  reference to it from irqfd so no need for
+> > >           complex polling/flushing scheme)
+> > > 	- closing irqfd or deasserting dis-associates
+> > > 	  deassert_eventfd automatically
+> > > 	- source id is internal to irqfd and goes away with it
+> > > 
+> > > it looks harder to misuse and fits what we want to do nicely,
+> > > and needs less code to implement.
+> > > 
+> > > Avi, what do you think?
+> > 
+> > I think given all the complexity in the separate ioctl approach that
+> > this makes sense.  There are no lifetime issues or code to match the two
+> > eventfds.  Alex, would this API simplify the code?
 > 
-> It's not about me. You are trying to play the system.
+> It does though I'm concerned that it's a very specific solution that
+> only addresses this problem.  Generic userspace eoi/ack is not
+> addressed.  The latest version using separate ioctls does a lot of
+> simplification by exposing irq sourceids.  The bulk of the code there is
+> duplicating what irqfd does just so we can catch the POLLHUP for
+> cleanup.  If there was an easier way to do that, we don't care about
+> POLLIN/POLLOUT, much of the code could be removed.  Alternatively we
+> could make some common infrastructure to simplify both irqfd and
+> irq_ackfd, but how to frame the helpers isn't easy.
 
-Thomas, I wasn't trying to get it through behind your back.  You have
-been notified clearly multiple times and have ample opportunities to
-object and suggest different ways if you don't like whatever is going
-on.
+There is way easier with a single ioctl.  Don't you see?
 
-I probably should have written "if the maintainer doesn't object, I
-think it would be easier to route these through wq/for-3.7 as it will
-be the only user for now, blah blah blah" instead and maybe I
-misjudged the character of the changes or the subsystem.  That said, I
-think you're inferring too much.
+As ack_eventfd pointer becomes part of the irqfd structure now, you
+simply drop the reference together with irqfd.
+In other words you do not care that ack eventfd goes
+away anymore. So no need for POLLHUP handlers, no
+separate DEASSERT that can race with that, etc.
 
-Thanks.
+So all this code just goes away, and it goes away completely, together
+with managing source IDs (source ID comes an internal optimization to
+avoid spurious EOIs, so no need to expose it to userspace anymore).
 
--- 
-tejun
+So all we are left with is minimal:
+1. change irqfds to use a separate source id (can do this
+   unconditionally for all irqfds)
+2. check deassert on ack, if set register ack notifier
+3. in ack notifier check deassert eventfd, if set signal it
+4. (optionally) add a flag in irqfd, set on assert, test and clear
+   on deassert, and only signal eventfd if it was set
+
+on top of that we could try to do
+5. allocate some more source IDs and if they are free try to use them as
+   an optimization to avoid atomics
+
+
+> > Yet another option was raised in the past, and that was exiling ioapic
+> > and pic to userspace.  This moves the entire issue to userspace.  The
+> > cost is a new interface that implements the APIC bus (betweem APIC and
+> > IOAPIC) and the INTACK sequence (between APIC and PIC), and potential
+> > for performance regressions due to the PIC, IOAPIC, and PIT being in
+> > userspace.  We would still have to keep the IOAPIC/PIC in the kernel,
+> > but no new features would be added.
+> 
+> Doesn't this assure a performance regression or are we assuming anywhere
+> we care about performance we're using MSI?  Thanks,
+> 
+> Alex
