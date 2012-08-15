@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2HOLjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 07:39:52 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41756 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab2HOLjU (ORCPT
+	id S1751868Ab2HOLkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 07:40:49 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:54246 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2HOLkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 07:39:20 -0400
+	Wed, 15 Aug 2012 07:40:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344454580-17031-1-git-send-email-john.stultz@linaro.org>
-References: <1344454580-17031-1-git-send-email-john.stultz@linaro.org>
-Date: Wed, 15 Aug 2012 07:39:19 -0400
-Message-ID: <CA+5PVA7k8=E6NkrrNbzT3=6wPE7UdnrQ94EjkGfxW6kU9u5MWw@mail.gmail.com>
-Subject: Re: [PATCH] time: Improve sanity checking of timekeeping inputs
+In-Reply-To: <50201BB5.9050005@jp.fujitsu.com>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+	<CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
+	<50201BB5.9050005@jp.fujitsu.com>
+Date: Wed, 15 Aug 2012 07:40:46 -0400
+Message-ID: <CA+5PVA7YejzbWDEpX=gj8s2QAQtgoxyNUUa5HhGtVGY+2BHqRA@mail.gmail.com>
+Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
 From: Josh Boyer <jwboyer@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhouping Liu <zliu@redhat.com>,
-        CAI Qian <caiqian@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        stable@vger.kernel.org
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@google.com, davej@redhat.com, mgorman@suse.de,
+        cl@linux.com, stable@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 8, 2012 at 3:36 PM, John Stultz <john.stultz@linaro.org> wrote:
-> Thomas, Ingo,
->         Here's a fix against tip/timers/urgent that addresses
-> timekeeping edge cases detected by both a bad BIOS and system
-> fuzzing w/ trinity. Thanks to Sasha Levin and CAI Qian for
-> finding and reporting these!
+On Mon, Aug 6, 2012 at 3:32 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> On 7/31/2012 8:33 AM, Josh Boyer wrote:
+>> On Mon, Jun 11, 2012 at 5:17 AM,  <kosaki.motohiro@gmail.com> wrote:
+>>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>
+>>> Hi
+>>>
+>>> This is trivial fixes of mempolicy meory corruption issues. There
+>>> are independent patches each ather. and, they don't change userland
+>>> ABIs.
+>>>
+>>> Thanks.
+>>>
+>>> changes from v1: fix some typo of changelogs s.
+>>>
+>>> -----------------------------------------------
+>>> KOSAKI Motohiro (6):
+>>>   Revert "mm: mempolicy: Let vma_merge and vma_split handle
+>>>     vma->vm_policy linkages"
+>>>   mempolicy: Kill all mempolicy sharing
+>>>   mempolicy: fix a race in shared_policy_replace()
+>>>   mempolicy: fix refcount leak in mpol_set_shared_policy()
+>>>   mempolicy: fix a memory corruption by refcount imbalance in
+>>>     alloc_pages_vma()
+>>>   MAINTAINERS: Added MEMPOLICY entry
+>>>
+>>>  MAINTAINERS    |    7 +++
+>>>  mm/mempolicy.c |  151 ++++++++++++++++++++++++++++++++++++++++----------------
+>>>  mm/shmem.c     |    9 ++--
+>>>  3 files changed, 120 insertions(+), 47 deletions(-)
+>>
+>> I don't see these patches queued anywhere.  They aren't in linux-next,
+>> mmotm, or Linus' tree.  Did these get dropped?  Is the revert still
+>> needed?
 >
-> Let me know if you have any tweaks you want to see.
->
-> thanks
-> -john
->
-> Unexpected behavior could occur if the time is set to
-> a value large enough to overflow a 64bit ktime_t
-> (which is something larger then the year 2262).
->
-> Also unexpected behavior could occur if large negative
-> offsets are injected via adjtimex.
->
-> So this patch improves the sanity check timekeeping inputs
-> by improving the timespec_valid() check, and then makes better
-> use of timespec_valid() to make sure we don't set the time to
-> an invalid negative value or one that overflows ktime_t.
->
-> Note: This does not protect from setting the time close to
-> overflowing ktime_t and then letting natural accumulation
-> cause the overflow.
->
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Prarit Bhargava <prarit@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Zhouping Liu <zliu@redhat.com>
-> Cc: CAI Qian <caiqian@redhat.com>
-> Cc: Sasha Levin <levinsasha928@gmail.com>
-> Cc: stable@vger.kernel.org
-> Reported-by: CAI Qian <caiqian@redhat.com>
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  include/linux/ktime.h     |    7 -------
->  include/linux/time.h      |   22 ++++++++++++++++++++--
->  kernel/time/timekeeping.c |   26 ++++++++++++++++++++++++--
->  3 files changed, 44 insertions(+), 11 deletions(-)
+> Sorry. my fault. yes, it is needed. currently, Some LTP was fail since
+> Mel's "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages" patch.
 
-This patch fixes a boot regression on machines with crappy BIOS.  Is
-this going to get committed soon?
-
-https://bugzilla.redhat.com/show_bug.cgi?id=844249
+The series still isn't queued anywhere.  Are you planning on resending
+it again, or should it get picked up in a particular tree?
 
 josh
