@@ -1,243 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2HOUYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:24:53 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:45436 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab2HOUYu (ORCPT
+	id S1757003Ab2HOUZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:25:26 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36789 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab2HOTu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:24:50 -0400
-Date: Wed, 15 Aug 2012 22:24:36 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Huacai Chen <chenhuacai@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
-Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
- memory (>4GB).
-Message-ID: <20120815202436.GB15844@linux-mips.org>
-References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
- <1344677543-22591-10-git-send-email-chenhc@lemote.com>
- <20120813175447.GB26088@phenom.dumpdata.com>
+	Wed, 15 Aug 2012 15:50:26 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Kautuk Consul <consul.kautuk@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 065/165] xhci-mem.c: Check for ring->first_seg != NULL
+Date: Wed, 15 Aug 2012 15:46:49 -0400
+Message-ID: <1345060109-9187-66-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120813175447.GB26088@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 01:54:47PM -0400, Konrad Rzeszutek Wilk wrote:
+From: Kautuk Consul <consul.kautuk@gmail.com>
 
-> > +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
-> > +				dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
-> > +{
-> > +	void *ret;
-> > +
-> > +	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
-> > +		return ret;
-> > +
-> > +	/* ignore region specifiers */
-> > +	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
-> > +
-> > +#ifdef CONFIG_ZONE_DMA
-> > +	if (dev == NULL)
-> > +		gfp |= __GFP_DMA;
-> 
-> When would this happen? dev == NULL?
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-A legacy (ISA) device driver.  Some of the Loongsons have some kind of
-southbridge which incorporates legacy devices though of the top of my
-head I'm not sure which if any of these are actually being used.  Huacai?
+commit 0e6c7f746ea99089fb3263709075c20485a479ae upstream.
 
-> > +	else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
-> > +		gfp |= __GFP_DMA;
-> > +	else
-> > +#endif
-> > +#ifdef CONFIG_ZONE_DMA32
-> > +	if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
-> > +		gfp |= __GFP_DMA32;
-> > +	else
-> 
-> Why the 'else'
-> > +#endif
-> > +	;
-> 
-> why?
-> > +	gfp |= __GFP_NORETRY;
-> > +
-> > +	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
-> > +	mb();
-> 
-> Why the 'mb()' ? Can you just do
-> 	return swiotlb_alloc_coherent(...) 
-> 
-> > +	return ret;
-> > +}
-> > +
-> > +static void loongson_dma_free_coherent(struct device *dev, size_t size,
-> > +				void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
-> > +{
-> > +	int order = get_order(size);
-> > +
-> > +	if (dma_release_from_coherent(dev, order, vaddr))
-> > +		return;
-> > +
-> > +	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-> > +}
-> > +
-> > +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
-> > +				unsigned long offset, size_t size,
-> > +				enum dma_data_direction dir,
-> > +				struct dma_attrs *attrs)
-> > +{
-> > +	dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
-> > +					dir, attrs);
-> > +	mb();
-> 
-> Please do 'return swiotlb_map_page(..)'..
-> 
-> But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
-> ?
-> 
-> 
-> > +	return daddr;
-> > +}
-> > +
-> > +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
-> > +				int nents, enum dma_data_direction dir,
-> > +				struct dma_attrs *attrs)
-> > +{
-> > +	int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
-> > +	mb();
-> > +
-> > +	return r;
-> > +}
-> > +
-> > +static void loongson_dma_sync_single_for_device(struct device *dev,
-> > +				dma_addr_t dma_handle, size_t size,
-> > +				enum dma_data_direction dir)
-> > +{
-> > +	swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
-> > +	mb();
-> > +}
-> > +
-> > +static void loongson_dma_sync_sg_for_device(struct device *dev,
-> > +				struct scatterlist *sg, int nents,
-> > +				enum dma_data_direction dir)
-> > +{
-> > +	swiotlb_sync_sg_for_device(dev, sg, nents, dir);
-> > +	mb();
-> > +}
-> > +
-> 
-> I am not really sure why you have these extra functions, when you could
-> just modify the dma_ops to point to the swiotlb ones
-> 
-> > +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
-> > +{
-> > +	return (paddr < 0x10000000) ?
-> > +			(paddr | 0x0000000080000000) : paddr;
-> > +}
-> > +
-> > +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
-> > +{
-> > +	return (daddr < 0x90000000 && daddr >= 0x80000000) ?
-> > +			(daddr & 0x0fffffff) : daddr;
-> > +}
-> > +
-> > +struct loongson_dma_map_ops {
-> > +	struct dma_map_ops dma_map_ops;
-> > +	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
-> > +	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
-> > +};
-> > +
-> > +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> > +{
-> > +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-> > +					struct loongson_dma_map_ops, dma_map_ops);
-> > +
-> > +	return ops->phys_to_dma(dev, paddr);
-> > +}
-> > +
-> > +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
-> > +{
-> > +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
-> > +					struct loongson_dma_map_ops, dma_map_ops);
-> > +
-> > +	return ops->dma_to_phys(dev, daddr);
-> > +}
-> > +
-> > +static int loongson_dma_set_mask(struct device *dev, u64 mask)
-> > +{
-> > +	/* Loongson doesn't support DMA above 32-bit */
-> > +	if (mask > DMA_BIT_MASK(32))
-> > +		return -EIO;
-> > +
-> > +	*dev->dma_mask = mask;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
-> > +	.dma_map_ops = {
-> > +		.alloc = loongson_dma_alloc_coherent,
-> > +		.free = loongson_dma_free_coherent,
-> > +		.map_page = loongson_dma_map_page,
-> 
-> But why not 'swiotlb_map_page'?
-> 
-> > +		.unmap_page = swiotlb_unmap_page,
-> > +		.map_sg = loongson_dma_map_sg,
-> > +		.unmap_sg = swiotlb_unmap_sg_attrs,
-> > +		.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
-> > +		.sync_single_for_device = loongson_dma_sync_single_for_device,
-> > +		.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
-> > +		.sync_sg_for_device = loongson_dma_sync_sg_for_device,
-> > +		.mapping_error = swiotlb_dma_mapping_error,
-> > +		.dma_supported = swiotlb_dma_supported,
-> > +		.set_dma_mask = loongson_dma_set_mask
-> > +	},
-> > +	.phys_to_dma = loongson_unity_phys_to_dma,
-> > +	.dma_to_phys = loongson_unity_dma_to_phys
-> 
-> Why do you need these? I am not seeing it being used here by any external code?
-> 
-> > +};
-> > +
-> > +void __init plat_swiotlb_setup(void)
-> > +{
-> > +	swiotlb_init(1);
-> > +	mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
-> > +}
-> > diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-> > index 3fab204..122f4f8 100644
-> > --- a/arch/mips/mm/dma-default.c
-> > +++ b/arch/mips/mm/dma-default.c
-> > @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
-> >  	       current_cpu_type() == CPU_R12000);
-> >  }
-> >  
-> > +static inline int cpu_is_noncoherent_loongson(struct device *dev)
-> > +{
-> > +	return !plat_device_is_coherent(dev) &&
-> > +			(current_cpu_type() == CPU_LOONGSON2 ||
-> > +			 current_cpu_type() == CPU_LOONGSON3);
-> > +}
-> > +
-> >  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
-> >  {
-> >  	gfp_t dma_flag;
-> > @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
-> >  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
-> >  	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
-> >  {
-> > -	if (cpu_is_noncoherent_r10000(dev))
-> > +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+There are 2 situations wherein the xhci_ring* might not get freed:
+- When xhci_ring_alloc() -> xhci_segment_alloc() returns NULL and
+  we goto the fail: label in xhci_ring_alloc. In this case, the ring
+  will not get kfreed.
+- When the num_segs argument to xhci_ring_alloc is passed as 0 and
+  we try to free the rung after that.
+  ( This doesn't really happen as of now in the code but we seem to
+    be entertaining num_segs=0 in xhci_ring_alloc )
 
-Why this?  I hope you're not claiming the Loongson has the same very weird
-behaviour as the R10000 in a non-coherent system.  No sane CPU should ...
+This should be backported to kernels as old as 2.6.31.
 
-  Ralf
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/usb/host/xhci-mem.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 727ac40..31cf540 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -111,18 +111,20 @@ void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
+ 	struct xhci_segment *seg;
+ 	struct xhci_segment *first_seg;
+ 
+-	if (!ring || !ring->first_seg)
++	if (!ring)
+ 		return;
+-	first_seg = ring->first_seg;
+-	seg = first_seg->next;
+-	xhci_dbg(xhci, "Freeing ring at %p\n", ring);
+-	while (seg != first_seg) {
+-		struct xhci_segment *next = seg->next;
+-		xhci_segment_free(xhci, seg);
+-		seg = next;
++	if (ring->first_seg) {
++		first_seg = ring->first_seg;
++		seg = first_seg->next;
++		xhci_dbg(xhci, "Freeing ring at %p\n", ring);
++		while (seg != first_seg) {
++			struct xhci_segment *next = seg->next;
++			xhci_segment_free(xhci, seg);
++			seg = next;
++		}
++		xhci_segment_free(xhci, first_seg);
++		ring->first_seg = NULL;
+ 	}
+-	xhci_segment_free(xhci, first_seg);
+-	ring->first_seg = NULL;
+ 	kfree(ring);
+ }
+ 
+-- 
+1.7.12.rc2
+
