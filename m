@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2HOIfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:35:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26560 "EHLO mx1.redhat.com"
+	id S1753890Ab2HOIjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 04:39:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33887 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab2HOIfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:35:14 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87ipckrgal.fsf@rustcorp.com.au>
-References: <87ipckrgal.fsf@rustcorp.com.au> <87d32us55c.fsf@rustcorp.com.au> <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk> <32504.1344953290@warthog.procyon.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, Jonas Gorski <jonas.gorski@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH] MIPS: fix module.c build for 32 bit
-Date: Wed, 15 Aug 2012 09:34:58 +0100
-Message-ID: <1171.1345019698@warthog.procyon.org.uk>
+	id S1753340Ab2HOIjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 04:39:33 -0400
+Date: Wed, 15 Aug 2012 10:39:25 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: multitouch: Add support for eGalax 0x73f7
+In-Reply-To: <1344494088-3438-1-git-send-email-thierry.reding@avionic-design.de>
+Message-ID: <alpine.LNX.2.00.1208151039160.7026@pobox.suse.cz>
+References: <1344494088-3438-1-git-send-email-thierry.reding@avionic-design.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+On Thu, 9 Aug 2012, Thierry Reding wrote:
 
-> For a build fix????
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  drivers/hid/hid-ids.h        | 1 +
+>  drivers/hid/hid-multitouch.c | 3 +++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 5a91bf6..9614a65 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -270,6 +270,7 @@
+>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA	0x72fa
+>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302	0x7302
+>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349	0x7349
+> +#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7	0x73f7
+>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
+>  
+>  #define USB_VENDOR_ID_ELECOM		0x056e
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 59c8b5c..115dca2 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -885,6 +885,9 @@ static const struct hid_device_id mt_devices[] = {
+>  			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349) },
+>  	{ .driver_data = MT_CLS_EGALAX_SERIAL,
+>  		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
+> +			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_73F7) },
+> +	{ .driver_data = MT_CLS_EGALAX_SERIAL,
+> +		MT_USB_DEVICE(USB_VENDOR_ID_DWAV,
+>  			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
+>  
+>  	/* Elo TouchSystems IntelliTouch Plus panel */
 
-Linux hasn't pulled the asm-generic cleanup patch yet - you missed the merge
-window, I think.  Jonas detected the problem in linux-next.
+Applied, thanks Thierry.
 
-David
+-- 
+Jiri Kosina
+SUSE Labs
