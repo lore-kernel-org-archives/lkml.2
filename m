@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2HOSR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:17:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39107 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab2HOSR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:17:57 -0400
+	id S1753036Ab2HOSUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:20:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984Ab2HOSUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:20:39 -0400
+Date: Wed, 15 Aug 2012 20:17:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+Message-ID: <20120815181711.GA19018@redhat.com>
+References: <20120726134748.GA20605@localhost> <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com> <20120810015222.GA19286@localhost> <CAGXu5jK_ZJqmcJ7JcnpwNb5R3x8=ay_shD16ZA3q-7Lwi8S=qg@mail.gmail.com> <20120815030110.GA24836@localhost> <CAGXu5j+0FUYdBqsotn_vp1EbG=dcURAA1sxv+yFzaJuUkdAh0A@mail.gmail.com> <20120815130159.GA3221@redhat.com> <1345041021.31459.88.camel@twins> <20120815175651.GA17814@redhat.com> <CAGXu5jJ+HOdSxS7Ec=TW06h6KEpEmi-rF+Jk8L5LiQsp9gyAtg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-5-git-send-email-glommer@parallels.com>
-	<20120814162144.GC6905@dhcp22.suse.cz>
-	<502B6D03.1080804@parallels.com>
-	<20120815123931.GF23985@dhcp22.suse.cz>
-	<000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
-	<502BBC35.809@parallels.com>
-	<000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
-Date: Wed, 15 Aug 2012 11:11:49 -0700
-Message-ID: <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-From: Ying Han <yinghan@google.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJ+HOdSxS7Ec=TW06h6KEpEmi-rF+Jk8L5LiQsp9gyAtg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 8:34 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 15 Aug 2012, Glauber Costa wrote:
+On 08/15, Kees Cook wrote:
 >
->> On 08/15/2012 06:47 PM, Christoph Lameter wrote:
->> > On Wed, 15 Aug 2012, Michal Hocko wrote:
->> >
->> >>> That is not what the kernel does, in general. We assume that if he wants
->> >>> that memory and we can serve it, we should. Also, not all kernel memory
->> >>> is unreclaimable. We can shrink the slabs, for instance. Ying Han
->> >>> claims she has patches for that already...
->> >>
->> >> Are those patches somewhere around?
->> >
->> > You can already shrink the reclaimable slabs (dentries / inodes) via
->> > calls to the subsystem specific shrinkers. Did Ying Han do anything to
->> > go beyond that?
->> >
->> That is not enough for us.
->> We would like to make sure that the objects being discarded belong to
->> the memcg which is under pressure. We don't need to be perfect here, and
->> an occasional slip is totally fine. But if in general, shrinking from
->> memcg A will mostly wipe out objects from memcg B, we harmed the system
->> in return for nothing good.
->
-> How can you figure out which objects belong to which memcg? The ownerships
-> of dentries and inodes is a dubious concept already.
+> It sounds like get_task_comm shouldn't have locking at all then? It
+> should just do a length-limited copy
 
-I figured it out based on the kernel slab accounting.
-obj->page->kmem_cache->memcg
+Without task_lock() get_task_comm() can copy incomplete new name.
 
---Ying
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Honestly, I do not know any user which "strictly" needs the correct
+name. may be proc.
+
+> and make sure there is a trailing
+> 0-byte?
+
+get_task_comm()->strncpy() should always see (and copy) 0-byte.
+comm[TASK_COMM_LEN - 1] == '\0' and this byte is never changed.
+
+set_task_comm()->strlcpy() can write to this byte, but it can
+only write 0 again.
+
+Or I am totally confused ;)
+
+Oleg.
+
