@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab2HOO6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:58:52 -0400
+	id S1755105Ab2HOO67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:58:59 -0400
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:42867 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab2HOO6t (ORCPT
+	with ESMTP id S1755014Ab2HOO6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:58:49 -0400
+	Wed, 15 Aug 2012 10:58:55 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] perf ui/gtk: Implement helpline_fns
-Date: Wed, 15 Aug 2012 23:57:33 +0900
-Message-Id: <1345042655-27862-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/5] perf ui/gtk: Add perf_gtk__show_helpline() for pr_*
+Date: Wed, 15 Aug 2012 23:57:35 +0900
+Message-Id: <1345042655-27862-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1345042655-27862-1-git-send-email-namhyung@kernel.org>
 References: <1345042655-27862-1-git-send-email-namhyung@kernel.org>
@@ -21,92 +21,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helpline API implementation to GTK front-end.
+Use helpline for printing error/debug messages. The code resembles a
+TUI counter part and only print the first line of the message.
 
 Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Makefile          |    1 +
- tools/perf/ui/gtk/gtk.h      |    2 ++
- tools/perf/ui/gtk/helpline.c |   31 +++++++++++++++++++++++++++++++
- tools/perf/ui/gtk/setup.c    |    1 +
- 4 files changed, 35 insertions(+)
- create mode 100644 tools/perf/ui/gtk/helpline.c
+ tools/perf/ui/gtk/helpline.c |   26 ++++++++++++++++++++++++++
+ tools/perf/ui/gtk/util.c     |    5 -----
+ tools/perf/ui/helpline.h     |   23 +++++++++++++++++++++++
+ tools/perf/ui/setup.c        |    4 ++++
+ tools/perf/ui/tui/setup.c    |    2 --
+ tools/perf/util/debug.c      |    4 +++-
+ tools/perf/util/debug.h      |    8 +-------
+ 7 files changed, 57 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 14c0b744d98e..91f16e26fd0d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -601,6 +601,7 @@ else
- 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
- 		# Make sure that it'd be included only once.
- 		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
- 			LIB_OBJS += $(OUTPUT)ui/setup.o
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index a4d0f2b4a2dc..793cb6116ddf 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -29,6 +29,8 @@ static inline bool perf_gtk__is_active_context(struct perf_gtk_context *ctx)
- struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
- int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
- 
-+void perf_gtk__init_helpline(void);
-+
- #ifndef HAVE_GTK_INFO_BAR
- static inline GtkWidget *perf_gtk__setup_info_bar(void)
- {
 diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
-new file mode 100644
-index 000000000000..c02cb4a54939
---- /dev/null
+index c02cb4a54939..b4f498efdb1e 100644
+--- a/tools/perf/ui/gtk/helpline.c
 +++ b/tools/perf/ui/gtk/helpline.c
-@@ -0,0 +1,31 @@
-+#include "gtk.h"
-+#include "../helpline.h"
+@@ -1,5 +1,10 @@
++#include <stdio.h>
++#include <string.h>
 +
-+
-+static void gtk_helpline_pop(void)
-+{
-+	if (!perf_gtk__is_active_context(pgctx))
-+		return;
-+
-+	gtk_statusbar_pop(GTK_STATUSBAR(pgctx->statbar),
-+			  pgctx->statbar_ctx_id);
-+}
-+
-+static void gtk_helpline_push(const char *msg)
-+{
-+	if (!perf_gtk__is_active_context(pgctx))
-+		return;
-+
-+	gtk_statusbar_push(GTK_STATUSBAR(pgctx->statbar),
-+			   pgctx->statbar_ctx_id, msg);
-+}
-+
-+static struct perf_helpline gtk_helpline_fns = {
-+	.pop	= gtk_helpline_pop,
-+	.push	= gtk_helpline_push,
-+};
-+
-+void perf_gtk__init_helpline(void)
-+{
-+	helpline_fns = &gtk_helpline_fns;
-+}
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 92879ce61e2f..ad40b3626fdb 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -7,6 +7,7 @@ extern struct perf_error_ops perf_gtk_eops;
- int perf_gtk__init(void)
- {
- 	perf_error__register(&perf_gtk_eops);
-+	perf_gtk__init_helpline();
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
- }
+ #include "gtk.h"
++#include "../ui.h"
+ #include "../helpline.h"
++#include "../../util/debug.h"
  
+ 
+ static void gtk_helpline_pop(void)
+@@ -29,3 +34,24 @@ void perf_gtk__init_helpline(void)
+ {
+ 	helpline_fns = &gtk_helpline_fns;
+ }
++
++int perf_gtk__show_helpline(const char *fmt, va_list ap)
++{
++	int ret;
++	char *ptr;
++	static int backlog;
++
++	ret = vscnprintf(ui_helpline__current + backlog,
++			 sizeof(ui_helpline__current) - backlog, fmt, ap);
++	backlog += ret;
++
++	/* only first line can be displayed */
++	ptr = strchr(ui_helpline__current, '\n');
++	if (ptr && (ptr - ui_helpline__current) <= backlog) {
++		*ptr = '\0';
++		ui_helpline__puts(ui_helpline__current);
++		backlog = 0;
++	}
++
++	return ret;
++}
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index 0ead373c0dfb..b8efb966f94c 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -117,11 +117,6 @@ struct perf_error_ops perf_gtk_eops = {
+  *        For now, just add stubs for NO_NEWT=1 build.
+  */
+ #ifdef NO_NEWT_SUPPORT
+-int ui_helpline__show_help(const char *format __used, va_list ap __used)
+-{
+-	return 0;
+-}
+-
+ void ui_progress__update(u64 curr __used, u64 total __used,
+ 			 const char *title __used)
+ {
+diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
+index 7e2d4fb10ebd..8d5a8ba3a122 100644
+--- a/tools/perf/ui/helpline.h
++++ b/tools/perf/ui/helpline.h
+@@ -4,6 +4,8 @@
+ #include <stdio.h>
+ #include <stdarg.h>
+ 
++#include "../util/cache.h"
++
+ struct perf_helpline {
+ 	void (*pop)(void);
+ 	void (*push)(const char *msg);
+@@ -19,4 +21,25 @@ void ui_helpline__puts(const char *msg);
+ 
+ extern char ui_helpline__current[512];
+ 
++#ifdef NO_NEWT_SUPPORT
++static inline int ui_helpline__show_help(const char *format __used,
++					 va_list ap __used)
++{
++	return 0;
++}
++#else
++extern char ui_helpline__last_msg[];
++int ui_helpline__show_help(const char *format, va_list ap);
++#endif /* NO_NEWT_SUPPORT */
++
++#ifdef NO_GTK2_SUPPORT
++static inline int perf_gtk__show_helpline(const char *format __used,
++					  va_list ap __used)
++{
++	return 0;
++}
++#else
++int perf_gtk__show_helpline(const char *format, va_list ap);
++#endif /* NO_GTK2_SUPPORT */
++
+ #endif /* _PERF_UI_HELPLINE_H_ */
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index 791fb15ce350..c7820e569660 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -1,7 +1,11 @@
++#include <pthread.h>
++
+ #include "../cache.h"
+ #include "../debug.h"
+ 
+ 
++pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
++
+ void setup_browser(bool fallback_to_pager)
+ {
+ 	if (!isatty(1) || dump_trace)
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index e247bf51d247..009c962fae85 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -3,8 +3,6 @@
+ 
+ #include "tui.h"
+ 
+-pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+-
+ static volatile int ui__need_resize;
+ 
+ void ui__refresh_dimensions(bool force)
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 4dfe0bb3c322..66eb3828ceb5 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -23,8 +23,10 @@ int eprintf(int level, const char *fmt, ...)
+ 
+ 	if (verbose >= level) {
+ 		va_start(args, fmt);
+-		if (use_browser > 0)
++		if (use_browser == 1)
+ 			ret = ui_helpline__show_help(fmt, args);
++		else if (use_browser == 2)
++			ret = perf_gtk__show_helpline(fmt, args);
+ 		else
+ 			ret = vfprintf(stderr, fmt, args);
+ 		va_end(args);
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 015c91dbc096..05e660cbf7e2 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -4,6 +4,7 @@
+ 
+ #include <stdbool.h>
+ #include "event.h"
++#include "../ui/helpline.h"
+ 
+ extern int verbose;
+ extern bool quiet, dump_trace;
+@@ -15,11 +16,6 @@ struct ui_progress;
+ struct perf_error_ops;
+ 
+ #if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+-static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
+-{
+-	return 0;
+-}
+-
+ static inline void ui_progress__update(u64 curr __used, u64 total __used,
+ 				       const char *title __used) {}
+ 
+@@ -39,8 +35,6 @@ perf_error__unregister(struct perf_error_ops *eops __used)
+ 
+ #else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+-extern char ui_helpline__last_msg[];
+-int ui_helpline__show_help(const char *format, va_list ap);
+ #include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ #include "../ui/util.h"
 -- 
 1.7.9.2
 
