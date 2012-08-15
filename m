@@ -1,172 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab2HOPux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:50:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56976 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab2HOPrG (ORCPT
+	id S1755458Ab2HOPwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:52:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58192 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab2HOPwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:47:06 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com, dhowells@redhat.com,
-        hpj@urpla.net, sedat.dilek@googlemail.com, penberg@kernel.org,
-        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
-Subject: [PATCH 01/13] vfs: add i_op->open()
-Date: Wed, 15 Aug 2012 17:48:08 +0200
-Message-Id: <1345045700-9062-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+	Wed, 15 Aug 2012 11:52:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 28/31] arm64: Generic timers support
+Date: Wed, 15 Aug 2012 15:52:40 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208151552.40484.arnd@arndb.de>
+X-Provags-ID: V02:K0:TxHzGosXIlLmnH8VyaOYiHRHOs6ENM6XLgOlxt+c3DF
+ osHNWmi1Q4hAy2AYcI642qhZ0F3gXtUCtZGPc2lXPUJtIL+Wwt
+ xSBxH6vfQTHLnfebIbLmBPl/1CbllvrWoOODHKLykcKeWvgp68
+ hpDNlRlU6wNn8eoLnHQLOY0zJi6BBcUzoCDaSkxh9sAwt77pEa
+ wF0lTTXgIdd1g3IKwfSV8cW+8Rrz67aVGLTE1l7fkshb/SAMbB
+ BBP0ER06KdHu+RYp2j2UWcqHml84uunIfuhzkd25BCrjB004Ak
+ WYFwgJ56MYX3guZUjOHyAyioNcXVIzDrRJ8WITdXnD1ggNZSjw
+ Oyk7HrUuAj6g1SNSYM9Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Tuesday 14 August 2012, Catalin Marinas wrote:
+> +static void arch_timer_reg_write(int reg, u32 val)
+> +{
+> +       switch (reg) {
+> +       case ARCH_TIMER_REG_CTRL:
+> +               asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
+> +               break;
+> +       case ARCH_TIMER_REG_TVAL:
+> +               asm volatile("msr cntp_tval_el0, %0" : : "r" (val));
+> +               break;
+> +       default:
+> +               BUG();
+> +       }
+> +
+> +       isb();
+> +}
+> +
+> +static u32 arch_timer_reg_read(int reg)
+> +{
+> +       u32 val;
+> +
+> +       switch (reg) {
+> +       case ARCH_TIMER_REG_CTRL:
+> +               asm volatile("mrs %0,  cntp_ctl_el0" : "=r" (val));
+> +               break;
+> +       case ARCH_TIMER_REG_FREQ:
+> +               asm volatile("mrs %0,   cntfrq_el0" : "=r" (val));
+> +               break;
+> +       case ARCH_TIMER_REG_TVAL:
+> +               asm volatile("mrs %0, cntp_tval_el0" : "=r" (val));
+> +               break;
+> +       default:
+> +               BUG();
+> +       }
+> +
+> +       return val;
+> +}
 
-Add a new inode operation i_op->open().  This is for stacked
-filesystems that want to return a struct file from a different
-filesystem.
+Are the inline assemblies the only things in this driver that are
+specific to AArch64?
+Are you planning to use the same file for 32 bit ARM as well, e.g.
+when running a 32 bit guest kernel on a 64 bit host?
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- Documentation/filesystems/Locking |    2 ++
- Documentation/filesystems/vfs.txt |    7 +++++++
- fs/namei.c                        |    9 ++++++---
- fs/open.c                         |   23 +++++++++++++++++++++--
- include/linux/fs.h                |    2 ++
- 5 files changed, 38 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 0f103e3..d222b6a 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -64,6 +64,7 @@ prototypes:
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 				struct file *, unsigned open_flag,
- 				umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- 
- locking rules:
- 	all may block
-@@ -92,6 +93,7 @@ removexattr:	yes
- fiemap:		no
- update_time:	no
- atomic_open:	yes
-+open:		no
- 
- 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
- victim.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 065aa2d..f53d93c 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -367,6 +367,7 @@ struct inode_operations {
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 				struct file *, unsigned open_flag,
- 				umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- };
- 
- Again, all methods are called without any locks being held, unless
-@@ -696,6 +697,12 @@ struct address_space_operations {
-   	but instead uses bmap to find out where the blocks in the file
-   	are and uses those addresses directly.
- 
-+  dentry_open: this is an alternative to f_op->open(), the difference is that
-+	this method may open a file not necessarily originating from the same
-+	filesystem as the one i_op->open() was called on.  It may be
-+	useful for stacking filesystems which want to allow native I/O directly
-+	on underlying files.
-+
- 
-   invalidatepage: If a page has PagePrivate set, then invalidatepage
-         will be called when part or all of the page is to be removed
-diff --git a/fs/namei.c b/fs/namei.c
-index 1b46439..ac2526d 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2816,9 +2816,12 @@ finish_open_created:
- 	error = may_open(&nd->path, acc_mode, open_flag);
- 	if (error)
- 		goto out;
--	file->f_path.mnt = nd->path.mnt;
--	error = finish_open(file, nd->path.dentry, NULL, opened);
--	if (error) {
-+
-+	BUG_ON(*opened & FILE_OPENED); /* once it's opened, it's opened */
-+	error = vfs_open(&nd->path, file, current_cred());
-+	if (!error) {
-+		*opened |= FILE_OPENED;
-+	} else {
- 		if (error == -EOPENSTALE)
- 			goto stale_open;
- 		goto out;
-diff --git a/fs/open.c b/fs/open.c
-index f3d96e7..c5a8cac 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -787,8 +787,7 @@ struct file *dentry_open(const struct path *path, int flags,
- 		return ERR_PTR(error);
- 
- 	f->f_flags = flags;
--	f->f_path = *path;
--	error = do_dentry_open(f, NULL, cred);
-+	error = vfs_open(path, f, cred);
- 	if (!error) {
- 		error = open_check_o_direct(f);
- 		if (error) {
-@@ -803,6 +802,26 @@ struct file *dentry_open(const struct path *path, int flags,
- }
- EXPORT_SYMBOL(dentry_open);
- 
-+/**
-+ * vfs_open - open the file at the given path
-+ * @path: path to open
-+ * @filp: newly allocated file with f_flag initialized
-+ * @cred: credentials to use
-+ */
-+int vfs_open(const struct path *path, struct file *filp,
-+	     const struct cred *cred)
-+{
-+	struct inode *inode = path->dentry->d_inode;
-+
-+	if (inode->i_op->dentry_open)
-+		return inode->i_op->dentry_open(path->dentry, filp, cred);
-+	else {
-+		filp->f_path = *path;
-+		return do_dentry_open(filp, NULL, cred);
-+	}
-+}
-+EXPORT_SYMBOL(vfs_open);
-+
- static void __put_unused_fd(struct files_struct *files, unsigned int fd)
- {
- 	struct fdtable *fdt = files_fdtable(files);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 38dba16..abc7a53 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1836,6 +1836,7 @@ struct inode_operations {
- 	int (*atomic_open)(struct inode *, struct dentry *,
- 			   struct file *, unsigned open_flag,
- 			   umode_t create_mode, int *opened);
-+	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
- } ____cacheline_aligned;
- 
- struct seq_file;
-@@ -2201,6 +2202,7 @@ extern long do_sys_open(int dfd, const char __user *filename, int flags,
- extern struct file *filp_open(const char *, int, umode_t);
- extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- 				   const char *, int);
-+extern int vfs_open(const struct path *, struct file *, const struct cred *);
- extern struct file * dentry_open(const struct path *, int, const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
- extern char * getname(const char __user *);
--- 
-1.7.7
-
+	Arnd
