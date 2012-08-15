@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab2HNXwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 19:52:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40907 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab2HNXwo (ORCPT
+	id S1754855Ab2HOAAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:00:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39878 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab2HOAAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 19:52:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1208150134070.32033@ionos>
-References: <1344449428-24962-1-git-send-email-tj@kernel.org>
-	<alpine.LFD.2.02.1208131720070.32033@ionos>
-	<20120814191549.GX25632@google.com>
-	<alpine.LFD.2.02.1208142118060.32033@ionos>
-	<20120814214009.GD25632@google.com>
-	<alpine.LFD.2.02.1208150045360.32033@ionos>
-	<20120814232738.GG25632@google.com>
-	<alpine.LFD.2.02.1208150134070.32033@ionos>
-Date: Tue, 14 Aug 2012 16:52:42 -0700
-X-Google-Sender-Auth: 51tQsGiVrj7x-p94F6a068pt-sU
-Message-ID: <CAOS58YMOie06+Q0xkzyOwvGd-oeVHLFvrewU7UP_4ES2r4hK+g@mail.gmail.com>
-Subject: Re: [PATCHSET] timer: clean up initializers and implement irqsafe timers
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Aug 2012 20:00:11 -0400
+Date: Tue, 14 Aug 2012 17:00:10 -0700 (PDT)
+Message-Id: <20120814.170010.1136116037664193225.davem@davemloft.net>
+To: Julia.Lawall@lip6.fr
+Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] drivers/net/ethernet/ti/davinci_cpdma.c: Remove
+ potential NULL dereference
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1344959388-19719-5-git-send-email-Julia.Lawall@lip6.fr>
+References: <1344959388-19719-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1344959388-19719-5-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Tue, 14 Aug 2012 17:49:47 +0200
 
-On Tue, Aug 14, 2012 at 4:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Do you really expect that I follow all of kernel dev posts within a
-> day of returning from a two weeks vacation?
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> If the NULL test is necessary, the initialization involving a dereference of
+> the tested value should be moved after the NULL test.
+> 
+> The sematic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The head message says on what it's based on and the git branch. I
-can't read your mind or know your current state. You could have asked
-using a proper sentence.
-
-We can continue this, but I don't think this is leading any place
-productive. I'm replying to your other reply about the suggestion
-about implementing workqueue's own timerlist. Let's just talk about
-that. Please.
-
-Thanks.
-
--- 
-tejun
+Applied, thanks.
