@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab2HOTun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:50:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36826 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab2HOTuk (ORCPT
+	id S1756669Ab2HOTus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:50:48 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62920 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756552Ab2HOTuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:40 -0400
+	Wed, 15 Aug 2012 15:50:44 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Denis Pershin <dyp@perchine.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 075/165] USB: add RESET_RESUME for webcams shown to be quirky
-Date: Wed, 15 Aug 2012 15:46:59 -0400
-Message-ID: <1345060109-9187-76-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 074/165] usb: cdc-acm: Owen SI-30 support
+Date: Wed, 15 Aug 2012 15:46:58 -0400
+Message-ID: <1345060109-9187-75-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Denis Pershin <dyp@perchine.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,63 +31,44 @@ From: Oliver Neukum <oneukum@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 2394d67e446bf616a0885167d5f0d397bdacfdfc upstream.
+commit 65e52f41fa944cef2e6d4222b8c54f46cc575214 upstream.
 
-The new runtime PM code has shown that many webcams suffer
-from a race condition that may crash them upon resume.
-Runtime PM is especially prone to show the problem because
-it retains power to the cameras at all times. However
-system suspension may also crash the devices and retain
-power to the devices.
-The only way to solve this problem without races is in
-usbcore with the RESET_RESUME quirk.
+here is the patch to support Owen SI-30 device.
+This is a pulse counter controller.
+http://www.owen.ru/en/catalog/93788515
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+usb-drivers output:
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=02(commc) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=03eb ProdID=0030 Rev=01.01
+C:  #Ifs= 2 Cfg#= 1 Atr=c0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=02(commc) Sub=02 Prot=00 Driver=cdc_acm
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_acm
+
+This patch is installed on my home system which receives data from this
+controller connected to cold water counter.
+
+Signed-off-by: Denis Pershin <dyp@perchine.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/core/quirks.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/usb/class/cdc-acm.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 99f2d61..241a0d6 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -38,6 +38,24 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	/* Creative SB Audigy 2 NX */
- 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index e907cfd..db34eb4 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1623,6 +1623,9 @@ static const struct usb_device_id acm_ids[] = {
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x03cd), }, /* Nokia C7 */
+ 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
  
-+	/* Logitech Webcam C200 */
-+	{ USB_DEVICE(0x046d, 0x0802), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Support for Owen devices */
++	{ USB_DEVICE(0x03eb, 0x0030), }, /* Owen SI30 */
 +
-+	/* Logitech Webcam C250 */
-+	{ USB_DEVICE(0x046d, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam B/C500 */
-+	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam Pro 9000 */
-+	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C310 */
-+	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
-+
-+	/* Logitech Webcam C270 */
-+	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Philips PSC805 audio device */
- 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
+ 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
  
-@@ -66,6 +84,9 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
- 
-+	/* Guillemot Webcam Hercules Dualpix Exchange*/
-+	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* M-Systems Flash Disk Pioneers */
- 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+ 	/* Support Lego NXT using pbLua firmware */
 -- 
 1.7.12.rc2
 
