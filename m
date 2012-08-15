@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2HOVe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 17:34:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40178 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab2HOVex (ORCPT
+	id S1757547Ab2HOVfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 17:35:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52155 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab2HOVdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 17:34:53 -0400
-Date: Thu, 16 Aug 2012 01:34:49 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
- providers
-Message-ID: <20120815213449.GQ23657@moon>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.507162379@openvz.org>
- <20120815212927.GO23464@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815212927.GO23464@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Aug 2012 17:33:12 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        James Chapman <jchapman@katalix.com>
+Subject: [PATCH 09/14] l2tp: fix info leak via getsockname()
+Date: Wed, 15 Aug 2012 23:31:52 +0200
+Message-Id: <1345066317-22512-10-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345066317-22512-1-git-send-email-minipli@googlemail.com>
+References: <1345066317-22512-1-git-send-email-minipli@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 10:29:27PM +0100, Al Viro wrote:
-> 
-> This, BTW, is too convoluted for its own good.  What you need is
-> something like
-> struct whatever {
-> 	struct seq_file *m;
-> 	struct file *f;
-> 	int flags;
-> };
-> with single allocation of that sucker in your ->open().  Set
-> file->private_data to address of seq_file field in your object *before*
-> calling seq_open() and don't bother with m->private at all - just use
-> container_of(m, struct whatever, m) in your ->show() to get to that
-> structure...
+The L2TP code for IPv6 fails to initialize the l2tp_unused member of
+struct sockaddr_l2tpip6 and that for leaks two bytes kernel stack via
+the getsockname() syscall. Initialize l2tp_unused with 0 to avoid the
+info leak.
 
-I will try and post results, thanks!
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: James Chapman <jchapman@katalix.com>
+---
+ net/l2tp/l2tp_ip6.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-	Cyrill
+diff --git a/net/l2tp/l2tp_ip6.c b/net/l2tp/l2tp_ip6.c
+index 35e1e4b..9275471 100644
+--- a/net/l2tp/l2tp_ip6.c
++++ b/net/l2tp/l2tp_ip6.c
+@@ -410,6 +410,7 @@ static int l2tp_ip6_getname(struct socket *sock, struct sockaddr *uaddr,
+ 	lsa->l2tp_family = AF_INET6;
+ 	lsa->l2tp_flowinfo = 0;
+ 	lsa->l2tp_scope_id = 0;
++	lsa->l2tp_unused = 0;
+ 	if (peer) {
+ 		if (!lsk->peer_conn_id)
+ 			return -ENOTCONN;
+-- 
+1.7.10.4
+
