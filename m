@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2HOWQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:16:36 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27888 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab2HOWQe (ORCPT
+	id S1752988Ab2HOWTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:19:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49779 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab2HOWTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:16:34 -0400
-Date: Thu, 16 Aug 2012 00:16:33 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        Sirrix AG <tpmdd@sirrix.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Rajiv Andrade <mail@srajiv.net>, Seiji Munetoh <munetoh@jp.ibm.com>,
-        Stefan Berger <stefanb@us.ibm.com>,
-        Reiner Sailer <sailer@watson.ibm.com>, Kylene Hall <kjhall@us.ibm.com>
-Subject: [PATCH] tpm: Do not dereference NULL pointer if acpi_os_map_memory()
- fails.
-In-Reply-To: <alpine.LNX.2.00.1208160001080.7818@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1208160011160.7818@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1208072247490.3227@swampdragon.chaosbits.net> <20120808180750.GA24016@linux.vnet.ibm.com> <20120815201527.GC27618@linux.vnet.ibm.com> <alpine.LNX.2.00.1208160001080.7818@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 15 Aug 2012 18:19:40 -0400
+Date: Wed, 15 Aug 2012 15:19:36 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v5 05/12] block: Kill bi_destructor
+Message-ID: <20120815221936.GC2758@google.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-6-git-send-email-koverstreet@google.com>
+ <20120808222223.GD6983@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120809002154.GE7262@moria.home.lan>
+ <20120809060517.GB2845@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120809061214.GA9128@dhcp-172-18-216-138.mtv.corp.google.com>
+ <CAOS58YOHZmNWezg0uDhDeKP1dAt8fmmcLjmzKGShrw6PCpCFpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YOHZmNWezg0uDhDeKP1dAt8fmmcLjmzKGShrw6PCpCFpg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/char/tpm/tpm_acpi.c::read_log() we call
-acpi_os_map_memory(). That call may fail for a number of reasons
-(invalid address, out of memory etc). If the call fails it returns
-NULL and we just pass that to memcpy() unconditionally, which will go
-bad when it tries to dereference the pointer.
+On Wed, Aug 08, 2012 at 11:34:09PM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Aug 8, 2012 at 11:12 PM, Kent Overstreet <koverstreet@google.com> wrote:
+> > But if it's a pointer to heap allocated memory, but the bio was embedded
+> > in another struct? I've seen a fair number of instances of that (md, off
+> > the top of my head).
+> >
+> > If you're sure that in a normal config the slab allocator is going to
+> > complain right away and not corrupt itself, fine. But I've been bitten
+> > way too hard by bugs that could've been caught right away by a simple
+> > assert and instead I had to spend hours backtracking, and the block
+> > layer is _rife_ with that kind of thing.
+> 
+> Let's let slab debug code deal with that.  I really don't see much
+> benefit in doing this.  The said kind of bugs aren't particularly
+> difficult to track down.
 
-Unfortunately we just get NULL back, so we can't really tell the user
-exactely what went wrong, but we can at least avoid crashing and
-return an error (-EIO seemed more generic and more suitable here than
--ENOMEM or something else, so I picked that).
+The only difference would be changing
+#define BIO_KMALLOC_POOL ((void *) ~0)
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/char/tpm/tpm_acpi.c | 5 +++++
- 1 file changed, 5 insertions(+)
+to
+#define BIO_KMALLOC_POOL NULL
 
- note: this patch is against git://github.com/shpedoikal/linux.git v3.6-rc1-tpmdd-staging
-
-diff --git a/drivers/char/tpm/tpm_acpi.c b/drivers/char/tpm/tpm_acpi.c
-index a1bb5a18..fe3fa94 100644
---- a/drivers/char/tpm/tpm_acpi.c
-+++ b/drivers/char/tpm/tpm_acpi.c
-@@ -96,6 +96,11 @@ int read_log(struct tpm_bios_log *log)
- 	log->bios_event_log_end = log->bios_event_log + len;
- 
- 	virt = acpi_os_map_memory(start, len);
-+	if (!virt) {
-+		kfree(log->bios_event_log);
-+		printk("%s: ERROR - Unable to map memory\n", __func__);
-+		return -EIO;
-+	}
- 
- 	memcpy(log->bios_event_log, virt, len);
- 
--- 
-1.7.11.4
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+We want a define for this - bio_alloc_bioset(GFP_KERNEL, 1, NULL)
+doesn't make any sense. I just don't see the argument for changing an
+arbitrary constant... If it's just the ~0 pointer you don't like, I
+originally used a real statically allocated struct bio_set as a sentinel
+value.
