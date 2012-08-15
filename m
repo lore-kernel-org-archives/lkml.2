@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab2HOQbF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:31:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55221 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755766Ab2HOQbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:31:02 -0400
-Message-ID: <502BCEAD.7050905@zytor.com>
-Date: Wed, 15 Aug 2012 09:30:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755795Ab2HOQcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:32:16 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42913 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2HOQcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 12:32:14 -0400
+Message-ID: <502BCF0B.3050401@gmail.com>
+Date: Wed, 15 Aug 2012 12:32:11 -0400
+From: Salar Ali Mumtaz <salaarali@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: tglx@linutronix.de, mingo@redhat.com, davem@davemloft.net,
-        thierry.reding@avionic-design.de, bfields@redhat.com,
-        eric.dumazet@gmail.com, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, viro@zeniv.linux.org.uk,
-        gorcunov@openvz.org, akpm@linux-foundation.org,
-        tim.c.chen@linux.intel.com, devel@openvz.org, ebiederm@xmission.com
-Subject: Re: [RFC PATCH 5/5] syscall: sys_fbind() introduced
-References: <20120815161141.7598.16682.stgit@localhost.localdomain> <20120815162225.7598.85131.stgit@localhost.localdomain>
-In-Reply-To: <20120815162225.7598.85131.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
+References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net> <50213D69.3060904@gmail.com> <5021486B.6020907@xenotime.net> <50240770.6070207@gmail.com> <5025A9C6.1080207@xenotime.net>
+In-Reply-To: <5025A9C6.1080207@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 09:22 AM, Stanislav Kinsbursky wrote:
-> This syscall allows to bind socket to specified file descriptor.
-> Descriptor can be gained by simple open with O_PATH flag.
-> Socket node can be created by sys_mknod().
->
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->   arch/x86/syscalls/syscall_32.tbl |    1 +
->   arch/x86/syscalls/syscall_64.tbl |    1 +
->   include/linux/syscalls.h         |    1 +
->   kernel/sys_ni.c                  |    3 +++
->   net/socket.c                     |   25 +++++++++++++++++++++++++
->   5 files changed, 31 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-> index 7a35a6e..9594b82 100644
-> --- a/arch/x86/syscalls/syscall_32.tbl
-> +++ b/arch/x86/syscalls/syscall_32.tbl
-> @@ -356,3 +356,4 @@
->   347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
->   348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
->   349	i386	kcmp			sys_kcmp
-> +350	i386	fbind			sys_fbind
+On 12-08-10 08:39 PM, Randy Dunlap wrote:
+> On 08/09/2012 11:54 AM, Salar Ali Mumtaz wrote:
+> 
+>> On 12-08-07 12:55 PM, Randy Dunlap wrote:
+>>
+>>> In Kconfig language, is "" the same as 'n' ?
+>>> If so, I'm OK with your proposal above.
+>>>
+>>
+>>
+>> So a colleague of mine tested this and came up with a conclusion that expressions in Kconfig can only deal with boolean or tristate operands and no casting is made with strings. Using any string operand as part of a boolean expression is simply a type error and Kconfig probably marks such operand as 'n', regardless of its value.
+>>
+> 
+> 
+> My question was about FRV, which is a boolean,
+> but still did not display as 'n' in your example.
+> 
+> 
 
-i386 uses socketcalls... perhaps it shouldn't (socketcalls are pretty 
-much an abomination), but for socketcall-based architectures this really 
-should be a socketcall.
-
-Don't you also need fconnect()?  Or is that simply handled by allowing 
-open() without O_PATH?
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+FRV is not a boolean.
