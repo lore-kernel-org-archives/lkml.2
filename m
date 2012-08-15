@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2HOOCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:02:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59580 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754823Ab2HOOCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:02:52 -0400
-Message-ID: <1345039364.824.217.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 06/44] ARM: 7467/1: mutex: use generic xchg-based
- implementation for ARMv6+
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Date: Wed, 15 Aug 2012 15:02:44 +0100
-In-Reply-To: <20120813220142.690510091@linuxfoundation.org>
-References: <20120813220142.113186818@linuxfoundation.org>
-	 <20120813220142.690510091@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-9KwQrPNbqgacHMoXHYUo"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755121Ab2HOODh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:03:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33567 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754823Ab2HOODf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:03:35 -0400
+Date: Wed, 15 Aug 2012 16:03:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Johannes Goetzfried 
+	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Tilo =?utf-8?Q?M=C3=BCller?= 
+	<tilo.mueller@informatik.uni-erlangen.de>
+Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler implementation
+Message-ID: <20120815140331.GB4103@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+	Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+	Tilo =?utf-8?Q?M=C3=BCller?= <tilo.mueller@informatik.uni-erlangen.de>
+References: <20120527144919.GE17705@kronos.redsun>
+ <20120815114216.209814z4mq3hxqe8@www.81.fi>
+ <20120815092804.GA14676@x1.osrc.amd.com>
+ <20120815140016.76673zs818g2hagw@www.81.fi>
+ <20120815125220.GB4409@x1.osrc.amd.com>
+ <20120815164854.11913imktb2fg90k@www.81.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120815164854.11913imktb2fg90k@www.81.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 15, 2012 at 04:48:54PM +0300, Jussi Kivilinna wrote:
+> I posted patch that optimize twofish-avx few weeks ago:
+> http://marc.info/?l=linux-crypto-vger&m=134364845024825&w=2
+>
+> I'd be interested to know, if this is patch helps on Bulldozer.
 
---=-9KwQrPNbqgacHMoXHYUo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sure, can you inline it here too please. The "Download message RAW" link
+on marc.info gives me a diff but patch says:
 
-On Mon, 2012-08-13 at 15:02 -0700, Greg Kroah-Hartman wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
->=20
-> 3.0-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Will Deacon <will.deacon@arm.com>
->=20
-> commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
->=20
-> The open-coded mutex implementation for ARMv6+ cores suffers from a
-> severe lack of barriers, so in the uncontended case we don't actually
-> protect any accesses performed during the critical section.
->=20
-> Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
-> code but optimised to remove a branch instruction, as the mutex fastpath
-> was previously inlined. Now that this is executed out-of-line, we can
-> reuse the atomic access code for the locking (in fact, we use the xchg
-> code as this produces shorter critical sections).
->=20
-> This patch uses the generic xchg based implementation for mutexes on
-> ARMv6+, which introduces barriers to the lock/unlock operations and also
-> has the benefit of removing a fair amount of inline assembly code.
-[...]
+patching file arch/x86/crypto/twofish-avx-x86_64-asm_64.S
+patch unexpectedly ends in middle of line
 
-This should be deferred, same as in 3.4.y and 3.5.y.
+Thanks.
 
-Ben.
-
---=20
-Ben Hutchings
-I say we take off; nuke the site from orbit.  It's the only way to be sure.
-
---=-9KwQrPNbqgacHMoXHYUo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUCusBOe/yOyVhhEJAQpwrg//ekTUO+KWfGWdRRot1bOewLPB+Rq3iuze
-KaER7b0giI05bULzed0iWBQfCRCQW8ShUZgL6DIpoChW3VEFFJfCQTy7qkoWNWwo
-ByCSeOwCGsgawqGRTEIfC3mYPkXWIs2LFmJQrfbLes8U2cynEJSGSp7IrvO5HRH2
-+OGmbAhjxq8kIKgaCsjCjX/Q4GsjSWVsvxUmCQXQOak0Eo7ppbyujZsaveeEbUGL
-g+A6ZNb2DgBNmxPvsSGNdx9XlnrdbBKBveEsQ1AIzVIG+ReeyxlWd47DLCwN9otT
-0uLPmrf9XzHdeSNP7DodBFPFsMxxBrE2bRu4USXPCMK7qSL9ak5IPlJrwl+d2Svz
-GOUEACNlasNflh7dAdsfHy8FKzp/Pbgm+RRb25rQ/L29YhUDdFeO3m2aZ+p79jf+
-PFGABXQjlK/muLyiQ7s3Wf1YTETX5P3hB/FhsKm/ubAPLvqVAP+1zWNB1yomsQBV
-AI6tunUeOz3UyXMP3YswV2dK7g9Be10bTGAOHu8aslGZJKYpGgnqvtYo65razzFs
-P9Pg1Kci5H3y2CcEe2poYriCWx9W7ReQT/RVdM1V1ckH0bR1B8KK5I2qgvWsZ/tu
-neX+LYvF6JWhmv3oa3df1Kf/3qg6BMf4cMwdDXcLiKtoj59zUpjj32xrA+mu71CK
-poaDEu0AK3o=
-=QDR/
------END PGP SIGNATURE-----
-
---=-9KwQrPNbqgacHMoXHYUo--
+-- 
+Regards/Gruss,
+Boris.
