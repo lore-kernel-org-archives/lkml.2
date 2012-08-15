@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab2HOK4Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 06:56:25 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39369 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab2HOK4Y (ORCPT
+	id S1753948Ab2HOK5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 06:57:32 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:48637 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2HOK5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 06:56:24 -0400
-Date: Wed, 15 Aug 2012 06:56:18 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: John Fastabend <john.r.fastabend@intel.com>
-Cc: viro@ZenIV.linux.org.uk, netdev@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [net PATCH v3 3/3] net: netprio: fix cgrp create and write
- priomap race
-Message-ID: <20120815105618.GC23811@hmsreliant.think-freely.org>
-References: <20120814223424.3551.21608.stgit@jf-dev1-dcblab>
- <20120814223435.3551.62387.stgit@jf-dev1-dcblab>
+	Wed, 15 Aug 2012 06:57:30 -0400
+Date: Wed, 15 Aug 2012 12:57:20 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 0/2] Align MIPS swapper_pg_dir for faster code.
+Message-ID: <20120815105720.GA6270@linux-mips.org>
+References: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120814223435.3551.62387.stgit@jf-dev1-dcblab>
+In-Reply-To: <1344967681-13179-1-git-send-email-ddaney.cavm@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 03:34:35PM -0700, John Fastabend wrote:
-> A race exists where creating cgroups and also updating the priomap
-> may result in losing a priomap update. This is because priomap
-> writers are not protected by rtnl_lock.
-> 
-> Move priority writer into rtnl_lock()/rtnl_unlock().
-> 
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
-> ---
-> 
->  net/core/netprio_cgroup.c |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-> index f65dba3..c75e3f9 100644
-> --- a/net/core/netprio_cgroup.c
-> +++ b/net/core/netprio_cgroup.c
-> @@ -101,12 +101,10 @@ static int write_update_netdev_table(struct net_device *dev)
->  	u32 max_len;
->  	struct netprio_map *map;
->  
-> -	rtnl_lock();
->  	max_len = atomic_read(&max_prioidx) + 1;
->  	map = rtnl_dereference(dev->priomap);
->  	if (!map || map->priomap_len < max_len)
->  		ret = extend_netdev_table(dev, max_len);
-> -	rtnl_unlock();
->  
->  	return ret;
->  }
-> @@ -256,17 +254,17 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
->  	if (!dev)
->  		goto out_free_devname;
->  
-> +	rtnl_lock();
->  	ret = write_update_netdev_table(dev);
->  	if (ret < 0)
->  		goto out_put_dev;
->  
-> -	rcu_read_lock();
-> -	map = rcu_dereference(dev->priomap);
-> +	map = rtnl_dereference(dev->priomap);
->  	if (map)
->  		map->priomap[prioidx] = priority;
-> -	rcu_read_unlock();
->  
->  out_put_dev:
-> +	rtnl_unlock();
->  	dev_put(dev);
->  
->  out_free_devname:
-> 
-> 
+On Tue, Aug 14, 2012 at 11:07:59AM -0700, David Daney wrote:
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> From: David Daney <david.daney@cavium.com>
+> 
+> The MIPS swapper_pg_dir needs 64K alignment for faster TLB refills in
+> kernel mappings.  There are two parts to the patch set:
+> 
+> 1) Modify generic vmlinux.lds.h to allow architectures to place
+>    additional sections at the start of .bss.  This allows alignment
+>    constraints to be met with minimal holes added for padding.
+>    Putting this in common code should reduce the risk of future
+>    changes to the linker scripts not being propagated to MIPS (or any
+>    other architecture that needs something like this).
+> 
+> 2) Align the MIPS swapper_pg_dir.
+> 
+> Since the initial use of the code is for MIPS, perhaps both parts
+> could be merged by Ralf's tree (after collecting any Acked-bys).
 
+Looks good to me but will wait a bit longer for comments and (N)Acks
+before merging.
+
+  Ralf
