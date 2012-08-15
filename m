@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab2HORyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:54:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55963 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2HORyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:54:47 -0400
-Message-ID: <502BE247.7000308@zytor.com>
-Date: Wed, 15 Aug 2012 10:54:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755685Ab2HOR6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:58:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53571 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab2HOR6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 13:58:03 -0400
 MIME-Version: 1.0
-To: blp@cs.stanford.edu
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>, tglx@linutronix.de,
-        mingo@redhat.com, davem@davemloft.net,
-        thierry.reding@avionic-design.de, bfields@redhat.com,
-        eric.dumazet@gmail.com, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, viro@zeniv.linux.org.uk,
-        gorcunov@openvz.org, akpm@linux-foundation.org,
-        tim.c.chen@linux.intel.com, devel@openvz.org, ebiederm@xmission.com
-Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
-References: <20120815161141.7598.16682.stgit@localhost.localdomain> <87wr102j2y.fsf@blp.benpfaff.org>
-In-Reply-To: <87wr102j2y.fsf@blp.benpfaff.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <502B8D1F.7030706@anonymous.org.uk>
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com>
+ <502B8D1F.7030706@anonymous.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 15 Aug 2012 10:57:40 -0700
+Message-ID: <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com>
+Subject: Re: O_DIRECT to md raid 6 is slow
+To: John Robinson <john.robinson@anonymous.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 09:52 AM, Ben Pfaff wrote:
-> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> 
->> This system call is especially required for UNIX sockets, which has name
->> lenght limitation.
-> 
-> The worst of the name length limitations can be worked around by
-> opening the directory where the socket is to go as a file
-> descriptor, then using /proc/self/fd/<fd>/<basename> as the name
-> of the socket.  This technique also works with "connect" and in
-> other contexts where a struct sockaddr is needed.  At first
-> glance, it looks like your patches only help with "bind".
-> 
+On Wed, Aug 15, 2012 at 4:50 AM, John Robinson
+<john.robinson@anonymous.org.uk> wrote:
+> On 15/08/2012 01:49, Andy Lutomirski wrote:
+>>
+>> If I do:
+>> # dd if=/dev/zero of=/dev/md0p1 bs=8M
+>
+> [...]
+>
+>> It looks like md isn't recognizing that I'm writing whole stripes when
+>> I'm in O_DIRECT mode.
+>
+>
+> I see your md device is partitioned. Is the partition itself stripe-aligned?
 
-The really hard part is what to do with things that are supposed to
-return a struct sockaddr.  I also have some reservations about using a
-new system call to deal with what at least theoretically is only part of
-one socket domain.
+Crud.
 
-	-hpa
+md0 : active raid6 sdg1[5] sdf1[4] sde1[3] sdd1[2] sdc1[1] sdb1[0]
+      11720536064 blocks super 1.2 level 6, 512k chunk, algorithm 2
+[6/6] [UUUUUU]
 
+IIUC this means that I/O should be aligned on 2MB boundaries (512k
+chunk * 4 non-parity disks).  gdisk put my partition on a 2048 sector
+(i.e. 1MB) boundary.
+
+Sadly, /sys/block/md0/md0p1/alignment_offset reports 0 (instead of 1MB).
+
+Fixing this has no effect, though.
+
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
