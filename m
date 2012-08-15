@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab2HOUZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:25:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36772 "EHLO
+	id S1757027Ab2HOUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:25:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36784 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab2HOTuW (ORCPT
+	with ESMTP id S1756569Ab2HOTuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:22 -0400
+	Wed, 15 Aug 2012 15:50:25 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jouni Malinen <jouni@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+CC: Kautuk Consul <consul.kautuk@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 057/165] cfg80211: Fix validation of AKM suites
-Date: Wed, 15 Aug 2012 15:46:41 -0400
-Message-ID: <1345060109-9187-58-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 063/165] staging: quatech_usb2: Potential lost wakeup scenario in TIOCMIWAIT
+Date: Wed, 15 Aug 2012 15:46:47 -0400
+Message-ID: <1345060109-9187-64-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jouni Malinen <jouni@qca.qualcomm.com>
+From: Kautuk Consul <consul.kautuk@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,43 +32,66 @@ From: Jouni Malinen <jouni@qca.qualcomm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1b9ca0272ffae212e726380f66777b30a56ed7a5 upstream.
+commit e8df1674d383d2ecc6efa8d7dba74c03aafdfdd7 upstream.
 
-Incorrect variable was used in validating the akm_suites array from
-NL80211_ATTR_AKM_SUITES. In addition, there was no explicit
-validation of the array length (we only have room for
-NL80211_MAX_NR_AKM_SUITES).
+If the usermode app does an ioctl over this serial device  by
+using TIOCMIWAIT, then the code will wait by setting the current
+task state to TASK_INTERRUPTIBLE and then calling schedule().
+This will be woken up by the qt2_process_modem_status on URB
+completion when the port_extra->shadowMSR is set to the new
+modem status.
 
-This can result in a buffer write overflow for stack variables with
-arbitrary data from user space. The nl80211 commands using the affected
-functionality require GENL_ADMIN_PERM, so this is only exposed to admin
-users.
+However, this could result in a lost wakeup scenario due to a race
+in the logic in the qt2_ioctl(TIOCMIWAIT) loop and the URB completion
+for new modem status in qt2_process_modem_status.
+Due to this, the usermode app's task will continue to sleep despite a
+change in the modem status.
 
-Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/wireless/nl80211.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/staging/quatech_usb2/quatech_usb2.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 56bc9b9..fde82a8 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -3537,9 +3537,12 @@ static int nl80211_crypto_settings(struct genl_info *info,
- 		if (len % sizeof(u32))
- 			return -EINVAL;
- 
-+		if (settings->n_akm_suites > NL80211_MAX_NR_AKM_SUITES)
-+			return -EINVAL;
-+
- 		memcpy(settings->akm_suites, data, len);
- 
--		for (i = 0; i < settings->n_ciphers_pairwise; i++)
-+		for (i = 0; i < settings->n_akm_suites; i++)
- 			if (!nl80211_valid_akm_suite(settings->akm_suites[i]))
- 				return -EINVAL;
- 	}
+diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
+index 1561f74..3ca3c2a 100644
+--- a/drivers/staging/quatech_usb2/quatech_usb2.c
++++ b/drivers/staging/quatech_usb2/quatech_usb2.c
+@@ -921,9 +921,10 @@ static int qt2_ioctl(struct tty_struct *tty, struct file *file,
+ 		dbg("%s() port %d, cmd == TIOCMIWAIT enter",
+ 			__func__, port->number);
+ 		prev_msr_value = port_extra->shadowMSR  & QT2_SERIAL_MSR_MASK;
++		barrier();
++		__set_current_state(TASK_INTERRUPTIBLE);
+ 		while (1) {
+ 			add_wait_queue(&port_extra->wait, &wait);
+-			set_current_state(TASK_INTERRUPTIBLE);
+ 			schedule();
+ 			dbg("%s(): port %d, cmd == TIOCMIWAIT here\n",
+ 				__func__, port->number);
+@@ -931,9 +932,12 @@ static int qt2_ioctl(struct tty_struct *tty, struct file *file,
+ 			/* see if a signal woke us up */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++			set_current_state(TASK_INTERRUPTIBLE);
+ 			msr_value = port_extra->shadowMSR & QT2_SERIAL_MSR_MASK;
+-			if (msr_value == prev_msr_value)
++			if (msr_value == prev_msr_value) {
++				__set_current_state(TASK_RUNNING);
+ 				return -EIO;  /* no change - error */
++			}
+ 			if ((arg & TIOCM_RNG &&
+ 				((prev_msr_value & QT2_SERIAL_MSR_RI) ==
+ 					(msr_value & QT2_SERIAL_MSR_RI))) ||
+@@ -946,6 +950,7 @@ static int qt2_ioctl(struct tty_struct *tty, struct file *file,
+ 				(arg & TIOCM_CTS &&
+ 				((prev_msr_value & QT2_SERIAL_MSR_CTS) ==
+ 					(msr_value & QT2_SERIAL_MSR_CTS)))) {
++				__set_current_state(TASK_RUNNING);
+ 				return 0;
+ 			}
+ 		} /* end inifinite while */
 -- 
 1.7.12.rc2
 
