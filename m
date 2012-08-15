@@ -1,246 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab2HOUH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:07:26 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45902 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932216Ab2HOUHT (ORCPT
+	id S1757045Ab2HOTwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:20 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63078 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757022Ab2HOTwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:07:19 -0400
+	Wed, 15 Aug 2012 15:52:15 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Dave Jones <davej@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 129/165] kbuild: Disable -Wunused-but-set-variable for gcc 4.6.0
+Date: Wed, 15 Aug 2012 15:47:53 -0400
+Message-ID: <1345060109-9187-130-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <1337930622-7696-1-git-send-email-jiang.liu@huawei.com>
-References: <1337930622-7696-1-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Aug 2012 14:06:57 -0600
-Message-ID: <CAErSpo4Ya4TXns664jXHqDSLfPGnE-v5GD0fTpjxU7q45WQ02w@mail.gmail.com>
-Subject: Re: [PATCH v1] PCI,IA64: free associated resources when removing host bridges
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 1:23 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> There are some resources associated with PCI host bridges on
-> IA 64 platforms, they should be released when removing host
-> bridges. Otherwise it will cause memory leak and other strange
-> behavior.
->
-> For example, PCI IO port address space are mapped into memory
-> address space on IA64. Those IO port resource should be released
-> when removing PCI host bridges. Otherwise host bridge hotplug
-> may cause duplicated entries in the iomem resource pool.
-> All "1fffffe400000-1fffffffffffe" are duplicated entries.
->
-> 30fc000000-30ffffffff : reserved
-> 1fffffc000000-1fffffc33dcf7 : PCI Bus 0000:00 I/O Ports 00000000-00000cf7
-> 1fffffc400000-1fffffe3fffff : PCI Bus 0000:00 I/O Ports 00001000-00008fff
-> 30fc000000-30ffffffff : reserved
-> 1fffffc000000-1fffffc33dcf7 : PCI Bus 0000:00 I/O Ports 00000000-00000cf7
-> 1fffffc400000-1fffffe3fffff : PCI Bus 0000:00 I/O Ports 00001000-00008fff
-> 1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
->   1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
->     1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
->
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->
-> This patch applies to
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/next-3.5
+From: Dave Jones <davej@redhat.com>
 
-x86 does the exact same thing in arch/x86/pci/acpi.c (some of the data
-structures are slightly different and ia64 does have the extra
-memory-mapped I/O port space regions, but they are essentially
-similar).  Can you rework this a bit so it looks more like the x86
-code, e.g., use the same function names and code when possible?
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Someday the x86 and ia64 code should be converged, and if the code
-looks more similar, that's more likely to happen.
+commit af0e5d565d2fffcd97d1e2d89669d627cc04e8b8 upstream.
 
-> ---
->  arch/ia64/include/asm/pci.h |    6 +++
->  arch/ia64/pci/pci.c         |   80 +++++++++++++++++++++++++++++++++++--------
->  2 files changed, 71 insertions(+), 15 deletions(-)
->
-> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
-> index 5e04b59..3939f00 100644
-> --- a/arch/ia64/include/asm/pci.h
-> +++ b/arch/ia64/include/asm/pci.h
-> @@ -94,6 +94,11 @@ struct pci_window {
->         u64 offset;
->  };
->
-> +struct iospace_resource {
-> +       struct list_head list;
-> +       struct resource res;
-> +};
-> +
->  struct pci_controller {
->         void *acpi_handle;
->         void *iommu;
-> @@ -102,6 +107,7 @@ struct pci_controller {
->
->         unsigned int windows;
->         struct pci_window *window;
-> +       struct list_head io_resources;
->
->         void *platform_data;
->  };
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index d173a88..a66cba4 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -168,25 +168,20 @@ new_space (u64 phys_base, int sparse)
->  static u64 __devinit
->  add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
->  {
-> +       struct iospace_resource *iospace;
->         struct resource *resource;
->         char *name;
->         unsigned long base, min, max, base_port;
->         unsigned int sparse = 0, space_nr, len;
->
-> -       resource = kzalloc(sizeof(*resource), GFP_KERNEL);
-> -       if (!resource) {
-> +       len = strlen(info->name) + 32;
-> +       iospace = kzalloc(sizeof(*iospace) + len, GFP_KERNEL);
-> +       if (!iospace) {
->                 printk(KERN_ERR "PCI: No memory for %s I/O port space\n",
->                         info->name);
->                 goto out;
->         }
-> -
-> -       len = strlen(info->name) + 32;
-> -       name = kzalloc(len, GFP_KERNEL);
-> -       if (!name) {
-> -               printk(KERN_ERR "PCI: No memory for %s I/O port space name\n",
-> -                       info->name);
-> -               goto free_resource;
-> -       }
-> +       name = (char *)(iospace + 1);
->
->         min = addr->minimum;
->         max = min + addr->address_length - 1;
-> @@ -195,7 +190,7 @@ add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
->
->         space_nr = new_space(addr->translation_offset, sparse);
->         if (space_nr == ~0)
-> -               goto free_name;
-> +               goto free_resource;
->
->         base = __pa(io_space[space_nr].mmio_base);
->         base_port = IO_SPACE_BASE(space_nr);
-> @@ -210,18 +205,24 @@ add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
->         if (space_nr == 0)
->                 sparse = 1;
->
-> +       resource = &iospace->res;
->         resource->name  = name;
->         resource->flags = IORESOURCE_MEM;
->         resource->start = base + (sparse ? IO_SPACE_SPARSE_ENCODING(min) : min);
->         resource->end   = base + (sparse ? IO_SPACE_SPARSE_ENCODING(max) : max);
-> -       insert_resource(&iomem_resource, resource);
-> +       if (insert_resource(&iomem_resource, resource)) {
-> +               dev_err(&info->bridge->dev,
-> +                       "can't allocate host bridge io space resource  %pR\n",
-> +                       resource);
-> +               goto free_resource;
-> +       }
-> +
-> +       list_add_tail(&iospace->list, &info->controller->io_resources);
->
->         return base_port;
->
-> -free_name:
-> -       kfree(name);
->  free_resource:
-> -       kfree(resource);
-> +       kfree(iospace);
->  out:
->         return ~0;
->  }
-> @@ -325,6 +326,51 @@ static __devinit acpi_status add_window(struct acpi_resource *res, void *data)
->         return AE_OK;
->  }
->
-> +static void shutdown_pci_controller(struct pci_host_bridge *bridge)
-> +{
-> +       unsigned int i;
-> +       struct resource *resource;
-> +       struct iospace_resource *iospace;
-> +       struct pci_controller *controller = bridge->release_data;
-> +
-> +       if (!controller)
-> +               return;
+Disable the new -Wunused-but-set-variable that was added in gcc 4.6.0
+It produces more false positives than useful warnings.
 
-I'd remove this test because controller will be NULL only if there's a
-programming error, and having the test here would cover up such
-errors.
+This can still be enabled using W=1
 
-> +       /* release io space resource */
-> +       list_for_each_entry(iospace, &controller->io_resources, list)
-> +               release_resource(&iospace->res);
-> +
-> +       /* release root bus resource */
-> +       for (i = 0; i < controller->windows; i++) {
-> +               resource = &controller->window[i].resource;
-> +               if (resource->flags & (IORESOURCE_MEM | IORESOURCE_IO))
-> +                       if (resource->parent)
-> +                               release_resource(resource);
-> +       }
-> +}
-> +
-> +static void free_pci_controller(struct pci_host_bridge *bridge)
-> +{
-> +       struct resource *resource;
-> +       struct iospace_resource *iospace, *tmp;
-> +       struct pci_controller *controller = bridge->release_data;
-> +
-> +       if (!controller)
-> +               return;
-> +
-> +       shutdown_pci_controller(bridge);
-> +
-> +       list_for_each_entry_safe(iospace, tmp, &controller->io_resources, list)
-> +               kfree(iospace);
-> +
-> +       if (controller->window) {
-> +               kfree(controller->window->resource.name);
-> +               kfree(controller->window);
-> +       }
-> +
-> +       kfree(controller);
-> +}
-> +
->  struct pci_bus * __devinit
->  pci_acpi_scan_root(struct acpi_pci_root *root)
->  {
-> @@ -343,6 +389,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
->                 goto out1;
->
->         controller->acpi_handle = device->handle;
-> +       INIT_LIST_HEAD(&controller->io_resources);
->
->         pxm = acpi_get_pxm(controller->acpi_handle);
->  #ifdef CONFIG_NUMA
-> @@ -386,6 +433,9 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
->                 return NULL;
->         }
->
-> +       pci_set_host_bridge_release(to_pci_host_bridge(pbus->bridge),
-> +                       free_pci_controller, controller);
-> +
->         pci_scan_child_bus(pbus);
->         return pbus;
->
-> --
-> 1.7.1
->
->
+Signed-off-by: Dave Jones <davej@redhat.com>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+Tested-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ Makefile               | 4 ++++
+ scripts/Makefile.build | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index 25a8f63..e9fafd0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -547,6 +547,10 @@ ifndef CONFIG_CC_STACKPROTECTOR
+ KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
+ endif
+ 
++# This warning generated too much noise in a regular build.
++# Use make W=1 to enable this warning (see scripts/Makefile.build)
++KBUILD_CFLAGS += $(call cc-option, -Wno-unused-but-set-variable)
++
+ ifdef CONFIG_FRAME_POINTER
+ KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
+ else
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index f9a413b..4e82824 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -66,6 +66,7 @@ warning-1 += -Wmissing-format-attribute
+ warning-1 += -Wmissing-prototypes
+ warning-1 += -Wold-style-definition
+ warning-1 += $(call cc-option, -Wmissing-include-dirs)
++warning-1 += $(call cc-option, -Wunused-but-set-variable)
+ 
+ warning-2 := -Waggregate-return
+ warning-2 += -Wcast-align
+-- 
+1.7.12.rc2
+
