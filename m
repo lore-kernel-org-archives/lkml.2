@@ -1,217 +1,491 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab2HOAKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:10:45 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:48778 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375Ab2HOAKn (ORCPT
+	id S1755110Ab2HOARN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:17:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56472 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab2HOARK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:10:43 -0400
-Date: Tue, 14 Aug 2012 17:10:43 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 08/31] arm64: CPU support
-Message-ID: <20120815001043.GD19607@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
+	Tue, 14 Aug 2012 20:17:10 -0400
+Message-ID: <502AEA7D.2000702@gmail.com>
+Date: Wed, 15 Aug 2012 10:17:01 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Herrmann <dh.herrmann@googlemail.com>
+CC: linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 05/11] fblog: register one fblog object per framebuffer
+References: <1344783205-2384-1-git-send-email-dh.herrmann@googlemail.com> <1344783205-2384-6-git-send-email-dh.herrmann@googlemail.com> <50284234.40306@gmail.com> <CANq1E4QP8PwQRFBr++b3cu1dM9NWf6+Y45rq4UAirjaAHyeM4Q@mail.gmail.com>
+In-Reply-To: <CANq1E4QP8PwQRFBr++b3cu1dM9NWf6+Y45rq4UAirjaAHyeM4Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 14/08/12 21:01, David Herrmann wrote:
+> Hi Ryan
+> 
+> On Mon, Aug 13, 2012 at 1:54 AM, Ryan Mallon <rmallon@gmail.com> wrote:
+>> On 13/08/12 00:53, David Herrmann wrote:
+>>>  drivers/video/console/fblog.c | 195 ++++++++++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 195 insertions(+)
+>>>
+>>> diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
+>>> index fb39737..279f4d8 100644
+>>> --- a/drivers/video/console/fblog.c
+>>> +++ b/drivers/video/console/fblog.c
+>>> @@ -23,15 +23,210 @@
+>>>   * all fblog instances before running other graphics applications.
+>>>   */
+>>>
+>>> +#define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
+>>> +
+>>> +#include <linux/device.h>
+>>> +#include <linux/fb.h>
+>>>  #include <linux/module.h>
+>>> +#include <linux/mutex.h>
+>>> +
+>>> +enum fblog_flags {
+>>> +     FBLOG_KILLED,
+>>> +};
+>>> +
+>>> +struct fblog_fb {
+>>> +     unsigned long flags;
+>>
+>> Are more flags added in later patches? If not, why not just have:
+>>
+>>   bool is_killed;
+>>
+>> ?
+> 
+> Yes, more are added in patch-6 and patch-8 which includes FBLOG_OPEN,
+> FBLOG_SUSPENDED, FBLOG_BLANKED.
+> 
+>>> +static void fblog_release(struct device *dev)
+>>> +{
+>>> +     struct fblog_fb *fb = to_fblog_dev(dev);
+>>> +
+>>> +     kfree(fb);
+>>> +     module_put(THIS_MODULE);
+>>> +}
+>>> +
+>>> +static void fblog_do_unregister(struct fb_info *info)
+>>> +{
+>>> +     struct fblog_fb *fb;
+>>> +
+>>> +     fb = fblog_fbs[info->node];
+>>> +     if (!fb || fb->info != info)
+>>> +             return;
+>>> +
+>>> +     fblog_fbs[info->node] = NULL;
+>>> +
+>>> +     device_del(&fb->dev);
+>>> +     put_device(&fb->dev);
+>>
+>> device_unregister?
+> 
+> Right, I will replace it.
+> 
+>>> +}
+>>> +
+>>> +static void fblog_do_register(struct fb_info *info, bool force)
+>>> +{
+>>> +     struct fblog_fb *fb;
+>>> +     int ret;
+>>> +
+>>> +     fb = fblog_fbs[info->node];
+>>> +     if (fb && fb->info != info) {
+>>> +             if (!force)
+>>> +                     return;
+>>> +
+>>> +             fblog_do_unregister(fb->info);
+>>> +     }
+>>> +
+>>> +     fb = kzalloc(sizeof(*fb), GFP_KERNEL);
+>>> +     if (!fb)
+>>> +             return;
+>>> +
+>>> +     fb->info = info;
+>>> +     __module_get(THIS_MODULE);
+>>> +     device_initialize(&fb->dev);
+>>> +     fb->dev.class = fb_class;
+>>> +     fb->dev.release = fblog_release;
+>>> +     dev_set_name(&fb->dev, "fblog%d", info->node);
+>>> +     fblog_fbs[info->node] = fb;
+>>> +
+>>> +     ret = device_add(&fb->dev);
+>>> +     if (ret) {
+>>> +             fblog_fbs[info->node] = NULL;
+>>> +             set_bit(FBLOG_KILLED, &fb->flags);
+>>> +             put_device(&fb->dev);
+>>
+>> kfree(fb); ?
+> 
+> No. See device_initialize() in ./drivers/base/core.c. After a call to
+> device_initialize() the object is ref-counted so put_device() will
+> invoke the fblog_release() callback which will call kfree(fb) itself.
+> 
+>>> +             return;
+>>> +     }
+>>> +}
+>>> +
+>>> +static void fblog_register(struct fb_info *info, bool force)
+>>> +{
+>>> +     mutex_lock(&fblog_registration_lock);
+>>> +     fblog_do_register(info, force);
+>>> +     mutex_unlock(&fblog_registration_lock);
+>>> +}
+>>> +
+>>> +static void fblog_unregister(struct fb_info *info)
+>>> +{
+>>> +     mutex_lock(&fblog_registration_lock);
+>>> +     fblog_do_unregister(info);
+>>> +     mutex_unlock(&fblog_registration_lock);
+>>> +}
+>>
+>> This locking is needlessly heavy, and could easily pushed down into the
+>> fb_do_(un)register functions. It would also help make it clear exactly
+>> what the lock is protecting.
+> 
+> I need to call fblog_do_unregister() from within fblog_do_register().
+> I cannot release the locks while calling fblog_do_unregister() so I
+> need the unlocked fblog_do_unregister() function. So the locking must
+> be in a wrapper function.
+> 
+> See below for an explanation of the locks.
 
-On Tue, Aug 14, 2012 at 06:52:09PM +0100, Catalin Marinas wrote:
+I meant something like the below. It doesn't actually make the lock much
+more fine-grained, but (IMHO) it does make it a bit more clear how the
+lock is being used. I also don't think you need to split
+device_initialize and device_add, which can make the code a bit simpler:
 
-> diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-> new file mode 100644
-> index 0000000..ef54125
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/cputype.h
-> @@ -0,0 +1,49 @@
-> +/*
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_CPUTYPE_H
-> +#define __ASM_CPUTYPE_H
-> +
-> +#define ID_MIDR_EL1		"midr_el1"
-> +#define ID_CTR_EL0		"ctr_el0"
-> +
-> +#define ID_AA64PFR0_EL1		"id_aa64pfr0_el1"
-> +#define ID_AA64DFR0_EL1		"id_aa64dfr0_el1"
-> +#define ID_AA64AFR0_EL1		"id_aa64afr0_el1"
-> +#define ID_AA64ISAR0_EL1	"id_aa64isar0_el1"
-> +#define ID_AA64MMFR0_EL1	"id_aa64mmfr0_el1"
-> +
-> +#define read_cpuid(reg) ({						\
-> +	u64 __val;							\
-> +	asm("mrs	%0, " reg : "=r" (__val));			\
-> +	__val;								\
-> +})
-> +
-> +/*
-> + * The CPU ID never changes at run time, so we might as well tell the
-> + * compiler that it's constant.  Use this function to read the CPU ID
-> + * rather than directly reading processor_id or read_cpuid() directly.
-> + */
-> +static inline u32 __attribute_const__ read_cpuid_id(void)
-> +{
-> +	return read_cpuid(ID_MIDR_EL1);
-> +}
-> +
-> +static inline u32 __attribute_const__ read_cpuid_cachetype(void)
-> +{
-> +	return read_cpuid(ID_CTR_EL0);
-> +}
+static void __fblog_unregister(struct fblog_fb *fb)
+{
+	fblog_fbs[fb->info->node] = NULL;	
+	device_unregister(&fb->dev);
+}
 
-Is this perhaps a carry-over from arch/arm? Abstracting out read_cpuid()
-doesn't seem to buy anything here, just opencode the one-line assembly
-in each.
+static void fblog_unregister(struct fb_info *info)
+{
+	struct fblog_fb *fb;
+	
+	mutex_lock(&fblog_registration_lock);
+	fb = fblog_fbs[info->node];
+	if (!fb || fb->info != info) {
+		mutex_unlock(&fblog_registration_lock);
+		return;
+	}
 
-Might as well cleanup the naming a little too while you're at it, i.e.
-read_cpu_id() and read_cpu_cachetype().
+	__fblog_unregister(fb);
+	mutex_unlock(&fblog_registration_lock);
+}
+
+static int fblog_register(struct fb_info *info, bool force)
+{
+	struct fblog_fb *fb;
+	int ret;
+
+	mutex_lock(&fblog_registration_lock);
+	fb = fblog_fbs[info->node];
+	if (fb && fb->info != info) {
+		if (!force) {
+			mutex_unlock(&fblog_registration_lock);
+			return -EEXIST;
+		}
+
+		__fblog_unregister(fb);
+	}
+
+	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
+	if (!fb)
+		return;
+
+	fb->info = info;
+	__module_get(THIS_MODULE);
+	fb->dev.class = fb_class;
+	fb->dev.release = fblog_release;
+	dev_set_name(&fb->dev, "fblog%d", info->node);
+
+	ret = device_register(&fb->dev);
+	if (ret) {
+		mutex_unlock(&fblog_registeration_lock);
+		put_device(&fb->dev);
+		return ret;
+	}
+
+	fblog_fbs[info->node] = fb;
+	mutex_unlock(&fblog_registeration_lock);
+	
+	return 0;
+}
+
+Functions which do:
+
+  foo() {
+  	lock(some_lock);
+	do_foo();
+	unlock(some_lock);
+  }
+
+can be a valid pattern for locked/unlocked versions (usually the
+unlocked version do_foo will be called __foo). But other times it looks
+lazy, where the lock is just serialising everthing and doesn't scale
+well. Granted, in a case like this it probably doesn't matter, but it
+still a good idea to try and make the locking as fine grained as
+possible. It also helps when trying to determine what a lock is actually
+protecting, since if do_foo is long, the lock may or may not be
+protecting any number of things inside it.
+
+>>> +static int fblog_event(struct notifier_block *self, unsigned long action,
+>>> +                    void *data)
+>>> +{
+>>> +     struct fb_event *event = data;
+>>> +     struct fb_info *info = event->info;
+>>> +
+>>> +     switch(action) {
+>>> +     case FB_EVENT_FB_REGISTERED:
+>>> +             /* This is called when a low-level system driver registers a new
+>>> +              * framebuffer. The registration lock is held but the console
+>>> +              * lock might not be held when this is called. */
+>>
+>> Nitpick:
+>>
+>>   /*
+>>    * The Linux kernel multi-line
+>>    * comment style looks like
+>>    * this.
+>>    */
+> 
+> I was confused by a recent discussion on the LKML:
+> http://comments.gmane.org/gmane.linux.kernel/1282421
+> However, turns out they didn't add this to CodingStyle so I will adopt
+> the old style again. Will be fixed in the next revision, thanks.
+> 
+>>> +             fblog_register(info, true);
+>>> +             break;
+>>> +     case FB_EVENT_FB_UNREGISTERED:
+>>> +             /* This is called when a low-level system driver unregisters a
+>>> +              * framebuffer. The registration lock is held but the console
+>>> +              * lock might not be held. */
+>>> +             fblog_unregister(info);
+>>> +             break;
+>>> +     }
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static void fblog_scan(void)
+>>> +{
+>>> +     unsigned int i;
+>>> +     struct fb_info *info, *tmp;
+>>> +
+>>> +     for (i = 0; i < FB_MAX; ++i) {
+>>> +             info = get_fb_info(i);
+>>> +             if (!info || IS_ERR(info))
+>>
+>> Nitpick:
+>>
+>>   if (IS_ERR_OR_NULL(info))
+> 
+> Didn't know of this macro, thanks.
+> 
+>>> +                     continue;
+>>> +
+>>> +             fblog_register(info, false);
+>>
+>> This function should really return a value to indicate if it failed.
+>> There is no point continuing if it didn't register anything.
+> 
+> Indeed.
+> 
+>>> +             /* There is a very subtle race-condition. Even though we might
+>>> +              * own a reference to the fb, it may still get unregistered
+>>> +              * between our call from get_fb_info() and fblog_register().
+>>> +              * Therefore, we simply check whether the same fb still is
+>>> +              * registered by calling get_fb_info() again. Only if they
+>>> +              * differ we know that it got unregistered, therefore, we
+>>> +              * call fblog_unregister() with the old pointer. */
+>>> +
+>>> +             tmp = get_fb_info(i);
+>>> +             if (tmp && !IS_ERR(tmp))
+>>> +                     put_fb_info(tmp);
+>>> +             if (tmp != info)
+>>> +                     fblog_unregister(info);
+>>
+>> It would be better to fix this issue properly. Calling fblog_unregister
+>> here also looks unsafe if the call to fblog_register above failed.
+> 
+> fblog_unregister() does nothing if the passed "info" does not match
+> the found "info" so this is safe. And as we are holding a reference to
+> "info" here, the pointer is always valid and cannot be used by other
+> FBs.
+> 
+> Fixing this properly means changing the locking of fbdev. This can
+> either be done by exporting the fbdev-registration-lock (which I want
+> to avoid as locking should never be exported in an API) or by changing
+> fbdev to provide an scan/enumeration function itself. However, in my
+> opinion both would be uglier than using this race-condition-check
+> here.
+> 
+> The best way would be redesigning the fbdev in-kernel API. But that
+> means checking that fbcon will not break and this is something I
+> really don't want to touch.
+
+Fair enough. It might be something to come back to once this gets merged.
+
+>>> +             /* Here we either called fblog_unregister() and therefore do not
+>>> +              * need any reference to the fb, or we can be sure that the FB
+>>> +              * is registered and FB_EVENT_FB_UNREGISTERED will be called
+>>> +              * before the last reference is dropped. Hence, we can drop our
+>>> +              * reference here. */
+>>
+>> This seems a slightly odd reasoning. Why would you not hold a reference
+>> to something you are using?
+> 
+> It's because get_fb_info() takes the fbdev-registration-lock so we
+> cannot call it from fblog_event(). 
+
+That could possibly be fixed by providing an unlocked __get_fb_info
+function. Then the ref-counting could be done by calling __get_fb_info
+in fblog_register and __put_fb_info in fblog_unregister, so that you
+hold the ref-count for the lifetime of the fblog object which I think
+makes a bit more sense.
+
+> And fblog_event() calls
+> fblog_register() for hotplugged framebuffers so we cannot get a refcnt
+> for hotplugged framebuffers.
+> Now I can either increase the fbdev-refcount manually without calling
+> get_fb_info() in fblog_register() or I can simply drop the framebuffer
+> when the fbdev-core notifies me that it is gone. I chose the latter
+> one.
+> 
+>>> +             put_fb_info(info);
+>>> +     }
+>>> +}
+>>> +
+>>> +static struct notifier_block fblog_notifier = {
+>>> +     .notifier_call = fblog_event,
+>>> +};
+>>>
+>>>  static int __init fblog_init(void)
+>>>  {
+>>> +     int ret;
+>>> +
+>>> +     ret = fb_register_client(&fblog_notifier);
+>>> +     if (ret) {
+>>> +             pr_err("cannot register framebuffer notifier\n");
+>>> +             return ret;
+>>> +     }
+>>> +
+>>> +     fblog_scan();
+>>> +
+>>>       return 0;
+>>>  }
+>>>
+>>>  static void __exit fblog_exit(void)
+>>>  {
+>>> +     unsigned int i;
+>>> +     struct fb_info *info;
+>>> +
+>>> +     fb_unregister_client(&fblog_notifier);
+>>> +
+>>> +     /* We scan through the whole registered_fb array here instead of
+>>> +      * fblog_fbs because we need to get the device lock _before_ the
+>>> +      * fblog-registration-lock. */
+>>> +
+>>> +     for (i = 0; i < FB_MAX; ++i) {
+>>> +             info = get_fb_info(i);
+>>> +             if (!info || IS_ERR(info))
+>>> +                     continue;
+>>> +
+>>> +             fblog_unregister(info);
+>>
+>> Given the description of the get_fb_info/fblog_register race above, can
+>> this unregister the wrong framebuffer?
+> 
+> No. fblog_unregister() will do nothing if the "info" pointers do not
+> match. Moreover, this unregisters _all_ framebuffers, so I don't
+> understand how this can unregister the "wrong" framebuffer?
+> 
+> But I just noticed a race here. If the fbdev core unregisters a
+> framebuffer during my loop, I will not call fblog_unregister() on it,
+> as it does not exist anymore. Therefore, I will not free it in my
+> fblog_fbs array as the fblog_notifier has already been unregistered.
+> So I need to set a global "exiting" flag and fblog_event() shall only
+> handle the UNBIND/UNREGISTER events during exit. Then I simply move
+> the fb_unregister_client() call below this loop.
+> 
+>>> +             put_fb_info(info);
+>>> +     }
+>>>  }
+>>>
+>>>  module_init(fblog_init);
+>>>
+>>
+> 
+> A short explanation for all locks:
+> First of all, I spent hours getting this right. The easy way would be
+> removing all locks and relying on the fbdev locking (fbcon does this).
+> But obviously, that doesn't work as fbdev has no safe way of
+> scanning/enumerating all existing devices. And this is needed as fblog
+> can be compiled as a module.
+> fbdev has a core registration-lock and each framebuffer has its own
+> fb-lock. fblog_event() is sometimes called with these locks held,
+> sometimes without any locks held (see the comments in this function)
+> and I need to work around this.
+> So fblog_event() as entry point for hotplugging is called with the
+> fbdev-registration-lock held. And it calls fblog_(un)register() which
+> uses its own locks. So when calling this from fblog_scan(), I need to
+> make sure to guarantee that the locks are acquired in the same order
+> as in fblog_event(), otherwise I might have deadlocks. But I have no
+> outside access to the fbdev-registration-lock, therefore, the
+> fblog-registration-lock is needed and fblog_scan() needs to check for
+> those ugly races.
+
+Right, I think providing unlocked versions of get/put_fb_info will help
+fix part of this.
+
+> As you mentioned that this locking is needlessly complex, I have to
+> disagree. 
+
+Sorry, poor choice of words. I meant 'coarse-grained', not complex.
+However, some documentation in the code explaining how the locking
+works, and what the locking order is never goes amiss.
+
+> I use one lock to protect the registration
+> (fblog_registration_lock) and one lock to protect each registered
+> framebuffer from concurrent access (struct fblog_fb->lock). This is
+> the most common way to protect hotplugged devices and I don't see how
+> this can be done with less locks? (these are the only locks that are
+> added by fblog).
+
+I was only referring to the 'heavy' usage of the registration lock by
+just acquiring it for the whole register/unregister functions. I was
+skimming through the code and was assuming that the actual concurrent
+part would just be the addition/removal in the fblog_fbs array, and
+therefore the lock was being held for much longer than it needed to be.
+As shown above, it isn't as bad as I thought it was.
+
+> Normally, this would be all locks I have to access. However, the
+> fbdev-core wasn't designed as in-kernel API and thus has very
+> inconsistent locking. And all entry points to fblog that are not
+> through fbdev-notifier-callbacks (eg, fblog_scan) need to make sure to
+> acquire the same locks as the fbdev-core to avoid races with the
+> fbdev-core. As this is not possible, because the fbdev-locks are not
+> exported, I need to carefully use fbdev-functions that guarantee that
+> I have no races. And I think I found the only way to guarantee this.
+> If anyone has other ideas, I would be glad to hear them.
+
+Yeah, this makes sense. It would be good, as you say, to not export the
+locks for fbmem. I think adding a couple of functions to fbmem.c for
+doing unlocked access might help a lot though.
+
+~Ryan
 
 
-> diff --git a/arch/arm64/include/asm/procinfo.h b/arch/arm64/include/asm/procinfo.h
-> new file mode 100644
-> index 0000000..81fece9
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/procinfo.h
-> @@ -0,0 +1,44 @@
-> +/*
-> + * Based on arch/arm/include/asm/procinfo.h
-> + *
-> + * Copyright (C) 1996-1999 Russell King
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_PROCINFO_H
-> +#define __ASM_PROCINFO_H
-> +
-> +#ifdef __KERNEL__
-> +
-> +/*
-> + * Note!  struct processor is always defined if we're
-> + * using MULTI_CPU, otherwise this entry is unused,
-> + * but still exists.
-
-Stale comment?
-
-> + *
-> + * NOTE! The following structure is defined by assembly
-> + * language, NOT C code.  For more information, check:
-> + *  arch/arm/mm/proc-*.S and arch/arm/kernel/head.S
-
-Stale references. Also, no current arm64 implementation uses this. Premature
-abstraction perhaps?
-
-> +struct proc_info_list {
-> +	unsigned int		cpu_val;
-> +	unsigned int		cpu_mask;
-> +	unsigned long		__cpu_flush;		/* used by head.S */
-> +	const char		*cpu_name;
-> +};
-> +
-> +#else	/* __KERNEL__ */
-> +#include <asm/elf.h>
-> +#warning "Please include asm/elf.h instead"
-> +#endif	/* __KERNEL__ */
-> +#endif
-> diff --git a/arch/arm64/mm/proc-syms.c b/arch/arm64/mm/proc-syms.c
-> new file mode 100644
-> index 0000000..2d99ef9
-> --- /dev/null
-> +++ b/arch/arm64/mm/proc-syms.c
-> @@ -0,0 +1,31 @@
-> +/*
-> + * Based on arch/arm/mm/proc-syms.c
-> + *
-> + * Copyright (C) 2000-2002 Russell King
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/export.h>
-> +#include <linux/mm.h>
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/proc-fns.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/page.h>
-> +
-> +EXPORT_SYMBOL(__cpuc_flush_kern_all);
-> +EXPORT_SYMBOL(__cpuc_flush_user_all);
-> +EXPORT_SYMBOL(__cpuc_flush_user_range);
-> +EXPORT_SYMBOL(__cpuc_coherent_kern_range);
-> +EXPORT_SYMBOL(__cpuc_flush_dcache_area);
-
-See comment on other email about putting function pointers in a struct
-instead.
-
-> diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
-> new file mode 100644
-> index 0000000..453f517
-> --- /dev/null
-> +++ b/arch/arm64/mm/proc.S
-> @@ -0,0 +1,193 @@
-> +	.section ".proc.info.init", #alloc, #execinstr
-> +
-> +	.type	__v8_proc_info, #object
-> +__v8_proc_info:
-> +	.long	0x000f0000			// Required ID value
-> +	.long	0x000f0000			// Mask for ID
-> +	b	__cpu_setup
-> +	nop
-> +	.quad	cpu_name
-> +	.long	0
-> +	.size	__v8_proc_info, . - __v8_proc_info
-
-I know this is a carry-over from arch/arm, but how about moving this
-to more of a C construct similar to arch/powerpc/kernel/cputable.c
-instead? It's considerably easier to read that way, and it's convenient
-to have the definitions all in one place, making it easier to share some
-of the functions, etc.
-
-
--Olof
