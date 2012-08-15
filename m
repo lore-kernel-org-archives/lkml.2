@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab2HOU7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:59:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57625 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333Ab2HOU7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:59:08 -0400
-Message-ID: <502C0D7C.2040707@zytor.com>
-Date: Wed, 15 Aug 2012 13:58:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756711Ab2HOVCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 17:02:44 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40692 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2HOVCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 17:02:42 -0400
+Date: Thu, 16 Aug 2012 01:02:37 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120815210237.GF25421@moon>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <20120815204546.GC25062@fieldses.org>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Stanislav Kinsbursky <skinsbursky@parallels.com>, tglx@linutronix.de,
-        mingo@redhat.com, davem@davemloft.net,
-        thierry.reding@avionic-design.de, bfields@redhat.com,
-        eric.dumazet@gmail.com, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, viro@zeniv.linux.org.uk,
-        gorcunov@openvz.org, akpm@linux-foundation.org,
-        tim.c.chen@linux.intel.com, devel@openvz.org
-Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
-References: <20120815161141.7598.16682.stgit@localhost.localdomain> <87a9xwc4vr.fsf@xmission.com>
-In-Reply-To: <87a9xwc4vr.fsf@xmission.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815204546.GC25062@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 12:49 PM, Eric W. Biederman wrote:
+On Wed, Aug 15, 2012 at 04:45:46PM -0400, J. Bruce Fields wrote:
+> On Wed, Aug 15, 2012 at 01:21:20PM +0400, Cyrill Gorcunov wrote:
+> > To provide fsnotify object inodes being watched without
+> > binding to alphabetical path we need to encode them with
+> > exportfs help. This patch adds a helper which operates
+> > with plain inodes directly.
 > 
-> There is also the trick of getting a shorter directory name using
-> /proc/self/fd if you are threaded and can't change the directory.
-> 
-> The obvious choices at this point are
-> - Teach bind and connect and af_unix sockets to take longer AF_UNIX
->   socket path names.
-> 
-> - introduce sockaddr_fd that can be applied to AF_UNIX sockets,
->   and teach unix_bind and unix_connect how to deal with a second type of sockaddr.
->   struct sockaddr_fd { short fd_family; short pad; int fd; };
-> 
-> - introduce sockaddr_unix_at that takes a directory file descriptor
->   as well as a unix path, and teach unix_bind and unix_connect to deal with a
->   second sockaddr type.
->   struct sockaddr_unix_at { short family; short pad; int dfd; char path[102]; }
->   AF_UNIX_AT
-> 
-> I don't know what the implications of for breaking connect up into 3
-> system calls and changing the semantics are and I would really rather
-> not have to think about it.
-> 
-> But it certainly does not look to me like you introduce new systems
-> calls to do what you want.
-> 
+> I don't get it--this seems like a really roundabout way to get inode and
+> generation number, if that's all you want.
 
-How would you distinguish the new sockaddr types from the traditional
-one?  New AF_?
+We can re-open the targets via filehandle on restore, this was the idea.
+All this series aimed to achieve the way to restore objects after checkpoit,
+thus we need to provide additional information which would be enough.
 
-	-hpa
+> On the other hand, if you want a real filehandle then wouldn't you want
+> to e.g. call the filesystem's ->encode_fh() if necessary, as
+> exportfs_encode_fh() does?
+
+Well, one of the problem I hit when I've been trying to use encode_fh
+is that every new implementation of encode_fh will require some size
+(even unknown) in buffer where encoded data pushed. Correct me please
+if I'm wrong. But with export_encode_inode_fh there is a small buffer
+with pretty known size needed on stack needed for printing data in
+fdinfo.
+
+	Cyrill
