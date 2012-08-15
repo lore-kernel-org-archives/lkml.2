@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab2HOUCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:02:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37347 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2HOTwl (ORCPT
+	id S932402Ab2HOUDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:03:21 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63120 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2HOTwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:41 -0400
+	Wed, 15 Aug 2012 15:52:36 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 145/165] x86, random: Architectural inlines to get random integers with RDRAND
-Date: Wed, 15 Aug 2012 15:48:09 -0400
-Message-ID: <1345060109-9187-146-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 138/165] usb-storage: Accept 8020i-protocol commands longer than 12 bytes
+Date: Wed, 15 Aug 2012 15:48:02 -0400
+Message-ID: <1345060109-9187-139-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,149 +33,55 @@ From: "H. Peter Anvin" <hpa@zytor.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 628c6246d47b85f5357298601df2444d7f4dd3fd upstream.
+commit 2f640bf4c94324aeaa1b6385c10aab8c5ad1e1cf upstream.
 
-Architectural inlines to get random ints and longs using the RDRAND
-instruction.
+The 8020i protocol (also 8070i and QIC-157) uses 12-byte commands;
+shorter commands must be padded.  Simon Detheridge reports that his
+3-TB USB disk drive claims to use the 8020i protocol (which is
+normally meant for ATAPI devices like CD drives), and because of its
+large size, the disk drive requires the use of 16-byte commands.
+However the usb_stor_pad12_command() routine in usb-storage always
+sets the command length to 12, making the drive impossible to use.
 
-Intel has introduced a new RDRAND instruction, a Digital Random Number
-Generator (DRNG), which is functionally an high bandwidth entropy
-source, cryptographic whitener, and integrity monitor all built into
-hardware.  This enables RDRAND to be used directly, bypassing the
-kernel random number pool.
+Since the SFF-8020i specification allows for 16-byte commands in
+future extensions, we may as well accept them.  This patch (as1490)
+changes usb_stor_pad12_command() to leave commands larger than 12
+bytes alone rather than truncating them.
 
-For technical documentation, see:
-
-http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
-
-In this patch, this is *only* used for the nonblocking random number
-pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
-and is therefore not a direct replacement for /dev/random.  The
-architectural hooks presented in the previous patch only feed the
-kernel internal users, which only use the nonblocking pool, and so
-this is not a problem.
-
-Since this instruction is available in userspace, there is no reason
-to have a /dev/hw_rng device driver for the purpose of feeding rngd.
-This is especially so since RDRAND is a nonblocking source, and needs
-additional whitening and reduction (see the above technical
-documentation for details) in order to be of "pure entropy source"
-quality.
-
-The CONFIG_EXPERT compile-time option can be used to disable this use
-of RDRAND.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Originally-by: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Simon Detheridge <simon@widgit.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/Kconfig                  |  9 +++++
- arch/x86/include/asm/archrandom.h | 73 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
- create mode 100644 arch/x86/include/asm/archrandom.h
+ drivers/usb/storage/protocol.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b99909c..0a813f8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1460,6 +1460,15 @@ config ARCH_USES_PG_UNCACHED
- 	def_bool y
- 	depends on X86_PAT
+diff --git a/drivers/usb/storage/protocol.c b/drivers/usb/storage/protocol.c
+index fc310f7..0fded39 100644
+--- a/drivers/usb/storage/protocol.c
++++ b/drivers/usb/storage/protocol.c
+@@ -58,7 +58,9 @@
  
-+config ARCH_RANDOM
-+	def_bool y
-+	prompt "x86 architectural random number generator" if EXPERT
-+	---help---
-+	  Enable the x86 architectural RDRAND instruction
-+	  (Intel Bull Mountain technology) to generate random numbers.
-+	  If supported, this is a high bandwidth, cryptographically
-+	  secure hardware random number generator.
-+
- config EFI
- 	bool "EFI runtime service support"
- 	depends on ACPI
-diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
-new file mode 100644
-index 0000000..b7b5bc0
---- /dev/null
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -0,0 +1,73 @@
-+/*
-+ * This file is part of the Linux kernel.
-+ *
-+ * Copyright (c) 2011, Intel Corporation
-+ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
-+ *          H. Peter Anvin <hpa@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#ifndef ASM_X86_ARCHRANDOM_H
-+#define ASM_X86_ARCHRANDOM_H
-+
-+#include <asm/processor.h>
-+#include <asm/cpufeature.h>
-+#include <asm/alternative.h>
-+#include <asm/nops.h>
-+
-+#define RDRAND_RETRY_LOOPS	10
-+
-+#define RDRAND_INT	".byte 0x0f,0xc7,0xf0"
-+#ifdef CONFIG_X86_64
-+# define RDRAND_LONG	".byte 0x48,0x0f,0xc7,0xf0"
-+#else
-+# define RDRAND_LONG	RDRAND_INT
-+#endif
-+
-+#ifdef CONFIG_ARCH_RANDOM
-+
-+#define GET_RANDOM(name, type, rdrand, nop)			\
-+static inline int name(type *v)					\
-+{								\
-+	int ok;							\
-+	alternative_io("movl $0, %0\n\t"			\
-+		       nop,					\
-+		       "\n1: " rdrand "\n\t"			\
-+		       "jc 2f\n\t"				\
-+		       "decl %0\n\t"                            \
-+		       "jnz 1b\n\t"                             \
-+		       "2:",                                    \
-+		       X86_FEATURE_RDRAND,                      \
-+		       ASM_OUTPUT2("=r" (ok), "=a" (*v)),       \
-+		       "0" (RDRAND_RETRY_LOOPS));		\
-+	return ok;						\
-+}
-+
-+#ifdef CONFIG_X86_64
-+
-+GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP5);
-+GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP4);
-+
-+#else
-+
-+GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
-+GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
-+
-+#endif /* CONFIG_X86_64 */
-+
-+#endif  /* CONFIG_ARCH_RANDOM */
-+
-+#endif /* ASM_X86_ARCHRANDOM_H */
+ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ {
+-	/* Pad the SCSI command with zeros out to 12 bytes
++	/*
++	 * Pad the SCSI command with zeros out to 12 bytes.  If the
++	 * command already is 12 bytes or longer, leave it alone.
+ 	 *
+ 	 * NOTE: This only works because a scsi_cmnd struct field contains
+ 	 * a unsigned char cmnd[16], so we know we have storage available
+@@ -66,9 +68,6 @@ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ 	for (; srb->cmd_len<12; srb->cmd_len++)
+ 		srb->cmnd[srb->cmd_len] = 0;
+ 
+-	/* set command length to 12 bytes */
+-	srb->cmd_len = 12;
+-
+ 	/* send the command to the transport layer */
+ 	usb_stor_invoke_transport(srb, us);
+ }
 -- 
 1.7.12.rc2
 
