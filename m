@@ -1,79 +1,548 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab2HOSeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:34:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47913 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2HOSeK (ORCPT
+	id S1753748Ab2HOSgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:36:35 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:58996 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751457Ab2HOSgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:34:10 -0400
+	Wed, 15 Aug 2012 14:36:33 -0400
+Message-ID: <502BEC1D.5040406@metafoo.de>
+Date: Wed, 15 Aug 2012 20:36:13 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-From: Marti Raudsepp <marti@juffo.org>
-Date: Wed, 15 Aug 2012 21:33:29 +0300
-Message-ID: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
-Subject: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-To: Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V3 5/8] DA9058 RTC driver
+References: <201208151518.q7FFINX1011619@latitude.olech.com>
+In-Reply-To: <201208151518.q7FFINX1011619@latitude.olech.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+On 08/15/2012 05:05 PM, Anthony Olech wrote:
+> This is the RTC component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE component driver of the DA9058 MFD.
 
-I was moving and deleting some files between two of my ext4 partitions
-when it suddenly crashed and dropped me into an kernel oops screen
-(below). I'm using ext4 on kernel 3.5.1 (Arch Linux). Both likely
-suspect file systems are stored on LVM2, mounted with
-data=writeback,errors=remount-ro,noatime
+How much is this one actually different from the da9052 rtc core? I just had a
+quick glance at them, but they seem rather similar.
 
-EXT4-fs (sda3): mounted filesystem with writeback data mode. Opts: (null)
-EXT4-fs (dm-1): mounted filesystem with writeback data mode. Opts:
-errors=remount-ro
-EXT4-fs (dm-0): mounted filesystem with writeback data mode. Opts:
-errors=remount-ro
+> 
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+> ---
+>  drivers/rtc/Kconfig      |   10 +
+>  drivers/rtc/Makefile     |    1 +
+>  drivers/rtc/rtc-da9058.c |  458 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 469 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/rtc/rtc-da9058.c
+> 
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index 08cbdb9..21f5630 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -135,6 +135,16 @@ config RTC_DRV_88PM860X
+>  	  This driver can also be built as a module. If so, the module
+>  	  will be called rtc-88pm860x.
+>  
+> +config RTC_DRV_DA9058
+> +	tristate "Dialog DA9058"
+> +	depends on MFD_DA9058
+> +	help
+> +	  If you say yes here you will get support for the
+> +	  RTC of the Dialog DA9058 PMIC.
+> +
+> +	  This driver can also be built as a module. If so, the module
+> +	  will be called rtc-da9058.
+> +
+>  config RTC_DRV_DS1307
+>  	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
+>  	help
+> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> index 2973921..b772f05 100644
+> --- a/drivers/rtc/Makefile
+> +++ b/drivers/rtc/Makefile
+> @@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+>  obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+>  obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+>  obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
+> +obj-$(CONFIG_RTC_DRV_DA9058)	+= rtc-da9058.o
+>  obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+>  obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+>  obj-$(CONFIG_RTC_DRV_DS1216)	+= rtc-ds1216.o
+> diff --git a/drivers/rtc/rtc-da9058.c b/drivers/rtc/rtc-da9058.c
+> new file mode 100644
+> index 0000000..1b4e05b
+> --- /dev/null
+> +++ b/drivers/rtc/rtc-da9058.c
+> @@ -0,0 +1,458 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/rtc.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/core.h>
+> +
+> +#include <linux/mfd/da9058/version.h>
+> +#include <linux/mfd/da9058/registers.h>
+> +#include <linux/mfd/da9058/core.h>
+> +#include <linux/mfd/da9058/irq.h>
+> +#include <linux/mfd/da9058/rtc.h>
+> +
+> +/*
+> + *  Limit values
+> + */
+> +#define DA9058_RTC_SECONDS_LIMIT		59
+> +#define DA9058_RTC_MINUTES_LIMIT		59
+> +#define DA9058_RTC_HOURS_LIMIT			23
+> +#define DA9058_RTC_DAYS_LIMIT			31
+> +#define DA9058_RTC_MONTHS_LIMIT			12
+> +#define DA9058_RTC_YEARS_LIMIT			63
+> +
+> +struct da9058_rtc {
+> +	struct da9058 *da9058;
+> +	struct platform_device *pdev;
+> +	struct rtc_device *rtc_dev;
+> +	int alarm_irq;
+> +	int tick_irq;
+> +	int alarm_enabled;	/* used over suspend/resume */
+> +};
+> +
+> +static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
+> +{
+> +	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm->tm_sec < 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm->tm_min < 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm->tm_hour < 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_mday > DA9058_RTC_DAYS_LIMIT) || (rtc_tm->tm_mday <= 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm->tm_mon <= 0))
+> +		return -EIO;
+> +
+> +	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm->tm_year < 0))
+> +		return -EIO;
+> +
+> +	return 0;
+> +}
+> +
+> +static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	u8 rtc_time[6];
+> +	int ret;
+> +
+> +	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
+> +	if (ret)
+> +		return ret;
+> +
+> +	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
+> +
+> +	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
+> +
+> +	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
+> +
+> +	tm->tm_mday = (rtc_time[3] & DA9058_RTC_DAY_MASK);
+> +
+> +	tm->tm_mon = (rtc_time[4] & DA9058_RTC_MTH_MASK);
+> +
+> +	tm->tm_year = (rtc_time[5] & DA9058_RTC_YRS_MASK);
+> +
+> +	ret = da9058_rtc_check_param(tm);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
+> +						tm->tm_year);
+> +	tm->tm_year += 100;
+> +	tm->tm_mon -= 1;
+> +
+> +	return 0;
+> +}
+> +
+> +static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	unsigned int rtc_ctrl, val;
+> +	u8 rtc_time[6];
+> +	int ret;
+> +
+> +	tm->tm_year -= 100;
+> +	tm->tm_mon += 1;
+> +
+> +	ret = da9058_rtc_check_param(tm);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = da9058_reg_read(da9058, DA9058_COUNTS_REG, &rtc_ctrl);
+> +	if (ret)
+> +		return ret;
+> +	rtc_ctrl &= ~DA9058_RTC_SECS_MASK;
+> +
+> +	rtc_time[0] = rtc_ctrl | tm->tm_sec;
+> +	rtc_time[1] = tm->tm_min;
+> +	rtc_time[2] = tm->tm_hour;
+> +	rtc_time[3] = tm->tm_mday;
+> +	rtc_time[4] = tm->tm_mon;
+> +	rtc_time[5] = tm->tm_year;
+> +
+> +	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
+> +	if (ret) {
+> +		dev_dbg(dev, "failed %d to write to RTC\n", ret);
+> +		return ret;
+> +	}
+> +	ret = da9058_reg_read(da9058, DA9058_COUNTY_REG, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	val &= DA9058_COUNTY_MONITOR;
+> +	if (val)
+> +		return 0;
+> +
+> +	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
+> +
+> +	return ret;
+> +}
+> +
+> +static int da9058_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	struct rtc_time *tm = &alrm->time;
+> +	unsigned int val;
+> +	u8 alm_time[6];
+> +	int ret;
+> +
+> +	ret = da9058_bulk_read(da9058, DA9058_ALARMS_REG, alm_time, 6);
+> +	if (ret)
+> +		return ret;
+> +
+> +	tm->tm_min = alm_time[0] & DA9058_RTC_ALMSECS_MASK;
+> +
+> +	tm->tm_min = alm_time[1] & DA9058_RTC_ALMMINS_MASK;
+> +
+> +	tm->tm_hour = alm_time[2] & DA9058_RTC_ALMHRS_MASK;
+> +
+> +	tm->tm_mday = alm_time[3] & DA9058_RTC_ALMDAY_MASK;
+> +
+> +	tm->tm_mon = alm_time[4] & DA9058_RTC_ALMMTH_MASK;
+> +
+> +	tm->tm_year = alm_time[5] & DA9058_RTC_ALMYRS_MASK;
+> +
+> +	ret = da9058_rtc_check_param(tm);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	alrm->enabled = val & DA9058_ALARMY_ALARMON;
+> +
+> +	tm->tm_year += 100;
+> +	tm->tm_mon -= 1;
+> +
+> +	return 0;
+> +}
+> +
+> +static int da9058_rtc_stop_alarm(struct da9058_rtc *rtc)
+> +{
+> +	return da9058_clear_bits(rtc->da9058, DA9058_ALARMY_REG,
+> +						DA9058_ALARMY_ALARMON);
+> +}
+> +
+> +static int da9058_rtc_start_alarm(struct da9058_rtc *rtc)
+> +{
+> +	return da9058_set_bits(rtc->da9058, DA9058_ALARMY_REG,
+> +						DA9058_ALARMY_ALARMON);
+> +}
+> +
+> +static int da9058_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	struct rtc_time *tm = &alrm->time;
+> +	unsigned int rtc_ctrl;
+> +	u8 alm_time[6];
+> +	int ret;
+> +
+> +	tm->tm_year -= 100;
+> +	tm->tm_mon += 1;
+> +
+> +	ret = da9058_rtc_check_param(tm);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	memset(alm_time, 0, sizeof(alm_time));
+> +
+> +	if (tm->tm_sec != -1)
+> +		alm_time[0] |= tm->tm_sec;
+> +	else
+> +		alm_time[0] |= DA9058_RTC_ALMSECS_MASK;
+> +
+> +	ret = da9058_reg_read(da9058, DA9058_ALARMMI_REG, &rtc_ctrl);
+> +	if (ret)
+> +		return ret;
+> +	rtc_ctrl &= ~DA9058_RTC_ALMMINS_MASK;
+> +
+> +	if (tm->tm_min != -1)
+> +		alm_time[1] = rtc_ctrl | tm->tm_min;
+> +	else
+> +		alm_time[1] = rtc_ctrl | DA9058_RTC_ALMMINS_MASK;
+> +
+> +	if (tm->tm_hour != -1)
+> +		alm_time[2] |= tm->tm_hour;
+> +	else
+> +		alm_time[2] |= DA9058_RTC_ALMHRS_MASK;
+> +
+> +	if (tm->tm_mday != -1)
+> +		alm_time[3] |= tm->tm_mday;
+> +	else
+> +		alm_time[3] |= DA9058_RTC_ALMDAY_MASK;
+> +
+> +	if (tm->tm_mon != -1)
+> +		alm_time[4] |= tm->tm_mon;
+> +	else
+> +		alm_time[4] |= DA9058_RTC_ALMMTH_MASK;
+> +
+> +	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
+> +	if (ret)
+> +		return ret;
+> +
+> +	rtc_ctrl &= ~DA9058_RTC_ALMYRS_MASK;
+> +
+> +	if (tm->tm_year != -1)
+> +		alm_time[5] = rtc_ctrl | tm->tm_year;
+> +	else
+> +		alm_time[5] = rtc_ctrl | DA9058_RTC_ALMYRS_MASK;
+> +
+> +	ret = da9058_rtc_stop_alarm(rtc);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = da9058_bulk_write(da9058, DA9058_ALARMS_REG, alm_time, 6);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (alrm->enabled)
+> +		ret = da9058_rtc_start_alarm(rtc);
+> +
+> +	return ret;
+> +}
+> +
+> +static int da9058_rtc_alarm_irq_enable(struct device *dev,
+> +						unsigned int enabled)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +
+> +	if (enabled)
+> +		return da9058_rtc_start_alarm(rtc);
+> +	else
+> +		return da9058_rtc_stop_alarm(rtc);
+> +}
+> +
+> +static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
+> +{
+> +	struct da9058_rtc *rtc = data;
+> +
+> +	da9058_rtc_stop_alarm(rtc);
+> +	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static irqreturn_t da9058_rtc_tick_alarm_handler(int irq, void *data)
+> +{
+> +	struct da9058_rtc *rtc = data;
+> +
+> +	rtc_update_irq(rtc->rtc_dev, 1, RTC_PF | RTC_IRQF);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
+> +{
+> +	struct da9058_rtc *rtc = dev_get_drvdata(dev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +	unsigned int rtc_ctrl;
+> +	int ret;
+> +
+> +	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
+> +
+> +	seq_printf(seq, rtc_ctrl & DA9058_ALARMY_ALARMON ?
+> +		"ALRM is running\n" : "ALRM is not running\n");
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct rtc_class_ops da9058_rtc_ops = {
+> +	.read_time = da9058_rtc_readtime,
+> +	.set_time = da9058_rtc_settime,
+> +	.read_alarm = da9058_rtc_readalarm,
+> +	.set_alarm = da9058_rtc_setalarm,
+> +	.proc = da9058_rtc_proc,
+> +	.alarm_irq_enable = da9058_rtc_alarm_irq_enable,
+> +};
+> +
+> +static int da9058_rtc_probe(struct platform_device *pdev)
+> +{
+> +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
+> +	const struct mfd_cell *cell = mfd_get_cell(pdev);
+> +	struct da9058_rtc_pdata *rtc_pdata;
+> +	struct da9058_rtc *rtc;
+> +	int ret;
+> +
+> +	if (cell == NULL) {
+> +		ret = -ENODEV;
+> +		goto exit;
+> +	}
+> +
+> +	rtc_pdata = cell->platform_data;
+> +
+> +	if (rtc_pdata == NULL) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9058_rtc), GFP_KERNEL);
+> +	if (!rtc) {
+> +		ret = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, rtc);
+> +
+> +	rtc->da9058 = da9058;
+> +	rtc->pdev = pdev;
+> +	ret = da9058_clear_bits(da9058, DA9058_WAITCONT_REG,
+> +						DA9058_WAITCONT_RTCCLOCK);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to set RTC running: %d\n", ret);
+> +		goto unable_to_init_device;
+> +	}
+> +
+> +	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed No gating RTC: %d\n", ret);
+> +		goto unable_to_init_device;
+> +	}
+> +
+> +	device_init_wakeup(&pdev->dev, 1);
+> +
+> +	rtc->rtc_dev = rtc_device_register("da9058", &pdev->dev,
+> +						&da9058_rtc_ops, THIS_MODULE);
+> +	if (IS_ERR(rtc->rtc_dev)) {
+> +		ret = PTR_ERR(rtc->rtc_dev);
+> +		dev_err(&pdev->dev, "failed to register RTC: %d\n", ret);
+> +		goto unable_to_register_device;
+> +	}
+> +
+> +	rtc->alarm_irq = platform_get_irq(pdev, 0);
+> +	if (rtc->alarm_irq < 0) {
+> +		dev_err(&pdev->dev, "can not get RTC ALARM IRQ error=%d\n",
+> +				rtc->alarm_irq);
+> +		ret = -ENODEV;
+> +		goto failed_to_get_alarm_irq;
+> +	}
+> +
+> +	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
+> +							rtc->alarm_irq),
+> +				NULL, da9058_rtc_timer_alarm_handler,
+> +				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> +				"DA9058 RTC Timer Alarm", rtc);
+> +
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +			"Failed to get rtc timer alarm IRQ %d: %d\n",
+> +			rtc->alarm_irq, ret);
+> +		goto unable_to_setup_timer_irq;
+> +	}
+> +
+> +	rtc->tick_irq = platform_get_irq(pdev, 1);
+> +	if (rtc->tick_irq < 0) {
+> +		dev_err(&pdev->dev, "can not get RTC TICK IRQ error=%d\n",
+> +				rtc->tick_irq);
+> +		ret = -ENODEV;
+> +		goto failed_to_get_tick_irq;
+> +	}
+> +	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
+> +							rtc->tick_irq),
+> +				NULL, da9058_rtc_tick_alarm_handler,
+> +				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> +				"DA9058 RTC Tick Alarm", rtc);
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +			"Failed to get rtc timer alarm IRQ %d: %d\n",
+> +			DA9058_IRQ_ETICK, ret);
+> +		goto unable_to_setup_alarm_irq;
+> +	}
+> +	goto exit;
+> +
+> +failed_to_get_tick_irq:
+> +unable_to_setup_alarm_irq:
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
+> +failed_to_get_alarm_irq:
+> +unable_to_setup_timer_irq:
+> +	rtc_device_unregister(rtc->rtc_dev);
+> +unable_to_register_device:
+> +unable_to_init_device:
+> +	platform_set_drvdata(pdev, NULL);
+> +exit:
+> +	return ret;
+> +}
+> +
+> +static int __devexit da9058_rtc_remove(struct platform_device *pdev)
+> +{
+> +	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
+> +	struct da9058 *da9058 = rtc->da9058;
+> +
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
+> +	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
+> +
+> +	rtc_device_unregister(rtc->rtc_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver da9058_rtc_driver = {
+> +	.probe = da9058_rtc_probe,
+> +	.remove = __devexit_p(da9058_rtc_remove),
+> +	.driver = {
+> +		.name = "da9058-rtc",
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +module_platform_driver(da9058_rtc_driver);
+> +
+> +MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
+> +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:da9058-rtc");
 
-I can't be bothered to transcribe all those 64-bit pointer values, but
-here's the human-readable parts (screen shot links below):
-
-BUG: unable to handle kernel NULL pointer dereference at 000...00028
-IP: [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
-PGD ... PUD ... PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-CPU 2
-Modules linked in: [... bazillion modules ...]
-
-Pid: 3687, comm: rm Tainted: G    C    3.5.1-1-ARCH #1 System
-manufacturer System Product Name/M3A76-CM
-RIP: 0010:[...] [...] ext4_ext_remove_space
-[... CPU register dump ...]
-Process rm (pid: 3687, threadinfo ..., task ...)
-Call Trace:
- [...] ext4_ext_truncate+0x183/0x1c0 [ext]
- [...] ? ext4_mark_inode_dirty+0x7e/0x230 [ext4]
- [...] ext4_truncate+0x135/0x140 [ext4]
- [...] ext4_evict_inode+0x40f/0x4e0 [ext4]
- [...] evict+0xb8/0x1b0
- [...] iput+0x105/0x210
- [...] do_unlinkat+0x1b/0x50
- [...] ? flip_close+0x66/0xa0
- [...] sys_unlinkat+0x1b/0x50
- [...] system_call_fastpath+0x16/0x1b
-Code: [...]
-RIP [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
-CR2: 000...00028
-
-Taint flag C is caused by the staging r8712u driver (Realtek USB Wi-Fi
-adapter). But I wasn't even using it today, so I doubt that had
-anything to do with it.
-
-Some "screen shots" taken with a webcam (warning: CSI "zoom & enhance"
-technology required)
-http://ompldr.org/vZjQ3dw
-http://ompldr.org/vZjQ3eg
-http://ompldr.org/vZjQ4MA
-http://ompldr.org/vZjQ3eQ
-http://ompldr.org/vZjQ3eA
-
-Regards,
-Marti
