@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2HOSBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:01:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36513 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2HOSBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:01:42 -0400
+	id S1756048Ab2HOSCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:02:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38338 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab2HOSCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:02:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,774,1336374000"; 
+   d="scan'208";a="181441991"
+Message-ID: <502BE41B.4020508@linux.intel.com>
+Date: Wed, 15 Aug 2012 11:02:03 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120815123931.GF23985@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-5-git-send-email-glommer@parallels.com>
-	<20120814162144.GC6905@dhcp22.suse.cz>
-	<502B6D03.1080804@parallels.com>
-	<20120815123931.GF23985@dhcp22.suse.cz>
-Date: Wed, 15 Aug 2012 11:01:41 -0700
-Message-ID: <CALWz4ixYXN9FGJ1E9CZ9viJ=s3k63Pm8t3nakQvi+1T5qtyFYw@mail.gmail.com>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-From: Ying Han <yinghan@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <20120815163400.GC14534@srcf.ucam.org>
+In-Reply-To: <20120815163400.GC14534@srcf.ucam.org>
+X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 5:39 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 15-08-12 13:33:55, Glauber Costa wrote:
-> [...]
->> > This can
->> > be quite confusing.  I am still not sure whether we should mix the two
->> > things together. If somebody wants to limit the kernel memory he has to
->> > touch the other limit anyway.  Do you have a strong reason to mix the
->> > user and kernel counters?
+On 8/15/2012 9:34 AM, Matthew Garrett wrote:
+> On Wed, Aug 15, 2012 at 01:05:38PM +0200, Peter Zijlstra wrote:
+>> On Mon, 2012-08-13 at 20:21 +0800, Alex Shi wrote:
+>>> It bases on the following assumption:
+>>> 1, If there are many task crowd in system, just let few domain cpus
+>>> running and let other cpus idle can not save power. Let all cpu take the
+>>> load, finish tasks early, and then get into idle. will save more power
+>>> and have better user experience.
 >>
->> This is funny, because the first opposition I found to this work was
->> "Why would anyone want to limit it separately?" =p
->>
->> It seems that a quite common use case is to have a container with a
->> unified view of "memory" that it can use the way he likes, be it with
->> kernel memory, or user memory. I believe those people would be happy to
->> just silently account kernel memory to user memory, or at the most have
->> a switch to enable it.
->>
->> What gets clear from this back and forth, is that there are people
->> interested in both use cases.
->
-> I am still not 100% sure myself. It is just clear that the reclaim would
-> need some work in order to do accounting like this.
->
->> > My impression was that kernel allocation should simply fail while user
->> > allocations might reclaim as well. Why should we reclaim just because of
->> > the kernel allocation (which is unreclaimable from hard limit reclaim
->> > point of view)?
->>
->> That is not what the kernel does, in general. We assume that if he wants
->> that memory and we can serve it, we should. Also, not all kernel memory
->> is unreclaimable. We can shrink the slabs, for instance. Ying Han
->> claims she has patches for that already...
->
-> Are those patches somewhere around?
+>> I'm not sure this is a valid assumption. I've had it explained to me by
+>> various people that race-to-idle isn't always the best thing. It has to
+>> do with the cost of switching power states and the duration of execution
+>> and other such things.
+> 
+> This is affected by Intel's implementation - if there's a single active 
 
-Yes, I am working on it to post it sometime *this week*. My last
-rebase is based on v3.3 and now I am trying to get it rebased to
-github-memcg. The patch itself has a functional dependency on kernel
-slab accounting, and I am trying to get that rebased on Glauber's tree
-but has some difficulty now. What I am planning to do is post the RFC
-w/ only complied version by far.
+not just intel.. also AMD
+basically everyone who has the memory controller in the cpu package will end up with
+a restriction very similar to this.
 
-The patch handles dentry cache shrinker only at this moment. That is
-what we discussed last time as well, where dentry contributes most of
-the reclaimable objects. (it pins inode, so we leave inode behind)
+(this is because the exit-from-self-refresh latency is pretty high.. at least in DDR2/3)
 
 
---Ying
->
-> [...]
->> > This doesn't check for the hierachy so kmem_accounted might not be in
->> > sync with it's parents. mem_cgroup_create (below) needs to copy
->> > kmem_accounted down from the parent and the above needs to check if this
->> > is a similar dance like mem_cgroup_oom_control_write.
->> >
->>
->> I don't see why we have to.
->>
->> I believe in a A/B/C hierarchy, C should be perfectly able to set a
->> different limit than its parents. Note that this is not a boolean.
->
-> Ohh, I wasn't clear enough. I am not against setting the _limit_ I just
-> meant that the kmem_accounted should be consistent within the hierarchy.
->
-> --
-> Michal Hocko
-> SUSE Labs
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
