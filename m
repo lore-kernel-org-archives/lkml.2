@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab2HOUfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:35:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36411 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab2HOTtU (ORCPT
+	id S1757277Ab2HOUfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:35:22 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62765 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299Ab2HOTtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:49:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Gregory Hermant <gregory.hermant@calao-systems.com>,
+        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 020/165] locks: fix checking of fcntl_setlease argument
-Date: Wed, 15 Aug 2012 15:46:04 -0400
-Message-ID: <1345060109-9187-21-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 021/165] USB: ftdi_sio: add Calao reference board support
+Date: Wed, 15 Aug 2012 15:46:05 -0400
+Message-ID: <1345060109-9187-22-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@fieldses.org>
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,55 +33,77 @@ From: "J. Bruce Fields" <bfields@fieldses.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0ec4f431eb56d633da3a55da67d5c4b88886ccc7 upstream.
+commit c96fbdd0ab97235f930ebf24b38fa42a2e3458cf upstream.
 
-The only checks of the long argument passed to fcntl(fd,F_SETLEASE,.)
-are done after converting the long to an int.  Thus some illegal values
-may be let through and cause problems in later code.
+Calao use on there dev kits a FT2232 where the port 0 is used for the JTAG and
+port 1 for the UART
 
-[ They actually *don't* cause problems in mainline, as of Dave Jones's
-  commit 8d657eb3b438 "Remove easily user-triggerable BUG from
-  generic_setlease", but we should fix this anyway.  And this patch will
-  be necessary to fix real bugs on earlier kernels. ]
+They use the same VID and PID as FTDI Chip but they program the manufacturer
+name in the eeprom
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So use this information to detect it
+
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/locks.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/fs/locks.c b/fs/locks.c
-index ab24d49..8cedfbf 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -291,7 +291,7 @@ static int flock_make_lock(struct file *filp, struct file_lock **lock,
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index c7e4fb8..e8bc908 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -105,6 +105,7 @@ static int   ftdi_jtag_probe(struct usb_serial *serial);
+ static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
+ static int   ftdi_NDI_device_setup(struct usb_serial *serial);
+ static int   ftdi_stmclite_probe(struct usb_serial *serial);
++static int   ftdi_8u2232c_probe(struct usb_serial *serial);
+ static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
+ static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
+ 
+@@ -132,6 +133,10 @@ static struct ftdi_sio_quirk ftdi_stmclite_quirk = {
+ 	.probe	= ftdi_stmclite_probe,
+ };
+ 
++static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
++	.probe	= ftdi_8u2232c_probe,
++};
++
+ /*
+  * The 8U232AM has the same API as the sio except for:
+  * - it can support MUCH higher baudrates; up to:
+@@ -181,7 +186,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_ALT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
+-	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) ,
++		.driver_info = (kernel_ulong_t)&ftdi_8u2232c_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RELAIS_PID) },
+@@ -1749,6 +1755,18 @@ static int ftdi_jtag_probe(struct usb_serial *serial)
  	return 0;
  }
  
--static int assign_type(struct file_lock *fl, int type)
-+static int assign_type(struct file_lock *fl, long type)
- {
- 	switch (type) {
- 	case F_RDLCK:
-@@ -444,7 +444,7 @@ static const struct lock_manager_operations lease_manager_ops = {
++static int ftdi_8u2232c_probe(struct usb_serial *serial)
++{
++	struct usb_device *udev = serial->dev;
++
++	dbg("%s", __func__);
++
++	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
++		return ftdi_jtag_probe(serial);
++
++	return 0;
++}
++
  /*
-  * Initialize a lease, use the default lock manager operations
-  */
--static int lease_init(struct file *filp, int type, struct file_lock *fl)
-+static int lease_init(struct file *filp, long type, struct file_lock *fl)
-  {
- 	if (assign_type(fl, type) != 0)
- 		return -EINVAL;
-@@ -462,7 +462,7 @@ static int lease_init(struct file *filp, int type, struct file_lock *fl)
- }
- 
- /* Allocate a file_lock initialised to this type of lease */
--static struct file_lock *lease_alloc(struct file *filp, int type)
-+static struct file_lock *lease_alloc(struct file *filp, long type)
- {
- 	struct file_lock *fl = locks_alloc_lock();
- 	int error = -ENOMEM;
+  * First and second port on STMCLiteadaptors is reserved for JTAG interface
+  * and the forth port for pio
 -- 
 1.7.12.rc2
 
