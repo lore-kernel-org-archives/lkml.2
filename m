@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2HOOuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:50:07 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49702 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab2HOOuB (ORCPT
+	id S1755138Ab2HOOuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:50:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35144 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab2HOOuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:50:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 20/31] arm64: User access library function
-Date: Wed, 15 Aug 2012 14:49:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-21-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1344966752-16102-21-git-send-email-catalin.marinas@arm.com>
+	Wed, 15 Aug 2012 10:50:12 -0400
+Date: Wed, 15 Aug 2012 11:50:01 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
+        Barry Song <bs14@csr.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Ido Yariv <ido@wizery.com>, Daniel Drake <dsd@laptop.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 07/44] ARM: 7477/1: vfp: Always save VFP state in
+ vfp_pm_suspend on UP
+Message-ID: <20120815145000.GA3323@herton-Z68MA-D2H-B3>
+References: <20120813220142.113186818@linuxfoundation.org>
+ <20120813220142.801309366@linuxfoundation.org>
+ <20120814200110.GE5277@herton-Z68MA-D2H-B3>
+ <20120815140541.GB22871@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208151449.54834.arnd@arndb.de>
-X-Provags-ID: V02:K0:r0CrVWVIim3iiF5eBAVHTBRgk18eh/vaEbAwQSWHnDQ
- xsNBjCs7Wnc19/Ks6t6rDqZvfUtiGHbivXmVsVAV1dcrGoGx7P
- 27orDe+7y4jleJyC3jxGzZWJMSlNwv0LmtS74cK20/S8T8G3DS
- Q5q2th9zuV2EYeSRIbZUsazNedl4nw2entvbSBg7cBb0WVx9OM
- PKXdjPQAKNlIaPBXqOWlliivV9+a+LjLkYUBxfRVLN6eIdleWZ
- poSSUExK8hyp1F4ol1L9CId+cp2IC6nQCj/6R4MqbN0EuwkzAo
- eTRdLPmtrLOB2gqkD5tVxshDMl02mehYV/JY7496UVBdSqpKhA
- uHPX1fpwbsH8NJ9EZ5yA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815140541.GB22871@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 August 2012, Catalin Marinas wrote:
+On Wed, Aug 15, 2012 at 07:05:41AM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Aug 14, 2012 at 05:01:11PM -0300, Herton Ronaldo Krzesinski wrote:
+> > On Mon, Aug 13, 2012 at 03:02:14PM -0700, Greg Kroah-Hartman wrote:
+> > > From: Greg KH <gregkh@linuxfoundation.org>
+> > > 
+> > [...]
+> > > --- a/arch/arm/vfp/vfpmodule.c
+> > > +++ b/arch/arm/vfp/vfpmodule.c
+> > > @@ -412,6 +412,12 @@ static int vfp_pm_suspend(void)
+> > >  
+> > >  		/* disable, just in case */
+> > >  		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
+> > > +	} else if (vfp_current_hw_state[ti->cpu]) {
+> > > +#ifndef CONFIG_SMP
+> > > +		fmxr(FPEXC, fpexc | FPEXC_EN);
+> > > +		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
+> > > +		fmxr(FPEXC, fpexc);
+> > > +#endif
+> > 
+> > This fails to build on 3.0:
+> > 
+> > linux-stable/arch/arm/vfp/vfpmodule.c: In function 'vfp_pm_suspend':
+> > linux-stable/arch/arm/vfp/vfpmodule.c:415:13: error: 'vfp_current_hw_state' undeclared (first use in this function)
+> > linux-stable/arch/arm/vfp/vfpmodule.c:415:13: note: each undeclared identifier is reported only once for each function it appears in
+> > make[3]: *** [arch/arm/vfp/vfpmodule.o] Error 1
+> > 
+> > In 3.0, vfp_current_hw_state was still named last_VFP_context, so I
+> > think just renaming should be enough to fix this.
+> 
+> I'll remove the patch as it probably just shouldn't be there, right?  If
+> you think it should be in 3.0-stable, can you please send me a fixed up
+> patch that you have tested that it at least builds properly?
 
-> +/*
-> + * Single-value transfer routines.  They automatically use the right
-> + * size if we just have the right pointer type.  Note that the functions
-> + * which read from user space (*get_*) need to take care not to leak
-> + * kernel data even if the calling code is buggy and fails to check
-> + * the return value.  This means zeroing out the destination variable
-> + * or buffer on error.  Normally this is done out of line by the
-> + * fixup code, but there are a few places where it intrudes on the
-> + * main code path.  When we only write to user space, there is no
-> + * problem.
-> + */
-> +extern long __get_user_1(void *);
-> +extern long __get_user_2(void *);
-> +extern long __get_user_4(void *);
-> +extern long __get_user_8(void *);
-> +
-> +#define __get_user_x(__r2,__p,__e,__s,__i...)				\
-> +	   asm volatile(						\
-> +		__asmeq("%0", "x0") __asmeq("%1", "x2")			\
-> +		"bl	__get_user_" #__s				\
-> +		: "=&r" (__e), "=r" (__r2)				\
-> +		: "0" (__p)						\
-> +		: __i, "cc")
-> +
-> +#define get_user(x,p)							\
-> +	({								\
-> +		register const typeof(*(p)) __user *__p asm("x0") = (p);\
-> +		register unsigned long __r2 asm("x2");			\
-> +		register long __e asm("x0");				\
-> +		switch (sizeof(*(__p))) {				\
-> +		case 1:							\
-> +			__get_user_x(__r2, __p, __e, 1, "x30");		\
-> +			break;						\
-> +		case 2:							\
-> +			__get_user_x(__r2, __p, __e, 2, "x3", "x30");	\
-> +			break;						\
-> +		case 4:							\
-> +			__get_user_x(__r2, __p, __e, 4, "x30");		\
-> +			break;						\
-> +		case 8:							\
-> +			__get_user_x(__r2, __p, __e, 8, "x30");		\
-> +			break;						\
-> +		default: __e = __get_user_bad(); break;			\
-> +		}							\
-> +		x = (typeof(*(p))) __r2;				\
-> +		__e;							\
-> +	})
+I'm not intimate with this ARM code, so I think someone else in Cc can
+answer better, I just saw it doesn't build with 3.0. If the same problem
+affects 3.0, then the change should be backported renaming
+vfp_current_hw_state to last_VFP_context. It seems the same code was
+there with vfp_current_hw_state still named as last_VFP_context, so
+looks like 3.0 would be affected as well.
 
-It's fairly unusual to have out of line get_user/put_user functions.
-What is the reason for this, other than copying from ARM?
+Also I noted that because the same naming, 3.0 didn't got commit
+a84b895a2348f0dbff31b71ddf954f70a6cde368 ("ARM: 7476/1: vfp: only clear
+vfp state for current cpu in vfp_pm_suspend") as the patch would fail to
+apply on 3.0 code base, while 3.4.9 and 3.5.2 have it.
 
-> +
-> +__get_user_bad:
-> +	mov	x2, #0
-> +	mov	x0, #-EFAULT
-> +	ret
-> +ENDPROC(__get_user_bad)
+I assume someone who did these commits or know it/are affected can take
+a look and if needed backport them to 3.0?
 
-> +__put_user_bad:
-> +	mov	x0, #-EFAULT
-> +	ret
-> +ENDPROC(__put_user_bad)
-> +
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-The purpose of these symbols is to provoke a link error when you
-pass the wrong data into get_user/put_user. Actually defining them
-completely breaks this logic, so you should remove these!
-
-	Arnd
+-- 
+[]'s
+Herton
