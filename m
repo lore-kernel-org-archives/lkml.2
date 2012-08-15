@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab2HOUhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:37:08 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62752 "EHLO
+	id S1757318Ab2HOUhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:37:11 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62749 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255Ab2HOTtN (ORCPT
+	with ESMTP id S1756251Ab2HOTtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:13 -0400
+	Wed, 15 Aug 2012 15:49:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jonghwan Choi <jhbird.choi@samsung.com>,
-        James Morris <james.l.morris@oracle.com>,
+CC: David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 017/165] security: fix compile error in commoncap.c
-Date: Wed, 15 Aug 2012 15:46:01 -0400
-Message-ID: <1345060109-9187-18-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 019/165] KEYS: Fix a NULL pointer deref in the user-defined key type
+Date: Wed, 15 Aug 2012 15:46:03 -0400
+Message-ID: <1345060109-9187-20-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+From: David Howells <dhowells@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,34 +32,70 @@ From: Jonghwan Choi <jhbird.choi@samsung.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 51b79bee627d526199b2f6a6bef8ee0c0739b6d1 upstream.
+commit 9f35a33b8d06263a165efe3541d9aa0cdbd70b3b upstream.
 
-Add missing "personality.h"
-security/commoncap.c: In function 'cap_bprm_set_creds':
-security/commoncap.c:510: error: 'PER_CLEAR_ON_SETID' undeclared (first use in this function)
-security/commoncap.c:510: error: (Each undeclared identifier is reported only once
-security/commoncap.c:510: error: for each function it appears in.)
+Fix a NULL pointer deref in the user-defined key type whereby updating a
+negative key into a fully instantiated key will cause an oops to occur
+when the code attempts to free the non-existent old payload.
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+This results in an oops that looks something like the following:
+
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+  PGD 3391d067 PUD 3894a067 PMD 0
+  Oops: 0002 [#1] SMP
+  CPU 1
+  Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
+  RIP: 0010:[<ffffffff81085fa1>]  [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
+  RSP: 0018:ffff88003d591df8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000006e
+  RDX: ffffffff8161d0c0 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88003d591e18 R08: 0000000000000000 R09: ffffffff8152fa6c
+  R10: 0000000000000000 R11: 0000000000000300 R12: ffff88003b8f9538
+  R13: ffffffff8161d0c0 R14: ffff88003b8f9d50 R15: ffff88003c69f908
+  FS:  00007f97eb18c720(0000) GS:ffff88003bd00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 0000000000000008 CR3: 000000003d47a000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process keyctl (pid: 4354, threadinfo ffff88003d590000, task ffff88003c78a040)
+  Stack:
+   ffff88003e0ffde0 ffff88003b8f9538 0000000000000001 ffff88003b8f9d50
+   ffff88003d591e28 ffffffff810860f0 ffff88003d591e68 ffffffff8117bfea
+   ffff88003d591e68 ffffffff00000000 ffff88003e0ffde1 ffff88003e0ffde0
+  Call Trace:
+   [<ffffffff810860f0>] call_rcu_sched+0x10/0x12
+   [<ffffffff8117bfea>] user_update+0x8d/0xa2
+   [<ffffffff8117723a>] key_create_or_update+0x236/0x270
+   [<ffffffff811789b1>] sys_add_key+0x123/0x17e
+   [<ffffffff813b84bb>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Neil Horman <nhorman@redhat.com>
+Acked-by: Steve Dickson <steved@redhat.com>
+Acked-by: James Morris <jmorris@namei.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[PG: pre-3.0 kernels dont have kfree_rcu, so tweak accordingly]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- security/commoncap.c | 1 +
- 1 file changed, 1 insertion(+)
+ security/keys/user_defined.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 6166973..3927418 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -28,6 +28,7 @@
- #include <linux/prctl.h>
- #include <linux/securebits.h>
- #include <linux/syslog.h>
-+#include <linux/personality.h>
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index e9aa079..d6781b9 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -119,7 +119,8 @@ int user_update(struct key *key, const void *data, size_t datalen)
+ 		key->expiry = 0;
+ 	}
  
- /*
-  * If a non-root user executes a setuid-root binary in
+-	call_rcu(&zap->rcu, user_update_rcu_disposal);
++	if (zap)
++		call_rcu(&zap->rcu, user_update_rcu_disposal);
+ 
+ error:
+ 	return ret;
 -- 
 1.7.12.rc2
 
