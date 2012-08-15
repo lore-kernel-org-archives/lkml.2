@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2HOPKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:10:31 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51192 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab2HOPK3 (ORCPT
+	id S1752573Ab2HOPLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:11:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52400 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab2HOPLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:10:29 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.46.74
-Date: Wed, 15 Aug 2012 08:10:20 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Trevor Brandt <tjbrandt@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Eric Paris <eparis@redhat.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, team-fjord@googlegroups.com
-Subject: Re: [PATCH] sched: Support compiling out real-time scheduling with
- REALTIME_SCHED.
-Message-ID: <20120815151019.GA2837@leaf>
-References: <y>
- <1344977423-28900-1-git-send-email-tjbrandt@gmail.com>
- <1345014740.4515.104.camel@marge.simpson.net>
+	Wed, 15 Aug 2012 11:11:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 25/31] arm64: Performance counters support
+Date: Wed, 15 Aug 2012 15:11:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345014740.4515.104.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208151511.11612.arnd@arndb.de>
+X-Provags-ID: V02:K0:vv7UGPk6DCGbf6RqGU2Zwv5SLFUrU6wmqgzGJ4FBsa9
+ RVOXtcR72rZd+E7EFO9HprskYLsYVLZgZSK0iYYU17ZodnNaBh
+ /+gEuKvhivDOuHRjzx4bjr6cs9A2zfsuRqsid5R9POQqigq0fd
+ ZhOpcx3J08zg8GNZsNQgFuwYOVJ6Pi4SRtkSPtXeV0TB7+06fT
+ oa/FvmhKt7tUhC2d8tGN1zVgb92ixCLAh38NtWDKnhiLyqUrX1
+ c+lFG7tvFS1RWDbs8xua3k8LzY16UfJ4DQw0csYUiyjTt/KMU5
+ 3HuJ9jgINHCz8kC49rPrFMuWc3GYaCuHKARWzzhXzmDKlbiKdM
+ WCCI6hlBCz/RMlB3rY4o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 09:12:20AM +0200, Mike Galbraith wrote:
-> On Tue, 2012-08-14 at 13:50 -0700, Trevor Brandt wrote:
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 3f42cd6..768dc76 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -27,6 +27,13 @@ config IRQ_WORK
-> >  	bool
-> >  	depends on HAVE_IRQ_WORK
-> >  
-> > +config REALTIME_SCHED
-> > +	bool "Realtime Scheduler" if EXPERT
-> > +	default y
-> > +	help
-> > +	  This option enables support for the realtime scheduler and the
-> > +	  corresponding scheduling classes SCHED_FIFO and SCHED_RR.
-> > +
-> >  menu "General setup"
-> >  
-> >  config EXPERIMENTAL
+On Tuesday 14 August 2012, Catalin Marinas wrote:
+> From: Will Deacon <will.deacon@arm.com>
 > 
-> If you inverted that, it could be a proper default n new feature [1].
+> This patch adds support for the AArch64 performance counters.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  arch/arm64/include/asm/perf_event.h |   22 +
+>  arch/arm64/include/asm/pmu.h        |   82 +++
+>  arch/arm64/kernel/perf_event.c      | 1368 +++++++++++++++++++++++++++++++++++
+>  tools/perf/perf.h                   |    6 +
 
-Huh.  You mean, DISABLE_REALTIME_SCHED?  How would that help?
-DISABLE_REALTIME_SCHED=n seems like an unnecessary double negative, and
-I see very little precedent for that in Kconfig options.
+Can you explain how AArch64 performance counters differ from the 32
+bit ones? Do they work for AArch32 user space under AArch64 kernels?
+Is it possible to share parts of the implementation with arch/arm?
 
-> (that SMP could select to greatly simplify RT)
-
-I hope this isn't a serious suggestion. :)  In any case, that doesn't
-seem like something that should happen in *this* patch, if it should
-happen at all.
-
-> However, if weight loss is the goal, why not go whole hog, and create
-> sched/thin.c containing no lard... or just integrate an existing thin
-> scheduler as a config option?
-
-Historically, the response to configurable/modular/selectable schedulers
-has been entirely negative, with most responses amounting to "we should
-fix the scheduler we have to work for all workloads", which doesn't seem
-like an unreasonable response to me.
-
-The kernel also has a *large* number of dependencies on the workings of
-the fair scheduler, and as this patch shows, far fewer on the real-time
-scheduler.
-
-Given both of the above, writing and integrating an entirely new
-scheduler (*and* dealing with the repeats of old flamewars that would
-ensue after posting it) seems a bit much to ask for a student project.
-:)
-
-- Josh Triplett
+	Arnd
