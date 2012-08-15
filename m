@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2HOOnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:43:05 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:43857 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab2HOOnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:43:03 -0400
-Date: Wed, 15 Aug 2012 16:42:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf: Let O= makes handle relative paths
-Message-ID: <20120815144255.GB15989@aftab.osrc.amd.com>
-References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
- <20120813132438.GA18990@aftab.osrc.amd.com>
- <1344867782.6935.119.camel@gandalf.stny.rr.com>
- <20120813142909.GC18990@aftab.osrc.amd.com>
- <20120813180249.GB6840@infradead.org>
- <20120815102722.GB4640@aftab.osrc.amd.com>
- <20120815130634.GE2370@infradead.org>
- <20120815131806.GC4640@aftab.osrc.amd.com>
- <1345041485.31459.89.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345041485.31459.89.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754797Ab2HOOnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:43:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54165 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab2HOOno convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:43:44 -0400
+Message-ID: <1345041802.31459.94.camel@twins>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Date: Wed, 15 Aug 2012 16:43:22 +0200
+In-Reply-To: <20120815131514.GC4409@x1.osrc.amd.com>
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
+	 <20120815131514.GC4409@x1.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 04:38:05PM +0200, Peter Zijlstra wrote:
-> Because you're an idiot and made a typo ;-) Happens to me all the time.
+On Wed, 2012-08-15 at 15:15 +0200, Borislav Petkov wrote:
+> On Wed, Aug 15, 2012 at 01:05:38PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2012-08-13 at 20:21 +0800, Alex Shi wrote:
+> > > Since there is no power saving consideration in scheduler CFS, I has a
+> > > very rough idea for enabling a new power saving schema in CFS.
+> > 
+> > Adding Thomas, he always delights poking holes in power schemes.
+> > 
+> > > It bases on the following assumption:
+> > > 1, If there are many task crowd in system, just let few domain cpus
+> > > running and let other cpus idle can not save power. Let all cpu take the
+> > > load, finish tasks early, and then get into idle. will save more power
+> > > and have better user experience.
+> > 
+> > I'm not sure this is a valid assumption. I've had it explained to me by
+> > various people that race-to-idle isn't always the best thing. It has to
+> > do with the cost of switching power states and the duration of execution
+> > and other such things.
+> 
+> I think what he means here is that we might want to let all cores on
+> the node (i.e., domain) finish and then power down the whole node which
+> should bring much more power savings than letting a subset of the cores
+> idle. Alex?
 
-I'm not an idiot - I'm perfection at its purest! :-)
+Sure we can do that.
 
-> The regular kernel build doesn't create non-existent O= targets either
-> iirc.
+> > So I'd leave the currently implemented scheme as performance, and I
+> > don't think the above describes the current state.
+> > 
+> > > 			} else if (schedule policy == power)
+> > > 				move tasks from busiest group to
+> > > 				idlest group until busiest is just full
+> > > 				of capacity.
+> > > 				//the busiest group can balance
+> > > 				//internally after next time LB,
+> > 
+> > There's another thing we need to do, and that is collect tasks in a
+> > minimal amount of power domains.
+> 
+> Yep.
+> 
+> Btw, what heuristic would tell here when a domain overflows and another
+> needs to get woken? Combined load of the whole domain?
+> 
+> And if I absolutely positively don't want a node to wake up, do I
+> hotplug its cores off or are we going to have a way to tell the
+> scheduler to overcommit the non-idle domains and spread the tasks only
+> among them.
+> 
+> I'm thinking of short bursts here where it would be probably beneficial
+> to let the tasks rather wait runnable for a while then wake up the next
+> node and waste power...
 
-Ok, I see. The kernel needs to protect itself against the people who
-wrote it :-).
+I was thinking of a utilization measure made of per-task weighted
+runnable averages. This should indeed cover that case and we'll overflow
+when on average there is no (significant) idle time over a period longer
+than the averaging period.
 
--- 
-Regards/Gruss,
-Boris.
+Anyway, I'm not too set on this and I'm very sure we can tweak this ad
+infinitum, so starting with something relatively simple that works for
+most is preferred.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+As already stated, I think some of the Linaro people actually played
+around with something like this based on PJTs patches.
