@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2HOSaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:30:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54763 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2HOSaO (ORCPT
+	id S1753292Ab2HOSeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:34:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47913 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HOSeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:30:14 -0400
+	Wed, 15 Aug 2012 14:34:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120815181711.GA19018@redhat.com>
-References: <20120726134748.GA20605@localhost>
-	<CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
-	<20120810015222.GA19286@localhost>
-	<CAGXu5jK_ZJqmcJ7JcnpwNb5R3x8=ay_shD16ZA3q-7Lwi8S=qg@mail.gmail.com>
-	<20120815030110.GA24836@localhost>
-	<CAGXu5j+0FUYdBqsotn_vp1EbG=dcURAA1sxv+yFzaJuUkdAh0A@mail.gmail.com>
-	<20120815130159.GA3221@redhat.com>
-	<1345041021.31459.88.camel@twins>
-	<20120815175651.GA17814@redhat.com>
-	<CAGXu5jJ+HOdSxS7Ec=TW06h6KEpEmi-rF+Jk8L5LiQsp9gyAtg@mail.gmail.com>
-	<20120815181711.GA19018@redhat.com>
-Date: Wed, 15 Aug 2012 11:30:12 -0700
-X-Google-Sender-Auth: fJ-s4KS3cSvTfeCfA10ptiLyYNQ
-Message-ID: <CAGXu5j+9o+82tFv93C1f-2tkf+GcbCjH_pKqSb+Bi7O9sB168Q@mail.gmail.com>
-Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+From: Marti Raudsepp <marti@juffo.org>
+Date: Wed, 15 Aug 2012 21:33:29 +0300
+Message-ID: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+Subject: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+To: Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 11:17 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/15, Kees Cook wrote:
->>
->> It sounds like get_task_comm shouldn't have locking at all then? It
->> should just do a length-limited copy
->
-> Without task_lock() get_task_comm() can copy incomplete new name.
->
-> Honestly, I do not know any user which "strictly" needs the correct
-> name. may be proc.
+Hi list,
 
-Right, which is my point -- if the race to read against
-set_task_comm() isn't useful to anything, why lock in get_task_comm at
-all?
+I was moving and deleting some files between two of my ext4 partitions
+when it suddenly crashed and dropped me into an kernel oops screen
+(below). I'm using ext4 on kernel 3.5.1 (Arch Linux). Both likely
+suspect file systems are stored on LVM2, mounted with
+data=writeback,errors=remount-ro,noatime
 
->
->> and make sure there is a trailing
->> 0-byte?
->
-> get_task_comm()->strncpy() should always see (and copy) 0-byte.
-> comm[TASK_COMM_LEN - 1] == '\0' and this byte is never changed.
->
-> set_task_comm()->strlcpy() can write to this byte, but it can
-> only write 0 again.
+EXT4-fs (sda3): mounted filesystem with writeback data mode. Opts: (null)
+EXT4-fs (dm-1): mounted filesystem with writeback data mode. Opts:
+errors=remount-ro
+EXT4-fs (dm-0): mounted filesystem with writeback data mode. Opts:
+errors=remount-ro
 
-Right, and set_task_comm even does a memset() of 0 over the whole area
-before the strlcpy too.
+I can't be bothered to transcribe all those 64-bit pointer values, but
+here's the human-readable parts (screen shot links below):
 
-Regardless, it sounds like just using ->comm directly is fine; I'll
-send a patch.
+BUG: unable to handle kernel NULL pointer dereference at 000...00028
+IP: [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
+PGD ... PUD ... PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+CPU 2
+Modules linked in: [... bazillion modules ...]
 
--Kees
+Pid: 3687, comm: rm Tainted: G    C    3.5.1-1-ARCH #1 System
+manufacturer System Product Name/M3A76-CM
+RIP: 0010:[...] [...] ext4_ext_remove_space
+[... CPU register dump ...]
+Process rm (pid: 3687, threadinfo ..., task ...)
+Call Trace:
+ [...] ext4_ext_truncate+0x183/0x1c0 [ext]
+ [...] ? ext4_mark_inode_dirty+0x7e/0x230 [ext4]
+ [...] ext4_truncate+0x135/0x140 [ext4]
+ [...] ext4_evict_inode+0x40f/0x4e0 [ext4]
+ [...] evict+0xb8/0x1b0
+ [...] iput+0x105/0x210
+ [...] do_unlinkat+0x1b/0x50
+ [...] ? flip_close+0x66/0xa0
+ [...] sys_unlinkat+0x1b/0x50
+ [...] system_call_fastpath+0x16/0x1b
+Code: [...]
+RIP [...] ext4_ext_remove_space+0xaa4/0xef0 [ext4]
+CR2: 000...00028
 
--- 
-Kees Cook
-Chrome OS Security
+Taint flag C is caused by the staging r8712u driver (Realtek USB Wi-Fi
+adapter). But I wasn't even using it today, so I doubt that had
+anything to do with it.
+
+Some "screen shots" taken with a webcam (warning: CSI "zoom & enhance"
+technology required)
+http://ompldr.org/vZjQ3dw
+http://ompldr.org/vZjQ3eg
+http://ompldr.org/vZjQ4MA
+http://ompldr.org/vZjQ3eQ
+http://ompldr.org/vZjQ3eA
+
+Regards,
+Marti
