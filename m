@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab2HOSAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:00:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25868 "EHLO mx1.redhat.com"
+	id S1753894Ab2HOSAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:00:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2HOSAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751388Ab2HOSAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 14:00:18 -0400
-Date: Wed, 15 Aug 2012 19:56:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Kees Cook <keescook@chromium.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
-Message-ID: <20120815175651.GA17814@redhat.com>
-References: <20120726134748.GA20605@localhost> <CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com> <20120810015222.GA19286@localhost> <CAGXu5jK_ZJqmcJ7JcnpwNb5R3x8=ay_shD16ZA3q-7Lwi8S=qg@mail.gmail.com> <20120815030110.GA24836@localhost> <CAGXu5j+0FUYdBqsotn_vp1EbG=dcURAA1sxv+yFzaJuUkdAh0A@mail.gmail.com> <20120815130159.GA3221@redhat.com> <1345041021.31459.88.camel@twins>
+Date: Wed, 15 Aug 2012 14:53:39 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 00/12] KVM: introduce readonly memslot
+Message-ID: <20120815175338.GA18452@amt.cnet>
+References: <5020E423.9080004@linux.vnet.ibm.com>
+ <20120810181422.GA14892@amt.cnet>
+ <502A5A01.6040505@redhat.com>
+ <20120814155106.GA22249@amt.cnet>
+ <502B7D7E.20902@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345041021.31459.88.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <502B7D7E.20902@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15, Peter Zijlstra wrote:
->
-> On Wed, 2012-08-15 at 15:01 +0200, Oleg Nesterov wrote:
-> > BTW, set_task_comm()->wmb() and memset() should die. There are
-> > not needed afaics, and the comment is misleading.
->
-> As long as we guarantee there's always a terminating '\0',
+On Wed, Aug 15, 2012 at 01:44:14PM +0300, Avi Kivity wrote:
+> On 08/14/2012 06:51 PM, Marcelo Tosatti wrote:
+> >> 
+> >> Userspace may want to modify the ROM (for example, when programming a
+> >> flash device).  It is also possible to map an hva range rw through one
+> >> slot and ro through another.
+> > 
+> > Right, can do that with multiple userspace maps to the same anonymous 
+> > memory region (see other email).
+> 
+> Yes it's possible.  It requires that we move all memory allocation to be
+> fd based, since userspace can't predict what memory will be dual-mapped
+> (at least if emulated hardware allows this).
 
-Yes, but we already have this guarantee?
+It can:
+- Create named memory object, with associated fd.
+- Copy data from large anonymous memory region to named memory.
+- Unmap region that must be dual-mapped from large anonymous memory chunk.
+- Map named memory object at address.
 
-Unless of course some buggy code does something wrong with task->comm[],
-but nobody should do this.
+The last step can be replaced by adjusting KVM memory slots.
 
-IOW, task->comm[TASK_COMM_LEN - 1] is always 0, no?
+The disadvantage of protection information in memory slots
+is that it duplicates functionality that is handled by 
+userspace mappings.
 
-> now strlcpy()
-> doesn't pad the result,
+Moreover, multiple memory maps are necessary for any
+split-qemu-into-smaller-pieces solutions.
 
-afaics set_task_comm()->strlcpy() doesn't change the last byte too.
+>  Is this a reasonable
+> requirement?  Do ksm/thp/autonuma work with this?
 
-> however if we initialize the ->comm to all 0s in
-> fork()
+As mentioned, only memory used for ROM purposes must be dual mapped. 
 
-fork() is special, yes. ->comm is copied by dup_task_struct() and
-the new task_struct can have everything in ->comm. But nobody can
-see the new task yet, and nobody can play with its ->comm.
+I don't think there is any way to create multiple mappings 
+to one anonymous memory object ATM, but POSIX defines it
+(posix_typed_mem_open).
 
-Or I misunderstood?
+The limitation of thp/ksm on shared memory also affects any other user
+of shared memory, so it should be fixed there.
 
-> That barrier is indeed completely pointless as there's no pairing
-> barrier anywhere.
-
-Yes, agreed.
-
-Oleg.
+Also, QEMU ROM is allocated separately from RAM, correct?
 
