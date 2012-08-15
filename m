@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2HOIwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:52:40 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:49294
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752083Ab2HOIwZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:52:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dIc89bh1432Izz1202h1082kzz8275bh8275dhz2dh2a8h668h839h93fhd25he5bhf0ah107ah)
-Message-ID: <502B63AD.4000604@freescale.com>
-Date: Wed, 15 Aug 2012 16:54:05 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1752016Ab2HOJAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 05:00:32 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:49244 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750984Ab2HOJAa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 05:00:30 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-CC: Huang Shijie <shijie8@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dedekind1@gmail.com>
-Subject: Re: [PATCH] mtd: kill MTD_NAND_VERIFY_WRITE
-References: <1344998325-3279-1-git-send-email-shijie8@gmail.com> <20120815100655.479e2c39@pixies.home.jungo.com>
-In-Reply-To: <20120815100655.479e2c39@pixies.home.jungo.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Subject: RE: [PATCH 02/16] user_ns: use new hashtable implementation
+Date: Wed, 15 Aug 2012 09:46:57 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FB5@saturn3.aculab.com>
+In-Reply-To: <87obmchmpu.fsf@xmission.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 02/16] user_ns: use new hashtable implementation
+thread-index: Ac16k+/CnUwwKHjCQTarP6REmO6aMgALLDtA
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com><1344961490-4068-3-git-send-email-levinsasha928@gmail.com><87txw5hw0s.fsf@xmission.com> <502AF184.4010907@gmail.com><87393phshy.fsf@xmission.com> <502AFCD5.6070104@gmail.com> <87obmchmpu.fsf@xmission.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Sasha Levin" <levinsasha928@gmail.com>
+Cc: <torvalds@linux-foundation.org>, <tj@kernel.org>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <paul.gortmaker@windriver.com>,
+        <davem@davemloft.net>, <rostedt@goodmis.org>, <mingo@elte.hu>,
+        <aarcange@redhat.com>, <ericvh@gmail.com>, <netdev@vger.kernel.org>,
+        <josh@joshtriplett.org>, <eric.dumazet@gmail.com>,
+        <mathieu.desnoyers@efficios.com>, <axboe@kernel.dk>, <agk@redhat.com>,
+        <dm-devel@redhat.com>, <neilb@suse.de>, <ccaulfie@redhat.com>,
+        <teigland@redhat.com>, <Trond.Myklebust@netapp.com>,
+        <bfields@fieldses.org>, <fweisbec@gmail.com>, <jesse@nicira.com>,
+        <venkat.x.venkatsubra@oracle.com>, <ejt@redhat.com>,
+        <snitzer@redhat.com>, <edumazet@google.com>,
+        <linux-nfs@vger.kernel.org>, <dev@openvswitch.org>,
+        <rds-devel@oss.oracle.com>, <lw@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年08月15日 15:06, Shmulik Ladkani 写道:
-> Hi Huang,
->
-> On Tue, 14 Aug 2012 22:38:45 -0400 Huang Shijie<shijie8@gmail.com>  wrote:
->> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
->> index 588e989..0ca7257 100644
->> --- a/drivers/mtd/nand/Kconfig
->> +++ b/drivers/mtd/nand/Kconfig
->> @@ -22,15 +22,6 @@ menuconfig MTD_NAND
->>
->>   if MTD_NAND
->>
->> -config MTD_NAND_VERIFY_WRITE
->> -	bool "Verify NAND page writes"
->> -	help
->> -	  This adds an extra check when data is written to the flash. The
->> -	  NAND flash device internally checks only bits transitioning
->> -	  from 1 to 0. There is a rare possibility that even though the
->> -	  device thinks the write was successful, a bit could have been
->> -	  flipped accidentally due to device wear or something else.
->> -
-> There are some defconfig files which set CONFIG_MTD_NAND_VERIFY_WRITE.
->
-> I guess you should submit an accompanying patch that removes
-> CONFIG_MTD_NAND_VERIFY_WRITE from all defconfig files.
->
-thanks a lot.
+> Yes hash_32 seems reasonable for the uid hash.   With those long hash
+> chains I wouldn't like to be on a machine with 10,000 processes with
+> each with a different uid, and a processes calling setuid in the fast
+> path.
+> 
+> The uid hash that we are playing with is one that I sort of wish that
+> the hash table could grow in size, so that we could scale up better.
 
-I will send out a separate patch to fix it.
+Since uids are likely to be allocated in dense blocks, maybe an
+unhashed multi-level lookup scheme might be appropriate.
 
-Huang Shijie
-> (also, trimmed the CC list for this specific discussion, seems unrelated
-> to all of the parties)
->
-> Regards,
-> Shmulik
->
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
->
+Index an array with the low 8 (say) bits of the uid.
+Each item can be either:  
+  1) NULL => free entry.
+  2) a pointer to a uid structure (check uid value).
+  3) a pointer to an array to index with the next 8 bits.
+(2) and (3) can be differentiated by the low address bit.
+I think that is updateable with cmpxchg.
+
+Clearly this is a bad algorithm if uids are all multiples of 2^24
+but that is true or any hash function.
+
+	David
+
 
 
