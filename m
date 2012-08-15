@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab2HOULH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:11:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37033 "EHLO
+	id S1757219Ab2HOULq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:11:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37028 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756940Ab2HOTv6 (ORCPT
+	with ESMTP id S1756934Ab2HOTv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:58 -0400
+	Wed, 15 Aug 2012 15:51:57 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Petr Uzel <petr.uzel@suse.cz>, James Bottomley <JBottomley@parallels.com>,
+CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 120/165] [SCSI] st: fix race in st_scsi_execute_end
-Date: Wed, 15 Aug 2012 15:47:44 -0400
-Message-ID: <1345060109-9187-121-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 114/165] timekeeping: Fix leapsecond triggered load spike issue
+Date: Wed, 15 Aug 2012 15:47:38 -0400
+Message-ID: <1345060109-9187-115-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Uzel <petr.uzel@suse.cz>
+From: John Stultz <johnstul@us.ibm.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,48 +32,55 @@ From: Petr Uzel <petr.uzel@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c68bf8eeaa57c852e74adcf597237be149eef830 upstream.
+commit 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51 upstream.
 
-The call to complete() in st_scsi_execute_end() wakes up sleeping thread
-in write_behind_check(), which frees the st_request, thus invalidating
-the pointer to the associated bio structure, which is then passed to the
-blk_rq_unmap_user(). Fix by storing pointer to bio structure into
-temporary local variable.
+The timekeeping code misses an update of the hrtimer subsystem after a
+leap second happened. Due to that timers based on CLOCK_REALTIME are
+either expiring a second early or late depending on whether a leap
+second has been inserted or deleted until an operation is initiated
+which causes that update. Unless the update happens by some other
+means this discrepancy between the timekeeping and the hrtimer data
+stays forever and timers are expired either early or late.
 
-This bug is present since at least linux-2.6.32.
+The reported immediate workaround - $ data -s "`date`" - is causing a
+call to clock_was_set() which updates the hrtimer data structures.
+See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
-Reported-by: Juergen Groß <juergen.gross@ts.fujitsu.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Acked-by: Kai Mäkisara <kai.makisara@kolumbus.fi>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Add the missing clock_was_set() call to update_wall_time() in case of
+a leap second event. The actual update is deferred to softirq context
+as the necessary smp function call cannot be invoked from hard
+interrupt context.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/st.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 3ea1a71..516ca15 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -462,14 +462,16 @@ static void st_scsi_execute_end(struct request *req, int uptodate)
- {
- 	struct st_request *SRpnt = req->end_io_data;
- 	struct scsi_tape *STp = SRpnt->stp;
-+	struct bio *tmp;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index adfa89d..634c9ee 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -769,6 +769,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
  
- 	STp->buffer->cmdstat.midlevel_result = SRpnt->result = req->errors;
- 	STp->buffer->cmdstat.residual = req->resid_len;
- 
-+	tmp = SRpnt->bio;
- 	if (SRpnt->waiting)
- 		complete(SRpnt->waiting);
- 
--	blk_rq_unmap_user(SRpnt->bio);
-+	blk_rq_unmap_user(tmp);
- 	__blk_put_request(req->q, req);
- }
- 
+ 	/* Accumulate into raw time */
 -- 
 1.7.12.rc2
 
