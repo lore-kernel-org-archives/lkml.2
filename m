@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab2HOAqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:46:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57177 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2HOAq1 (ORCPT
+	id S1755056Ab2HOAuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:50:16 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60966 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab2HOAuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:46:27 -0400
-Message-ID: <502AF184.4010907@gmail.com>
-Date: Wed, 15 Aug 2012 02:47:00 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Tue, 14 Aug 2012 20:50:14 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, aarcange@redhat.com, ericvh@gmail.com,
-        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
-        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
-References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com> <1344961490-4068-3-git-send-email-levinsasha928@gmail.com> <87txw5hw0s.fsf@xmission.com>
-In-Reply-To: <87txw5hw0s.fsf@xmission.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Aug 2012 17:49:52 -0700
+Message-ID: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com>
+Subject: O_DIRECT to md raid 6 is slow
+To: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 01:52 AM, Eric W. Biederman wrote:
-> Sasha Levin <levinsasha928@gmail.com> writes:
-> 
->> Switch user_ns to use the new hashtable implementation. This reduces the amount of
->> generic unrelated code in user_ns.
-> 
-> Two concerns here.
-> 1) When adding a new entry you recompute the hash where previously that
->    was not done.  I believe that will slow down adding of new entries.
+If I do:
+# dd if=/dev/zero of=/dev/md0p1 bs=8M
+then iostat -m 5 says:
 
-I figured that the price for the extra hashing isn't significant since hash_32
-is just a multiplication and a shift.
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           0.00    0.00   26.88   35.27    0.00   37.85
 
-I'll modify the code to calculate the key just once.
+Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+sdb             265.20         1.16        54.79          5        273
+sdc             266.20         1.47        54.73          7        273
+sdd             264.20         1.38        54.54          6        272
+sdf             286.00         1.84        54.74          9        273
+sde             266.60         1.04        54.75          5        273
+sdg             265.00         1.02        54.74          5        273
+md0           55808.00         0.00       218.00          0       1090
 
-> 2) Using hash_32 for uids is an interesting choice.  hash_32 discards
->    the low bits.  Last I checked for uids the low bits were the bits
->    that were most likely to be different and had the most entropy.
-> 
->    I'm not certain how multiplying by the GOLDEN_RATION_PRIME_32 will
->    affect things but I would be surprised if it shifted all of the
->    randomness from the low bits to the high bits.
+If I do:
+# dd if=/dev/zero of=/dev/md0p1 bs=8M oflag=direct
+then iostat -m 5 says:
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           0.00    0.00   11.70   12.94    0.00   75.36
 
-"Is hash_* good enough for our purpose?" - I was actually surprised that no one
-raised that question during the RFC and assumed it was because everybody agreed
-that it's indeed good enough.
+Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+sdb             831.00         8.58        30.42         42        152
+sdc             832.80         8.05        29.99         40        149
+sdd             832.00         9.10        29.78         45        148
+sdf             838.40         9.11        29.72         45        148
+sde             828.80         7.91        29.79         39        148
+sdg             850.80         8.00        30.18         40        150
+md0            1012.60         0.00       101.27          0        506
 
-I can offer the following: I'll write a small module that will hash 1...10000
-into a hashtable which uses 7 bits (just like user_ns) and post the distribution
-we'll get.
+It looks like md isn't recognizing that I'm writing whole stripes when
+I'm in O_DIRECT mode.
 
-If the results of the above will be satisfactory we can avoid the discussion
-about which hash function we should really be using. If not, I guess now is a
-good time for that :)
+--Andy
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
