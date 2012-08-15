@@ -1,158 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2HOBnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 21:43:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24576 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2HOBnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 21:43:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,770,1336374000"; 
-   d="scan'208";a="134389831"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [UPDATE][PATCH -v3 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
-Date: Wed, 15 Aug 2012 09:43:03 +0800
-Message-Id: <1344994983-9092-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755584Ab2HOCSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 22:18:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41938 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab2HOCSL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 22:18:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120813175447.GB26088@phenom.dumpdata.com>
+References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
+	<1344677543-22591-10-git-send-email-chenhc@lemote.com>
+	<20120813175447.GB26088@phenom.dumpdata.com>
+Date: Wed, 15 Aug 2012 10:18:09 +0800
+Message-ID: <CAAhV-H5_p8Rs-Wnq_fVrP0Fq-ekdQHQXxfYw8PPX-Bz4TF1Mhw@mail.gmail.com>
+Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
+ memory (>4GB).
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following bug:
+On Tue, Aug 14, 2012 at 1:54 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
+>> +                             dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+>> +{
+>> +     void *ret;
+>> +
+>> +     if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
+>> +             return ret;
+>> +
+>> +     /* ignore region specifiers */
+>> +     gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
+>> +
+>> +#ifdef CONFIG_ZONE_DMA
+>> +     if (dev == NULL)
+>> +             gfp |= __GFP_DMA;
+>
+> When would this happen? dev == NULL?
+This can really happen, "grep dma_alloc_coherent drivers/ -rwI | grep
+NULL" will get lots of information.
 
-http://marc.info/?l=linux-pci&m=134338059022620&w=2
+>
+>> +     else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
+>> +             gfp |= __GFP_DMA;
+>> +     else
+>> +#endif
+>> +#ifdef CONFIG_ZONE_DMA32
+>> +     if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+>> +             gfp |= __GFP_DMA32;
+>> +     else
+>
+> Why the 'else'
+>> +#endif
+>> +     ;
+>
+> why?
+>> +     gfp |= __GFP_NORETRY;
+>> +
+>> +     ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
+>> +     mb();
+>
+> Why the 'mb()' ? Can you just do
+>         return swiotlb_alloc_coherent(...)
+>
+>> +     return ret;
+>> +}
+>> +
+>> +static void loongson_dma_free_coherent(struct device *dev, size_t size,
+>> +                             void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
+>> +{
+>> +     int order = get_order(size);
+>> +
+>> +     if (dma_release_from_coherent(dev, order, vaddr))
+>> +             return;
+>> +
+>> +     swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+>> +}
+>> +
+>> +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
+>> +                             unsigned long offset, size_t size,
+>> +                             enum dma_data_direction dir,
+>> +                             struct dma_attrs *attrs)
+>> +{
+>> +     dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
+>> +                                     dir, attrs);
+>> +     mb();
+>
+> Please do 'return swiotlb_map_page(..)'..
+mb() is needed because of cache coherency (CPU write some data, then
+map the page for a device, if without mb(), then device may read wrong
+data.)
 
-Where lspci does not work properly if a device and the corresponding
-parent bridge (such as PCIe port) is suspended.  This is because the
-device configuration space registers will be not accessible if the
-corresponding parent bridge is suspended or the device is put into
-D3cold state.
+>
+> But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
+> ?
+>
+>
+>> +     return daddr;
+>> +}
+>> +
+>> +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
+>> +                             int nents, enum dma_data_direction dir,
+>> +                             struct dma_attrs *attrs)
+>> +{
+>> +     int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
+>> +     mb();
+>> +
+>> +     return r;
+>> +}
+>> +
+>> +static void loongson_dma_sync_single_for_device(struct device *dev,
+>> +                             dma_addr_t dma_handle, size_t size,
+>> +                             enum dma_data_direction dir)
+>> +{
+>> +     swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
+>> +     mb();
+>> +}
+>> +
+>> +static void loongson_dma_sync_sg_for_device(struct device *dev,
+>> +                             struct scatterlist *sg, int nents,
+>> +                             enum dma_data_direction dir)
+>> +{
+>> +     swiotlb_sync_sg_for_device(dev, sg, nents, dir);
+>> +     mb();
+>> +}
+>> +
+>
+> I am not really sure why you have these extra functions, when you could
+> just modify the dma_ops to point to the swiotlb ones
+>
+>> +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
+>> +{
+>> +     return (paddr < 0x10000000) ?
+>> +                     (paddr | 0x0000000080000000) : paddr;
+>> +}
+>> +
+>> +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
+>> +{
+>> +     return (daddr < 0x90000000 && daddr >= 0x80000000) ?
+>> +                     (daddr & 0x0fffffff) : daddr;
+>> +}
+>> +
+>> +struct loongson_dma_map_ops {
+>> +     struct dma_map_ops dma_map_ops;
+>> +     dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
+>> +     phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
+>> +};
+>> +
+>> +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+>> +{
+>> +     struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+>> +                                     struct loongson_dma_map_ops, dma_map_ops);
+>> +
+>> +     return ops->phys_to_dma(dev, paddr);
+>> +}
+>> +
+>> +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+>> +{
+>> +     struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+>> +                                     struct loongson_dma_map_ops, dma_map_ops);
+>> +
+>> +     return ops->dma_to_phys(dev, daddr);
+>> +}
+>> +
+>> +static int loongson_dma_set_mask(struct device *dev, u64 mask)
+>> +{
+>> +     /* Loongson doesn't support DMA above 32-bit */
+>> +     if (mask > DMA_BIT_MASK(32))
+>> +             return -EIO;
+>> +
+>> +     *dev->dma_mask = mask;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
+>> +     .dma_map_ops = {
+>> +             .alloc = loongson_dma_alloc_coherent,
+>> +             .free = loongson_dma_free_coherent,
+>> +             .map_page = loongson_dma_map_page,
+>
+> But why not 'swiotlb_map_page'?
+>
+>> +             .unmap_page = swiotlb_unmap_page,
+>> +             .map_sg = loongson_dma_map_sg,
+>> +             .unmap_sg = swiotlb_unmap_sg_attrs,
+>> +             .sync_single_for_cpu = swiotlb_sync_single_for_cpu,
+>> +             .sync_single_for_device = loongson_dma_sync_single_for_device,
+>> +             .sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
+>> +             .sync_sg_for_device = loongson_dma_sync_sg_for_device,
+>> +             .mapping_error = swiotlb_dma_mapping_error,
+>> +             .dma_supported = swiotlb_dma_supported,
+>> +             .set_dma_mask = loongson_dma_set_mask
+>> +     },
+>> +     .phys_to_dma = loongson_unity_phys_to_dma,
+>> +     .dma_to_phys = loongson_unity_dma_to_phys
+>
+> Why do you need these? I am not seeing it being used here by any external code?
+phys_to_dma() and dma_to_phys() are called in lib/swiotlb.c
 
-To solve the issue, the bridge/PCIe port connected to the device is
-put into active state before read/write configuration space registers.
-If the device is in D3cold state, it will be put into active state
-too.
-
-To avoid resume/suspend PCIe port for each configuration register
-read/write, a small delay is added before the PCIe port to go
-suspended.
-
-Reported-by: Bjorn Mork <bjorn@mork.no>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/pci/pci-sysfs.c        |   42 +++++++++++++++++++++++++++++++++++++++++
- drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
- 2 files changed, 51 insertions(+)
-
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -458,6 +458,40 @@ boot_vga_show(struct device *dev, struct
- }
- struct device_attribute vga_attr = __ATTR_RO(boot_vga);
- 
-+static void
-+pci_config_pm_runtime_get(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	if (parent)
-+		pm_runtime_get_sync(parent);
-+	pm_runtime_get_noresume(dev);
-+	/*
-+	 * pdev->current_state is set to PCI_D3cold during suspending,
-+	 * so wait until suspending completes
-+	 */
-+	pm_runtime_barrier(dev);
-+	/*
-+	 * Only need to resume devices in D3cold, because config
-+	 * registers are still accessible for devices suspended but
-+	 * not in D3cold.
-+	 */
-+	if (pdev->current_state == PCI_D3cold)
-+		pm_runtime_resume(dev);
-+}
-+
-+static void
-+pci_config_pm_runtime_put(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	pm_runtime_put(dev);
-+	if (parent)
-+		pm_runtime_put_sync(parent);
-+}
-+
- static ssize_t
- pci_read_config(struct file *filp, struct kobject *kobj,
- 		struct bin_attribute *bin_attr,
-@@ -484,6 +518,8 @@ pci_read_config(struct file *filp, struc
- 		size = count;
- 	}
- 
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((off & 1) && size) {
- 		u8 val;
- 		pci_user_read_config_byte(dev, off, &val);
-@@ -529,6 +565,8 @@ pci_read_config(struct file *filp, struc
- 		--size;
- 	}
- 
-+	pci_config_pm_runtime_put(dev);
-+
- 	return count;
- }
- 
-@@ -549,6 +587,8 @@ pci_write_config(struct file* filp, stru
- 		count = size;
- 	}
- 	
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((off & 1) && size) {
- 		pci_user_write_config_byte(dev, off, data[off - init_off]);
- 		off++;
-@@ -587,6 +627,8 @@ pci_write_config(struct file* filp, stru
- 		--size;
- 	}
- 
-+	pci_config_pm_runtime_put(dev);
-+
- 	return count;
- }
- 
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
- {
- 	return 0;
- }
-+
-+static int pcie_port_runtime_idle(struct device *dev)
-+{
-+	/* Delay for a short while to prevent too frequent suspend/resume */
-+	pm_schedule_suspend(dev, 10);
-+	return -EBUSY;
-+}
- #else
- #define pcie_port_runtime_suspend	NULL
- #define pcie_port_runtime_resume	NULL
-+#define pcie_port_runtime_idle		NULL
- #endif
- 
- static const struct dev_pm_ops pcie_portdrv_pm_ops = {
-@@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
- 	.resume_noirq	= pcie_port_resume_noirq,
- 	.runtime_suspend = pcie_port_runtime_suspend,
- 	.runtime_resume = pcie_port_runtime_resume,
-+	.runtime_idle	= pcie_port_runtime_idle,
- };
- 
- #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
+>
+>> +};
+>> +
+>> +void __init plat_swiotlb_setup(void)
+>> +{
+>> +     swiotlb_init(1);
+>> +     mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
+>> +}
+>> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+>> index 3fab204..122f4f8 100644
+>> --- a/arch/mips/mm/dma-default.c
+>> +++ b/arch/mips/mm/dma-default.c
+>> @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
+>>              current_cpu_type() == CPU_R12000);
+>>  }
+>>
+>> +static inline int cpu_is_noncoherent_loongson(struct device *dev)
+>> +{
+>> +     return !plat_device_is_coherent(dev) &&
+>> +                     (current_cpu_type() == CPU_LOONGSON2 ||
+>> +                      current_cpu_type() == CPU_LOONGSON3);
+>> +}
+>> +
+>>  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+>>  {
+>>       gfp_t dma_flag;
+>> @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
+>>  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+>>       size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+>>  {
+>> -     if (cpu_is_noncoherent_r10000(dev))
+>> +     if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>               __dma_sync(dma_addr_to_page(dev, dma_addr),
+>>                          dma_addr & ~PAGE_MASK, size, direction);
+>>
+>> @@ -260,7 +267,7 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+>>  static void mips_dma_sync_single_for_cpu(struct device *dev,
+>>       dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+>>  {
+>> -     if (cpu_is_noncoherent_r10000(dev))
+>> +     if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>               __dma_sync(dma_addr_to_page(dev, dma_handle),
+>>                          dma_handle & ~PAGE_MASK, size, direction);
+>>  }
+>> @@ -281,7 +288,7 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+>>
+>>       /* Make sure that gcc doesn't leave the empty loop body.  */
+>>       for (i = 0; i < nelems; i++, sg++) {
+>> -             if (cpu_is_noncoherent_r10000(dev))
+>> +             if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
+>>                       __dma_sync(sg_page(sg), sg->offset, sg->length,
+>>                                  direction);
+>>       }
+>> --
+>> 1.7.7.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
