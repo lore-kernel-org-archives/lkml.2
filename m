@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab2HOHNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 03:13:34 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39104 "EHLO
+	id S1751930Ab2HOHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 03:30:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49181 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2HOHNd (ORCPT
+	with ESMTP id S1750946Ab2HOHax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 03:13:33 -0400
-Message-ID: <502B4C19.7060701@tremplin-utc.net>
-Date: Wed, 15 Aug 2012 09:13:29 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120724 Thunderbird/15.0
+	Wed, 15 Aug 2012 03:30:53 -0400
+Date: Wed, 15 Aug 2012 09:30:45 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Andy Gospodarek <gospo@redhat.com>, netdev@vger.kernel.org,
+        davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
+        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
+        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
+        fbl@redhat.com
+Subject: Re: [patch net-next v2 00/15] net: introduce upper device lists and
+ remove dev->master
+Message-ID: <20120815073045.GA1726@minipsycho.orion>
+References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
+ <20120814201950.GA17781@quad.redhat.com>
+ <1344976373.2690.41.camel@bwh-desktop.uk.solarflarecom.com>
 MIME-Version: 1.0
-To: Daniel Mack <zonque@gmail.com>
-CC: "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH v3 1/2] lis3: add generic DT matching code
-References: <1343633775-6268-1-git-send-email-zonque@gmail.com> <501E9CE2.20500@gmail.com> <331ABD5ECB02734CA317220B2BBEABC13EA0B8A5@DBDE01.ent.ti.com> <5021631D.1030505@gmail.com>
-In-Reply-To: <5021631D.1030505@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344976373.2690.41.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07-08-12 20:49, Daniel Mack wrote:
-:
+Tue, Aug 14, 2012 at 10:32:53PM CEST, bhutchings@solarflare.com wrote:
+>On Tue, 2012-08-14 at 16:19 -0400, Andy Gospodarek wrote:
+>> On Tue, Aug 14, 2012 at 05:05:33PM +0200, Jiri Pirko wrote:
+>> > Hi all.
+>> > 
+>> > Recent discussion around
+>> > "[net-next] bonding: don't allow the master to become its slave"
+>> > forced me to think about upper<->lower device connections.
+>> > 
+>> > This patchset adds a possibility to record upper device linkage.
+>> > All upper<->lower devices are converted to use this mechanism right after.
+>> > That leads to dev->master removal because this info becomes redundant since
+>> > "unique links" have the same value.
+>> > 
+>> > After all changes, there is no longer possible to do:
+>> > "bond->someotherdevice->samebond"
+>> > 
+>> > Also I think that drivers like cxgb3, qlcnic, qeth would benefit by this
+>> > in future by being able to get more appropriate info about l3 addresses.
+>> > 
+>> > v1->v2:
+>> > - s/unique/master/ better naming + stays closer to the history
+>> > - fixed vlan err goto
+>> > - original patch 15 (WARN_ON change) is squashed into the first patch
+>> > - fixed netdev_unique_upper_dev_get_rcu() case of upper==NULL
+>> I just started to review v1 when v2 came out, but luckily the changes
+>> were not too significant that I need to start all over.
+>> 
+>> The first note is that I didn't like the use of the term 'upper' -- it
+>> seems like 'stacked' might be a better alternative as these are stacked
+>> devices.
 >
-> I fixed all these issues now and attached a v4.
+>When linking any two devices in a stack, one will be upper and the other
+>lower.  The lower device might itself be stacked on top of a further
+>device, so 'stacked' is not a useful distinguishing adjective in
+>variable names.  It might be a useful term in the commit messages and
+>kernel-doc, though.
 >
-Sorry for the late reply, I had read the v3 but didn't find time to send 
-comments. They are all addressed in v4.
+>> One thing to note is that I don't see any clear changelog that states
+>> the current goals for this.  You have stated in several places that it
+>> will no longer be possible to create bonds of bonds, but there are
+>> probably a few more things it might be wise to intentionally outlaw.
+>>
+>> What about teams of teams?  Or teams of bonds?  Or bonds of teams?
+>> Bonds of vlans?
+>[...]
+>
+>It doesn't disallow bonds of bonds (unless I'm missing something).  It
+>disallows loops that involve any or all of those types of stacked
+>devices.
 
-For both [PATCH v4 1/2] and  [PATCH v3 2/2], here is my:
-Reviewed-by: Éric Piel <eric.piel@tremplin-utc.net>
+Exactly. It's every "upper driver" responsibility to check which device
+it allows to be added as lower.
 
-
-Cheers,
-Éric
+>
+>Ben.
+>
+>-- 
+>Ben Hutchings, Staff Engineer, Solarflare
+>Not speaking for my employer; that's the marketing department's job.
+>They asked us to note that Solarflare product names are trademarked.
+>
