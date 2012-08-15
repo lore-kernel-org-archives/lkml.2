@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab2HOVcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 17:32:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44504 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756446Ab2HOVcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 17:32:12 -0400
-Date: Wed, 15 Aug 2012 23:32:05 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-In-Reply-To: <20120815171635.2564a4a8@neptune.home>
-Message-ID: <alpine.LNX.2.00.1208152329580.7026@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home> <alpine.LNX.2.00.1208151016221.7026@pobox.suse.cz> <20120815114236.0f7db40e@neptune.home> <alpine.LNX.2.00.1208151409500.7026@pobox.suse.cz> <20120815171635.2564a4a8@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1757220Ab2HOVc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 17:32:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34449 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab2HOVc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 17:32:57 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH 00/14] net: info leaks and other bugs
+Date: Wed, 15 Aug 2012 23:31:43 +0200
+Message-Id: <1345066317-22512-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Bruno Prémont wrote:
+Hi David,
 
-> > I see. Alan Stern has fixed a huge pile of things in this area in 3.6-rc1. 
-> > I have expected all of those to actually be on theoretical problems not 
-> > ever having happened in the wild, but it might be that you are actually 
-> > chasing on of those.
-> >
-> > Could you please retest with latest Linus' tree (or at least eb055fd0560b) 
-> > to see whether this hasn't actually been fixed already by Alan's series?
-> 
-> I've started trying that out, it seems Alan's work improved things.
-> 
-> For the first few attempts I have not seen SLAB corruptions, though after
-> a few rounds I hit accumulation of the following messages:
-> [  297.174828] hid-picolcd 0003:04D8:C002.0003: output queue full
-> [  297.181098] hid-picolcd 0003:04D8:C002.0003: output queue full
-> [  297.187820] hid-picolcd 0003:04D8:C002.0003: output queue full
-> [  297.194087] hid-picolcd 0003:04D8:C002.0003: output queue full
-> 
-> with sporadically in between:
-> [  292.668019] hid-picolcd 0003:04D8:C002.0003: usb_submit_urb(out) failed: -1
-> 
-> At first glance I think the queue filling up and never draining is caused
-> by hid_hw_stop() stalling the queue and the time between both being just too
-> short.
+this series fixes quite a bunch of info leaks under net/. There is also
+one NULL pointer deref fix ("dccp: check ccid before..") that could be
+abused for privilege escalation.
 
-I don't really understand this explanation. Once usb_kill_urb() returns, 
-the URB should be available for future use (and therefore all queues 
-completely drained).
+The info leak fixes might be material for stable, too. But I leave the
+decision up to you.
+
+On request, test code for all (but one) of the issues can be provided.
+
+
+Regards,
+Mathias
+
+
+Mathias Krause (14):
+  atm: fix info leak in getsockopt(SO_ATMPVC)
+  atm: fix info leak via getsockname()
+  Bluetooth: HCI - Fix info leak in getsockopt(HCI_FILTER)
+  Bluetooth: HCI - Fix info leak via getsockname()
+  Bluetooth: RFCOMM - Fix info leak in getsockopt(BT_SECURITY)
+  Bluetooth: RFCOMM - Fix info leak in ioctl(RFCOMMGETDEVLIST)
+  Bluetooth: RFCOMM - Fix info leak via getsockname()
+  Bluetooth: L2CAP - Fix info leak via getsockname()
+  l2tp: fix info leak via getsockname()
+  llc: fix info leak via getsockname()
+  dccp: check ccid before dereferencing
+  dccp: fix info leak via getsockopt(DCCP_SOCKOPT_CCID_TX_INFO)
+  ipvs: fix info leak in getsockopt(IP_VS_SO_GET_TIMEOUT)
+  net: fix info leak in compat dev_ifconf()
+
+ net/atm/common.c               |    1 +
+ net/atm/pvc.c                  |    1 +
+ net/bluetooth/hci_sock.c       |    2 ++
+ net/bluetooth/l2cap_sock.c     |    1 +
+ net/bluetooth/rfcomm/sock.c    |    2 ++
+ net/bluetooth/rfcomm/tty.c     |    2 +-
+ net/dccp/ccid.h                |    4 ++--
+ net/dccp/ccids/ccid3.c         |    1 +
+ net/l2tp/l2tp_ip6.c            |    1 +
+ net/llc/af_llc.c               |    3 +--
+ net/netfilter/ipvs/ip_vs_ctl.c |    1 +
+ net/socket.c                   |    1 +
+ 12 files changed, 15 insertions(+), 5 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.10.4
+
