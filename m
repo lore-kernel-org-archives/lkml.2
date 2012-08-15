@@ -1,107 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab2HOOjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24912 "EHLO mx1.redhat.com"
+	id S1754650Ab2HOOnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:43:05 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:43857 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab2HOOjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:39:33 -0400
-Date: Wed, 15 Aug 2012 17:40:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120815144019.GH3068@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <87lihis5qi.fsf@rustcorp.com.au>
- <20120814083320.GA3597@redhat.com>
- <20120814184409.GC13338@t510.redhat.com>
- <20120814193109.GA28840@redhat.com>
- <20120815123457.GA2175@t510.redhat.com>
+	id S1754173Ab2HOOnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:43:03 -0400
+Date: Wed, 15 Aug 2012 16:42:55 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+Message-ID: <20120815144255.GB15989@aftab.osrc.amd.com>
+References: <1344864055.6935.117.camel@gandalf.stny.rr.com>
+ <20120813132438.GA18990@aftab.osrc.amd.com>
+ <1344867782.6935.119.camel@gandalf.stny.rr.com>
+ <20120813142909.GC18990@aftab.osrc.amd.com>
+ <20120813180249.GB6840@infradead.org>
+ <20120815102722.GB4640@aftab.osrc.amd.com>
+ <20120815130634.GE2370@infradead.org>
+ <20120815131806.GC4640@aftab.osrc.amd.com>
+ <1345041485.31459.89.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120815123457.GA2175@t510.redhat.com>
+In-Reply-To: <1345041485.31459.89.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 09:34:58AM -0300, Rafael Aquini wrote:
-> On Tue, Aug 14, 2012 at 10:31:09PM +0300, Michael S. Tsirkin wrote:
-> > > > now CPU1 executes the next instruction:
-> > > > 
-> > > > }
-> > > > 
-> > > > which would normally return to function's caller,
-> > > > but it has been overwritten by CPU2 so we get corruption.
-> > > > 
-> > > > No?
-> > > 
-> > > At the point CPU2 is unloading the module, it will be kept looping at the
-> > > snippet Rusty pointed out because the isolation / migration steps do not mess
-> > > with 'vb->num_pages'. The driver will only unload after leaking the total amount
-> > > of balloon's inflated pages, which means (for this hypothetical case) CPU2 will
-> > > wait until CPU1 finishes the putaback procedure.
-> > > 
-> > 
-> > Yes but only until unlock finishes. The last return from function
-> > is not guarded and can be overwritten.
-> 
-> CPU1 will be returning to putback_balloon_page() which code is located at core
-> mm/compaction.c, outside the driver.
+On Wed, Aug 15, 2012 at 04:38:05PM +0200, Peter Zijlstra wrote:
+> Because you're an idiot and made a typo ;-) Happens to me all the time.
 
-Sorry, I don't seem to be able to articulate this clearly.
-But this is a correctness issue so I am compelled to try again.
+I'm not an idiot - I'm perfection at its purest! :-)
 
-Here is some pseudo code:
+> The regular kernel build doesn't create non-existent O= targets either
+> iirc.
 
-int pages_lock;
-
-void virtballoon_isolatepage(void *page, unsigned long mode)
-{
-       pages_lock = 0;
-}
-
-assignment of 0 emulates spin unlock.
-I removed all other content. Now look at disassembly:
-
-080483d0 <virtballoon_isolatepage>:
-virtballoon_isolatepage():
- 80483d0:       c7 05 88 96 04 08 00    movl   $0x0,0x8049688
- 80483d7:       00 00 00 
-
-<----------- Above is "spin unlock"
-
- 80483da:       c3                      ret    
-
-^^^^
-Here we are still executing module code (one instruction of it!)
-after we have dropped the lock.
-
-
-So if module goes away at the point marked by <--------
-above (and nothing seems to prevent that,
-since pages_lock is unlocked), the last instruction can get overwritten
-and then random code will get executed instead.
-
-In the end the rule is simple: you can not
-prevent module unloading from within module
-itself. It always must be the caller of your
-module that uses some lock to do this.
-
-My proposal is to use rcu for this since it is lightweight
-and also does not require us to pass extra
-state around.
+Ok, I see. The kernel needs to protect itself against the people who
+wrote it :-).
 
 -- 
-MST
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
