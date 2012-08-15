@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2HONji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:39:38 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:42325 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab2HONjd (ORCPT
+	id S1754762Ab2HONj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:39:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34677 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754686Ab2HONj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:39:33 -0400
-Message-ID: <502BA6B4.9020106@gmail.com>
-Date: Wed, 15 Aug 2012 15:40:04 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Wed, 15 Aug 2012 09:39:56 -0400
+Date: Wed, 15 Aug 2012 14:39:23 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 04/31] arm64: MMU definitions
+Message-ID: <20120815133923.GA12596@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
+ <201208151330.02112.arnd@arndb.de>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
-References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com> <1344961490-4068-3-git-send-email-levinsasha928@gmail.com> <87txw5hw0s.fsf@xmission.com> <502AF184.4010907@gmail.com> <87393phshy.fsf@xmission.com> <502AFCD5.6070104@gmail.com> <87obmchmpu.fsf@xmission.com> <20120815033155.GA32653@Krystal>
-In-Reply-To: <20120815033155.GA32653@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151330.02112.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 05:31 AM, Mathieu Desnoyers wrote:
-> * Eric W. Biederman (ebiederm@xmission.com) wrote:
->> Sasha Levin <levinsasha928@gmail.com> writes:
->>
->>> On 08/15/2012 03:08 AM, Eric W. Biederman wrote:
->>>>> I can offer the following: I'll write a small module that will hash 1...10000
->>>>>> into a hashtable which uses 7 bits (just like user_ns) and post the distribution
->>>>>> we'll get.
->>>> That won't hurt.  I think 1-100 then 1000-1100 may actually be more
->>>> representative.  Not that I would mind seeing the larger range.
->>>> Especially since I am in the process of encouraging the use of more
->>>> uids.
->>>>
->>>
->>> Alrighty, the results are in (numbers are objects in bucket):
->>>
->>> For the 0...10000 range:
->>>
->>> Average: 78.125
->>> Std dev: 1.4197704151
->>> Min: 75
->>> Max: 80
->>>
->>>
->>> For the 1...100 range:
->>>
->>> Average: 0.78125
->>> Std dev: 0.5164613088
->>> Min: 0
->>> Max: 2
->>>
->>>
->>> For the 1000...1100 range:
->>>
->>> Average: 0.7890625
->>> Std dev: 0.4964812206
->>> Min: 0
->>> Max: 2
->>>
->>>
->>> Looks like hash_32 is pretty good with small numbers.
->>
->> Yes hash_32 seems reasonable for the uid hash.   With those long hash
->> chains I wouldn't like to be on a machine with 10,000 processes with
->> each with a different uid, and a processes calling setuid in the fast
->> path.
->>
->> The uid hash that we are playing with is one that I sort of wish that
->> the hash table could grow in size, so that we could scale up better.
-> 
-> Hi Eric,
-> 
-> If you want to try out something that has more features than a basic
-> hash table, already exists and is available for you to play with, you
-> might want to have a look at the RCU lock-free resizable hash table.
-> It's initially done in userspace, but shares the same RCU semantic as
-> the kernel, and has chunk-based kernel-friendly index backends (thanks
-> to Lai Jiangshan), very useful to integrate with the kernel page
-> allocator.
+Hi Arnd,
 
-I'm guessing that once this static hashtable is stable, a
-DEFINE_DYNAMIC_HASHTABLE() will get introduced which will evolve into something
-similar to what Mathieu has pointed out in the urcu.
+On Wed, Aug 15, 2012 at 02:30:01PM +0100, Arnd Bergmann wrote:
+> On Tuesday 14 August 2012, Catalin Marinas wrote:
+> > +/*
+> > + * TCR flags.
+> > + */
+> > +#define TCR_TxSZ(x)		(((64 - (x)) << 16) | ((64 - (x)) << 0))
+> > +#define TCR_IRGN_NC		((0 << 8) | (0 << 24))
+> > +#define TCR_IRGN_WBWA		((1 << 8) | (1 << 24))
+> > +#define TCR_IRGN_WT		((2 << 8) | (2 << 24))
+> > +#define TCR_IRGN_WBnWA		((3 << 8) | (3 << 24))
+> > +#define TCR_IRGN_MASK		((3 << 8) | (3 << 24))
+> > +#define TCR_ORGN_NC		((0 << 10) | (0 << 26))
+> > +#define TCR_ORGN_WBWA		((1 << 10) | (1 << 26))
+> > +#define TCR_ORGN_WT		((2 << 10) | (2 << 26))
+> > +#define TCR_ORGN_WBnWA		((3 << 10) | (3 << 26))
+> > +#define TCR_ORGN_MASK		((3 << 10) | (3 << 26))
+> > +#define TCR_SHARED		((3 << 12) | (3 << 28))
+> > +#define TCR_TG0_64K		(1 << 14)
+> > +#define TCR_TG1_64K		(1 << 30)
+> > +#define TCR_IPS_40BIT		(2 << 32)
+> > +#define TCR_ASID16		(1 << 36)
+> > +
+> 
+> As a matter of coding style, I would much prefer tables like this to be
+> written as
+> 
+> #define TCR_IRGN_MASK		0x0000000003000300
+> #define TCR_IRGN_WBnWA		0x0000000003000300
+> #define TCR_IRGN_WT		0x0000000002000200
+> #define TCR_IRGN_WBWA		0x0000000001000100
+> #define TCR_IRGN_NC		0x0000000000000000
+> 
+> #define TCR_ORGN_MASK		0x000000000c000c00
+> #define TCR_ORGN_WBnWA		0x000000000c000c00
+> #define TCR_ORGN_WT		0x0000000008000800
+> #define TCR_ORGN_WBWA		0x0000000004000400
+> #define TCR_ORGN_NC		0x0000000000000000
+> 
+> The advantage of this is that you can visually compare the bitmasks
+> to a hex dump, and if you are suffering from endian-confused documentation
+> authors, there is no ambiguity about which end of the word is bit zero.
 
+That depends on the case, in some places it's more readable like this.
+In the above case, I find it easier to compare against the documentation
+which, for example, has groups of 2 bits at position 8 and 24 or 10 and
+26 (for TTBR0 and TTBR1). The meaning of a group of 2 bits is described
+separately as 0b00 (NC), 0b01(WBWA) etc. Same goes for the shareability
+bits (12 and 28).
+
+So I think at least for code writing it's less error-prone to write the
+explicit bit position than a magic long hex.
+
+-- 
+Catalin
