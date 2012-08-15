@@ -1,233 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab2HOBlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 21:41:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1532 "EHLO mx1.redhat.com"
+	id S1755552Ab2HOBnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 21:43:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24576 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2HOBlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 21:41:18 -0400
-Date: Tue, 14 Aug 2012 21:25:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Yan Vugenfirer <yvugenfi@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, Jan Kiszka <jan.kiszka@siemens.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is
- panicked\
-Message-ID: <20120815002500.GA3615@amt.cnet>
-References: <20120813182132.GB25268@amt.cnet>
- <20120814085619.GA32708@redhat.com>
- <502A2B7A.3070801@siemens.com>
- <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com>
- <20120814154237.GA21284@amt.cnet>
- <87boidgvaq.fsf@codemonkey.ws>
- <20120814191927.GA6058@amt.cnet>
- <87txw5clmh.fsf@codemonkey.ws>
- <20120814205339.GA14172@amt.cnet>
- <877gt16pxh.fsf@codemonkey.ws>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gt16pxh.fsf@codemonkey.ws>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751287Ab2HOBnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 21:43:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,770,1336374000"; 
+   d="scan'208";a="134389831"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [UPDATE][PATCH -v3 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+Date: Wed, 15 Aug 2012 09:43:03 +0800
+Message-Id: <1344994983-9092-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 05:59:06PM -0500, Anthony Liguori wrote:
-> Marcelo Tosatti <mtosatti@redhat.com> writes:
-> 
-> > On Tue, Aug 14, 2012 at 02:35:34PM -0500, Anthony Liguori wrote:
-> >> Marcelo Tosatti <mtosatti@redhat.com> writes:
-> >> 
-> >> > On Tue, Aug 14, 2012 at 01:53:01PM -0500, Anthony Liguori wrote:
-> >> >> Marcelo Tosatti <mtosatti@redhat.com> writes:
-> >> >> 
-> >> >> > On Tue, Aug 14, 2012 at 05:55:54PM +0300, Yan Vugenfirer wrote:
-> >> >> >> 
-> >> >> >> On Aug 14, 2012, at 1:42 PM, Jan Kiszka wrote:
-> >> >> >> 
-> >> >> >> > On 2012-08-14 10:56, Daniel P. Berrange wrote:
-> >> >> >> >> On Mon, Aug 13, 2012 at 03:21:32PM -0300, Marcelo Tosatti wrote:
-> >> >> >> >>> On Wed, Aug 08, 2012 at 10:43:01AM +0800, Wen Congyang wrote:
-> >> >> >> >>>> We can know the guest is panicked when the guest runs on xen.
-> >> >> >> >>>> But we do not have such feature on kvm.
-> >> >> >> >>>> 
-> >> >> >> >>>> Another purpose of this feature is: management app(for example:
-> >> >> >> >>>> libvirt) can do auto dump when the guest is panicked. If management
-> >> >> >> >>>> app does not do auto dump, the guest's user can do dump by hand if
-> >> >> >> >>>> he sees the guest is panicked.
-> >> >> >> >>>> 
-> >> >> >> >>>> We have three solutions to implement this feature:
-> >> >> >> >>>> 1. use vmcall
-> >> >> >> >>>> 2. use I/O port
-> >> >> >> >>>> 3. use virtio-serial.
-> >> >> >> >>>> 
-> >> >> >> >>>> We have decided to avoid touching hypervisor. The reason why I choose
-> >> >> >> >>>> choose the I/O port is:
-> >> >> >> >>>> 1. it is easier to implememt
-> >> >> >> >>>> 2. it does not depend any virtual device
-> >> >> >> >>>> 3. it can work when starting the kernel
-> >> >> >> >>> 
-> >> >> >> >>> How about searching for the "Kernel panic - not syncing" string 
-> >> >> >> >>> in the guests serial output? Say libvirtd could take an action upon
-> >> >> >> >>> that?
-> >> >> >> >> 
-> >> >> >> >> No, this is not satisfactory. It depends on the guest OS being
-> >> >> >> >> configured to use the serial port for console output which we
-> >> >> >> >> cannot mandate, since it may well be required for other purposes.
-> >> >> >> > 
-> >> >> >> Please don't forget Windows guests, there is no console and no "Kernel Panic" string ;)
-> >> >> >> 
-> >> >> >> What I used for debugging purposes on Windows guest is to register a bugcheck callback in virtio-net driver and write 1 to VIRTIO_PCI_ISR register.
-> >> >> >> 
-> >> >> >> Yan. 
-> >> >> >
-> >> >> > Considering whether a "panic-device" should cover other OSes is also \
-> >> >
-> >> >> > something to consider. Even for Linux, is "panic" the only case which
-> >> >> > should be reported via the mechanism? What about oopses without panic? 
-> >> >> >
-> >> >> > Is the mechanism general enough for supporting new events, etc.
-> >> >> 
-> >> >> Hi,
-> >> >> 
-> >> >> I think this discussion is gone of the deep end.
-> >> >> 
-> >> >> Forget about !x86 platforms.  They have their own way to do this sort of
-> >> >> thing.  
-> >> >
-> >> > The panic function in kernel/panic.c has the following options, which
-> >> > appear to be arch independent, on panic:
-> >> >
-> >> > - reboot 
-> >> > - blink
-> >> 
-> >> Not sure the semantics of blink but that might be a good place for a
-> >> pvops hook.
-> >> 
-> >> >
-> >> > None are paravirtual interfaces however.
-> >> >
-> >> >> Think of this feature like a status LED on a motherboard.  These
-> >> >> are very common and usually controlled by IO ports.
-> >> >> 
-> >> >> We're simply reserving a "status LED" for the guest to indicate that it
-> >> >> has paniced.  Let's not over engineer this.
-> >> >
-> >> > My concern is that you end up with state that is dependant on x86.
-> >> >
-> >> > Subject: [PATCH v8 3/6] add a new runstate: RUN_STATE_GUEST_PANICKED
-> >> >
-> >> > Having the ability to stop/restart the guest (and even introducing a 
-> >> > new VM runstate) is more than a status LED analogy.
-> >> 
-> >> I must admit, I don't know why a new runstate is necessary/useful.  The
-> >> kernel shouldn't have to care about the difference between a halted guest
-> >> and a panicked guest.  That level of information belongs in userspace IMHO.
-> >> 
-> >> > Can this new infrastructure be used by other architectures?
-> >> 
-> >> I guess I don't understand why the kernel side of this isn't anything
-> >> more than a paravirt op hook that does a single outb() with the
-> >> remaining logic handled 100% in QEMU.
-> >
-> > From the patch description:
-> >
-> > "Another purpose of this feature is: management app(for example:
-> > libvirt) can do auto dump when the guest is panicked. If management
-> > app does not do auto dump, the guest's user can do dump by hand if
-> > he sees the guest is panicked."
-> 
-> Why does this mandated another runstate?  
+This patch fixes the following bug:
 
-Good question.
+http://marc.info/?l=linux-pci&m=134338059022620&w=2
 
-> QEMU can simply mark the VCPUs as stopped and raise a QMP event.
+Where lspci does not work properly if a device and the corresponding
+parent bridge (such as PCIe port) is suspended.  This is because the
+device configuration space registers will be not accessible if the
+corresponding parent bridge is suspended or the device is put into
+D3cold state.
 
-Yes. As long as management app is able to find out for what the reason
-the VM has been stopped (that is, its not an issue to lose the QMP
-event).
+To solve the issue, the bridge/PCIe port connected to the device is
+put into active state before read/write configuration space registers.
+If the device is in D3cold state, it will be put into active state
+too.
 
-> The kernel doesn't care if the VCPUs
-> are stopped or panicked.
-> > Wen, auto dump means dump of guest memory?
-> >
-> > In that case, the notification should obviously stop the guest 
-> > otherwise the guest might be reset by the time memdump from QEMU 
-> > monitor runs.
-> >
-> > But kexec supports dumping of memory already (i suppose it can 
-> > do automatic dump+{reboot,shutdown}).
-> >
-> >> > Do you consider allowing support for Windows as overengineering?
-> >> 
-> >> I don't think there is a way to hook BSOD on Windows so attempting to
-> >> engineer something that works with Windows seems odd, no?
-> >
-> > Unsure about hooking at BSOD time. But Windows has configurable 
-> > memory dump/reset/reboot, so yes it should not necessary.
-> 
-> Do you mean it's not necessary to hook BSOD?
+To avoid resume/suspend PCIe port for each configuration register
+read/write, a small delay is added before the PCIe port to go
+suspended.
 
-If all you need is dumping memory and rebooting the guest, then Windows
-can do that automatically. Linux probably does, if not its possible 
-to make it do so.
+Reported-by: Bjorn Mork <bjorn@mork.no>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/pci/pci-sysfs.c        |   42 +++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
+ 2 files changed, 51 insertions(+)
 
-> I've very often gotten asked: We know 1 person is experiencing this
-> crash condition, can we figure out from the host how many other VMs are
-> experiencing this crash too instead of waiting for a user to complain?
-> 
-> That's the primary use-case for this notification IMHO.  Just a simple
-> status LED from the guest to indicate that it's in a bad state.
-
-That makes sense. But it appears to me that using an interface which is
-not specific to x86 is interesting, so as to not require another
-driver and matching QEMU code for other architectures. That is, 
-for the "paravirtual status-LED-on-panic", there is no advantage 
-in making every architecture different.
-
-Also configuration of reboot-on-panic should override
-panic-via-hypervisor (guest settings have priority over
-panic-via-hypervisor).
-
-For the usecase above (recording a critical event), it also makes sense
-to support Windows.
-
-
-> Regards,
-> 
-> Anthony Liguori
-> 
-> >
-> >> 
-> >> Regards,
-> >> 
-> >> Anthony Liguori
-> >> 
-> >> >
-> >> >> Regards,
-> >> >> 
-> >> >> Anthony Liguori
-> >> >> 
-> >> >> >
-> >> >> >> 
-> >> >> >> > Well, we have more than a single serial port, even when leaving
-> >> >> >> > virtio-serial aside...
-> >> >> >> > 
-> >> >> >> > Jan
-> >> >> >> > 
-> >> >> >> > -- 
-> >> >> >> > Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-> >> >> >> > Corporate Competence Center Embedded Linux
-> >> >> >> > --
-> >> >> >> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >> >> >> > the body of a message to majordomo@vger.kernel.org
-> >> >> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -458,6 +458,40 @@ boot_vga_show(struct device *dev, struct
+ }
+ struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+ 
++static void
++pci_config_pm_runtime_get(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	if (parent)
++		pm_runtime_get_sync(parent);
++	pm_runtime_get_noresume(dev);
++	/*
++	 * pdev->current_state is set to PCI_D3cold during suspending,
++	 * so wait until suspending completes
++	 */
++	pm_runtime_barrier(dev);
++	/*
++	 * Only need to resume devices in D3cold, because config
++	 * registers are still accessible for devices suspended but
++	 * not in D3cold.
++	 */
++	if (pdev->current_state == PCI_D3cold)
++		pm_runtime_resume(dev);
++}
++
++static void
++pci_config_pm_runtime_put(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	pm_runtime_put(dev);
++	if (parent)
++		pm_runtime_put_sync(parent);
++}
++
+ static ssize_t
+ pci_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+@@ -484,6 +518,8 @@ pci_read_config(struct file *filp, struc
+ 		size = count;
+ 	}
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		u8 val;
+ 		pci_user_read_config_byte(dev, off, &val);
+@@ -529,6 +565,8 @@ pci_read_config(struct file *filp, struc
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
+ }
+ 
+@@ -549,6 +587,8 @@ pci_write_config(struct file* filp, stru
+ 		count = size;
+ 	}
+ 	
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((off & 1) && size) {
+ 		pci_user_write_config_byte(dev, off, data[off - init_off]);
+ 		off++;
+@@ -587,6 +627,8 @@ pci_write_config(struct file* filp, stru
+ 		--size;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	return count;
+ }
+ 
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
+ {
+ 	return 0;
+ }
++
++static int pcie_port_runtime_idle(struct device *dev)
++{
++	/* Delay for a short while to prevent too frequent suspend/resume */
++	pm_schedule_suspend(dev, 10);
++	return -EBUSY;
++}
+ #else
+ #define pcie_port_runtime_suspend	NULL
+ #define pcie_port_runtime_resume	NULL
++#define pcie_port_runtime_idle		NULL
+ #endif
+ 
+ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+@@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
+ 	.resume_noirq	= pcie_port_resume_noirq,
+ 	.runtime_suspend = pcie_port_runtime_suspend,
+ 	.runtime_resume = pcie_port_runtime_resume,
++	.runtime_idle	= pcie_port_runtime_idle,
+ };
+ 
+ #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
