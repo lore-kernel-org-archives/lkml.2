@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2HOUSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:18:55 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62960 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab2HOTvB (ORCPT
+	id S1756824Ab2HOUSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:18:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36872 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756724Ab2HOTvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:01 -0400
+	Wed, 15 Aug 2012 15:51:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+CC: Vasily Averin <vvs@parallels.com>, Vasily Averin <vvs@sw.ru>,
+        James Bottomley <JBottomley@parallels.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 088/165] ASoC: ak4535: fixup cache register table
-Date: Wed, 15 Aug 2012 15:47:12 -0400
-Message-ID: <1345060109-9187-89-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 055/165] aacraid: reset should disable MSI interrupt
+Date: Wed, 15 Aug 2012 15:46:39 -0400
+Message-ID: <1345060109-9187-56-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Vasily Averin <vvs@parallels.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,38 +32,37 @@ From: Axel Lin <axel.lin@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7c04241acbdaf97f1448dcccd27ea0fcd1a57684 upstream.
+commit d0efab26f89506387a1bde898556660e06d7eb15 upstream.
 
-ak4535_reg should be 8bit, but cache table is defined as 16bit.
+scsi reset on hardware with enabled MSI interrupts generates WARNING message
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[11027.798722] aacraid: Host adapter abort request (0,0,0,0)
+[11027.798814] aacraid: Host adapter reset request. SCSI hang ?
+[11087.762237] aacraid: SCSI bus appears hung
+[11135.082543] ------------[ cut here ]------------
+[11135.082646] WARNING: at drivers/pci/msi.c:658 pci_enable_msi_block+0x251/0x290()
+
+Signed-off-by: Vasily Averin <vvs@sw.ru>
+Acked-by: Mark Salyzyn <mark_salyzyn@us.xyratex.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/soc/codecs/ak4535.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/scsi/aacraid/commsup.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/soc/codecs/ak4535.c b/sound/soc/codecs/ak4535.c
-index 352d1d0..133d8f5 100644
---- a/sound/soc/codecs/ak4535.c
-+++ b/sound/soc/codecs/ak4535.c
-@@ -41,11 +41,11 @@ struct ak4535_priv {
- /*
-  * ak4535 register cache
-  */
--static const u16 ak4535_reg[AK4535_CACHEREGNUM] = {
--    0x0000, 0x0080, 0x0000, 0x0003,
--    0x0002, 0x0000, 0x0011, 0x0001,
--    0x0000, 0x0040, 0x0036, 0x0010,
--    0x0000, 0x0000, 0x0057, 0x0000,
-+static const u8 ak4535_reg[AK4535_CACHEREGNUM] = {
-+	0x00, 0x80, 0x00, 0x03,
-+	0x02, 0x00, 0x11, 0x01,
-+	0x00, 0x40, 0x36, 0x10,
-+	0x00, 0x00, 0x57, 0x00,
- };
- 
- /*
+diff --git a/drivers/scsi/aacraid/commsup.c b/drivers/scsi/aacraid/commsup.c
+index 94d2954..2cb663f 100644
+--- a/drivers/scsi/aacraid/commsup.c
++++ b/drivers/scsi/aacraid/commsup.c
+@@ -1242,6 +1242,8 @@ static int _aac_reset_adapter(struct aac_dev *aac, int forced)
+ 	kfree(aac->queues);
+ 	aac->queues = NULL;
+ 	free_irq(aac->pdev->irq, aac);
++	if (aac->msi)
++		pci_disable_msi(aac->pdev);
+ 	kfree(aac->fsa_dev);
+ 	aac->fsa_dev = NULL;
+ 	quirks = aac_get_driver_ident(index)->quirks;
 -- 
 1.7.12.rc2
 
