@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab2HORIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:08:46 -0400
+	id S1755618Ab2HORIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:08:51 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:50494 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039Ab2HORIm (ORCPT
+	with ESMTP id S1755462Ab2HORIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:42 -0400
+	Wed, 15 Aug 2012 13:08:46 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
         Ian Molton <ian.molton@codethink.co.uk>,
         Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v3 4/6] ARM: dove: add device tree based machine descriptor
-Date: Wed, 15 Aug 2012 19:07:33 +0200
-Message-Id: <1345050455-32643-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v3 6/6] ARM: dove: SolidRun CuBox DT
+Date: Wed, 15 Aug 2012 19:07:35 +0200
+Message-Id: <1345050455-32643-7-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,10 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic DT_MACHINE for mach-dove. As with other orion based
-SoCs there still is some glue code required to make all internal devices
-work, i.e. auxdata is provided to pass clocks to corresponding device
-drivers.
+This patch adds basic support for the SolidRun CuBox to DT based
+mach-dove. There are still some issues related to ongoing orion/mvebu
+development, e.g. gpio-led will not work as there is no DT pinctrl
+for dove yet and we don't have board specific setup code. Nevertheless,
+the DT description is already introduced here.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -42,117 +43,68 @@ Cc: Ian Molton <ian.molton@codethink.co.uk>
 Cc: Maen Suleiman <maen@marvell.com>
 Cc: Olof Johansson <olof@lixom.net>
 ---
- arch/arm/mach-dove/Kconfig  |    7 +++++
- arch/arm/mach-dove/common.c |   67 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 74 insertions(+)
+ arch/arm/boot/dts/dove-cubox.dts |   42 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-dove/Makefile.boot |    1 +
+ 2 files changed, 43 insertions(+)
+ create mode 100644 arch/arm/boot/dts/dove-cubox.dts
 
-diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
-index dd937c5..00154e7 100644
---- a/arch/arm/mach-dove/Kconfig
-+++ b/arch/arm/mach-dove/Kconfig
-@@ -15,6 +15,13 @@ config MACH_CM_A510
- 	  Say 'Y' here if you want your kernel to support the
- 	  CompuLab CM-A510 Board.
+diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+new file mode 100644
+index 0000000..0adbd5a
+--- /dev/null
++++ b/arch/arm/boot/dts/dove-cubox.dts
+@@ -0,0 +1,42 @@
++/dts-v1/;
++
++/include/ "dove.dtsi"
++
++/ {
++	model = "SolidRun CuBox";
++	compatible = "solidrun,cubox", "marvell,dove";
++
++	memory {
++		device_type = "memory";
++		reg = <0x00000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8 earlyprintk";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		power {
++			label = "Power";
++			gpios = <&gpio0 18 1>;
++			linux,default-trigger = "default-on";
++		};
++	};
++};
++
++&uart0 { status = "okay"; };
++&sdio0 { status = "okay"; };
++&sata0 { status = "okay"; };
++&i2c0 { status = "okay"; };
++
++&spi0 {
++	status = "okay";
++
++	/* spi0.0: 4M Flash Winbond W25Q32BV */
++	spi-flash@0 {
++		compatible = "st,w25q32";
++		spi-max-frequency = <20000000>;
++		reg = <0>;
++	};
++};
+diff --git a/arch/arm/mach-dove/Makefile.boot b/arch/arm/mach-dove/Makefile.boot
+index 94ab6b3..cfac9c5 100644
+--- a/arch/arm/mach-dove/Makefile.boot
++++ b/arch/arm/mach-dove/Makefile.boot
+@@ -4,3 +4,4 @@ initrd_phys-y	:= 0x00800000
  
-+config MACH_DOVE_DT
-+	bool "Marvell Dove Flattened Device Tree"
-+	select USE_OF
-+	help
-+	  Say 'Y' here if you want your kernel to support the
-+	  Marvell Dove using flattened device tree.
-+
- endmenu
- 
- endif
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index 66689ce..810ea15 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -16,6 +16,8 @@
- #include <linux/clk-provider.h>
- #include <linux/ata_platform.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
- #include <asm/page.h>
- #include <asm/setup.h>
- #include <asm/timex.h>
-@@ -29,6 +31,7 @@
- #include <asm/mach/arch.h>
- #include <linux/irq.h>
- #include <plat/time.h>
-+#include <plat/irq.h>
- #include <plat/ehci-orion.h>
- #include <plat/common.h>
- #include <plat/addr-map.h>
-@@ -379,3 +382,67 @@ void dove_restart(char mode, const char *cmd)
- 	while (1)
- 		;
- }
-+
-+#if defined(CONFIG_MACH_DOVE_DT)
-+/*
-+ * Auxdata required until real OF clock provider
-+ */
-+struct of_dev_auxdata dove_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("marvell,orion-spi", 0xf1010600, "orion_spi.0", NULL),
-+	OF_DEV_AUXDATA("marvell,orion-spi", 0xf1014600, "orion_spi.1", NULL),
-+	OF_DEV_AUXDATA("marvell,orion-wdt", 0xf1020300, "orion_wdt", NULL),
-+	OF_DEV_AUXDATA("marvell,mv64xxx-i2c", 0xf1011000, "mv64xxx_i2c.0",
-+		       NULL),
-+	OF_DEV_AUXDATA("marvell,orion-sata", 0xf10a0000, "sata_mv.0", NULL),
-+	OF_DEV_AUXDATA("marvell,dove-sdhci", 0xf1092000, "sdhci-dove.0", NULL),
-+	OF_DEV_AUXDATA("marvell,dove-sdhci", 0xf1090000, "sdhci-dove.1", NULL),
-+	{},
-+};
-+
-+static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
-+	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
-+};
-+
-+static void __init dove_dt_init(void)
-+{
-+	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
-+		(dove_tclk + 499999) / 1000000);
-+
-+#ifdef CONFIG_CACHE_TAUROS2
-+	tauros2_init();
-+#endif
-+	dove_setup_cpu_mbus();
-+
-+	/* Setup root of clk tree */
-+	dove_clk_init();
-+
-+	/* Internal devices not ported to DT yet */
-+	dove_rtc_init();
-+	dove_xor0_init();
-+	dove_xor1_init();
-+
-+	dove_ge00_init(&dove_dt_ge00_data);
-+	dove_ehci0_init();
-+	dove_ehci1_init();
-+	dove_pcie_init(1, 1);
-+	dove_crypto_init();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table,
-+			     dove_auxdata_lookup, NULL);
-+}
-+
-+static const char * const dove_dt_board_compat[] = {
-+	"marvell,dove",
-+	NULL
-+};
-+
-+DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
-+	.map_io		= dove_map_io,
-+	.init_early	= dove_init_early,
-+	.init_irq	= orion_dt_init_irq,
-+	.timer		= &dove_timer,
-+	.init_machine	= dove_dt_init,
-+	.restart	= dove_restart,
-+	.dt_compat	= dove_dt_board_compat,
-+MACHINE_END
-+#endif
+ dtb-$(CONFIG_MACH_DOVE_DT) += dove-dove-db.dtb
+ dtb-$(CONFIG_MACH_DOVE_DT) += dove-cm-a510.dtb
++dtb-$(CONFIG_MACH_DOVE_DT) += dove-cubox.dtb
 -- 
 1.7.10.4
 
