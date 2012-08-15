@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab2HOODh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:03:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33567 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754823Ab2HOODf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:03:35 -0400
-Date: Wed, 15 Aug 2012 16:03:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Cc: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tilo =?utf-8?Q?M=C3=BCller?= 
-	<tilo.mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler implementation
-Message-ID: <20120815140331.GB4103@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-	Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-	Tilo =?utf-8?Q?M=C3=BCller?= <tilo.mueller@informatik.uni-erlangen.de>
-References: <20120527144919.GE17705@kronos.redsun>
- <20120815114216.209814z4mq3hxqe8@www.81.fi>
- <20120815092804.GA14676@x1.osrc.amd.com>
- <20120815140016.76673zs818g2hagw@www.81.fi>
- <20120815125220.GB4409@x1.osrc.amd.com>
- <20120815164854.11913imktb2fg90k@www.81.fi>
+	id S1755245Ab2HOODp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:03:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39027 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198Ab2HOODn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:03:43 -0400
+Date: Wed, 15 Aug 2012 07:03:37 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Henningsson <david.henningsson@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [ 10/44] ALSA: hda - remove quirk for Dell Vostro 1015
+Message-ID: <20120815140337.GA22871@kroah.com>
+References: <20120813220142.113186818@linuxfoundation.org>
+ <20120813220143.070291526@linuxfoundation.org>
+ <5029DF77.1010301@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120815164854.11913imktb2fg90k@www.81.fi>
+In-Reply-To: <5029DF77.1010301@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 04:48:54PM +0300, Jussi Kivilinna wrote:
-> I posted patch that optimize twofish-avx few weeks ago:
-> http://marc.info/?l=linux-crypto-vger&m=134364845024825&w=2
->
-> I'd be interested to know, if this is patch helps on Bulldozer.
+On Tue, Aug 14, 2012 at 07:17:43AM +0200, David Henningsson wrote:
+> On 08/14/2012 12:02 AM, Greg Kroah-Hartman wrote:
+> >From: Greg KH <gregkh@linuxfoundation.org>
+> >
+> >3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> As my previous email states, I still object to this patch being
+> applied to 3.0 (it is for 3.2+). Repeating that text now:
+> 
+> This patch will not work on 3.0 because there is no model=auto
+> fallback, so please remove it from 3.0-stable-queue.
+> 
+> In the original patch [1], the cc to stable was written as this:
+> 
+> Cc: stable@kernel.org (3.2+)
+> 
+> Is there a better way to specify what kernels it should and should
+> not be applied to, as it doesn't seem to have worked in this case?
+> 
+> [1] http://git.kernel.org/?p=linux/kernel/git/tiwai/sound.git;a=commit;h=e9fc83cb2e5877801a255a37ddbc5be996ea8046
 
-Sure, can you inline it here too please. The "Download message RAW" link
-on marc.info gives me a diff but patch says:
+No, that's my fault, sorry, I missed that marking and shouldn't have
+applied it there.  I'll go remove it right now from the queue.
 
-patching file arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-patch unexpectedly ends in middle of line
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+greg k-h
