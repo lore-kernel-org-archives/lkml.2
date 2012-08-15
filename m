@@ -1,132 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2HOULp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:11:45 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63043 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab2HOTv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:57 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 115/165] timekeeping: Maintain ktime_t based offsets for hrtimers
-Date: Wed, 15 Aug 2012 15:47:39 -0400
-Message-ID: <1345060109-9187-116-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757117Ab2HOUMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:12:35 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:38106 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756944Ab2HOUMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 16:12:33 -0400
+X-Greylist: delayed 899 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Aug 2012 16:12:32 EDT
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>
+Subject: [PATCH] rapidio/tsi721: fix inbound doorbell interrupt handling
+Date: Wed, 15 Aug 2012 15:55:48 -0400
+Message-Id: <1345060548-14859-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Make sure that there is no doorbell messages left behind due to disabled
+interrupts during inbound doorbell processing.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+The most common case for this bug is loss of rionet JOIN messages in
+systems with three or more rionet participants and MSI or MSI-X enabled.
+As result, requests for packet transfers may finish with
+"destination unreachable" error message.
 
-commit 5b9fe759a678e05be4937ddf03d50e950207c1c0 upstream.
+This patch is applicable to kernel versions starting from v3.2.
 
-We need to update the hrtimer clock offsets from the hrtimer interrupt
-context. To avoid conversions from timespec to ktime_t maintain a
-ktime_t based representation of those offsets in the timekeeper. This
-puts the conversion overhead into the code which updates the
-underlying offsets and provides fast accessible values in the hrtimer
-interrupt.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
 ---
- kernel/time/timekeeping.c | 25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 634c9ee..3d443b4 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -161,18 +161,34 @@ struct timespec xtime __attribute__ ((aligned (16)));
- struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
-+/* Offset clock monotonic -> clock realtime */
-+static ktime_t offs_real;
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 722246c..c0d6a04 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -435,6 +435,9 @@ static void tsi721_db_dpc(struct work_struct *work)
+ 				" info %4.4x\n", DBELL_SID(idb.bytes),
+ 				DBELL_TID(idb.bytes), DBELL_INF(idb.bytes));
+ 		}
 +
-+/* Offset clock monotonic -> clock boottime */
-+static ktime_t offs_boot;
-+
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-  */
- struct timespec raw_time;
- 
- /* must hold write on xtime_lock */
-+static void update_rt_offset(void)
-+{
-+	struct timespec tmp, *wtm = &wall_to_monotonic;
-+
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	offs_real = timespec_to_ktime(tmp);
-+}
-+
-+/* must hold write on xtime_lock */
- static void timekeeping_update(bool clearntp)
- {
- 	if (clearntp) {
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
++		wr_ptr = ioread32(priv->regs +
++				  TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
  	}
-+	update_rt_offset();
- 	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
+ 
+ 	iowrite32(rd_ptr & (IDB_QSIZE - 1),
+@@ -445,6 +448,10 @@ static void tsi721_db_dpc(struct work_struct *work)
+ 	regval |= TSI721_SR_CHINT_IDBQRCV;
+ 	iowrite32(regval,
+ 		priv->regs + TSI721_SR_CHINTE(IDB_QUEUE));
++
++	wr_ptr = ioread32(priv->regs + TSI721_IDQ_WP(IDB_QUEUE)) % IDB_QSIZE;
++	if (wr_ptr != rd_ptr)
++		schedule_work(&priv->idb_work);
  }
  
-@@ -565,6 +581,7 @@ void __init timekeeping_init(void)
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
- 	update_xtime_cache(0);
-+	update_rt_offset();
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -573,6 +590,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
- 
-+static void update_sleep_time(struct timespec t)
-+{
-+	total_sleep_time = t;
-+	offs_boot = timespec_to_ktime(t);
-+}
-+
  /**
-  * timekeeping_resume - Resumes the generic timekeeping subsystem.
-  * @dev:	unused
-@@ -596,7 +619,7 @@ static int timekeeping_resume(struct sys_device *dev)
- 		ts = timespec_sub(ts, timekeeping_suspend_time);
- 		xtime = timespec_add_safe(xtime, ts);
- 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
--		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
-+		update_sleep_time(timespec_add_safe(total_sleep_time, ts));
- 	}
- 	update_xtime_cache(0);
- 	/* re-base the last cycle value */
 -- 
-1.7.12.rc2
+1.7.8.4
 
