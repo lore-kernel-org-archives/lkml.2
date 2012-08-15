@@ -1,87 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2HONj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:39:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34677 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754686Ab2HONj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:39:56 -0400
-Date: Wed, 15 Aug 2012 14:39:23 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 04/31] arm64: MMU definitions
-Message-ID: <20120815133923.GA12596@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
- <201208151330.02112.arnd@arndb.de>
+	id S1754784Ab2HONkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:40:13 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:50454 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754686Ab2HONkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 09:40:09 -0400
+Message-ID: <502BA6AE.9000209@parallels.com>
+Date: Wed, 15 Aug 2012 17:39:58 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208151330.02112.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-8-git-send-email-glommer@parallels.com> <20120814151616.GO4177@suse.de> <502B66F8.30909@parallels.com> <20120815132244.GQ4177@suse.de>
+In-Reply-To: <20120815132244.GQ4177@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On Wed, Aug 15, 2012 at 02:30:01PM +0100, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
-> > +/*
-> > + * TCR flags.
-> > + */
-> > +#define TCR_TxSZ(x)		(((64 - (x)) << 16) | ((64 - (x)) << 0))
-> > +#define TCR_IRGN_NC		((0 << 8) | (0 << 24))
-> > +#define TCR_IRGN_WBWA		((1 << 8) | (1 << 24))
-> > +#define TCR_IRGN_WT		((2 << 8) | (2 << 24))
-> > +#define TCR_IRGN_WBnWA		((3 << 8) | (3 << 24))
-> > +#define TCR_IRGN_MASK		((3 << 8) | (3 << 24))
-> > +#define TCR_ORGN_NC		((0 << 10) | (0 << 26))
-> > +#define TCR_ORGN_WBWA		((1 << 10) | (1 << 26))
-> > +#define TCR_ORGN_WT		((2 << 10) | (2 << 26))
-> > +#define TCR_ORGN_WBnWA		((3 << 10) | (3 << 26))
-> > +#define TCR_ORGN_MASK		((3 << 10) | (3 << 26))
-> > +#define TCR_SHARED		((3 << 12) | (3 << 28))
-> > +#define TCR_TG0_64K		(1 << 14)
-> > +#define TCR_TG1_64K		(1 << 30)
-> > +#define TCR_IPS_40BIT		(2 << 32)
-> > +#define TCR_ASID16		(1 << 36)
-> > +
+>>
+>> As for the type, do you think using struct mem_cgroup would be less
+>> confusing?
+>>
 > 
-> As a matter of coding style, I would much prefer tables like this to be
-> written as
-> 
-> #define TCR_IRGN_MASK		0x0000000003000300
-> #define TCR_IRGN_WBnWA		0x0000000003000300
-> #define TCR_IRGN_WT		0x0000000002000200
-> #define TCR_IRGN_WBWA		0x0000000001000100
-> #define TCR_IRGN_NC		0x0000000000000000
-> 
-> #define TCR_ORGN_MASK		0x000000000c000c00
-> #define TCR_ORGN_WBnWA		0x000000000c000c00
-> #define TCR_ORGN_WT		0x0000000008000800
-> #define TCR_ORGN_WBWA		0x0000000004000400
-> #define TCR_ORGN_NC		0x0000000000000000
-> 
-> The advantage of this is that you can visually compare the bitmasks
-> to a hex dump, and if you are suffering from endian-confused documentation
-> authors, there is no ambiguity about which end of the word is bit zero.
+> Yes and returning the mem_cgroup or NULL instead of bool.
 
-That depends on the case, in some places it's more readable like this.
-In the above case, I find it easier to compare against the documentation
-which, for example, has groups of 2 bits at position 8 and 24 or 10 and
-26 (for TTBR0 and TTBR1). The meaning of a group of 2 bits is described
-separately as 0b00 (NC), 0b01(WBWA) etc. Same goes for the shareability
-bits (12 and 28).
+Ok. struct mem_cgroup it is.
 
-So I think at least for code writing it's less error-prone to write the
-explicit bit position than a magic long hex.
+> 
+>> The placeholder is there, but it is later patched
+>> to the final thing.
+>> With that explained, if you want me to change it to something else, I
+>> can do it. Should I ?
+>>
+> 
+> Not in this patch anyway. I would have preferred a pattern like this but
+> that's about it.
+> 
+> #ifdef CONFIG_MEMCG_KMEM
+> extern struct static_key memcg_kmem_enabled_key;
+> static inline int memcg_kmem_enabled(void)
+> {
+>        return static_key_false(&memcg_kmem_enabled_key);
+> }
+> #else
+> 
+> static inline bool memcg_kmem_enabled(void)
+> {
+>        return false;
+> }
+> #endif
+> 
 
--- 
-Catalin
+humm, I'll have to think about this name.
+"memcg_kmem_enabled" means it is enabled in this cgroup. It is actually
+used inside memcontrol.c to denote precisely that.
+
+Now the static branch, of course, means it is globally enabled. Or as I
+called here, "on".
+
+
+> Two reasons. One, it does not use the terms "on" and "enabled"
+> interchangeably.  The other reason is down to taste as I'm copying the
+> pattern I used myself for sk_memalloc_socks(). Of course I am biased.
+> 
+> Also, why is the key exported?
+> 
+
+Same reason. The slab will now have inline functions that will test
+against that. The alloc functions themselves, are inside the page
+allocator, and the exports can go away.
+
+But the static branch will still be tested inside inlined functions in
+the slab.
+
+That said, for the sake of simplicity, I can make it go away here, and
+add that to the right place later.
+
+>>> I also find it *very* strange to have a function named as if it is an
+>>> allocation-style function when it in fact it's looking up a mem_cgroup
+>>> and charging it (and uncharging it in the error path if necessary). If
+>>> it was called memcg_kmem_newpage_charge I might have found it a little
+>>> better.
+>>
+>> I don't feel strongly about names in general. I can change it.
+>> Will update to memcg_kmem_newpage_charge() and memcg_kmem_page_uncharge().
+>>
+> 
+> I would prefer that anyway. Names have meaning and people make assumptions on
+> the implementation depending on the name. We should try to be as consistent
+> as possible or maintenance becomes harder. I know there are areas where
+> we are not consistent at all but we should not compound the problem.
+
+memcg_kmem_page_charge() is even better I believe, and that is what I
+changed this to in my tree.
+
+>>> As this thing is called from within the allocator, it's not clear why
+>>> __memcg_kmem_new_page is exported. I can't imagine why a module would call
+>>> it directly although maybe you cover that somewhere else in the series.
+>>
+>> Okay, more people commented on this, so let me clarify: They shouldn't
+>> be. They were initially exported when this was about the slab only,
+>> because they could be called from inlined functions from the allocators.
+>> Now that the charge/uncharge was moved to the page allocator - which
+>> already allowed me the big benefit of separating this in two pieces,
+>> none of this needs to be exported.
+>>
+>> Sorry for not noticing this myself, but thanks for the eyes =)
+>>
+> 
+> You're welcome. I expect to see all the exports disappear so. If there
+> are any exports left I think it would be important to document why they
+> have to be exported. This is particularly true because they are
+> EXPORT_SYMBOL not EXPORT_SYMBOL_GPL. I think it would be good to know in
+> advance why a module (particularly an out-of-tree one) would be
+> interested.
+> 
+
+I will remove them all for now.
+
