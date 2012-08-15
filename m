@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab2HOTxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:53:30 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63195 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab2HOTxZ (ORCPT
+	id S932338Ab2HOTxn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:53:43 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:62651 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab2HOTxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:53:25 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 119/165] timekeeping: Add missing update call in timekeeping_resume()
-Date: Wed, 15 Aug 2012 15:47:43 -0400
-Message-ID: <1345060109-9187-120-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 15 Aug 2012 15:53:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120815190328.GA6714@quad.lixom.net>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <20120814230645.GA19607@quad.lixom.net> <20120815173711.GC14264@arm.com> <20120815190328.GA6714@quad.lixom.net>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 15 Aug 2012 20:53:12 +0100
+X-Google-Sender-Auth: BA7IJLa38s_TG9ek0F_dIc61Oxw
+Message-ID: <CAHkRjk4k0q9TuHqJMLtLy-wxFHN8xQEQERkpf2Qt_48+1Qwwgw@mail.gmail.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On 15 August 2012 20:03, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Aug 15, 2012 at 06:37:11PM +0100, Catalin Marinas wrote:
+>> If we add machine_desc structure back, we could print which machine was
+>> matched. But so far I try to keep the SoC code to a minimum and just do
+>> the probing later in the SoC code (of_find_matching_node). Ideally we
+>> shouldn't have any SoC code and just keep code in drivers but we'll see
+>> how far we can get. We can discuss more details at the KS as I would
+>> like the arm-soc team to get involved here.
+>
+> Interesting approach, I wonder if it'll scale, in particular if it comes
+> to needing to do early setup and init. For device-level setup, generic
+> will probably work just fine. And if it doesn't, things can be changed
+> later. So it sounds like a good start.
+>
+> Definitely something we should discuss. I suggest not doing it at KS
+> though, since only half of the arm-soc team is invited there. So the
+> ARM mini-summit or hallway around LPC is a better venue.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+I was indeed thinking of the ARM mini-summit or hallway discussions.
+The KS has different topics and it wouldn't have been of wide interest
+anyway.
 
-commit 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0 upstream.
-
-The leap second rework unearthed another issue of inconsistent data.
-
-On timekeeping_resume() the timekeeper data is updated, but nothing
-calls timekeeping_update(), so now the update code in the timer
-interrupt sees stale values.
-
-This has been the case before those changes, but then the timer
-interrupt was using stale data as well so this went unnoticed for quite
-some time.
-
-Add the missing update call, so all the data is consistent everywhere.
-
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/time/timekeeping.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 0b4f6d1..156fd67 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -626,6 +626,7 @@ static int timekeeping_resume(struct sys_device *dev)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
-+	timekeeping_update(false);
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	touch_softlockup_watchdog();
 -- 
-1.7.12.rc2
-
+Catalin
