@@ -1,34 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2HOTdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:33:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25843 "EHLO mx1.redhat.com"
+	id S1755828Ab2HOTep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:34:45 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:58293 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab2HOTdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:33:11 -0400
-Date: Wed, 15 Aug 2012 21:33:09 +0200
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.22-rc2
-Message-ID: <20120815193309.GB24676@x2.net.home>
+	id S1751863Ab2HOTen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:34:43 -0400
+Message-ID: <502BF916.10902@parallels.com>
+Date: Wed, 15 Aug 2012 23:31:34 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Greg Thelen <gthelen@google.com>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <50254475.4000201@jp.fujitsu.com> <5028BA9E.7000302@parallels.com> <xr93ipcl9u7x.fsf@gthelen.mtv.corp.google.com> <502B6956.5030508@parallels.com> <xr93wr109kke.fsf@gthelen.mtv.corp.google.com> <502BD5AF.301@parallels.com> <xr93lihg9j0q.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93lihg9j0q.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/15/2012 09:12 PM, Greg Thelen wrote:
+> On Wed, Aug 15 2012, Glauber Costa wrote:
+> 
+>> On 08/15/2012 08:38 PM, Greg Thelen wrote:
+>>> On Wed, Aug 15 2012, Glauber Costa wrote:
+>>>
+>>>> On 08/14/2012 10:58 PM, Greg Thelen wrote:
+>>>>> On Mon, Aug 13 2012, Glauber Costa wrote:
+>>>>>
+>>>>>>>>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>>>>>>>>> +	size = (1 << order) << PAGE_SHIFT;
+>>>>>>>>> +	memcg_uncharge_kmem(memcg, size);
+>>>>>>>>> +	mem_cgroup_put(memcg);
+>>>>>>> Why do we need ref-counting here ? kmem res_counter cannot work as
+>>>>>>> reference ?
+>>>>>> This is of course the pair of the mem_cgroup_get() you commented on
+>>>>>> earlier. If we need one, we need the other. If we don't need one, we
+>>>>>> don't need the other =)
+>>>>>>
+>>>>>> The guarantee we're trying to give here is that the memcg structure will
+>>>>>> stay around while there are dangling charges to kmem, that we decided
+>>>>>> not to move (remember: moving it for the stack is simple, for the slab
+>>>>>> is very complicated and ill-defined, and I believe it is better to treat
+>>>>>> all kmem equally here)
+>>>>>
+>>>>> By keeping memcg structures hanging around until the last referring kmem
+>>>>> page is uncharged do such zombie memcg each consume a css_id and thus
+>>>>> put pressure on the 64k css_id space?  I imagine in pathological cases
+>>>>> this would prevent creation of new cgroups until these zombies are
+>>>>> dereferenced.
+>>>>
+>>>> Yes, but although this patch makes it more likely, it doesn't introduce
+>>>> that. If the tasks, for instance, grab a reference to the cgroup dentry
+>>>> in the filesystem (like their CWD, etc), they will also keep the cgroup
+>>>> around.
+>>>
+>>> Fair point.  But this doesn't seems like a feature.  It's probably not
+>>> needed initially, but what do you think about creating a
+>>> memcg_kernel_context structure which is allocated when memcg is
+>>> allocated?  Kernel pages charged to a memcg would have
+>>> page_cgroup->mem_cgroup=memcg_kernel_context rather than memcg.  This
+>>> would allow the mem_cgroup and its css_id to be deleted when the cgroup
+>>> is unlinked from cgroupfs while allowing for the active kernel pages to
+>>> continue pointing to a valid memcg_kernel_context.  This would be a
+>>> reference counted structure much like you are doing with memcg.  When a
+>>> memcg is deleted the memcg_kernel_context would be linked into its
+>>> surviving parent memcg.  This would avoid needing to visit each kernel
+>>> page.
+>>
+>> You need more, you need at the res_counters to stay around as well. And
+>> probably other fields.
+> 
+> I am not sure the res_counters would need to stay around.  Once a
+> memcg_kernel_context has been reparented, then any future kernel page
+> uncharge calls will uncharge the parent res_counter.
 
-The util-linux release v2.22-rc2 is available at
+Well, if you hold the memcg due to a reference, like in the dentry case,
+then fine. But if this is a dangling charge, as will be the case with
+the slab, then you have to uncharge it.
 
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.22/
+An arbitrary number of parents might have been deleted as well, so you
+need to transverse them all until you reach a live parent to uncharge from.
 
-Feedback and bug reports, as always, are welcomed.
+To do that, your counters have to be still alive.
 
-       Karel
+> 
+>> So my fear here is that as you add fields to that structure, you can
+>> defeat a bit the goal of reducing memory consumption. Still leaves the
+>> css space, yes. But by doing this we can introduce some subtle bugs by
+>> having a field in the wrong structure.
+>>
+>> Did you observe that to be a big problem in your systems?
+> 
+> No I have not seen this yet.  But our past solutions have reparented
+> kmem_cache's to root memcg so we have been avoiding zombie memcg.  My
+> concerns with your approach are just a suspicion because we have been
+> experimenting with accounting of even more kernel memory (e.g. vmalloc,
+> kernel stacks, page tables).  As the scope of such accounting grows the
+> chance of long lived charged pages grows and thus the chance of zombies
+> which exhaust the css_id space grows.
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Well, since we agree this can all be done under the hood, I'd say let's
+wait until a problem actually exists, since the solution is likely to be
+a bit convoluted...
+
+I personally believe that if won't have a lot of task movement, most of
+the data will go away as the cgroup dies. The remainder shouldn't be too
+much to hold it in memory for a lot of time. This is of course assuming
+a real use case, not an adversarial scenario, which is quite easy to
+come up with: just create a task, hold a bunch of kmem, move the task
+away, delete the cgroup, etc.
+
+That said, nothing stops us to actively try to create a scenario that
+would demonstrate such a problem.
+
+
