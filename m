@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2HOAuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:50:16 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60966 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2HOAuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:50:14 -0400
+	id S1754833Ab2HOAvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:51:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48647 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636Ab2HOAvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 20:51:17 -0400
+Message-ID: <502AF27D.2010902@zytor.com>
+Date: Tue, 14 Aug 2012 17:51:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 Aug 2012 17:49:52 -0700
-Message-ID: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com>
-Subject: O_DIRECT to md raid 6 is slow
-To: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Olof Johansson <olof@lixom.net>
+CC: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
+        mjg@redhat.com
+Subject: Re: [PATCH] efi: add efi_runtime state checking
+References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com> <1340832957-7386-1-git-send-email-olof@lixom.net> <4FEB80A5.8020806@zytor.com> <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
+In-Reply-To: <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I do:
-# dd if=/dev/zero of=/dev/md0p1 bs=8M
-then iostat -m 5 says:
+On 06/28/2012 10:02 AM, Olof Johansson wrote:
+> On Wed, Jun 27, 2012 at 2:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 06/27/2012 02:35 PM, Olof Johansson wrote:
+>>>
+>>> This adds an efi_runtime variable indicating whether the
+>>> efi runtime services are available. The only time they are
+>>> expected to not be available is when a 32-bit kernel has been
+>>> booted using 64-but EFI and vice versa.
+>>>
+>>> It also adds checking to the two locations where functions are
+>>> called; x86 reboot and efivars.
+>>>
+>>
+>> OK, stupid question:
+>>
+>> Why is this different from the efi_enabled variable, or rather: why is it
+>> different from what the efi_enabled variable *should* be?  If runtime
+>> services aren't available the only "EFI" that is available to the kernel are
+>> the data structures passed in, and those can be checked directly...
+>
+> Excellent question, and I think it would work to turn off efi_enabled
+> towards the end of setup_arch() for non-native boots. That'd solve all
+> these problems, I believe.
+>
+> I'll try it out and revise this patch. It might take me a day or two
+> to get cycles for it.
+>
 
-avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-           0.00    0.00   26.88   35.27    0.00   37.85
+Ping?
 
-Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
-sdb             265.20         1.16        54.79          5        273
-sdc             266.20         1.47        54.73          7        273
-sdd             264.20         1.38        54.54          6        272
-sdf             286.00         1.84        54.74          9        273
-sde             266.60         1.04        54.75          5        273
-sdg             265.00         1.02        54.74          5        273
-md0           55808.00         0.00       218.00          0       1090
+	-hpa
 
-If I do:
-# dd if=/dev/zero of=/dev/md0p1 bs=8M oflag=direct
-then iostat -m 5 says:
-avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-           0.00    0.00   11.70   12.94    0.00   75.36
-
-Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
-sdb             831.00         8.58        30.42         42        152
-sdc             832.80         8.05        29.99         40        149
-sdd             832.00         9.10        29.78         45        148
-sdf             838.40         9.11        29.72         45        148
-sde             828.80         7.91        29.79         39        148
-sdg             850.80         8.00        30.18         40        150
-md0            1012.60         0.00       101.27          0        506
-
-It looks like md isn't recognizing that I'm writing whole stripes when
-I'm in O_DIRECT mode.
-
---Andy
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
