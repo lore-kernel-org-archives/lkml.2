@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab2HOAkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:40:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65395 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2HOAkG (ORCPT
+	id S1755155Ab2HOAqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:46:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57177 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab2HOAq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:40:06 -0400
-Date: Tue, 14 Aug 2012 17:40:06 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 14/31] arm64: DMA mapping API
-Message-ID: <20120815004006.GG19607@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
+	Tue, 14 Aug 2012 20:46:27 -0400
+Message-ID: <502AF184.4010907@gmail.com>
+Date: Wed, 15 Aug 2012 02:47:00 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com> <1344961490-4068-3-git-send-email-levinsasha928@gmail.com> <87txw5hw0s.fsf@xmission.com>
+In-Reply-To: <87txw5hw0s.fsf@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-
-On Tue, Aug 14, 2012 at 06:52:15PM +0100, Catalin Marinas wrote:
-> This patch adds support for the DMA mapping API. It uses dma_map_ops for
-> flexibility and it currently supports swiotlb. This patch could be
-> simplified further if the DMA accesses are coherent (not mandated by the
-> architecture) or if corresponding hooks are placed in the generic
-> swiotlb code to deal with cache maintenance.
+On 08/15/2012 01:52 AM, Eric W. Biederman wrote:
+> Sasha Levin <levinsasha928@gmail.com> writes:
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  arch/arm64/include/asm/dma-mapping.h |  124 ++++++++++++++++++++
->  arch/arm64/mm/dma-mapping.c          |  208 ++++++++++++++++++++++++++++++++++
->  2 files changed, 332 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm64/include/asm/dma-mapping.h
->  create mode 100644 arch/arm64/mm/dma-mapping.c
+>> Switch user_ns to use the new hashtable implementation. This reduces the amount of
+>> generic unrelated code in user_ns.
 > 
-> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-> new file mode 100644
-> index 0000000..538f4b4
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/dma-mapping.h
-> @@ -0,0 +1,124 @@
-> +/*
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_DMA_MAPPING_H
-> +#define __ASM_DMA_MAPPING_H
-> +
-> +#ifdef __KERNEL__
-> +
-> +#include <linux/types.h>
-> +#include <linux/vmalloc.h>
-> +
-> +#include <asm-generic/dma-coherent.h>
-> +
-> +#define ARCH_HAS_DMA_GET_REQUIRED_MASK
-> +
-> +extern struct dma_map_ops *dma_ops;
+> Two concerns here.
+> 1) When adding a new entry you recompute the hash where previously that
+>    was not done.  I believe that will slow down adding of new entries.
+
+I figured that the price for the extra hashing isn't significant since hash_32
+is just a multiplication and a shift.
+
+I'll modify the code to calculate the key just once.
+
+> 2) Using hash_32 for uids is an interesting choice.  hash_32 discards
+>    the low bits.  Last I checked for uids the low bits were the bits
+>    that were most likely to be different and had the most entropy.
 > 
-> +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> +{
-> +	if (unlikely(!dev) || !dev->archdata.dma_ops)
-> +		return dma_ops;
-> +	else
-> +		return dev->archdata.dma_ops;
-> +}
+>    I'm not certain how multiplying by the GOLDEN_RATION_PRIME_32 will
+>    affect things but I would be surprised if it shifted all of the
+>    randomness from the low bits to the high bits.
 
-Does it make sense to add the concept of a global dma ops on arm64,
-instead of requiring the dma ops pointer per device similar to how
-some other platforms do it (including powerpc)? For devices that lack
-archdata.dma_ops, dma_supported() should return 0 (and the other ops
-should return error).
+"Is hash_* good enough for our purpose?" - I was actually surprised that no one
+raised that question during the RFC and assumed it was because everybody agreed
+that it's indeed good enough.
 
+I can offer the following: I'll write a small module that will hash 1...10000
+into a hashtable which uses 7 bits (just like user_ns) and post the distribution
+we'll get.
 
+If the results of the above will be satisfactory we can avoid the discussion
+about which hash function we should really be using. If not, I guess now is a
+good time for that :)
 
--Olof
