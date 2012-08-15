@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab2HOQRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:17:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58144 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2HOQRD (ORCPT
+	id S1755436Ab2HOQTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:19:15 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50034 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754064Ab2HOQTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:17:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 27/31] arm64: Loadable modules
-Date: Wed, 15 Aug 2012 16:16:56 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151523.21447.arnd@arndb.de> <20120815153538.GA14264@arm.com>
-In-Reply-To: <20120815153538.GA14264@arm.com>
+	Wed, 15 Aug 2012 12:19:14 -0400
+Date: Wed, 15 Aug 2012 12:19:12 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] PM / Runtime: Clear power.deferred_resume on success
+ in rpm_suspend()
+In-Reply-To: <201208142340.45153.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1208151214560.1674-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208151616.56932.arnd@arndb.de>
-X-Provags-ID: V02:K0:RnEHo3qFiXNkpDMpeYA8JZjDFH7/8zB0XX5dEpw+M1g
- nyOSBXnGksg/fbpG5DQpA4jx6rLkoEYuwvoSwaasOPDT2Kg6v0
- hm0doUtYmnpwkIqBqnqsLkco0YL7UwsziLDo/x0wW9dUPo+Rjz
- 0wBczdMZf2iph1XBNYE5odjLXVF9e1uNMS1DprgKwrbxGPA00Z
- NoI+Z4VjySJcNIV49Xs2MsOMhWssVl8kWs4Bo/ehJfAPiHsnXP
- tWkXffn/L5WZsJVn5MIgsRcKFQiJxP0MHS9F0pBeJGFuyHbBOm
- Iwb3JVP3MLJKJ/3+3BfsUSTDhVrR93sH2C8wkkL8gsA5F9uzqw
- 2YJcUx7Zpj6XB9ksOL1k=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 August 2012, Catalin Marinas wrote:
-> Primarily branch relocation, we have a limitation to 128MB branch range.
-> The alternative would be to always compile the modules with a large
-> memory model but we may lose some performance and could make the
-> relocation handling even harder. What we do now is pretty much similar
-> to static linking but at module load time.
+On Tue, 14 Aug 2012, Rafael J. Wysocki wrote:
 
-Ok, makes sense.
+> 
+> The power.deferred_resume can only be set if the runtime PM status
+> of device is RPM_SUSPENDING and it should be cleared after its
+> status has been changed, regardless of whether or not the runtime
+> suspend has been successful.  However, it only is cleared on suspend
+> failure, while it may remain set after successful suspend and is
+> happily leaked to rpm_resume() executed in that case.
+> 
+> That shouldn't happen, so if power.deferred_resume is set in
+> rpm_suspend() after the status has been changed to RPM_SUSPENDED,
+> clear it before calling rpm_resume().  Then, it doesn't need to be
+> cleared before changing the status to RPM_SUSPENDING any more,
+> because it's always cleared after the status has been changed to
+> either RPM_SUSPENDED (on success) or RPM_ACTIVE (on failure).
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/power/runtime.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux/drivers/base/power/runtime.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/runtime.c
+> +++ linux/drivers/base/power/runtime.c
+> @@ -388,7 +388,6 @@ static int rpm_suspend(struct device *de
+>  		goto repeat;
+>  	}
+>  
+> -	dev->power.deferred_resume = false;
+>  	if (dev->power.no_callbacks)
+>  		goto no_callback;	/* Assume success. */
+>  
+> @@ -440,6 +439,7 @@ static int rpm_suspend(struct device *de
+>  	wake_up_all(&dev->power.wait_queue);
+>  
+>  	if (dev->power.deferred_resume) {
+> +		dev->power.deferred_resume = false;
+>  		rpm_resume(dev, 0);
+>  		retval = -EAGAIN;
+>  		goto out;
 
-	Arnd
+Basically this comes down to a matter of taste.  I tend to use a "lazy" 
+approach, not initializing values until they need to contain a proper 
+value (and not worrying if they contain garbage or wrong values at 
+times when they won't be used).
+
+But of course, this is fine too.  With this change, you can also
+simplify one of the tests in rpm_check_suspend_allowed().
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
