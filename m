@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab2HOOjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:39:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38415 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab2HOOjX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:39:23 -0400
-Message-ID: <1345041548.31459.90.camel@twins>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        vincent.guittot@linaro.org, svaidy@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@kernel.org>,
+	id S1754752Ab2HOOjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:39:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754605Ab2HOOjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:39:33 -0400
+Date: Wed, 15 Aug 2012 17:40:19 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Date: Wed, 15 Aug 2012 16:39:08 +0200
-In-Reply-To: <502BA7DC.7060907@linux.intel.com>
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
-	 <502BA7DC.7060907@linux.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120815144019.GH3068@redhat.com>
+References: <cover.1344619987.git.aquini@redhat.com>
+ <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
+ <20120813084123.GF14081@redhat.com>
+ <87lihis5qi.fsf@rustcorp.com.au>
+ <20120814083320.GA3597@redhat.com>
+ <20120814184409.GC13338@t510.redhat.com>
+ <20120814193109.GA28840@redhat.com>
+ <20120815123457.GA2175@t510.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815123457.GA2175@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 06:45 -0700, Arjan van de Ven wrote:
-> On 8/15/2012 4:05 AM, Peter Zijlstra wrote:
-> > Yay, ideally we'd also provide a 3rd option: auto, which simply switches
-> > between the two based on AC/BAT, UPS 
+On Wed, Aug 15, 2012 at 09:34:58AM -0300, Rafael Aquini wrote:
+> On Tue, Aug 14, 2012 at 10:31:09PM +0300, Michael S. Tsirkin wrote:
+> > > > now CPU1 executes the next instruction:
+> > > > 
+> > > > }
+> > > > 
+> > > > which would normally return to function's caller,
+> > > > but it has been overwritten by CPU2 so we get corruption.
+> > > > 
+> > > > No?
+> > > 
+> > > At the point CPU2 is unloading the module, it will be kept looping at the
+> > > snippet Rusty pointed out because the isolation / migration steps do not mess
+> > > with 'vb->num_pages'. The driver will only unload after leaking the total amount
+> > > of balloon's inflated pages, which means (for this hypothetical case) CPU2 will
+> > > wait until CPU1 finishes the putaback procedure.
+> > > 
+> > 
+> > Yes but only until unlock finishes. The last return from function
+> > is not guarded and can be overwritten.
 > 
-> nooooooo!
-> 
-> anything but this.
-> if anyone thinks that AC/Battery matters for power sensitivity... they
-> need to go talk to a datacenter operator ;-)
+> CPU1 will be returning to putback_balloon_page() which code is located at core
+> mm/compaction.c, outside the driver.
 
-Servers in a datacenter have battery?
+Sorry, I don't seem to be able to articulate this clearly.
+But this is a correctness issue so I am compelled to try again.
 
-> seriously, there are possibly many ways to have a power/performance
-> preference..,. but AC/battery is a very very poor one.
-> 
-Do expand..
+Here is some pseudo code:
+
+int pages_lock;
+
+void virtballoon_isolatepage(void *page, unsigned long mode)
+{
+       pages_lock = 0;
+}
+
+assignment of 0 emulates spin unlock.
+I removed all other content. Now look at disassembly:
+
+080483d0 <virtballoon_isolatepage>:
+virtballoon_isolatepage():
+ 80483d0:       c7 05 88 96 04 08 00    movl   $0x0,0x8049688
+ 80483d7:       00 00 00 
+
+<----------- Above is "spin unlock"
+
+ 80483da:       c3                      ret    
+
+^^^^
+Here we are still executing module code (one instruction of it!)
+after we have dropped the lock.
+
+
+So if module goes away at the point marked by <--------
+above (and nothing seems to prevent that,
+since pages_lock is unlocked), the last instruction can get overwritten
+and then random code will get executed instead.
+
+In the end the rule is simple: you can not
+prevent module unloading from within module
+itself. It always must be the caller of your
+module that uses some lock to do this.
+
+My proposal is to use rcu for this since it is lightweight
+and also does not require us to pass extra
+state around.
+
+-- 
+MST
