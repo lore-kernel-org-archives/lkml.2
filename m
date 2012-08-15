@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab2HORII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:08:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35887 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2HORIG (ORCPT
+	id S1754986Ab2HORIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:08:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50494 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab2HORId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:06 -0400
-Date: Wed, 15 Aug 2012 18:07:58 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, nbd@openwrt.org, neilb@suse.de,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        ricwheeler@gmail.com, dhowells@redhat.com, hpj@urpla.net,
-        sedat.dilek@googlemail.com, penberg@kernel.org,
-        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
-Subject: Re: [PATCH 12/13] ovl: switch to __inode_permission()
-Message-ID: <20120815170758.GP29100@dm>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
- <1345045700-9062-13-git-send-email-miklos@szeredi.hu>
- <502BD587.6090807@schaufler-ca.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502BD587.6090807@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Aug 2012 13:08:33 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH v3 0/6] ARM: dove: DT support for Marvell Dove
+Date: Wed, 15 Aug 2012 19:07:29 +0200
+Message-Id: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 09:59:51AM -0700, Casey Schaufler wrote:
-> On 8/15/2012 8:48 AM, Miklos Szeredi wrote:
-> > From: Andy Whitcroft <apw@canonical.com>
-> >
-> > When checking permissions on an overlayfs inode we do not take into
-> > account either device cgroup restrictions nor security permissions.
-> > This allows a user to mount an overlayfs layer over a restricted device
-> > directory and by pass those permissions to open otherwise restricted
-> > files.
-> 
-> Why is this a good idea? Either you're not including enough context
-> about the conditions under which this can occur, or you're suggesting
-> the introduction of a trivial mechanism for bypassing all file access
-> controls. This does not seem right.
+This patch set adds DT support for Marvell Dove SoC and three boards
+equipped with this SoC. The work is based on device tree support for
+Marvell Orion based SoCs introduced in 3.6-rc1.
 
-It is stating that the unprotected case is how things was before this
-patch switches us over to __inode_permisssions.  The patch is closing
-the hole indicated.
+The first three patches move mach-dove closer to Marvell Kirkwood's
+setup code by unifying the clock setup routines, adding clock gating
+control, and support for Marvell's crypto engine to mach-dove.
 
--apw
-> >
-> > Switch over to __inode_permissions.
-> >
-> > Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> > ---
-> >  fs/overlayfs/inode.c |   12 +-----------
-> >  1 files changed, 1 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-> > index e854720..f3a534f 100644
-> > --- a/fs/overlayfs/inode.c
-> > +++ b/fs/overlayfs/inode.c
-> > @@ -100,19 +100,9 @@ int ovl_permission(struct inode *inode, int mask)
-> >  		if (is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode) &&
-> >  		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-> >  			goto out_dput;
-> > -
-> > -		/*
-> > -		 * Nobody gets write access to an immutable file.
-> > -		 */
-> > -		err = -EACCES;
-> > -		if (IS_IMMUTABLE(realinode))
-> > -			goto out_dput;
-> >  	}
-> >  
-> > -	if (realinode->i_op->permission)
-> > -		err = realinode->i_op->permission(realinode, mask);
-> > -	else
-> > -		err = generic_permission(realinode, mask);
-> > +	err = __inode_permission(realinode, mask);
-> >  out_dput:
-> >  	dput(alias);
-> >  	return err;
-> 
+Patches 4 and 5 add a generic DT machine descriptor to mach-dove and
+corresponding DT descriptors for the SoC and already supported boards.
+
+Finally, the last patch adds a DT descriptor for the SolidRun CuBox,
+a plug computer based on Marvell Dove.
+
+This patch set relies on a DT support patch for sdhci-dove that has
+been accepted on mmc-next for 3.7 as commit
+b2293055c1e1200acbb46523976852d1686fdfa4.
+
+Changes:
+v2: removed clk_prepare_enable for tclk and updated subsequent patches
+v3: fixed a typo in clk_gate name for pex0
+    removed device name macros from clk gate names
+
+Sebastian Hesselbarth (6):
+  ARM: dove: unify clock setup
+  ARM: dove: add clock gating control
+  ARM: dove: add crypto engine
+  ARM: dove: add device tree based machine descriptor
+  ARM: dove: add device tree descriptors
+  ARM: dove: SolidRun CuBox DT
+
+ arch/arm/boot/dts/dove-cm-a510.dts   |   38 +++++++++
+ arch/arm/boot/dts/dove-cubox.dts     |   42 +++++++++
+ arch/arm/boot/dts/dove-dove-db.dts   |   38 +++++++++
+ arch/arm/boot/dts/dove.dtsi          |  143 +++++++++++++++++++++++++++++++
+ arch/arm/mach-dove/Kconfig           |    7 ++
+ arch/arm/mach-dove/Makefile.boot     |    4 +
+ arch/arm/mach-dove/common.c          |  156 +++++++++++++++++++++++++++++++---
+ arch/arm/mach-dove/include/mach/pm.h |   54 ++++++++----
+ 8 files changed, 452 insertions(+), 30 deletions(-)
+ create mode 100644 arch/arm/boot/dts/dove-cm-a510.dts
+ create mode 100644 arch/arm/boot/dts/dove-cubox.dts
+ create mode 100644 arch/arm/boot/dts/dove-dove-db.dts
+ create mode 100644 arch/arm/boot/dts/dove.dtsi
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Rabeeh Khoury <rabeeh@solid-run.com>
+Cc: Ian Molton <ian.molton@codethink.co.uk>
+Cc: Maen Suleiman <maen@marvell.com>
+Cc: Olof Johansson <olof@lixom.net>
+
+-- 
+1.7.10.4
+
