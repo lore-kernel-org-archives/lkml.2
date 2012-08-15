@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab2HOW4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:56:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35818 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab2HOW4H (ORCPT
+	id S1752987Ab2HOW6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:58:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39750 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2HOW63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:56:07 -0400
-Date: Wed, 15 Aug 2012 15:56:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SGI XPC fails to load when cpu 0 is out of IRQ
- resources.
-Message-Id: <20120815155605.cf02ef7b.akpm@linux-foundation.org>
-In-Reply-To: <20120803194628.GN3093@sgi.com>
-References: <20120803194628.GN3093@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Aug 2012 18:58:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <1345042516.31459.99.camel@twins>
+References: <5028F12C.7080405@intel.com>
+	<CADZ9YHhB_1ZeZM3WOFiz0kcx1ZR9iFO_R=Mst_w=QKXOi4Z9OQ@mail.gmail.com>
+	<1345042516.31459.99.camel@twins>
+Date: Thu, 16 Aug 2012 04:58:29 +0600
+Message-ID: <CADZ9YHjLzNtR+EVQYbutV034T8zrPr52D6mMGLQL3VgaxnemAw@mail.gmail.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in scheduler
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Aug 2012 14:46:29 -0500
-Robin Holt <holt@sgi.com> wrote:
+On Wed, Aug 15, 2012 at 8:55 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2012-08-15 at 20:24 +0600, Rakib Mullick wrote:
+>> How do you plan to test this power saving scheme? Using powertop? Or,
+>> is there any other tools?
+>
+> We should start out simple enough that we can validate it by looking at
+> task placement by hand, eg. 4 tasks on a dual socket quad-core, should
+> only keep one socket awake.
+>
+Yeah, that's what we can do "task placement", that's what scheduler is
+known for :).
 
-> On many of our larger systems, CPU 0 has had all of its IRQ resources
-> consumed before XPC loads.  Worse cases on machines with multiple
-> 10 GigE cards and multiple IB cards have depleted the entire first
-> socket of IRQs.  That patch makes selecting the node upon which
-> IRQs are allocated (as well as all the other GRU Message Queue
-> structures) specifiable as a module load param and has a default
-> behavior of searching all nodes/cpus for an available resource.
-> 
+> We can also add an power aware evaluator to Linsched (another one of
+> those things that needs getting sorted).
+>
+> And yeah, someone running with a power meter is of course king.
+>
+> _BUT_ we shouldn't go off the wall with power meters as that very
+> quickly gets very specific to the system being measured.
+>
+> We should really keep this thing as simple as possible while still
+> providing some benefit for all various architectures without tons of per
+> arch knobs and knowhow.
 
-Is this problem serious enough to warrant a -stable backport?  If you
-want it to appear in vendor kernels then I guess "yes".
+Perhaps this is because, there's no well sorted specification from
+various arch, to properly deal with power saving from scheduler's POV.
+Actually, this is what I wasn't really sure whether there's any
+documentation of how scheduler should work to save power.
 
-> +static int
-> +xpc_init_mq_node(int nid)
-> +{
-> +	int cpu;
-> +
-> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
-> +		xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
-> +							  XPC_ACTIVATE_IRQ_NAME,
-> +							  xpc_handle_activate_IRQ_uv);
-> +		if (!IS_ERR(xpc_activate_mq_uv))
-> +			break;
-> +	}
-> +	if (IS_ERR(xpc_activate_mq_uv))
-> +		return PTR_ERR(xpc_activate_mq_uv);
-> +
-> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
-> +		xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
-> +							XPC_NOTIFY_IRQ_NAME,
-> +							xpc_handle_notify_IRQ_uv);
-> +		if (!IS_ERR(xpc_notify_mq_uv))
-> +			break;
-> +	}
-> +	if (IS_ERR(xpc_notify_mq_uv)) {
-> +		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
-> +		return PTR_ERR(xpc_notify_mq_uv);
-> +	}
-> +
-> +	return 0;
-> +}
-
-This seems to take the optimistic approach to CPU hotplug ;)
-get_online_cpus(), perhaps?
-
+Thanks,
+Rakib
