@@ -1,100 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab2HORgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab2HORgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:36:32 -0400
-Message-ID: <1345052191.4683.435.camel@ul30vt.home>
-Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 15 Aug 2012 11:36:31 -0600
-In-Reply-To: <20120815142803.GF3068@redhat.com>
-References: <20120810223633.809.44188.stgit@bling.home>
-	 <20120815142803.GF3068@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756053Ab2HORhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:37:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42778 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756013Ab2HORhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 13:37:43 -0400
+Date: Wed, 15 Aug 2012 18:37:11 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+Message-ID: <20120815173711.GC14264@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <20120814230645.GA19607@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814230645.GA19607@quad.lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
-> On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
-> > v8:
-> > 
-> > Trying a new approach.  Nobody seems to like the internal IRQ
-> > source ID object and the interactions it implies between irqfd
-> > and eoifd, so let's get rid of it.  Instead, simply expose
-> > IRQ source IDs to userspace.  This lets the user be in charge
-> > of freeing them or hanging onto a source ID for later use.
+Hi Olof,
+
+On Wed, Aug 15, 2012 at 12:06:45AM +0100, Olof Johansson wrote:
+> On Tue, Aug 14, 2012 at 06:52:03PM +0100, Catalin Marinas wrote:
+> > +Before jumping into the kernel, the following conditions must be met:
+> > +
+> > +- Quiesce all DMA capable devices so that memory does not get
+> > +  corrupted by bogus network packets or disk data.  This will save
+> > +  you many hours of debug.
+> > +
+> > +- Primary CPU general-purpose register settings
+> > +  x0 = physical address of device tree blob (dtb) in system RAM.
+> > +
+> > +- CPU mode
+> > +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
+> > +  IRQ and FIQ).
+> > +  The CPU must be in either EL2 (RECOMMENDED in order to have access to
+> > +  the virtualisation extensions) or non-secure EL1.
+> > +
+> > +- Caches, MMUs
+> > +  The MMU must be off.
+> > +  Instruction cache may be on or off.
+> > +  Data cache must be off and invalidated.
+> > +
+> > +- Architected timers
+> > +  CNTFRQ must be programmed with the timer frequency.
+> > +  If entering the kernel at EL1, CNTHCTL_EL2 must have EL1PCTEN (bit 0)
+> > +  set where available.
+> > +
+> > +- Coherency
+> > +  All CPUs to be booted by the kernel must be part of the same coherency
+> > +  domain on entry to the kernel.  This may require IMPLEMENTATION DEFINED
+> > +  initialisation to enable the receiving of maintenance operations on
+> > +  each CPU.
+> > +
+> > +- System registers
+> > +  All writable architected system registers at the exception level where
+> > +  the kernel image will be entered must be initialised by software at a
+> > +  higher exception level to prevent execution in an UNKNOWN state.
 > 
-> In the end it turns out source ID is an optimization for shared
-> interrupts, isn't it?  Can't we apply the optimization transparently to
-> the user?  E.g. if we have some spare source IDs, allocate them, if we
-> run out, use a shared source ID?
+> Given the recent development of ARM platforms, you might want to mandate
+> the state of IOMMUs as well (they should probably be off, since there
+> should be no active DMA activity). Graphics would be the exception to
+> this, since if you want to keep scanning out a splash screen, you'll
+> have to keep doing DMA...
 
-Let's think about shared source IDs a bit more.  I think it's wrong that
-irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
-irqfd users can share a source ID.  We do not get the logical OR of all
-users by putting them on the same source ID, we get "last set wins".
-KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
-logical OR happens in userspace.  How would we not starve a user if we
-define KVM_IRQFD_SOURCE_ID?  What am I missing?
+We'll enhance this document as we get hardware as it's not clear whether
+we can simply mandate it to be off. We may have situations with some
+simple IOMMU that is previously set up by the firmware and the kernel
+doesn't get access to it. One example is the System MMU from ARM that
+supports stage 2 (hypervisor) translations and you just run a guest
+kernel without any control of the IOMMU.
 
-So I'm inclined to say source IDs are a requirement for shared
-interrupts.  That means the re-use scheme becomes complicated (ex. we
-run out of IRQ source IDs, so we start looking for sharing by re-using a
-source ID used by a different GSI).  Do we want to do that in kernel or
-userspace?  This series allows userspace to deal with that complexity.
-Please let me know if I'm thinking incorrectly about source ID re-use.
-Thanks,
+> > +- The primary CPU must jump directly to the first instruction of the
+> > +  kernel image.  The device tree blob passed by this CPU must contain
+> > +  for each CPU node:
+> > +
+> > +    1. An 'enable-method' property. Currently, the only supported value
+> > +       for this field is the string "spin-table".
+> > +
+> > +    2. A 'cpu-release-addr' property identifying a 64-bit,
+> > +       zero-initialised memory location.
+> 
+> These would be good to have documented in the
+> Documentation/devicetree/bindings hierarchy as well.
 
-Alex
+OK.
 
+> > index 0000000..d766493
+> > --- /dev/null
+> > +++ b/arch/arm64/include/asm/setup.h
+> > @@ -0,0 +1,26 @@
+> > +/*
+> > + * Based on arch/arm/include/asm/setup.h
+> > + *
+> > + * Copyright (C) 1997-1999 Russell King
+> > + * Copyright (C) 2012 ARM Ltd.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +#ifndef __ASM_SETUP_H
+> > +#define __ASM_SETUP_H
+> > +
+> > +#include <linux/types.h>
+> > +
+> > +#define COMMAND_LINE_SIZE 1024
+> 
+> Probably not a huge deal, and other architectures seem to be all over
+> the map on this, but you might want to go with a larger value now rather
+> than later. 2048 or 4096 perhaps?
 
-> > They
-> > can also detach and re-attach components at will.  It also opens
-> > up the possibility that userspace might want to use each IRQ
-> > source ID for more than one GSI (and avoids the kernel needing
-> > to manage that).  Per suggestions, EOIFD is now IRQ_ACKFD.
-> > 
-> > I really wanted to add a de-assert-only option to irqfd so the
-> > irq_ackfd could be fed directly into an irqfd, but I'm dependent
-> > on the ordering of de-assert _then_ signal an eventfd.  Keeping
-> > that ordering doesn't seem to be possible, especially since irqfd
-> > uses a workqueue, if I attempt to make that connection.  Thanks,
-> > 
-> > Alex
-> > ---
-> > 
-> > Alex Williamson (6):
-> >       kvm: Add de-assert option to KVM_IRQ_ACKFD
-> >       kvm: KVM_IRQ_ACKFD
-> >       kvm: Add assert-only option to KVM_IRQFD
-> >       kvm: Add IRQ source ID option to KVM_IRQFD
-> >       kvm: Expose IRQ source IDs to userspace
-> >       kvm: Allow filtering of acked irqs
-> > 
-> > 
-> >  Documentation/virtual/kvm/api.txt |   53 ++++++
-> >  arch/x86/kvm/Kconfig              |    1 
-> >  arch/x86/kvm/i8254.c              |    1 
-> >  arch/x86/kvm/i8259.c              |    8 +
-> >  arch/x86/kvm/x86.c                |    8 +
-> >  include/linux/kvm.h               |   39 ++++-
-> >  include/linux/kvm_host.h          |   18 ++
-> >  virt/kvm/Kconfig                  |    3 
-> >  virt/kvm/assigned-dev.c           |    1 
-> >  virt/kvm/eventfd.c                |  315 +++++++++++++++++++++++++++++++++++++
-> >  virt/kvm/ioapic.c                 |    5 -
-> >  virt/kvm/irq_comm.c               |   28 +++
-> >  virt/kvm/kvm_main.c               |   26 +++
-> >  13 files changed, 496 insertions(+), 10 deletions(-)
+It looks like there are many different values, including the asm-generic
+one which is 512. I'm happy to follow the x86 example and change it to
+2048, it doesn't really matter.
 
+> > diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
+> > new file mode 100644
+> > index 0000000..34ccdc0
+> > --- /dev/null
+> > +++ b/arch/arm64/kernel/head.S
+> 
+> [...]
+> 
+> > +/*
+> > + * Setup common bits before finally enabling the MMU. Essentially this is just
+> > + * loading the page table pointer and vector base registers.
+> > + *
+> > + * On entry to this code, x0 must contain the SCTLR_EL1 value for turning on
+> > + * the MMU.
+> > + */
+> > +__enable_mmu:
+> 
+> ENTRY()?
 
+__enable_mmu is not used outside this file, so no need for ENTRY().
 
+> > +	ldr	x5, =vectors
+> > +	msr	vbar_el1, x5
+> > +	msr	ttbr0_el1, x25			// load TTBR0
+> > +	msr	ttbr1_el1, x26			// load TTBR1
+> > +	isb
+> > +	b	__turn_mmu_on
+> > +ENDPROC(__enable_mmu)
+> 
+> ...or just END()? Same for a few of the other functions below.
+
+ENDPROC() gives us ".type @function" in addition to END(). This proved
+to be useful in the past for debugging symbols, unwind table (though we
+don't have the latter on AArch64).
+
+> > diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> > new file mode 100644
+> > index 0000000..f25186f
+> > --- /dev/null
+> > +++ b/arch/arm64/kernel/setup.c
+> 
+> [...]
+> 
+> > +static void __init setup_processor(void)
+> > +{
+> > +	struct proc_info_list *list;
+> > +
+> > +	/*
+> > +	 * locate processor in the list of supported processor
+> > +	 * types.  The linker builds this table for us from the
+> > +	 * entries in arch/arm/mm/proc.S
+> > +	 */
+> 
+> Probably from arch/arm64/... somewhere?
+
+Yes, I did a grep and found a few more.
+
+> > +	printk("CPU: %s [%08x] revision %d\n",
+> > +	       cpu_name, read_cpuid_id(), read_cpuid_id() & 15);
+> > +
+> > +	sprintf(init_utsname()->machine, "aarch64");
+> 
+> > +	initial_boot_params = devtree;
+> > +	dt_root = of_get_flat_dt_root();
+> > +
+> > +	machine_name = of_get_flat_dt_prop(dt_root, "model", NULL);
+> > +	if (!machine_name)
+> > +		machine_name = of_get_flat_dt_prop(dt_root, "compatible", NULL);
+> > +	if (!machine_name)
+> > +		machine_name = "<unknown>";
+> > +	pr_info("Machine: %s\n", machine_name);
+> 
+> This property is an array of strings. It would be more valuable to print out
+> the entry that was matched for a platform instead of the provided one from the
+> device tree.
+
+If we add machine_desc structure back, we could print which machine was
+matched. But so far I try to keep the SoC code to a minimum and just do
+the probing later in the SoC code (of_find_matching_node). Ideally we
+shouldn't have any SoC code and just keep code in drivers but we'll see
+how far we can get. We can discuss more details at the KS as I would
+like the arm-soc team to get involved here.
+
+Thanks.
+
+-- 
+Catalin
