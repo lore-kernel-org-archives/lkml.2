@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2HORGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:06:16 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37047 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab2HORGN (ORCPT
+	id S1754766Ab2HORII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:08:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35887 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HORIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:06:13 -0400
-Date: Wed, 15 Aug 2012 10:06:13 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Message-ID: <20120815170613.GA2892@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
- <201208151320.02313.arnd@arndb.de>
+	Wed, 15 Aug 2012 13:08:06 -0400
+Date: Wed, 15 Aug 2012 18:07:58 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, nbd@openwrt.org, neilb@suse.de,
+        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        ricwheeler@gmail.com, dhowells@redhat.com, hpj@urpla.net,
+        sedat.dilek@googlemail.com, penberg@kernel.org,
+        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
+Subject: Re: [PATCH 12/13] ovl: switch to __inode_permission()
+Message-ID: <20120815170758.GP29100@dm>
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+ <1345045700-9062-13-git-send-email-miklos@szeredi.hu>
+ <502BD587.6090807@schaufler-ca.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208151320.02313.arnd@arndb.de>
+In-Reply-To: <502BD587.6090807@schaufler-ca.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:20:02PM +0000, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
+On Wed, Aug 15, 2012 at 09:59:51AM -0700, Casey Schaufler wrote:
+> On 8/15/2012 8:48 AM, Miklos Szeredi wrote:
+> > From: Andy Whitcroft <apw@canonical.com>
+> >
+> > When checking permissions on an overlayfs inode we do not take into
+> > account either device cgroup restrictions nor security permissions.
+> > This allows a user to mount an overlayfs layer over a restricted device
+> > directory and by pass those permissions to open otherwise restricted
+> > files.
 > 
-> > +The AArch64 exception model is made up of a number of exception levels
-> > +(EL0 - EL3), with EL0 and EL1 having a secure and a non-secure
-> > +counterpart.  EL2 is the hypervisor level and exists only in non-secure
-> > +mode. EL3 is the highest priority level and exists only in secure mode.
-> 
-> I'm always confused by a description like this. It sounds like you cannot
-> have a hypervisor if you have code running in secure mode in EL3. What
-> I instead understand is that you enter non-secure mode by going from
-> EL3 into EL2.
-> 
-> > +2. Setup the device tree
-> > +-------------------------
-> > +
-> > +Requirement: MANDATORY
-> > +
-> > +The device tree blob (dtb) must be no bigger than 2 megabytes in size
-> > +and placed at a 2-megabyte boundary within the first 512 megabytes from
-> > +the start of the kernel image. This is to allow the kernel to map the
-> > +blob using a single section mapping in the initial page tables.
-> 
-> I've seen people put firmware for some peripherals into the device tree,
-> so that a device driver can grab a blob from there and load it into the
-> device, rather than calling request_firmware() which would fail if the
-> OS running on the system does not contain the blob. If such firmware is
-> too large, you end up violating the 2 MB limit you impose here.
-> 
-> Should we keep that limit and declare those use cases as invalid, or
-> should we try to make the boot protocol more flexible?
-> 
-> > diff --git a/arch/arm64/include/asm/setup.h b/arch/arm64/include/asm/setup.h
-> > new file mode 100644
-> > index 0000000..d766493
-> > --- /dev/null
-> > +++ b/arch/arm64/include/asm/setup.h
-> > @@ -0,0 +1,26 @@
-> > +#ifndef __ASM_SETUP_H
-> > +#define __ASM_SETUP_H
-> > +
-> > +#include <linux/types.h>
-> > +
-> > +#define COMMAND_LINE_SIZE 1024
-> > +
-> > +#endif
-> 
-> Is this necessary? The asm-generic version of this file allows 512 bytes,
-> which seems plenty.
+> Why is this a good idea? Either you're not including enough context
+> about the conditions under which this can occur, or you're suggesting
+> the introduction of a trivial mechanism for bypassing all file access
+> controls. This does not seem right.
 
-Chrome OS on my system today uses a 553 character cmdline, in particular
-because some of the device mapper arguments are in there (since we boot without
-ramdisk). It adds up quickly.
+It is stating that the unprotected case is how things was before this
+patch switches us over to __inode_permisssions.  The patch is closing
+the hole indicated.
 
-I suggest keeping it common with x86 since those limits are what people
-will be used to (2048).
-
-
--Olof
+-apw
+> >
+> > Switch over to __inode_permissions.
+> >
+> > Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> > ---
+> >  fs/overlayfs/inode.c |   12 +-----------
+> >  1 files changed, 1 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
+> > index e854720..f3a534f 100644
+> > --- a/fs/overlayfs/inode.c
+> > +++ b/fs/overlayfs/inode.c
+> > @@ -100,19 +100,9 @@ int ovl_permission(struct inode *inode, int mask)
+> >  		if (is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode) &&
+> >  		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+> >  			goto out_dput;
+> > -
+> > -		/*
+> > -		 * Nobody gets write access to an immutable file.
+> > -		 */
+> > -		err = -EACCES;
+> > -		if (IS_IMMUTABLE(realinode))
+> > -			goto out_dput;
+> >  	}
+> >  
+> > -	if (realinode->i_op->permission)
+> > -		err = realinode->i_op->permission(realinode, mask);
+> > -	else
+> > -		err = generic_permission(realinode, mask);
+> > +	err = __inode_permission(realinode, mask);
+> >  out_dput:
+> >  	dput(alias);
+> >  	return err;
+> 
