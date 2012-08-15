@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2HOT7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:59:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16646 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2HOT7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:59:03 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=xNAAEMgky9QA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=2sSwxcZ2iN8A:10 a=2rFVrY8bsTbAbCyUXO0A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Subject: Re: [PATCH] sched: Support compiling out real-time scheduling with
- REALTIME_SCHED.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Trevor Brandt <tjbrandt@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, Eric Paris <eparis@redhat.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        team-fjord@googlegroups.com
-In-Reply-To: <1345043679.31459.109.camel@twins>
-References: <y> <1344977423-28900-1-git-send-email-tjbrandt@gmail.com>
-	 <1345043679.31459.109.camel@twins>
+	id S932350Ab2HOT7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:59:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932121Ab2HOT7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:59:20 -0400
+Message-ID: <1345060759.4683.451.camel@ul30vt.home>
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 15 Aug 2012 13:59:19 -0600
+In-Reply-To: <20120815192224.GB5670@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+	 <20120815142803.GF3068@redhat.com> <1345052191.4683.435.camel@ul30vt.home>
+	 <20120815192224.GB5670@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Aug 2012 15:58:44 -0400
-Message-ID: <1345060724.29444.1.camel@acer.local.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 17:14 +0200, Peter Zijlstra wrote:
+On Wed, 2012-08-15 at 22:22 +0300, Michael S. Tsirkin wrote:
+> On Wed, Aug 15, 2012 at 11:36:31AM -0600, Alex Williamson wrote:
+> > On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
+> > > On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
+> > > > v8:
+> > > > 
+> > > > Trying a new approach.  Nobody seems to like the internal IRQ
+> > > > source ID object and the interactions it implies between irqfd
+> > > > and eoifd, so let's get rid of it.  Instead, simply expose
+> > > > IRQ source IDs to userspace.  This lets the user be in charge
+> > > > of freeing them or hanging onto a source ID for later use.
+> > > 
+> > > In the end it turns out source ID is an optimization for shared
+> > > interrupts, isn't it?  Can't we apply the optimization transparently to
+> > > the user?  E.g. if we have some spare source IDs, allocate them, if we
+> > > run out, use a shared source ID?
+> > 
+> > Let's think about shared source IDs a bit more.  I think it's wrong that
+> > irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
+> > irqfd users can share a source ID.  We do not get the logical OR of all
+> > users by putting them on the same source ID, we get "last set wins".
+> > KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
+> > logical OR happens in userspace.  How would we not starve a user if we
+> > define KVM_IRQFD_SOURCE_ID?  What am I missing?
+> 
+> That all irqfds are deasserted on EOI anyway.  So there's no point
+> to do a logical OR.
 
-> Other than that I'm not entirely happy with the growing #ifdef maze.
-> Granted this new one isn't nearly as bad as some of the existing ones,
-> but I do wish someone would clean up some of that.
+Ok, so the argument is:
 
-To get rid of the #ifdefs, just make the RT scheduler into a module that
-gets loaded for those that want it.
+- edge irqfds (the code now) can share a source ID because there is no
+state.  Overlapping interrupt injects always cause one or more edge
+triggers.
+- your proposed level extension can only be asserted by the inject
+eventfd and is only de-asserted by EOI, which de-asserts and notifies
+all users.
 
-/me runs!
+What prevents an edge irqfd being registered to the same GSI as a level
+irqfd, resulting in a de-assert that might result in the irr not being
+seen by the guest and therefore maybe not getting an EOI? (I think this
+is the same problem as why we can't use the exiting irqfd to insert a
+level interrupt)
 
--- Steve
+Having the de-assert only on EOI policy allows level irqfds to share a
+source ID, but do they all need to share a separate source ID from edge
+irqfds?
 
+> > So I'm inclined to say source IDs are a requirement for shared
+> > interrupts.
+> 
+> Can yo show a specific example that breaks?
+> I don't think it can exist.
+
+Only the edge vs level interaction if we define the policy above for
+de-assert.
+
+> > That means the re-use scheme becomes complicated (ex. we
+> > run out of IRQ source IDs, so we start looking for sharing by re-using a
+> > source ID used by a different GSI).  Do we want to do that in kernel or
+> > userspace?  This series allows userspace to deal with that complexity.
+> > Please let me know if I'm thinking incorrectly about source ID re-use.
+> > Thanks,
+> > 
+> > Alex
+> 
+> I think there is a misunderstanding.
+> All deassert on ack irqfds can share a source ID.
+> This is why I am now thinking deassert on ack behaviour
+> should be set when irqfd is assigned.
+
+Maybe you were already thinking along the lines of a separate source ID
+for de-assert on ack irqfds vs normal irqfds then.  I think I missed
+that.  Thanks,
+
+Alex
 
