@@ -1,124 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2HORKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:10:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56023 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2HORIe (ORCPT
+	id S1754926Ab2HORMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:12:23 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56009 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2HORMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:34 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v3 1/6] ARM: dove: unify clock setup
-Date: Wed, 15 Aug 2012 19:07:30 +0200
-Message-Id: <1345050455-32643-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 15 Aug 2012 13:12:21 -0400
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: marek.vasut@gmail.com, Tomas Hlavacek <tmshlvck@gmail.com>
+Subject: [PATCHv2 1/1] [RFC] uartclk from serial_core exposed to sysfs
+Date: Wed, 15 Aug 2012 19:12:13 +0200
+Message-Id: <1345050733-20252-1-git-send-email-tmshlvck@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch synchronizes the clock setup of dove with other orion-based
-platforms.
+Added file /sys/devices/.../tty/ttySX/uartclk to allow read/modify
+uartclk value in struct uart_port in serial_core via sysfs.
 
-In dove_find_tclk there was a note about DOVE_SAMPLE_HI/LO register to
-detect tclk. While it might be possible to set a different tclk frequency
-with reset strapping the Dove datasheets don't tell anything about tclk
-frequency here. Therefore, I removed that comment.
+It simplifies initialization of no-name cards that have non-standard
+oscillator speed while having no distinguishing PCI IDs to allow
+autodetection.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
 ---
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rabeeh Khoury <rabeeh@solid-run.com>
-Cc: Ian Molton <ian.molton@codethink.co.uk>
-Cc: Maen Suleiman <maen@marvell.com>
-Cc: Olof Johansson <olof@lixom.net>
----
- arch/arm/mach-dove/common.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/tty/serial/serial_core.c |   55 ++++++++++++++++++++++++++++++++++++++
+ drivers/tty/tty_io.c             |   17 ++++++++++++
+ include/linux/tty.h              |    2 ++
+ 3 files changed, 74 insertions(+)
 
-v2: remove useless clk_prepare_enable for fixed rate tclk
-
-diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index 4db5de5..b6f092c 100644
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -33,8 +33,6 @@
- #include <plat/addr-map.h>
- #include "common.h"
- 
--static int get_tclk(void);
--
- /*****************************************************************************
-  * I/O Address Mapping
-  ****************************************************************************/
-@@ -70,12 +68,13 @@ void __init dove_map_io(void)
- /*****************************************************************************
-  * CLK tree
-  ****************************************************************************/
-+static int dove_tclk;
- static struct clk *tclk;
- 
--static void __init clk_init(void)
-+static void __init dove_clk_init(void)
- {
- 	tclk = clk_register_fixed_rate(NULL, "tclk", NULL, CLK_IS_ROOT,
--				       get_tclk());
-+				       dove_tclk);
- 
- 	orion_clkdev_init(tclk);
- }
-@@ -187,16 +186,16 @@ void __init dove_init_early(void)
- 	orion_time_set_base(TIMER_VIRT_BASE);
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index a21dc8e..0929fe3 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2293,6 +2293,47 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
+ 	return p->tty_driver;
  }
  
--static int get_tclk(void)
-+static int __init dove_find_tclk(void)
- {
--	/* use DOVE_RESET_SAMPLE_HI/LO to detect tclk */
- 	return 166666667;
++static ssize_t uart_get_attr_uartclk(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	int ret;
++
++	struct uart_state *state = dev_get_drvdata(dev);
++	mutex_lock(&state->port.mutex);
++	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
++	mutex_unlock(&state->port.mutex);
++	return ret;
++}
++
++static ssize_t uart_set_attr_uartclk(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct uart_state *state = dev_get_drvdata(dev);
++	unsigned int val;
++	int ret;
++
++	ret = kstrtouint(buf, 10, &val);
++	if (ret)
++		return ret;
++
++	mutex_lock(&state->port.mutex);
++
++	/*
++	 * Check value: baud_base does not make sense to be set below 9600
++	 * and since uartclock = (baud_base * 16) it has to be equal or greater
++	 * than 9600 * 16 = 153600.
++	 */
++	if (val >= 153600)
++		state->uart_port->uartclk = val;
++
++	mutex_unlock(&state->port.mutex);
++
++	return count;
++}
++
++static DEVICE_ATTR(uartclk, S_IRUGO | S_IWUSR, uart_get_attr_uartclk,
++		uart_set_attr_uartclk);
++
+ /**
+  *	uart_add_one_port - attach a driver-defined port structure
+  *	@drv: pointer to the uart low level driver structure for this port
+@@ -2355,6 +2396,14 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 	}
+ 
+ 	/*
++	 * Expose uartclk in sysfs. Use driverdata of the tty device for
++	 * referencing the UART port.
++	 */
++	dev_set_drvdata(tty_dev, state);
++	if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
++		dev_err(tty_dev, "Failed to add uartclk attr\n");
++
++	/*
+ 	 * Ensure UPF_DEAD is not set.
+ 	 */
+ 	uport->flags &= ~UPF_DEAD;
+@@ -2397,6 +2446,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 	mutex_unlock(&port->mutex);
+ 
+ 	/*
++	 * Remove uartclk file from sysfs.
++	 */
++	device_remove_file(tty_lookup_device(drv->tty_driver, uport->line),
++			&dev_attr_uartclk);
++
++	/*
+ 	 * Remove the devices from the tty layer
+ 	 */
+ 	tty_unregister_device(drv->tty_driver, uport->line);
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index b425c79..8ea8622 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -3049,6 +3049,23 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
  }
+ EXPORT_SYMBOL(tty_unregister_device);
  
- static void __init dove_timer_init(void)
++/*
++ *	tty_lookup_device - lookup a tty device
++ *	@driver: the tty driver that describes the tty device
++ *	@index: the index in the tty driver for this tty device
++ *
++ *	This function returns a struct device pointer when device has
++ *	been found and NULL otherwise.
++ *
++ *	Locking: ??
++ */
++struct device *tty_lookup_device(struct tty_driver *driver, unsigned index)
++{
++	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
++	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
++}
++EXPORT_SYMBOL(tty_lookup_device);
++
+ struct tty_driver *__alloc_tty_driver(int lines, struct module *owner)
  {
-+	dove_tclk = dove_find_tclk();
- 	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
--			IRQ_DOVE_BRIDGE, get_tclk());
-+			IRQ_DOVE_BRIDGE, dove_tclk);
- }
- 
- struct sys_timer dove_timer = {
-@@ -284,8 +283,8 @@ void __init dove_sdio1_init(void)
- 
- void __init dove_init(void)
- {
--	printk(KERN_INFO "Dove 88AP510 SoC, ");
--	printk(KERN_INFO "TCLK = %dMHz\n", (get_tclk() + 499999) / 1000000);
-+	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
-+		(dove_tclk + 499999) / 1000000);
- 
- #ifdef CONFIG_CACHE_TAUROS2
- 	tauros2_init();
-@@ -293,7 +292,7 @@ void __init dove_init(void)
- 	dove_setup_cpu_mbus();
- 
- 	/* Setup root of clk tree */
--	clk_init();
-+	dove_clk_init();
- 
- 	/* internal devices that every board has */
- 	dove_rtc_init();
+ 	struct tty_driver *driver;
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 9f47ab5..5d408a1 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -410,6 +410,8 @@ extern int tty_register_driver(struct tty_driver *driver);
+ extern int tty_unregister_driver(struct tty_driver *driver);
+ extern struct device *tty_register_device(struct tty_driver *driver,
+ 					  unsigned index, struct device *dev);
++extern struct device *tty_lookup_device(struct tty_driver *driver,
++					unsigned index);
+ extern void tty_unregister_device(struct tty_driver *driver, unsigned index);
+ extern int tty_read_raw_data(struct tty_struct *tty, unsigned char *bufp,
+ 			     int buflen);
 -- 
 1.7.10.4
 
