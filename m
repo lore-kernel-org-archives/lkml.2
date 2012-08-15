@@ -1,262 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab2HOAVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:21:32 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53241 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab2HOAVa (ORCPT
+	id S1755201Ab2HOAYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:24:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45277 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab2HOAYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:21:30 -0400
-Date: Tue, 14 Aug 2012 17:21:30 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 12/31] arm64: Atomic operations
-Message-ID: <20120815002130.GE19607@quad.lixom.net>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-13-git-send-email-catalin.marinas@arm.com>
+	Tue, 14 Aug 2012 20:24:17 -0400
+Message-ID: <502AEC51.2010305@gmail.com>
+Date: Wed, 15 Aug 2012 02:24:49 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344966752-16102-13-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: NeilBrown <neilb@suse.de>
+CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 01/16] hashtable: introduce a small and naive hashtable
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com> <1344961490-4068-2-git-send-email-levinsasha928@gmail.com> <20120815092523.00a909ef@notabene.brown>
+In-Reply-To: <20120815092523.00a909ef@notabene.brown>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Aug 14, 2012 at 06:52:13PM +0100, Catalin Marinas wrote:
-> This patch introduces the atomic, mutex and futex operations. Many
-> atomic operations use the load-acquire and store-release operations
-> which imply barriers, avoiding the need for explicit DMB.
+On 08/15/2012 01:25 AM, NeilBrown wrote:
+> On Tue, 14 Aug 2012 18:24:35 +0200 Sasha Levin <levinsasha928@gmail.com>
+> wrote:
 > 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  arch/arm64/include/asm/atomic.h |  306 +++++++++++++++++++++++++++++++++++++++
->  arch/arm64/include/asm/futex.h  |  134 +++++++++++++++++
->  2 files changed, 440 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm64/include/asm/atomic.h
->  create mode 100644 arch/arm64/include/asm/futex.h
 > 
-> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
-> new file mode 100644
-> index 0000000..fa60c8b
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/atomic.h
-> @@ -0,0 +1,306 @@
-> +/*
-> + * Based on arch/arm/include/asm/atomic.h
-> + *
-> + * Copyright (C) 1996 Russell King.
-> + * Copyright (C) 2002 Deep Blue Solutions Ltd.
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_ATOMIC_H
-> +#define __ASM_ATOMIC_H
-> +
-> +#include <linux/compiler.h>
-> +#include <linux/types.h>
-> +
-> +#include <asm/barrier.h>
-> +#include <asm/cmpxchg.h>
-> +
-> +#define ATOMIC_INIT(i)	{ (i) }
-> +
-> +#ifdef __KERNEL__
-> +
-> +/*
-> + * On ARM, ordinary assignment (str instruction) doesn't clear the local
-> + * strex/ldrex monitor on some implementations. The reason we can use it for
-> + * atomic_set() is the clrex or dummy strex done on every exception return.
-> + */
-> +#define atomic_read(v)	(*(volatile int *)&(v)->counter)
-> +#define atomic_set(v,i)	(((v)->counter) = (i))
-> +
-> +/*
-> + * AArch64 UP and SMP safe atomic ops.  We use load exclusive and
-> + * store exclusive to ensure that these are atomic.  We may loop
-> + * to ensure that the update happens.
-> + */
-> +static inline void atomic_add(int i, atomic_t *v)
-> +{
-> +	unsigned long tmp;
-> +	int result;
-> +
-> +	asm volatile("// atomic_add\n"
-> +"1:	ldxr	%w0, [%3]\n"
-> +"	add	%w0, %w0, %w4\n"
-> +"	stxr	%w1, %w0, [%3]\n"
-> +"	cbnz	%w1,1b"
+>> +static inline void hash_init_size(struct hlist_head *hashtable, int bits)
+>> +{
+>> +	int i;
+>> +
+>> +	for (i = 0; i < HASH_SIZE(bits); i++)
+>> +		INIT_HLIST_HEAD(hashtable + i);
+>> +}
+> 
+> This seems like an inefficient way to do "memset(hashtable, 0, ...);".
+> And in many cases it isn't needed as the hash table is static and initialised
+> to zero.
+> I note that in the SUNRPC/cache patch you call hash_init(), but in the lockd
+> patch you don't.  You don't actually need to in either case.
 
-Nit: space before 1b
+Agreed that the code will run just fine if we wouldn't use hash_init().
 
-[...]
+> I realise that any optimisation here is for code that is only executed once
+> per boot, so no big deal, and even the presence of extra code making the
+> kernel bigger is unlikely to be an issue.  But I'd at least like to see
+> consistency: Either use hash_init everywhere, even when not needed, or only
+> use it where absolutely needed which might be no-where because static tables
+> are already initialised, and dynamic tables can use GFP_ZERO.
 
-> diff --git a/arch/arm64/include/asm/futex.h b/arch/arm64/include/asm/futex.h
-> new file mode 100644
-> index 0000000..0745e82
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/futex.h
-> @@ -0,0 +1,134 @@
-> +/*
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_FUTEX_H
-> +#define __ASM_FUTEX_H
-> +
-> +#ifdef __KERNEL__
-> +
-> +#include <linux/futex.h>
-> +#include <linux/uaccess.h>
-> +#include <asm/errno.h>
-> +
-> +#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
-> +	asm volatile(							\
-> +"1:	ldaxr	%w1, %2\n"						\
-> +	insn "\n"							\
-> +"2:	stlxr	%w3, %w0, %2\n"						\
-> +"	cbnz	%w3, 1b\n"						\
-> +"3:	.pushsection __ex_table,\"a\"\n"				\
-> +"	.align	3\n"							\
-> +"	.quad	1b, 4f, 2b, 4f\n"					\
-> +"	.popsection\n"							\
-> +"	.pushsection .fixup,\"ax\"\n"					\
+This is a consistency problem. I didn't want to add a module_init() to modules that didn't have it just to get hash_init() in there.
 
-Moving the exception table below the body of the code makes the flow easier to
-read, please do that.
+I'll get it fixed.
 
-Also, don't you need a barrier here?
+> And if you keep hash_init_size I would rather see a memset(0)....
 
-> +"4:	mov	%w0, %w5\n"						\
-> +"	b	3b\n"							\
-> +"	.popsection"							\
-> +	: "=&r" (ret), "=&r" (oldval), "+Q" (*uaddr), "=&r" (tmp)	\
-> +	: "r" (oparg), "Ir" (-EFAULT)					\
-> +	: "cc")
-> +
-> +static inline int
-> +futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
-> +{
-> +	int op = (encoded_op >> 28) & 7;
-> +	int cmp = (encoded_op >> 24) & 15;
-> +	int oparg = (encoded_op << 8) >> 20;
-> +	int cmparg = (encoded_op << 20) >> 20;
-> +	int oldval = 0, ret, tmp;
-> +
-> +	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
-> +		oparg = 1 << oparg;
-> +
-> +	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-> +		return -EFAULT;
-> +
-> +	pagefault_disable();	/* implies preempt_disable() */
-> +
-> +	switch (op) {
-> +	case FUTEX_OP_SET:
-> +		__futex_atomic_op("mov	%w0, %w4",
-> +				  ret, oldval, uaddr, tmp, oparg);
-> +		break;
-> +	case FUTEX_OP_ADD:
-> +		__futex_atomic_op("add	%w0, %w1, %w4",
-> +				  ret, oldval, uaddr, tmp, oparg);
-> +		break;
-> +	case FUTEX_OP_OR:
-> +		__futex_atomic_op("orr	%w0, %w1, %w4",
-> +				  ret, oldval, uaddr, tmp, oparg);
-> +		break;
-> +	case FUTEX_OP_ANDN:
-> +		__futex_atomic_op("and	%w0, %w1, %w4",
-> +				  ret, oldval, uaddr, tmp, ~oparg);
-> +		break;
-> +	case FUTEX_OP_XOR:
-> +		__futex_atomic_op("eor	%w0, %w1, %w4",
-> +				  ret, oldval, uaddr, tmp, oparg);
-> +		break;
-> +	default:
-> +		ret = -ENOSYS;
-> +	}
-> +
-> +	pagefault_enable();	/* subsumes preempt_enable() */
-> +
-> +	if (!ret) {
-> +		switch (cmp) {
-> +		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
-> +		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
-> +		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
-> +		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
-> +		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
-> +		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
-> +		default: ret = -ENOSYS;
-> +		}
-> +	}
-> +	return ret;
-> +}
-> +
-> +static inline int
-> +futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-> +			      u32 oldval, u32 newval)
-> +{
-> +	int ret = 0;
-> +	u32 val, tmp;
-> +
-> +	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-> +		return -EFAULT;
-> +
-> +	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
-> +"1:	ldaxr	%w1, %2\n"
-> +"	sub	%w3, %w1, %w4\n"
-> +"	cbnz	%w3, 3f\n"
-> +"2:	stlxr	%w3, %w5, %2\n"
-> +"	cbnz	%w3, 1b\n"
-> +"3:	.pushsection __ex_table,\"a\"\n"
-> +"	.align	3\n"
-> +"	.quad	1b, 4f, 2b, 4f\n"
-> +"	.popsection\n"
-> +"	.pushsection .fixup,\"ax\"\n"
+My concern with using a memset(0) is that I'm going to break layering.
 
-Same here w.r.t. exception table location and barrier.
+The hashtable uses hlist. hlist provides us with an entire family of init functions which I'm supposed to use to initialize hlist heads.
 
-> +"4:	mov	%w0, %w6\n"
-> +"	b	3b\n"
-> +"	.popsection"
-> +	: "+r" (ret), "=&r" (val), "+Q" (*uaddr), "=&r" (tmp)
-> +	: "r" (oldval), "r" (newval), "Ir" (-EFAULT)
-> +	: "cc", "memory");
-> +
-> +	*uval = val;
-> +	return ret;
-> +}
-> +
-> +#endif /* __KERNEL__ */
-> +#endif /* __ASM_FUTEX_H */
+So while a memset(0) will work perfectly here, I consider that cheating - it results in an uglier code that assumes to know about hlist internals, and will probably break as soon as someone tries to do something to hlist.
 
+I can think of several alternatives here, and all of them involve changes to hlist instead of the hashtable:
 
--Olof
+ - Remove INIT_HLIST_HEAD()/HLIST_HEAD()/HLIST_HEAD_INIT() and introduce a CLEAR_HLIST instead, documenting that it's enough to memset(0) the hlist to initialize it properly.
+ - Add a block initializer INIT_HLIST_HEADS() or something similar that would initialize an array of heads.
