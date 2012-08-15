@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2HOT6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:58:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37399 "EHLO
+	id S932267Ab2HOT6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:58:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37398 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2HOTwz (ORCPT
+	with ESMTP id S932184Ab2HOTwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:52:55 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: NeilBrown <neilb@suse.de>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+CC: "Theodore Ts'o" <tytso@mit.edu>, Matt Mackall <mpm@selenic.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 122/165] NFS/sunrpc: don't use a credential with extra groups.
-Date: Wed, 15 Aug 2012 15:47:46 -0400
-Message-ID: <1345060109-9187-123-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 158/165] MAINTAINERS: Theodore Ts'o is taking over the random driver
+Date: Wed, 15 Aug 2012 15:48:22 -0400
+Message-ID: <1345060109-9187-159-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Theodore Ts'o <tytso@mit.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,42 +31,30 @@ From: NeilBrown <neilb@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
+commit 330e0a01d54c2b8606c56816f99af6ebc58ec92c upstream.
 
-The sunrpc layer keeps a cache of recently used credentials and
-'unx_match' is used to find the credential which matches the current
-process.
+Matt Mackall stepped down as the /dev/random driver maintainer last
+year, so Theodore Ts'o is taking back the /dev/random driver.
 
-However unx_match allows a match when the cached credential has extra
-groups at the end of uc_gids list which are not in the process group list.
-
-So if a process with a list of (say) 4 group accesses a file and gains
-access because of the last group in the list, then another process
-with the same uid and gid, and a gid list being the first tree of the
-gids of the original process tries to access the file, it will be
-granted access even though it shouldn't as the wrong rpc credential
-will be used.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/auth_unix.c | 3 +++
- 1 file changed, 3 insertions(+)
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sunrpc/auth_unix.c b/net/sunrpc/auth_unix.c
-index aac2f8b..c16f25d 100644
---- a/net/sunrpc/auth_unix.c
-+++ b/net/sunrpc/auth_unix.c
-@@ -130,6 +130,9 @@ unx_match(struct auth_cred *acred, struct rpc_cred *rcred, int flags)
- 	for (i = 0; i < groups ; i++)
- 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
- 			return 0;
-+	if (groups < NFS_NGROUPS &&
-+	    cred->uc_gids[groups] != NOGROUP)
-+		return 0;
- 	return 1;
- }
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 52bec00..de13f3e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4644,7 +4644,7 @@ F:	Documentation/blockdev/ramdisk.txt
+ F:	drivers/block/brd.c
+ 
+ RANDOM NUMBER DRIVER
+-M:	Matt Mackall <mpm@selenic.com>
++M:	Theodore Ts'o" <tytso@mit.edu>
+ S:	Maintained
+ F:	drivers/char/random.c
  
 -- 
 1.7.12.rc2
