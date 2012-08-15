@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2HOWPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:15:54 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52513 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2HOWPw (ORCPT
+	id S1753863Ab2HOWQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:16:36 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27888 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab2HOWQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:15:52 -0400
-Date: Wed, 15 Aug 2012 15:15:49 -0700 (PDT)
-Message-Id: <20120815.151549.1835466517645273818.davem@davemloft.net>
-To: jiri@resnulli.us
-Cc: bhutchings@solarflare.com, netdev@vger.kernel.org, edumazet@google.com,
-        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
-        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
-        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
-        fbl@redhat.com
-Subject: Re: [patch net-next v2 01/15] net: introduce upper device lists
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120815074612.GB1726@minipsycho.orion>
-References: <1344956748-2099-2-git-send-email-jiri@resnulli.us>
-	<1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
-	<20120815074612.GB1726@minipsycho.orion>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Aug 2012 18:16:34 -0400
+Date: Thu, 16 Aug 2012 00:16:33 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        Sirrix AG <tpmdd@sirrix.com>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Rajiv Andrade <mail@srajiv.net>, Seiji Munetoh <munetoh@jp.ibm.com>,
+        Stefan Berger <stefanb@us.ibm.com>,
+        Reiner Sailer <sailer@watson.ibm.com>, Kylene Hall <kjhall@us.ibm.com>
+Subject: [PATCH] tpm: Do not dereference NULL pointer if acpi_os_map_memory()
+ fails.
+In-Reply-To: <alpine.LNX.2.00.1208160001080.7818@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1208160011160.7818@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1208072247490.3227@swampdragon.chaosbits.net> <20120808180750.GA24016@linux.vnet.ibm.com> <20120815201527.GC27618@linux.vnet.ibm.com> <alpine.LNX.2.00.1208160001080.7818@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Pirko <jiri@resnulli.us>
-Date: Wed, 15 Aug 2012 09:46:12 +0200
+In drivers/char/tpm/tpm_acpi.c::read_log() we call
+acpi_os_map_memory(). That call may fail for a number of reasons
+(invalid address, out of memory etc). If the call fails it returns
+NULL and we just pass that to memcpy() unconditionally, which will go
+bad when it tries to dereference the pointer.
 
-> You are probably right. I'm not sure how to handle this correctly
-> though. Adding some hard limit number might not be correct.
+Unfortunately we just get NULL back, so we can't really tell the user
+exactely what went wrong, but we can at least avoid crashing and
+return an error (-EIO seemed more generic and more suitable here than
+-ENOMEM or something else, so I picked that).
 
-I would just use a hard limit of something like 8 for now, and if we
-need to expand this limit we can consider how to do so with real known
-usage in mind rather than pure speculation.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/char/tpm/tpm_acpi.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+ note: this patch is against git://github.com/shpedoikal/linux.git v3.6-rc1-tpmdd-staging
+
+diff --git a/drivers/char/tpm/tpm_acpi.c b/drivers/char/tpm/tpm_acpi.c
+index a1bb5a18..fe3fa94 100644
+--- a/drivers/char/tpm/tpm_acpi.c
++++ b/drivers/char/tpm/tpm_acpi.c
+@@ -96,6 +96,11 @@ int read_log(struct tpm_bios_log *log)
+ 	log->bios_event_log_end = log->bios_event_log + len;
+ 
+ 	virt = acpi_os_map_memory(start, len);
++	if (!virt) {
++		kfree(log->bios_event_log);
++		printk("%s: ERROR - Unable to map memory\n", __func__);
++		return -EIO;
++	}
+ 
+ 	memcpy(log->bios_event_log, virt, len);
+ 
+-- 
+1.7.11.4
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
