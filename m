@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2HOQay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:30:54 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37056 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754192Ab2HOQaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:30:52 -0400
-X-Sasl-enc: 8sGZsZXSiWxZ7Lr9er3f9rOc6A2WoZhHXDyadc0QcDCt 1345048251
-Date: Wed, 15 Aug 2012 13:30:46 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [ 36/44] x86, microcode: Sanitize per-cpu microcode reloading
- interface
-Message-ID: <20120815163046.GA30736@khazad-dum.debian.net>
-References: <20120813220142.113186818@linuxfoundation.org>
- <20120813220145.337264645@linuxfoundation.org>
- <20120815002654.GA11666@khazad-dum.debian.net>
- <20120815140655.GC22871@kroah.com>
+	id S1755830Ab2HOQbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:31:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55221 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755766Ab2HOQbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 12:31:02 -0400
+Message-ID: <502BCEAD.7050905@zytor.com>
+Date: Wed, 15 Aug 2012 09:30:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815140655.GC22871@kroah.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: tglx@linutronix.de, mingo@redhat.com, davem@davemloft.net,
+        thierry.reding@avionic-design.de, bfields@redhat.com,
+        eric.dumazet@gmail.com, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, viro@zeniv.linux.org.uk,
+        gorcunov@openvz.org, akpm@linux-foundation.org,
+        tim.c.chen@linux.intel.com, devel@openvz.org, ebiederm@xmission.com
+Subject: Re: [RFC PATCH 5/5] syscall: sys_fbind() introduced
+References: <20120815161141.7598.16682.stgit@localhost.localdomain> <20120815162225.7598.85131.stgit@localhost.localdomain>
+In-Reply-To: <20120815162225.7598.85131.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Greg Kroah-Hartman wrote:
-> On Tue, Aug 14, 2012 at 09:26:54PM -0300, Henrique de Moraes Holschuh wrote:
-> > I believe the patch bellow, which was required on 3.2, will also be
-> > necessary.
-> 
-> Will it be necessary to apply this before this patch goes in the series,
-> or after it?
+On 08/15/2012 09:22 AM, Stanislav Kinsbursky wrote:
+> This syscall allows to bind socket to specified file descriptor.
+> Descriptor can be gained by simple open with O_PATH flag.
+> Socket node can be created by sys_mknod().
+>
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>   arch/x86/syscalls/syscall_32.tbl |    1 +
+>   arch/x86/syscalls/syscall_64.tbl |    1 +
+>   include/linux/syscalls.h         |    1 +
+>   kernel/sys_ni.c                  |    3 +++
+>   net/socket.c                     |   25 +++++++++++++++++++++++++
+>   5 files changed, 31 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+> index 7a35a6e..9594b82 100644
+> --- a/arch/x86/syscalls/syscall_32.tbl
+> +++ b/arch/x86/syscalls/syscall_32.tbl
+> @@ -356,3 +356,4 @@
+>   347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+>   348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+>   349	i386	kcmp			sys_kcmp
+> +350	i386	fbind			sys_fbind
 
-Applying after fixes a build error.  Applying before might avoid the build
-error altogether (error happens when #undef CONFIG_SMP), AFAIK.
+i386 uses socketcalls... perhaps it shouldn't (socketcalls are pretty 
+much an abomination), but for socketcall-based architectures this really 
+should be a socketcall.
+
+Don't you also need fconnect()?  Or is that simply handled by allowing 
+open() without O_PATH?
+
+	-hpa
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
