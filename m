@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab2HOUAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:00:53 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42859 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2HOUAs (ORCPT
+	id S932400Ab2HOUB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:01:26 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63144 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab2HOTwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:00:48 -0400
-Date: Wed, 15 Aug 2012 14:59:37 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Ashley Lai <adlai@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        adlai@us.ibm.com
-Subject: Re: [PATCH V3 0/3] tpm: Add new vTPM device driver for PPC64
-Message-ID: <20120815195937.GA27618@linux.vnet.ibm.com>
-References: <1344986638.4430.22.camel@footlong>
+	Wed, 15 Aug 2012 15:52:43 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 149/165] random: Adjust the number of loops when initializing
+Date: Wed, 15 Aug 2012 15:48:13 -0400
+Message-ID: <1345060109-9187-150-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344986638.4430.22.camel@footlong>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081520-2398-0000-0000-0000097A1D3A
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 06:23:58PM -0500, Ashley Lai wrote:
-> Change log V3:
-> - Replaced TPM_NO_EVENT_LOG macro with stubs
-> - Removed tpm_noeventlog.c file 
-> - Called of_node_put() before return in tpm_of.c
-> 
-> Change log V2:
-> - Removed unnecessary tpm_bios_log_setup and tpm_bios_log_teardown
->   functions in tpm_eventlog.h (patch 3/3).
-> - Added more descriptions on vTPM (patch 1/3).
-> 
-> These patches add support for IBM vTPM for PPC64. This new device driver
-> works on firmware that supports vTPM (firmware release 740 or higher).
-> 
-> Tested on Power7+ system with firmware level ZM770_001.
-> 
-> Applied to Kent Yoder tree at:
-> https://github.com/shpedoikal/linux/tree/v3.6-rc1-tpmdd-staging
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-  Thanks Ashley, I've added the patches to that tree.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Kent
+commit 2dac8e54f988ab58525505d7ef982493374433c3 upstream.
 
-> 
-> Ashley Lai (3):
->   drivers/char/tpm: Add new device driver to support IBM vTPM
->   PPC64: Add support for instantiating SML from Open Firmware
->   drivers/char/tpm: Add securityfs support for event log
-> 
->  arch/powerpc/kernel/prom_init.c |   62 ++++
->  drivers/char/tpm/Kconfig        |    8 +
->  drivers/char/tpm/Makefile       |    6 +
->  drivers/char/tpm/tpm.h          |   13 +-
->  drivers/char/tpm/tpm_eventlog.h |   15 +
->  drivers/char/tpm/tpm_ibmvtpm.c  |  749 +++++++++++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_ibmvtpm.h  |   83 +++++
->  drivers/char/tpm/tpm_of.c       |   73 ++++
->  8 files changed, 997 insertions(+), 12 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
->  create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
->  create mode 100644 drivers/char/tpm/tpm_of.c
-> 
-> 
+When we are initializing using arch_get_random_long() we only need to
+loop enough times to touch all the bytes in the buffer; using
+poolwords for that does twice the number of operations necessary on a
+64-bit machine, since in the random number generator code "word" means
+32 bits.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Link: http://lkml.kernel.org/r/1324589281-31931-1-git-send-email-tytso@mit.edu
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/char/random.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 4874f55..fce764d 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -968,7 +968,7 @@ static void init_std_data(struct entropy_store *r)
+ 
+ 	now = ktime_get_real();
+ 	mix_pool_bytes(r, &now, sizeof(now));
+-	for (i = r->poolinfo->poolwords; i; i--) {
++	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
+ 		if (!arch_get_random_long(&flags))
+ 			break;
+ 		mix_pool_bytes(r, &flags, sizeof(flags));
+-- 
+1.7.12.rc2
 
