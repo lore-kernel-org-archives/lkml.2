@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab2HOVbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 17:31:09 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41924 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756405Ab2HOVbH (ORCPT
+	id S1757075Ab2HOVbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 17:31:38 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:57402 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab2HOVbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 17:31:07 -0400
-Date: Thu, 16 Aug 2012 01:31:03 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
- providers
-Message-ID: <20120815213103.GP23657@moon>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.507162379@openvz.org>
- <20120815211628.GN23464@ZenIV.linux.org.uk>
+	Wed, 15 Aug 2012 17:31:37 -0400
+Date: Wed, 15 Aug 2012 23:31:26 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Huacai Chen <chenhuacai@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH V5 13/18] drm: Define SAREA_MAX for Loongson (PageSize =
+ 16KB).
+Message-ID: <20120815213126.GC15844@linux-mips.org>
+References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
+ <1344677543-22591-14-git-send-email-chenhc@lemote.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120815211628.GN23464@ZenIV.linux.org.uk>
+In-Reply-To: <1344677543-22591-14-git-send-email-chenhc@lemote.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 10:16:28PM +0100, Al Viro wrote:
-> On Wed, Aug 15, 2012 at 01:21:19PM +0400, Cyrill Gorcunov wrote:
-> > -static int fdinfo_open_helper(struct inode *inode, int *f_flags, struct path *path)
-> > +static int fdinfo_open_helper(struct inode *inode, int *f_flags, struct file **f_file, struct path *path)
-> 
-> Bloody bad taste, that...  This kind of optional arguments is almost always
-> a bad sign - tends to happen when you have two barely related functions
-> crammed into one.  And yes, proc_fd_info() suffers the same braindamage.
-> Trying to avoid code duplication is generally a good thing, but it's not
-> always worth doing - less obfuscated code wins.
+On Sat, Aug 11, 2012 at 05:32:18PM +0800, Huacai Chen wrote:
 
-Sure I'll update. Thanks.
+> Subject: [PATCH V5 13/18] drm: Define SAREA_MAX for Loongson (PageSize = 16KB).
 
-> >  static int seq_show(struct seq_file *m, void *v)
-> >  {
-> >  	struct proc_fdinfo *fdinfo = m->private;
-> > -	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-> > -		   (long long)fdinfo->f_pos,
-> > -		   fdinfo->f_flags);
-> > -	return 0;
-> > +	int ret;
-> > +
-> > +	ret = seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-> > +			 (long long)fdinfo->f_file->f_pos,
-> > +			 fdinfo->f_flags);
-> 
-> Realistically, that one is not going to overflow; you are almost certainly
-> wasting more cycles on that check of !ret just below than you'll save on
-> not going into ->show_fdinfo() in case of full buffer.
+But your code doesn't define it just for Loongsson as the log message claims
+but rather for all MIPS.
 
-Yes, this is redundant, thanks. Will fix.
+> diff --git a/include/drm/drm_sarea.h b/include/drm/drm_sarea.h
+> index ee5389d..1d1a858 100644
+> --- a/include/drm/drm_sarea.h
+> +++ b/include/drm/drm_sarea.h
+> @@ -37,6 +37,8 @@
+>  /* SAREA area needs to be at least a page */
+>  #if defined(__alpha__)
+>  #define SAREA_MAX                       0x2000U
+> +#elif defined(__mips__)
+> +#define SAREA_MAX                       0x4000U
 
-> 
-> > +	if (!ret && fdinfo->f_file->f_op->show_fdinfo)
-> > +		ret = fdinfo->f_file->f_op->show_fdinfo(m, fdinfo->f_file);
-> > +
-> > +	return ret;
-> >  }
->   
-> > +	ret = single_open(file, seq_show, fdinfo);
-> > +	if (ret) {
-> > +		put_filp(fdinfo->f_file);
-> 
-> Excuse me?  We should *never* do put_filp() on anything that has already
-> been opened.  Think what happens if you race with close(); close() would
-> rip the reference from descriptor table and do fput(), leaving you with
-> the last reference to that struct file.  You really don't want to just
-> go and free it.  IOW, that one should be fput().
-> 
-> > +	put_filp(fdinfo->f_file);
-> Ditto. 
+How about replacing this whole #ifdef mess with something like:
 
-It seems I indeed missed this scenario, thanks Al, will update!
+#include <linux/kernel.h>
+#include <asm/page.h>
 
-	Cyrill
+/* Intel 830M driver needs at least 8k SAREA */
+#define SAREA_MAX	max(PAGE_SIZE, 0x2000U)
+
+MIPS also uses 64K page size and your patch as posted would break with 64k
+pages.
+
+  Ralf
