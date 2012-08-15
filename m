@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab2HOTtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:49:19 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36394 "EHLO
+	id S1756317Ab2HOTtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:49:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36409 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab2HOTtL (ORCPT
+	with ESMTP id S1756292Ab2HOTtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:11 -0400
+	Wed, 15 Aug 2012 15:49:19 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Avi Kivity <avi@redhat.com>, Michael Ellerman <michael@ellerman.id.au>,
+CC: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 016/165] KVM: Ensure all vcpus are consistent with in-kernel irqchip settings
-Date: Wed, 15 Aug 2012 15:46:00 -0400
-Message-ID: <1345060109-9187-17-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 024/165] atm: br2684: Fix oops due to skb->dev being NULL
+Date: Wed, 15 Aug 2012 15:46:08 -0400
+Message-ID: <1345060109-9187-25-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avi Kivity <avi@redhat.com>
+From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,106 +32,53 @@ From: Avi Kivity <avi@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3e515705a1f46beb1c942bb8043c16f8ac7b1e9e upstream.
+commit fbe5e29ec1886967255e76946aaf537b8cc9b81e upstream.
 
-If some vcpus are created before KVM_CREATE_IRQCHIP, then
-irqchip_in_kernel() and vcpu->arch.apic will be inconsistent, leading
-to potential NULL pointer dereferences.
+This oops have been already fixed with commit
 
-Fix by:
-- ensuring that no vcpus are installed when KVM_CREATE_IRQCHIP is called
-- ensuring that a vcpu has an apic if it is installed after KVM_CREATE_IRQCHIP
+    27141666b69f535a4d63d7bc6d9e84ee5032f82a
 
-This is somewhat long winded because vcpu->arch.apic is created without
-kvm->lock held.
+    atm: [br2684] Fix oops due to skb->dev being NULL
 
-Based on earlier patch by Michael Ellerman.
+    It happens that if a packet arrives in a VC between the call to open it on
+    the hardware and the call to change the backend to br2684, br2684_regvcc
+    processes the packet and oopses dereferencing skb->dev because it is
+    NULL before the call to br2684_push().
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+but have been introduced again with commit
+
+    b6211ae7f2e56837c6a4849316396d1535606e90
+
+    atm: Use SKB queue and list helpers instead of doing it by-hand.
+
+Signed-off-by: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/ia64/kvm/kvm-ia64.c | 5 +++++
- arch/x86/kvm/x86.c       | 8 ++++++++
- include/linux/kvm_host.h | 7 +++++++
- virt/kvm/kvm_main.c      | 4 ++++
- 4 files changed, 24 insertions(+)
+ net/atm/br2684.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 7f3c0a2..2b7adad 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1179,6 +1179,11 @@ out:
+diff --git a/net/atm/br2684.c b/net/atm/br2684.c
+index f3bae14..e9b5677 100644
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -522,12 +522,13 @@ static int br2684_regvcc(struct atm_vcc *atmvcc, void __user * arg)
+ 	spin_unlock_irqrestore(&rq->lock, flags);
  
- #define PALE_RESET_ENTRY    0x80000000ffffffb0UL
+ 	skb_queue_walk_safe(&queue, skb, tmp) {
+-		struct net_device *dev = skb->dev;
++		struct net_device *dev;
++
++		br2684_push(atmvcc, skb);
++		dev = skb->dev;
  
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
-+{
-+	return irqchip_in_kernel(vcpu->kcm) == (vcpu->arch.apic != NULL);
-+}
-+
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_vcpu *v;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8ced130..c1e586d 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2764,6 +2764,9 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		r = -EEXIST;
- 		if (kvm->arch.vpic)
- 			goto create_irqchip_unlock;
-+		r = -EINVAL;
-+		if (atomic_read(&kvm->online_vcpus))
-+			goto create_irqchip_unlock;
- 		r = -ENOMEM;
- 		vpic = kvm_create_pic(kvm);
- 		if (vpic) {
-@@ -5586,6 +5589,11 @@ void kvm_arch_check_processor_compat(void *rtn)
- 	kvm_x86_ops->check_processor_compatibility(rtn);
- }
- 
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
-+{
-+	return irqchip_in_kernel(vcpu->kvm) == (vcpu->arch.apic != NULL);
-+}
-+
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- {
- 	struct page *page;
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 169d077..94cb72c 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -599,6 +599,13 @@ static inline bool kvm_vcpu_is_bsp(struct kvm_vcpu *vcpu)
- {
- 	return vcpu->kvm->bsp_vcpu_id == vcpu->vcpu_id;
- }
-+
-+bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu);
-+
-+#else
-+
-+static inline bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu) { return true; }
-+
- #endif
- 
- #ifdef __KVM_HAVE_DEVICE_ASSIGNMENT
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index c82ae24..559af38 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1322,6 +1322,10 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 		return r;
- 
- 	mutex_lock(&kvm->lock);
-+	if (!kvm_vcpu_compatible(vcpu)) {
-+		r = -EINVAL;
-+		goto unlock_vcpu_destroy;
-+	}
- 	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
- 		r = -EINVAL;
- 		goto vcpu_destroy;
+ 		dev->stats.rx_bytes -= skb->len;
+ 		dev->stats.rx_packets--;
+-
+-		br2684_push(atmvcc, skb);
+ 	}
+ 	__module_get(THIS_MODULE);
+ 	return 0;
 -- 
 1.7.12.rc2
 
