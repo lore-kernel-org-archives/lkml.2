@@ -1,49 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2HOGKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 02:10:47 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43007 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2HOGKp (ORCPT
+	id S1752595Ab2HOGR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 02:17:59 -0400
+Received: from audible.transient.net ([216.254.12.79]:52600 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751251Ab2HOGR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 02:10:45 -0400
-Date: Tue, 14 Aug 2012 23:10:44 -0700 (PDT)
-Message-Id: <20120814.231044.1298412631777662795.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: vyasevich@gmail.com, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.ariyasu@hp.com,
-        jan.ariyasu@gmail.com, nhorman@tuxdriver.com, tgraf@infradead.org,
-        xi.wang@gmail.com
-Subject: Re: [PATCH net-next 0/7] sctp: network namespace support Part 2:
- per net tunables
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87ipcud3ld.fsf_-_@xmission.com>
-References: <87mx27rig7.fsf@xmission.com>
-	<87zk67q31q.fsf_-_@xmission.com>
-	<87ipcud3ld.fsf_-_@xmission.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Aug 2012 02:17:58 -0400
+Date: Wed, 15 Aug 2012 06:11:15 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to return
+Message-ID: <20120815061115.GC32347@cucamonga.audible.transient.net>
+Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
+	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 07 Aug 2012 10:17:02 -0700
 
-> 
-> Since I am motivated to get things done, and since there has been much
-> grumbling about my patches not implementing tunables, I have added
-> tunable support on top of my last patchset.
-> 
-> I have performed basic testing on the these patches and nothing
-> appears amis.
-> 
-> The sm statemachine is a major tease as it has all of these association
-> and endpoint pointers in the common set of function parameters that turn
-> out to be NULL at the most inconvinient times.  So I added to the common
-> parameter list a struct net pointer, that is never NULL. 
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Now that I have the ACKs from Vlad, I'm applying all of your work,
-thanks Eric.
+I really wish I could have nailed this down better, but I've had a
+hard time reliably reproducing the problem during bisection, and I
+haven't seen anyone report a similar sounding problem.  Here's what
+I've seen: since 3.5 I've been having spurious delays on my nfs
+clients, noticable particularly when I open an mbox file in mutt over
+an nfs v4 mount from a v3.5 or later server.  The servers I've
+reproduced this on are all uni-proc 32-bit systems... but then I
+haven't tried SMP or 64-bit systems yet, it may or may not exist
+there.  When the delay occurs, it's quite noticable.  I've never seen
+one that takes less than 40 seconds to "unstick."  I wrote a quick and
+dirty reproduction tool, based on the syscalls mutt was doing that
+triggered the problem, attached to this message.  To use it, compile
+the file as utime-test on an exported volume, then execute with (cd
+/some/mount/point && strace -T ./utime-test) from a nfs4 client.
+
+For whatever, reason I frequently find the second call to utime takes
+an irritatingly long time to return and I see something like:
+utime("utime-test.c", [2012/08/14-22:47:21, 2012/08/14-17:25:21]) = 0 <70.510913>
+in the strace output.
+
+I've reproduced this on Debian Squeeze / nfs-utils 1.2.2 based servers
+(legacy idmapper, no user-space nfsidmap), as well as Debian Wheezy /
+nfs-utils 1.2.6 (uses keyutils upcalls) servers, so I doubt it's a
+user-space related issue...  Attempts to bisect have been muddled,
+I'll keep trying in the interim, but the best I've been able to pin
+things down is that issue was probably introduced in the
+419f4319495043a9507ac3e616be9ca60af09744 merge.  I can't repo on a
+kernel based on fb21affa49204acd409328415b49bfe90136653c.  (I say
+based on, because I have to apply the patch from
+http://marc.info/?l=linux-nfs&m=133950479803025 or face additional
+problems.)
+
+I'll try to get full rcpdebug traces on client and server as the delay
+is occuring in the hopes that helps pin things down, and post them
+separately.
+
+-- 
+Jamie Heilman                     http://audible.transient.net/~jamie/
+
+--sdtB3X0nJg68CQEu
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="utime-test.c"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <time.h>
+#include <utime.h>
+#include <stdio.h>
+
+#define F_PATH "utime-test.c"
+
+int main()
+{
+	struct stat sb;
+	struct utimbuf ub;
+	int fd;
+
+	if (stat(F_PATH, &sb) == -1) {
+		perror(NULL);
+		return -1;
+	}
+	ub.modtime = sb.st_mtime;
+	ub.actime = time(NULL);
+	if (utime(F_PATH, &ub) == -1) {
+		perror(NULL);
+		return -2;
+	}
+	if ((fd = open(F_PATH, O_RDONLY)) == -1) {
+		perror(NULL);
+		return -3;
+	}
+	close(fd);
+	if (stat(F_PATH, &sb) == -1) {
+		perror(NULL);
+		return -1;
+	}
+	ub.modtime = sb.st_mtime;
+	ub.actime = time(NULL);
+	if (utime(F_PATH, &ub) == -1) {
+		perror(NULL);
+		return -2;
+	}
+
+	return 0;
+}
+
+--sdtB3X0nJg68CQEu--
