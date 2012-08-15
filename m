@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab2HOJYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 05:24:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36709 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081Ab2HOJYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 05:24:10 -0400
-Date: Wed, 15 Aug 2012 11:24:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+	id S1753428Ab2HOJYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 05:24:17 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47893 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752756Ab2HOJYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 05:24:13 -0400
+Message-Id: <20120815092116.700948346@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 15 Aug 2012 13:21:16 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
-Message-ID: <20120815092404.GA23985@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-8-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344517279-30646-8-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: [patch 0/8] procfs, fdinfo updated
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-08-12 17:01:15, Glauber Costa wrote:
-[...]
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b956cec..da341dc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2532,6 +2532,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	struct page *page = NULL;
->  	int migratetype = allocflags_to_migratetype(gfp_mask);
->  	unsigned int cpuset_mems_cookie;
-> +	void *handle = NULL;
->  
->  	gfp_mask &= gfp_allowed_mask;
->  
-> @@ -2543,6 +2544,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  		return NULL;
->  
->  	/*
-> +	 * Will only have any effect when __GFP_KMEMCG is set.
-> +	 * This is verified in the (always inline) callee
-> +	 */
-> +	if (!memcg_kmem_new_page(gfp_mask, &handle, order))
-> +		return NULL;
+Hi guys,
 
-When the previous patch introduced this function I thought the handle
-obfuscantion is to prevent from spreading struct mem_cgroup inside the
-page allocator but memcg_kmem_commit_page uses the type directly. So why
-that obfuscation? Even handle as a name sounds unnecessarily confusing.
-I would go with struct mem_cgroup **memcgp or even return the pointer on
-success or NULL otherwise.
+here is an updated series. As being discussed with Al
+the fdinfo helper provided via file_operations. Also
+I've dropped CONFIG_CHECKPOINT_RESTORE wrap from inside
+of particular subsystems, thus this new feature will be
+available by default. I've tested the whole series but
+additional review would be appreciated.
 
-[...]
-> +EXPORT_SYMBOL(__free_accounted_pages);
+Please tell me wht you think.
 
-Why exported?
-
-Btw. this is called from call_rcu context but it itself calls call_rcu
-down the chain in mem_cgroup_put. Is it safe?
-
-[...]
-> +EXPORT_SYMBOL(free_accounted_pages);
-
-here again
--- 
-Michal Hocko
-SUSE Labs
+	Cyrill
