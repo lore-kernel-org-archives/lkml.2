@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2HOVd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 17:33:26 -0400
+	id S1756325Ab2HOVdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 17:33:23 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:34449 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab2HOVdU (ORCPT
+	with ESMTP id S1757478Ab2HOVdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 17:33:20 -0400
+	Wed, 15 Aug 2012 17:33:17 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH 14/14] net: fix info leak in compat dev_ifconf()
-Date: Wed, 15 Aug 2012 23:31:57 +0200
-Message-Id: <1345066317-22512-15-git-send-email-minipli@googlemail.com>
+        Mathias Krause <minipli@googlemail.com>,
+        Gerrit Renker <gerrit@erg.abdn.ac.uk>
+Subject: [PATCH 12/14] dccp: fix info leak via getsockopt(DCCP_SOCKOPT_CCID_TX_INFO)
+Date: Wed, 15 Aug 2012 23:31:55 +0200
+Message-Id: <1345066317-22512-13-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1345066317-22512-1-git-send-email-minipli@googlemail.com>
 References: <1345066317-22512-1-git-send-email-minipli@googlemail.com>
@@ -21,29 +22,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The implementation of dev_ifconf() for the compat ioctl interface uses
-an intermediate ifc structure allocated in userland for the duration of
-the syscall. Though, it fails to initialize the padding bytes inserted
-for alignment and that for leaks four bytes of kernel stack. Add an
-explicit memset(0) before filling the structure to avoid the info leak.
+The CCID3 code fails to initialize the trailing padding bytes of struct
+tfrc_tx_info added for alignment on 64 bit architectures. It that for
+potentially leaks four bytes kernel stack via the getsockopt() syscall.
+Add an explicit memset(0) before filling the structure to avoid the
+info leak.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Gerrit Renker <gerrit@erg.abdn.ac.uk>
 ---
- net/socket.c |    1 +
+ net/dccp/ccids/ccid3.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/socket.c b/net/socket.c
-index dfe5b66..a5471f8 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2657,6 +2657,7 @@ static int dev_ifconf(struct net *net, struct compat_ifconf __user *uifc32)
- 	if (copy_from_user(&ifc32, uifc32, sizeof(struct compat_ifconf)))
- 		return -EFAULT;
- 
-+	memset(&ifc, 0, sizeof(ifc));
- 	if (ifc32.ifcbuf == 0) {
- 		ifc32.ifc_len = 0;
- 		ifc.ifc_len = 0;
+diff --git a/net/dccp/ccids/ccid3.c b/net/dccp/ccids/ccid3.c
+index d65e987..119c043 100644
+--- a/net/dccp/ccids/ccid3.c
++++ b/net/dccp/ccids/ccid3.c
+@@ -535,6 +535,7 @@ static int ccid3_hc_tx_getsockopt(struct sock *sk, const int optname, int len,
+ 	case DCCP_SOCKOPT_CCID_TX_INFO:
+ 		if (len < sizeof(tfrc))
+ 			return -EINVAL;
++		memset(&tfrc, 0, sizeof(tfrc));
+ 		tfrc.tfrctx_x	   = hc->tx_x;
+ 		tfrc.tfrctx_x_recv = hc->tx_x_recv;
+ 		tfrc.tfrctx_x_calc = hc->tx_x_calc;
 -- 
 1.7.10.4
 
