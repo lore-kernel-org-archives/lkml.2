@@ -1,62 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2HOJof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 05:44:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60134 "EHLO mx1.redhat.com"
+	id S1753977Ab2HOJqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 05:46:49 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33149 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769Ab2HOJoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 05:44:34 -0400
-Subject: [PATCH] act_mirred: do not drop packets when fails to mirror it
-To: netdev@vger.kernel.org, jhs@mojatatu.com, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 15 Aug 2012 17:37:56 +0800
-Message-ID: <20120815093756.22238.80872.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1753549Ab2HOJqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 05:46:47 -0400
+Message-ID: <502B6F00.8040207@parallels.com>
+Date: Wed, 15 Aug 2012 13:42:24 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        "David Rientjes" <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Pekka Enberg" <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <20120814172540.GD6905@dhcp22.suse.cz>
+In-Reply-To: <20120814172540.GD6905@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We drop packet unconditionally when we fail to mirror it. This is not intended
-in some cases. Consdier for kvm guest, we may mirror the traffic of the bridge
-to a tap device used by a VM. When kernel fails to mirror the packet in
-conditions such as when qemu crashes or stop polling the tap, it's hard for the
-management software to detect such condition and clean the the mirroring
-before. This would lead all packets to the bridge to be dropped and break the
-netowrk of other virtual machines.
 
-To solve the issue, the patch does not drop packets when kernel fails to mirror
-it, and only drop the redirected packets.
+>> + * memcg_kmem_new_page: verify if a new kmem allocation is allowed.
+>> + * @gfp: the gfp allocation flags.
+>> + * @handle: a pointer to the memcg this was charged against.
+>> + * @order: allocation order.
+>> + *
+>> + * returns true if the memcg where the current task belongs can hold this
+>> + * allocation.
+>> + *
+>> + * We return true automatically if this allocation is not to be accounted to
+>> + * any memcg.
+>> + */
+>> +static __always_inline bool
+>> +memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
+>> +{
+>> +	if (!memcg_kmem_on)
+>> +		return true;
+>> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
+> 
+> OK, I see the point behind __GFP_NOFAIL but it would deserve a comment
+> or a mention in the changelog.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- net/sched/act_mirred.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+documentation can't hurt!
 
-diff --git a/net/sched/act_mirred.c b/net/sched/act_mirred.c
-index fe81cc1..3682951 100644
---- a/net/sched/act_mirred.c
-+++ b/net/sched/act_mirred.c
-@@ -198,15 +198,12 @@ static int tcf_mirred(struct sk_buff *skb, const struct tc_action *a,
- 	err = dev_queue_xmit(skb2);
- 
- out:
--	if (err) {
-+	if (err)
- 		m->tcf_qstats.overlimits++;
--		/* should we be asking for packet to be dropped?
--		 * may make sense for redirect case only
--		 */
-+	if (err && m->tcf_action == TC_ACT_STOLEN)
- 		retval = TC_ACT_SHOT;
--	} else {
-+	else
- 		retval = m->tcf_action;
--	}
- 	spin_unlock(&m->tcf_lock);
- 
- 	return retval;
+Just added.
+
+> [...]
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 54e93de..e9824c1 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+> [...]
+>> +EXPORT_SYMBOL(__memcg_kmem_new_page);
+> 
+> Why is this exported?
+> 
+
+It shouldn't be. Removed.
+
+>> +
+>> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order)
+>> +{
+>> +	struct page_cgroup *pc;
+>> +	struct mem_cgroup *memcg = handle;
+>> +
+>> +	if (!memcg)
+>> +		return;
+>> +
+>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>> +	/* The page allocation must have failed. Revert */
+>> +	if (!page) {
+>> +		size_t size = PAGE_SIZE << order;
+>> +
+>> +		memcg_uncharge_kmem(memcg, size);
+>> +		mem_cgroup_put(memcg);
+>> +		return;
+>> +	}
+>> +
+>> +	pc = lookup_page_cgroup(page);
+>> +	lock_page_cgroup(pc);
+>> +	pc->mem_cgroup = memcg;
+>> +	SetPageCgroupUsed(pc);
+> 
+> Don't we need a write barrier before assigning memcg? Same as
+> __mem_cgroup_commit_charge. This tests the Used bit always from within
+> lock_page_cgroup so it should be safe but I am not 100% sure about the
+> rest of the code.
+> 
+Well, I don't see the reason, precisely because we'll always grab it
+from within the locked region. That should ensure all the necessary
+serialization.
+
+>> +#ifdef CONFIG_MEMCG_KMEM
+>> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
+>> +{
+>> +	struct res_counter *fail_res;
+>> +	struct mem_cgroup *_memcg;
+>> +	int ret;
+>> +	bool may_oom;
+>> +	bool nofail = false;
+>> +
+>> +	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
+>> +	    !(gfp & __GFP_NORETRY);
+> 
+> This deserves a comment.
+> 
+can't hurt!! =)
+
+>> +
+>> +	ret = 0;
+>> +
+>> +	if (!memcg)
+>> +		return ret;
+>> +
+>> +	_memcg = memcg;
+>> +	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
+>> +	    &_memcg, may_oom);
+> 
+> This is really dangerous because atomic allocation which seem to be
+> possible could result in deadlocks because of the reclaim. 
+
+Can you elaborate on how this would happen?
+
+> Also, as I
+> have mentioned in the other email in this thread. Why should we reclaim
+> just because of kernel allocation when we are not reclaiming any of it
+> because shrink_slab is ignored in the memcg reclaim.
+
+
+Don't get too distracted by the fact that shrink_slab is ignored. It is
+temporary, and while this being ignored now leads to suboptimal
+behavior, it will 1st, only affect its users, and 2nd, not be disastrous.
+
+I see it this as more or less on pair with the soft limit reclaim
+problem we had. It is not ideal, but it already provided functionality
+
+>> +
+>> +	if (ret == -EINTR)  {
+>> +		nofail = true;
+>> +		/*
+>> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
+>> +		 * OOM kill or fatal signal.  Since our only options are to
+>> +		 * either fail the allocation or charge it to this cgroup, do
+>> +		 * it as a temporary condition. But we can't fail. From a
+>> +		 * kmem/slab perspective, the cache has already been selected,
+>> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
+>> +		 * our minds
+>> +		 */
+>> +		res_counter_charge_nofail(&memcg->res, delta, &fail_res);
+>> +		if (do_swap_account)
+>> +			res_counter_charge_nofail(&memcg->memsw, delta,
+>> +						  &fail_res);
+> 
+> Hmmm, this is kind of ugly but I guess unvoidable with the current
+> implementation. Oh well...
+> 
+
+Oh well...
 
