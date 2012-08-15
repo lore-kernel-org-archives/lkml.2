@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2HOOts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:49:48 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35287 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2HOOtq (ORCPT
+	id S1755045Ab2HOOuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:50:07 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49702 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab2HOOuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:49:46 -0400
-Date: Wed, 15 Aug 2012 10:49:43 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>, Shan Kang <kangshan0910@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based implementation
- for ARMv6+
-In-Reply-To: <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
-Message-ID: <alpine.LFD.2.02.1208151035360.1541@xanadu.home>
-References: <20120813201746.448504360@linuxfoundation.org> <20120813201748.202917513@linuxfoundation.org> <1345038982.824.216.camel@deadeye.wl.decadent.org.uk> <20120815140808.GD22871@kroah.com> <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 15 Aug 2012 10:50:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 20/31] arm64: User access library function
+Date: Wed, 15 Aug 2012 14:49:54 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-21-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-21-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208151449.54834.arnd@arndb.de>
+X-Provags-ID: V02:K0:r0CrVWVIim3iiF5eBAVHTBRgk18eh/vaEbAwQSWHnDQ
+ xsNBjCs7Wnc19/Ks6t6rDqZvfUtiGHbivXmVsVAV1dcrGoGx7P
+ 27orDe+7y4jleJyC3jxGzZWJMSlNwv0LmtS74cK20/S8T8G3DS
+ Q5q2th9zuV2EYeSRIbZUsazNedl4nw2entvbSBg7cBb0WVx9OM
+ PKXdjPQAKNlIaPBXqOWlliivV9+a+LjLkYUBxfRVLN6eIdleWZ
+ poSSUExK8hyp1F4ol1L9CId+cp2IC6nQCj/6R4MqbN0EuwkzAo
+ eTRdLPmtrLOB2gqkD5tVxshDMl02mehYV/JY7496UVBdSqpKhA
+ uHPX1fpwbsH8NJ9EZ5yA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Ben Hutchings wrote:
+On Tuesday 14 August 2012, Catalin Marinas wrote:
 
-> On Wed, 2012-08-15 at 07:08 -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Aug 15, 2012 at 02:56:22PM +0100, Ben Hutchings wrote:
-> > > On Mon, 2012-08-13 at 13:18 -0700, Greg Kroah-Hartman wrote:
-> > > > From: Greg KH <gregkh@linuxfoundation.org>
-> > > > 
-> > > > 3.5-stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Will Deacon <will.deacon@arm.com>
-> > > > 
-> > > > commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
-> > > > 
-> > > > The open-coded mutex implementation for ARMv6+ cores suffers from a
-> > > > severe lack of barriers, so in the uncontended case we don't actually
-> > > > protect any accesses performed during the critical section.
-> > > > 
-> > > > Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
-> > > > code but optimised to remove a branch instruction, as the mutex fastpath
-> > > > was previously inlined. Now that this is executed out-of-line, we can
-> > > > reuse the atomic access code for the locking (in fact, we use the xchg
-> > > > code as this produces shorter critical sections).
-> > > > 
-> > > > This patch uses the generic xchg based implementation for mutexes on
-> > > > ARMv6+, which introduces barriers to the lock/unlock operations and also
-> > > > has the benefit of removing a fair amount of inline assembly code.
-> > > [...]
-> > > 
-> > > Here also, I think this should be deferred.
-> > 
-> > "also"?  Am I missing some context here?  Why should we deferr this one?
-> > What do we need to wait for?
-> 
-> This is the same as 3.4.9-rc1 patch 10/65, which I queried as it
-> apparently caused a regression.
-> 
-> Will Deacon wrote:
-> > The additional patch should also be CC'd to stable and is sitting in -tip
-> > somewhere I believe, so it shouldn't be long before it does hit mainline.
-> > 
-> > Without this patch there's a memory-ordering bug (which we seem to have hit
-> > once in > 5 years). With the patch there's a mutex lockup issue on SMP systems
-> > that I can provoke with enough hackbenching, so you may want to hold off for
-> > now.
+> +/*
+> + * Single-value transfer routines.  They automatically use the right
+> + * size if we just have the right pointer type.  Note that the functions
+> + * which read from user space (*get_*) need to take care not to leak
+> + * kernel data even if the calling code is buggy and fails to check
+> + * the return value.  This means zeroing out the destination variable
+> + * or buffer on error.  Normally this is done out of line by the
+> + * fixup code, but there are a few places where it intrudes on the
+> + * main code path.  When we only write to user space, there is no
+> + * problem.
+> + */
+> +extern long __get_user_1(void *);
+> +extern long __get_user_2(void *);
+> +extern long __get_user_4(void *);
+> +extern long __get_user_8(void *);
+> +
+> +#define __get_user_x(__r2,__p,__e,__s,__i...)				\
+> +	   asm volatile(						\
+> +		__asmeq("%0", "x0") __asmeq("%1", "x2")			\
+> +		"bl	__get_user_" #__s				\
+> +		: "=&r" (__e), "=r" (__r2)				\
+> +		: "0" (__p)						\
+> +		: __i, "cc")
+> +
+> +#define get_user(x,p)							\
+> +	({								\
+> +		register const typeof(*(p)) __user *__p asm("x0") = (p);\
+> +		register unsigned long __r2 asm("x2");			\
+> +		register long __e asm("x0");				\
+> +		switch (sizeof(*(__p))) {				\
+> +		case 1:							\
+> +			__get_user_x(__r2, __p, __e, 1, "x30");		\
+> +			break;						\
+> +		case 2:							\
+> +			__get_user_x(__r2, __p, __e, 2, "x3", "x30");	\
+> +			break;						\
+> +		case 4:							\
+> +			__get_user_x(__r2, __p, __e, 4, "x30");		\
+> +			break;						\
+> +		case 8:							\
+> +			__get_user_x(__r2, __p, __e, 8, "x30");		\
+> +			break;						\
+> +		default: __e = __get_user_bad(); break;			\
+> +		}							\
+> +		x = (typeof(*(p))) __r2;				\
+> +		__e;							\
+> +	})
 
-If you wish to really be stable, both this patch _and_ 
-http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=patch;h=0bce9c46bf
-must be applied.  The later is going to hit mainline soon.
+It's fairly unusual to have out of line get_user/put_user functions.
+What is the reason for this, other than copying from ARM?
 
+> +
+> +__get_user_bad:
+> +	mov	x2, #0
+> +	mov	x0, #-EFAULT
+> +	ret
+> +ENDPROC(__get_user_bad)
 
-Nicolas
+> +__put_user_bad:
+> +	mov	x0, #-EFAULT
+> +	ret
+> +ENDPROC(__put_user_bad)
+> +
+
+The purpose of these symbols is to provoke a link error when you
+pass the wrong data into get_user/put_user. Actually defining them
+completely breaks this logic, so you should remove these!
+
+	Arnd
