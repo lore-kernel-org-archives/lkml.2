@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab2HOSAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:00:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab2HOSAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:00:18 -0400
-Date: Wed, 15 Aug 2012 14:53:39 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 00/12] KVM: introduce readonly memslot
-Message-ID: <20120815175338.GA18452@amt.cnet>
-References: <5020E423.9080004@linux.vnet.ibm.com>
- <20120810181422.GA14892@amt.cnet>
- <502A5A01.6040505@redhat.com>
- <20120814155106.GA22249@amt.cnet>
- <502B7D7E.20902@redhat.com>
+	id S1755976Ab2HOSBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:01:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36513 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HOSBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:01:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502B7D7E.20902@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120815123931.GF23985@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+	<1344517279-30646-5-git-send-email-glommer@parallels.com>
+	<20120814162144.GC6905@dhcp22.suse.cz>
+	<502B6D03.1080804@parallels.com>
+	<20120815123931.GF23985@dhcp22.suse.cz>
+Date: Wed, 15 Aug 2012 11:01:41 -0700
+Message-ID: <CALWz4ixYXN9FGJ1E9CZ9viJ=s3k63Pm8t3nakQvi+1T5qtyFYw@mail.gmail.com>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+From: Ying Han <yinghan@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:44:14PM +0300, Avi Kivity wrote:
-> On 08/14/2012 06:51 PM, Marcelo Tosatti wrote:
-> >> 
-> >> Userspace may want to modify the ROM (for example, when programming a
-> >> flash device).  It is also possible to map an hva range rw through one
-> >> slot and ro through another.
-> > 
-> > Right, can do that with multiple userspace maps to the same anonymous 
-> > memory region (see other email).
-> 
-> Yes it's possible.  It requires that we move all memory allocation to be
-> fd based, since userspace can't predict what memory will be dual-mapped
-> (at least if emulated hardware allows this).
+On Wed, Aug 15, 2012 at 5:39 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Wed 15-08-12 13:33:55, Glauber Costa wrote:
+> [...]
+>> > This can
+>> > be quite confusing.  I am still not sure whether we should mix the two
+>> > things together. If somebody wants to limit the kernel memory he has to
+>> > touch the other limit anyway.  Do you have a strong reason to mix the
+>> > user and kernel counters?
+>>
+>> This is funny, because the first opposition I found to this work was
+>> "Why would anyone want to limit it separately?" =p
+>>
+>> It seems that a quite common use case is to have a container with a
+>> unified view of "memory" that it can use the way he likes, be it with
+>> kernel memory, or user memory. I believe those people would be happy to
+>> just silently account kernel memory to user memory, or at the most have
+>> a switch to enable it.
+>>
+>> What gets clear from this back and forth, is that there are people
+>> interested in both use cases.
+>
+> I am still not 100% sure myself. It is just clear that the reclaim would
+> need some work in order to do accounting like this.
+>
+>> > My impression was that kernel allocation should simply fail while user
+>> > allocations might reclaim as well. Why should we reclaim just because of
+>> > the kernel allocation (which is unreclaimable from hard limit reclaim
+>> > point of view)?
+>>
+>> That is not what the kernel does, in general. We assume that if he wants
+>> that memory and we can serve it, we should. Also, not all kernel memory
+>> is unreclaimable. We can shrink the slabs, for instance. Ying Han
+>> claims she has patches for that already...
+>
+> Are those patches somewhere around?
 
-It can:
-- Create named memory object, with associated fd.
-- Copy data from large anonymous memory region to named memory.
-- Unmap region that must be dual-mapped from large anonymous memory chunk.
-- Map named memory object at address.
+Yes, I am working on it to post it sometime *this week*. My last
+rebase is based on v3.3 and now I am trying to get it rebased to
+github-memcg. The patch itself has a functional dependency on kernel
+slab accounting, and I am trying to get that rebased on Glauber's tree
+but has some difficulty now. What I am planning to do is post the RFC
+w/ only complied version by far.
 
-The last step can be replaced by adjusting KVM memory slots.
+The patch handles dentry cache shrinker only at this moment. That is
+what we discussed last time as well, where dentry contributes most of
+the reclaimable objects. (it pins inode, so we leave inode behind)
 
-The disadvantage of protection information in memory slots
-is that it duplicates functionality that is handled by 
-userspace mappings.
 
-Moreover, multiple memory maps are necessary for any
-split-qemu-into-smaller-pieces solutions.
-
->  Is this a reasonable
-> requirement?  Do ksm/thp/autonuma work with this?
-
-As mentioned, only memory used for ROM purposes must be dual mapped. 
-
-I don't think there is any way to create multiple mappings 
-to one anonymous memory object ATM, but POSIX defines it
-(posix_typed_mem_open).
-
-The limitation of thp/ksm on shared memory also affects any other user
-of shared memory, so it should be fixed there.
-
-Also, QEMU ROM is allocated separately from RAM, correct?
-
+--Ying
+>
+> [...]
+>> > This doesn't check for the hierachy so kmem_accounted might not be in
+>> > sync with it's parents. mem_cgroup_create (below) needs to copy
+>> > kmem_accounted down from the parent and the above needs to check if this
+>> > is a similar dance like mem_cgroup_oom_control_write.
+>> >
+>>
+>> I don't see why we have to.
+>>
+>> I believe in a A/B/C hierarchy, C should be perfectly able to set a
+>> different limit than its parents. Note that this is not a boolean.
+>
+> Ohh, I wasn't clear enough. I am not against setting the _limit_ I just
+> meant that the kmem_accounted should be consistent within the hierarchy.
+>
+> --
+> Michal Hocko
+> SUSE Labs
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
