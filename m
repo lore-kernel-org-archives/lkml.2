@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2HOUIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:08:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37093 "EHLO
+	id S1756997Ab2HOTwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37045 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab2HOTwT (ORCPT
+	with ESMTP id S1756866Ab2HOTwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:19 -0400
+	Wed, 15 Aug 2012 15:52:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Chris Wilson <chris@chris-wilson.co.uk>,
+CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 132/165] drm/i915: Sanity check pread/pwrite
-Date: Wed, 15 Aug 2012 15:47:56 -0400
-Message-ID: <1345060109-9187-133-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 118/165] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Wed, 15 Aug 2012 15:47:42 -0400
+Message-ID: <1345060109-9187-119-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: John Stultz <johnstul@us.ibm.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,89 +32,129 @@ From: Chris Wilson <chris@chris-wilson.co.uk>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit ce9d419dbecc292cc3e06e8b1d6d123d3fa813a4 upstream.
+commit 5baefd6d84163443215f4a99f6a20f054ef11236 upstream.
 
-Move the access control up from the fast paths, which are no longer
-universally taken first, up into the caller. This then duplicates some
-sanity checking along the slow paths, but is much simpler.
-Tracked as CVE-2010-2962.
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
 
-Reported-by: Kees Cook <kees@ubuntu.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
+
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
+
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
+
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
+
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
+
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ kernel/hrtimer.c | 27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index e07722a..fd51c36 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -487,8 +487,15 @@ i915_gem_pread_ioctl(struct drm_device *dev, void *data,
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference_unlocked(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	if (!access_ok(VERIFY_WRITE,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
- 
- 	if (i915_gem_object_needs_bit17_swizzle(obj)) {
-@@ -500,8 +507,8 @@ i915_gem_pread_ioctl(struct drm_device *dev, void *data,
- 							file_priv);
- 	}
- 
-+err:
- 	drm_gem_object_unreference_unlocked(obj);
--
- 	return ret;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 039db35..6b6835f 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -603,6 +603,12 @@ static int hrtimer_reprogram(struct hrtimer *timer,
+ 	return res;
  }
  
-@@ -591,8 +598,6 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev, struct drm_gem_object *obj,
- 
- 	user_data = (char __user *) (uintptr_t) args->data_ptr;
- 	remain = args->size;
--	if (!access_ok(VERIFY_READ, user_data, remain))
--		return -EFAULT;
- 
- 
- 	mutex_lock(&dev->struct_mutex);
-@@ -960,8 +965,15 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference_unlocked(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[CLOCK_REALTIME].offset;
 +
-+	if (!access_ok(VERIFY_READ,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
++	return ktime_get_update_offsets(offs_real);
++}
  
- 	/* We can only do the GTT pwrite on untiled buffers, as otherwise
-@@ -994,8 +1006,8 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
- 		DRM_INFO("pwrite failed %d\n", ret);
- #endif
+ /*
+  * Retrigger next event is called after clock was set
+@@ -612,26 +618,15 @@ static int hrtimer_reprogram(struct hrtimer *timer,
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base;
+-	struct timespec realtime_offset;
+-	unsigned long seq;
  
-+err:
- 	drm_gem_object_unreference_unlocked(obj);
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	do {
+-		seq = read_seqbegin(&xtime_lock);
+-		set_normalized_timespec(&realtime_offset,
+-					-wall_to_monotonic.tv_sec,
+-					-wall_to_monotonic.tv_nsec);
+-	} while (read_seqretry(&xtime_lock, seq));
 -
- 	return ret;
- }
+ 	base = &__get_cpu_var(hrtimer_bases);
  
+ 	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[CLOCK_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	raw_spin_unlock(&base->lock);
+ }
+@@ -731,7 +726,6 @@ static int hrtimer_switch_to_hres(void)
+ 	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1280,7 +1274,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1356,9 +1350,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	raw_spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
 -- 
 1.7.12.rc2
 
