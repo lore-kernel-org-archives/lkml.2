@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab2HOUdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:33:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62785 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab2HOTtf (ORCPT
+	id S1756348Ab2HOTtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:49:32 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36481 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756320Ab2HOTt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:35 -0400
+	Wed, 15 Aug 2012 15:49:27 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+CC: Wang Zhi <zhi.wang@windriver.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 033/165] xen/smp: Warn user why they keel over - nosmp or noapic and what to use instead.
-Date: Wed, 15 Aug 2012 15:46:17 -0400
-Message-ID: <1345060109-9187-34-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 022/165] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
+Date: Wed, 15 Aug 2012 15:46:06 -0400
+Message-ID: <1345060109-9187-23-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Wang Zhi <zhi.wang@windriver.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,52 +32,55 @@ From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit ed467e69f16e6b480e2face7bc5963834d025f91 upstream.
+commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
 
-We have hit a couple of customer bugs where they would like to
-use those parameters to run an UP kernel - but both of those
-options turn of important sources of interrupt information so
-we end up not being able to boot. The correct way is to
-pass in 'dom0_max_vcpus=1' on the Xen hypervisor line and
-the kernel will patch itself to be a UP kernel.
+>From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
+PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
+Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
+bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
+the action of clearing PORT_RESUME. This will cause unexpected long
+resume signal on USB bus.
 
-Fixes bug: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=637308
-
-Acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/xen/smp.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/host/ehci-hub.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index d2dfbf5..9aac865 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -31,6 +31,7 @@
- #include <xen/page.h>
- #include <xen/events.h>
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index ae32f02..d5ff2b0 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -311,7 +311,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 	u32			temp;
+ 	u32			power_okay;
+ 	int			i;
+-	u8			resume_needed = 0;
++	unsigned long		resume_needed = 0;
  
-+#include <xen/hvc-console.h>
- #include "xen-ops.h"
- #include "mmu.h"
- 
-@@ -181,6 +182,15 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	unsigned cpu;
- 
-+	if (skip_ioapic_setup) {
-+		char *m = (max_cpus == 0) ?
-+			"The nosmp parameter is incompatible with Xen; " \
-+			"use Xen dom0_max_vcpus=1 parameter" :
-+			"The noapic parameter is incompatible with Xen";
-+
-+		xen_raw_printk(m);
-+		panic(m);
-+	}
- 	xen_init_lock_cpu(0);
- 
- 	smp_store_cpu_info(0);
+ 	if (time_before (jiffies, ehci->next_statechange))
+ 		msleep(5);
+@@ -384,7 +384,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 		if (test_bit(i, &ehci->bus_suspended) &&
+ 				(temp & PORT_SUSPEND)) {
+ 			temp |= PORT_RESUME;
+-			resume_needed = 1;
++			set_bit(i, &resume_needed);
+ 		}
+ 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 	}
+@@ -399,8 +399,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 	i = HCS_N_PORTS (ehci->hcs_params);
+ 	while (i--) {
+ 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
+-		if (test_bit(i, &ehci->bus_suspended) &&
+-				(temp & PORT_SUSPEND)) {
++		if (test_bit(i, &resume_needed)) {
+ 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
+ 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
 -- 
 1.7.12.rc2
 
