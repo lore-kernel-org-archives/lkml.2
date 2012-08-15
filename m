@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab2HOL2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 07:28:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2HOL2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 07:28:02 -0400
-Date: Wed, 15 Aug 2012 14:28:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120815112851.GA2707@redhat.com>
-References: <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <20120814182244.GB13338@t510.redhat.com>
- <20120814195139.GA28870@redhat.com>
- <20120814201113.GE22133@t510.redhat.com>
- <20120815090528.GH4052@csn.ul.ie>
- <20120815092528.GA29214@redhat.com>
- <20120815094839.GJ4052@csn.ul.ie>
- <20120815100108.GA1999@redhat.com>
- <20120815111651.GL4052@csn.ul.ie>
+	id S1753360Ab2HOL3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 07:29:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52770 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2HOL3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 07:29:20 -0400
+Date: Wed, 15 Aug 2012 04:29:02 -0700
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-c7660994ed6b44d17dad0aac0d156da1e0a2f003@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, alex.shi@intel.com, tglx@linutronix.de,
+        fengguang.wu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, alex.shi@intel.com,
+        fengguang.wu@intel.com
+In-Reply-To: <502AF3E6.3050709@intel.com>
+References: <502AF3E6.3050709@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] tile: Remove SD_PREFER_LOCAL leftover
+Git-Commit-ID: c7660994ed6b44d17dad0aac0d156da1e0a2f003
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120815111651.GL4052@csn.ul.ie>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 15 Aug 2012 04:29:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 12:16:51PM +0100, Mel Gorman wrote:
-> On Wed, Aug 15, 2012 at 01:01:08PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Aug 15, 2012 at 10:48:39AM +0100, Mel Gorman wrote:
-> > > On Wed, Aug 15, 2012 at 12:25:28PM +0300, Michael S. Tsirkin wrote:
-> > > > On Wed, Aug 15, 2012 at 10:05:28AM +0100, Mel Gorman wrote:
-> > > > > On Tue, Aug 14, 2012 at 05:11:13PM -0300, Rafael Aquini wrote:
-> > > > > > On Tue, Aug 14, 2012 at 10:51:39PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > What I think you should do is use rcu for access.
-> > > > > > > And here sync rcu before freeing.
-> > > > > > > Maybe an overkill but at least a documented synchronization
-> > > > > > > primitive, and it is very light weight.
-> > > > > > > 
-> > > > > > 
-> > > > > > I liked your suggestion on barriers, as well.
-> > > > > > 
-> > > > > 
-> > > > > I have not thought about this as deeply as I shouold but is simply rechecking
-> > > > > the mapping under the pages_lock to make sure the page is still a balloon
-> > > > > page an option? i.e. use pages_lock to stabilise page->mapping.
-> > > > 
-> > > > To clarify, are you concerned about cost of rcu_read_lock
-> > > > for non balloon pages?
-> > > > 
-> > > 
-> > > Not as such, but given the choice between introducing RCU locking and
-> > > rechecking page->mapping under a spinlock I would choose the latter as it
-> > > is more straight-forward.
-> > 
-> > OK but checking it how? page->mapping == balloon_mapping does not scale to
-> > multiple balloons,
-> 
-> I was thinking of exactly that page->mapping == balloon_mapping check. As I
-> do not know how many active balloon drivers there might be I cannot guess
-> in advance how much of a scalability problem it will be.
+Commit-ID:  c7660994ed6b44d17dad0aac0d156da1e0a2f003
+Gitweb:     http://git.kernel.org/tip/c7660994ed6b44d17dad0aac0d156da1e0a2f003
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Wed, 15 Aug 2012 08:14:36 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 15 Aug 2012 13:22:55 +0200
 
-Not at all sure multiple drivers are worth supporting, but multiple
-*devices* is I think worth supporting, if for no other reason than that
-they can work today. For that, we need a device pointer which Rafael
-wants to put into the mapping, this means multiple balloon mappings.
+tile: Remove SD_PREFER_LOCAL leftover
 
+commit (sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code
+clean up) removed SD_PREFER_LOCAL, but left a SD_PREFER_LOCAL usage in
+arch/tile code. That breaks the arch/tile build.
 
-> > so I hoped we can switch to
-> > page->mapping->flags & BALLOON_MAPPING or some such,
-> > but this means we dereference it outside the lock ...
-> > 
-> 
-> That also sounded like future stuff to me that would be justified with
-> profiling if necessary. Personally I would have started with the spinlock
-> and a simple check and moved to RCU later when either scalability was a
-> problem or it was found there was a need to stabilise whether a page was
-> a balloon page or not outside a spinlock.
-> 
-> This is not a NAK to the idea and I'm not objecting to RCU being used now
-> if that is what is really desired. I just suspect it's making the series
-> more complex than it needs to be right now.
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/502AF3E6.3050709@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/tile/include/asm/topology.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
+index 7a7ce39..d5e86c9 100644
+--- a/arch/tile/include/asm/topology.h
++++ b/arch/tile/include/asm/topology.h
+@@ -69,7 +69,6 @@ static inline const struct cpumask *cpumask_of_node(int node)
+ 				| 1*SD_BALANCE_FORK			\
+ 				| 0*SD_BALANCE_WAKE			\
+ 				| 0*SD_WAKE_AFFINE			\
+-				| 0*SD_PREFER_LOCAL			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
