@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2HOTzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:55:41 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37441 "EHLO
+	id S932248Ab2HOTxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:53:03 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37368 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab2HOTxE (ORCPT
+	with ESMTP id S932171Ab2HOTwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:53:04 -0400
+	Wed, 15 Aug 2012 15:52:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+CC: "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 164/165] mfd: wm831x: Feed the device UUID into device_add_randomness()
-Date: Wed, 15 Aug 2012 15:48:28 -0400
-Message-ID: <1345060109-9187-165-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 154/165] random: use the arch-specific rng in xfer_secondary_pool
+Date: Wed, 15 Aug 2012 15:48:18 -0400
+Message-ID: <1345060109-9187-155-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,51 +31,88 @@ From: Mark Brown <broonie@opensource.wolfsonmicro.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 27130f0cc3ab97560384da437e4621fc4e94f21c upstream.
+commit e6d4947b12e8ad947add1032dd754803c6004824 upstream.
 
-wm831x devices contain a unique ID value. Feed this into the newly added
-device_add_randomness() to add some per device seed data to the pool.
+If the CPU supports a hardware random number generator, use it in
+xfer_secondary_pool(), where it will significantly improve things and
+where we can afford it.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Also, remove the use of the arch-specific rng in
+add_timer_randomness(), since the call is significantly slower than
+get_cycles(), and we're much better off using it in
+xfer_secondary_pool() anyway.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/mfd/wm831x-otp.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/char/random.c | 25 ++++++++++++++++---------
+ 1 file changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-otp.c b/drivers/mfd/wm831x-otp.c
-index f742745..b90f3e0 100644
---- a/drivers/mfd/wm831x-otp.c
-+++ b/drivers/mfd/wm831x-otp.c
-@@ -18,6 +18,7 @@
- #include <linux/bcd.h>
- #include <linux/delay.h>
- #include <linux/mfd/core.h>
-+#include <linux/random.h>
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 0c85b69..f41a9f3 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -247,6 +247,7 @@
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+ #include <linux/ptrace.h>
++#include <linux/kmemcheck.h>
  
- #include <linux/mfd/wm831x/core.h>
- #include <linux/mfd/wm831x/otp.h>
-@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm831x_unique_id_show, NULL);
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -695,11 +696,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
+ 		goto out;
  
- int wm831x_otp_init(struct wm831x *wm831x)
+ 	sample.jiffies = jiffies;
+-
+-	/* Use arch random value, fall back to cycles */
+-	if (!arch_get_random_int(&sample.cycles))
+-		sample.cycles = get_cycles();
+-
++	sample.cycles = get_cycles();
+ 	sample.num = num;
+ 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ 
+@@ -831,7 +828,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+  */
+ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
  {
-+	char uuid[WM831X_UNIQUE_ID_LEN];
- 	int ret;
+-	__u32 tmp[OUTPUT_POOL_WORDS];
++	union {
++		__u32	tmp[OUTPUT_POOL_WORDS];
++		long	hwrand[4];
++	} u;
++	int	i;
  
- 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
-@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831x)
- 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
- 			ret);
+ 	if (r->pull && r->entropy_count < nbytes * 8 &&
+ 	    r->entropy_count < r->poolinfo->POOLBITS) {
+@@ -842,17 +843,23 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ 		/* pull at least as many as BYTES as wakeup BITS */
+ 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
+ 		/* but never more than the buffer size */
+-		bytes = min_t(int, bytes, sizeof(tmp));
++		bytes = min_t(int, bytes, sizeof(u.tmp));
  
-+	ret = wm831x_unique_id_read(wm831x, uuid);
-+	if (ret == 0)
-+		add_device_randomness(uuid, sizeof(uuid));
-+	else
-+		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
-+
- 	return ret;
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+ 			  "(%d of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+-		bytes = extract_entropy(r->pull, tmp, bytes,
++		bytes = extract_entropy(r->pull, u.tmp, bytes,
+ 					random_read_wakeup_thresh / 8, rsvd);
+-		mix_pool_bytes(r, tmp, bytes, NULL);
++		mix_pool_bytes(r, u.tmp, bytes, NULL);
+ 		credit_entropy_bits(r, bytes*8);
+ 	}
++	kmemcheck_mark_initialized(&u.hwrand, sizeof(u.hwrand));
++	for (i = 0; i < 4; i++)
++		if (arch_get_random_long(&u.hwrand[i]))
++			break;
++	if (i)
++		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
  }
  
+ /*
 -- 
 1.7.12.rc2
 
