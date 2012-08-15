@@ -1,102 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab2HORRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:17:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45378 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab2HORRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:17:16 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1345045700-9062-12-git-send-email-miklos@szeredi.hu>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	<1345045700-9062-12-git-send-email-miklos@szeredi.hu>
-Date: Wed, 15 Aug 2012 19:17:14 +0200
-Message-ID: <CA+icZUXuunziB15xyjUy+L9+ne+zQNpHv+-k9HTp6dfDg_eVvQ@mail.gmail.com>
-Subject: Re: [PATCH 11/13] vfs: export __inode_permission() to modules
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+	id S1755821Ab2HORRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:17:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753597Ab2HORRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 13:17:48 -0400
+Message-ID: <1345051067.4683.421.camel@ul30vt.home>
+Subject: Re: [PATCH v8 5/6] kvm: KVM_IRQ_ACKFD
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 15 Aug 2012 11:17:47 -0600
+In-Reply-To: <20120815140554.GD3068@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+	 <20120810223746.809.87948.stgit@bling.home>
+	 <20120815140554.GD3068@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 5:48 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
->
-> We need to be able to check inode permissions (but not filesystem implied
-> permissions) for stackable filesystems.  Expose this interface for overlayfs.
->
+On Wed, 2012-08-15 at 17:05 +0300, Michael S. Tsirkin wrote:
+> On Fri, Aug 10, 2012 at 04:37:48PM -0600, Alex Williamson wrote:
+> > Enable a mechanism for IRQ ACKs to be exposed through an eventfd.  The
+> > user can specify the GSI and optionally an IRQ source ID and have the
+> > provided eventfd trigger whenever the irqchip resamples it's inputs,
+> > for instance on EOI.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> > 
+> >  Documentation/virtual/kvm/api.txt |   18 ++
+> >  arch/x86/kvm/x86.c                |    2 
+> >  include/linux/kvm.h               |   16 ++
+> >  include/linux/kvm_host.h          |   13 ++
+> >  virt/kvm/eventfd.c                |  285 +++++++++++++++++++++++++++++++++++++
+> >  virt/kvm/kvm_main.c               |   10 +
+> >  6 files changed, 344 insertions(+)
+> > 
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index 17cd599..77b4837 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -2011,6 +2011,24 @@ of IRQ source IDs.  These IDs are also shared with KVM internal users
+> >  (ex. KVM assigned devices, PIT, shared user ID), therefore not all IDs
+> >  may be allocated through this interface.
+> >  
+> > +4.78 KVM_IRQ_ACKFD
+> > +
+> > +Capability: KVM_CAP_IRQ_ACKFD
+> > +Architectures: x86
+> > +Type: vm ioctl
+> > +Parameters: struct kvm_irq_ackfd (in)
+> > +Returns: 0 on success, -errno on error
+> > +
+> > +Allows userspace notification of IRQ ACKs, or resampling of irqchip
+> > +inputs, often associated with an EOI.  User provided kvm_irq_ackfd.fd
+> > +and kvm_irq_ackfd.gsi are required and result in an eventfd trigger
+> > +whenever the GSI is acknowledged.  When KVM_CAP_IRQ_ACKFD_IRQ_SOURCE_FD
+> > +is available, KVM_IRQ_ACKFD supports the KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID
+> > +flag which indicates kvm_irqfd.irq_source_id is provided.  With this,
+> > +the eventfd is only triggered when the specified IRQ source ID is
+> > +pending.  On deassign, fd, gsi, and irq_source_id (if provided on assign)
+> > +must be provided.
+> > +
+> >
+> 
+> This seems to imply that ACKFD can be used with edge
+> GSIs, but this does not actually work: with source ID
+> because of the filtering, and without because of PV EOI.
+> It seems that what we are really tracking is
+> level change 1->0. For edge no level -> no notification?
+> 
+> Or does 'resampling of irqchip inputs' imply level somehow?
 
-This patch can go through Al's vfs tree?
-It's an addendum for the below patch "VFS: Split inode_permission()"
-[1] from the first pile of vfs patches for v3.6-rc1 (first bits of/for
-union-mounts!).
-I talked with Andy on #ubuntu-kernel that the export is needed when
-OverlayFS is built as a module.
+AIUI, there's some sort of resampling for edge inputs, but I'm by no
+means an expert.  In earlier versions I defined this as level-only,
+undefined results for edge, but Gleb thought it might be useful for
+clock drift problems.  There seem to be other complications for using it
+for that, so maybe we can go back to this being defined for level-only
+and undefined for edge.  I'd probably vote for a documentation-only
+change vs trying to validate that a irqchip pin is programmed for level
+at the time of this ioctl.
 
-Comments?
+...
+> > +static int kvm_assign_irq_ackfd(struct kvm *kvm, struct kvm_irq_ackfd *args)
+> > +{
+> > +	struct file *file = NULL;
+> > +	struct eventfd_ctx *eventfd = NULL;
+> > +	struct _irq_ackfd *ackfd = NULL, *tmp;
+> > +	int ret;
+> > +	u64 cnt;
+> > +
+> > +	file = eventfd_fget(args->fd);
+> > +	if (IS_ERR(file)) {
+> > +		ret = PTR_ERR(file);
+> > +		goto fail;
+> > +	}
+> > +
+> > +	eventfd = eventfd_ctx_fileget(file);
+> > +	if (IS_ERR(eventfd)) {
+> > +		ret = PTR_ERR(eventfd);
+> > +		goto fail;
+> > +	}
+> > +
+> > +	ackfd = kzalloc(sizeof(*ackfd), GFP_KERNEL);
+> > +	if (!ackfd) {
+> > +		ret = -ENOMEM;
+> > +		goto fail;
+> > +	}
+> > +
+> > +	INIT_LIST_HEAD(&ackfd->list);
+> > +	INIT_WORK(&ackfd->shutdown, irq_ackfd_shutdown);
+> > +	ackfd->kvm = kvm;
+> > +	ackfd->eventfd = eventfd;
+> > +	ackfd->notifier.gsi = args->gsi;
+> > +	if (args->flags & KVM_IRQ_ACKFD_FLAG_IRQ_SOURCE_ID)
+> > +		ackfd->notifier.irq_source_id = args->irq_source_id;
+> > +	else
+> > +		ackfd->notifier.irq_source_id = -1;
+> > +	ackfd->notifier.irq_acked = irq_ackfd_acked;
+> > +
+> > +	/*
+> > +	 * Install our own custom wake-up handling so we are notified via
+> > +	 * a callback whenever someone releases the underlying eventfd
+> > +	 */
+> > +	init_waitqueue_func_entry(&ackfd->wait, irq_ackfd_wakeup);
+> > +	init_poll_funcptr(&ackfd->pt, irq_ackfd_ptable_queue_proc);
+> > +
+> > +	/*
+> > +	 * Install the wait queue function to allow cleanup when the
+> > +	 * eventfd is closed by the user.  This grabs the wqh lock, so
+> > +	 * we do it out of spinlock, holding the file reference ensures
+> > +	 * we won't see a POLLHUP until setup is complete.
+> > +	 */
+> > +	file->f_op->poll(file, &ackfd->pt);
+> > +
+> > +	spin_lock_irq(&kvm->irq_ackfds.lock);
+> > +
+> > +	/* Check for duplicates.  */
+> > +	list_for_each_entry(tmp, &kvm->irq_ackfds.items, list) {
+> > +		if (ackfd->eventfd == tmp->eventfd &&
+> > +		    ackfd->notifier.gsi == tmp->notifier.gsi &&
+> > +		    ackfd->notifier.irq_source_id ==
+> > +		    tmp->notifier.irq_source_id) {
+> > +			spin_unlock_irq(&kvm->irq_ackfds.lock);
+> > +			ret = -EBUSY;
+> > +			goto fail_unqueue;
+> > +		}
+> > +	}
+> > +
+> 
+> So source ID is not validated at all, this means there are
+> 4G ways for the same eventfd to be registered,
+> drinking up unlimited kernel memory by means of kzalloc above.
 
-- Sedat -
+Bitmap and cross-referencing mentioned in earlier patches also fix this.
+Thanks,
 
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=0bdaea9017b9d2b9996e153a71ee03555969b80e
+Alex
 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/internal.h      |    5 -----
->  fs/namei.c         |    1 +
->  include/linux/fs.h |    1 +
->  3 files changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/internal.h b/fs/internal.h
-> index 371bcc4..8578209 100644
-> --- a/fs/internal.h
-> +++ b/fs/internal.h
-> @@ -42,11 +42,6 @@ static inline int __sync_blockdev(struct block_device *bdev, int wait)
->  extern void __init chrdev_init(void);
->
->  /*
-> - * namei.c
-> - */
-> -extern int __inode_permission(struct inode *, int);
-> -
-> -/*
->   * namespace.c
->   */
->  extern int copy_mount_options(const void __user *, unsigned long *);
-> diff --git a/fs/namei.c b/fs/namei.c
-> index ac2526d..9be439a 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -348,6 +348,7 @@ int __inode_permission(struct inode *inode, int mask)
->
->         return security_inode_permission(inode, mask);
->  }
-> +EXPORT_SYMBOL(__inode_permission);
->
->  /**
->   * sb_permission - Check superblock-level permissions
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 1265e24..d573703 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2418,6 +2418,7 @@ extern sector_t bmap(struct inode *, sector_t);
->  #endif
->  extern int notify_change(struct dentry *, struct iattr *);
->  extern int inode_permission(struct inode *, int);
-> +extern int __inode_permission(struct inode *, int);
->  extern int generic_permission(struct inode *, int);
->
->  static inline bool execute_ok(struct inode *inode)
-> --
-> 1.7.7
->
+
