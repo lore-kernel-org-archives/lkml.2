@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab2HOU11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:27:27 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36717 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab2HOTuG (ORCPT
+	id S1757209Ab2HOU1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:27:24 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62861 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756522Ab2HOTuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:50:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Takashi Iwai <tiwai@suse.de>,
+CC: Manual Munz <freifunk@somakoma.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 053/165] ALSA: hda/realtek - Avoid bogus HP-pin assignment
-Date: Wed, 15 Aug 2012 15:46:37 -0400
-Message-ID: <1345060109-9187-54-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 044/165] b43: Fix beacon problem in ad-hoc mode
+Date: Wed, 15 Aug 2012 15:46:28 -0400
+Message-ID: <1345060109-9187-45-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Manual Munz <freifunk@somakoma.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,35 +33,33 @@ From: Takashi Iwai <tiwai@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 5fe6e0151dbd969f5fbcd94d05c968b76d76952b upstream.
+commit 8c23516fbb209ccf8f8c36268311c721faff29ee upstream.
 
-When the headphone pin is assigned as primary output to line_out_pins[],
-the automatic HP-pin assignment by ASSID must be suppressed.  Otherwise
-a wrong pin might be assigned to the headphone and breaks the auto-mute.
+In ad-hoc mode, driver b43 does not issue beacons.
 
-Reference: https://bugzilla.novell.com/show_bug.cgi?id=716104
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Manual Munz <freifunk@somakoma.de>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/pci/hda/patch_realtek.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/b43/main.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index d388680..2c71de1 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1336,7 +1336,9 @@ do_sku:
- 	 * 15   : 1 --> enable the function "Mute internal speaker
- 	 *	        when the external headphone out jack is plugged"
- 	 */
--	if (!spec->autocfg.hp_pins[0]) {
-+	if (!spec->autocfg.hp_pins[0] &&
-+	    !(spec->autocfg.line_out_pins[0] &&
-+	      spec->autocfg.line_out_type == AUTO_PIN_HP_OUT)) {
- 		hda_nid_t nid;
- 		tmp = (ass >> 11) & 0x3;	/* HP to chassis */
- 		if (tmp == 0)
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 9a374ef..1f230b8 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -1538,7 +1538,8 @@ static void handle_irq_beacon(struct b43_wldev *dev)
+ 	u32 cmd, beacon0_valid, beacon1_valid;
+ 
+ 	if (!b43_is_mode(wl, NL80211_IFTYPE_AP) &&
+-	    !b43_is_mode(wl, NL80211_IFTYPE_MESH_POINT))
++	    !b43_is_mode(wl, NL80211_IFTYPE_MESH_POINT) &&
++	    !b43_is_mode(wl, NL80211_IFTYPE_ADHOC))
+ 		return;
+ 
+ 	/* This is the bottom half of the asynchronous beacon update. */
 -- 
 1.7.12.rc2
 
