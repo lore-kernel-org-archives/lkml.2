@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab2HOSZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:25:08 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:59479 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751026Ab2HOSZG (ORCPT
+	id S1753192Ab2HOS0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:26:52 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56718 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab2HOS0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:25:06 -0400
-Date: Wed, 15 Aug 2012 18:25:04 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ying Han <yinghan@google.com>
-cc: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-In-Reply-To: <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com>
-Message-ID: <000001392b881bf0-4cf7cb93-c142-4ddb-960a-b35390caca0f-000000@email.amazonses.com>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz>
- <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com> <502BBC35.809@parallels.com> <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
- <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 15 Aug 2012 14:26:50 -0400
+Date: Wed, 15 Aug 2012 11:26:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [ 36/44] x86, microcode: Sanitize per-cpu microcode reloading
+ interface
+Message-ID: <20120815182645.GA25870@kroah.com>
+References: <20120813220142.113186818@linuxfoundation.org>
+ <20120813220145.337264645@linuxfoundation.org>
+ <20120815002654.GA11666@khazad-dum.debian.net>
+ <20120815140655.GC22871@kroah.com>
+ <20120815163046.GA30736@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815163046.GA30736@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Ying Han wrote:
+On Wed, Aug 15, 2012 at 01:30:46PM -0300, Henrique de Moraes Holschuh wrote:
+> On Wed, 15 Aug 2012, Greg Kroah-Hartman wrote:
+> > On Tue, Aug 14, 2012 at 09:26:54PM -0300, Henrique de Moraes Holschuh wrote:
+> > > I believe the patch bellow, which was required on 3.2, will also be
+> > > necessary.
+> > 
+> > Will it be necessary to apply this before this patch goes in the series,
+> > or after it?
+> 
+> Applying after fixes a build error.  Applying before might avoid the build
+> error altogether (error happens when #undef CONFIG_SMP), AFAIK.
 
-> > How can you figure out which objects belong to which memcg? The ownerships
-> > of dentries and inodes is a dubious concept already.
->
-> I figured it out based on the kernel slab accounting.
-> obj->page->kmem_cache->memcg
+Ok, it doesn't apply directly, but looks easy enough to fix up by hand,
+I'll go work on that right now...
 
-Well that is only the memcg which allocated it. It may be in use heavily
-by other processes.
-
+greg k-h
