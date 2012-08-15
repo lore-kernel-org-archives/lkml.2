@@ -1,174 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab2HORIl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:08:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab2HORIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:37 -0400
-Message-ID: <1345050515.4683.412.camel@ul30vt.home>
-Subject: Re: [PATCH v8 3/6] kvm: Add IRQ source ID option to KVM_IRQFD
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 15 Aug 2012 11:08:35 -0600
-In-Reply-To: <20120815134918.GC3068@redhat.com>
-References: <20120810223633.809.44188.stgit@bling.home>
-	 <20120810223731.809.67249.stgit@bling.home>
-	 <20120815134918.GC3068@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755471Ab2HORIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:08:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50494 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039Ab2HORIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 13:08:42 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH v3 4/6] ARM: dove: add device tree based machine descriptor
+Date: Wed, 15 Aug 2012 19:07:33 +0200
+Message-Id: <1345050455-32643-5-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 16:49 +0300, Michael S. Tsirkin wrote:
-> On Fri, Aug 10, 2012 at 04:37:33PM -0600, Alex Williamson wrote:
-> > This allows specifying an IRQ source ID to be used when injecting an
-> > interrupt.  When not specified KVM_USERSPACE_IRQ_SOURCE_ID is used.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  Documentation/virtual/kvm/api.txt |    5 +++++
-> >  arch/x86/kvm/x86.c                |    1 +
-> >  include/linux/kvm.h               |    6 +++++-
-> >  virt/kvm/eventfd.c                |   14 ++++++++++----
-> >  4 files changed, 21 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > index 062cfd5..46f4b4d 100644
-> > --- a/Documentation/virtual/kvm/api.txt
-> > +++ b/Documentation/virtual/kvm/api.txt
-> > @@ -1946,6 +1946,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> >  and kvm_irqfd.gsi.
-> >  
-> > +When KVM_CAP_IRQFD_IRQ_SOURCE_ID is available, KVM_IRQFD supports the
-> > +KVM_IRQFD_FLAG_IRQ_SOURCE_ID which can be used to specify an IRQ
-> > +source ID (see KVM_IRQ_SOURCE_ID) to be used for the guest interrupt.
-> > +This flag has no effect on deassignment.
-> > +
-> >  4.76 KVM_PPC_ALLOCATE_HTAB
-> >  
-> >  Capability: KVM_CAP_PPC_ALLOC_HTAB
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 75e743e..946c5bd 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -2174,6 +2174,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> >  	case KVM_CAP_GET_TSC_KHZ:
-> >  	case KVM_CAP_PCI_2_3:
-> >  	case KVM_CAP_KVMCLOCK_CTRL:
-> > +	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
-> >  		r = 1;
-> >  		break;
-> >  	case KVM_CAP_COALESCED_MMIO:
-> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > index 67b6b49..deda8a9 100644
-> > --- a/include/linux/kvm.h
-> > +++ b/include/linux/kvm.h
-> > @@ -619,6 +619,7 @@ struct kvm_ppc_smmu_info {
-> >  #define KVM_CAP_S390_COW 79
-> >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> >  #define KVM_CAP_NR_IRQ_SOURCE_ID 81
-> > +#define KVM_CAP_IRQFD_IRQ_SOURCE_ID 82
-> >  
-> >  #ifdef KVM_CAP_IRQ_ROUTING
-> >  
-> > @@ -684,12 +685,15 @@ struct kvm_xen_hvm_config {
-> >  #endif
-> >  
-> >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> > +/* Available with KVM_CAP_IRQFD_IRQ_SOURCE_ID */
-> > +#define KVM_IRQFD_FLAG_IRQ_SOURCE_ID (1 << 1)
-> >  
-> >  struct kvm_irqfd {
-> >  	__u32 fd;
-> >  	__u32 gsi;
-> >  	__u32 flags;
-> > -	__u8  pad[20];
-> > +	__u32 irq_source_id;
-> > +	__u8  pad[16];
-> >  };
-> >  
-> >  #define KVM_IRQ_SOURCE_ID_FLAG_DEASSIGN (1 << 0)
-> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > index 7d7e2aa..30150f1 100644
-> > --- a/virt/kvm/eventfd.c
-> > +++ b/virt/kvm/eventfd.c
-> > @@ -51,6 +51,7 @@ struct _irqfd {
-> >  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> >  	/* Used for level IRQ fast-path */
-> >  	int gsi;
-> > +	int irq_source_id;
-> >  	struct work_struct inject;
-> >  	/* Used for setup/shutdown */
-> >  	struct eventfd_ctx *eventfd;
-> > @@ -67,8 +68,8 @@ irqfd_inject(struct work_struct *work)
-> >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> >  	struct kvm *kvm = irqfd->kvm;
-> >  
-> > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > +	kvm_set_irq(kvm, irqfd->irq_source_id, irqfd->gsi, 1);
-> > +	kvm_set_irq(kvm, irqfd->irq_source_id, irqfd->gsi, 0);
-> 
-> Looks like this can lead to kernel data corruption if irq_source_id
-> specified it out of range?
+This adds a generic DT_MACHINE for mach-dove. As with other orion based
+SoCs there still is some glue code required to make all internal devices
+work, i.e. auxdata is provided to pass clocks to corresponding device
+drivers.
 
-Yep, we need range checking and maybe even cross check against user
-allocated IDs.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Rabeeh Khoury <rabeeh@solid-run.com>
+Cc: Ian Molton <ian.molton@codethink.co.uk>
+Cc: Maen Suleiman <maen@marvell.com>
+Cc: Olof Johansson <olof@lixom.net>
+---
+ arch/arm/mach-dove/Kconfig  |    7 +++++
+ arch/arm/mach-dove/common.c |   67 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 74 insertions(+)
 
-> >  }
-> >  
-> >  /*
-> > @@ -138,7 +139,7 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> >  		irq = rcu_dereference(irqfd->irq_entry);
-> >  		/* An event has been signaled, inject an interrupt */
-> >  		if (irq)
-> > -			kvm_set_msi(irq, kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-> > +			kvm_set_msi(irq, kvm, irqfd->irq_source_id, 1);
-> >  		else
-> >  			schedule_work(&irqfd->inject);
-> >  		rcu_read_unlock();
-> > @@ -213,6 +214,10 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  
-> >  	irqfd->kvm = kvm;
-> >  	irqfd->gsi = args->gsi;
-> > +	if (args->flags & KVM_IRQFD_FLAG_IRQ_SOURCE_ID)
-> > +		irqfd->irq_source_id = args->irq_source_id;
-> > +	else
-> > +		irqfd->irq_source_id = KVM_USERSPACE_IRQ_SOURCE_ID;
-> 
-> As in the previous patch, there is no validation
-> that source id was previously allocated to userspace, so this makes life
-> harder for userspace: if it deassigns a used source ID the result is not
-> a clean failure but hard to find bugs.
-
-Yep, good point.  Some trivial bitmap management should fix this.
-
-> >  	INIT_LIST_HEAD(&irqfd->list);
-> >  	INIT_WORK(&irqfd->inject, irqfd_inject);
-> >  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
-> > @@ -340,7 +345,8 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  int
-> >  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
-> >  {
-> > -	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-> > +	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN |
-> > +			    KVM_IRQFD_FLAG_IRQ_SOURCE_ID))
-> >  		return -EINVAL;
-> >  
-> >  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
-
-Summary:
-      * user allocation bitmap needs to be cross-referenced by consumers
-        of user passed source IDs.
-
-Thanks,
-
-Alex
+diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
+index dd937c5..00154e7 100644
+--- a/arch/arm/mach-dove/Kconfig
++++ b/arch/arm/mach-dove/Kconfig
+@@ -15,6 +15,13 @@ config MACH_CM_A510
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  CompuLab CM-A510 Board.
+ 
++config MACH_DOVE_DT
++	bool "Marvell Dove Flattened Device Tree"
++	select USE_OF
++	help
++	  Say 'Y' here if you want your kernel to support the
++	  Marvell Dove using flattened device tree.
++
+ endmenu
+ 
+ endif
+diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
+index 66689ce..810ea15 100644
+--- a/arch/arm/mach-dove/common.c
++++ b/arch/arm/mach-dove/common.c
+@@ -16,6 +16,8 @@
+ #include <linux/clk-provider.h>
+ #include <linux/ata_platform.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
+ #include <asm/page.h>
+ #include <asm/setup.h>
+ #include <asm/timex.h>
+@@ -29,6 +31,7 @@
+ #include <asm/mach/arch.h>
+ #include <linux/irq.h>
+ #include <plat/time.h>
++#include <plat/irq.h>
+ #include <plat/ehci-orion.h>
+ #include <plat/common.h>
+ #include <plat/addr-map.h>
+@@ -379,3 +382,67 @@ void dove_restart(char mode, const char *cmd)
+ 	while (1)
+ 		;
+ }
++
++#if defined(CONFIG_MACH_DOVE_DT)
++/*
++ * Auxdata required until real OF clock provider
++ */
++struct of_dev_auxdata dove_auxdata_lookup[] __initdata = {
++	OF_DEV_AUXDATA("marvell,orion-spi", 0xf1010600, "orion_spi.0", NULL),
++	OF_DEV_AUXDATA("marvell,orion-spi", 0xf1014600, "orion_spi.1", NULL),
++	OF_DEV_AUXDATA("marvell,orion-wdt", 0xf1020300, "orion_wdt", NULL),
++	OF_DEV_AUXDATA("marvell,mv64xxx-i2c", 0xf1011000, "mv64xxx_i2c.0",
++		       NULL),
++	OF_DEV_AUXDATA("marvell,orion-sata", 0xf10a0000, "sata_mv.0", NULL),
++	OF_DEV_AUXDATA("marvell,dove-sdhci", 0xf1092000, "sdhci-dove.0", NULL),
++	OF_DEV_AUXDATA("marvell,dove-sdhci", 0xf1090000, "sdhci-dove.1", NULL),
++	{},
++};
++
++static struct mv643xx_eth_platform_data dove_dt_ge00_data = {
++	.phy_addr = MV643XX_ETH_PHY_ADDR_DEFAULT,
++};
++
++static void __init dove_dt_init(void)
++{
++	pr_info("Dove 88AP510 SoC, TCLK = %d MHz.\n",
++		(dove_tclk + 499999) / 1000000);
++
++#ifdef CONFIG_CACHE_TAUROS2
++	tauros2_init();
++#endif
++	dove_setup_cpu_mbus();
++
++	/* Setup root of clk tree */
++	dove_clk_init();
++
++	/* Internal devices not ported to DT yet */
++	dove_rtc_init();
++	dove_xor0_init();
++	dove_xor1_init();
++
++	dove_ge00_init(&dove_dt_ge00_data);
++	dove_ehci0_init();
++	dove_ehci1_init();
++	dove_pcie_init(1, 1);
++	dove_crypto_init();
++
++	of_platform_populate(NULL, of_default_bus_match_table,
++			     dove_auxdata_lookup, NULL);
++}
++
++static const char * const dove_dt_board_compat[] = {
++	"marvell,dove",
++	NULL
++};
++
++DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
++	.map_io		= dove_map_io,
++	.init_early	= dove_init_early,
++	.init_irq	= orion_dt_init_irq,
++	.timer		= &dove_timer,
++	.init_machine	= dove_dt_init,
++	.restart	= dove_restart,
++	.dt_compat	= dove_dt_board_compat,
++MACHINE_END
++#endif
+-- 
+1.7.10.4
 
