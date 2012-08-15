@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab2HOC2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 22:28:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48674 "EHLO mga01.intel.com"
+	id S1755665Ab2HOCa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 22:30:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14568 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2HOC2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 22:28:46 -0400
+	id S1751661Ab2HOCa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 22:30:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,770,1336374000"; 
-   d="scan'208";a="208554465"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] max17042_battery: add support for battery STATUS and
- CHARGE_TYPE
-Thread-Topic: [PATCH] max17042_battery: add support for battery STATUS and
- CHARGE_TYPE
-Thread-Index: AQHNdUn+gL445xu300ubXjvWlDtWJpdaME/g
-Date: Wed, 15 Aug 2012 02:28:41 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD22482D@BGSMSX102.gar.corp.intel.com>
-References: <1343408181-21988-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120808093857.GA1402@lizard>
-In-Reply-To: <20120808093857.GA1402@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+   d="scan'208";a="201194701"
+Date: Wed, 15 Aug 2012 10:30:50 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        linux-c6x-dev@linux-c6x.org, Lennox Wu <lennox.wu@gmail.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH] select GENERIC_ATOMIC64 for c6x/score/unicore32 archs
+Message-ID: <20120815023050.GA24641@localhost>
+References: <20120814153413.GA18601@localhost>
+ <1344961371.30830.43.camel@deneb.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344961371.30830.43.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7F2SqIj019234
 
-> On Fri, Jul 27, 2012 at 10:26:21PM +0530, Ramakrishna Pallala wrote:
-> > This patch adds the support to report the battery power supply
-> > attributes STATUS and CHARGE_TYPE. This patch makes use of
-> > power_supply_get_external_attr() API to get these attributes through power
-> supply core.
-> >
-> > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+On Tue, Aug 14, 2012 at 12:22:49PM -0400, Mark Salter wrote:
+> On Tue, 2012-08-14 at 23:34 +0800, Fengguang Wu wrote:
+> > Sorry I have no compilers for build testing these changes, however the
+> > risk looks low and it's much better than to leave the arch broken,
+> > considering that Eric will do atomic64_t in the core fs/namespace.c
+> > code.
+> > 
+> > CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > > ---
-> [...]
-> >  	switch (psp) {
-> > +	case POWER_SUPPLY_PROP_STATUS:
-> > +		ret = power_supply_get_external_attr(&query);
-> > +		if (ret < 0)
-> > +			return ret;
-> > +		val->intval = query.res.intval;
-> > +		break;
+> > 
+> > Andrew: the arch maintainers have been CCed. Best is the maintainers
+> > respond, test and perhaps take the corresponding change. Let's see how
+> > this will work out..
+> > 
+> > 
+> >  arch/c6x/Kconfig       |    1 +
 > 
-> First of, thanks a lot for your work. And sorry that it took me quite a while to
-> review it, but these are fundamental changes, so I had to thoughtfully consider
-> all this.
+> The c6x port also needs this:
 > 
-> This exact code clearly shows that it is not battery's property. Battery itself
-> cannot report it, right? OK, here is what
-> Documentation/power/power_supply_class.txt says:
-> 
-> A: Most likely, no. This class is designed to export properties which are
->    directly measurable by the specific hardware available.
-> 
->    Inferring not available properties using some heuristics or mathematical
->    model is not subject of work for a battery driver. Such functionality
->    should be factored out
-> 
-> So, you basically try to infer battery's properties from the charger hw.
-> This is surely doable, but no, I think we should not do this. Instead, what we
-> want is to make use of "supplied_to" mechanism of the power supply class, and
-> export it via sysfs. Then userland can see all the power supply hierarchy, and
-> thus see which hardware provides which data.
-> 
-> See my thoughts about exporting "supplied_to" to the sysfs:
-> 
-> 	http://lkml.org/lkml/2011/6/22/258
-> 
-> So, we'll have:
-> 
-> /sys/
->    class/
->       power_supply/
->          charger/
->             supplied_to/battery -> ../../battery
->          battery/
-> 
-> Sure, we'll have to teach userland to operate on this scheme, i.e.
-> it must be aware that batteries might be connected to an external charger, and
-> if so, userland must query* charging status from the charger.
-> 
-> Do you see any problem with this approach?
-> 
-> Thanks!
+> C6X: add L*_CACHE_SHIFT defines
+>     
+> C6X currently lacks L*_CACHE_SHIFT defines which are used in a few
+> places in the generic kernel. This patch adds those missing defines.
+>     
+> Signed-off-by: Mark Salter <msalter@redhat.com>
 
-Got your point. I will try this approach.
-Thanks for your time :-)
+Thanks for the quick fix! git grep shows this:
+
+        lib/atomic64.c: addr >>= L1_CACHE_SHIFT;
+
+So this patch is a prerequisite for the GENERIC_ATOMIC64 patch.
+
+git grep also shows
+
+        arch/score/include/asm/cache.h:#define L1_CACHE_SHIFT           4
+
+        arch/unicore32/include/asm/cache.h:#define L1_CACHE_SHIFT (5)
+
+So the other two archs are fine.
 
 Thanks,
-Ram
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Fengguang
