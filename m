@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab2HOUZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:25:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36789 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571Ab2HOTu0 (ORCPT
+	id S1756672Ab2HOUZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:25:24 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62895 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756572Ab2HOTu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:50:26 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Kautuk Consul <consul.kautuk@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Rigbert Hamisch <rigbert@gmx.de>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 065/165] xhci-mem.c: Check for ring->first_seg != NULL
-Date: Wed, 15 Aug 2012 15:46:49 -0400
-Message-ID: <1345060109-9187-66-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 064/165] USB: qcserial: add device ID for "HP un2430 Mobile Broadband Module"
+Date: Wed, 15 Aug 2012 15:46:48 -0400
+Message-ID: <1345060109-9187-65-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
+From: Rigbert Hamisch <rigbert@gmx.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,62 +31,29 @@ From: Kautuk Consul <consul.kautuk@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0e6c7f746ea99089fb3263709075c20485a479ae upstream.
+commit 1bfac90d1b8e63a4d44158c3445d8fda3fb6d5eb upstream.
 
-There are 2 situations wherein the xhci_ring* might not get freed:
-- When xhci_ring_alloc() -> xhci_segment_alloc() returns NULL and
-  we goto the fail: label in xhci_ring_alloc. In this case, the ring
-  will not get kfreed.
-- When the num_segs argument to xhci_ring_alloc is passed as 0 and
-  we try to free the rung after that.
-  ( This doesn't really happen as of now in the code but we seem to
-    be entertaining num_segs=0 in xhci_ring_alloc )
+add device ID for "HP un2430 Mobile Broadband Module"
 
-This should be backported to kernels as old as 2.6.31.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Rigbert Hamisch <rigbert@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/xhci-mem.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/usb/serial/qcserial.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 727ac40..31cf540 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -111,18 +111,20 @@ void xhci_ring_free(struct xhci_hcd *xhci, struct xhci_ring *ring)
- 	struct xhci_segment *seg;
- 	struct xhci_segment *first_seg;
- 
--	if (!ring || !ring->first_seg)
-+	if (!ring)
- 		return;
--	first_seg = ring->first_seg;
--	seg = first_seg->next;
--	xhci_dbg(xhci, "Freeing ring at %p\n", ring);
--	while (seg != first_seg) {
--		struct xhci_segment *next = seg->next;
--		xhci_segment_free(xhci, seg);
--		seg = next;
-+	if (ring->first_seg) {
-+		first_seg = ring->first_seg;
-+		seg = first_seg->next;
-+		xhci_dbg(xhci, "Freeing ring at %p\n", ring);
-+		while (seg != first_seg) {
-+			struct xhci_segment *next = seg->next;
-+			xhci_segment_free(xhci, seg);
-+			seg = next;
-+		}
-+		xhci_segment_free(xhci, first_seg);
-+		ring->first_seg = NULL;
- 	}
--	xhci_segment_free(xhci, first_seg);
--	ring->first_seg = NULL;
- 	kfree(ring);
- }
- 
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 225fc88..7facae0 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -26,6 +26,7 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+ 	{USB_DEVICE(0x03f0, 0x1f1d)},	/* HP un2400 Gobi Modem Device */
+ 	{USB_DEVICE(0x03f0, 0x201d)},	/* HP un2400 Gobi QDL Device */
++	{USB_DEVICE(0x03f0, 0x371d)},	/* HP un2430 Mobile Broadband Module */
+ 	{USB_DEVICE(0x04da, 0x250d)},	/* Panasonic Gobi Modem device */
+ 	{USB_DEVICE(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
+ 	{USB_DEVICE(0x413c, 0x8172)},	/* Dell Gobi Modem device */
 -- 
 1.7.12.rc2
 
