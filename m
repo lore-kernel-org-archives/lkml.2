@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2HOSXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:23:45 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:42486 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753538Ab2HOSXn (ORCPT
+	id S1752722Ab2HOSZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:25:08 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:59479 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751026Ab2HOSZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:23:43 -0400
-Date: Wed, 15 Aug 2012 14:23:41 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Update][PATCH 3/3] PM / Runtime: Check device PM QoS setting
- before "no callbacks" check
-In-Reply-To: <201208152022.56224.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1208151422580.547-100000@netrider.rowland.org>
+	Wed, 15 Aug 2012 14:25:06 -0400
+Date: Wed, 15 Aug 2012 18:25:04 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ying Han <yinghan@google.com>
+cc: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+In-Reply-To: <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com>
+Message-ID: <000001392b881bf0-4cf7cb93-c142-4ddb-960a-b35390caca0f-000000@email.amazonses.com>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz>
+ <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com> <502BBC35.809@parallels.com> <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
+ <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Rafael J. Wysocki wrote:
+On Wed, 15 Aug 2012, Ying Han wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Runtime: Check device PM QoS setting before "no callbacks"
-> 
-> If __dev_pm_qos_read_value(dev) returns a negative value,
-> rpm_suspend() should return -EPERM for dev even if its
-> power.no_callbacks flag is set.  For this to happen, the device's
-> power.no_callbacks flag has to be checked after the PM QoS check,
-> so move the PM QoS check to rpm_check_suspend_allowed() (this will
-> make it cover idle notifications as well as runtime suspend too).
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/runtime.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> Index: linux/drivers/base/power/runtime.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/runtime.c
-> +++ linux/drivers/base/power/runtime.c
-> @@ -147,6 +147,8 @@ static int rpm_check_suspend_allowed(str
->  	    || (dev->power.request_pending
->  			&& dev->power.request == RPM_REQ_RESUME))
->  		retval = -EAGAIN;
-> +	else if (__dev_pm_qos_read_value(dev) < 0)
-> +		retval = -EPERM;
->  	else if (dev->power.runtime_status == RPM_SUSPENDED)
->  		retval = 1;
->  
-> @@ -402,12 +404,6 @@ static int rpm_suspend(struct device *de
->  		goto out;
->  	}
->  
-> -	if (__dev_pm_qos_read_value(dev) < 0) {
-> -		/* Negative PM QoS constraint means "never suspend". */
-> -		retval = -EPERM;
-> -		goto out;
-> -	}
-> -
->  	__update_runtime_status(dev, RPM_SUSPENDING);
->  
->  	if (dev->pm_domain)
+> > How can you figure out which objects belong to which memcg? The ownerships
+> > of dentries and inodes is a dubious concept already.
+>
+> I figured it out based on the kernel slab accounting.
+> obj->page->kmem_cache->memcg
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Well that is only the memcg which allocated it. It may be in use heavily
+by other processes.
 
