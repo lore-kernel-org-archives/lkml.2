@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2HOTQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:16:38 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:59508 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab2HOTQg (ORCPT
+	id S1755074Ab2HOTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:18:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65069 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab2HOTSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:16:36 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Minho Ban <mhban@samsung.com>,
-        Jaecheol Lee <jc.lee@samsung.com>,
-        Sunyoung Kang <sy0816.kang@samsung.com>,
-        Olof Johansson <olofj@chromium.org>
-Subject: [PATCH] ARM: SAMSUNG: use spin_lock_irqsave() in clk_set_parent
-Date: Wed, 15 Aug 2012 12:16:27 -0700
-Message-Id: <1345058187-18843-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 15 Aug 2012 15:18:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <201208042327.33132.rjw@sisk.pl>
+References: <201208042327.33132.rjw@sisk.pl>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 15 Aug 2012 13:17:43 -0600
+Message-ID: <CAErSpo4EHK5SEiAquguFV9sZa2-+q2jrF64JeBZqKBjaULNsRQ@mail.gmail.com>
+Subject: Re: [Resend][PATCH] PCI / PM: Fix messages printed by acpi_pci_set_power_state()
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0cdf3aff, "ARM: SAMSUNG: use spin_lock_irqsave() in
-clk_{enable,disable}":
+On Sat, Aug 4, 2012 at 3:27 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> If a PCI device is put into D3_cold by acpi_bus_set_power(),
+> the message printed by acpi_pci_set_power_state() says that its
+> power state has been changed to D4, which doesn't make sense.
+> In turn, if the device is put into D3_hot, the message simply
+> says "D3" without specifying the variant of the D3 state.
+>
+> Fix this by using the pci_power_name() macro for printing the state
+> name instead of building it from the numeric value corresponding to
+> the given state directly.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-  The clk_enable()and clk_disable() can be used process and ISR either.
-  And actually it is used for real product and other platforms use it
-  now. So spin_lock_irqsave() should be used instead.
+Applied to my for-linus branch, since this fixes a minor issue
+introduced with the runtime D3cold support we merged for 3.6.  Thanks!
 
-We need to make a similar change in clk_set_parent(). Otherwise,
-you can potentially get spinlock recursion:
-
-BUG: spinlock recursion on CPU#0, kinteractive/68
- lock: 807832a8, .magic: dead4ead, .owner: kinteractive/68, .owner_cpu: 0
-[<80015f54>] (unwind_backtrace+0x0/0x128) from [<804f2914>] (dump_stack+0x20/0x24)
-[<804f2914>] (dump_stack+0x20/0x24) from [<804f57b8>] (spin_dump+0x80/0x94)
-[<804f57b8>] (spin_dump+0x80/0x94) from [<804f57f8>] (spin_bug+0x2c/0x30)
-[<804f57f8>] (spin_bug+0x2c/0x30) from [<80222730>] (do_raw_spin_lock+0x54/0x150)
-[<80222730>] (do_raw_spin_lock+0x54/0x150) from [<804f96ec>] (_raw_spin_lock_irqsave+0x20/0x28)
-[<804f96ec>] (_raw_spin_lock_irqsave+0x20/0x28) from [<80022ea4>] (clk_enable+0x3c/0x84)
-[<80022ea4>] (clk_enable+0x3c/0x84) from [<8038336c>] (s5p_mfc_clock_on+0x60/0x74)
-[<8038336c>] (s5p_mfc_clock_on+0x60/0x74) from [<8038645c>] (s5p_mfc_read_info+0x20/0x38)
-[<8038645c>] (s5p_mfc_read_info+0x20/0x38) from [<8037ca3c>] (s5p_mfc_handle_frame+0x2e4/0x4bc)
-[<8037ca3c>] (s5p_mfc_handle_frame+0x2e4/0x4bc) from [<8037d420>] (s5p_mfc_irq+0x1ec/0x6cc)
-[<8037d420>] (s5p_mfc_irq+0x1ec/0x6cc) from [<8007fc74>] (handle_irq_event_percpu+0x8c/0x244)
-[<8007fc74>] (handle_irq_event_percpu+0x8c/0x244) from [<8007fe78>] (handle_irq_event+0x4c/0x6c)
-[<8007fe78>] (handle_irq_event+0x4c/0x6c) from [<80082dd8>] (handle_fasteoi_irq+0xe4/0x150)
-[<80082dd8>] (handle_fasteoi_irq+0xe4/0x150) from [<8007f424>] (generic_handle_irq+0x3c/0x50)
-[<8007f424>] (generic_handle_irq+0x3c/0x50) from [<8000f7c4>] (handle_IRQ+0x88/0xc8)
-[<8000f7c4>] (handle_IRQ+0x88/0xc8) from [<80008564>] (gic_handle_irq+0x44/0x68)
-[<80008564>] (gic_handle_irq+0x44/0x68) from [<8000e400>] (__irq_svc+0x40/0x60)
-Exception stack(0xef3cbe68 to 0xef3cbeb0)
-[<8000e400>] (__irq_svc+0x40/0x60) from [<80022cfc>] (clk_set_parent+0x30/0x74)
-[<80022cfc>] (clk_set_parent+0x30/0x74) from [<803ac7f8>] (set_apll.isra.0+0x28/0xb0)
-[<803ac7f8>] (set_apll.isra.0+0x28/0xb0) from [<803ac8e4>] (exynos5250_set_frequency+0x64/0xb8)
-[<803ac8e4>] (exynos5250_set_frequency+0x64/0xb8) from [<803ac280>] (exynos_target+0x1b0/0x220)
-[<803ac280>] (exynos_target+0x1b0/0x220) from [<803a4a0c>] (__cpufreq_driver_target+0xb0/0xd4)
-[<803a4a0c>] (__cpufreq_driver_target+0xb0/0xd4) from [<803aab80>] (cpufreq_interactive_updown_task+0x214/0x264)
-[<803aab80>] (cpufreq_interactive_updown_task+0x214/0x264) from [<80047d04>] (kthread+0x9c/0xa8)
-[<80047d04>] (kthread+0x9c/0xa8) from [<8000fa48>] (kernel_thread_exit+0x0/0x8)
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Suggested-by: Sunil Mazhavanchery <sunilm@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org
-CC: linux-samsung-soc@vger.kernel.org
-CC: Ben Dooks <ben-linux@fluff.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Minho Ban <mhban@samsung.com>
-CC: Jaecheol Lee <jc.lee@samsung.com>
-CC: Sunyoung Kang <sy0816.kang@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: Olof Johansson <olofj@chromium.org>
----
- arch/arm/plat-samsung/clock.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/plat-samsung/clock.c b/arch/arm/plat-samsung/clock.c
-index 65c5eca..80eacca 100644
---- a/arch/arm/plat-samsung/clock.c
-+++ b/arch/arm/plat-samsung/clock.c
-@@ -173,17 +173,18 @@ struct clk *clk_get_parent(struct clk *clk)
- 
- int clk_set_parent(struct clk *clk, struct clk *parent)
- {
-+	unsigned long flags;
- 	int ret = 0;
- 
- 	if (IS_ERR(clk))
- 		return -EINVAL;
- 
--	spin_lock(&clocks_lock);
-+	spin_lock_irqsave(&clocks_lock, flags);
- 
- 	if (clk->ops && clk->ops->set_parent)
- 		ret = (clk->ops->set_parent)(clk, parent);
- 
--	spin_unlock(&clocks_lock);
-+	spin_unlock_irqrestore(&clocks_lock, flags);
- 
- 	return ret;
- }
--- 
-1.7.7.3
-
+> ---
+>  drivers/pci/pci-acpi.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux/drivers/pci/pci-acpi.c
+> ===================================================================
+> --- linux.orig/drivers/pci/pci-acpi.c
+> +++ linux/drivers/pci/pci-acpi.c
+> @@ -266,8 +266,8 @@ static int acpi_pci_set_power_state(stru
+>         }
+>
+>         if (!error)
+> -               dev_printk(KERN_INFO, &dev->dev,
+> -                               "power state changed by ACPI to D%d\n", state);
+> +               dev_info(&dev->dev, "power state changed by ACPI to %s\n",
+> +                        pci_power_name(state));
+>
+>         return error;
+>  }
