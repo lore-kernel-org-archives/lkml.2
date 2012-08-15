@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2HOT2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:28:23 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45228 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2HOT2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:28:22 -0400
-Date: Wed, 15 Aug 2012 21:28:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 3/4] cputime: Consolidate vtime handling on context switch
-Message-ID: <20120815192813.GE19716@somewhere>
-References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
- <1344953810-20564-4-git-send-email-fweisbec@gmail.com>
- <20120815172219.4e4d5ef5@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815172219.4e4d5ef5@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754969Ab2HOTbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:31:20 -0400
+Received: from waste.org ([173.11.57.241]:56948 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751785Ab2HOTbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:31:18 -0400
+Message-ID: <1345059051.32116.32.camel@calx>
+Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
+From: Matt Mackall <mpm@selenic.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
+        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+        davem@davemloft.net, mingo@kernel.org, hpa@zytor.com,
+        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
+Date: Wed, 15 Aug 2012 14:30:51 -0500
+In-Reply-To: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
+References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 05:22:19PM +0200, Martin Schwidefsky wrote:
-> On Tue, 14 Aug 2012 16:16:49 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Mon, 2012-08-13 at 10:26 -0700, H. Peter Anvin wrote:
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
 > 
-> > The archs that implement virtual cputime accounting all
-> > flush the cputime of a task when it gets descheduled
-> > and sometimes set up some ground initialization for the
-> > next task to account its cputime.
-> > 
-> > These archs all put their own hooks in their context
-> > switch callbacks and handle the off-case themselves.
-> > 
-> > Consolidate this by creating a new account_switch_vtime()
-> > callback called in generic code right after a context switch
-> > and that these archs must implement to flush the prev task
-> > cputime and initialize the next task cputime related state.
-> 
-> That change requires that the accounting for the previous process
-> can be done before finish_arch_switch() completed. With the old
-> code the architecture could to the accounting call in the middle
-> of finish_arch_switch, that is not possible anymore. Dunno if this
-> is relevant or not. For s390 the new code should work fine.
+> When we write entropy into a non-empty pool, we currently don't
+> account at all for the fact that we will probabilistically overwrite
+> some of the entropy in that pool.
 
-I'm not sure how this could potentially cause a problem. Interrupts are disabled
-between while we switch_to() until finish_lock_switch(). So nothing
-should be able to mess up with the accounting of the prev task.
+Technically, no, nothing is overwritten. The key fact is that the mixing
+function is -reversible-. Thus, even if you mix in known data, you can't
+learn anything about the state and thus can't destroy any of the
+existing entropy.
 
-I don't really understand what you mean actually.
+But you are correct, mixing new actual entropy is not purely additive
+(with saturation). For that to happen, we'd need an input mixing
+function with perfect maximal cascading. Instead we effectively cascade
+across somewhere between 6 and 64 bits. So the truth lies somewhere
+between linear and your exponential estimate (which would be the case
+for mixing a single bit into the pool with XOR), but much closer to
+linear due to combinatoric expansion.
 
-Thanks.
+On the other hand, I don't think this sort of thing matters at all.
+There is so much more fundamentally wrong with even trying to do entropy
+accounting in the first place that these sorts of details don't even
+matter. Instead we should stop fooling ourselves and just drop the
+pretense of accounting entirely. Now that we've got a much richer set of
+inputs, I think the time is ripe... but of course, I'm no longer the
+maintainer.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
