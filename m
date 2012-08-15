@@ -1,128 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2HOGx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 02:53:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43397 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab2HOGxz (ORCPT
+	id S1752680Ab2HOHHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 03:07:05 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50342 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab2HOHHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 02:53:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344887375.7580.2.camel@maxim-laptop>
-References: <20120611231842.221bd738@europa>
-	<20120705222429.43586868@europa>
-	<CAJCn4U=pLjiLVW_TT+JN5G177dh4RUwg=vinjBrS4udChOyqoQ@mail.gmail.com>
-	<1344091275.4520.1.camel@maxim-laptop>
-	<1344285484.14543.0.camel@maxim-laptop>
-	<20120808053716.GA10092@turiel.bne.redhat.com>
-	<87lihpkjnu.fsf@turtle.gmx.de>
-	<20120808060841.GB10092@turiel.bne.redhat.com>
-	<87fw7xkiu6.fsf@turtle.gmx.de>
-	<87d32uzrq5.fsf@turtle.gmx.de>
-	<1344887375.7580.2.camel@maxim-laptop>
-Date: Wed, 15 Aug 2012 08:53:54 +0200
-Message-ID: <CAGZ4FETJAU+13RRj_DOq=Xng-MguLFAwae=h_BT=_NSrXe9UXQ@mail.gmail.com>
-Subject: Re: [Nouveau] [bisected] nouveau: "Failed to idle channel x" after resume
-From: Maarten Maathuis <madman2003@gmail.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: Sven Joachim <svenjoac@gmx.de>, Aioanei Rares <krnl.list@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Martin Nyhus <martin.nyhus@gmx.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 15 Aug 2012 03:07:04 -0400
+Date: Wed, 15 Aug 2012 10:06:55 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: kill MTD_NAND_VERIFY_WRITE
+Message-ID: <20120815100655.479e2c39@pixies.home.jungo.com>
+In-Reply-To: <1344998325-3279-1-git-send-email-shijie8@gmail.com>
+References: <1344998325-3279-1-git-send-email-shijie8@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 9:49 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> On Mon, 2012-08-13 at 18:22 +0200, Sven Joachim wrote:
->> On 2012-08-08 08:18 +0200, Sven Joachim wrote:
->>
->> > On 2012-08-08 08:08 +0200, Ben Skeggs wrote:
->> >
->> >> On Wed, Aug 08, 2012 at 08:00:21AM +0200, Sven Joachim wrote:
->> >>> Not for me on my GeForce 8500 GT, and I still cannot suspend more than
->> >>> once, subsequent attempts fail:
->> >>>
->> >>> ,----
->> >>> | Aug 8 07:49:16 turtle kernel: [ 91.697068] nouveau W[
->> >>> | PGRAPH][0000:01:00.0][0x0200502d][ffff880037be1d40] parent failed
->> >>> | suspend, -16
->> >>> | Aug  8 07:49:16 turtle kernel: [   91.697078] nouveau  [     DRM][0000:01:00.0] resuming display...
->> >>> `----
->> >> Interesting.  Were there any messages prior to that?
->> >
->> > Nothing interesting:
->> >
->> > ,----
->> > | Aug  8 07:49:16 turtle kernel: [   89.655362] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
->> > | Aug  8 07:49:16 turtle kernel: [   89.655367] nouveau  [     DRM][0000:01:00.0] suspending display...
->> > | Aug  8 07:49:16 turtle kernel: [   89.696888] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
->> > | Aug  8 07:49:16 turtle kernel: [   89.696909] nouveau  [     DRM][0000:01:00.0] evicting buffers...
->> > | Aug  8 07:49:16 turtle kernel: [   89.696913] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
->> > `----
->> >
->> >> I guess the the fifo
->> >> code detected a timeout when trying to save the graphics context, I have
->> >> I have other patches in my tree (I'll push them soon, tied up with other
->> >> work atm) that might help here.
->> >
->> > Thanks, I'll try them when they are available.
->>
->> With current nouveau master ("drm/nouveau: fix find/replace bug in
->> license header") suspending works again, thanks!  However, it is a bit
->> slow, taking between two and five seconds:
->>
->> ,----
->> | Aug 13 18:17:56 turtle kernel: [  678.524814] PM: Syncing filesystems ... done.
->> | Aug 13 18:18:09 turtle kernel: [  678.639202] Freezing user space processes ... (elapsed 0.01 seconds) done.
->> | Aug 13 18:18:09 turtle kernel: [  678.649954] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
->> | Aug 13 18:18:09 turtle kernel: [  678.663298] Suspending console(s) (use no_console_suspend to debug)
->> | Aug 13 18:18:09 turtle kernel: [  678.680884] sd 0:0:0:0: [sda] Synchronizing SCSI cache
->> | Aug 13 18:18:09 turtle kernel: [  678.681000] sd 0:0:0:0: [sda] Stopping disk
->> | Aug 13 18:18:09 turtle kernel: [  678.695141] parport_pc 00:07: disabled
->> | Aug 13 18:18:09 turtle kernel: [  678.695204] serial 00:06: disabled
->> | Aug 13 18:18:09 turtle kernel: [  678.695209] serial 00:06: wake-up capability disabled by ACPI
->> | Aug 13 18:18:09 turtle kernel: [  678.695235] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
->> | Aug 13 18:18:09 turtle kernel: [  678.695239] nouveau  [     DRM][0000:01:00.0] suspending display...
->> | Aug 13 18:18:09 turtle kernel: [  678.742111] nouveau  [     DRM][0000:01:00.0] unpinning framebuffer(s)...
->> | Aug 13 18:18:09 turtle kernel: [  678.742189] nouveau  [     DRM][0000:01:00.0] evicting buffers...
->> | Aug 13 18:18:09 turtle kernel: [  682.357319] nouveau  [     DRM][0000:01:00.0] suspending client object trees...
->> | Aug 13 18:18:09 turtle kernel: [  683.526646] PM: suspend of devices complete after 4863.181 msecs
->> `----
->>
->> With the 3.4.8 kernel, suspending takes little more than one second.
->>
->> Cheers,
->>        Sven
-> I confirm exactly the same thing.
->
-> Here suspend takes more that 10 seconds:
->
-> [ 2165.363878] nouveau  [     DRM][0000:01:00.0] suspending fbcon...
-> [ 2165.363885] nouveau  [     DRM][0000:01:00.0] suspending display...
-> [ 2165.475791] sd 0:0:0:0: [sda] Stopping disk
-> [ 2166.396877] nouveau  [     DRM][0000:01:00.0] unpinning
-> framebuffer(s)...
-> [ 2166.396926] nouveau  [     DRM][0000:01:00.0] evicting buffers...
-> [ 2174.809084] nouveau  [     DRM][0000:01:00.0] suspending client
-> object trees...
-> [ 2177.950222] nouveau 0000:01:00.0: power state changed by ACPI to D3
->
->
-> Best regards,
-> Maxim Levitsky
->
-> _______________________________________________
-> Nouveau mailing list
-> Nouveau@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/nouveau
+Hi Huang,
 
-In my case suspend also takes longer than usual, in the order of 10 seconds.
+On Tue, 14 Aug 2012 22:38:45 -0400 Huang Shijie <shijie8@gmail.com> wrote:
+> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+> index 588e989..0ca7257 100644
+> --- a/drivers/mtd/nand/Kconfig
+> +++ b/drivers/mtd/nand/Kconfig
+> @@ -22,15 +22,6 @@ menuconfig MTD_NAND
+>  
+>  if MTD_NAND
+>  
+> -config MTD_NAND_VERIFY_WRITE
+> -	bool "Verify NAND page writes"
+> -	help
+> -	  This adds an extra check when data is written to the flash. The
+> -	  NAND flash device internally checks only bits transitioning
+> -	  from 1 to 0. There is a rare possibility that even though the
+> -	  device thinks the write was successful, a bit could have been
+> -	  flipped accidentally due to device wear or something else.
+> -
 
-@Ben: Have you been able to reproduce this?
+There are some defconfig files which set CONFIG_MTD_NAND_VERIFY_WRITE.
 
--- 
-Far away from the primal instinct, the song seems to fade away, the
-river get wider between your thoughts and the things we do and say.
+I guess you should submit an accompanying patch that removes
+CONFIG_MTD_NAND_VERIFY_WRITE from all defconfig files.
+
+(also, trimmed the CC list for this specific discussion, seems unrelated
+to all of the parties)
+
+Regards,
+Shmulik
