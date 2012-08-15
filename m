@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2HOQjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:39:32 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:44683 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755871Ab2HOQja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:39:30 -0400
-Date: Wed, 15 Aug 2012 18:39:23 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH] perf: Let O= makes handle relative paths
-Message-ID: <20120815163923.GD15989@aftab.osrc.amd.com>
-References: <20120813132438.GA18990@aftab.osrc.amd.com>
- <1344867782.6935.119.camel@gandalf.stny.rr.com>
- <20120813142909.GC18990@aftab.osrc.amd.com>
- <20120813180249.GB6840@infradead.org>
- <20120815102722.GB4640@aftab.osrc.amd.com>
- <20120815130634.GE2370@infradead.org>
- <20120815131806.GC4640@aftab.osrc.amd.com>
- <1345041485.31459.89.camel@twins>
- <20120815144255.GB15989@aftab.osrc.amd.com>
- <20120815145935.GI2370@infradead.org>
+	id S1755901Ab2HOQod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:44:33 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46617 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab2HOQoc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 12:44:32 -0400
+Message-ID: <502BD1C5.6080002@parallels.com>
+Date: Wed, 15 Aug 2012 20:43:49 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815145935.GI2370@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "bfields@redhat.com" <bfields@redhat.com>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "gorcunov@openvz.org" <gorcunov@openvz.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH 5/5] syscall: sys_fbind() introduced
+References: <20120815161141.7598.16682.stgit@localhost.localdomain> <20120815162225.7598.85131.stgit@localhost.localdomain> <502BCEAD.7050905@zytor.com>
+In-Reply-To: <502BCEAD.7050905@zytor.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 11:59:35AM -0300, Arnaldo Carvalho de Melo wrote:
-> Of course! Those are the ultimate kernel killers!
+15.08.2012 20:30, H. Peter Anvin пишет:
+> On 08/15/2012 09:22 AM, Stanislav Kinsbursky wrote:
+>> This syscall allows to bind socket to specified file descriptor.
+>> Descriptor can be gained by simple open with O_PATH flag.
+>> Socket node can be created by sys_mknod().
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> ---
+>>    arch/x86/syscalls/syscall_32.tbl |    1 +
+>>    arch/x86/syscalls/syscall_64.tbl |    1 +
+>>    include/linux/syscalls.h         |    1 +
+>>    kernel/sys_ni.c                  |    3 +++
+>>    net/socket.c                     |   25 +++++++++++++++++++++++++
+>>    5 files changed, 31 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+>> index 7a35a6e..9594b82 100644
+>> --- a/arch/x86/syscalls/syscall_32.tbl
+>> +++ b/arch/x86/syscalls/syscall_32.tbl
+>> @@ -356,3 +356,4 @@
+>>    347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_readv
+>>    348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+>>    349	i386	kcmp			sys_kcmp
+>> +350	i386	fbind			sys_fbind
+>
+> i386 uses socketcalls... perhaps it shouldn't (socketcalls are pretty
+> much an abomination), but for socketcall-based architectures this really
+> should be a socketcall.
+>
 
-Haha, this is what I'm answering next time I'm asked about what I do for
-a living :-).
+Thanks, Peter. I'll rework this.
 
-How about this?
+> Don't you also need fconnect()?  Or is that simply handled by allowing
+> open() without O_PATH?
+>
 
---
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Mon, 13 Aug 2012 10:23:02 -0400
-Subject: [PATCH] perf: Let O= makes handle relative paths
+Yes, I need it.
+If this approach will be accepted, then I'll send one more patch set for fconnect.
 
-When I did a compile of perf using a relative path for the output
-directory, the build failed when it tried to compile libtraceevent. This
-is because it continues to use the same relative path when the new
-working directory is in a different path.
+> 	-hpa
+>
 
-    SUBDIR ../lib/traceevent/
-/bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
-Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
-make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
-
-Make the path used an absolute path when building perf with O=.
-
-Boris:
-
-Teach Makefile to check whether the supplied O= directory exists and
-bail out if not. Reportedly, kernel dudes are idiots and need to be
-guarded so as not to shoot themselves in the foot when playing in the
-sandbox.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- tools/scripts/Makefile.include | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index bde8521d56bb..96ce80a3743b 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -1,6 +1,8 @@
- ifeq ("$(origin O)", "command line")
--	OUTPUT := $(O)/
--	COMMAND_O := O=$(O)
-+	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
-+	ABSOLUTE_O := $(shell cd $(O) ; pwd)
-+	OUTPUT := $(ABSOLUTE_O)/
-+	COMMAND_O := O=$(ABSOLUTE_O)
- endif
- 
- ifneq ($(OUTPUT),)
--- 
-1.7.11.rc1
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Best regards,
+Stanislav Kinsbursky
