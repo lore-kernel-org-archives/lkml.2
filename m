@@ -1,62 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2HOA2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:28:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53592 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab2HOA2l (ORCPT
+	id S1755251Ab2HOAd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:33:58 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:65260 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab2HOAdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:28:41 -0400
-Date: Tue, 14 Aug 2012 17:28:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: NeilBrown <neilb@suse.de>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com,
-        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, ccaulfie@redhat.com, teigland@redhat.com,
-        Trond.Myklebust@netapp.com, bfields@fieldses.org, fweisbec@gmail.com,
-        jesse@nicira.com, venkat.x.venkatsubra@oracle.com, ejt@redhat.com,
-        snitzer@redhat.com, edumazet@google.com, linux-nfs@vger.kernel.org,
-        dev@openvswitch.org, rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH 01/16] hashtable: introduce a small and naive hashtable
-Message-ID: <20120815002834.GI25632@google.com>
-References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
- <1344961490-4068-2-git-send-email-levinsasha928@gmail.com>
- <20120815092523.00a909ef@notabene.brown>
- <502AEC51.2010305@gmail.com>
+	Tue, 14 Aug 2012 20:33:55 -0400
+Date: Tue, 14 Aug 2012 17:33:55 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 13/31] arm64: Device specific operations
+Message-ID: <20120815003355.GF19607@quad.lixom.net>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <502AEC51.2010305@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-(Sasha, would it be possible to change your MUA so that it breaks long
- lines.  It's pretty difficult to reply to.)
-
-On Wed, Aug 15, 2012 at 02:24:49AM +0200, Sasha Levin wrote:
-> The hashtable uses hlist. hlist provides us with an entire family of
-> init functions which I'm supposed to use to initialize hlist heads.
+On Tue, Aug 14, 2012 at 06:52:14PM +0100, Catalin Marinas wrote:
+> This patch adds several definitions for device communication, including
+> I/O accessors and ioremap(). The __raw_* accessors are implemented as
+> inline asm to avoid compiler generation of post-indexed accesses (less
+> efficient to emulate in a virtualised environment).
 > 
-> So while a memset(0) will work perfectly here, I consider that
-> cheating - it results in an uglier code that assumes to know about
-> hlist internals, and will probably break as soon as someone tries to
-> do something to hlist.
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  arch/arm64/include/asm/device.h |   26 ++++
+>  arch/arm64/include/asm/fb.h     |   34 +++++
+>  arch/arm64/include/asm/io.h     |  263 +++++++++++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/io.c          |   64 ++++++++++
+>  arch/arm64/mm/ioremap.c         |   84 +++++++++++++
+>  5 files changed, 471 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm64/include/asm/device.h
+>  create mode 100644 arch/arm64/include/asm/fb.h
+>  create mode 100644 arch/arm64/include/asm/io.h
+>  create mode 100644 arch/arm64/kernel/io.c
+>  create mode 100644 arch/arm64/mm/ioremap.c
+> 
+> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> new file mode 100644
+> index 0000000..48fa83f
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/io.h
 
-I think we should stick with INIT_HLIST_HEAD().  It's not a hot path
-and we might add, say, debug fields or initialization magics added
-later.  If this really matters, the right thing to do would be adding
-something like INIT_HLIST_HEAD_ARRAY().
+[...]
 
-Thanks.
+> +/*
+> + *  I/O port access primitives.
+> + */
+> +#define IO_SPACE_LIMIT		0xffff
+> +
+> +/*
+> + * We currently don't have any platform with PCI support, so just leave this
+> + * defined to 0 until needed.
+> + */
+> +#define PCI_IOBASE		((void __iomem *)0)
 
--- 
-tejun
+You could just leave out the PCI / I/O code alltogether instead.
+
+> diff --git a/arch/arm64/kernel/io.c b/arch/arm64/kernel/io.c
+> new file mode 100644
+> index 0000000..7d37ead
+> --- /dev/null
+> +++ b/arch/arm64/kernel/io.c
+> @@ -0,0 +1,64 @@
+> +/*
+> + * Based on arch/arm/kernel/io.c
+> + *
+> + * Copyright (C) 2012 ARM Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/export.h>
+> +#include <linux/types.h>
+> +#include <linux/io.h>
+> +
+> +/*
+> + * Copy data from IO memory space to "real" memory space.
+> + */
+> +void __memcpy_fromio(void *to, const volatile void __iomem *from, size_t count)
+> +{
+> +	unsigned char *t = to;
+> +	while (count) {
+> +		count--;
+> +		*t = readb(from);
+> +		t++;
+> +		from++;
+> +	}
+> +}
+> +EXPORT_SYMBOL(__memcpy_fromio);
+> +
+> +/*
+> + * Copy data from "real" memory space to IO memory space.
+> + */
+> +void __memcpy_toio(volatile void __iomem *to, const void *from, size_t count)
+> +{
+> +	const unsigned char *f = from;
+> +	while (count) {
+> +		count--;
+> +		writeb(*f, to);
+> +		f++;
+> +		to++;
+> +	}
+> +}
+> +EXPORT_SYMBOL(__memcpy_toio);
+> +
+> +/*
+> + * "memset" on IO memory space.
+> + */
+> +void __memset_io(volatile void __iomem *dst, int c, size_t count)
+> +{
+> +	while (count) {
+> +		count--;
+> +		writeb(c, dst);
+> +		dst++;
+> +	}
+> +}
+> +EXPORT_SYMBOL(__memset_io);
+
+Doing all of the above a byte at a time is horribly inefficient. Feel
+free to borrow the implementations from arch/powerpc/kernel/io.c instead
+of from ARM.
+
+
+-Olof
