@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2HONbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:31:37 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55243 "EHLO mx2.parallels.com"
+	id S1754669Ab2HONjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:39:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754358Ab2HONbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:31:35 -0400
-Message-ID: <502BA4AC.9040000@parallels.com>
-Date: Wed, 15 Aug 2012 17:31:24 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1750781Ab2HONjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 09:39:19 -0400
+Message-ID: <502BA72B.6070205@redhat.com>
+Date: Wed, 15 Aug 2012 21:42:03 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        "David Rientjes" <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz> <502B9BD4.4070003@parallels.com> <20120815130228.GH23985@dhcp22.suse.cz> <502B9E5F.2080907@parallels.com> <20120815132621.GJ23985@dhcp22.suse.cz>
-In-Reply-To: <20120815132621.GJ23985@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: jhs@mojatatu.com
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH] act_mirred: do not drop packets when fails to mirror
+ it
+References: <20120815093756.22238.80872.stgit@amd-6168-8-1.englab.nay.redhat.com> <1345034141.20443.12.camel@mojatatu>
+In-Reply-To: <1345034141.20443.12.camel@mojatatu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 05:26 PM, Michal Hocko wrote:
-> On Wed 15-08-12 17:04:31, Glauber Costa wrote:
->> On 08/15/2012 05:02 PM, Michal Hocko wrote:
->>> On Wed 15-08-12 16:53:40, Glauber Costa wrote:
->>> [...]
->>>>>>> This doesn't check for the hierachy so kmem_accounted might not be in 
->>>>>>> sync with it's parents. mem_cgroup_create (below) needs to copy
->>>>>>> kmem_accounted down from the parent and the above needs to check if this
->>>>>>> is a similar dance like mem_cgroup_oom_control_write.
->>>>>>>
->>>>>>
->>>>>> I don't see why we have to.
->>>>>>
->>>>>> I believe in a A/B/C hierarchy, C should be perfectly able to set a
->>>>>> different limit than its parents. Note that this is not a boolean.
->>>>>
->>>>> Ohh, I wasn't clear enough. I am not against setting the _limit_ I just
->>>>> meant that the kmem_accounted should be consistent within the hierarchy.
->>>>>
->>>>
->>>> If a parent of yours is accounted, you get accounted as well. This is
->>>> not the state in this patch, but gets added later. Isn't this enough ?
->>>
->>> But if the parent is not accounted, you can set the children to be
->>> accounted, right? Or maybe this is changed later in the series? I didn't
->>> get to the end yet.
->>>
->>
->> Yes, you can. Do you see any problem with that?
-> 
-> Well, if a child contributes with the kmem charges upwards the hierachy
-> then a parent can have kmem.usage > 0 with disabled accounting.
-> I am not saying this is a no-go but it definitely is confusing and I do
-> not see any good reason for it. I've considered it as an overlook rather
-> than a deliberate design decision.
-> 
+On 08/15/2012 08:35 PM, Jamal Hadi Salim wrote:
+> On Wed, 2012-08-15 at 17:37 +0800, Jason Wang wrote:
+>> We drop packet unconditionally when we fail to mirror it. This is not intended
+>> in some cases.
+> Hi Jason,
+> Did you actually notice the behavior you described or were you going by
+> the XXX comment I had in the code?
+>
+> cheers,
+> jamal
+Hi Jamal:
 
-No, it is not an overlook.
-It is theoretically possible to skip accounting on non-limited parents,
-but how expensive is that? This is, indeed, confusing.
+I met it actually through the following steps:
 
-Of course I can be biased, but the way I see it, once you have
-hierarchy, you account everything your child accounts.
+- start a kvm guest with tap and make it to be an interface of the bridge
+- mirror the ingress traffic of the bridge to the tap
+- terminate the qemu process, the tap device is then removed
+- all packet goes to bridge would be dropped, so the network of guests 
+in the same bridge would be broken
 
-I really don't see what is the concern here.
+It's hard for the management to forcast the termination of the porcess 
+and clean the mirroring before. The realistic way is to remove the 
+mirroring after the termination of the process. So, if we drop the 
+packets when the mirred device (tap) is removed, in the gap between the 
+qemu termitnaion and disabling mirroring, the bridge ( and other VMs 
+using the it) would not recevie any packet.
+
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
