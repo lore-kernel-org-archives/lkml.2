@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab2HOQQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:16:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55069 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab2HOQQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:16:20 -0400
-Message-ID: <502BCB4A.5050002@zytor.com>
-Date: Wed, 15 Aug 2012 09:16:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755445Ab2HOQRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:17:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58144 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2HOQRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 12:17:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 27/31] arm64: Loadable modules
+Date: Wed, 15 Aug 2012 16:16:56 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151523.21447.arnd@arndb.de> <20120815153538.GA14264@arm.com>
+In-Reply-To: <20120815153538.GA14264@arm.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: Q: On restoring terminal with hinted index
-References: <20120815152504.GG23657@moon>
-In-Reply-To: <20120815152504.GG23657@moon>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208151616.56932.arnd@arndb.de>
+X-Provags-ID: V02:K0:RnEHo3qFiXNkpDMpeYA8JZjDFH7/8zB0XX5dEpw+M1g
+ nyOSBXnGksg/fbpG5DQpA4jx6rLkoEYuwvoSwaasOPDT2Kg6v0
+ hm0doUtYmnpwkIqBqnqsLkco0YL7UwsziLDo/x0wW9dUPo+Rjz
+ 0wBczdMZf2iph1XBNYE5odjLXVF9e1uNMS1DprgKwrbxGPA00Z
+ NoI+Z4VjySJcNIV49Xs2MsOMhWssVl8kWs4Bo/ehJfAPiHsnXP
+ tWkXffn/L5WZsJVn5MIgsRcKFQiJxP0MHS9F0pBeJGFuyHbBOm
+ Iwb3JVP3MLJKJ/3+3BfsUSTDhVrR93sH2C8wkkL8gsA5F9uzqw
+ 2YJcUx7Zpj6XB9ksOL1k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 08:25 AM, Cyrill Gorcunov wrote:
-> Hi Peter,
-> 
-> that happened that in a sake of restoring ptys after checkpoint
-> we need to create them with predefined indices, as they were at
-> moment of dumping. So we have two options -- 1) Open terminals
-> in sequence until needed index reached 2) Use some other way to
-> say the kernel that some index is preferred.
-> 
-> So I thought, would it be acceptible to provide such hint via
-> sysctl, as in patch below (note I've not even compiled it yet,
-> but would like to know your opinion early).
-> 
-> (Maybe even make it one shot, thus once ida_get_new_above called
->  the pty_next reset to zero).
-> 
+On Wednesday 15 August 2012, Catalin Marinas wrote:
+> Primarily branch relocation, we have a limitation to 128MB branch range.
+> The alternative would be to always compile the modules with a large
+> memory model but we may lose some performance and could make the
+> relocation handling even harder. What we do now is pretty much similar
+> to static linking but at module load time.
 
-Pardon me while I vomit... an interaction between sysctl and open?  Talk
-about a race condition from hell.  It is stateful, and not connected to
-the filesystem instance that it is supposed to be affecting.  So no,
-please don't.  I understand your objective but it really needs to be
-something attached to the pts filesystem instance in question.
+Ok, makes sense.
 
-	-hpa
+	Arnd
