@@ -1,95 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2HORJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:09:09 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37572 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab2HORJG convert rfc822-to-8bit (ORCPT
+	id S1755638Ab2HORJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:09:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56023 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab2HORIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:09:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208141450.23453.marek.vasut@gmail.com>
-References: <CAEB7QLAJXkK6NDPVDi36n_U_X_DGh5niHJhH6FpqBUZFmXQ2Xg@mail.gmail.com>
-	<1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-	<201208141450.23453.marek.vasut@gmail.com>
-Date: Wed, 15 Aug 2012 19:09:05 +0200
-Message-ID: <CAEB7QLCgUJzq+7nqDoBLp8hRpKXAxhajPFnMEZ82MfzesUqZ6A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] [RFC] uartclk from serial_core exposed to sysfs
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Aug 2012 13:08:44 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH v3 5/6] ARM: dove: add device tree descriptors
+Date: Wed, 15 Aug 2012 19:07:34 +0200
+Message-Id: <1345050455-32643-6-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Marek,
+This patch adds device tree decriptors for dove SoC and currently
+supported boards.
 
-On Tue, Aug 14, 2012 at 2:50 PM, Marek Vasut <marek.vasut@gmail.com> wrote:
-> Dear Tomas Hlavacek,
->
->> +static ssize_t get_attr_uartclk(struct device *dev,
->> +             struct device_attribute *attr, char *buf)
->> +{
->> +     int ret;
->> +
->> +     struct uart_state *state = (struct uart_state *)(dev_get_drvdata(dev));
->
-> You don't need this cast here.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Rabeeh Khoury <rabeeh@solid-run.com>
+Cc: Ian Molton <ian.molton@codethink.co.uk>
+Cc: Maen Suleiman <maen@marvell.com>
+Cc: Olof Johansson <olof@lixom.net>
+---
+ arch/arm/boot/dts/dove-cm-a510.dts |   38 ++++++++++
+ arch/arm/boot/dts/dove-dove-db.dts |   38 ++++++++++
+ arch/arm/boot/dts/dove.dtsi        |  143 ++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-dove/Makefile.boot   |    3 +
+ 4 files changed, 222 insertions(+)
+ create mode 100644 arch/arm/boot/dts/dove-cm-a510.dts
+ create mode 100644 arch/arm/boot/dts/dove-dove-db.dts
+ create mode 100644 arch/arm/boot/dts/dove.dtsi
 
-Yes, you are right. Thanks.
-
->
->> +     mutex_lock(&state->port.mutex);
->> +     ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
->
-> Do you really need such a large buffer (PAGE_SIZE) ?
-
-Well no, but I believe that I get the buffer of length equal to
-PAGE_SIZE anyway. Documentation/filesystems/sysfs.txt says so on line
-179.
-
->
->> +     mutex_unlock(&state->port.mutex);
->> +     return ret;
->> +}
->> +
->> +static ssize_t set_attr_uartclk(struct device *dev,
->> +             struct device_attribute *attr, const char *buf, size_t count)
->> +{
->> +     struct uart_state *state = (struct uart_state *)(dev_get_drvdata(dev));
->> +     unsigned int val;
->> +     int ret;
->> +
->> +     ret = kstrtouint(buf, 10, &val);
->> +     if (ret)
->> +             return ret;
->> +
->> +     mutex_lock(&state->port.mutex);
->> +
->> +     /*
->> +      * Check value: baud_base has to be more than 9600
->> +      * and uartclock = baud_base * 16 .
->> +      */
->> +     if (val >= 153600)
->> +             state->uart_port->uartclk = val;
->
-> This magic value here would use some documentation.
-
-OK. Do you think this would be sufficient comment?:
-
-/*
- * Check value: baud_base does not make sense to be set below 9600
- * and since uartclock = (baud_base * 16) it has to be equal or greater than
- * 9600 * 16 = 153600.
- */
-
-PATCHv2 follows.
-
-Tomas
-
-
+diff --git a/arch/arm/boot/dts/dove-cm-a510.dts b/arch/arm/boot/dts/dove-cm-a510.dts
+new file mode 100644
+index 0000000..61a8062
+--- /dev/null
++++ b/arch/arm/boot/dts/dove-cm-a510.dts
+@@ -0,0 +1,38 @@
++/dts-v1/;
++
++/include/ "dove.dtsi"
++
++/ {
++	model = "Compulab CM-A510";
++	compatible = "compulab,cm-a510", "marvell,dove";
++
++	memory {
++		device_type = "memory";
++		reg = <0x00000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8 earlyprintk";
++	};
++};
++
++&uart0 { status = "okay"; };
++&uart1 { status = "okay"; };
++&sdio0 { status = "okay"; };
++&sdio1 { status = "okay"; };
++&sata0 { status = "okay"; };
++
++&spi0 {
++	status = "okay";
++
++	/* spi0.0: 4M Flash Winbond W25Q32BV */
++	spi-flash@0 {
++		compatible = "st,w25q32";
++		spi-max-frequency = <20000000>;
++		reg = <0>;
++	};
++};
++
++&i2c0 {
++	  status = "okay";
++};
+diff --git a/arch/arm/boot/dts/dove-dove-db.dts b/arch/arm/boot/dts/dove-dove-db.dts
+new file mode 100644
+index 0000000..e5a920b
+--- /dev/null
++++ b/arch/arm/boot/dts/dove-dove-db.dts
+@@ -0,0 +1,38 @@
++/dts-v1/;
++
++/include/ "dove.dtsi"
++
++/ {
++	model = "Marvell DB-MV88AP510-BP Development Board";
++	compatible = "marvell,dove-db", "marvell,dove";
++
++	memory {
++		device_type = "memory";
++		reg = <0x00000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8 earlyprintk";
++	};
++};
++
++&uart0 { status = "okay"; };
++&uart1 { status = "okay"; };
++&sdio0 { status = "okay"; };
++&sdio1 { status = "okay"; };
++&sata0 { status = "okay"; };
++
++&spi0 {
++	status = "okay";
++
++	/* spi0.0: 4M Flash ST-M25P32-VMF6P */
++	spi-flash@0 {
++		compatible = "st,m25p32";
++		spi-max-frequency = <20000000>;
++		reg = <0>;
++	};
++};
++
++&i2c0 {
++	  status = "okay";
++};
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+new file mode 100644
+index 0000000..96fb824
+--- /dev/null
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -0,0 +1,143 @@
++/include/ "skeleton.dtsi"
++
++/ {
++	compatible = "marvell,dove";
++	model = "Marvell Armada 88AP510 SoC";
++
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller {
++		compatible = "marvell,orion-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0xf1020204 0x04>,
++		      <0xf1020214 0x04>;
++	};
++
++	mbus@f1000000 {
++		compatible = "simple-bus";
++		ranges = <0 0xf1000000 0x4000000>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		uart0: serial@12000 {
++			compatible = "ns16550a";
++			reg = <0x12000 0x100>;
++			reg-shift = <2>;
++			interrupts = <7>;
++			clock-frequency = <166666667>;
++			status = "disabled";
++		};
++
++		uart1: serial@12100 {
++			compatible = "ns16550a";
++			reg = <0x12100 0x100>;
++			reg-shift = <2>;
++			interrupts = <8>;
++			clock-frequency = <166666667>;
++			status = "disabled";
++		};
++
++		uart2: serial@12200 {
++			compatible = "ns16550a";
++			reg = <0x12000 0x100>;
++			reg-shift = <2>;
++			interrupts = <9>;
++			clock-frequency = <166666667>;
++			status = "disabled";
++		};
++
++		uart3: serial@12300 {
++			compatible = "ns16550a";
++			reg = <0x12100 0x100>;
++			reg-shift = <2>;
++			interrupts = <10>;
++			clock-frequency = <166666667>;
++			status = "disabled";
++		};
++
++		wdt: wdt@20300 {
++			compatible = "marvell,orion-wdt";
++			reg = <0x20300 0x28>;
++		};
++
++		gpio0: gpio@d0400 {
++			compatible = "marvell,orion-gpio";
++			#gpio-cells = <2>;
++			gpio-controller;
++			reg = <0xd0400 0x20>;
++			ngpio = <32>;
++			interrupts = <12>, <13>, <14>, <60>;
++		};
++
++		gpio1: gpio@d0420 {
++			compatible = "marvell,orion-gpio";
++			#gpio-cells = <2>;
++			gpio-controller;
++			reg = <0xd0420 0x20>;
++			ngpio = <32>;
++			interrupts = <61>;
++		};
++
++		gpio2: gpio@e8400 {
++			compatible = "marvell,orion-gpio";
++			#gpio-cells = <2>;
++			gpio-controller;
++			reg = <0xe8400 0x0c>;
++			ngpio = <8>;
++		};
++
++		spi0: spi@10600 {
++			compatible = "marvell,orion-spi";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			cell-index = <0>;
++			interrupts = <6>;
++			reg = <0x10600 0x28>;
++			status = "disabled";
++		};
++
++		spi1: spi@14600 {
++			compatible = "marvell,orion-spi";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			cell-index = <1>;
++			interrupts = <5>;
++			reg = <0x14600 0x28>;
++			status = "disabled";
++		};
++
++		i2c0: i2c@11000 {
++			compatible = "marvell,mv64xxx-i2c";
++			reg = <0x11000 0x20>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			interrupts = <11>;
++			clock-frequency = <400000>;
++			timeout-ms = <1000>;
++			status = "disabled";
++		};
++
++		sdio0: sdio@92000 {
++			compatible = "marvell,dove-sdhci";
++			reg = <0x92000 0x100>;
++			interrupts = <35>, <37>;
++			status = "disabled";
++		};
++
++		sdio1: sdio@90000 {
++			compatible = "marvell,dove-sdhci";
++			reg = <0x90000 0x100>;
++			interrupts = <36>, <38>;
++			status = "disabled";
++		};
++
++		sata0: sata@a0000 {
++			compatible = "marvell,orion-sata";
++			reg = <0xa0000 0x2400>;
++			interrupts = <62>;
++			nr-ports = <1>;
++			status = "disabled";
++		};
++	};
++};
+diff --git a/arch/arm/mach-dove/Makefile.boot b/arch/arm/mach-dove/Makefile.boot
+index 760a0ef..94ab6b3 100644
+--- a/arch/arm/mach-dove/Makefile.boot
++++ b/arch/arm/mach-dove/Makefile.boot
+@@ -1,3 +1,6 @@
+    zreladdr-y	+= 0x00008000
+ params_phys-y	:= 0x00000100
+ initrd_phys-y	:= 0x00800000
++
++dtb-$(CONFIG_MACH_DOVE_DT) += dove-dove-db.dtb
++dtb-$(CONFIG_MACH_DOVE_DT) += dove-cm-a510.dtb
 -- 
-Tomáš Hlaváček <tmshlvck@gmail.com>
+1.7.10.4
+
