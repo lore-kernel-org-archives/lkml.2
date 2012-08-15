@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2HORIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:08:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50494 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab2HORIq (ORCPT
+	id S1755733Ab2HORJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:09:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37572 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab2HORJG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:46 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v3 6/6] ARM: dove: SolidRun CuBox DT
-Date: Wed, 15 Aug 2012 19:07:35 +0200
-Message-Id: <1345050455-32643-7-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 15 Aug 2012 13:09:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <201208141450.23453.marek.vasut@gmail.com>
+References: <CAEB7QLAJXkK6NDPVDi36n_U_X_DGh5niHJhH6FpqBUZFmXQ2Xg@mail.gmail.com>
+	<1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	<201208141450.23453.marek.vasut@gmail.com>
+Date: Wed, 15 Aug 2012 19:09:05 +0200
+Message-ID: <CAEB7QLCgUJzq+7nqDoBLp8hRpKXAxhajPFnMEZ82MfzesUqZ6A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] [RFC] uartclk from serial_core exposed to sysfs
+From: Tomas Hlavacek <tmshlvck@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds basic support for the SolidRun CuBox to DT based
-mach-dove. There are still some issues related to ongoing orion/mvebu
-development, e.g. gpio-led will not work as there is no DT pinctrl
-for dove yet and we don't have board specific setup code. Nevertheless,
-the DT description is already introduced here.
+Hello Marek,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rabeeh Khoury <rabeeh@solid-run.com>
-Cc: Ian Molton <ian.molton@codethink.co.uk>
-Cc: Maen Suleiman <maen@marvell.com>
-Cc: Olof Johansson <olof@lixom.net>
----
- arch/arm/boot/dts/dove-cubox.dts |   42 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-dove/Makefile.boot |    1 +
- 2 files changed, 43 insertions(+)
- create mode 100644 arch/arm/boot/dts/dove-cubox.dts
+On Tue, Aug 14, 2012 at 2:50 PM, Marek Vasut <marek.vasut@gmail.com> wrote:
+> Dear Tomas Hlavacek,
+>
+>> +static ssize_t get_attr_uartclk(struct device *dev,
+>> +             struct device_attribute *attr, char *buf)
+>> +{
+>> +     int ret;
+>> +
+>> +     struct uart_state *state = (struct uart_state *)(dev_get_drvdata(dev));
+>
+> You don't need this cast here.
 
-diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
-new file mode 100644
-index 0000000..0adbd5a
---- /dev/null
-+++ b/arch/arm/boot/dts/dove-cubox.dts
-@@ -0,0 +1,42 @@
-+/dts-v1/;
-+
-+/include/ "dove.dtsi"
-+
-+/ {
-+	model = "SolidRun CuBox";
-+	compatible = "solidrun,cubox", "marvell,dove";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200n8 earlyprintk";
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+		power {
-+			label = "Power";
-+			gpios = <&gpio0 18 1>;
-+			linux,default-trigger = "default-on";
-+		};
-+	};
-+};
-+
-+&uart0 { status = "okay"; };
-+&sdio0 { status = "okay"; };
-+&sata0 { status = "okay"; };
-+&i2c0 { status = "okay"; };
-+
-+&spi0 {
-+	status = "okay";
-+
-+	/* spi0.0: 4M Flash Winbond W25Q32BV */
-+	spi-flash@0 {
-+		compatible = "st,w25q32";
-+		spi-max-frequency = <20000000>;
-+		reg = <0>;
-+	};
-+};
-diff --git a/arch/arm/mach-dove/Makefile.boot b/arch/arm/mach-dove/Makefile.boot
-index 94ab6b3..cfac9c5 100644
---- a/arch/arm/mach-dove/Makefile.boot
-+++ b/arch/arm/mach-dove/Makefile.boot
-@@ -4,3 +4,4 @@ initrd_phys-y	:= 0x00800000
- 
- dtb-$(CONFIG_MACH_DOVE_DT) += dove-dove-db.dtb
- dtb-$(CONFIG_MACH_DOVE_DT) += dove-cm-a510.dtb
-+dtb-$(CONFIG_MACH_DOVE_DT) += dove-cubox.dtb
+Yes, you are right. Thanks.
+
+>
+>> +     mutex_lock(&state->port.mutex);
+>> +     ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
+>
+> Do you really need such a large buffer (PAGE_SIZE) ?
+
+Well no, but I believe that I get the buffer of length equal to
+PAGE_SIZE anyway. Documentation/filesystems/sysfs.txt says so on line
+179.
+
+>
+>> +     mutex_unlock(&state->port.mutex);
+>> +     return ret;
+>> +}
+>> +
+>> +static ssize_t set_attr_uartclk(struct device *dev,
+>> +             struct device_attribute *attr, const char *buf, size_t count)
+>> +{
+>> +     struct uart_state *state = (struct uart_state *)(dev_get_drvdata(dev));
+>> +     unsigned int val;
+>> +     int ret;
+>> +
+>> +     ret = kstrtouint(buf, 10, &val);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     mutex_lock(&state->port.mutex);
+>> +
+>> +     /*
+>> +      * Check value: baud_base has to be more than 9600
+>> +      * and uartclock = baud_base * 16 .
+>> +      */
+>> +     if (val >= 153600)
+>> +             state->uart_port->uartclk = val;
+>
+> This magic value here would use some documentation.
+
+OK. Do you think this would be sufficient comment?:
+
+/*
+ * Check value: baud_base does not make sense to be set below 9600
+ * and since uartclock = (baud_base * 16) it has to be equal or greater than
+ * 9600 * 16 = 153600.
+ */
+
+PATCHv2 follows.
+
+Tomas
+
+
 -- 
-1.7.10.4
-
+Tomáš Hlaváček <tmshlvck@gmail.com>
