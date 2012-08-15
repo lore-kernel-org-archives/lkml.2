@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab2HOI1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:27:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab2HOI1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:27:46 -0400
-Date: Wed, 15 Aug 2012 10:27:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-In-Reply-To: <20120730213656.0a9f6d30@neptune.home>
-Message-ID: <alpine.LNX.2.00.1208151016221.7026@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753609Ab2HOIaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 04:30:25 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54491 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab2HOIaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 04:30:18 -0400
+Date: Wed, 15 Aug 2012 01:30:13 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5-rc6 configfs BUG_ON
+Message-ID: <20120815083013.GM31083@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120711192558.GA3393@redhat.com>
+ <20120715205845.GE18682@dhcp-172-17-9-228.mtv.corp.google.com>
+ <20120715235831.GA21952@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120715235831.GA21952@redhat.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jul 2012, Bruno Prémont wrote:
-
-> Hi,
+On Sun, Jul 15, 2012 at 07:58:31PM -0400, Dave Jones wrote:
+> On Sun, Jul 15, 2012 at 01:58:46PM -0700, Joel Becker wrote:
+>  
+>  > > Call Trace:
+>  > >  [<ffffffff811ec74f>] d_kill+0xaf/0x120
+>  > >  [<ffffffff811ec8a2>] dput+0xe2/0x1d0
+>  > >  [<ffffffff811dfaea>] path_put+0x1a/0x30
+>  > >  [<ffffffff811d9705>] vfs_fstatat+0x55/0x70
+>  > >  [<ffffffff811d973e>] vfs_lstat+0x1e/0x20
+>  > >  [<ffffffff811d99ca>] sys_newlstat+0x1a/0x40
+>  > >  [<ffffffff81696aed>] system_call_fastpath+0x1a/0x1f
+>  > > Code: f6 43 40 01 75 eb 48 8b 7b 50 e8 41 4d f6 ff 48 8b 3d c2 bf 7f 01 48 89 de e8 a2 52 f6 ff 4c 89 e7 e8 1a b5 f9 ff 5b 41 5c 5d c3 <0f> 0b be 9c 00 00 00 48 c7 c7 30 a2 9e 81 e8 42 2e e1 ff eb a7 
+>  > > RIP  [<ffffffff812562fb>] configfs_d_iput+0x8b/0xa0
+>  > >  RSP <ffff88014325be08>
+>  > > ---[ end trace 65e130035db36f7d ]---
+>  > > 
+>  > >   58         if (sd) {
+>  > >   59                 BUG_ON(sd->s_dentry != dentry);
+>  > > 
+>  > 
+>  > Dave,
+>  > 	What were you doing at the time?  Is this ocfs2, dlm, target, or
+>  > what?
+>  > 
+>  > Joel
+>  > 
 > 
-> This series updates picoLCD driver:
-> - split the driver functions into separate files which get included
->   depending on Kconfig selection
->   (implementation for CIR using RC_CORE will follow later)
-> - drop private framebuffer refcounting in favor of refcounting added
->   to fb_info some time ago
-> - fix various bugs issues
-> - disabled firmware version checking in probe() as it does not work
->   anymore since commit 4ea5454203d991ec85264f64f89ca8855fce69b0
->   [HID: Fix race condition between driver core and ll-driver]
+> See  http://codemonkey.org.uk/projects/trinity/
+> Running that with -c newlstat should trigger it.
+> (load configfs module first, no further config necessary)
 
-I have now applied the series to my 'picolcd' branch, except for 6/7, 
-please see the comment I sent to it separately.
+Cool tool.  I presume that -c newlstat just randomly picks paths to
+newlstat.  I think I see what's happening, but I can't see what gets the
+dirent into that state.  Now to get a VM I can break.
 
-> Note: I still get weird behavior on quick unbind/bind sequences
-> issued via sysfs (CONFIG_SMP=n system) that are triggered by framebuffer
-> support and apparently more specifically fb_defio part of it.
-> 
-> Unfortunately I'm out of ideas as to how to track down the problem which
-> shows either as SLAB corruption (detected with SLUB debugging, e.g.
-
-Would be nice to have this sorted out before the next merge window indeed, 
-so that it can go in together with the rest of the changes.
-
-> 
-> [ 6383.521833] =============================================================================
-> [ 6383.530020] BUG kmalloc-64 (Not tainted): Object already free
-> [ 6383.530020] -----------------------------------------------------------------------------
-> [ 6383.530020] 
-> [ 6383.530020] INFO: Slab 0xdde0ea20 objects=51 used=40 fp=0xcef516e0 flags=0x40000080
-> [ 6383.530020] INFO: Object 0xcef51190 @offset=400 fp=0xcef51f50
-> [ 6383.530020] 
-> [ 6383.530020] Bytes b4 cef51180: cc cc cc cc d0 12 f5 ce 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
-> [ 6383.530020] Object cef51190: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511a0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511b0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 6383.530020] Object cef511c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-> [ 6383.530020] Redzone cef511d0: bb bb bb bb                                      ....
-> [ 6383.530020] Padding cef511d8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-> [ 6383.530020] Pid: 1922, comm: bash Not tainted 3.5.0-jupiter-00003-g8d858b1-dirty #2
-> [ 6383.530020] Call Trace:
-> [ 6383.530020]  [<c10bd3cc>] print_trailer+0x11c/0x130
-> [ 6383.530020]  [<c10bd415>] object_err+0x35/0x40
-> [ 6383.530020]  [<c10be809>] free_debug_processing+0x99/0x200
-> [ 6383.530020]  [<c10bf77e>] __slab_free+0x2e/0x280
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322870>] ? __usbhid_submit_report+0xc0/0x3c0
-> [ 6383.530020]  [<c10bfbda>] ? kfree+0xfa/0x110
-> [ 6383.530020]  [<de932aa4>] ? picolcd_debug_out_report+0x8c4/0x8e0 [hid_picolcd]
-> [ 6383.530020]  [<c10bfbda>] kfree+0xfa/0x110
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] ? hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322284>] hid_submit_out+0xa4/0x120
-> [ 6383.530020]  [<c1322908>] __usbhid_submit_report+0x158/0x3c0
-> [ 6383.530020]  [<c1322c2b>] usbhid_submit_report+0x1b/0x30
-> [ 6383.530020]  [<de930789>] picolcd_fb_reset+0xb9/0x180 [hid_picolcd]
-> [ 6383.530020]  [<de930f1d>] picolcd_init_framebuffer+0x20d/0x2e0 [hid_picolcd]
-> [ 6383.530020]  [<de92fb9c>] picolcd_probe+0x3cc/0x580 [hid_picolcd]
-> [ 6383.530020]  [<c1319147>] hid_device_probe+0x67/0xf0
-> [ 6383.530020]  [<c1282f97>] ? driver_sysfs_add+0x57/0x80
-> [ 6383.530020]  [<c128329d>] driver_probe_device+0xbd/0x1c0
-> [ 6383.530020]  [<c1318a1b>] ? hid_match_device+0x7b/0x90
-> [ 6383.530020]  [<c12821e5>] driver_bind+0x75/0xd0
-> [ 6383.530020]  [<c1282170>] ? driver_unbind+0x90/0x90
-> [ 6383.530020]  [<c12818b7>] drv_attr_store+0x27/0x30
-> [ 6383.530020]  [<c1114aec>] sysfs_write_file+0xac/0xf0
-> [ 6383.530020]  [<c10c794c>] vfs_write+0x9c/0x130
-> [ 6383.530020]  [<c10d4a1f>] ? sys_dup3+0x11f/0x160
-> [ 6383.530020]  [<c1114a40>] ? sysfs_poll+0x90/0x90
-> [ 6383.530020]  [<c10c7bbd>] sys_write+0x3d/0x70
-> [ 6383.530020]  [<c13f2557>] sysenter_do_call+0x12/0x26
-
-So I am wondering whether the path this happens on is
-
-                if (!test_bit(HID_OUT_RUNNING, &usbhid->iofl)) {
-                        usbhid_restart_out_queue(usbhid);
-
-in __usbhid_submit_report(). It would then indicate perhaps some race with 
-iofl handling.
-
-Could you please stick some printk() just before and after this 
-usbhid_restart_out_queue() call, so that we know that it's this triggering 
-it?
+Joel
 
 -- 
-Jiri Kosina
-SUSE Labs
+
+"The trouble with being punctual is that nobody's there to
+ appreciate it."
+	- Franklin P. Jones
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
