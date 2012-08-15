@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2HOPEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:04:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61439 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab2HOPEA (ORCPT
+	id S1755087Ab2HOPD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:03:57 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:57569 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab2HOPD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:04:00 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH 1/2] slub: reduce failure of this_cpu_cmpxchg in put_cpu_partial() after unfreezing
-Date: Thu, 16 Aug 2012 00:02:39 +0900
-Message-Id: <1345042960-6287-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 15 Aug 2012 11:03:56 -0400
+Date: Wed, 15 Aug 2012 17:03:47 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+Message-ID: <20120815170347.323507b1@de.ibm.com>
+In-Reply-To: <1344953810-20564-2-git-send-email-fweisbec@gmail.com>
+References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
+	<1344953810-20564-2-git-send-email-fweisbec@gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12081515-6892-0000-0000-000002B813C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, after unfreezing, we doesn't touch oldpage,
-so it remain 'NOT NULL'. When we call this_cpu_cmpxchg()
-with this old oldpage, this_cpu_cmpxchg() is mostly be failed.
+On Tue, 14 Aug 2012 16:16:47 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-We can change value of oldpage to NULL after unfreezing,
-because unfreeze_partial() ensure that all the cpu partial slabs is removed
-from cpu partial list. In this time, we could expect that
-this_cpu_cmpxchg is mostly succeed.
+> S390, ia64 and powerpc all define their own version
+> of CONFIG_VIRT_CPU_ACCOUNTING. Generalize the config
+> and its description to a single place to avoid
+> duplication.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>
-Acked-by: Christoph Lameter <cl@linux.com>
+For S390 CONFIG_VIRT_CPU_ACCOUNTING is not configurable, it is always
+enabled. With this patch we'd get a config option in the menu, no?
 
----
-Hello, Pekka.
-
-These two patches get "Acked-by: Christoph Lameter <cl@linux.com>",
-but, I don't hear any answer from U.
-Could you review these, please?
-
-Thanks!
-
-diff --git a/mm/slub.c b/mm/slub.c
-index e517d43..ca778e5 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1952,6 +1952,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				local_irq_save(flags);
- 				unfreeze_partials(s);
- 				local_irq_restore(flags);
-+				oldpage = NULL;
- 				pobjects = 0;
- 				pages = 0;
- 				stat(s, CPU_PARTIAL_DRAIN);
 -- 
-1.7.9.5
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
