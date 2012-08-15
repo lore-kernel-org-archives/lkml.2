@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab2HOTwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:52:10 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63050 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab2HOTwB (ORCPT
+	id S1757069Ab2HOTwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37079 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757019Ab2HOTwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:01 -0400
+	Wed, 15 Aug 2012 15:52:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Prarit Bhargava <prarit@redhat.com>,
+CC: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 117/165] timekeeping: Provide hrtimer update function
-Date: Wed, 15 Aug 2012 15:47:41 -0400
-Message-ID: <1345060109-9187-118-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 130/165] md/raid5: abort any pending parity operations when array fails.
+Date: Wed, 15 Aug 2012 15:47:54 -0400
+Message-ID: <1345060109-9187-131-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: NeilBrown <neilb@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,88 +31,77 @@ From: Thomas Gleixner <tglx@linutronix.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f6c06abfb3972ad4914cef57d8348fcb2932bc3b upstream.
+commit 9a3f530f39f4490eaa18b02719fb74ce5f4d2d86 upstream.
 
-To finally fix the infamous leap second issue and other race windows
-caused by functions which change the offsets between the various time
-bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
-function which atomically gets the current monotonic time and updates
-the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
-overhead. The previous patch which provides ktime_t offsets allows us
-to make this function almost as cheap as ktime_get() which is going to
-be replaced in hrtimer_interrupt().
+When the number of failed devices exceeds the allowed number
+we must abort any active parity operations (checks or updates) as they
+are no longer meaningful, and can lead to a BUG_ON in
+handle_parity_checks6.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+This bug was introduce by commit 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+in 2.6.29.
+
+Reported-by: Manish Katiyar <mkatiyar@gmail.com>
+Tested-by: Manish Katiyar <mkatiyar@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[PG: use 2.6.32.49 backport since raid5.c @ 9a3f530f/v3.2 differs more]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/hrtimer.h   |  2 +-
- kernel/time/timekeeping.c | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 1 deletion(-)
+ drivers/md/raid5.c | 32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 0325598..887d1e7 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -319,7 +319,7 @@ static inline void clock_was_set_delayed(void) { }
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index dc3e4fc..2936c3b 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3040,12 +3040,16 @@ static void handle_stripe5(struct stripe_head *sh)
+ 	/* check if the array has lost two devices and, if so, some requests might
+ 	 * need to be failed
+ 	 */
+-	if (s.failed > 1 && s.to_read+s.to_write+s.written)
+-		handle_failed_stripe(conf, sh, &s, disks, &return_bi);
+-	if (s.failed > 1 && s.syncing) {
+-		md_done_sync(conf->mddev, STRIPE_SECTORS,0);
+-		clear_bit(STRIPE_SYNCING, &sh->state);
+-		s.syncing = 0;
++	if (s.failed > 1) {
++		sh->check_state = 0;
++		sh->reconstruct_state = 0;
++		if (s.to_read+s.to_write+s.written)
++			handle_failed_stripe(conf, sh, &s, disks, &return_bi);
++		if (s.syncing) {
++			md_done_sync(conf->mddev, STRIPE_SECTORS,0);
++			clear_bit(STRIPE_SYNCING, &sh->state);
++			s.syncing = 0;
++		}
+ 	}
  
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
--
-+extern ktime_t ktime_get_update_offsets(ktime_t *offs_real);
+ 	/* might be able to return some write requests if the parity block
+@@ -3323,12 +3327,16 @@ static void handle_stripe6(struct stripe_head *sh)
+ 	/* check if the array has lost >2 devices and, if so, some requests
+ 	 * might need to be failed
+ 	 */
+-	if (s.failed > 2 && s.to_read+s.to_write+s.written)
+-		handle_failed_stripe(conf, sh, &s, disks, &return_bi);
+-	if (s.failed > 2 && s.syncing) {
+-		md_done_sync(conf->mddev, STRIPE_SECTORS,0);
+-		clear_bit(STRIPE_SYNCING, &sh->state);
+-		s.syncing = 0;
++	if (s.failed > 2) {
++		sh->check_state = 0;
++		sh->reconstruct_state = 0;
++		if (s.to_read+s.to_write+s.written)
++			handle_failed_stripe(conf, sh, &s, disks, &return_bi);
++		if (s.syncing) {
++			md_done_sync(conf->mddev, STRIPE_SECTORS,0);
++			clear_bit(STRIPE_SYNCING, &sh->state);
++			s.syncing = 0;
++		}
+ 	}
  
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 3d443b4..0b4f6d1 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -969,3 +969,35 @@ struct timespec get_monotonic_coarse(void)
- 				now.tv_nsec + mono.tv_nsec);
- 	return now;
- }
-+
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+/**
-+ * ktime_get_update_offsets - hrtimer helper
-+ * @real:	pointer to storage for monotonic -> realtime offset
-+ *
-+ * Returns current monotonic time and updates the offsets
-+ * Called from hrtimer_interupt() or retrigger_next_event()
-+ */
-+ktime_t ktime_get_update_offsets(ktime_t *real)
-+{
-+	ktime_t now;
-+	unsigned int seq;
-+	u64 secs, nsecs;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		secs = xtime.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
-+
-+		*real = offs_real;
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
-+	now = ktime_sub(now, *real);
-+	return now;
-+}
-+#endif
+ 	/*
 -- 
 1.7.12.rc2
 
