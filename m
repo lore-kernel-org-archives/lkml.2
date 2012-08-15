@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2HORIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:08:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50494 "EHLO
+	id S1755522Ab2HORJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:09:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56023 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2HORIh (ORCPT
+	with ESMTP id S1755194Ab2HORIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:08:37 -0400
+	Wed, 15 Aug 2012 13:08:40 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         linux-kernel@vger.kernel.org, Rabeeh Khoury <rabeeh@solid-run.com>,
         Ian Molton <ian.molton@codethink.co.uk>,
         Maen Suleiman <maen@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v3 2/6] ARM: dove: add clock gating control
-Date: Wed, 15 Aug 2012 19:07:31 +0200
-Message-Id: <1345050455-32643-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v3 3/6] ARM: dove: add crypto engine
+Date: Wed, 15 Aug 2012 19:07:32 +0200
+Message-Id: <1345050455-32643-4-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1345050455-32643-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344681326-17946-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,10 +25,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds clock gates from the clock gating control register
-available on dove. All clock gates are hooked up to tclk, except for
-gigabit ethernet controller (ge) which is a child of gephy to allow
-both enabled/disabled at the same time.
+This patch adds a dove specific setup function for the Marvell CESA
+crypto engine available on orion based SoCs. Dove setup was just
+missing a function to call orion_crypto_init with dove specific
+setup.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -42,161 +42,29 @@ Cc: Ian Molton <ian.molton@codethink.co.uk>
 Cc: Maen Suleiman <maen@marvell.com>
 Cc: Olof Johansson <olof@lixom.net>
 ---
- arch/arm/mach-dove/common.c          |   57 +++++++++++++++++++++++++++++++++-
- arch/arm/mach-dove/include/mach/pm.h |   54 +++++++++++++++++++++-----------
- 2 files changed, 92 insertions(+), 19 deletions(-)
-
-v2: adapted to removed clk_prepare_enable from patch 1
-v3: fixed a typo in clk_gate name for pex0
-    removed device name macros from clk gate names
+ arch/arm/mach-dove/common.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/mach-dove/common.c b/arch/arm/mach-dove/common.c
-index b6f092c..9b2f961 100644
+index 9b2f961..66689ce 100644
 --- a/arch/arm/mach-dove/common.c
 +++ b/arch/arm/mach-dove/common.c
-@@ -24,6 +24,7 @@
- #include <asm/mach/time.h>
- #include <asm/mach/pci.h>
- #include <mach/dove.h>
-+#include <mach/pm.h>
- #include <mach/bridge-regs.h>
- #include <asm/mach/arch.h>
- #include <linux/irq.h>
-@@ -69,14 +70,68 @@ void __init dove_map_io(void)
-  * CLK tree
-  ****************************************************************************/
- static int dove_tclk;
-+
-+static DEFINE_SPINLOCK(gating_lock);
- static struct clk *tclk;
- 
-+static struct clk __init *dove_register_gate(const char *name,
-+					     const char *parent, u8 bit_idx)
-+{
-+	return clk_register_gate(NULL, name, parent, 0,
-+				 (void __iomem *)CLOCK_GATING_CONTROL,
-+				 bit_idx, 0, &gating_lock);
-+}
-+
- static void __init dove_clk_init(void)
- {
-+	struct clk *usb0, *usb1, *sata, *pex0, *pex1, *sdio0, *sdio1;
-+	struct clk *nand, *camera, *i2s0, *i2s1, *crypto, *ac97, *pdma;
-+	struct clk *xor0, *xor1, *ge, *gephy;
-+
- 	tclk = clk_register_fixed_rate(NULL, "tclk", NULL, CLK_IS_ROOT,
- 				       dove_tclk);
- 
--	orion_clkdev_init(tclk);
-+	usb0 = dove_register_gate("usb0", "tclk", CLOCK_GATING_BIT_USB0);
-+	usb1 = dove_register_gate("usb1", "tclk", CLOCK_GATING_BIT_USB1);
-+	sata = dove_register_gate("sata", "tclk", CLOCK_GATING_BIT_SATA);
-+	pex0 = dove_register_gate("pex0", "tclk", CLOCK_GATING_BIT_PCIE0);
-+	pex1 = dove_register_gate("pex1", "tclk", CLOCK_GATING_BIT_PCIE1);
-+	sdio0 = dove_register_gate("sdio0", "tclk", CLOCK_GATING_BIT_SDIO0);
-+	sdio1 = dove_register_gate("sdio1", "tclk", CLOCK_GATING_BIT_SDIO1);
-+	nand = dove_register_gate("nand", "tclk", CLOCK_GATING_BIT_NAND);
-+	camera = dove_register_gate("camera", "tclk", CLOCK_GATING_BIT_CAMERA);
-+	i2s0 = dove_register_gate("i2s0", "tclk", CLOCK_GATING_BIT_I2S0);
-+	i2s1 = dove_register_gate("i2s1", "tclk", CLOCK_GATING_BIT_I2S1);
-+	crypto = dove_register_gate("crypto", "tclk", CLOCK_GATING_BIT_CRYPTO);
-+	ac97 = dove_register_gate("ac97", "tclk", CLOCK_GATING_BIT_AC97);
-+	pdma = dove_register_gate("pdma", "tclk", CLOCK_GATING_BIT_PDMA);
-+	xor0 = dove_register_gate("xor0", "tclk", CLOCK_GATING_BIT_XOR0);
-+	xor1 = dove_register_gate("xor1", "tclk", CLOCK_GATING_BIT_XOR1);
-+	gephy = dove_register_gate("gephy", "tclk", CLOCK_GATING_BIT_GIGA_PHY);
-+	ge = dove_register_gate("ge", "gephy", CLOCK_GATING_BIT_GBE);
-+
-+	orion_clkdev_add(NULL, "orion_spi.0", tclk);
-+	orion_clkdev_add(NULL, "orion_spi.1", tclk);
-+	orion_clkdev_add(NULL, "orion_wdt", tclk);
-+	orion_clkdev_add(NULL, "mv64xxx_i2c.0", tclk);
-+
-+	orion_clkdev_add(NULL, "orion-ehci.0", usb0);
-+	orion_clkdev_add(NULL, "orion-ehci.1", usb1);
-+	orion_clkdev_add(NULL, "mv643xx_eth.0", ge);
-+	orion_clkdev_add("0", "sata_mv.0", sata);
-+	orion_clkdev_add("0", "pcie", pex0);
-+	orion_clkdev_add("1", "pcie", pex1);
-+	orion_clkdev_add(NULL, "sdhci-dove.0", sdio0);
-+	orion_clkdev_add(NULL, "sdhci-dove.1", sdio1);
-+	orion_clkdev_add(NULL, "orion_nand", nand);
-+	orion_clkdev_add(NULL, "cafe1000-ccic.0", camera);
-+	orion_clkdev_add(NULL, "kirkwood-i2s.0", i2s0);
-+	orion_clkdev_add(NULL, "kirkwood-i2s.1", i2s1);
-+	orion_clkdev_add(NULL, "mv_crypto", crypto);
-+	orion_clkdev_add(NULL, "dove-ac97", ac97);
-+	orion_clkdev_add(NULL, "dove-pdma", pdma);
-+	orion_clkdev_add(NULL, "mv_xor_shared.0", xor0);
-+	orion_clkdev_add(NULL, "mv_xor_shared.1", xor1);
- }
+@@ -258,6 +258,15 @@ struct sys_timer dove_timer = {
+ };
  
  /*****************************************************************************
-diff --git a/arch/arm/mach-dove/include/mach/pm.h b/arch/arm/mach-dove/include/mach/pm.h
-index 3ad9f94..7bcd0df 100644
---- a/arch/arm/mach-dove/include/mach/pm.h
-+++ b/arch/arm/mach-dove/include/mach/pm.h
-@@ -13,24 +13,42 @@
- #include <mach/irqs.h>
- 
- #define CLOCK_GATING_CONTROL	(DOVE_PMU_VIRT_BASE + 0x38)
--#define  CLOCK_GATING_USB0_MASK		(1 << 0)
--#define  CLOCK_GATING_USB1_MASK		(1 << 1)
--#define  CLOCK_GATING_GBE_MASK		(1 << 2)
--#define  CLOCK_GATING_SATA_MASK		(1 << 3)
--#define  CLOCK_GATING_PCIE0_MASK	(1 << 4)
--#define  CLOCK_GATING_PCIE1_MASK	(1 << 5)
--#define  CLOCK_GATING_SDIO0_MASK	(1 << 8)
--#define  CLOCK_GATING_SDIO1_MASK	(1 << 9)
--#define  CLOCK_GATING_NAND_MASK		(1 << 10)
--#define  CLOCK_GATING_CAMERA_MASK	(1 << 11)
--#define  CLOCK_GATING_I2S0_MASK		(1 << 12)
--#define  CLOCK_GATING_I2S1_MASK		(1 << 13)
--#define  CLOCK_GATING_CRYPTO_MASK	(1 << 15)
--#define  CLOCK_GATING_AC97_MASK		(1 << 21)
--#define  CLOCK_GATING_PDMA_MASK		(1 << 22)
--#define  CLOCK_GATING_XOR0_MASK		(1 << 23)
--#define  CLOCK_GATING_XOR1_MASK		(1 << 24)
--#define  CLOCK_GATING_GIGA_PHY_MASK	(1 << 30)
-+#define  CLOCK_GATING_BIT_USB0		0
-+#define  CLOCK_GATING_BIT_USB1		1
-+#define  CLOCK_GATING_BIT_GBE		2
-+#define  CLOCK_GATING_BIT_SATA		3
-+#define  CLOCK_GATING_BIT_PCIE0		4
-+#define  CLOCK_GATING_BIT_PCIE1		5
-+#define  CLOCK_GATING_BIT_SDIO0		8
-+#define  CLOCK_GATING_BIT_SDIO1		9
-+#define  CLOCK_GATING_BIT_NAND		10
-+#define  CLOCK_GATING_BIT_CAMERA	11
-+#define  CLOCK_GATING_BIT_I2S0		12
-+#define  CLOCK_GATING_BIT_I2S1		13
-+#define  CLOCK_GATING_BIT_CRYPTO	15
-+#define  CLOCK_GATING_BIT_AC97		21
-+#define  CLOCK_GATING_BIT_PDMA		22
-+#define  CLOCK_GATING_BIT_XOR0		23
-+#define  CLOCK_GATING_BIT_XOR1		24
-+#define  CLOCK_GATING_BIT_GIGA_PHY	30
-+#define  CLOCK_GATING_USB0_MASK		(1 << CLOCK_GATING_BIT_USB0)
-+#define  CLOCK_GATING_USB1_MASK		(1 << CLOCK_GATING_BIT_USB1)
-+#define  CLOCK_GATING_GBE_MASK		(1 << CLOCK_GATING_BIT_GBE)
-+#define  CLOCK_GATING_SATA_MASK		(1 << CLOCK_GATING_BIT_SATA)
-+#define  CLOCK_GATING_PCIE0_MASK	(1 << CLOCK_GATING_BIT_PCIE0)
-+#define  CLOCK_GATING_PCIE1_MASK	(1 << CLOCK_GATING_BIT_PCIE1)
-+#define  CLOCK_GATING_SDIO0_MASK	(1 << CLOCK_GATING_BIT_SDIO0)
-+#define  CLOCK_GATING_SDIO1_MASK	(1 << CLOCK_GATING_BIT_SDIO1)
-+#define  CLOCK_GATING_NAND_MASK		(1 << CLOCK_GATING_BIT_NAND)
-+#define  CLOCK_GATING_CAMERA_MASK	(1 << CLOCK_GATING_BIT_CAMERA)
-+#define  CLOCK_GATING_I2S0_MASK		(1 << CLOCK_GATING_BIT_I2S0)
-+#define  CLOCK_GATING_I2S1_MASK		(1 << CLOCK_GATING_BIT_I2S1)
-+#define  CLOCK_GATING_CRYPTO_MASK	(1 << CLOCK_GATING_BIT_CRYPTO)
-+#define  CLOCK_GATING_AC97_MASK		(1 << CLOCK_GATING_BIT_AC97)
-+#define  CLOCK_GATING_PDMA_MASK		(1 << CLOCK_GATING_BIT_PDMA)
-+#define  CLOCK_GATING_XOR0_MASK		(1 << CLOCK_GATING_BIT_XOR0)
-+#define  CLOCK_GATING_XOR1_MASK		(1 << CLOCK_GATING_BIT_XOR1)
-+#define  CLOCK_GATING_GIGA_PHY_MASK	(1 << CLOCK_GATING_BIT_GIGA_PHY)
- 
- #define PMU_INTERRUPT_CAUSE	(DOVE_PMU_VIRT_BASE + 0x50)
- #define PMU_INTERRUPT_MASK	(DOVE_PMU_VIRT_BASE + 0x54)
++ * Cryptographic Engines and Security Accelerator (CESA)
++ ****************************************************************************/
++void __init dove_crypto_init(void)
++{
++	orion_crypto_init(DOVE_CRYPT_PHYS_BASE, DOVE_CESA_PHYS_BASE,
++			  DOVE_CESA_SIZE, IRQ_DOVE_CRYPTO);
++}
++
++/*****************************************************************************
+  * XOR 0
+  ****************************************************************************/
+ void __init dove_xor0_init(void)
 -- 
 1.7.10.4
 
