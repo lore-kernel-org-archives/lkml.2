@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab2HOTXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:23:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50148 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755509Ab2HOTXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:23:38 -0400
-Message-ID: <502BF734.9000608@wwwdotorg.org>
-Date: Wed, 15 Aug 2012 13:23:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1755581Ab2HOTZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:25:47 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33404 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753390Ab2HOTZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:25:46 -0400
+Message-ID: <502BF6FA.6050602@parallels.com>
+Date: Wed, 15 Aug 2012 23:22:34 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: vt8500-wm8505-linux-kernel@googlegroups.com, linux-fbdev@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King <linux@arm.linux.org.uk>, rtc-linux@googlegroups.com,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Eric Andersson <eric.andersson@unixphere.com>,
-        linux-serial@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Hauke Mehrtens <hauke@hauke-m.de>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>, Neil Zhang <zhangwm@marvell.com>,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCHv2 0/8] *** ARM: Update arch-vt8500 to Devicetree ***
-References: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1344477300-25251-1-git-send-email-linux@prisktech.co.nz>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Lameter <cl@linux.com>
+CC: Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz> <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com> <502BBC35.809@parallels.com> <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com> <CALWz4ixv8wfOqQ34CBLQ1jVdWoQc4-hQRkeRTb6U5x93gxjZZw@mail.gmail.com> <000001392b881bf0-4cf7cb93-c142-4ddb-960a-b35390caca0f-000000@email.amazonses.com>
+In-Reply-To: <000001392b881bf0-4cf7cb93-c142-4ddb-960a-b35390caca0f-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2012 07:54 PM, Tony Prisk wrote:
-> This patchset updates arch-vt8500 to devicetree and removes all the old-style
-> code. Support for WM8650 has also been added.
+On 08/15/2012 10:25 PM, Christoph Lameter wrote:
+> On Wed, 15 Aug 2012, Ying Han wrote:
+> 
+>>> How can you figure out which objects belong to which memcg? The ownerships
+>>> of dentries and inodes is a dubious concept already.
+>>
+>> I figured it out based on the kernel slab accounting.
+>> obj->page->kmem_cache->memcg
+> 
+> Well that is only the memcg which allocated it. It may be in use heavily
+> by other processes.
+> 
 
-Sorry for taking such a long time to re-review this.
+Yes, but a lot of the use cases for cgroups/containers are pretty local.
+That is why we have been able to get away with a first-touch mechanism
+even in user pages memcg. In those cases - which we expect to be the
+majority of them - this will perform well.
 
-I scanned the series looking for just the changes to the issues I raised
-on v1, and I do see almost everything has been fixed up OK, except for
-the one issue I just commented on. So, aside from that, this series is
-fine by me. I'll defer to others about whether it's necessary to fix the
-display node-name-vs.-phandle issue I pointed out, or defer that until
-later.
+Now, this is not of course representative of the whole range of possible
+use cases, and others are valid. There are people like Greg
+and Ying Han herself that want a more fine grained control on which
+memcg gets the accounting. That is one of the topics for the summit.
+
+But even then: regardless of what mechanism is in place, one cgroup is
+to be accounted (or not accounted at all, meaning it belongs to a
+non-accounted cgroup). And then we can just grab whichever memcg it was
+allocated from and shrink it.
+
