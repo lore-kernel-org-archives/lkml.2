@@ -1,133 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2HONkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:40:13 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50454 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754686Ab2HONkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:40:09 -0400
-Message-ID: <502BA6AE.9000209@parallels.com>
-Date: Wed, 15 Aug 2012 17:39:58 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754802Ab2HONkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:40:25 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:64481 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab2HONkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 09:40:20 -0400
+Date: Wed, 15 Aug 2012 06:40:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] debugfs: Allow debugfs_create_dir() to take data
+Message-ID: <20120815134015.GA22202@kroah.com>
+References: <1344407073-12030-1-git-send-email-hdoyu@nvidia.com>
+ <1344407073-12030-2-git-send-email-hdoyu@nvidia.com>
+ <20120808133427.GA14417@kroah.com>
+ <20120809155624.b781edae9efa7c51faf6c31c@nvidia.com>
+ <20120815084008.3d8f4ac20af5dc3372cd7681@nvidia.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 07/11] mm: Allocate kernel pages to the right memcg
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-8-git-send-email-glommer@parallels.com> <20120814151616.GO4177@suse.de> <502B66F8.30909@parallels.com> <20120815132244.GQ4177@suse.de>
-In-Reply-To: <20120815132244.GQ4177@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815084008.3d8f4ac20af5dc3372cd7681@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> As for the type, do you think using struct mem_cgroup would be less
->> confusing?
->>
+On Wed, Aug 15, 2012 at 08:40:08AM +0300, Hiroshi Doyu wrote:
+> On Thu, 9 Aug 2012 14:56:24 +0200
+> Hiroshi Doyu <hdoyu@nvidia.com> wrote:
 > 
-> Yes and returning the mem_cgroup or NULL instead of bool.
-
-Ok. struct mem_cgroup it is.
-
+> > Hi Greg, Felipe,
+> > 
+> > On Wed, 8 Aug 2012 15:34:27 +0200
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > 
+> > > On Wed, Aug 08, 2012 at 09:24:32AM +0300, Hiroshi Doyu wrote:
+> > > > Add __debugfs_create_dir(), which takes data passed from caller.
+> > > 
+> > > Why?
+> > > 
+> > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > > > ---
+> > > >  fs/debugfs/inode.c      |    7 ++++---
+> > > >  include/linux/debugfs.h |    9 ++++++++-
+> > > >  2 files changed, 12 insertions(+), 4 deletions(-)
+> > .....
+> > > What are you trying to do here?  This patch doesn't look right at all.
+> > 
+> > I missed to send the cover letter of this patch series to LKML, which
+> > explained the background. I attached that cover letter below. Please
+> > read the following explanation too.
 > 
->> The placeholder is there, but it is later patched
->> to the final thing.
->> With that explained, if you want me to change it to something else, I
->> can do it. Should I ?
->>
-> 
-> Not in this patch anyway. I would have preferred a pattern like this but
-> that's about it.
-> 
-> #ifdef CONFIG_MEMCG_KMEM
-> extern struct static_key memcg_kmem_enabled_key;
-> static inline int memcg_kmem_enabled(void)
-> {
->        return static_key_false(&memcg_kmem_enabled_key);
-> }
-> #else
-> 
-> static inline bool memcg_kmem_enabled(void)
-> {
->        return false;
-> }
-> #endif
-> 
+> Any chance to get some feedback on this?
 
-humm, I'll have to think about this name.
-"memcg_kmem_enabled" means it is enabled in this cgroup. It is actually
-used inside memcontrol.c to denote precisely that.
+I still don't like it, and then there's the basic fact that I'm pretty
+sure you broke the build with the patch, but who's noticing little
+things like that :)
 
-Now the static branch, of course, means it is globally enabled. Or as I
-called here, "on".
+> I'm also sending another version of patch, which just uses
+> debgufs_create_dir() as Felipe suggested, in-reply-to this mail.
 
+I'd prefer not to change debugfs for this, so if you don't do that, I
+don't object to your driver-specific patch.
 
-> Two reasons. One, it does not use the terms "on" and "enabled"
-> interchangeably.  The other reason is down to taste as I'm copying the
-> pattern I used myself for sk_memalloc_socks(). Of course I am biased.
-> 
-> Also, why is the key exported?
-> 
-
-Same reason. The slab will now have inline functions that will test
-against that. The alloc functions themselves, are inside the page
-allocator, and the exports can go away.
-
-But the static branch will still be tested inside inlined functions in
-the slab.
-
-That said, for the sake of simplicity, I can make it go away here, and
-add that to the right place later.
-
->>> I also find it *very* strange to have a function named as if it is an
->>> allocation-style function when it in fact it's looking up a mem_cgroup
->>> and charging it (and uncharging it in the error path if necessary). If
->>> it was called memcg_kmem_newpage_charge I might have found it a little
->>> better.
->>
->> I don't feel strongly about names in general. I can change it.
->> Will update to memcg_kmem_newpage_charge() and memcg_kmem_page_uncharge().
->>
-> 
-> I would prefer that anyway. Names have meaning and people make assumptions on
-> the implementation depending on the name. We should try to be as consistent
-> as possible or maintenance becomes harder. I know there are areas where
-> we are not consistent at all but we should not compound the problem.
-
-memcg_kmem_page_charge() is even better I believe, and that is what I
-changed this to in my tree.
-
->>> As this thing is called from within the allocator, it's not clear why
->>> __memcg_kmem_new_page is exported. I can't imagine why a module would call
->>> it directly although maybe you cover that somewhere else in the series.
->>
->> Okay, more people commented on this, so let me clarify: They shouldn't
->> be. They were initially exported when this was about the slab only,
->> because they could be called from inlined functions from the allocators.
->> Now that the charge/uncharge was moved to the page allocator - which
->> already allowed me the big benefit of separating this in two pieces,
->> none of this needs to be exported.
->>
->> Sorry for not noticing this myself, but thanks for the eyes =)
->>
-> 
-> You're welcome. I expect to see all the exports disappear so. If there
-> are any exports left I think it would be important to document why they
-> have to be exported. This is particularly true because they are
-> EXPORT_SYMBOL not EXPORT_SYMBOL_GPL. I think it would be good to know in
-> advance why a module (particularly an out-of-tree one) would be
-> interested.
-> 
-
-I will remove them all for now.
-
+greg k-h
