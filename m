@@ -1,41 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2HOSm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:42:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48979 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab2HOSm0 (ORCPT
+	id S1754891Ab2HOSnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:43:24 -0400
+Received: from mga07.intel.com ([143.182.124.22]:26891 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752645Ab2HOSnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:42:26 -0400
-Date: Wed, 15 Aug 2012 20:42:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: a.p.zijlstra@chello.nl, prasad.krishnan@gmail.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, emachado@linux.vnet.ibm.com
-Subject: Re: [PATCH v3] Hardware breakpoints: Invoke __perf_event_disable()
- if interrupts are already disabled
-Message-ID: <20120815184216.GC19716@somewhere>
-References: <20120731134124.GD17078@somewhere.redhat.com>
- <20120802081635.5811.17737.stgit@localhost.localdomain>
- <502BDE3D.6070909@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502BDE3D.6070909@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Aug 2012 14:43:23 -0400
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC v2 0/7] modsig: signature based kernel module integrity verfication
+Date: Wed, 15 Aug 2012 21:43:05 +0300
+Message-Id: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 11:07:01PM +0530, Naveen N. Rao wrote:
-> Hi Frederick,
-> Did you get a chance to take a look at this?
-> 
-> Regards,
-> Naveen
+Hello,
 
-Yeah, I'm ok with the patch. Peter, are you ok with it?
+IMA measures/appraises modules when modprobe or insmod opens and reads them.
+Unfortunately, there are no guarantees between what is read by userspace and
+what is passed to the kernel via load_module system call. This patch adds
+support for digital signature verification of kernel modules.
 
-Thanks.
+It uses the upstreamed digital signature verification support, which is also
+used by IMA/EVM. There is no dependency on IMA/EVM, but both use the same
+signature and key formats, defined by digital signature verification support.
+
+These patches are intended to support the different use cases, from an
+individual developer creating ephemeral keys, to the distro having an
+existing signing mechanism in place.
+
+For the distro, a well known public key can simply be embedded in the
+kernel during the 'make' process.
+
+For the developer, these patches create an ephemeral key during module
+install, in order to limit the duration of the private key's existence.
+Unfortunately, this necessitates embedding the public key in the kernel,
+after the kernel has already been built.  A new make target called
+'signed_modules_install', creates the keypair, signs the modules,
+removes the private key, and then, for now, recompiles the kernel using
+'make bzImage'.  For the developer, instead of doing 'make
+modules_install', the new build process would be 'make', followed by
+'make signed_modules_install' and 'make install'.
+
+Scripts:
+- new scripts/ksign.sh and scripts/genkey.sh scripts
+- new targets signed_module_install and genkey for the top Makefile
+- scripts/Makefile.modinst changes
+
+Changelog v2:
+- Replaces passing the signature as a separate argument, with appending
+  the signature to the kernel module during module install, as suggested
+  by Rusty Russell. (No module-init-tools changes required.)
+- The signature is created during module install, after the module was
+  possibly stripped.
+- Added support for using a builtin public key. (No requirement for an
+  initramfs to load the public key.)
+- Added key creation and signing support to kernel Makefiles.
+- Permits developers to conveniently sign their own modules with an
+  ephemeral key using "make signed_modules_install".
+
+- Dmitry & Mimi
+
+Dmitry Kasatkin (4):
+  integrity: added digest calculation function
+  modsig: add integrity_module_check hook
+  modsig: verify module integrity based on signature
+  modsig: build rules and scripts to generate keys and sign modules
+
+Mimi Zohar (3):
+  keys: initialize root uid and session keyrings early
+  integrity: create and inititialize a keyring with builtin public key
+  modsig: initialize the _module public key keyring
+
+ Makefile                           |   38 ++++++++++
+ include/linux/integrity.h          |   10 +++
+ kernel/module.c                    |    9 +++
+ scripts/Makefile.modinst           |    1 +
+ scripts/genkey.sh                  |  135 ++++++++++++++++++++++++++++++++++++
+ scripts/ksign.sh                   |   64 +++++++++++++++++
+ security/integrity/Kconfig         |   21 ++++++
+ security/integrity/Makefile        |   18 +++++
+ security/integrity/digsig.c        |   31 ++++++++-
+ security/integrity/digsig_pubkey.c |   96 +++++++++++++++++++++++++
+ security/integrity/integrity.h     |   13 ++++
+ security/integrity/module.c        |   91 ++++++++++++++++++++++++
+ security/keys/Makefile             |    1 +
+ security/keys/root_keyring.c       |   18 +++++
+ 14 files changed, 544 insertions(+), 2 deletions(-)
+ create mode 100755 scripts/genkey.sh
+ create mode 100755 scripts/ksign.sh
+ create mode 100644 security/integrity/digsig_pubkey.c
+ create mode 100644 security/integrity/module.c
+ create mode 100644 security/keys/root_keyring.c
+
+-- 
+1.7.9.5
+
