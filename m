@@ -1,257 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab2HOQe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:34:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54840 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab2HOQeZ (ORCPT
+	id S1755897Ab2HOQet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:34:49 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60382 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab2HOQer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:34:25 -0400
-Date: Wed, 15 Aug 2012 13:34:17 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] perf ui: Introduce struct perf_helpline
-Message-ID: <20120815163417.GJ2370@infradead.org>
-References: <1345042655-27862-1-git-send-email-namhyung@kernel.org>
+	Wed, 15 Aug 2012 12:34:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345042655-27862-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201208151330.02112.arnd@arndb.de>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+	<1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
+	<201208151330.02112.arnd@arndb.de>
+Date: Wed, 15 Aug 2012 18:34:46 +0200
+X-Google-Sender-Auth: otgEEInDBSbPkCmyKTVwFKu2rW8
+Message-ID: <CAMuHMdUEKNYFAU4N8KnJ0DPYgW7BRtaaJQSARDJCVjQOU2bFBw@mail.gmail.com>
+Subject: Re: [PATCH v2 04/31] arm64: MMU definitions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 15, 2012 at 11:57:31PM +0900, Namhyung Kim escreveu:
-> Add struct perf_helpline in order to provide flexible implementation
-> of helpline APIs. And convert existing TUI implementation to use it.
+On Wed, Aug 15, 2012 at 3:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> +#define TCR_IPS_40BIT                (2 << 32)
 
-I advise not to use struct perf_helpline but struct ui_helpline, as it
-is just user interface, not exactly tied to perf, it is just its first
-user.
+By default, constants are int, i.e. 32-bit. So you must write
 
-We don't need to bend over backwardws trying to create yet another UI
-widget set, but there is no need to use the "perf_" namespace on it, I
-think.
+2ULL << 32
 
-- Arnaldo
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/Makefile          |    5 ++--
->  tools/perf/ui/helpline.c     |   56 ++++++++++++++--------------------------
->  tools/perf/ui/helpline.h     |   10 +++++++-
->  tools/perf/ui/tui/helpline.c |   58 ++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 89 insertions(+), 40 deletions(-)
->  create mode 100644 tools/perf/ui/tui/helpline.c
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index e457afa04b59..483fb69fa4ae 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -335,6 +335,7 @@ LIB_H += util/rblist.h
->  LIB_H += util/intlist.h
->  LIB_H += util/perf_regs.h
->  LIB_H += util/unwind.h
-> +LIB_H += ui/helpline.h
->  
->  LIB_OBJS += $(OUTPUT)util/abspath.o
->  LIB_OBJS += $(OUTPUT)util/alias.o
-> @@ -402,6 +403,7 @@ LIB_OBJS += $(OUTPUT)util/cgroup.o
->  LIB_OBJS += $(OUTPUT)util/target.o
->  LIB_OBJS += $(OUTPUT)util/rblist.o
->  LIB_OBJS += $(OUTPUT)util/intlist.o
-> +LIB_OBJS += $(OUTPUT)ui/helpline.o
->  
->  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
->  
-> @@ -567,14 +569,13 @@ else
->  		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
->  		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
->  		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
-> -		LIB_OBJS += $(OUTPUT)ui/helpline.o
->  		LIB_OBJS += $(OUTPUT)ui/progress.o
->  		LIB_OBJS += $(OUTPUT)ui/util.o
->  		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
->  		LIB_OBJS += $(OUTPUT)ui/tui/util.o
-> +		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
->  		LIB_H += ui/browser.h
->  		LIB_H += ui/browsers/map.h
-> -		LIB_H += ui/helpline.h
->  		LIB_H += ui/keysyms.h
->  		LIB_H += ui/libslang.h
->  		LIB_H += ui/progress.h
-> diff --git a/tools/perf/ui/helpline.c b/tools/perf/ui/helpline.c
-> index 2f950c2641c8..ac52dd0af49e 100644
-> --- a/tools/perf/ui/helpline.c
-> +++ b/tools/perf/ui/helpline.c
-> @@ -5,23 +5,32 @@
->  #include "../debug.h"
->  #include "helpline.h"
->  #include "ui.h"
-> -#include "libslang.h"
->  
-> -void ui_helpline__pop(void)
-> +char ui_helpline__current[512];
-> +
-> +static void perf_helpline__pop(void)
->  {
->  }
->  
-> -char ui_helpline__current[512];
-> +static void perf_helpline__push(const char *msg __used)
-> +{
-> +}
->  
-> -void ui_helpline__push(const char *msg)
-> +static struct perf_helpline default_helpline_fns = {
-> +	.pop	= perf_helpline__pop,
-> +	.push	= perf_helpline__push,
-> +};
-> +
-> +struct perf_helpline *helpline_fns = &default_helpline_fns;
-> +
-> +void ui_helpline__pop(void)
->  {
-> -	const size_t sz = sizeof(ui_helpline__current);
-> +	helpline_fns->pop();
-> +}
->  
-> -	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
-> -	SLsmg_set_color(0);
-> -	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
-> -	SLsmg_refresh();
-> -	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
-> +void ui_helpline__push(const char *msg)
-> +{
-> +	helpline_fns->push(msg);
->  }
->  
->  void ui_helpline__vpush(const char *fmt, va_list ap)
-> @@ -50,30 +59,3 @@ void ui_helpline__puts(const char *msg)
->  	ui_helpline__pop();
->  	ui_helpline__push(msg);
->  }
-> -
-> -void ui_helpline__init(void)
-> -{
-> -	ui_helpline__puts(" ");
-> -}
-> -
-> -char ui_helpline__last_msg[1024];
-> -
-> -int ui_helpline__show_help(const char *format, va_list ap)
-> -{
-> -	int ret;
-> -	static int backlog;
-> -
-> -	pthread_mutex_lock(&ui__lock);
-> -	ret = vscnprintf(ui_helpline__last_msg + backlog,
-> -			sizeof(ui_helpline__last_msg) - backlog, format, ap);
-> -	backlog += ret;
-> -
-> -	if (ui_helpline__last_msg[backlog - 1] == '\n') {
-> -		ui_helpline__puts(ui_helpline__last_msg);
-> -		SLsmg_refresh();
-> -		backlog = 0;
-> -	}
-> -	pthread_mutex_unlock(&ui__lock);
-> -
-> -	return ret;
-> -}
-> diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
-> index 7bab6b34e35e..eee8e2ff51d8 100644
-> --- a/tools/perf/ui/helpline.h
-> +++ b/tools/perf/ui/helpline.h
-> @@ -4,13 +4,21 @@
->  #include <stdio.h>
->  #include <stdarg.h>
->  
-> +struct perf_helpline {
-> +	void (*pop)(void);
-> +	void (*push)(const char *msg);
-> +};
-> +
-> +extern struct perf_helpline *helpline_fns;
-> +
->  void ui_helpline__init(void);
-> +
->  void ui_helpline__pop(void);
->  void ui_helpline__push(const char *msg);
->  void ui_helpline__vpush(const char *fmt, va_list ap);
->  void ui_helpline__fpush(const char *fmt, ...);
->  void ui_helpline__puts(const char *msg);
->  
-> -extern char ui_helpline__current[];
-> +extern char ui_helpline__current[512];
->  
->  #endif /* _PERF_UI_HELPLINE_H_ */
-> diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
-> new file mode 100644
-> index 000000000000..b63a9326d06b
-> --- /dev/null
-> +++ b/tools/perf/ui/tui/helpline.c
-> @@ -0,0 +1,58 @@
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <pthread.h>
-> +
-> +#include "../../util/debug.h"
-> +#include "../helpline.h"
-> +#include "../ui.h"
-> +#include "../libslang.h"
-> +
-> +
-> +static void tui_helpline__pop(void)
-> +{
-> +}
-> +
-> +static void tui_helpline__push(const char *msg)
-> +{
-> +	const size_t sz = sizeof(ui_helpline__current);
-> +
-> +	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
-> +	SLsmg_set_color(0);
-> +	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
-> +	SLsmg_refresh();
-> +	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
-> +}
-> +
-> +struct perf_helpline tui_helpline_fns = {
-> +	.pop	= tui_helpline__pop,
-> +	.push	= tui_helpline__push,
-> +};
-> +
-> +void ui_helpline__init(void)
-> +{
-> +	helpline_fns = &tui_helpline_fns;
-> +	ui_helpline__puts(" ");
-> +}
-> +
-> +char ui_helpline__last_msg[1024];
-> +
-> +int ui_helpline__show_help(const char *format, va_list ap)
-> +{
-> +	int ret;
-> +	static int backlog;
-> +
-> +	pthread_mutex_lock(&ui__lock);
-> +	ret = vscnprintf(ui_helpline__last_msg + backlog,
-> +			sizeof(ui_helpline__last_msg) - backlog, format, ap);
-> +	backlog += ret;
-> +
-> +	if (ui_helpline__last_msg[backlog - 1] == '\n') {
-> +		ui_helpline__puts(ui_helpline__last_msg);
-> +		SLsmg_refresh();
-> +		backlog = 0;
-> +	}
-> +	pthread_mutex_unlock(&ui__lock);
-> +
-> +	return ret;
-> +}
-> -- 
-> 1.7.9.2
+>> +#define TCR_ASID16           (1 << 36)
+
+1ULL
+
+> As a matter of coding style, I would much prefer tables like this to be
+> written as
+>
+> #define TCR_IRGN_MASK           0x0000000003000300
+
+0x0000000003000300ULL, to be safe
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
