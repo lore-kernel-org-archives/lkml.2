@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab2HOTh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:37:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37851 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2HOThz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:37:55 -0400
+	id S1755956Ab2HOTiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:38:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39761 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754360Ab2HOTiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:38:08 -0400
+Date: Wed, 15 Aug 2012 21:38:00 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: Re: [PATCH] HID: hidraw: improve error handling in hidraw_init()
+In-Reply-To: <1345059105-26827-1-git-send-email-khoroshilov@ispras.ru>
+Message-ID: <alpine.LNX.2.00.1208152137510.7026@pobox.suse.cz>
+References: <1345059105-26827-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CALF0-+W4afY+sCn5KMa-4ONmr7YnCu1m6d5P+aboSKe5=mgOMQ@mail.gmail.com>
-References: <CALF0-+W4afY+sCn5KMa-4ONmr7YnCu1m6d5P+aboSKe5=mgOMQ@mail.gmail.com>
-Date: Wed, 15 Aug 2012 16:37:54 -0300
-Message-ID: <CALF0-+VWdyPmJEqC69hJXxufKgd9q77TBVEgLS3ryi9isLxW7A@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/1] trace: Add early event trace support
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Tim Bird <tim.bird@am.sony.com>, lizefan@huawei.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 12:20 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> Hi Steven,
->
-> This patch is my first attempt to address the "early tracing issue".
-> Right now, trace events are registered on fs_initcall, which is very late
-> if you want to capture boot-up events.
->
-> This feature is in developers wish list as this old (2009) thread shows [1].
->
-> By splitting the initialization, separating the ftrace enable from the
-> sysfs entry
-> creation, it is possible to move events enable to early_initcall.
-> (which is also late, but I wouldn't expect more from such a small patch).
->
-> Without this patch, and using
-> "trace_event=kmem:kmalloc,kmem:kmalloc_node,kmem:kfree"
-> as kernel parameter, on a bare kernel I can start capturing kmallocs
-> from ~0.4 secs,
-> and I get 186 callers.
->
-> This patch moves the capture to ~ 0.2 secs and captures 220 callers.
->
-> The caller count is inaccurate since gcc does some automatic inlining
-> (I have another RFC PATCH for that), but it shows a rough increase.
->
-> Also, this enable is not time-consuming:
-> [    0.190000] calling  event_trace_enable+0x0/0xad @ 1
-> [    0.190000] initcall event_trace_enable+0x0/0xad returned 0 after 0 usecs
->
-> This patch is intended to trigger this discussion: to be honest I'm
-> not sure how ugly
-> this is. So some feedback about it would be greatly appreciated.
->
-> Also, I'd like to ask for some guidelines (not solutions, just some guidelines)
-> on how to attack this problem.
-> I'm interesting on capturing kmem events, from the very first kmalloc onwards.
-> Though, it would be nice to extend the solution to other event classes.
->
-> Thanks,
-> Ezequiel.
->
-> [1] http://lkml.indiana.edu/hypermail/linux/kernel/0911.3/00036.html
+On Wed, 15 Aug 2012, Alexey Khoroshilov wrote:
 
+> Several improvements in error handling:
+> - do not report success if alloc_chrdev_region() failed
+> - check for error code of cdev_add()
+> - use unregister_chrdev_region() instead of unregister_chrdev()
+>   if class_create() failed
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/hid/hidraw.c |   15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index 36fa77b..15e6660 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -549,21 +549,28 @@ int __init hidraw_init(void)
+>  
+>  	if (result < 0) {
+>  		pr_warn("can't get major number\n");
+> -		result = 0;
+>  		goto out;
+>  	}
+>  
+>  	hidraw_class = class_create(THIS_MODULE, "hidraw");
+>  	if (IS_ERR(hidraw_class)) {
+>  		result = PTR_ERR(hidraw_class);
+> -		unregister_chrdev(hidraw_major, "hidraw");
+> -		goto out;
+> +		goto error_cdev;
+>  	}
+>  
+>          cdev_init(&hidraw_cdev, &hidraw_ops);
+> -        cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
+> +	result = cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
+> +	if (result < 0)
+> +		goto error_class;
+> +
+>  out:
+>  	return result;
+> +
+> +error_class:
+> +	class_destroy(hidraw_class);
+> +error_cdev:
+> +	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
+> +	goto out;
+>  }
+>  
+>  void hidraw_exit(void)
 
-I forgot to add this work is part of a project funded by CE workgroup.
-You can find more details here:
+Applied, thanks Alexey.
 
-http://elinux.org/Kernel_dynamic_memory_allocation_tracking_and_reduction
-
-Thanks,
-Ezequiel.
+-- 
+Jiri Kosina
+SUSE Labs
