@@ -1,331 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2HOPUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:20:40 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:41545 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab2HOPS1 (ORCPT
+	id S1755337Ab2HOPUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:20:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35556 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab2HOPUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:18:27 -0400
-Message-Id: <201208151518.q7FFILAM011604@latitude.olech.com>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Wed, 15 Aug 2012 16:05:25 +0100
-Subject: [NEW DRIVER V3 8/8] DA9058 REGULATOR driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: David Dajun Chen <david.chen@diasemi.com>
+	Wed, 15 Aug 2012 11:20:41 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>, tim.bird@am.sony.com,
+        lizefan@huawei.com, Ezequiel Garcia <elezegarcia@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [RFC PATCH 1/1] trace: Move trace event enable from fs_initcall to early_initcall
+Date: Wed, 15 Aug 2012 12:18:27 -0300
+Message-Id: <1345043907-18299-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the REGULATOR component driver of the Dialog DA9058 PMIC.
-This driver is just one component of the whole DA9058 PMIC driver.
-It depends on the CORE component driver of the DA9058 MFD.
+This patch splits trace event initialization in two stages:
+ * ftrace enable
+ * sysfs event entry creation
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+This allows to capture trace events from an earlier point
+by using 'trace_event' kernel parameter and is important
+to trace boot-up allocations.
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/regulator/Kconfig            |   11 ++
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/da9058-regulator.c |  251 ++++++++++++++++++++++++++++++++++
- 3 files changed, 263 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/da9058-regulator.c
+ kernel/trace/trace_events.c |   71 ++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 53 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index c86b886..1fc04f9 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -64,6 +64,17 @@ config REGULATOR_USERSPACE_CONSUMER
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..3055bc9 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1450,6 +1450,49 @@ static __init int setup_trace_event(char *str)
+ }
+ __setup("trace_event=", setup_trace_event);
  
-           If unsure, say no.
- 
-+config REGULATOR_DA9058
-+	tristate "Support regulators on Dialog Semiconductor DA9058 PMIC"
-+	depends on MFD_DA9058
-+	help
-+	  Say y here to support the BUCKs and LDOs regulators found on
-+	  Dialog Semiconductor DA9058 PMIC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called da9058-regulator.
-+
-+
- config REGULATOR_GPIO
- 	tristate "GPIO regulator support"
- 	depends on GENERIC_GPIO
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 977fd46..f4d0bff 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
- obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
-+obj-$(CONFIG_REGULATOR_DA9058) += da9058-regulator.o
- obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
- obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
-diff --git a/drivers/regulator/da9058-regulator.c b/drivers/regulator/da9058-regulator.c
-new file mode 100644
-index 0000000..2e8ae43
---- /dev/null
-+++ b/drivers/regulator/da9058-regulator.c
-@@ -0,0 +1,251 @@
-+/*
-+ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
-+
-+#include <linux/mfd/da9058/version.h>
-+#include <linux/mfd/da9058/registers.h>
-+#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/regulator.h>
-+
-+struct da9058_regulator {
-+	struct da9058 *da9058;
-+	int ramp_register;
-+	int ramp_enable_mask;
-+	int fixed_voltage;
-+	struct platform_device *pdev;
-+	struct regulator_dev *reg_dev;
-+	struct regulator_desc desc;
-+	struct regulator_init_data init;
-+};
-+
-+static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
-+					unsigned int old_selector,
-+					unsigned int new_selector)
++static __init int event_trace_enable(void)
 +{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9058 *da9058 = regulator->da9058;
++	struct ftrace_event_call **iter, *call;
++	char *buf = bootup_event_buf;
++	char *token;
 +	int ret;
 +
-+	if (regulator->ramp_register == 0)
-+		return -EINVAL;
++	for_each_event(iter, __start_ftrace_events, __stop_ftrace_events) {
 +
-+	if (regulator->ramp_enable_mask == 0)
-+		return -EINVAL;
++		call = *iter;
 +
-+	ret = da9058_set_bits(da9058, regulator->ramp_register,
-+					regulator->ramp_enable_mask);
++		/* The linker may leave blanks */
++		if (!call->name)
++			continue;
 +
-+	if (ret)
-+		return ret;
++		if (!call->class->raw_init)
++			continue;
 +
-+	return 2200; /* micro Seconds needed to ramp to new voltage*/
-+}
-+
-+static int da9058_get_fixed_regulator_voltage(struct regulator_dev *rdev)
-+{
-+	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-+
-+	if (regulator_is_enabled_regmap(rdev))
-+		return regulator->fixed_voltage;
-+	else
-+		return 0;
-+}
-+
-+static struct regulator_ops da9058_buck_regulator_ops = {
-+	.map_voltage = regulator_map_voltage_linear,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.set_voltage_time_sel = da9058_buck_ramp_voltage,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static struct regulator_ops da9058_ldo_regulator_ops = {
-+	.map_voltage = regulator_map_voltage_linear,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static struct regulator_ops da9058_fixed_regulator_ops = {
-+	.get_voltage = da9058_get_fixed_regulator_voltage,
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static int da9058_regulator_probe(struct platform_device *pdev)
-+{
-+	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
-+	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_regulator_pdata *rpdata;
-+	struct da9058_regulator *reg;
-+	struct regulator_dev *rdev;
-+	struct regulator_config config = { };
-+	int ret;
-+	unsigned int val;
-+
-+	if (cell == NULL) {
-+		ret = -ENODEV;
-+		goto exit;
++		ret = call->class->raw_init(call);
++		if (ret < 0) {
++			if (ret != -ENOSYS)
++				pr_warning("Could not initialize trace events/%s\n",
++						call->name);
++			continue;
++		}
++		list_add(&call->list, &ftrace_events);
 +	}
 +
-+	rpdata = cell->platform_data;
++	while (true) {
++		token = strsep(&buf, ",");
 +
-+	if (rpdata == NULL) {
-+		ret = -EINVAL;
-+		goto exit;
++		if (!token)
++			break;
++		if (!*token)
++			continue;
++
++		ret = ftrace_set_clr_event(token, 1);
++		if (ret)
++			pr_warning("Failed to enable trace event: %s\n", token);
 +	}
-+
-+	if (rpdata->control_register == 0) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
-+	if (rpdata->control_enable_mask == 0) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
-+	reg = devm_kzalloc(&pdev->dev, sizeof(struct da9058_regulator),
-+				GFP_KERNEL);
-+	if (!reg) {
-+		ret = -ENOMEM;
-+		goto exit;
-+	}
-+
-+	platform_set_drvdata(pdev, reg);
-+
-+	reg->da9058 = da9058;
-+	reg->pdev = pdev;
-+	reg->ramp_register = rpdata->ramp_register;
-+	reg->ramp_enable_mask = rpdata->ramp_enable_mask;
-+	reg->fixed_voltage = rpdata->fixed_voltage;
-+
-+	reg->desc.name = rpdata->regulator_name;
-+	reg->desc.id = rpdata->regulator_id;
-+	reg->desc.type = REGULATOR_VOLTAGE;
-+	reg->desc.n_voltages = 1;
-+
-+	if (rpdata->control_voltage_step > 0)
-+		reg->desc.n_voltages += (rpdata->max_uV - rpdata->min_uV) /
-+					rpdata->control_voltage_step;
-+
-+	reg->desc.owner = THIS_MODULE;
-+	reg->desc.enable_reg = rpdata->control_register;
-+	reg->desc.enable_mask = rpdata->control_enable_mask;
-+	reg->desc.vsel_reg = rpdata->control_register;
-+	reg->desc.vsel_mask = DA9058_MAX_VSEL;
-+
-+	if (rpdata->control_voltage_step == 0) {
-+		reg->desc.ops = &da9058_fixed_regulator_ops;
-+	} else {
-+		reg->desc.min_uV = rpdata->min_uV;
-+		reg->desc.uV_step = rpdata->control_voltage_step;
-+
-+		if (reg->ramp_register)
-+			reg->desc.ops = &da9058_buck_regulator_ops;
-+		else
-+			reg->desc.ops = &da9058_ldo_regulator_ops;
-+	}
-+
-+	reg->init.constraints.name = rpdata->regulator_name;
-+	reg->init.constraints.min_uV = rpdata->min_uV;
-+	reg->init.constraints.max_uV = rpdata->max_uV;
-+	reg->init.constraints.valid_ops_mask = rpdata->valid_ops_mask;
-+	reg->init.constraints.valid_modes_mask = rpdata->valid_modes_mask;
-+	reg->init.constraints.boot_on = rpdata->boot_on;
-+	reg->init.constraints.always_on = rpdata->always_on;
-+	reg->init.num_consumer_supplies = rpdata->num_consumer_supplies;
-+	reg->init.consumer_supplies = rpdata->consumer_supplies;
-+
-+	config.dev = pdev->dev.parent;
-+	config.init_data = &reg->init;
-+	config.driver_data = reg;
-+	config.regmap = da9058->regmap;
-+
-+	rdev = regulator_register(&reg->desc, &config);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			rpdata->regulator_name);
-+		ret = PTR_ERR(rdev);
-+		goto failed_to_register;
-+	}
-+	reg->reg_dev = rdev;
-+
-+	/* before we do anything check the lock bit */
-+	ret = da9058_reg_read(da9058, DA9058_SUPPLY_REG, &val);
-+	if (ret)
-+		goto unlock_failed;
-+
-+	if (val & DA9058_SUPPLY_VLOCK)
-+		ret = da9058_clear_bits(da9058, DA9058_SUPPLY_REG,
-+					DA9058_SUPPLY_VLOCK);
-+	if (ret)
-+		goto unlock_failed;
-+
-+	goto exit;
-+
-+unlock_failed:
-+	regulator_unregister(rdev);
-+failed_to_register:
-+	platform_set_drvdata(pdev, NULL);
-+exit:
-+	return ret;
-+}
-+
-+static int da9058_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+
-+	regulator_unregister(rdev);
-+
 +	return 0;
 +}
 +
-+static struct platform_driver da9058_regulator_driver = {
-+	.probe = da9058_regulator_probe,
-+	.remove = da9058_regulator_remove,
-+	.driver = {
-+		.name = "da9058-regulator",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9058_regulator_init(void)
-+{
-+	return platform_driver_register(&da9058_regulator_driver);
-+}
-+
-+subsys_initcall(da9058_regulator_init);
-+
-+static void __exit da9058_regulator_exit(void)
-+{
-+	platform_driver_unregister(&da9058_regulator_driver);
-+}
-+
-+module_exit(da9058_regulator_exit);
-+
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC voltage and current regulator");
-+MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-regulator");
+ static __init int event_trace_init(void)
+ {
+ 	struct ftrace_event_call **call;
+@@ -1457,8 +1500,6 @@ static __init int event_trace_init(void)
+ 	struct dentry *entry;
+ 	struct dentry *d_events;
+ 	int ret;
+-	char *buf = bootup_event_buf;
+-	char *token;
+ 
+ 	d_tracer = tracing_init_dentry();
+ 	if (!d_tracer)
+@@ -1497,24 +1538,17 @@ static __init int event_trace_init(void)
+ 	if (trace_define_common_fields())
+ 		pr_warning("tracing: Failed to allocate common fields");
+ 
++	/*
++	 * Early initialization already enabled ftrace event.
++	 * Now it's only necessary to create the event directory.
++	 */
+ 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
+-		__trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
+-				       &ftrace_enable_fops,
+-				       &ftrace_event_filter_fops,
+-				       &ftrace_event_format_fops);
+-	}
+-
+-	while (true) {
+-		token = strsep(&buf, ",");
+-
+-		if (!token)
+-			break;
+-		if (!*token)
+-			continue;
+ 
+-		ret = ftrace_set_clr_event(token, 1);
+-		if (ret)
+-			pr_warning("Failed to enable trace event: %s\n", token);
++		event_create_dir(*call, d_events,
++				 &ftrace_event_id_fops,
++				 &ftrace_enable_fops,
++				 &ftrace_event_filter_fops,
++				 &ftrace_event_format_fops);
+ 	}
+ 
+ 	ret = register_module_notifier(&trace_module_nb);
+@@ -1523,6 +1557,7 @@ static __init int event_trace_init(void)
+ 
+ 	return 0;
+ }
++early_initcall(event_trace_enable);
+ fs_initcall(event_trace_init);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
 -- 
-end-of-patch for NEW DRIVER V3
+1.7.8.6
 
