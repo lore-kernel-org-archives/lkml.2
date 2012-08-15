@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab2HOR01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:26:27 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:23586 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755953Ab2HOR00 (ORCPT
+	id S1755995Ab2HORak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:30:40 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:45980 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755953Ab2HORai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:26:26 -0400
-Date: Wed, 15 Aug 2012 17:26:25 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-In-Reply-To: <502BC1B1.3010807@parallels.com>
-Message-ID: <000001392b526a8a-3ec5f35e-405f-47f5-a7c1-ec0cae473fe9-000000@email.amazonses.com>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz>
- <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com> <502BBC35.809@parallels.com> <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com> <502BC1B1.3010807@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 15 Aug 2012 13:30:38 -0400
+Message-ID: <502BDC62.4090408@xenotime.net>
+Date: Wed, 15 Aug 2012 10:29:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+To: Salar Ali Mumtaz <salaarali@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xconfig: Display dependency values in debug_info
+References: <1343256982-11421-1-git-send-email-salaarali@gmail.com> <50107EB7.8000009@xenotime.net> <CA+jpPM=nrbpDJpaka6xAp4dbEOQjJrtwQWtUXwi_gGS9b4yK-A@mail.gmail.com> <50117812.5080302@xenotime.net> <50213D69.3060904@gmail.com> <5021486B.6020907@xenotime.net> <50240770.6070207@gmail.com> <5025A9C6.1080207@xenotime.net> <502BCF0B.3050401@gmail.com>
+In-Reply-To: <502BCF0B.3050401@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Glauber Costa wrote:
+On 08/15/2012 09:32 AM, Salar Ali Mumtaz wrote:
 
-> Remember we copy over the metadata and create copies of the caches
-> per-memcg. Therefore, a dentry belongs to a memcg if it was allocated
-> from the slab pertaining to that memcg.
+> On 12-08-10 08:39 PM, Randy Dunlap wrote:
+>> On 08/09/2012 11:54 AM, Salar Ali Mumtaz wrote:
+>>
+>>> On 12-08-07 12:55 PM, Randy Dunlap wrote:
+>>>
+>>>> In Kconfig language, is "" the same as 'n' ?
+>>>> If so, I'm OK with your proposal above.
+>>>>
+>>>
+>>>
+>>> So a colleague of mine tested this and came up with a conclusion that expressions in Kconfig can only deal with boolean or tristate operands and no casting is made with strings. Using any string operand as part of a boolean expression is simply a type error and Kconfig probably marks such operand as 'n', regardless of its value.
+>>>
+>>
+>>
+>> My question was about FRV, which is a boolean,
+>> but still did not display as 'n' in your example.
+>>
+>>
+> 
+> FRV is not a boolean.
 
-The dentry could be used by other processes in the system though. F.e.
-directory names could easily be created by one process and then used by a
-multitude of others.
 
-> It is not 100 % accurate, but it is good enough.
 
-Lets hope that is true.
+Hm, why do you say that?  Please explain.
 
+
+from arch/frv/Kconfig:
+
+config FRV
+	bool
+	default y
+
+
+
+-- 
+~Randy
