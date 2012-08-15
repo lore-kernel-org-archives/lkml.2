@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab2HOM4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 08:56:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46128 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305Ab2HOMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 08:55:59 -0400
-Date: Wed, 15 Aug 2012 14:55:55 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-Message-ID: <20120815125555.GG23985@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-5-git-send-email-glommer@parallels.com>
- <20120814162144.GC6905@dhcp22.suse.cz>
- <502B6D03.1080804@parallels.com>
- <1345029143.2976.41.camel@dabdike.int.hansenpartnership.com>
+	id S1754429Ab2HOM5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 08:57:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62962 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2HOM5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 08:57:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 01/31] arm64: Assembly macros and definitions
+Date: Wed, 15 Aug 2012 12:57:33 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-2-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-2-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345029143.2976.41.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208151257.33405.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ikz/hc8zyaBSKmiejhtqc/mYrdEJZ97+0mh+EFINJI4
+ gxPhUrS3f8O0/I90HO9YJtfWLrLXKEQcotIhD8QcE12b42GKdR
+ V5crHXrmrykw3wTijjyACxf6q5AJVaZjeeGA4HfN0G8F3wkOOv
+ lCIJTWeykSTudu2qQFp8jDT//5Ry99CTdaDQTSql6vIYnnp2Y4
+ jlZk1S7UDZbwRIlxx8Sv/q9ZimZmeMusKc4Efb+938F/7f8giH
+ 2BgVBiRewPI4MC5ebTVaaCLPG0njRIxaxIu4DHXmGJaEkA6HPt
+ eakYtgKSMiTjgaJB5O/bAqgXcknM1RfDiw++IsyL5yWLwVyd1Y
+ CPcDXDs9WylGWpLTPyUs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-08-12 12:12:23, James Bottomley wrote:
-> On Wed, 2012-08-15 at 13:33 +0400, Glauber Costa wrote:
-> > > This can
-> > > be quite confusing.  I am still not sure whether we should mix the two
-> > > things together. If somebody wants to limit the kernel memory he has to
-> > > touch the other limit anyway.  Do you have a strong reason to mix the
-> > > user and kernel counters?
-> > 
-> > This is funny, because the first opposition I found to this work was
-> > "Why would anyone want to limit it separately?" =p
-> > 
-> > It seems that a quite common use case is to have a container with a
-> > unified view of "memory" that it can use the way he likes, be it with
-> > kernel memory, or user memory. I believe those people would be happy to
-> > just silently account kernel memory to user memory, or at the most have
-> > a switch to enable it.
-> > 
-> > What gets clear from this back and forth, is that there are people
-> > interested in both use cases.
+On Tuesday 14 August 2012, Catalin Marinas wrote:
+> This patch introduces several assembly macros and definitions used in
+> the .S files across arch/arm64/ like IRQ disabling/enabling, together
+> with asm-offsets.c.
 > 
-> Haven't we already had this discussion during the Prague get together?
-> We discussed the use cases and finally agreed to separate accounting for
-> k and then k+u mem because that satisfies both the Google and Parallels
-> cases.  No-one was overjoyed by k and k+u but no-one had a better
-> suggestion ... is there a better way of doing this that everyone can
-> agree to?
-> We do need to get this nailed down because it's the foundation of the
-> patch series.
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 
-There is a slot in MM/memcg minisum at KS so we have a slot to discuss
-this.
-
-> 
-> James
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
+Acked-by: Arnd Bergmann <arnd@arndb.de>
