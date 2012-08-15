@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab2HOOuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:50:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35144 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab2HOOuM (ORCPT
+	id S1754988Ab2HOOuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:50:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47089 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805Ab2HOOuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:50:12 -0400
-Date: Wed, 15 Aug 2012 11:50:01 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Wed, 15 Aug 2012 10:50:01 -0400
+Date: Wed, 15 Aug 2012 07:49:56 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
-        Barry Song <bs14@csr.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Ido Yariv <ido@wizery.com>, Daniel Drake <dsd@laptop.org>,
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
         Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [ 07/44] ARM: 7477/1: vfp: Always save VFP state in
- vfp_pm_suspend on UP
-Message-ID: <20120815145000.GA3323@herton-Z68MA-D2H-B3>
-References: <20120813220142.113186818@linuxfoundation.org>
- <20120813220142.801309366@linuxfoundation.org>
- <20120814200110.GE5277@herton-Z68MA-D2H-B3>
- <20120815140541.GB22871@kroah.com>
+Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based
+ implementation for ARMv6+
+Message-ID: <20120815144956.GB6320@kroah.com>
+References: <20120813201746.448504360@linuxfoundation.org>
+ <20120813201748.202917513@linuxfoundation.org>
+ <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
+ <20120815140808.GD22871@kroah.com>
+ <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120815140541.GB22871@kroah.com>
+In-Reply-To: <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 07:05:41AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Aug 14, 2012 at 05:01:11PM -0300, Herton Ronaldo Krzesinski wrote:
-> > On Mon, Aug 13, 2012 at 03:02:14PM -0700, Greg Kroah-Hartman wrote:
-> > > From: Greg KH <gregkh@linuxfoundation.org>
+On Wed, Aug 15, 2012 at 03:11:41PM +0100, Ben Hutchings wrote:
+> On Wed, 2012-08-15 at 07:08 -0700, Greg Kroah-Hartman wrote:
+> > On Wed, Aug 15, 2012 at 02:56:22PM +0100, Ben Hutchings wrote:
+> > > On Mon, 2012-08-13 at 13:18 -0700, Greg Kroah-Hartman wrote:
+> > > > From: Greg KH <gregkh@linuxfoundation.org>
+> > > > 
+> > > > 3.5-stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Will Deacon <will.deacon@arm.com>
+> > > > 
+> > > > commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
+> > > > 
+> > > > The open-coded mutex implementation for ARMv6+ cores suffers from a
+> > > > severe lack of barriers, so in the uncontended case we don't actually
+> > > > protect any accesses performed during the critical section.
+> > > > 
+> > > > Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
+> > > > code but optimised to remove a branch instruction, as the mutex fastpath
+> > > > was previously inlined. Now that this is executed out-of-line, we can
+> > > > reuse the atomic access code for the locking (in fact, we use the xchg
+> > > > code as this produces shorter critical sections).
+> > > > 
+> > > > This patch uses the generic xchg based implementation for mutexes on
+> > > > ARMv6+, which introduces barriers to the lock/unlock operations and also
+> > > > has the benefit of removing a fair amount of inline assembly code.
+> > > [...]
 > > > 
-> > [...]
-> > > --- a/arch/arm/vfp/vfpmodule.c
-> > > +++ b/arch/arm/vfp/vfpmodule.c
-> > > @@ -412,6 +412,12 @@ static int vfp_pm_suspend(void)
-> > >  
-> > >  		/* disable, just in case */
-> > >  		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
-> > > +	} else if (vfp_current_hw_state[ti->cpu]) {
-> > > +#ifndef CONFIG_SMP
-> > > +		fmxr(FPEXC, fpexc | FPEXC_EN);
-> > > +		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
-> > > +		fmxr(FPEXC, fpexc);
-> > > +#endif
+> > > Here also, I think this should be deferred.
 > > 
-> > This fails to build on 3.0:
+> > "also"?  Am I missing some context here?  Why should we deferr this one?
+> > What do we need to wait for?
+> 
+> This is the same as 3.4.9-rc1 patch 10/65, which I queried as it
+> apparently caused a regression.
+> 
+> Will Deacon wrote:
+> > The additional patch should also be CC'd to stable and is sitting in -tip
+> > somewhere I believe, so it shouldn't be long before it does hit mainline.
 > > 
-> > linux-stable/arch/arm/vfp/vfpmodule.c: In function 'vfp_pm_suspend':
-> > linux-stable/arch/arm/vfp/vfpmodule.c:415:13: error: 'vfp_current_hw_state' undeclared (first use in this function)
-> > linux-stable/arch/arm/vfp/vfpmodule.c:415:13: note: each undeclared identifier is reported only once for each function it appears in
-> > make[3]: *** [arch/arm/vfp/vfpmodule.o] Error 1
-> > 
-> > In 3.0, vfp_current_hw_state was still named last_VFP_context, so I
-> > think just renaming should be enough to fix this.
-> 
-> I'll remove the patch as it probably just shouldn't be there, right?  If
-> you think it should be in 3.0-stable, can you please send me a fixed up
-> patch that you have tested that it at least builds properly?
+> > Without this patch there's a memory-ordering bug (which we seem to have hit
+> > once in > 5 years). With the patch there's a mutex lockup issue on SMP systems
+> > that I can provoke with enough hackbenching, so you may want to hold off for
+> > now.
 
-I'm not intimate with this ARM code, so I think someone else in Cc can
-answer better, I just saw it doesn't build with 3.0. If the same problem
-affects 3.0, then the change should be backported renaming
-vfp_current_hw_state to last_VFP_context. It seems the same code was
-there with vfp_current_hw_state still named as last_VFP_context, so
-looks like 3.0 would be affected as well.
+Ah, ok, missed that.
 
-Also I noted that because the same naming, 3.0 didn't got commit
-a84b895a2348f0dbff31b71ddf954f70a6cde368 ("ARM: 7476/1: vfp: only clear
-vfp state for current cpu in vfp_pm_suspend") as the patch would fail to
-apply on 3.0 code base, while 3.4.9 and 3.5.2 have it.
+How about I just drop this for now, and when someone (Will?) feels it is
+"good enough time to wait", they will resend it to
+stable@vger.kernel.org so that we can add it then?  Otherwise I'll just
+loose it somewhere.
 
-I assume someone who did these commits or know it/are affected can take
-a look and if needed backport them to 3.0?
+Now dropped.
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
--- 
-[]'s
-Herton
+greg k-h
