@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2HOPPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:15:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39147 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2HOPPE convert rfc822-to-8bit (ORCPT
+	id S1752311Ab2HOPRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:17:20 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:43228 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2HOPRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:15:04 -0400
-Message-ID: <1345043679.31459.109.camel@twins>
-Subject: Re: [PATCH] sched: Support compiling out real-time scheduling with
- REALTIME_SCHED.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Trevor Brandt <tjbrandt@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, Eric Paris <eparis@redhat.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        team-fjord@googlegroups.com
-Date: Wed, 15 Aug 2012 17:14:39 +0200
-In-Reply-To: <1344977423-28900-1-git-send-email-tjbrandt@gmail.com>
-References: <y> <1344977423-28900-1-git-send-email-tjbrandt@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 15 Aug 2012 11:17:18 -0400
+Date: Wed, 15 Aug 2012 17:16:35 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/7] HID: picoLCD updates
+Message-ID: <20120815171635.2564a4a8@neptune.home>
+In-Reply-To: <alpine.LNX.2.00.1208151409500.7026@pobox.suse.cz>
+References: <20120730213656.0a9f6d30@neptune.home>
+	<alpine.LNX.2.00.1208151016221.7026@pobox.suse.cz>
+	<20120815114236.0f7db40e@neptune.home>
+	<alpine.LNX.2.00.1208151409500.7026@pobox.suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-14 at 13:50 -0700, Trevor Brandt wrote:
-> Adds support for compiling out the real-time scheduler (SCHED_FIFO
-> and SCHED_RR) to save space. Changes sched_set_stop_task to use
-> SCHED_NORMAL rather than SCHED_FIFO, since the kernel only uses this
-> function as a fake scheduling priority for userspace to read to avoid
-> exposing the stop class to userspace. Bloat-o-meter gives a space
-> savings of 1877 bytes with REALTIME_SCHED turned off.
-> 
-> Userspace works fine with REALTIME_SCHED turned off. Processes
-> attempting to set a real-time scheduling policy get EINVAL, exactly
-> the response that the sched_setscheduler manpage documents you will
-> get if the "scheduling policy is not one of the recognized policies."
+Hi Jiri,
 
-Are you in the same group that wanted to make SCHED_FAIR optional as
-well?
+On Wed, 15 August 2012 Jiri Kosina <jkosina@suse.cz> wrote:
+> I see. Alan Stern has fixed a huge pile of things in this area in 3.6-rc1. 
+> I have expected all of those to actually be on theoretical problems not 
+> ever having happened in the wild, but it might be that you are actually 
+> chasing on of those.
+>
+> Could you please retest with latest Linus' tree (or at least eb055fd0560b) 
+> to see whether this hasn't actually been fixed already by Alan's series?
 
-> Signed-off-by: Trevor Brandt <tjbrandt@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+I've started trying that out, it seems Alan's work improved things.
 
-> diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-> index 9a7dd35..a9bee25 100644
-> --- a/kernel/sched/Makefile
-> +++ b/kernel/sched/Makefile
-> @@ -11,7 +11,8 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
->  CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
->  endif
->  
-> -obj-y += core.o clock.o idle_task.o fair.o rt.o stop_task.o
-> +obj-y += core.o clock.o idle_task.o fair.o stop_task.o
-> +obj-$(CONFIG_REALTIME_SCHED) += rt.o
->  obj-$(CONFIG_SMP) += cpupri.o
+For the first few attempts I have not seen SLAB corruptions, though after
+a few rounds I hit accumulation of the following messages:
+[  297.174828] hid-picolcd 0003:04D8:C002.0003: output queue full
+[  297.181098] hid-picolcd 0003:04D8:C002.0003: output queue full
+[  297.187820] hid-picolcd 0003:04D8:C002.0003: output queue full
+[  297.194087] hid-picolcd 0003:04D8:C002.0003: output queue full
 
-This wants extra magic, cpupri is only used for rt, cutting that will of
-course increase your savings.
+with sporadically in between:
+[  292.668019] hid-picolcd 0003:04D8:C002.0003: usb_submit_urb(out) failed: -1
 
->  obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
->  obj-$(CONFIG_SCHEDSTATS) += stats.o
+At first glance I think the queue filling up and never draining is caused
+by hid_hw_stop() stalling the queue and the time between both being just too
+short.
+Maybe me (un)binding on hid-picolcd driver level is the major cause of this
+and (un)binding at lower usb level would kill the queue thus preventing
+it just growing until full...
 
-Other than that I'm not entirely happy with the growing #ifdef maze.
-Granted this new one isn't nearly as bad as some of the existing ones,
-but I do wish someone would clean up some of that.
+
+Is there a proper way to do rate-limiting or throttling when submitting
+reports (which are the urbs deeper in the stack) and catch -ENODEV early
+while remove() is delayed for locking reasons?
+At least until 3.5 submitting reports provides no return value for driver
+which could convey errors like -ENODEV, -EBUSY.
+
+
+
+After a few bind-unbind iterations I have also hit a race in hid-picolcd
+with regard to fbdefio.
+That looks like chicken-egg release sequencing between hid-picolcd and
+fb_info subdev -- though I'm wondering how that happens as the only framebuffer
+user I know of - fbcon - should have stopped using it after
+unregister_framebuffer() returned and released the last reference!
+
+But that part can be improved rather easily with a new spinlock synchronizing
+interoperation between hid side and framebuffer side.
+
+Thanks,
+Bruno
