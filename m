@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2HOUhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:37:11 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62749 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab2HOTtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:12 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 019/165] KEYS: Fix a NULL pointer deref in the user-defined key type
-Date: Wed, 15 Aug 2012 15:46:03 -0400
-Message-ID: <1345060109-9187-20-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1757342Ab2HOUhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:37:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17275 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756242Ab2HOUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 16:37:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,774,1336374000"; 
+   d="scan'208";a="186891343"
+Message-ID: <502C0883.2030904@linux.intel.com>
+Date: Wed, 15 Aug 2012 13:37:23 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Matt Mackall <mpm@selenic.com>
+CC: "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
+        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+        davem@davemloft.net, mingo@kernel.org, hpa@zytor.com,
+        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
+Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
+References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com> <1345059051.32116.32.camel@calx>
+In-Reply-To: <1345059051.32116.32.camel@calx>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+On 08/15/2012 12:30 PM, Matt Mackall wrote:
+> On Mon, 2012-08-13 at 10:26 -0700, H. Peter Anvin wrote:
+>> From: "H. Peter Anvin" <hpa@linux.intel.com>
+>>
+>> When we write entropy into a non-empty pool, we currently don't
+>> account at all for the fact that we will probabilistically overwrite
+>> some of the entropy in that pool.
+> 
+> Technically, no, nothing is overwritten. The key fact is that the mixing
+> function is -reversible-. Thus, even if you mix in known data, you can't
+> learn anything about the state and thus can't destroy any of the
+> existing entropy.
+> 
+> But you are correct, mixing new actual entropy is not purely additive
+> (with saturation). For that to happen, we'd need an input mixing
+> function with perfect maximal cascading. Instead we effectively cascade
+> across somewhere between 6 and 64 bits. So the truth lies somewhere
+> between linear and your exponential estimate (which would be the case
+> for mixing a single bit into the pool with XOR), but much closer to
+> linear due to combinatoric expansion.
+> 
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+I think you have it backwards; if the input was a FIFO, with no mixing
+at all, and no reuse, the linear estimate would be correct.  The mixing
+into an already-existent and potentially-observed pool is what causes
+the exponential estimate to apply... although it is assuming perfect
+mixing.  However, I believe it is still correct in the aggregate.
 
-commit 9f35a33b8d06263a165efe3541d9aa0cdbd70b3b upstream.
+> On the other hand, I don't think this sort of thing matters at all.
+> There is so much more fundamentally wrong with even trying to do entropy
+> accounting in the first place that these sorts of details don't even
+> matter. Instead we should stop fooling ourselves and just drop the
+> pretense of accounting entirely. Now that we've got a much richer set of
+> inputs, I think the time is ripe... but of course, I'm no longer the
+> maintainer.
 
-Fix a NULL pointer deref in the user-defined key type whereby updating a
-negative key into a fully instantiated key will cause an oops to occur
-when the code attempts to free the non-existent old payload.
+If we're going to fundamentally change the structure perhaps we should
+actually take the suggestions long offered from the cryptographic
+community, and look at structures like Fortuna.
 
-This results in an oops that looks something like the following:
-
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
-  PGD 3391d067 PUD 3894a067 PMD 0
-  Oops: 0002 [#1] SMP
-  CPU 1
-  Pid: 4354, comm: keyctl Not tainted 3.1.0-fsdevel+ #1140                  /DG965RY
-  RIP: 0010:[<ffffffff81085fa1>]  [<ffffffff81085fa1>] __call_rcu+0x11/0x13e
-  RSP: 0018:ffff88003d591df8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000006e
-  RDX: ffffffff8161d0c0 RSI: 0000000000000000 RDI: 0000000000000000
-  RBP: ffff88003d591e18 R08: 0000000000000000 R09: ffffffff8152fa6c
-  R10: 0000000000000000 R11: 0000000000000300 R12: ffff88003b8f9538
-  R13: ffffffff8161d0c0 R14: ffff88003b8f9d50 R15: ffff88003c69f908
-  FS:  00007f97eb18c720(0000) GS:ffff88003bd00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 0000000000000008 CR3: 000000003d47a000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process keyctl (pid: 4354, threadinfo ffff88003d590000, task ffff88003c78a040)
-  Stack:
-   ffff88003e0ffde0 ffff88003b8f9538 0000000000000001 ffff88003b8f9d50
-   ffff88003d591e28 ffffffff810860f0 ffff88003d591e68 ffffffff8117bfea
-   ffff88003d591e68 ffffffff00000000 ffff88003e0ffde1 ffff88003e0ffde0
-  Call Trace:
-   [<ffffffff810860f0>] call_rcu_sched+0x10/0x12
-   [<ffffffff8117bfea>] user_update+0x8d/0xa2
-   [<ffffffff8117723a>] key_create_or_update+0x236/0x270
-   [<ffffffff811789b1>] sys_add_key+0x123/0x17e
-   [<ffffffff813b84bb>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Neil Horman <nhorman@redhat.com>
-Acked-by: Steve Dickson <steved@redhat.com>
-Acked-by: James Morris <jmorris@namei.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[PG: pre-3.0 kernels dont have kfree_rcu, so tweak accordingly]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- security/keys/user_defined.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
-index e9aa079..d6781b9 100644
---- a/security/keys/user_defined.c
-+++ b/security/keys/user_defined.c
-@@ -119,7 +119,8 @@ int user_update(struct key *key, const void *data, size_t datalen)
- 		key->expiry = 0;
- 	}
- 
--	call_rcu(&zap->rcu, user_update_rcu_disposal);
-+	if (zap)
-+		call_rcu(&zap->rcu, user_update_rcu_disposal);
- 
- error:
- 	return ret;
--- 
-1.7.12.rc2
-
+	-hpa
