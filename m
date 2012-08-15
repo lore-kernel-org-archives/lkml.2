@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2HOPT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:19:28 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:8395 "EHLO
+	id S1755028Ab2HOPUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:20:08 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:6246 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2HOPSb (ORCPT
+	with ESMTP id S1751369Ab2HOPS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:18:31 -0400
-Message-Id: <201208151518.q7FFINs6011624@latitude.olech.com>
+	Wed, 15 Aug 2012 11:18:28 -0400
+Message-Id: <201208151518.q7FFIMHq011609@latitude.olech.com>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Wed, 15 Aug 2012 16:05:22 +0100
-Subject: [NEW DRIVER V3 4/8] DA9058 POWER driver
-To: Anton Vorontov <cbou@mail.ru>
-To: David Woodhouse <dwmw2@infradead.org>
+Date: Wed, 15 Aug 2012 16:05:24 +0100
+Subject: [NEW DRIVER V3 7/8] DA9058 HWMON driver
+To: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Axel Lin <axel.lin@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lm-sensors@lm-sensors.org
 Cc: LKML <linux-kernel@vger.kernel.org>
 Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the POWER component driver of the Dialog DA9058 PMIC.
+This is the HWMON component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the CORE and ADC component drivers of the DA9058 MFD.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 ---
- drivers/power/Kconfig        |   10 +
- drivers/power/Makefile       |    1 +
- drivers/power/da9058_power.c |  397 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 408 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/da9058_power.c
+ Documentation/hwmon/da9058   |   30 +++
+ drivers/hwmon/Kconfig        |   10 +
+ drivers/hwmon/Makefile       |    1 +
+ drivers/hwmon/da9058-hwmon.c |  425 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 466 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/da9058
+ create mode 100644 drivers/hwmon/da9058-hwmon.c
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index e3a3b49..e0b4d34 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -8,6 +8,16 @@ menuconfig POWER_SUPPLY
- 
- if POWER_SUPPLY
- 
-+config BATTERY_DA9058
-+	tristate "DA9058 battery charger support"
-+	depends on MFD_DA9058
-+	help
-+	  Say Y here to enable support for the battery charger in the Dialog
-+	  DA9058 PMIC.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called da9058_power.
-+
- config POWER_SUPPLY_DEBUG
- 	bool "Power supply debug"
- 	help
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b6b2434..8a4a049 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_WM831X_POWER)	+= wm831x_power.o
- obj-$(CONFIG_WM8350_POWER)	+= wm8350_power.o
- obj-$(CONFIG_TEST_POWER)	+= test_power.o
- 
-+obj-$(CONFIG_BATTERY_DA9058)	+= da9058_power.o
- obj-$(CONFIG_BATTERY_DS2760)	+= ds2760_battery.o
- obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
- obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
-diff --git a/drivers/power/da9058_power.c b/drivers/power/da9058_power.c
+diff --git a/Documentation/hwmon/da9058 b/Documentation/hwmon/da9058
 new file mode 100644
-index 0000000..9e82eb6
+index 0000000..60634c5
 --- /dev/null
-+++ b/drivers/power/da9058_power.c
-@@ -0,0 +1,397 @@
++++ b/Documentation/hwmon/da9058
+@@ -0,0 +1,30 @@
++Kernel driver da9058-hwmon
++==========================
++
++Supported chips:
++  * Dialog Semiconductor DA9058 PMIC
++    Prefix: 'da9058'
++    Datasheet:
++	http://www.dialog-semiconductor.com/products/power-management/da9058
++
++Authors: Opensource [Anthony Olech] <anthony.olech.opensource@diasemi.com>
++
++Description
++-----------
++
++The DA9058 PMIC contains a 5 channel ADC which can be used to monitor a
++range of system operating parameters, including the battery voltage and
++temperature.  The ADC measures voltage, but two of the ADC channels can
++be configured to supply a current, so that if an NTC termister is connected
++then the voltage reading can be converted to a temperature. Currently the
++driver provides reporting of all the input values but does not provide any
++alarms.
++
++Voltage Monitoring
++------------------
++
++Voltages are sampled in either 'automatic' or 'manual' mode, which is an
++initialization parameter set in the platform data by the machine driver.
++In manual mode the ADC conversion is 12 bit and in automatic mode it is
++10 bit. However all the raw readings are reported as 12 bit numbers.
++
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 6f1d167..0986f43 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -294,6 +294,16 @@ config SENSORS_ATXP1
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called atxp1.
+ 
++config SENSORS_DA9058
++	tristate "Dialog Semiconductor DA9058 ADC"
++	depends on I2C
++	help
++	  If you say yes here you get support for ADC on the Dialog
++	  Semiconductor DA9058 PMIC.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called da9058-hwmon.
++
+ config SENSORS_DS620
+ 	tristate "Dallas Semiconductor DS620"
+ 	depends on I2C
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index e1eeac1..be99572 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
+ obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
+ obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
+ obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
++obj-$(CONFIG_SENSORS_DA9058)	+= da9058-hwmon.o
+ obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
+ obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
+ obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
+diff --git a/drivers/hwmon/da9058-hwmon.c b/drivers/hwmon/da9058-hwmon.c
+new file mode 100644
+index 0000000..8953170
+--- /dev/null
++++ b/drivers/hwmon/da9058-hwmon.c
+@@ -0,0 +1,425 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -86,392 +123,420 @@ index 0000000..9e82eb6
 + */
 +
 +#include <linux/module.h>
-+#include <linux/power_supply.h>
++#include <linux/err.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
 +#include <linux/regmap.h>
 +#include <linux/mfd/core.h>
 +
 +#include <linux/mfd/da9058/version.h>
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/bat.h>
++#include <linux/mfd/da9058/hwmon.h>
 +
-+struct da9058_power {
-+	struct da9058 *da9058;
-+	struct platform_device *pdev;
-+	struct power_supply battery;
-+
-+	int battery_type;
-+	u8 illegalbattery;
-+	u8 health;
-+	u16 bat_temp;
-+	u16 bat_voltage;
-+	u8 cal_capacity;
-+	int bat_low_limit;
-+	int use_automatic_adc;
-+	int temperature_points;
-+	struct da9058_temp_capacity (*temp_tables)[];
-+};
-+
-+static inline u8 bat_temp_reg_to_C(u16 value)
++static ssize_t da9058_vbat_show_txt(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return 55 - value;
++	return sprintf(buf, "vbat\n");
 +}
 +
-+static inline u8 bat_mV_to_reg(u16 value)
++static ssize_t da9058_vbat_show_min(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return ((value - 4100) / 100) << 4;
++	return sprintf(buf, "2500\n");
 +}
 +
-+static inline u8 bat_drop_mV_to_reg(u16 value)
++static ssize_t da9058_vbat_show_max(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return ((value - 100) / 100) << 6;
++	return sprintf(buf, "4500\n");
 +}
 +
-+static inline u16 bat_reg_to_mV(u8 value)
++static ssize_t da9058_vbat_show_adc(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value * 100) + 4100;
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 2500 .. 4500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VBAT,
++					hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", 2500 + voltage * 2000 / 0xFFF);
 +}
 +
-+static inline u16 bat_drop_reg_to_mV(u8 value)
++static ssize_t da9058_tbat_show_txt(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value * 100) + 100;
++	return sprintf(buf, "tbat\n");
 +}
 +
-+static inline u8 vbat_thr_mV_to_reg(u16 value)
++static ssize_t da9058_tbat_show_type(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value - 2500) / 8;
++	return sprintf(buf, "4\n");	/* thermistor */
 +}
 +
-+static inline u16 vddout_reg_to_mV(u8 value)
++static ssize_t da9058_tbat_show_min(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value * 8) + 2500;
++	return sprintf(buf, "0\n");
 +}
 +
-+static inline u16 volt_bit_reg_to_mV(u16 value)
++static ssize_t da9058_tbat_show_max(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value * 2) + 2500;
++	return sprintf(buf, "2500\n");
 +}
 +
-+static inline u16 volt_reg_to_mV(u16 value)
++static ssize_t da9058_tbat_show_adc(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (((value * 610 * 100) / 115) + 2400000) / 1000;
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 0 .. 2500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TEMP,
++					hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", voltage * 2500 / 0xFFF);
 +}
 +
-+static inline u16 volt_10bit_reg_to_mV(u16 value)
++static ssize_t da9058_gp_show_txt(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (((value * 1510 * 100) / 75) + 2400000) / 1000;
++	return sprintf(buf, "gp\n"); /* general purpose */
 +}
 +
-+static inline u8 bit8_mV_to_reg(u16 value)
++static ssize_t da9058_gp_show_min(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	return (value * 2500) / 256000;
++	return sprintf(buf, "0\n");
++}
++
++static ssize_t da9058_gp_show_max(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "2500\n");
++}
++
++static ssize_t da9058_gp_show_adc(struct device *dev,
++					struct device_attribute *devattr,
++					char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int channel = to_sensor_dev_attr(devattr)->index;
++	int voltage; /* xFFF .. x800 = 0 .. 2500 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, channel,
++				hwmon->use_automatic_adc, &voltage);
++	if (ret)
++		return ret;
++
++	return sprintf(buf, "%d\n", (0xFFF - voltage) * 2500 / 0x7FF);
++}
++
++static ssize_t da9058_tjunc_show_txt(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "tjunc\n");
++}
++
++static ssize_t da9058_tjunc_show_min(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	unsigned int toffreg;
++	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
++
++	if (ret < 0) {
++		/*
++		 * just report worst theorectically possible case
++		 *	-325716 .. -108800 .. +109824
++		 */
++		return sprintf(buf, "-325716\n");
++	} else {
++		int toffset = (signed)((u8)toffreg);
++		return sprintf(buf, "%d\n", -(1708*toffset + 108800));
++	}
++}
++
++static ssize_t da9058_tjunc_show_max(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	unsigned int toffreg;
++	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
++
++	if (ret < 0) {
++		/*
++		 * just report worst theorectically possible case
++		 *	+109824 .. +326740 .. +545364
++		 */
++		return sprintf(buf, "545364\n");
++	} else {
++		int toffset = (signed)((u8)toffreg);
++		return sprintf(buf, "%d\n", 1708*(255 - toffset) - 108800);
++	}
 +}
 +
 +/*
-+ *  to convert the ADC reading to milliVolts:
-+ *  0000MMMMMMMMLL00 for automatic conversion
-+ *  0000MMMMMMMMLLLL for manual conversion
-+ *  2.5Volts == 0x0000 --> 2500
-+ *  4.5Volts == 0x0FFF --> 4500
++ *  The algorithm for converting the value is
++ *  Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
++ *  T_OFFSET is a trim value used to improve accuracy of the result
 + */
-+static int da9058_read_battery_millivolts(struct da9058_power *power)
++static ssize_t da9058_tjunc_show_adc(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	struct da9058 *da9058 = power->da9058;
-+	int vbat;
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int tjunc;
++	unsigned int toffreg;
++	s8 toffint;
++	int toffset;
 +	int ret;
 +
-+	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_VBAT,
-+				power->use_automatic_adc, &vbat);
++	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
++	if (ret < 0)
++		return ret;
 +
++	toffint = toffreg & 0xFF;
++	toffset = toffint;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TJUNC,
++					hwmon->use_automatic_adc, &tjunc);
++	if (ret < 0)
++		return ret;
++	tjunc >>= 4;	/* to recover the most sig 8 bits */
++
++	return sprintf(buf, "%d\n", 1708 * (tjunc - toffset) - 108800);
++}
++
++static ssize_t da9058_vfpin_show_txt(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "vfpin\n");
++}
++
++static ssize_t da9058_vfpin_show_min(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "0\n");
++}
++
++static ssize_t da9058_vfpin_show_max(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "4095\n");
++}
++
++static ssize_t da9058_vfpin_show_adc(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
++	int voltage; /* x000 .. xFFF = 0 .. 4095 mV */
++	int ret;
++
++	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VF,
++					hwmon->use_automatic_adc, &voltage);
 +	if (ret)
 +		return ret;
 +
-+	power->bat_voltage = (2500*0x0FFF + vbat*2000)/0x0FFF;
-+
-+	return 0;
++	return sprintf(buf, "%d\n", voltage);
 +}
 +
-+static int da9058_battery_temperature_tbat(struct da9058_power *power)
++static ssize_t da9058_hwmon_show_name(struct device *dev,
++				struct device_attribute *devattr, char *buf)
 +{
-+	struct da9058 *da9058 = power->da9058;
-+	int temp;
-+	int ret;
-+
-+	ret = da9058_adc_read(da9058, DA9058_ADCMAN_MUXSEL_TEMP,
-+				power->use_automatic_adc, &temp);
-+
-+	if (ret)
-+		return ret;
-+
-+	power->bat_temp = temp;
-+
-+	return 0;
++	return sprintf(buf, "da9058\n");
 +}
 +
-+static u32 interpolated(u32 vbat_lower, u32 vbat_upper, u32 level_lower,
-+			u32 level_upper, u32 vbat)
-+{
-+	s32 temp;
++static DEVICE_ATTR(name, S_IRUGO, da9058_hwmon_show_name, NULL);
 +
-+	/*apply formula y= yk + (x <96> xk) * (yk+1 <96> yk)/(xk+1 - xk) */
++static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, da9058_vbat_show_txt, NULL, 0);
++static SENSOR_DEVICE_ATTR(in0_min, S_IRUGO, da9058_vbat_show_min, NULL, 0);
++static SENSOR_DEVICE_ATTR(in0_max, S_IRUGO, da9058_vbat_show_max, NULL, 0);
++static SENSOR_DEVICE_ATTR(in0_value, S_IRUGO, da9058_vbat_show_adc, NULL, 0);
 +
-+	temp = ((level_upper - level_lower) * 1000)/(vbat_upper - vbat_lower);
-+	temp = level_lower + (((vbat - vbat_lower) * temp) / 1000);
++static SENSOR_DEVICE_ATTR(temp0_label, S_IRUGO, da9058_tbat_show_txt, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp0_type, S_IRUGO, da9058_tbat_show_type, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp0_min, S_IRUGO, da9058_tbat_show_min, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp0_max, S_IRUGO, da9058_tbat_show_max, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp0_value, S_IRUGO, da9058_tbat_show_adc, NULL, 0);
 +
-+	return temp;
-+}
++static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, da9058_vfpin_show_txt, NULL, 0);
++static SENSOR_DEVICE_ATTR(in1_min, S_IRUGO, da9058_vfpin_show_min, NULL, 0);
++static SENSOR_DEVICE_ATTR(in1_max, S_IRUGO, da9058_vfpin_show_max, NULL, 0);
++static SENSOR_DEVICE_ATTR(in1_value, S_IRUGO, da9058_vfpin_show_adc, NULL, 0);
 +
-+static int da9058_get_bat_level(struct da9058_power *power)
-+{
-+	int ret;
++static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, da9058_gp_show_txt, NULL,
++				DA9058_ADCMAN_MUXSEL_ADCIN);
++static SENSOR_DEVICE_ATTR(in2_min, S_IRUGO, da9058_gp_show_min, NULL,
++				DA9058_ADCMAN_MUXSEL_ADCIN);
++static SENSOR_DEVICE_ATTR(in2_max, S_IRUGO, da9058_gp_show_max, NULL,
++				DA9058_ADCMAN_MUXSEL_ADCIN);
++static SENSOR_DEVICE_ATTR(in2_value, S_IRUGO, da9058_gp_show_adc, NULL,
++				DA9058_ADCMAN_MUXSEL_ADCIN);
 +
-+	u16 tbat;
-+	u16 vbat;
-+	u32 vbat_lower = 0, vbat_upper = 0, level_upper =
-+		0, level_lower, level = 0;
-+	u8 access_index = 0, index = 0, flag = 0;
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, da9058_tjunc_show_txt, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp1_min, S_IRUGO, da9058_tjunc_show_min, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp1_max, S_IRUGO, da9058_tjunc_show_max, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp1_value, S_IRUGO, da9058_tjunc_show_adc, NULL, 0);
 +
-+	ret = da9058_read_battery_millivolts(power);
-+	if (ret)
-+		return ret;
-+
-+	vbat = power->bat_voltage;
-+
-+	ret = da9058_battery_temperature_tbat(power);
-+	if (ret)
-+		return ret;
-+
-+	tbat = power->bat_temp;
-+
-+	do {
-+		if ((tbat + tbat) <=
-+			((*power->temp_tables)[access_index].temperature +
-+			(*power->temp_tables)[access_index + 1].temperature))
-+			break;
-+
-+	} while (++access_index < (power->temperature_points - 1));
-+
-+	if (vbat >= (*power->temp_tables)[access_index].capacity[0][0]) {
-+		power->cal_capacity = 100;
-+		return 0;
-+	}
-+	if (vbat <=
-+		(*power->temp_tables)[access_index].
-+		capacity[DA9058_LOOK_UP_TABLE_SIZE - 1][0]) {
-+		power->cal_capacity = 0;
-+		return 0;
-+	}
-+	flag = 0;
-+
-+	for (index = 0; index < (DA9058_LOOK_UP_TABLE_SIZE - 1); index++) {
-+		struct da9058_temp_capacity *t =
-+					&(*power->temp_tables)[access_index];
-+
-+		if ((vbat <= t->capacity[index][0])
-+			&& (vbat >= t->capacity[index + 1][0])) {
-+			vbat_upper = t->capacity[index][0];
-+			vbat_lower = t->capacity[index + 1][0];
-+			level_upper = t->capacity[index][1];
-+			level_lower = t->capacity[index + 1][1];
-+			flag = 1;
-+			break;
-+		}
-+	}
-+	if (!flag)
-+		return -EIO;
-+
-+	level = interpolated(vbat_lower, vbat_upper, level_lower, level_upper,
-+				vbat);
-+	power->cal_capacity = level;
-+	return 0;
-+}
-+
-+static int da9058_bat_check_health(struct da9058_power *power)
-+{
-+	int ret;
-+
-+	ret = da9058_read_battery_millivolts(power);
-+	if (ret) {
-+		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		goto exit;
-+	}
-+
-+	if (power->bat_voltage < 2850) {
-+		power->health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+		goto exit;
-+	}
-+
-+	ret = da9058_get_bat_level(power);
-+	if (ret) {
-+		power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		goto exit;
-+	}
-+
-+	if (power->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
-+		if (power->illegalbattery)
-+			power->health = POWER_SUPPLY_HEALTH_UNKNOWN;
-+		else if (power->cal_capacity < power->bat_low_limit)
-+			power->health = POWER_SUPPLY_HEALTH_DEAD;
-+		else
-+			power->health = POWER_SUPPLY_HEALTH_GOOD;
-+	}
-+exit:
-+	return ret;
-+}
-+
-+static int da9058_bat_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct da9058_power *power = dev_get_drvdata(psy->dev->parent);
-+	int ret;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		ret = 0;
-+		if (power->illegalbattery)
-+			val->intval = 0;
-+		else
-+			val->intval = 1;
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		ret = 0;
-+		val->intval = power->battery_type;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		ret = da9058_read_battery_millivolts(power);
-+		val->intval = power->bat_voltage;
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		ret = da9058_bat_check_health(power);
-+		val->intval = power->health;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		ret = da9058_get_bat_level(power);
-+		val->intval = power->cal_capacity;
-+		break;
-+	case POWER_SUPPLY_PROP_TEMP:
-+		ret = da9058_battery_temperature_tbat(power);
-+		val->intval = power->bat_temp;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static enum power_supply_property da9058_bat_props[] = {
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
++static struct attribute *da9058_attr[] = {
++	&dev_attr_name.attr,
++	&sensor_dev_attr_in0_label.dev_attr.attr,
++	&sensor_dev_attr_in0_min.dev_attr.attr,
++	&sensor_dev_attr_in0_max.dev_attr.attr,
++	&sensor_dev_attr_in0_value.dev_attr.attr,
++	&sensor_dev_attr_temp0_label.dev_attr.attr,
++	&sensor_dev_attr_temp0_type.dev_attr.attr,
++	&sensor_dev_attr_temp0_min.dev_attr.attr,
++	&sensor_dev_attr_temp0_max.dev_attr.attr,
++	&sensor_dev_attr_temp0_value.dev_attr.attr,
++	&sensor_dev_attr_in1_label.dev_attr.attr,
++	&sensor_dev_attr_in1_min.dev_attr.attr,
++	&sensor_dev_attr_in1_max.dev_attr.attr,
++	&sensor_dev_attr_in1_value.dev_attr.attr,
++	&sensor_dev_attr_in2_label.dev_attr.attr,
++	&sensor_dev_attr_in2_min.dev_attr.attr,
++	&sensor_dev_attr_in2_max.dev_attr.attr,
++	&sensor_dev_attr_in2_value.dev_attr.attr,
++	&sensor_dev_attr_temp1_label.dev_attr.attr,
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	&sensor_dev_attr_temp1_value.dev_attr.attr,
++	NULL
 +};
 +
-+static __devinit int da9058_power_probe(struct platform_device *pdev)
++static const struct attribute_group da9058_attr_group = {.attrs = da9058_attr};
++
++static int __devinit da9058_hwmon_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_power_pdata *power_pdata;
-+	struct da9058_power *power;
-+	struct power_supply *battery;
-+	int ret = 0;
++	struct da9058_hwmon_pdata *hwmon_pdata;
++	struct da9058_hwmon *hwmon;
++	int ret;
 +
 +	if (cell == NULL) {
 +		ret = -ENODEV;
 +		goto exit;
 +	}
 +
-+	power_pdata = cell->platform_data;
++	hwmon_pdata = cell->platform_data;
 +
-+	if (power_pdata == NULL) {
++	if (hwmon_pdata == NULL) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	power = devm_kzalloc(&pdev->dev, sizeof(struct da9058_power),
++	if (hwmon_pdata->use_automatic_adc & !hwmon_pdata->temp_adc_resistance
++	) {
++		return -EINVAL; /* impossible setting */
++		goto exit;
++	}
++
++	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9058_hwmon),
 +				GFP_KERNEL);
-+	if (!power) {
++	if (!hwmon) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	platform_set_drvdata(pdev, power);
++	platform_set_drvdata(pdev, hwmon);
 +
-+	power->da9058 = da9058;
-+	power->pdev = pdev;
-+	power->battery_type = power_pdata->battery_type;
-+	power->bat_low_limit = power_pdata->bat_low_limit;
-+	power->use_automatic_adc = power_pdata->use_automatic_adc;
-+	power->temperature_points =
-+		power_pdata->lookup_tables->temperature_points;
-+	power->temp_tables = power_pdata->lookup_tables->temp_tables;
++	hwmon->da9058 = da9058;
++	hwmon->pdev = pdev;
++	hwmon->use_automatic_adc = hwmon_pdata->use_automatic_adc;
++	hwmon->temp_adc_resistance = hwmon_pdata->temp_adc_resistance;
++	hwmon->vf_adc_resistance = hwmon_pdata->vf_adc_resistance;
 +
-+	battery = &power->battery;
++	if (hwmon->use_automatic_adc) {
++		unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
++				DA9058_ADCCONT_TEMPISRCEN |
++				DA9058_ADCCONT_AUTOVBATEN |
++				DA9058_ADCCONT_AUTOVFEN |
++				DA9058_ADCCONT_AUTOAINEN;
 +
-+	battery->name = "da9058-battery";
-+	battery->properties = da9058_bat_props;
-+	battery->num_properties = ARRAY_SIZE(da9058_bat_props);
-+	battery->get_property = da9058_bat_get_property;
-+	battery->use_for_apm = 1;
++		if (hwmon->vf_adc_resistance)
++			mode |= DA9058_ADCCONT_VFISRCEN;
 +
-+	if (!power_pdata->use_automatic_adc) {
-+		unsigned int adc_ctrl;
-+		ret = da9058_reg_read(da9058, DA9058_ADCCONT_REG, &adc_ctrl);
++		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
 +		if (ret)
-+			goto err;
++			goto exit;
++	} else {
++		unsigned int mode = 0;
 +
-+		if (!(adc_ctrl & DA9058_ADCCONT_TEMPISRCEN)) {
-+			dev_err(&power->pdev->dev,
-+				"TEMP ADC must be a resistance\n");
-+			goto err;
-+		}
++		if (hwmon->temp_adc_resistance)
++			mode |= DA9058_ADCCONT_TEMPISRCEN;
++		if (hwmon->vf_adc_resistance)
++			mode |= DA9058_ADCCONT_VFISRCEN;
++
++		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
++		if (ret)
++			goto exit;
 +	}
 +
-+	ret = power_supply_register(&pdev->dev, battery);
-+	if (ret) {
-+		dev_err(&power->pdev->dev,
-+			"failed to register da9058-power driver: %d\n", ret);
-+		goto err;
-+	}
++	mutex_init(&hwmon->hwmon_lock);
 +
-+	power->illegalbattery = 0;
++	ret = sysfs_create_group(&pdev->dev.kobj, &da9058_attr_group);
++	if (ret)
++		goto exit;
++
++	hwmon->exit_hwmon_platform_callback =
++				hwmon_pdata->exit_hwmon_platform_callback;
++	hwmon->init_hwmon_platform_callback =
++				hwmon_pdata->init_hwmon_platform_callback;
++
++	if (hwmon_pdata->init_hwmon_platform_callback)
++			hwmon_pdata->init_hwmon_platform_callback(hwmon);
++
++	hwmon->class_device = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(hwmon->class_device)) {
++		ret = PTR_ERR(hwmon->class_device);
++		goto failed_to_register_device;
++	}
 +
 +	goto exit;
 +
-+err:
-+	platform_set_drvdata(pdev, NULL);
++failed_to_register_device:
++	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
 +exit:
 +	return ret;
 +}
 +
-+static __devexit int da9058_power_remove(struct platform_device *pdev)
++static int __devexit da9058_hwmon_remove(struct platform_device *pdev)
 +{
-+	struct da9058_power *power = platform_get_drvdata(pdev);
++	struct da9058_hwmon *hwmon = platform_get_drvdata(pdev);
 +
-+	power_supply_unregister(&power->battery);
++	hwmon_device_unregister(hwmon->class_device);
++	if (hwmon->exit_hwmon_platform_callback)
++				hwmon->exit_hwmon_platform_callback(hwmon);
++	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
++
 +	return 0;
 +}
 +
-+static struct platform_driver da9058_power_driver = {
-+	.probe = da9058_power_probe,
-+	.remove = __devexit_p(da9058_power_remove),
++static struct platform_driver da9058_hwmon_driver = {
++	.probe = da9058_hwmon_probe,
++	.remove = __devexit_p(da9058_hwmon_remove),
 +	.driver = {
-+		.name = "da9058-power",
++		.name = "da9058-hwmon",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9058_power_driver);
++module_platform_driver(da9058_hwmon_driver);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC Battery Driver");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC HardWare Monitor Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-power");
++MODULE_ALIAS("platform:da9058-hwmon");
 -- 
 end-of-patch for NEW DRIVER V3
 
