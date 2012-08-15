@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2HONaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:30:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57522 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab2HONaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:30:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 04/31] arm64: MMU definitions
-Date: Wed, 15 Aug 2012 13:30:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
+	id S1754643Ab2HONbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:31:37 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55243 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754358Ab2HONbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 09:31:35 -0400
+Message-ID: <502BA4AC.9040000@parallels.com>
+Date: Wed, 15 Aug 2012 17:31:24 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        "David Rientjes" <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz> <502B9BD4.4070003@parallels.com> <20120815130228.GH23985@dhcp22.suse.cz> <502B9E5F.2080907@parallels.com> <20120815132621.GJ23985@dhcp22.suse.cz>
+In-Reply-To: <20120815132621.GJ23985@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208151330.02112.arnd@arndb.de>
-X-Provags-ID: V02:K0:kgBlLMM7u01LwoQdqATMWEHGeT7fuLSXlNkkvXoBAEH
- TcPFyzJQwE7c9KVF76W6wPM9CtzNasCrgBx1naLLJGgpOnR7NT
- OXaQSedSmki1sU4bNYXi06iJFJFRisyMfGUNMBquI/TDv0VRoA
- +rBJqJpmY/Bh8C45S6/vYZuJfTC4dTj0EoDskDnI08ggVKbbLj
- xi9IZ9ok2Hq3x/yVofMOV5NYOTAF7BOsuCsIcnWUjjeP7vZzLv
- LfRRUN5um1W/5qJIs8s7hbo4/jM4le7msrI+2ksHY0TVe72Uyr
- gdJhK1xfI+9EajIuBKh1BqeU+8KmwwWQLn31r0ma5ZuAzwtSbv
- 6ckdXZTFbOasCMg/WGrU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 August 2012, Catalin Marinas wrote:
->
-> +/*
-> + * TCR flags.
-> + */
-> +#define TCR_TxSZ(x)		(((64 - (x)) << 16) | ((64 - (x)) << 0))
-> +#define TCR_IRGN_NC		((0 << 8) | (0 << 24))
-> +#define TCR_IRGN_WBWA		((1 << 8) | (1 << 24))
-> +#define TCR_IRGN_WT		((2 << 8) | (2 << 24))
-> +#define TCR_IRGN_WBnWA		((3 << 8) | (3 << 24))
-> +#define TCR_IRGN_MASK		((3 << 8) | (3 << 24))
-> +#define TCR_ORGN_NC		((0 << 10) | (0 << 26))
-> +#define TCR_ORGN_WBWA		((1 << 10) | (1 << 26))
-> +#define TCR_ORGN_WT		((2 << 10) | (2 << 26))
-> +#define TCR_ORGN_WBnWA		((3 << 10) | (3 << 26))
-> +#define TCR_ORGN_MASK		((3 << 10) | (3 << 26))
-> +#define TCR_SHARED		((3 << 12) | (3 << 28))
-> +#define TCR_TG0_64K		(1 << 14)
-> +#define TCR_TG1_64K		(1 << 30)
-> +#define TCR_IPS_40BIT		(2 << 32)
-> +#define TCR_ASID16		(1 << 36)
-> +
+On 08/15/2012 05:26 PM, Michal Hocko wrote:
+> On Wed 15-08-12 17:04:31, Glauber Costa wrote:
+>> On 08/15/2012 05:02 PM, Michal Hocko wrote:
+>>> On Wed 15-08-12 16:53:40, Glauber Costa wrote:
+>>> [...]
+>>>>>>> This doesn't check for the hierachy so kmem_accounted might not be in 
+>>>>>>> sync with it's parents. mem_cgroup_create (below) needs to copy
+>>>>>>> kmem_accounted down from the parent and the above needs to check if this
+>>>>>>> is a similar dance like mem_cgroup_oom_control_write.
+>>>>>>>
+>>>>>>
+>>>>>> I don't see why we have to.
+>>>>>>
+>>>>>> I believe in a A/B/C hierarchy, C should be perfectly able to set a
+>>>>>> different limit than its parents. Note that this is not a boolean.
+>>>>>
+>>>>> Ohh, I wasn't clear enough. I am not against setting the _limit_ I just
+>>>>> meant that the kmem_accounted should be consistent within the hierarchy.
+>>>>>
+>>>>
+>>>> If a parent of yours is accounted, you get accounted as well. This is
+>>>> not the state in this patch, but gets added later. Isn't this enough ?
+>>>
+>>> But if the parent is not accounted, you can set the children to be
+>>> accounted, right? Or maybe this is changed later in the series? I didn't
+>>> get to the end yet.
+>>>
+>>
+>> Yes, you can. Do you see any problem with that?
+> 
+> Well, if a child contributes with the kmem charges upwards the hierachy
+> then a parent can have kmem.usage > 0 with disabled accounting.
+> I am not saying this is a no-go but it definitely is confusing and I do
+> not see any good reason for it. I've considered it as an overlook rather
+> than a deliberate design decision.
+> 
 
-As a matter of coding style, I would much prefer tables like this to be
-written as
+No, it is not an overlook.
+It is theoretically possible to skip accounting on non-limited parents,
+but how expensive is that? This is, indeed, confusing.
 
-#define TCR_IRGN_MASK		0x0000000003000300
-#define TCR_IRGN_WBnWA		0x0000000003000300
-#define TCR_IRGN_WT		0x0000000002000200
-#define TCR_IRGN_WBWA		0x0000000001000100
-#define TCR_IRGN_NC		0x0000000000000000
+Of course I can be biased, but the way I see it, once you have
+hierarchy, you account everything your child accounts.
 
-#define TCR_ORGN_MASK		0x000000000c000c00
-#define TCR_ORGN_WBnWA		0x000000000c000c00
-#define TCR_ORGN_WT		0x0000000008000800
-#define TCR_ORGN_WBWA		0x0000000004000400
-#define TCR_ORGN_NC		0x0000000000000000
-
-The advantage of this is that you can visually compare the bitmasks
-to a hex dump, and if you are suffering from endian-confused documentation
-authors, there is no ambiguity about which end of the word is bit zero.
-
-	Arnd
+I really don't see what is the concern here.
