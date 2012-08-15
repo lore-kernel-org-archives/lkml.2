@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2HOTtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:49:52 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62806 "EHLO
+	id S1756481Ab2HOTt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:49:56 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62809 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab2HOTts (ORCPT
+	with ESMTP id S1756457Ab2HOTtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:48 -0400
+	Wed, 15 Aug 2012 15:49:52 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        James Bottomley <JBottomley@parallels.com>,
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 040/165] qla2xxx: Correct inadvertent loop state transitions during port-update handling.
-Date: Wed, 15 Aug 2012 15:46:24 -0400
-Message-ID: <1345060109-9187-41-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 042/165] ASoC: Fix reporting of partial jack updates
+Date: Wed, 15 Aug 2012 15:46:26 -0400
+Message-ID: <1345060109-9187-43-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Vasquez <andrew.vasquez@qlogic.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,54 +31,33 @@ From: Andrew Vasquez <andrew.vasquez@qlogic.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 58b48576966ed0afd3f63ef17480ec12748a7119 upstream.
+commit 747da0f80e566500421bd7760b2e050fea3fde5e upstream.
 
-Transitioning to a LOOP_UPDATE loop-state could cause the driver
-to miss normal link/target processing.  LOOP_UPDATE is a crufty
-artifact leftover from at time the driver performed it's own
-internal command-queuing.  Safely remove this state.
+We need to report the entire jack state to the core jack code, not just
+the bits that were being updated by the caller, otherwise the status
+reported by other detection methods will be omitted from the state seen
+by userspace.
 
-Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
-Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/qla2xxx/qla_init.c | 3 ---
- drivers/scsi/qla2xxx/qla_isr.c  | 1 -
- 2 files changed, 4 deletions(-)
+ sound/soc/soc-jack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index 4229bb4..8e23aa2 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -3497,15 +3497,12 @@ qla2x00_loop_resync(scsi_qla_host_t *vha)
- 		req = vha->req;
- 	rsp = req->rsp;
+diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
+index 3c07a94..f097755 100644
+--- a/sound/soc/soc-jack.c
++++ b/sound/soc/soc-jack.c
+@@ -95,7 +95,7 @@ void snd_soc_jack_report(struct snd_soc_jack *jack, int status, int mask)
  
--	atomic_set(&vha->loop_state, LOOP_UPDATE);
- 	clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
- 	if (vha->flags.online) {
- 		if (!(rval = qla2x00_fw_ready(vha))) {
- 			/* Wait at most MAX_TARGET RSCNs for a stable link. */
- 			wait_time = 256;
- 			do {
--				atomic_set(&vha->loop_state, LOOP_UPDATE);
--
- 				/* Issue a marker after FW becomes ready. */
- 				qla2x00_marker(vha, req, rsp, 0, 0,
- 					MK_SYNC_ALL);
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index db539b0..0266b78 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -724,7 +724,6 @@ skip_rio:
- 			vha->flags.rscn_queue_overflow = 1;
- 		}
+ 	snd_soc_dapm_sync(codec);
  
--		atomic_set(&vha->loop_state, LOOP_UPDATE);
- 		atomic_set(&vha->loop_down_timer, 0);
- 		vha->flags.management_server_logged_in = 0;
+-	snd_jack_report(jack->jack, status);
++	snd_jack_report(jack->jack, jack->status);
  
+ out:
+ 	mutex_unlock(&codec->mutex);
 -- 
 1.7.12.rc2
 
