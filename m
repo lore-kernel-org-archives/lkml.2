@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2HOPgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:36:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38424 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751822Ab2HOPgQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:36:16 -0400
-Date: Wed, 15 Aug 2012 16:35:39 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 27/31] arm64: Loadable modules
-Message-ID: <20120815153538.GA14264@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-28-git-send-email-catalin.marinas@arm.com>
- <201208151523.21447.arnd@arndb.de>
+	id S1755354Ab2HOPiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:38:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33130 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754621Ab2HOPiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 11:38:23 -0400
+Message-ID: <502BC1B1.3010807@parallels.com>
+Date: Wed, 15 Aug 2012 19:35:13 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208151523.21447.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz> <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com> <502BBC35.809@parallels.com> <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
+In-Reply-To: <000001392aec1926-72b3a631-1fb1-460c-803d-38c4405151e1-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 04:23:21PM +0100, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
-> > +
-> > +void *module_alloc(unsigned long size)
-> > +{
-> > +       return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
-> > +                                   GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-> > +                                   __builtin_return_address(0));
-> > +}
-> > +
+On 08/15/2012 07:34 PM, Christoph Lameter wrote:
+> On Wed, 15 Aug 2012, Glauber Costa wrote:
 > 
-> What is the reason for using a separate virtual address range for the
-> modules instead of falling back to the default module_alloc function
-> that uses vmalloc_exec()?
+>> On 08/15/2012 06:47 PM, Christoph Lameter wrote:
+>>> On Wed, 15 Aug 2012, Michal Hocko wrote:
+>>>
+>>>>> That is not what the kernel does, in general. We assume that if he wants
+>>>>> that memory and we can serve it, we should. Also, not all kernel memory
+>>>>> is unreclaimable. We can shrink the slabs, for instance. Ying Han
+>>>>> claims she has patches for that already...
+>>>>
+>>>> Are those patches somewhere around?
+>>>
+>>> You can already shrink the reclaimable slabs (dentries / inodes) via
+>>> calls to the subsystem specific shrinkers. Did Ying Han do anything to
+>>> go beyond that?
+>>>
+>> That is not enough for us.
+>> We would like to make sure that the objects being discarded belong to
+>> the memcg which is under pressure. We don't need to be perfect here, and
+>> an occasional slip is totally fine. But if in general, shrinking from
+>> memcg A will mostly wipe out objects from memcg B, we harmed the system
+>> in return for nothing good.
+> 
+> How can you figure out which objects belong to which memcg? The ownerships
+> of dentries and inodes is a dubious concept already.
+> 
 
-Primarily branch relocation, we have a limitation to 128MB branch range.
-The alternative would be to always compile the modules with a large
-memory model but we may lose some performance and could make the
-relocation handling even harder. What we do now is pretty much similar
-to static linking but at module load time.
+Remember we copy over the metadata and create copies of the caches
+per-memcg. Therefore, a dentry belongs to a memcg if it was allocated
+from the slab pertaining to that memcg.
 
--- 
-Catalin
+It is not 100 % accurate, but it is good enough.
