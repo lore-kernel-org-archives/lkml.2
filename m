@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab2HOSwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:52:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29281 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326Ab2HOSwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:52:00 -0400
-Message-ID: <502BEF53.80200@redhat.com>
-Date: Wed, 15 Aug 2012 14:49:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753569Ab2HOSxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:53:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41031 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751786Ab2HOSxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:53:20 -0400
+Date: Wed, 15 Aug 2012 19:53:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V3 1/8] DA9058 MFD core driver
+Message-ID: <20120815185316.GG15365@opensource.wolfsonmicro.com>
+References: <201208151518.q7FFIN9v011639@latitude.olech.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC 1/2] cma: remove __reclaim_pages
-References: <1344934627-8473-1-git-send-email-minchan@kernel.org> <1344934627-8473-2-git-send-email-minchan@kernel.org>
-In-Reply-To: <1344934627-8473-2-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151518.q7FFIN9v011639@latitude.olech.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2012 04:57 AM, Minchan Kim wrote:
-> Now cma reclaims too many pages by __reclaim_pages which says
-> following as
->
->          * Reclaim enough pages to make sure that contiguous allocation
->          * will not starve the system.
->
-> Starve? What does it starve the system? The function which allocate
-> free page for migration target would wake up kswapd and do direct reclaim
-> if needed during migration so system doesn't starve.
->
-> Let remove __reclaim_pages and related function and fields.
+On Wed, Aug 15, 2012 at 04:05:21PM +0100, Anthony Olech wrote:
 
-Fair enough.
+>  
+>  if HAS_IOMEM
+> +
+>  menu "Multifunction device drivers"
 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+This random change is still present from the first version....
 
-Acked-by: Rik van Riel <riel@redhat.com>
+> +	/*
+> +	 * the init_board_irq() call-back function should be defined in
+> +	 * the machine driver initialization code and is used to set up
+> +	 * the actual (probably GPIO) line as an interrupt line.
+> +	 */
+> +	if (pdata->init_board_irq) {
+> +		ret = pdata->init_board_irq();
+> +		if (ret)
+> +			goto failed_to_setup_the_actual_i2c_hw_irq;
+> +	}
+
+You appear to have ignored my previous review comments about this...  it
+still shouldn't be needed with modern kernels.
+
+> +static bool da9058_register_volatile(struct device *dev, unsigned int reg)
+> +{
+> +	switch (reg) {
+> +	case DA9058_ADCMAN_REG:
+> +	case DA9058_ADCRESH_REG:
+> +	case DA9058_ADCRESL_REG:
+> +	case DA9058_ALARMD_REG:
+> +	case DA9058_ALARMH_REG:
+> +	case DA9058_ALARMMI_REG:
+> +	case DA9058_ALARMMO_REG:
+> +	case DA9058_ALARMS_REG:
+> +	case DA9058_ALARMY_REG:
+
+Are all the alarm registers really volatile?
+
+> +	case DA9058_LDO9_REG:
+> +	case DA9058_TOFFSET_REG:
+> +	default:
+> +		return false;
+
+Just use the default.
+
+> +static struct regulator_consumer_supply platform_vddarm_consumers[] = {
+> +	{.supply = "vcc",}
+> +};
+
+No, this and all your other regulator configuration is board specific.
