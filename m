@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2HOPEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:04:24 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61439 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab2HOPEC (ORCPT
+	id S1755307Ab2HOPFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:05:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38943 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab2HOPFJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:04:02 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 2/2] slub: remove one code path and reduce lock contention in __slab_free()
-Date: Thu, 16 Aug 2012 00:02:40 +0900
-Message-Id: <1345042960-6287-2-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345042960-6287-1-git-send-email-js1304@gmail.com>
-References: <1345042960-6287-1-git-send-email-js1304@gmail.com>
+	Wed, 15 Aug 2012 11:05:09 -0400
+Message-ID: <1345043096.31459.106.camel@twins>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        vincent.guittot@linaro.org, svaidy@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Date: Wed, 15 Aug 2012 17:04:56 +0200
+In-Reply-To: <502BB5A3.5000403@linux.intel.com>
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
+	  <502BA7DC.7060907@linux.intel.com> <1345041548.31459.90.camel@twins>
+	 <502BB5A3.5000403@linux.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we try to free object, there is some of case that we need
-to take a node lock. This is the necessary step for preventing a race.
-After taking a lock, then we try to cmpxchg_double_slab().
-But, there is a possible scenario that cmpxchg_double_slab() is failed
-with taking a lock. Following example explains it.
+On Wed, 2012-08-15 at 07:43 -0700, Arjan van de Ven wrote:
 
-CPU A               CPU B
-need lock
-...                 need lock
-...                 lock!!
-lock..but spin      free success
-spin...             unlock
-lock!!
-free fail
+> > Servers in a datacenter have battery?
+> 
+> they have AC, and sometimes a battery called "UPS".
+> DC is getting much more prevalent in datacenters in general.
 
-In this case, retry with taking a lock is occured in CPU A.
-I think that in this case for CPU A,
-"release a lock first, and re-take a lock if necessary" is preferable way.
+AC/DC (/me slams a riff on his air-guitar)... 
 
-There are two reasons for this.
+> >> seriously, there are possibly many ways to have a power/performance
+> >> preference..,. but AC/battery is a very very poor one.
+> >>
+> > Do expand..
+> > 
+> 
+> The easy cop-out is provide the sysadmin a slider.
+> The slightly less easy one is to (and we're taking this approach
+> in the new P state code we're working on) say "in the default
+> setting, we're going to sacrifice up to 5% performance from peak
+> to give you the best power savings within that performance loss budget"
+> (with a slider that can give you 0%, 2 1/2%  5% and 10%)
+> 
+> on Intel PCs and servers, there usually is a bios switch/setting for this
+> (there is a setting the bios does to the CPU, and we can read that. Not all bioses
+> expose this setting to the end user). We could take clue from what was set there.
 
-First, this makes __slab_free()'s logic somehow simple.
-With this patch, 'was_frozen = 1' is "always" handled without taking a lock.
-So we can remove one code path.
+This all sounds far too complicated.. we're talking about simple
+spreading and packing balancers without deep arch knowledge and knobs,
+we couldn't possibly evaluate anything like that.
 
-Second, it may reduce lock contention.
-When we do retrying, status of slab is already changed,
-so we don't need a lock anymore in almost every case.
-"release a lock first, and re-take a lock if necessary" policy is
-helpful to this.
+I was really more thinking of something useful for the laptops out
+there, when they pull the power cord it makes sense to try and keep CPUs
+asleep until the one that's awake is saturated.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ca778e5..efce427 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2421,7 +2421,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 	void *prior;
- 	void **object = (void *)x;
- 	int was_frozen;
--	int inuse;
- 	struct page new;
- 	unsigned long counters;
- 	struct kmem_cache_node *n = NULL;
-@@ -2433,13 +2432,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 		return;
- 
- 	do {
-+		if (unlikely(n)) {
-+			spin_unlock_irqrestore(&n->list_lock, flags);
-+			n = NULL;
-+		}
- 		prior = page->freelist;
- 		counters = page->counters;
- 		set_freepointer(s, object, prior);
- 		new.counters = counters;
- 		was_frozen = new.frozen;
- 		new.inuse--;
--		if ((!new.inuse || !prior) && !was_frozen && !n) {
-+		if ((!new.inuse || !prior) && !was_frozen) {
- 
- 			if (!kmem_cache_debug(s) && !prior)
- 
-@@ -2464,7 +2467,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 
- 			}
- 		}
--		inuse = new.inuse;
- 
- 	} while (!cmpxchg_double_slab(s, page,
- 		prior, counters,
-@@ -2490,25 +2492,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-                 return;
-         }
- 
-+	if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-+		goto slab_empty;
-+
- 	/*
--	 * was_frozen may have been set after we acquired the list_lock in
--	 * an earlier loop. So we need to check it here again.
-+	 * Objects left in the slab. If it was not on the partial list before
-+	 * then add it.
- 	 */
--	if (was_frozen)
--		stat(s, FREE_FROZEN);
--	else {
--		if (unlikely(!inuse && n->nr_partial > s->min_partial))
--                        goto slab_empty;
--
--		/*
--		 * Objects left in the slab. If it was not on the partial list before
--		 * then add it.
--		 */
--		if (unlikely(!prior)) {
--			remove_full(s, page);
--			add_partial(n, page, DEACTIVATE_TO_TAIL);
--			stat(s, FREE_ADD_PARTIAL);
--		}
-+	if (kmem_cache_debug(s) && unlikely(!prior)) {
-+		remove_full(s, page);
-+		add_partial(n, page, DEACTIVATE_TO_TAIL);
-+		stat(s, FREE_ADD_PARTIAL);
- 	}
- 	spin_unlock_irqrestore(&n->list_lock, flags);
- 	return;
--- 
-1.7.9.5
 
