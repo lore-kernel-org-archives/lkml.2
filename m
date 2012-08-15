@@ -1,117 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab2HOUL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:11:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36489 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab2HOULp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757204Ab2HOULp (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 Aug 2012 16:11:45 -0400
-Date: Wed, 15 Aug 2012 15:11:35 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 1/7] integrity: added digest calculation function
-Message-ID: <20120815201135.GA10088@amd1>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
- <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
+Received: from mail1.windriver.com ([147.11.146.13]:63043 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937Ab2HOTv5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:51:57 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 115/165] timekeeping: Maintain ktime_t based offsets for hrtimers
+Date: Wed, 15 Aug 2012 15:47:39 -0400
+Message-ID: <1345060109-9187-116-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dmitry Kasatkin (dmitry.kasatkin@intel.com):
-> There are several functions, that need to calculate digest.
-> This patch adds common function for use by integrity subsystem.
-> 
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> ---
->  security/integrity/digsig.c    |   31 +++++++++++++++++++++++++++++--
->  security/integrity/integrity.h |    3 +++
->  2 files changed, 32 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> index 2dc167d..61a0c92 100644
-> --- a/security/integrity/digsig.c
-> +++ b/security/integrity/digsig.c
-> @@ -13,9 +13,9 @@
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
->  #include <linux/err.h>
-> -#include <linux/rbtree.h>
->  #include <linux/key-type.h>
->  #include <linux/digsig.h>
-> +#include <crypto/hash.h>
->  
->  #include "integrity.h"
->  
-> @@ -28,7 +28,7 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
->  };
->  
->  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> -					const char *digest, int digestlen)
-> +			    const char *digest, int digestlen)
->  {
->  	if (id >= INTEGRITY_KEYRING_MAX)
->  		return -EINVAL;
-> @@ -46,3 +46,30 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->  
->  	return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
->  }
-> +
-> +int integrity_calc_digest(const char *algo, const void *data, const int len,
-> +			  char *digest)
-> +{
-> +	int rc = -ENOMEM;
-> +	struct crypto_shash *tfm;
-> +
-> +	tfm = crypto_alloc_shash(algo, 0, 0);
-> +	if (IS_ERR(tfm)) {
-> +		rc = PTR_ERR(tfm);
-> +		pr_err("Can not allocate %s (reason: %d)\n", algo, rc);
-> +		return rc;
-> +	} else {
-> +		struct {
-> +			struct shash_desc shash;
-> +			char ctx[crypto_shash_descsize(tfm)];
-> +		} desc;
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Needless confusing indentation here.  Just move the struct {} desc; to the
-top and drop the else.  That will make it much more readable.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> +		desc.shash.tfm = tfm;
-> +		desc.shash.flags = 0;
-> +
-> +		rc = crypto_shash_digest(&desc.shash, data, len, digest);
-> +	}
-> +
-> +	crypto_free_shash(tfm);
-> +	return rc;
-> +}
-> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> index e21362a..48ee2d4 100644
-> --- a/security/integrity/integrity.h
-> +++ b/security/integrity/integrity.h
-> @@ -59,6 +59,9 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
->  
->  #ifdef CONFIG_INTEGRITY_SIGNATURE
->  
-> +int integrity_calc_digest(const char *algo, const void *data, const int len,
-> +			  char *digest);
-> +
->  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
->  					const char *digest, int digestlen);
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+commit 5b9fe759a678e05be4937ddf03d50e950207c1c0 upstream.
+
+We need to update the hrtimer clock offsets from the hrtimer interrupt
+context. To avoid conversions from timespec to ktime_t maintain a
+ktime_t based representation of those offsets in the timekeeper. This
+puts the conversion overhead into the code which updates the
+underlying offsets and provides fast accessible values in the hrtimer
+interrupt.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ kernel/time/timekeeping.c | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 634c9ee..3d443b4 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -161,18 +161,34 @@ struct timespec xtime __attribute__ ((aligned (16)));
+ struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+ static struct timespec total_sleep_time;
+ 
++/* Offset clock monotonic -> clock realtime */
++static ktime_t offs_real;
++
++/* Offset clock monotonic -> clock boottime */
++static ktime_t offs_boot;
++
+ /*
+  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+  */
+ struct timespec raw_time;
+ 
+ /* must hold write on xtime_lock */
++static void update_rt_offset(void)
++{
++	struct timespec tmp, *wtm = &wall_to_monotonic;
++
++	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
++	offs_real = timespec_to_ktime(tmp);
++}
++
++/* must hold write on xtime_lock */
+ static void timekeeping_update(bool clearntp)
+ {
+ 	if (clearntp) {
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
++	update_rt_offset();
+ 	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
+ }
+ 
+@@ -565,6 +581,7 @@ void __init timekeeping_init(void)
+ 	set_normalized_timespec(&wall_to_monotonic,
+ 				-boot.tv_sec, -boot.tv_nsec);
+ 	update_xtime_cache(0);
++	update_rt_offset();
+ 	total_sleep_time.tv_sec = 0;
+ 	total_sleep_time.tv_nsec = 0;
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -573,6 +590,12 @@ void __init timekeeping_init(void)
+ /* time in seconds when suspend began */
+ static struct timespec timekeeping_suspend_time;
+ 
++static void update_sleep_time(struct timespec t)
++{
++	total_sleep_time = t;
++	offs_boot = timespec_to_ktime(t);
++}
++
+ /**
+  * timekeeping_resume - Resumes the generic timekeeping subsystem.
+  * @dev:	unused
+@@ -596,7 +619,7 @@ static int timekeeping_resume(struct sys_device *dev)
+ 		ts = timespec_sub(ts, timekeeping_suspend_time);
+ 		xtime = timespec_add_safe(xtime, ts);
+ 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
+-		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
++		update_sleep_time(timespec_add_safe(total_sleep_time, ts));
+ 	}
+ 	update_xtime_cache(0);
+ 	/* re-base the last cycle value */
+-- 
+1.7.12.rc2
+
