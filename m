@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2HON7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:59:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44595 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab2HON64 (ORCPT
+	id S1755101Ab2HON6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:58:53 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37257 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab2HON6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:58:56 -0400
+	Wed, 15 Aug 2012 09:58:48 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rjones@redhat.com, steveamigauk@yahoo.co.uk, mszeredi@suse.cz
-Subject: [PATCH 4/4] fuse: check create mode in atomic open
-Date: Wed, 15 Aug 2012 15:59:59 +0200
-Message-Id: <1345039199-5904-5-git-send-email-miklos@szeredi.hu>
+        rjones@redhat.com, steveamigauk@yahoo.co.uk, mszeredi@suse.cz,
+        stable@vger.kernel.org
+Subject: [PATCH 1/4] vfs: canonicalize create mode in build_open_flags()
+Date: Wed, 15 Aug 2012 15:59:56 +0200
+Message-Id: <1345039199-5904-2-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1345039199-5904-1-git-send-email-miklos@szeredi.hu>
 References: <1345039199-5904-1-git-send-email-miklos@szeredi.hu>
@@ -23,31 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Verify that the VFS is passing us a complete create mode with the S_IFREG to
-atomic open.
+Userspace can pass weird create mode in open(2) that we canonicalize to
+"(mode & S_IALLUGO) | S_IFREG" in vfs_create().
 
-Reported-by: Steve <steveamigauk@yahoo.co.uk>
-Reported-by: Richard W.M. Jones <rjones@redhat.com>
+The problem is that we use the uncanonicalized mode before calling vfs_create()
+with unforseen consequences.
+
+So do the canonicalization early in build_open_flags().
+
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Tested-by: Richard W.M. Jones <rjones@redhat.com>
+CC: stable@vger.kernel.org
 ---
- fs/fuse/dir.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ fs/open.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 8964cf3..324bc08 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -383,6 +383,9 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	struct fuse_entry_out outentry;
- 	struct fuse_file *ff;
+diff --git a/fs/open.c b/fs/open.c
+index bc132e1..e1f2cdb 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -852,9 +852,10 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 	int lookup_flags = 0;
+ 	int acc_mode;
  
-+	/* Userspace expects S_IFREG in create mode */
-+	BUG_ON((mode & S_IFMT) != S_IFREG);
-+
- 	forget = fuse_alloc_forget();
- 	err = -ENOMEM;
- 	if (!forget)
+-	if (!(flags & O_CREAT))
+-		mode = 0;
+-	op->mode = mode;
++	if (flags & O_CREAT)
++		op->mode = (mode & S_IALLUGO) | S_IFREG;
++	else
++		op->mode = 0;
+ 
+ 	/* Must never be set by userspace */
+ 	flags &= ~FMODE_NONOTIFY;
 -- 
 1.7.7
 
