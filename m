@@ -1,68 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab2HOTu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:50:29 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62888 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560Ab2HOTuU (ORCPT
+	id S1756906Ab2HOUYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:24:53 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:45436 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756631Ab2HOUYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:20 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Matthew Daley <mattjd@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 062/165] x25: Prevent skb overreads when checking call user data
-Date: Wed, 15 Aug 2012 15:46:46 -0400
-Message-ID: <1345060109-9187-63-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 15 Aug 2012 16:24:50 -0400
+Date: Wed, 15 Aug 2012 22:24:36 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Huacai Chen <chenhuacai@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>
+Subject: Re: [PATCH V5 09/18] MIPS: Loongson: Add swiotlb to support big
+ memory (>4GB).
+Message-ID: <20120815202436.GB15844@linux-mips.org>
+References: <1344677543-22591-1-git-send-email-chenhc@lemote.com>
+ <1344677543-22591-10-git-send-email-chenhc@lemote.com>
+ <20120813175447.GB26088@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120813175447.GB26088@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Daley <mattjd@gmail.com>
+On Mon, Aug 13, 2012 at 01:54:47PM -0400, Konrad Rzeszutek Wilk wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> > +static void *loongson_dma_alloc_coherent(struct device *dev, size_t size,
+> > +				dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+> > +{
+> > +	void *ret;
+> > +
+> > +	if (dma_alloc_from_coherent(dev, size, dma_handle, &ret))
+> > +		return ret;
+> > +
+> > +	/* ignore region specifiers */
+> > +	gfp &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
+> > +
+> > +#ifdef CONFIG_ZONE_DMA
+> > +	if (dev == NULL)
+> > +		gfp |= __GFP_DMA;
+> 
+> When would this happen? dev == NULL?
 
-commit 7f81e25befdfb3272345a2e775f520e1d515fa20 upstream.
+A legacy (ISA) device driver.  Some of the Loongsons have some kind of
+southbridge which incorporates legacy devices though of the top of my
+head I'm not sure which if any of these are actually being used.  Huacai?
 
-x25_find_listener does not check that the amount of call user data given
-in the skb is big enough in per-socket comparisons, hence buffer
-overreads may occur.  Fix this by adding a check.
+> > +	else if (dev->coherent_dma_mask <= DMA_BIT_MASK(24))
+> > +		gfp |= __GFP_DMA;
+> > +	else
+> > +#endif
+> > +#ifdef CONFIG_ZONE_DMA32
+> > +	if (dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+> > +		gfp |= __GFP_DMA32;
+> > +	else
+> 
+> Why the 'else'
+> > +#endif
+> > +	;
+> 
+> why?
+> > +	gfp |= __GFP_NORETRY;
+> > +
+> > +	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
+> > +	mb();
+> 
+> Why the 'mb()' ? Can you just do
+> 	return swiotlb_alloc_coherent(...) 
+> 
+> > +	return ret;
+> > +}
+> > +
+> > +static void loongson_dma_free_coherent(struct device *dev, size_t size,
+> > +				void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
+> > +{
+> > +	int order = get_order(size);
+> > +
+> > +	if (dma_release_from_coherent(dev, order, vaddr))
+> > +		return;
+> > +
+> > +	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+> > +}
+> > +
+> > +static dma_addr_t loongson_dma_map_page(struct device *dev, struct page *page,
+> > +				unsigned long offset, size_t size,
+> > +				enum dma_data_direction dir,
+> > +				struct dma_attrs *attrs)
+> > +{
+> > +	dma_addr_t daddr = swiotlb_map_page(dev, page, offset, size,
+> > +					dir, attrs);
+> > +	mb();
+> 
+> Please do 'return swiotlb_map_page(..)'..
+> 
+> But if you are doing that why don't you just set the dma_ops.map_page = swiotlb_map_page
+> ?
+> 
+> 
+> > +	return daddr;
+> > +}
+> > +
+> > +static int loongson_dma_map_sg(struct device *dev, struct scatterlist *sg,
+> > +				int nents, enum dma_data_direction dir,
+> > +				struct dma_attrs *attrs)
+> > +{
+> > +	int r = swiotlb_map_sg_attrs(dev, sg, nents, dir, NULL);
+> > +	mb();
+> > +
+> > +	return r;
+> > +}
+> > +
+> > +static void loongson_dma_sync_single_for_device(struct device *dev,
+> > +				dma_addr_t dma_handle, size_t size,
+> > +				enum dma_data_direction dir)
+> > +{
+> > +	swiotlb_sync_single_for_device(dev, dma_handle, size, dir);
+> > +	mb();
+> > +}
+> > +
+> > +static void loongson_dma_sync_sg_for_device(struct device *dev,
+> > +				struct scatterlist *sg, int nents,
+> > +				enum dma_data_direction dir)
+> > +{
+> > +	swiotlb_sync_sg_for_device(dev, sg, nents, dir);
+> > +	mb();
+> > +}
+> > +
+> 
+> I am not really sure why you have these extra functions, when you could
+> just modify the dma_ops to point to the swiotlb ones
+> 
+> > +static dma_addr_t loongson_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > +{
+> > +	return (paddr < 0x10000000) ?
+> > +			(paddr | 0x0000000080000000) : paddr;
+> > +}
+> > +
+> > +static phys_addr_t loongson_unity_dma_to_phys(struct device *dev, dma_addr_t daddr)
+> > +{
+> > +	return (daddr < 0x90000000 && daddr >= 0x80000000) ?
+> > +			(daddr & 0x0fffffff) : daddr;
+> > +}
+> > +
+> > +struct loongson_dma_map_ops {
+> > +	struct dma_map_ops dma_map_ops;
+> > +	dma_addr_t (*phys_to_dma)(struct device *dev, phys_addr_t paddr);
+> > +	phys_addr_t (*dma_to_phys)(struct device *dev, dma_addr_t daddr);
+> > +};
+> > +
+> > +dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > +{
+> > +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+> > +					struct loongson_dma_map_ops, dma_map_ops);
+> > +
+> > +	return ops->phys_to_dma(dev, paddr);
+> > +}
+> > +
+> > +phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+> > +{
+> > +	struct loongson_dma_map_ops *ops = container_of(get_dma_ops(dev),
+> > +					struct loongson_dma_map_ops, dma_map_ops);
+> > +
+> > +	return ops->dma_to_phys(dev, daddr);
+> > +}
+> > +
+> > +static int loongson_dma_set_mask(struct device *dev, u64 mask)
+> > +{
+> > +	/* Loongson doesn't support DMA above 32-bit */
+> > +	if (mask > DMA_BIT_MASK(32))
+> > +		return -EIO;
+> > +
+> > +	*dev->dma_mask = mask;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct loongson_dma_map_ops loongson_linear_dma_map_ops = {
+> > +	.dma_map_ops = {
+> > +		.alloc = loongson_dma_alloc_coherent,
+> > +		.free = loongson_dma_free_coherent,
+> > +		.map_page = loongson_dma_map_page,
+> 
+> But why not 'swiotlb_map_page'?
+> 
+> > +		.unmap_page = swiotlb_unmap_page,
+> > +		.map_sg = loongson_dma_map_sg,
+> > +		.unmap_sg = swiotlb_unmap_sg_attrs,
+> > +		.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
+> > +		.sync_single_for_device = loongson_dma_sync_single_for_device,
+> > +		.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
+> > +		.sync_sg_for_device = loongson_dma_sync_sg_for_device,
+> > +		.mapping_error = swiotlb_dma_mapping_error,
+> > +		.dma_supported = swiotlb_dma_supported,
+> > +		.set_dma_mask = loongson_dma_set_mask
+> > +	},
+> > +	.phys_to_dma = loongson_unity_phys_to_dma,
+> > +	.dma_to_phys = loongson_unity_dma_to_phys
+> 
+> Why do you need these? I am not seeing it being used here by any external code?
+> 
+> > +};
+> > +
+> > +void __init plat_swiotlb_setup(void)
+> > +{
+> > +	swiotlb_init(1);
+> > +	mips_dma_map_ops = &loongson_linear_dma_map_ops.dma_map_ops;
+> > +}
+> > diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+> > index 3fab204..122f4f8 100644
+> > --- a/arch/mips/mm/dma-default.c
+> > +++ b/arch/mips/mm/dma-default.c
+> > @@ -42,6 +42,13 @@ static inline int cpu_is_noncoherent_r10000(struct device *dev)
+> >  	       current_cpu_type() == CPU_R12000);
+> >  }
+> >  
+> > +static inline int cpu_is_noncoherent_loongson(struct device *dev)
+> > +{
+> > +	return !plat_device_is_coherent(dev) &&
+> > +			(current_cpu_type() == CPU_LOONGSON2 ||
+> > +			 current_cpu_type() == CPU_LOONGSON3);
+> > +}
+> > +
+> >  static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+> >  {
+> >  	gfp_t dma_flag;
+> > @@ -209,7 +216,7 @@ static inline void __dma_sync(struct page *page,
+> >  static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+> >  	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
+> >  {
+> > -	if (cpu_is_noncoherent_r10000(dev))
+> > +	if (cpu_is_noncoherent_r10000(dev) || cpu_is_noncoherent_loongson(dev))
 
-Signed-off-by: Matthew Daley <mattjd@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Acked-by: Andrew Hendry <andrew.hendry@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- net/x25/af_x25.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Why this?  I hope you're not claiming the Loongson has the same very weird
+behaviour as the R10000 in a non-coherent system.  No sane CPU should ...
 
-diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-index 36e84e1..3117b9e 100644
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -296,7 +296,8 @@ static struct sock *x25_find_listener(struct x25_address *addr,
- 			 * Found a listening socket, now check the incoming
- 			 * call user data vs this sockets call user data
- 			 */
--			if(skb->len > 0 && x25_sk(s)->cudmatchlength > 0) {
-+			if (x25_sk(s)->cudmatchlength > 0 &&
-+				skb->len >= x25_sk(s)->cudmatchlength) {
- 				if((memcmp(x25_sk(s)->calluserdata.cuddata,
- 					skb->data,
- 					x25_sk(s)->cudmatchlength)) == 0) {
--- 
-1.7.12.rc2
-
+  Ralf
