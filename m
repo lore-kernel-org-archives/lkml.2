@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2HOPSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:18:32 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:19710 "EHLO
+	id S1754384Ab2HOPSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:18:35 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:11810 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab2HOPSa (ORCPT
+	with ESMTP id S1753657Ab2HOPSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:18:30 -0400
-Message-Id: <201208151518.q7FFINvI011614@latitude.olech.com>
+	Wed, 15 Aug 2012 11:18:32 -0400
+Message-Id: <201208151518.q7FFINn3011629@latitude.olech.com>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Wed, 15 Aug 2012 16:05:24 +0100
-Subject: [NEW DRIVER V3 6/8] DA9058 GPIO driver
-To: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@stericsson.com>
+Date: Wed, 15 Aug 2012 16:05:22 +0100
+Subject: [NEW DRIVER V3 3/8] DA9058 ONKEY driver
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Eric Andersson <eric.andersson@unixphere.com>
+Cc: Andrew Jones <drjones@redhat.com>
+Cc: linux-input@vger.kernel.org
 Cc: LKML <linux-kernel@vger.kernel.org>
 Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the GPIO component driver of the Dialog DA9058 PMIC.
+This is the ONKEY component driver of the Dialog DA9058 PMIC.
 This driver is just one component of the whole DA9058 PMIC driver.
 It depends on the CORE component driver of the DA9058 MFD.
-The meaning of the PMIC register 21 bits 1 and 5 has been documented
-in the driver source.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 ---
- drivers/gpio/Kconfig       |   12 ++
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-da9058.c |  367 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 380 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-da9058.c
+ drivers/input/misc/Kconfig        |   10 ++
+ drivers/input/misc/Makefile       |    1 +
+ drivers/input/misc/da9058_onkey.c |  177 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 188 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/da9058_onkey.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 542f0c0..63b574a 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -86,6 +86,18 @@ config GPIO_DA9052
- 	help
- 	  Say yes here to enable the GPIO driver for the DA9052 chip.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7faf4a7..697b703 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -73,6 +73,16 @@ config INPUT_BMA150
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called bma150.
  
-+config GPIO_DA9058
-+	tristate "Dialog DA9058 GPIO"
++config INPUT_DA9058_ONKEY
++	tristate "DA9058 ONKEY support"
 +	depends on MFD_DA9058
 +	help
-+	  Say yes here to enable the GPIO driver for the DA9058 chip.
++	  Support the ONKEY of DA9058 PMICs as an input device
++	  reporting power button status.
 +
-+	  The Dialog DA9058 PMIC chip has 2 GPIO pins that can be
-+	  be controller by this driver.
++	  To compile this driver as a module, choose M here: the module
++	  will be called da9058_onkey.
 +
-+	  If driver is built as a module it will be called da9058-gpio.
-+
-+
- config GPIO_MAX730X
- 	tristate
- 
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0f55662..209224a 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
- obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
-+obj-$(CONFIG_GPIO_DA9058)	+= gpio-da9058.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
-diff --git a/drivers/gpio/gpio-da9058.c b/drivers/gpio/gpio-da9058.c
+ config INPUT_PCSPKR
+ 	tristate "PC Speaker support"
+ 	depends on PCSPKR_PLATFORM
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index f55cdf4..048d50e 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -41,6 +41,7 @@ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+ obj-$(CONFIG_INPUT_PCSPKR)		+= pcspkr.o
+ obj-$(CONFIG_INPUT_PM8XXX_VIBRATOR)	+= pm8xxx-vibrator.o
+ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
++obj-$(CONFIG_INPUT_DA9058_ONKEY)		+= da9058_onkey.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+ obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
+ obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
+diff --git a/drivers/input/misc/da9058_onkey.c b/drivers/input/misc/da9058_onkey.c
 new file mode 100644
-index 0000000..9ddcdc6
+index 0000000..0b351d1
 --- /dev/null
-+++ b/drivers/gpio/gpio-da9058.c
-@@ -0,0 +1,367 @@
++++ b/drivers/input/misc/da9058_onkey.c
+@@ -0,0 +1,177 @@
 +/*
 + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
 + *
@@ -87,269 +87,65 @@ index 0000000..9ddcdc6
 + */
 +
 +#include <linux/module.h>
-+#include <linux/gpio.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
 +#include <linux/mfd/core.h>
 +#include <linux/regmap.h>
 +
 +#include <linux/mfd/da9058/version.h>
 +#include <linux/mfd/da9058/registers.h>
 +#include <linux/mfd/da9058/core.h>
-+#include <linux/mfd/da9058/gpio.h>
 +#include <linux/mfd/da9058/irq.h>
-+#include <linux/mfd/da9058/pdata.h>
++#include <linux/mfd/da9058/onkey.h>
 +
-+/*
-+ *  There are only 2 available GPIO pins on the DA9058 PMIC
-+ *
-+ *  Thus this driver distinguishes them by the offset number
-+ *  being zero or non-zero for simplicity.
-+*
-+*
-+ *  A note about the control register DA9058_GPIO0001_REG
-+ *
-+ *  Bit 0x02 for GPIO[0] and bit 0x20 for GPIO[1] are the direction bits
-+ *
-+ *  gpio_set() only makes sense for GPIO pins configured to be outputs
-+ *  and since the meaning of all the other bits is different for INP's
-+ *  we must not change them if that is the case
-+ *
-+ *  gpio_set_debounce() only makes sense for GPIO pins configured to be
-+ *  inputs and since the meaning of all the other bits is different for
-+ *  OUT's we must not change them if that is the case
-+ *
-+ *  However to allow for the case where the GPIO user issues the commands
-+ *  direction_input(), direction_output(), gpio_set(), gpio_set_debounce()
-+ *  in any order the driver has to remember those settings since using the
-+ *  DA9058 PMIC itself will not work and that is the reason for the recorded
-+ *  inp_config and out_config in the driver's da9058_gpio structure.
-+ *
-+ */
-+struct da9058_gpio {
++struct da9058_onkey {
 +	struct da9058 *da9058;
 +	struct platform_device *pdev;
-+	struct gpio_chip gp;
-+	struct mutex lock;
-+	int irq_0;
-+	int irq_1;
-+	u8 inp_config;
-+	u8 out_config;
++	struct input_dev *input;
++	struct delayed_work work;
++	int irq;
 +};
 +
-+static inline
-+struct da9058_gpio *gpio_chip_to_da9058_gpio(struct gpio_chip *chip)
++static void da9058_onkey_poll(struct work_struct *work)
 +{
-+	return container_of(chip, struct da9058_gpio, gp);
-+}
++	struct da9058_onkey *onkey = container_of(work, struct da9058_onkey,
++							work.work);
++	struct da9058 *da9058 = onkey->da9058;
++	int poll, ret;
++	unsigned int sa;
 +
-+static int da9058_gpio_get(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_level;
-+	int ret;
-+
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	ret = da9058_reg_read(da9058, DA9058_STATUSC_REG, &gpio_level);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (offset) {
-+		if (gpio_level & DA9058_STATUSC_GPI1)
-+			return 1;
-+		else
-+			return 0;
++	ret = da9058_reg_read(da9058, DA9058_STATUSA_REG, &sa);
++	if (ret) {
++		dev_dbg(&onkey->pdev->dev, "Failed to read ONKEY: %d\n", ret);
++		poll = 1;
++	} else if (sa & DA9058_STATUSA_NONKEY) {
++		poll = 0;
 +	} else {
-+		if (gpio_level & DA9058_STATUSC_GPI0)
-+			return 1;
-+		else
-+			return 0;
-+	}
-+}
-+
-+static void da9058_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	unsigned int gpio_cntrl;
-+	int ret;
-+
-+	if (offset > 1) {
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d output=%d because illegal GPIO\n",
-+			offset, value);
-+		return;
++		poll = 1;
 +	}
 +
-+	mutex_lock(&gpio->lock);
++	input_report_key(onkey->input, KEY_POWER, poll);
++	input_sync(onkey->input);
 +
-+	if (offset) {
-+
-+		ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
-+		if (ret)
-+			goto exit;
-+		gpio->out_config &= ~0x80;
-+		gpio->out_config |= value ? 0x80 : 0x00;
-+
-+		if (!(gpio_cntrl & 0x20))	/* an INP pin */
-+			goto exit;
-+
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->out_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+
-+		ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
-+		if (ret)
-+			goto exit;
-+		gpio->out_config &= ~0x08;
-+		gpio->out_config |= value ? 0x08 : 0x00;
-+
-+		if (!(gpio_cntrl & 0x02))	/* an INP pin */
-+			goto exit;
-+
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->out_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	}
-+exit:
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d output=%d error=%d\n",
-+			offset, value, ret);
-+	return;
++	if (poll)
++		schedule_delayed_work(&onkey->work, msecs_to_jiffies(50));
 +}
 +
-+static int da9058_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
++static irqreturn_t da9058_onkey_event_handler(int irq, void *data)
 +{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	int ret;
++	struct da9058_onkey *onkey = data;
 +
-+	if (offset > 1)
-+		return -EINVAL;
++	schedule_delayed_work(&onkey->work, 0);
 +
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_update_bits(da9058, DA9058_GPIO0001_REG,
-+				offset ? 0xF0 : 0x0F, gpio->inp_config);
-+
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d to output error=%d\n",
-+			offset, ret);
-+	return ret;
++	return IRQ_HANDLED;
 +}
 +
-+static int da9058_gpio_direction_output(struct gpio_chip *gc,
-+					unsigned offset, int value)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	int ret;
-+
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&gpio->lock);
-+
-+	ret = da9058_update_bits(da9058, DA9058_GPIO0001_REG,
-+				offset ? 0xF0 : 0x0F, gpio->out_config);
-+
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d to input error=%d\n",
-+			offset, ret);
-+	return ret;
-+}
-+
-+/*
-+ *  da9058_gpio_to_irq is an implementation of the GPIO Hook
-+ *  @to_irq: supporting non-static gpio_to_irq() mappings
-+ *  whose implementation may not sleep. This hook is called
-+ *  when setting up the threaded GPIO irq handler.
-+ */
-+static int da9058_gpio_to_irq(struct gpio_chip *gc, u32 offset)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	if (offset)
-+		return da9058_to_virt_irq_num(da9058, gpio->irq_1);
-+	else
-+		return da9058_to_virt_irq_num(da9058, gpio->irq_0);
-+}
-+
-+static int da9058_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
-+				unsigned debounce)
-+{
-+	struct da9058_gpio *gpio = gpio_chip_to_da9058_gpio(gc);
-+	struct da9058 *da9058 = gpio->da9058;
-+	int ret;
-+	unsigned int gpio_cntrl;
-+
-+	if (offset > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&gpio->lock);
-+
-+	if (offset) {
-+		u8 debounce_bits = debounce ? 0x80 : 0x00;
-+
-+		ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
-+		if (ret)
-+			goto exit;
-+		gpio->inp_config &= ~0x80;
-+		gpio->inp_config |= debounce_bits;
-+
-+		if (gpio_cntrl & 0x20)	/* an OUT pin */
-+			goto exit;
-+
-+		gpio_cntrl &= ~0xF0;
-+		gpio_cntrl |= 0xF0 & gpio->inp_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	} else {
-+		u8 debounce_bits = debounce ? 0x08 : 0x00;
-+
-+		ret = da9058_reg_read(da9058, DA9058_GPIO0001_REG, &gpio_cntrl);
-+		if (ret)
-+			goto exit;
-+		gpio->inp_config &= ~0x08;
-+		gpio->inp_config |= debounce_bits;
-+
-+		if (gpio_cntrl & 0x02)	/* an OUT pin */
-+			goto exit;
-+
-+		gpio_cntrl &= ~0x0F;
-+		gpio_cntrl |= 0x0F & gpio->inp_config;
-+
-+		ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio_cntrl);
-+	}
-+exit:
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO%d bounce=%d error=%d\n",
-+			offset, debounce, ret);
-+	return ret;
-+}
-+
-+static int __devinit da9058_gpio_probe(struct platform_device *pdev)
++static int __devinit da9058_onkey_probe(struct platform_device *pdev)
 +{
 +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
 +	const struct mfd_cell *cell = mfd_get_cell(pdev);
-+	struct da9058_gpio_pdata *gpio_pdata;
-+	struct da9058_gpio *gpio;
++	struct da9058_onkey_pdata *onkey_pdata;
++	struct da9058_onkey *onkey;
 +	int ret;
 +
 +	if (cell == NULL) {
@@ -357,92 +153,106 @@ index 0000000..9ddcdc6
 +		goto exit;
 +	}
 +
-+	gpio_pdata = cell->platform_data;
++	onkey_pdata = cell->platform_data;
 +
-+	if (!gpio_pdata) {
++	if (onkey_pdata == NULL) {
 +		ret = -EINVAL;
 +		goto exit;
 +	}
 +
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(struct da9058_gpio), GFP_KERNEL);
-+	if (!gpio) {
++	dev_info(&pdev->dev, "Starting ONKEY\n");
++
++	onkey = devm_kzalloc(&pdev->dev, sizeof(struct da9058_onkey),
++				GFP_KERNEL);
++	if (!onkey) {
 +		ret = -ENOMEM;
 +		goto exit;
 +	}
 +
-+	gpio->da9058 = da9058;
-+	gpio->pdev = pdev;
-+	gpio->irq_0 = platform_get_irq(pdev, 0);
-+	gpio->irq_1 = platform_get_irq(pdev, 1);
-+	if (gpio->irq_0 < 0 || gpio->irq_1 < 0) {
-+		dev_err(&pdev->dev, "can not get GPIO IRQ error=%d,%d\n",
-+				gpio->irq_0, gpio->irq_1);
++	platform_set_drvdata(pdev, onkey);
++
++	onkey->da9058 = da9058;
++	onkey->pdev = pdev;
++
++	onkey->irq = platform_get_irq(pdev, 0);
++	if (onkey->irq < 0) {
++		dev_err(&pdev->dev, "can not get ONKEY IRQ error=%d\n",
++				onkey->irq);
 +		ret = -ENODEV;
 +		goto failed_to_get_irq;
 +	}
 +
-+	gpio->gp.label = "da9058-gpio";
-+	gpio->gp.owner = THIS_MODULE;
-+	gpio->gp.get = da9058_gpio_get;
-+	gpio->gp.set = da9058_gpio_set;
-+	gpio->gp.direction_input = da9058_gpio_direction_input;
-+	gpio->gp.direction_output = da9058_gpio_direction_output;
-+	gpio->gp.to_irq = da9058_gpio_to_irq;
-+	gpio->gp.set_debounce = da9058_gpio_set_debounce;
-+	gpio->gp.can_sleep = 1;
-+	gpio->gp.ngpio = gpio_pdata->ngpio;
-+	gpio->gp.base = gpio_pdata->gpio_base;
++	INIT_DELAYED_WORK(&onkey->work, da9058_onkey_poll);
 +
-+	gpio->inp_config = 0x99;
-+	gpio->out_config = 0x66;
-+
-+	mutex_init(&gpio->lock);
-+
-+	ret = gpiochip_add(&gpio->gp);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-+		goto failed_to_add_gpio_chip;
++	onkey->input = input_allocate_device();
++	if (!onkey->input) {
++		dev_err(&pdev->dev, "failed to allocate data device\n");
++		ret = -ENOMEM;
++		goto failed_to_allocate_device;
 +	}
 +
-+	platform_set_drvdata(pdev, gpio);
++	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
++	onkey->input->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
++	onkey->input->name = "da9058-onkey";
++	onkey->input->phys = "da9058-onkey/input0";
++	onkey->input->dev.parent = &pdev->dev;
 +
-+	mutex_lock(&gpio->lock);
-+	ret = da9058_reg_write(da9058, DA9058_GPIO0001_REG, gpio->inp_config);
-+	mutex_unlock(&gpio->lock);
-+	if (ret)
-+		dev_err(da9058->dev,
-+			"Failed to set GPIO0 as an output error = %d\n", ret);
-+failed_to_add_gpio_chip:
++	ret = input_register_device(onkey->input);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Unable to register input ONKEY device: %d\n", ret);
++		goto failed_to_register_device;
++	}
++
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058, onkey->irq),
++				NULL, da9058_onkey_event_handler,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 keydown", onkey);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to get ONKEY keydown IRQ %d: %d\n",
++			onkey->irq, ret);
++		goto failed_to_get_onkey_irq;
++	}
++	goto exit;
++
++failed_to_get_onkey_irq:
++failed_to_register_device:
++	input_free_device(onkey->input);
 +failed_to_get_irq:
++failed_to_allocate_device:
++	platform_set_drvdata(pdev, NULL);
 +exit:
 +	return ret;
 +}
 +
-+static int __devexit da9058_gpio_remove(struct platform_device *pdev)
++static int __devexit da9058_onkey_remove(struct platform_device *pdev)
 +{
-+	struct da9058_gpio *gpio = platform_get_drvdata(pdev);
-+	int ret;
++	struct da9058_onkey *onkey = platform_get_drvdata(pdev);
++	struct da9058 *da9058 = onkey->da9058;
 +
-+	ret = gpiochip_remove(&gpio->gp);
++	free_irq(da9058_to_virt_irq_num(da9058, onkey->irq), onkey);
++	cancel_delayed_work_sync(&onkey->work);
++	input_unregister_device(onkey->input);
 +
-+	return ret;
++	return 0;
 +}
 +
-+static struct platform_driver da9058_gpio_driver = {
-+	.probe = da9058_gpio_probe,
-+	.remove = __devexit_p(da9058_gpio_remove),
++static struct platform_driver da9058_onkey_driver = {
++	.probe = da9058_onkey_probe,
++	.remove = __devexit_p(da9058_onkey_remove),
 +	.driver = {
-+		.name = "da9058-gpio",
++		.name = "da9058-onkey",
 +		.owner = THIS_MODULE,
-+	},
++	}
 +};
 +
-+module_platform_driver(da9058_gpio_driver);
++module_platform_driver(da9058_onkey_driver);
 +
-+MODULE_DESCRIPTION("Dialog DA9058 PMIC General Purpose IO Driver");
 +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_DESCRIPTION("Dialog DA9058 PMIC Onkey Driver");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:da9058-gpio");
++MODULE_ALIAS("platform:da9058-onkey");
 -- 
 end-of-patch for NEW DRIVER V3
 
