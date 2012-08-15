@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab2HOUD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:03:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37308 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab2HOTwe (ORCPT
+	id S932433Ab2HOUDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:03:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60350 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab2HOUDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:34 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Kees Cook <kees.cook@canonical.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 143/165] x86, cpufeature: Update CPU feature RDRND to RDRAND
-Date: Wed, 15 Aug 2012 15:48:07 -0400
-Message-ID: <1345060109-9187-144-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 15 Aug 2012 16:03:31 -0400
+Date: Wed, 15 Aug 2012 21:03:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>, netdev@vger.kernel.org,
+        davem@davemloft.net, linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [net PATCH v3 1/3] net: netprio: fix files lock and remove
+ useless d_path bits
+Message-ID: <20120815200318.GM23464@ZenIV.linux.org.uk>
+References: <20120814223424.3551.21608.stgit@jf-dev1-dcblab>
+ <20120815105206.GA23811@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815105206.GA23811@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <kees.cook@canonical.com>
+On Wed, Aug 15, 2012 at 06:52:06AM -0400, Neil Horman wrote:
+> On Tue, Aug 14, 2012 at 03:34:24PM -0700, John Fastabend wrote:
+> > Add lock to prevent a race with a file closing and also remove
+> > useless and ugly sscanf code. The extra code was never needed
+> > and the case it supposedly protected against is in fact handled
+> > correctly by sock_from_file as pointed out by Al Viro.
+> > 
+> > CC: Neil Horman <nhorman@tuxdriver.com>
+> > Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+> > Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+> > ---
+> > 
+> >  net/core/netprio_cgroup.c |   22 ++++------------------
+> >  1 files changed, 4 insertions(+), 18 deletions(-)
+> > 
+> > diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+> > index ed0c043..f65dba3 100644
+> > --- a/net/core/netprio_cgroup.c
+> > +++ b/net/core/netprio_cgroup.c
+> > @@ -277,12 +277,6 @@ out_free_devname:
+> >  void net_prio_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+> >  {
+> >  	struct task_struct *p;
+> > -	char *tmp = kzalloc(sizeof(char) * PATH_MAX, GFP_KERNEL);
+> > -
+> > -	if (!tmp) {
+> > -		pr_warn("Unable to attach cgrp due to alloc failure!\n");
+> > -		return;
+> > -	}
+> >  
+> >  	cgroup_taskset_for_each(p, cgrp, tset) {
+> >  		unsigned int fd;
+> > @@ -296,32 +290,24 @@ void net_prio_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+> >  			continue;
+> >  		}
+> >  
+> > -		rcu_read_lock();
+> > +		spin_lock(&files->file_lock);
+> >  		fdt = files_fdtable(files);
+> >  		for (fd = 0; fd < fdt->max_fds; fd++) {
+> > -			char *path;
+> >  			struct file *file;
+> >  			struct socket *sock;
+> > -			unsigned long s;
+> > -			int rv, err = 0;
+> > +			int err;
+> >  
+> >  			file = fcheck_files(files, fd);
+> >  			if (!file)
+> >  				continue;
+> >  
+> > -			path = d_path(&file->f_path, tmp, PAGE_SIZE);
+> > -			rv = sscanf(path, "socket:[%lu]", &s);
+> > -			if (rv <= 0)
+> > -				continue;
+> > -
+> >  			sock = sock_from_file(file, &err);
+> > -			if (!err)
+> > +			if (sock)
+> >  				sock_update_netprioidx(sock->sk, p);
+> >  		}
+> > -		rcu_read_unlock();
+> > +		spin_unlock(&files->file_lock);
+> >  		task_unlock(p);
+> >  	}
+> > -	kfree(tmp);
+> >  }
+> >  
+> >  static struct cftype ss_files[] = {
+> > 
+> > 
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> 
+> It looks good to me.  Al, could you please lend your review here too?
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
-
-commit 7ccafc5f75c87853f3c49845d5a884f2376e03ce upstream.
-
-The Intel manual changed the name of the CPUID bit to match the
-instruction name. We should follow suit for sanity's sake. (See Intel SDM
-Volume 2, Table 3-20 "Feature Information Returned in the ECX Register".)
-
-[ hpa: we can only do this at this time because there are currently no CPUs
-  with this feature on the market, hence this is pre-hardware enabling.
-  However, Cc:'ing stable so that stable can present a consistent ABI. ]
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Link: http://lkml.kernel.org/r/20110524232926.GA27728@outflux.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/include/asm/cpufeature.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 0cfa2fb..d79434e 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -125,7 +125,7 @@
- #define X86_FEATURE_OSXSAVE	(4*32+27) /* "" XSAVE enabled in the OS */
- #define X86_FEATURE_AVX		(4*32+28) /* Advanced Vector Extensions */
- #define X86_FEATURE_F16C	(4*32+29) /* 16-bit fp conversions */
--#define X86_FEATURE_RDRND	(4*32+30) /* The RDRAND instruction */
-+#define X86_FEATURE_RDRAND	(4*32+30) /* The RDRAND instruction */
- #define X86_FEATURE_HYPERVISOR	(4*32+31) /* Running on a hypervisor */
- 
- /* VIA/Cyrix/Centaur-defined CPU features, CPUID level 0xC0000001, word 5 */
--- 
-1.7.12.rc2
-
+Tolerable...  I still don't like the idea of iterating through the
+descriptor tables, but at least that variant is safe wrt locking and
+lifetime rules.
