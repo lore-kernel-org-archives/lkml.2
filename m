@@ -1,173 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2HOXbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:31:18 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42123 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab2HOXbR (ORCPT
+	id S1754605Ab2HOXoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 19:44:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55538 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab2HOXoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:31:17 -0400
-X-AuditID: 9c93016f-b7c98ae0000013b4-bf-502c3143735e
-Date: Thu, 16 Aug 2012 08:33:23 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC 2/2] cma: support MIGRATE_DISCARD
-Message-ID: <20120815233323.GB15225@bbox>
-References: <1344934627-8473-1-git-send-email-minchan@kernel.org>
- <1344934627-8473-3-git-send-email-minchan@kernel.org>
- <502BF139.3040403@redhat.com>
+	Wed, 15 Aug 2012 19:44:15 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: <linux-kernel@vger.kernel.org>
+CC: <shawn.guo@linaro.org>, <linus.walleij@linaro.org>,
+        <rob.herring@calxeda.com>, <pdeschrijver@nvidia.com>,
+        <pgaikwad@nvidia.com>, <viresh.kumar@linaro.org>, <rnayak@ti.com>,
+        <paul@pwsan.com>, <broonie@opensource.wolfsonmicro.com>,
+        <ccross@android.com>, <linux-arm-kernel@lists.infradead.org>,
+        <myungjoo.ham@samsung.com>, <rajagopal.venkat@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v2 3/4] [RFC] cpufreq: omap: scale regulator from clk notifier
+Date: Wed, 15 Aug 2012 16:43:33 -0700
+Message-ID: <1345074214-17531-4-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
+References: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502BF139.3040403@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rik,
+This patch moves direct control of the MPU voltage regulator out of the
+cpufreq driver .target callback and instead uses the common dvfs clk
+rate-change notifier infrastructure.
 
-On Wed, Aug 15, 2012 at 02:58:01PM -0400, Rik van Riel wrote:
-> On 08/14/2012 04:57 AM, Minchan Kim wrote:
-> >This patch introudes MIGRATE_DISCARD mode in migration.
-> >It drop clean cache pages instead of migration so that
-> >migration latency could be reduced. Of course, it could
-> >evict code pages but latency of big contiguous memory
-> >is more important than some background application's slow down
-> >in mobile embedded enviroment.
-> 
-> Would it be an idea to only drop clean UNMAPPED
-> page cache pages?
+Ideally it would be nice to reduce the .target callback for omap's
+cpufreq driver to a simple call to clk_set_rate.  For now there is still
+some other stuff needed there (jiffies per loop, rounding the rate, etc
+etc).
 
-Firstly I thougt about that but I chose more agressive thing.
-Namely, even drop mapped page cache.
-Because it can reduce latency more(ex, memcpy + remapping cost
-during migration) and it could not trivial if migration range is big.
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ drivers/cpufreq/omap-cpufreq.c |   85 +++++++++++-----------------------------
+ 1 file changed, 22 insertions(+), 63 deletions(-)
 
-> 
-> >Signed-off-by: Minchan Kim <minchan@kernel.org>
-> 
-> >@@ -799,12 +802,39 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
-> >  		goto skip_unmap;
-> >  	}
-> >
-> >+	file = page_is_file_cache(page);
-> >+	ttu_flags = TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS;
-> >+
-> >+	if (!(mode & MIGRATE_DISCARD) || !file || PageDirty(page))
-> >+		ttu_flags |= TTU_MIGRATION;
-> >+	else
-> >+		discard_mode = true;
-> >+
-> >  	/* Establish migration ptes or remove ptes */
-> >-	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-> >+	try_to_unmap(page, ttu_flags);
-> 
-> This bit looks wrong, because you end up ignoring
-> mlock and then discarding the page.
-
-Argh, Thanks!
-I will fix it in next spin.
-
-> 
-> Only dropping clean page cache pages that are not
-> mapped would avoid that problem, without introducing
-> much complexity in the code.
-
-Hmm, I don't think it makes code much complex.
-How about this?
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 0f3b7cd..0909d79 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1223,7 +1223,8 @@ out:
-  * repeatedly from try_to_unmap_ksm, try_to_unmap_anon or try_to_unmap_file.
-  */
- int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
--                    unsigned long address, enum ttu_flags flags)
-+                    unsigned long address, enum ttu_flags flags,
-+                    unsigned long *vm_flags)
- {
-        struct mm_struct *mm = vma->vm_mm;
-        pte_t *pte;
-@@ -1235,6 +1236,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
-        if (!pte)
-                goto out;
+diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+index 17fa04d..2f7de30 100644
+--- a/drivers/cpufreq/omap-cpufreq.c
++++ b/drivers/cpufreq/omap-cpufreq.c
+@@ -55,7 +55,7 @@ static atomic_t freq_table_users = ATOMIC_INIT(0);
+ static struct clk *mpu_clk;
+ static char *mpu_clk_name;
+ static struct device *mpu_dev;
+-static struct regulator *mpu_reg;
++static struct dvfs_info *di;
  
-+       vm_flags |= vma->vm_flags;
-        /*
-         * If the page is mlock()d, we cannot swap it out.
-         * If it's recently referenced (perhaps page_referenced
-@@ -1652,7 +1654,7 @@ out:
-  * SWAP_FAIL   - the page is unswappable
-  * SWAP_MLOCK  - page is mlocked.
-  */
--int try_to_unmap(struct page *page, enum ttu_flags flags)
-+int try_to_unmap(struct page *page, enum ttu_flags flags, unsigned long *vm_flags)
+ static int omap_verify_speed(struct cpufreq_policy *policy)
  {
-        int ret;
-
-<snip> 
-
-+       file = page_is_file_cache(page);
-+       ttu_flags = TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS;
+@@ -80,10 +80,9 @@ static int omap_target(struct cpufreq_policy *policy,
+ 		       unsigned int relation)
+ {
+ 	unsigned int i;
+-	int r, ret = 0;
++	int ret = 0;
+ 	struct cpufreq_freqs freqs;
+-	struct opp *opp;
+-	unsigned long freq, volt = 0, volt_old = 0, tol = 0;
++	unsigned long freq;
+ 
+ 	if (!freq_table) {
+ 		dev_err(mpu_dev, "%s: cpu%d: no freq table!\n", __func__,
+@@ -119,47 +118,11 @@ static int omap_target(struct cpufreq_policy *policy,
+ 
+ 	freq = freqs.new * 1000;
+ 
+-	if (mpu_reg) {
+-		opp = opp_find_freq_ceil(mpu_dev, &freq);
+-		if (IS_ERR(opp)) {
+-			dev_err(mpu_dev, "%s: unable to find MPU OPP for %d\n",
+-				__func__, freqs.new);
+-			return -EINVAL;
+-		}
+-		volt = opp_get_voltage(opp);
+-		tol = volt * OPP_TOLERANCE / 100;
+-		volt_old = regulator_get_voltage(mpu_reg);
+-	}
+-
+-	dev_dbg(mpu_dev, "cpufreq-omap: %u MHz, %ld mV --> %u MHz, %ld mV\n", 
+-		freqs.old / 1000, volt_old ? volt_old / 1000 : -1,
+-		freqs.new / 1000, volt ? volt / 1000 : -1);
+-
+-	/* scaling up?  scale voltage before frequency */
+-	if (mpu_reg && (freqs.new > freqs.old)) {
+-		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
+-		if (r < 0) {
+-			dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
+-				 __func__);
+-			freqs.new = freqs.old;
+-			goto done;
+-		}
+-	}
++	dev_dbg(mpu_dev, "cpufreq-omap: %u MHz --> %u MHz\n",
++			freqs.old / 1000, freqs.new / 1000); 
+ 
+ 	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
+ 
+-	/* scaling down?  scale voltage after frequency */
+-	if (mpu_reg && (freqs.new < freqs.old)) {
+-		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
+-		if (r < 0) {
+-			dev_warn(mpu_dev, "%s: unable to scale voltage down.\n",
+-				 __func__);
+-			ret = clk_set_rate(mpu_clk, freqs.old * 1000);
+-			freqs.new = freqs.old;
+-			goto done;
+-		}
+-	}
+-
+ 	freqs.new = omap_getspeed(policy->cpu);
+ #ifdef CONFIG_SMP
+ 	/*
+@@ -187,7 +150,6 @@ static int omap_target(struct cpufreq_policy *policy,
+ 					freqs.new);
+ #endif
+ 
+-done:
+ 	/* notifiers */
+ 	for_each_cpu(i, policy->cpus) {
+ 		freqs.cpu = i;
+@@ -207,10 +169,6 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	int result = 0;
+ 
+-	mpu_clk = clk_get(NULL, mpu_clk_name);
+-	if (IS_ERR(mpu_clk))
+-		return PTR_ERR(mpu_clk);
+-
+ 	if (policy->cpu >= NR_CPUS) {
+ 		result = -EINVAL;
+ 		goto fail_ck;
+@@ -286,6 +244,8 @@ static struct cpufreq_driver omap_driver = {
+ 
+ static int __init omap_cpufreq_init(void)
+ {
++	struct dvfs_info_init dii;
 +
-+       if (!(mode & MIGRATE_DISCARD) || !file || PageDirty(page) ||
-+               vm_flags & VM_LOCKED)
-+               ttu_flags |= TTU_MIGRATION;
-+       else
-+               discard_mode = true;
+ 	if (cpu_is_omap24xx())
+ 		mpu_clk_name = "virt_prcm_set";
+ 	else if (cpu_is_omap34xx())
+@@ -298,34 +258,33 @@ static int __init omap_cpufreq_init(void)
+ 		return -EINVAL;
+ 	}
+ 
++	mpu_clk = clk_get(NULL, mpu_clk_name);
++	if (IS_ERR(mpu_clk))
++		return PTR_ERR(mpu_clk);
 +
-
-
-> 
-> That would turn the test above into:
-> 
-> 	if (!page_mapped(page))
-> 		discard_mode = true;
-> 
-> >  skip_unmap:
-> >-	if (!page_mapped(page))
-> >-		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
-> >+	if (!page_mapped(page)) {
-> >+		if (!discard_mode)
-> >+			rc = move_to_new_page(newpage, page, remap_swapcache, mode);
-> >+		else {
-> >+			struct address_space *mapping;
-> >+			mapping = page_mapping(page);
-> >+
-> >+			if (page_has_private(page)) {
-> >+				if (!try_to_release_page(page, GFP_KERNEL)) {
-> >+					rc = -EAGAIN;
-> >+					goto uncharge;
-> >+				}
-> >+			}
-> >+
-> >+			if (remove_mapping(mapping, page))
-> >+				rc = 0;
-> >+			else
-> >+				rc = -EAGAIN;
-> >+			goto uncharge;
-> >+		}
-> >+	}
-> 
-> This big piece of code could probably be split out
-> into its own function.
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+ 	mpu_dev = omap_device_get_by_hwmod_name("mpu");
+ 	if (!mpu_dev) {
+ 		pr_warning("%s: unable to get the mpu device\n", __func__);
+-		return -EINVAL;
++		goto out;
+ 	}
+ 
+-	mpu_reg = regulator_get(mpu_dev, "vcc");
+-	if (IS_ERR(mpu_reg)) {
+-		pr_warning("%s: unable to get MPU regulator\n", __func__);
+-		mpu_reg = NULL;
+-	} else {
+-		/* 
+-		 * Ensure physical regulator is present.
+-		 * (e.g. could be dummy regulator.)
+-		 */
+-		if (regulator_get_voltage(mpu_reg) < 0) {
+-			pr_warn("%s: physical regulator not present for MPU\n",
++	dii.dev = mpu_dev;
++	dii.con_id = mpu_clk_name;
++	dii.reg_id = "vcc";
++	dii.tol = OPP_TOLERANCE;
++
++	di = dvfs_clk_notifier_register(&dii);
++	if (IS_ERR(di))
++		pr_warning("%s: failed to register dvfs clk notifier\n",
+ 				__func__);
+-			regulator_put(mpu_reg);
+-			mpu_reg = NULL;
+-		}
+-	}
+ 
++out:
+ 	return cpufreq_register_driver(&omap_driver);
+ }
+ 
+ static void __exit omap_cpufreq_exit(void)
+ {
++	dvfs_clk_notifier_unregister(di);
+ 	cpufreq_unregister_driver(&omap_driver);
+ }
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
