@@ -1,94 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab2HOXOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:14:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2HOXOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:14:11 -0400
-Message-ID: <502C2D35.4040102@redhat.com>
-Date: Wed, 15 Aug 2012 20:13:57 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754196Ab2HOXSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 19:18:22 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52198 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab2HOXSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 19:18:17 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-8d-502c2e376878
+Date: Thu, 16 Aug 2012 08:20:23 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC 2/2] cma: support MIGRATE_DISCARD
+Message-ID: <20120815232023.GA15225@bbox>
+References: <1344934627-8473-1-git-send-email-minchan@kernel.org>
+ <1344934627-8473-3-git-send-email-minchan@kernel.org>
+ <xa1t7gt1pnck.fsf@mina86.com>
 MIME-Version: 1.0
-To: Lars Hanisch <dvb@cinnamon-sage.de>
-CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: Re: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
-References: <1345063345-31131-1-git-send-email-khoroshilov@ispras.ru> <502C0DEC.3010104@cinnamon-sage.de>
-In-Reply-To: <502C0DEC.3010104@cinnamon-sage.de>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xa1t7gt1pnck.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 15-08-2012 18:00, Lars Hanisch escreveu:
-> Hi,
+Hi Michal,
+
+On Tue, Aug 14, 2012 at 04:19:55PM +0200, Michal Nazarewicz wrote:
+> Minchan Kim <minchan@kernel.org> writes:
+> > This patch introudes MIGRATE_DISCARD mode in migration.
+> > It drop clean cache pages instead of migration so that
+> > migration latency could be reduced. Of course, it could
+> > evict code pages but latency of big contiguous memory
+> > is more important than some background application's slow down
+> > in mobile embedded enviroment.
+> >
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
 > 
-> Am 15.08.2012 22:42, schrieb Alexey Khoroshilov:
->> If pci_register_driver() failed, resources allocated in
->> ddb_class_create() are leaked. The patch fixes it.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
->> ---
->>  drivers/media/dvb/ddbridge/ddbridge-core.c |    6 +++++-
->>  1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
->> index ebf3f05..36aa4e4 100644
->> --- a/drivers/media/dvb/ddbridge/ddbridge-core.c
->> +++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
->> @@ -1705,7 +1705,11 @@ static __init int module_init_ddbridge(void)
->>  	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
->>  	if (ddb_class_create())
->>  		return -1;
-
-This is not right. It should be returning a proper error code.
-
-Could you please patch ddb_class_create() in order to make it to
-return the retuned value from IS_ERR() as the error code, and return
-it back to the init code?
-
-Ok, I noticed that other parts of the driver are also returning wrong
-error codes, but let's fix at least module_init_ddbridge() while you're
-looking into this.
-
->> -	return pci_register_driver(&ddb_pci_driver);
->> +	if (pci_register_driver(&ddb_pci_driver) < 0) {
->> +		ddb_class_destroy();
->> +		return -1;
-
-Again, the correct here would be to store the error on a temp register
-and return it, instead of returning -1.
+> This looks good to me.
 > 
->  Difference to before: the return value of pci_register_driver is not passed through.
->  Is this a problem? I'm just an interested application developer, not a driver developer.
+> > ---
+> >  include/linux/migrate_mode.h |   11 +++++++---
+> >  mm/migrate.c                 |   50 +++++++++++++++++++++++++++++++++---------
+> >  mm/page_alloc.c              |    2 +-
+> >  3 files changed, 49 insertions(+), 14 deletions(-)
+> >
+> > diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
+> > index ebf3d89..04ca19c 100644
+> > --- a/include/linux/migrate_mode.h
+> > +++ b/include/linux/migrate_mode.h
+> > @@ -6,11 +6,16 @@
+> >   *	on most operations but not ->writepage as the potential stall time
+> >   *	is too significant
+> >   * MIGRATE_SYNC will block when migrating pages
+> > + * MIGRTATE_DISCARD will discard clean cache page instead of migration
+> > + *
+> > + * MIGRATE_ASYNC, MIGRATE_SYNC_LIGHT, MIGRATE_SYNC shouldn't be used
+> > + * together as OR flag.
+> >   */
+> >  enum migrate_mode {
+> > -	MIGRATE_ASYNC,
+> > -	MIGRATE_SYNC_LIGHT,
+> > -	MIGRATE_SYNC,
+> > +	MIGRATE_ASYNC = 1 << 0,
+> > +	MIGRATE_SYNC_LIGHT = 1 << 1,
+> > +	MIGRATE_SYNC = 1 << 2,
+> > +	MIGRATE_DISCARD = 1 << 3,
+> >  };
+> 
+> Since CMA is the only user of MIGRATE_DISCARD it may be worth it to
+> guard it inside an #ifdef, eg:
+> 
+> #ifdef CONFIG_CMA
+> 	MIGRATE_DISCARD = 1 << 3,
+> #define is_migrate_discard(mode) (((mode) & MIGRATE_DISCARD) == MIGRATE_DISCARD)
 
-On userspace, ioctl() always return -1 on errors. The error code at "errno"
-is wrong, though. Instead of "1", it should be the ones described at the
-API spec[1].
+The mode bit can be used with other bits like MIGRATE_SYNC|MIGRATE_DISCARD.
+So it is correct that (mode & MIGRATE_DISCARD).
 
-[1] http://linuxtv.org/downloads/v4l-dvb-apis/gen_errors.html
+Anyway, I don't want to fold it into only CMA because I think we can
+have a pontential users in mm.
+For example, memory-hotplug case. No enough free memory in the system
+but lots of page cache page as a migration source, then we can remove
+page cache page instead of migration and it might be better than failing
+memory-hotremove.
+
+In summary, I want to open it for potential usecases in future if anyone
+doesn't oppose strongly.
+
+> #endif
+> 
+>   
+> >  #endif		/* MIGRATE_MODE_H_INCLUDED */
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index 77ed2d7..8119a59 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -685,9 +685,12 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+> >  	int remap_swapcache = 1;
+> >  	struct mem_cgroup *mem;
+> >  	struct anon_vma *anon_vma = NULL;
+> > +	enum ttu_flags ttu_flags;
+> > +	bool discard_mode = false;
+> > +	bool file = false;
+> >  
+> >  	if (!trylock_page(page)) {
+> > -		if (!force || mode == MIGRATE_ASYNC)
+> > +		if (!force || mode & MIGRATE_ASYNC)
+
+It's not wrong technically but for readability, NP.
 
 > 
-> Regards,
-> Lars.
+> +		if (!force || (mode & MIGRATE_ASYNC))
 > 
->> +	}
->> +	return 0;
->>  }
->>  
->>  static __exit void module_exit_ddbridge(void)
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >  			goto out;
+> >  
+> >  		/*
 > 
+> 
+> -- 
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
 
+
+
+
+
+-- 
+Kind regards,
+Minchan Kim
