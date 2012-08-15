@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab2HOTwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:52:34 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63099 "EHLO
+	id S932152Ab2HOTwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:45 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63111 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2HOTw3 (ORCPT
+	with ESMTP id S932107Ab2HOTwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:29 -0400
+	Wed, 15 Aug 2012 15:52:34 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Worsley <amworsley@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+CC: sordna <sordna@gmail.com>, Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 137/165] USB: Fix Corruption issue in USB ftdi driver ftdi_sio.c
-Date: Wed, 15 Aug 2012 15:48:01 -0400
-Message-ID: <1345060109-9187-138-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 140/165] USB: quirks: adding more quirky webcams to avoid squeaky audio
+Date: Wed, 15 Aug 2012 15:48:04 -0400
+Message-ID: <1345060109-9187-141-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Worsley <amworsley@gmail.com>
+From: sordna <sordna@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,85 +32,61 @@ From: Andrew Worsley <amworsley@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b1ffb4c851f185e9051ba837c16d9b84ef688d26 upstream.
+commit 0d145d7d4a241c321c832a810bb6edad18e2217b upstream.
 
-Fix for ftdi_set_termios() glitching output
+The following patch contains additional affected webcam models, on top of the
+patches commited to linux-next 2394d67e446bf616a0885167d5f0d397bdacfdfc
+and 5b253d88cc6c65a23cefc457a5a4ef139913c5fc
 
-ftdi_set_termios() is constantly setting the baud rate, data bits and parity
-unnecessarily on every call, . When called while characters are being
-transmitted can cause the FTDI chip to corrupt the serial port bit stream
-output by stalling the output half a bit during the output of a character.
-Simple fix by skipping this setting if the baud rate/data bits/parity are
-unchanged.
-
-Signed-off-by: Andrew Worsley <amworsley@gmail.com>
-----
-
-  I had a brief run with strace on the getty and it was doing ioctl()s on
-  each call but it didn't look relavant to the problem. I think the issue is
-  that XON/XOFF flow control was being implmented via hardware - for the ixoff
-  to allow the user to use XON/XOFF to control output. Unfortunately it would
-  send 3 Control URBs updating all of the settings after each piece of input
-
-  I am trying to work around the issue of gmail messing with the tab/spacing
-  by submitting via SMTP via gmail which I believe should fix the issue.
-
-  The patch is against v3.2-rc2 and compiles - but no additional testing in
-  this kernel has been done.
-
-  Thanks
-
-   Andrew
-
+Signed-off-by: sordna <sordna@gmail.com>
+Cc: Oliver Neukum <oliver@neukum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/usb/core/quirks.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 24dc63c..7367f4b 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2332,13 +2332,19 @@ static void ftdi_set_termios(struct tty_struct *tty,
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index f1b7442..9774dfc 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -53,12 +53,36 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Logitech Webcam Pro 9000 */
+ 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	cflag = termios->c_cflag;
- 
--	/* FIXME -For this cut I don't care if the line is really changing or
--	   not  - so just do the change regardless  - should be able to
--	   compare old_termios and tty->termios */
-+	if (old_termios->c_cflag == termios->c_cflag
-+	    && old_termios->c_ispeed == termios->c_ispeed
-+	    && old_termios->c_ospeed == termios->c_ospeed)
-+		goto no_c_cflag_changes;
++	/* Logitech Webcam C905 */
++	{ USB_DEVICE(0x046d, 0x080a), .driver_info = USB_QUIRK_RESET_RESUME },
 +
- 	/* NOTE These routines can get interrupted by
- 	   ftdi_sio_read_bulk_callback  - need to examine what this means -
- 	   don't see any problems yet */
- 
-+	if ((old_termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)) ==
-+	    (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
-+		goto no_data_parity_stop_changes;
++	/* Logitech Webcam C210 */
++	{ USB_DEVICE(0x046d, 0x0819), .driver_info = USB_QUIRK_RESET_RESUME },
 +
- 	/* Set number of data bits, parity, stop bits */
++	/* Logitech Webcam C260 */
++	{ USB_DEVICE(0x046d, 0x081a), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Webcam C310 */
+ 	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	urb_value = 0;
-@@ -2379,6 +2385,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
- 	}
++	/* Logitech Webcam C910 */
++	{ USB_DEVICE(0x046d, 0x0821), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam C160 */
++	{ USB_DEVICE(0x046d, 0x0824), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Webcam C270 */
+ 	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	/* Now do the baudrate */
-+no_data_parity_stop_changes:
- 	if ((cflag & CBAUD) == B0) {
- 		/* Disable flow control */
- 		if (usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-@@ -2406,6 +2413,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
++	/* Logitech Quickcam Pro 9000 */
++	{ USB_DEVICE(0x046d, 0x0990), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Quickcam E3500 */
++	{ USB_DEVICE(0x046d, 0x09a4), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Quickcam Vision Pro */
++	{ USB_DEVICE(0x046d, 0x09a6), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Philips PSC805 audio device */
+ 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	/* Set flow control */
- 	/* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
-+no_c_cflag_changes:
- 	if (cflag & CRTSCTS) {
- 		dbg("%s Setting to CRTSCTS flow control", __func__);
- 		if (usb_control_msg(dev,
 -- 
 1.7.12.rc2
 
