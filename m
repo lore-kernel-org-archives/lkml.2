@@ -1,42 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab2HPO5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:57:31 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:37022 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700Ab2HPO5a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:57:30 -0400
-X-Auth-Info: UJ0/V1zhv1IDV/ehqtc3MDto8u+Z3UAXVAZ1j2SeOVY=
-From: Marek Vasut <marex@denx.de>
-To: linux-mtd@lists.infradead.org
-Subject: Re: [PATCH] mtd: kill MTD_NAND_VERIFY_WRITE
-Date: Thu, 16 Aug 2012 16:57:28 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Huang Shijie <b32955@freescale.com>, dedekind1@gmail.com,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Huang Shijie <shijie8@gmail.com>
-References: <1344998325-3279-1-git-send-email-shijie8@gmail.com> <201208151409.12390.marex@denx.de> <502CBAA5.4070302@freescale.com>
-In-Reply-To: <502CBAA5.4070302@freescale.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201208161657.28728.marex@denx.de>
+	id S1757347Ab2HPO7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:59:11 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:34649 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753001Ab2HPO7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:59:08 -0400
+Date: Wed, 15 Aug 2012 21:12:52 +0200
+Message-Id: <201208151912.q7FJCqiY008947@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] lxt PHY: Support for the buggy LXT973 rev A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Huang Shijie,
+Hello,
 
-> 于 2012年08月15日 20:09, Marek Vasut 写道:
-> > I'd still prefer for this to be rather fixed. It seems to be able to find
-> > some obvious mistakes etc.
-> 
-> could you please point out the mistakes?
+This patch adds proper handling of the buggy revision A2 of LXT973 phy, adding precautions linked to ERRATA Item 4:
 
-Usual stuff -- flaws in drivers, misbehavior of the chip etc
+Item 4: MDIO Interface and Repeated Polling
+Problem: Repeated polling of odd-numbered registers via the MDIO interface randomly returns the
+	contents of the previous even register.
+Implication: Managed applications may not obtain the correct register contents when a particular
+	register is monitored for device status.
+Workaround: None.
+Status: This erratum has been previously fixed (in rev A3)
 
-Best regards,
-Marek Vasut
+
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
+diff -u linux-3.5-vanilla/drivers/net/phy/lxt.c linux-3.5/drivers/net/phy/lxt.c
+--- linux-3.5-vanilla/drivers/net/phy/lxt.c	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/net/phy/lxt.c	2012-04-21 17:08:21.000000000 +0200
+@@ -7,6 +7,10 @@
+  *
+  * Copyright (c) 2004 Freescale Semiconductor, Inc.
+  *
++ * Copyright (c) 2010 CSSI
++ *
++ * Added support for buggy LXT973 rev A2
++ *
+  * This program is free software; you can redistribute  it and/or modify it
+  * under  the terms of  the GNU General  Public License as published by the
+  * Free Software Foundation;  either version 2 of the  License, or (at your
+@@ -56,6 +60,10 @@
+ /* register definitions for the 973 */
+ #define MII_LXT973_PCR 16 /* Port Configuration Register */
+ #define PCR_FIBER_SELECT 1
++#define MII_LXT973_SFR		27  /* Special Function Register */
++
++#define PHYDEV_PRIV_FIBER	1
++#define PHYDEV_PRIV_REVA2	2
+ 
+ MODULE_DESCRIPTION("Intel LXT PHY driver");
+ MODULE_AUTHOR("Andy Fleming");
+@@ -99,6 +107,9 @@
+ 	return err;
+ }
+ 
++/* register definitions for the 973 */
++#define MII_LXT973_PCR 16 /* Port Configuration Register */
++#define PCR_FIBER_SELECT 1
+ 
+ static int lxt971_ack_interrupt(struct phy_device *phydev)
+ {
+@@ -122,9 +133,141 @@
+ 	return err;
+ }
+ 
++/**
++ * ERRATA on LXT973
++ *
++ * Item 4: MDIO Interface and Repeated Polling
++ * Problem: Repeated polling of odd-numbered registers via the MDIO interface randomly returns the
++ * 	contents of the previous even register.
++ * Implication: Managed applications may not obtain the correct register contents when a particular
++ * 	register is monitored for device status.
++ * Workaround: None.
++ * Status: This erratum has been previously fixed (in rev A3)
++ *
++ */
++
++static int lxt973a2_update_link(struct phy_device *phydev)
++{
++	int status;
++	int control;
++	int retry = 8; /* we try 8 times */
++
++	/* Do a fake read */
++	status = phy_read(phydev, MII_BMSR);
++
++	if (status < 0)
++		return status;
++
++	control = phy_read(phydev, MII_BMCR);
++	if (control < 0)
++		return control;
++	
++	do {
++		/* Read link and autonegotiation status */
++		status = phy_read(phydev, MII_BMSR);
++	} while (status>=0 && retry-- && status == control);
++
++	if (status < 0)
++		return status;
++
++	if ((status & BMSR_LSTATUS) == 0)
++		phydev->link = 0;
++	else
++		phydev->link = 1;
++
++	return 0;
++}
++
++int lxt973a2_read_status(struct phy_device *phydev)
++{
++	int adv;
++	int err;
++	int lpa;
++	int lpagb = 0;
++
++	/* Update the link, but return if there
++	 * was an error */
++	err = lxt973a2_update_link(phydev);
++	if (err)
++		return err;
++
++	if (AUTONEG_ENABLE == phydev->autoneg) {
++		int retry = 1;
++		
++		adv = phy_read(phydev, MII_ADVERTISE);
++
++		if (adv < 0)
++			return adv;
++		
++		do {
++			lpa = phy_read(phydev, MII_LPA);
++
++			if (lpa < 0)
++				return lpa;
++
++			/* If both registers are equal, it is suspect but not impossible, hence a new try */	
++		} while (lpa == adv && retry--);
++
++		lpa &= adv;
++
++		phydev->speed = SPEED_10;
++		phydev->duplex = DUPLEX_HALF;
++		phydev->pause = phydev->asym_pause = 0;
++
++		if (lpagb & (LPA_1000FULL | LPA_1000HALF)) {
++			phydev->speed = SPEED_1000;
++
++			if (lpagb & LPA_1000FULL)
++				phydev->duplex = DUPLEX_FULL;
++		} else if (lpa & (LPA_100FULL | LPA_100HALF)) {
++			phydev->speed = SPEED_100;
++			
++			if (lpa & LPA_100FULL)
++				phydev->duplex = DUPLEX_FULL;
++		} else
++			if (lpa & LPA_10FULL)
++				phydev->duplex = DUPLEX_FULL;
++
++		if (phydev->duplex == DUPLEX_FULL){
++			phydev->pause = lpa & LPA_PAUSE_CAP ? 1 : 0;
++			phydev->asym_pause = lpa & LPA_PAUSE_ASYM ? 1 : 0;
++		}
++	} else {
++		int bmcr = phy_read(phydev, MII_BMCR);
++		if (bmcr < 0)
++			return bmcr;
++
++		if (bmcr & BMCR_FULLDPLX)
++			phydev->duplex = DUPLEX_FULL;
++		else
++			phydev->duplex = DUPLEX_HALF;
++
++		if (bmcr & BMCR_SPEED1000)
++			phydev->speed = SPEED_1000;
++		else if (bmcr & BMCR_SPEED100)
++			phydev->speed = SPEED_100;
++		else
++			phydev->speed = SPEED_10;
++
++		phydev->pause = phydev->asym_pause = 0;
++	}
++
++	return 0;
++}
++
++static int lxt973_read_status(struct phy_device *phydev)
++{
++	return (int)phydev->priv&PHYDEV_PRIV_REVA2 ? lxt973a2_read_status(phydev) : genphy_read_status(phydev);
++}
++
+ static int lxt973_probe(struct phy_device *phydev)
+ {
+ 	int val = phy_read(phydev, MII_LXT973_PCR);
++	int priv = 0;
++	
++	phydev->priv = NULL;
++	
++	if (val<0) return val;
+ 
+ 	if (val & PCR_FIBER_SELECT) {
+ 		/*
+@@ -136,17 +279,24 @@
+ 		val &= ~BMCR_ANENABLE;
+ 		phy_write(phydev, MII_BMCR, val);
+ 		/* Remember that the port is in fiber mode. */
+-		phydev->priv = lxt973_probe;
+-	} else {
+-		phydev->priv = NULL;
++		priv |= PHYDEV_PRIV_FIBER;
+ 	}
++	val = phy_read(phydev, MII_PHYSID2);
++	
++	if (val<0) return val;
++	
++	if ((val & 0xf) == 0) { /* rev A2 */
++		dev_info(&phydev->dev, " LXT973 revision A2 has bugs\n");
++		priv |= PHYDEV_PRIV_REVA2;
++	}
++	phydev->priv = (void*)priv;
+ 	return 0;
+ }
+ 
+ static int lxt973_config_aneg(struct phy_device *phydev)
+ {
+ 	/* Do nothing if port is in fiber mode. */
+-	return phydev->priv ? 0 : genphy_config_aneg(phydev);
++	return (int)phydev->priv&PHYDEV_PRIV_FIBER ? 0 : genphy_config_aneg(phydev);
+ }
+ 
+ static struct phy_driver lxt970_driver = {
+@@ -184,7 +334,10 @@
+ 	.flags		= 0,
+ 	.probe		= lxt973_probe,
+ 	.config_aneg	= lxt973_config_aneg,
+-	.read_status	= genphy_read_status,
++	.read_status	= lxt973_read_status,
++	.suspend	= genphy_suspend,
++	.resume		= genphy_resume,
++	.isolate	= genphy_isolate,
+ 	.driver 	= { .owner = THIS_MODULE,},
+ };
+ 
