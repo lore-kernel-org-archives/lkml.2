@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab2HOT7Y (ORCPT <rfc822;w@1wt.eu>);
+	id S932379Ab2HOT7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:59:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39393 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349Ab2HOT7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121Ab2HOT7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:59:20 -0400
-Message-ID: <1345060759.4683.451.camel@ul30vt.home>
-Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Date: Wed, 15 Aug 2012 13:59:19 -0600
-In-Reply-To: <20120815192224.GB5670@redhat.com>
-References: <20120810223633.809.44188.stgit@bling.home>
-	 <20120815142803.GF3068@redhat.com> <1345052191.4683.435.camel@ul30vt.home>
-	 <20120815192224.GB5670@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 2/9] scripts/modpost: add a exception for USB gadget drivers
+Date: Wed, 15 Aug 2012 21:59:12 +0200
+Message-Id: <1345060759-18091-3-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345060759-18091-1-git-send-email-bigeasy@linutronix.de>
+References: <1345060759-18091-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 22:22 +0300, Michael S. Tsirkin wrote:
-> On Wed, Aug 15, 2012 at 11:36:31AM -0600, Alex Williamson wrote:
-> > On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
-> > > On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
-> > > > v8:
-> > > > 
-> > > > Trying a new approach.  Nobody seems to like the internal IRQ
-> > > > source ID object and the interactions it implies between irqfd
-> > > > and eoifd, so let's get rid of it.  Instead, simply expose
-> > > > IRQ source IDs to userspace.  This lets the user be in charge
-> > > > of freeing them or hanging onto a source ID for later use.
-> > > 
-> > > In the end it turns out source ID is an optimization for shared
-> > > interrupts, isn't it?  Can't we apply the optimization transparently to
-> > > the user?  E.g. if we have some spare source IDs, allocate them, if we
-> > > run out, use a shared source ID?
-> > 
-> > Let's think about shared source IDs a bit more.  I think it's wrong that
-> > irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
-> > irqfd users can share a source ID.  We do not get the logical OR of all
-> > users by putting them on the same source ID, we get "last set wins".
-> > KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
-> > logical OR happens in userspace.  How would we not starve a user if we
-> > define KVM_IRQFD_SOURCE_ID?  What am I missing?
-> 
-> That all irqfds are deasserted on EOI anyway.  So there's no point
-> to do a logical OR.
+The "driver" struct for a gadget driver is named *_driver. On module
+load, the gadget expects a UDC driver to be loaded and avaiable. If this
+is not the case => -ENODEV and bye bye. That means that the gadget
+driver is initialized immediately. The initialization process includes
+calling ->bind() for the gadget driver. Therefore it is okay to put this
+in __init. It will never be called again, we don't (yet) allow two
+gadgets of the same kind to be ->bind() again.
 
-Ok, so the argument is:
+Commit 07a18bd716 ("usb gadget: don't save bind callback in struct
+usb_composite_driver") move the ->bind() member from the struct to an
+argument.
+I'm reverting this and adding this exception. For g_zero we save around
+400bytes. I'm not having the conversion about how important it is to
+save 400 bytes. I wait for configfs interface for the gadget subsystem.
+This will remove the __init from the ->bind() because we will be able to
+call ->bind() more than once and _after_ the init has been dropped.
 
-- edge irqfds (the code now) can share a source ID because there is no
-state.  Overlapping interrupt injects always cause one or more edge
-triggers.
-- your proposed level extension can only be asserted by the inject
-eventfd and is only de-asserted by EOI, which de-asserts and notifies
-all users.
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ scripts/mod/modpost.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-What prevents an edge irqfd being registered to the same GSI as a level
-irqfd, resulting in a de-assert that might result in the irr not being
-seen by the guest and therefore maybe not getting an EOI? (I think this
-is the same problem as why we can't use the exiting irqfd to insert a
-level interrupt)
-
-Having the de-assert only on EOI policy allows level irqfds to share a
-source ID, but do they all need to share a separate source ID from edge
-irqfds?
-
-> > So I'm inclined to say source IDs are a requirement for shared
-> > interrupts.
-> 
-> Can yo show a specific example that breaks?
-> I don't think it can exist.
-
-Only the edge vs level interaction if we define the policy above for
-de-assert.
-
-> > That means the re-use scheme becomes complicated (ex. we
-> > run out of IRQ source IDs, so we start looking for sharing by re-using a
-> > source ID used by a different GSI).  Do we want to do that in kernel or
-> > userspace?  This series allows userspace to deal with that complexity.
-> > Please let me know if I'm thinking incorrectly about source ID re-use.
-> > Thanks,
-> > 
-> > Alex
-> 
-> I think there is a misunderstanding.
-> All deassert on ack irqfds can share a source ID.
-> This is why I am now thinking deassert on ack behaviour
-> should be set when irqfd is assigned.
-
-Maybe you were already thinking along the lines of a separate source ID
-for de-assert on ack irqfds vs normal irqfds then.  I think I missed
-that.  Thanks,
-
-Alex
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 68e9f5e..5e30776 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -920,6 +920,9 @@ static const char *head_sections[] = { ".head.text*", NULL };
+ static const char *linker_symbols[] =
+ 	{ "__init_begin", "_sinittext", "_einittext", NULL };
+ 
++static const char *const driver_sym[] = { "*_driver", NULL };
++static const char *const gadget_bind[] = { "*_bind", NULL };
++
+ enum mismatch {
+ 	TEXT_TO_ANY_INIT,
+ 	DATA_TO_ANY_INIT,
+@@ -1129,6 +1132,13 @@ static int secref_whitelist(const struct sectioncheck *mismatch,
+ 	    match(fromsym, mismatch->symbol_white_list))
+ 		return 0;
+ 
++	/* Check for pattern 2a */
++	if (match(tosec, init_exit_sections) &&
++	    match(fromsec, data_sections) &&
++	    match(fromsym, driver_sym) &&
++	    match(tosym, gadget_bind))
++		return 0;
++
+ 	/* Check for pattern 3 */
+ 	if (match(fromsec, head_sections) &&
+ 	    match(tosec, init_sections))
+-- 
+1.7.10.4
 
