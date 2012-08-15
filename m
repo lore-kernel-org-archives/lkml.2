@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab2HOPLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:11:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52400 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab2HOPLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:11:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 25/31] arm64: Performance counters support
-Date: Wed, 15 Aug 2012 15:11:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
+	id S1751567Ab2HOPPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:15:03 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56068 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab2HOPPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 11:15:01 -0400
+Message-ID: <502BBC35.809@parallels.com>
+Date: Wed, 15 Aug 2012 19:11:49 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
+To: Christoph Lameter <cl@linux.com>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        "Johannes Weiner" <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        "Pekka Enberg" <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz> <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
+In-Reply-To: <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208151511.11612.arnd@arndb.de>
-X-Provags-ID: V02:K0:vv7UGPk6DCGbf6RqGU2Zwv5SLFUrU6wmqgzGJ4FBsa9
- RVOXtcR72rZd+E7EFO9HprskYLsYVLZgZSK0iYYU17ZodnNaBh
- /+gEuKvhivDOuHRjzx4bjr6cs9A2zfsuRqsid5R9POQqigq0fd
- ZhOpcx3J08zg8GNZsNQgFuwYOVJ6Pi4SRtkSPtXeV0TB7+06fT
- oa/FvmhKt7tUhC2d8tGN1zVgb92ixCLAh38NtWDKnhiLyqUrX1
- c+lFG7tvFS1RWDbs8xua3k8LzY16UfJ4DQw0csYUiyjTt/KMU5
- 3HuJ9jgINHCz8kC49rPrFMuWc3GYaCuHKARWzzhXzmDKlbiKdM
- WCCI6hlBCz/RMlB3rY4o=
+X-Originating-IP: [109.173.1.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 August 2012, Catalin Marinas wrote:
-> From: Will Deacon <will.deacon@arm.com>
+On 08/15/2012 06:47 PM, Christoph Lameter wrote:
+> On Wed, 15 Aug 2012, Michal Hocko wrote:
 > 
-> This patch adds support for the AArch64 performance counters.
+>>> That is not what the kernel does, in general. We assume that if he wants
+>>> that memory and we can serve it, we should. Also, not all kernel memory
+>>> is unreclaimable. We can shrink the slabs, for instance. Ying Han
+>>> claims she has patches for that already...
+>>
+>> Are those patches somewhere around?
 > 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  arch/arm64/include/asm/perf_event.h |   22 +
->  arch/arm64/include/asm/pmu.h        |   82 +++
->  arch/arm64/kernel/perf_event.c      | 1368 +++++++++++++++++++++++++++++++++++
->  tools/perf/perf.h                   |    6 +
+> You can already shrink the reclaimable slabs (dentries / inodes) via
+> calls to the subsystem specific shrinkers. Did Ying Han do anything to
+> go beyond that?
+> 
+That is not enough for us.
+We would like to make sure that the objects being discarded belong to
+the memcg which is under pressure. We don't need to be perfect here, and
+an occasional slip is totally fine. But if in general, shrinking from
+memcg A will mostly wipe out objects from memcg B, we harmed the system
+in return for nothing good.
 
-Can you explain how AArch64 performance counters differ from the 32
-bit ones? Do they work for AArch32 user space under AArch64 kernels?
-Is it possible to share parts of the implementation with arch/arm?
-
-	Arnd
