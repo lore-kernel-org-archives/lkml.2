@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2HOU1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:27:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36745 "EHLO
+	id S1757228Ab2HOU11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:27:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36717 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab2HOTuN (ORCPT
+	with ESMTP id S1756520Ab2HOTuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:13 -0400
+	Wed, 15 Aug 2012 15:50:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@parallels.com>,
+CC: Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 051/165] libiscsi_tcp: fix LLD data allocation
-Date: Wed, 15 Aug 2012 15:46:35 -0400
-Message-ID: <1345060109-9187-52-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 053/165] ALSA: hda/realtek - Avoid bogus HP-pin assignment
+Date: Wed, 15 Aug 2012 15:46:37 -0400
+Message-ID: <1345060109-9187-54-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Takashi Iwai <tiwai@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,56 +31,35 @@ From: Mike Christie <michaelc@cs.wisc.edu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 74dcd0ec735ba9c5bef254b2f6e53068cf3f9ff0 upstream.
+commit 5fe6e0151dbd969f5fbcd94d05c968b76d76952b upstream.
 
-Have libiscsi_tcp have upper layers allocate the LLD data
-along with the iscsi_cls_conn struct, so it is refcounted.
+When the headphone pin is assigned as primary output to line_out_pins[],
+the automatic HP-pin assignment by ASSID must be suppressed.  Otherwise
+a wrong pin might be assigned to the headphone and breaks the auto-mute.
 
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reference: https://bugzilla.novell.com/show_bug.cgi?id=716104
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/libiscsi_tcp.c | 14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+ sound/pci/hda/patch_realtek.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/libiscsi_tcp.c b/drivers/scsi/libiscsi_tcp.c
-index 5c92620..b90bb2a 100644
---- a/drivers/scsi/libiscsi_tcp.c
-+++ b/drivers/scsi/libiscsi_tcp.c
-@@ -1073,7 +1073,8 @@ iscsi_tcp_conn_setup(struct iscsi_cls_session *cls_session, int dd_data_size,
- 	struct iscsi_cls_conn *cls_conn;
- 	struct iscsi_tcp_conn *tcp_conn;
- 
--	cls_conn = iscsi_conn_setup(cls_session, sizeof(*tcp_conn), conn_idx);
-+	cls_conn = iscsi_conn_setup(cls_session,
-+				    sizeof(*tcp_conn) + dd_data_size, conn_idx);
- 	if (!cls_conn)
- 		return NULL;
- 	conn = cls_conn->dd_data;
-@@ -1085,22 +1086,13 @@ iscsi_tcp_conn_setup(struct iscsi_cls_session *cls_session, int dd_data_size,
- 
- 	tcp_conn = conn->dd_data;
- 	tcp_conn->iscsi_conn = conn;
--
--	tcp_conn->dd_data = kzalloc(dd_data_size, GFP_KERNEL);
--	if (!tcp_conn->dd_data) {
--		iscsi_conn_teardown(cls_conn);
--		return NULL;
--	}
-+	tcp_conn->dd_data = conn->dd_data + sizeof(*tcp_conn);
- 	return cls_conn;
- }
- EXPORT_SYMBOL_GPL(iscsi_tcp_conn_setup);
- 
- void iscsi_tcp_conn_teardown(struct iscsi_cls_conn *cls_conn)
- {
--	struct iscsi_conn *conn = cls_conn->dd_data;
--	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
--
--	kfree(tcp_conn->dd_data);
- 	iscsi_conn_teardown(cls_conn);
- }
- EXPORT_SYMBOL_GPL(iscsi_tcp_conn_teardown);
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index d388680..2c71de1 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1336,7 +1336,9 @@ do_sku:
+ 	 * 15   : 1 --> enable the function "Mute internal speaker
+ 	 *	        when the external headphone out jack is plugged"
+ 	 */
+-	if (!spec->autocfg.hp_pins[0]) {
++	if (!spec->autocfg.hp_pins[0] &&
++	    !(spec->autocfg.line_out_pins[0] &&
++	      spec->autocfg.line_out_type == AUTO_PIN_HP_OUT)) {
+ 		hda_nid_t nid;
+ 		tmp = (ass >> 11) & 0x3;	/* HP to chassis */
+ 		if (tmp == 0)
 -- 
 1.7.12.rc2
 
