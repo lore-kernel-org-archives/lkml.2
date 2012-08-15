@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2HOP0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:26:43 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:43349 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab2HOP0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:26:42 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, yinghan@google.com
-Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-5-git-send-email-glommer@parallels.com>
-	<20120814162144.GC6905@dhcp22.suse.cz>
-	<502B6D03.1080804@parallels.com>
-	<20120815123931.GF23985@dhcp22.suse.cz>
-	<000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
-Date: Wed, 15 Aug 2012 08:19:58 -0700
-In-Reply-To: <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
-	(Christoph Lameter's message of "Wed, 15 Aug 2012 14:47:57 +0000")
-Message-ID: <xr93obmcb2sh.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755054Ab2HOPco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:32:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753060Ab2HOPcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 11:32:43 -0400
+Message-ID: <502BC09A.5050104@redhat.com>
+Date: Wed, 15 Aug 2012 11:30:34 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives
+ to balloon pages
+References: <20120813084123.GF14081@redhat.com> <20120814182244.GB13338@t510.redhat.com> <20120814195139.GA28870@redhat.com> <20120814195916.GC28870@redhat.com> <20120814200830.GD22133@t510.redhat.com> <20120814202401.GB28990@redhat.com> <20120814202949.GF22133@t510.redhat.com> <20120814204906.GD28990@redhat.com> <20120814205426.GA29162@redhat.com> <502ABB9B.90108@redhat.com> <20120814213832.GA29180@redhat.com>
+In-Reply-To: <20120814213832.GA29180@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15 2012, Christoph Lameter wrote:
+On 08/14/2012 05:38 PM, Michael S. Tsirkin wrote:
 
-> On Wed, 15 Aug 2012, Michal Hocko wrote:
+> And even ignoring that, global pointer to a device
+> is an ugly hack and ugly hacks tend to explode.
 >
->> > That is not what the kernel does, in general. We assume that if he wants
->> > that memory and we can serve it, we should. Also, not all kernel memory
->> > is unreclaimable. We can shrink the slabs, for instance. Ying Han
->> > claims she has patches for that already...
->>
->> Are those patches somewhere around?
->
-> You can already shrink the reclaimable slabs (dentries / inodes) via
-> calls to the subsystem specific shrinkers. Did Ying Han do anything to
-> go beyond that?
+> And even ignoring estetics, and if we decide we are fine
+> with a single balloon, it needs to fail gracefully not
+> crash like it does now.
 
-cc: Ying
+Fair enough.  That certainly seems easy enough to fix.
 
-The Google shrinker patches enhance prune_dcache_sb() to limit dentry
-pressure to a specific memcg.
+Each balloon driver can have its own struct address_space,
+and simply point mapping->host (or any of the others) at
+a global balloon thing somewhere.
+
+if (page->mapping && page->mapping->host == balloon_magic)
+
+
