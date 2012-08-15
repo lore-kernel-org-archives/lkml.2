@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab2HOTxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:53:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37365 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932163Ab2HOTwr (ORCPT
+	id S932265Ab2HOTxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:53:05 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63156 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab2HOTwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:47 -0400
+	Wed, 15 Aug 2012 15:52:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 152/165] random: use lockless techniques in the interrupt path
-Date: Wed, 15 Aug 2012 15:48:16 -0400
-Message-ID: <1345060109-9187-153-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 153/165] random: create add_device_randomness() interface
+Date: Wed, 15 Aug 2012 15:48:17 -0400
+Message-ID: <1345060109-9187-154-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,243 +32,90 @@ From: Theodore Ts'o <tytso@mit.edu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 902c098a3663de3fa18639efbb71b6080f0bcd3c upstream.
+commit a2080a67abe9e314f9e9c2cc3a4a176e8a8f8793 upstream.
 
-The real-time Linux folks don't like add_interrupt_randomness() taking
-a spinlock since it is called in the low-level interrupt routine.
-This also allows us to reduce the overhead in the fast path, for the
-random driver, which is the interrupt collection path.
+Add a new interface, add_device_randomness() for adding data to the
+random pool that is likely to differ between two devices (or possibly
+even per boot).  This would be things like MAC addresses or serial
+numbers, or the read-out of the RTC. This does *not* add any actual
+entropy to the pool, but it initializes the pool to different values
+for devices that might otherwise be identical and have very little
+entropy available to them (particularly common in the embedded world).
 
+[ Modified by tytso to mix in a timestamp, since there may be some
+  variability caused by the time needed to detect/configure the hardware
+  in question. ]
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/random.c | 78 +++++++++++++++++++++++++--------------------------
- 1 file changed, 39 insertions(+), 39 deletions(-)
+ drivers/char/random.c  | 28 ++++++++++++++++++++++++++++
+ include/linux/random.h |  1 +
+ 2 files changed, 29 insertions(+)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index a104af3..3cfaf87 100644
+index 3cfaf87..0c85b69 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -411,9 +411,9 @@ struct entropy_store {
- 	/* read-write data: */
- 	spinlock_t lock;
- 	unsigned add_ptr;
-+	unsigned input_rotate;
- 	int entropy_count;
- 	int entropy_total;
--	int input_rotate;
- 	unsigned int initialized:1;
- 	__u8 last_data[EXTRACT_SIZE];
- };
-@@ -461,26 +461,24 @@ static __u32 const twist_table[8] = {
-  * it's cheap to do so and helps slightly in the expected case where
-  * the entropy is concentrated in the low-order bits.
-  */
--static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
--				   int nbytes, __u8 out[64])
-+static void __mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
- 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
- 	int input_rotate;
- 	int wordmask = r->poolinfo->poolwords - 1;
- 	const char *bytes = in;
- 	__u32 w;
--	unsigned long flags;
- 
--	/* Taps are constant, so we can load them without holding r->lock.  */
- 	tap1 = r->poolinfo->tap1;
- 	tap2 = r->poolinfo->tap2;
- 	tap3 = r->poolinfo->tap3;
- 	tap4 = r->poolinfo->tap4;
- 	tap5 = r->poolinfo->tap5;
- 
--	spin_lock_irqsave(&r->lock, flags);
--	input_rotate = r->input_rotate;
--	i = r->add_ptr;
-+	smp_rmb();
-+	input_rotate = ACCESS_ONCE(r->input_rotate);
-+	i = ACCESS_ONCE(r->add_ptr);
- 
- 	/* mix one byte at a time to simplify size handling and churn faster */
- 	while (nbytes--) {
-@@ -507,19 +505,23 @@ static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
- 		input_rotate += i ? 7 : 14;
- 	}
- 
--	r->input_rotate = input_rotate;
--	r->add_ptr = i;
-+	ACCESS_ONCE(r->input_rotate) = input_rotate;
-+	ACCESS_ONCE(r->add_ptr) = i;
-+	smp_wmb();
- 
- 	if (out)
- 		for (j = 0; j < 16; j++)
- 			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
--
--	spin_unlock_irqrestore(&r->lock, flags);
+@@ -125,10 +125,19 @@
+  * The current exported interfaces for gathering environmental noise
+  * from the devices are:
+  *
++ *	void add_device_randomness(const void *buf, unsigned int size);
+  * 	void add_input_randomness(unsigned int type, unsigned int code,
+  *                                unsigned int value);
+  *	void add_interrupt_randomness(int irq, int irq_flags);
+  *
++ * add_device_randomness() is for adding data to the random pool that
++ * is likely to differ between two devices (or possibly even per boot).
++ * This would be things like MAC addresses or serial numbers, or the
++ * read-out of the RTC. This does *not* add any actual entropy to the
++ * pool, but it initializes the pool to different values for devices
++ * that might otherwise be identical and have very little entropy
++ * available to them (particularly common in the embedded world).
++ *
+  * add_input_randomness() uses the input layer interrupt timing, as well as
+  * the event type information from the hardware.
+  *
+@@ -639,6 +648,25 @@ static void set_timer_rand_state(unsigned int irq,
  }
+ #endif
  
--static void mix_pool_bytes(struct entropy_store *r, const void *in, int bytes)
-+static void mix_pool_bytes(struct entropy_store *r, const void *in,
-+			     int nbytes, __u8 out[64])
- {
--       mix_pool_bytes_extract(r, in, bytes, NULL);
-+	unsigned long flags;
++/*
++ * Add device- or boot-specific data to the input and nonblocking
++ * pools to help initialize them to unique values.
++ *
++ * None of this adds any entropy, it is meant to avoid the
++ * problem of the nonblocking pool having similar initial state
++ * across largely identical devices.
++ */
++void add_device_randomness(const void *buf, unsigned int size)
++{
++	unsigned long time = get_cycles() ^ jiffies;
 +
-+	spin_lock_irqsave(&r->lock, flags);
-+	__mix_pool_bytes(r, in, nbytes, out);
-+	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- struct fast_pool {
-@@ -557,23 +559,22 @@ static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
-  */
- static void credit_entropy_bits(struct entropy_store *r, int nbits)
- {
--	unsigned long flags;
--	int entropy_count;
-+	int entropy_count, orig;
- 
- 	if (!nbits)
- 		return;
- 
--	spin_lock_irqsave(&r->lock, flags);
--
- 	DEBUG_ENT("added %d entropy credits to %s\n", nbits, r->name);
--	entropy_count = r->entropy_count;
-+retry:
-+	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 	entropy_count += nbits;
- 	if (entropy_count < 0) {
- 		DEBUG_ENT("negative entropy/overflow\n");
- 		entropy_count = 0;
- 	} else if (entropy_count > r->poolinfo->POOLBITS)
- 		entropy_count = r->poolinfo->POOLBITS;
--	r->entropy_count = entropy_count;
-+	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+		goto retry;
- 
- 	if (!r->initialized && nbits > 0) {
- 		r->entropy_total += nbits;
-@@ -586,7 +587,6 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
- 		wake_up_interruptible(&random_read_wait);
- 		kill_fasync(&fasync, SIGIO, POLL_IN);
- 	}
--	spin_unlock_irqrestore(&r->lock, flags);
- }
- 
- /*********************************************************************
-@@ -673,7 +673,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		sample.cycles = get_cycles();
- 
- 	sample.num = num;
--	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
-+	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
- 	/*
- 	 * Calculate number of bits of randomness we probably added.
-@@ -757,7 +757,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	fast_pool->last = now;
- 
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
--	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
-+	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
-@@ -822,7 +822,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 
- 		bytes = extract_entropy(r->pull, tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, tmp, bytes);
-+		mix_pool_bytes(r, tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
- }
-@@ -883,9 +883,11 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	int i;
- 	__u32 hash[5], workspace[SHA_WORKSPACE_WORDS];
- 	__u8 extract[64];
-+	unsigned long flags;
- 
- 	/* Generate a hash across the pool, 16 words (512 bits) at a time */
- 	sha_init(hash);
-+	spin_lock_irqsave(&r->lock, flags);
- 	for (i = 0; i < r->poolinfo->poolwords; i += 16)
- 		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
- 
-@@ -898,7 +900,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- 	 * brute-forcing the feedback as hard as brute-forcing the
- 	 * hash.
- 	 */
--	mix_pool_bytes_extract(r, hash, sizeof(hash), extract);
-+	__mix_pool_bytes(r, hash, sizeof(hash), extract);
-+	spin_unlock_irqrestore(&r->lock, flags);
- 
- 	/*
- 	 * To avoid duplicates, we atomically extract a portion of the
-@@ -921,11 +924,10 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
--			       size_t nbytes, int min, int reserved)
-+				 size_t nbytes, int min, int reserved)
- {
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
--	unsigned long flags;
- 
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
-@@ -934,6 +936,8 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 		extract_buf(r, tmp);
- 
- 		if (fips_enabled) {
-+			unsigned long flags;
++	mix_pool_bytes(&input_pool, buf, size, NULL);
++	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
++	mix_pool_bytes(&nonblocking_pool, buf, size, NULL);
++	mix_pool_bytes(&nonblocking_pool, &time, sizeof(time), NULL);
++}
++EXPORT_SYMBOL(add_device_randomness);
 +
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -1027,22 +1031,18 @@ EXPORT_SYMBOL(get_random_bytes);
- static void init_std_data(struct entropy_store *r)
- {
- 	int i;
--	ktime_t now;
--	unsigned long flags;
-+	ktime_t now = ktime_get_real();
-+	unsigned long rv;
+ static struct timer_rand_state input_timer_state;
  
--	spin_lock_irqsave(&r->lock, flags);
- 	r->entropy_count = 0;
- 	r->entropy_total = 0;
--	spin_unlock_irqrestore(&r->lock, flags);
--
--	now = ktime_get_real();
--	mix_pool_bytes(r, &now, sizeof(now));
--	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof flags) {
--		if (!arch_get_random_long(&flags))
-+	mix_pool_bytes(r, &now, sizeof(now), NULL);
-+	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
-+		if (!arch_get_random_long(&rv))
- 			break;
--		mix_pool_bytes(r, &flags, sizeof(flags));
-+		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
--	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
-+	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
- }
+ /*
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 8a85602..7451093 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -46,6 +46,7 @@ struct rand_pool_info {
  
- static int rand_initialize(void)
-@@ -1179,7 +1179,7 @@ write_pool(struct entropy_store *r, const char __user *buffer, size_t count)
- 		count -= bytes;
- 		p += bytes;
+ extern void rand_initialize_irq(int irq);
  
--		mix_pool_bytes(r, buf, bytes);
-+		mix_pool_bytes(r, buf, bytes, NULL);
- 		cond_resched();
- 	}
- 
++extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+ extern void add_interrupt_randomness(int irq, int irq_flags);
 -- 
 1.7.12.rc2
 
