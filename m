@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab2HOEol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 00:44:41 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51599 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab2HOEoj (ORCPT
+	id S1752203Ab2HOErT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 00:47:19 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:53928 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab2HOErR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 00:44:39 -0400
+	Wed, 15 Aug 2012 00:47:17 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: =?utf-8?Q?R=C3=A9mi_Denis-Courmont?= <remi@remlab.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+References: <87ehnav9n5.fsf@xmission.com>
+	<1344889115-21610-1-git-send-email-ebiederm@xmission.com>
+	<1344889115-21610-6-git-send-email-ebiederm@xmission.com>
+	<201208132326.35045.remi@remlab.net>
+Date: Tue, 14 Aug 2012 21:47:09 -0700
+In-Reply-To: <201208132326.35045.remi@remlab.net> (=?utf-8?Q?=22R=C3=A9mi?=
+ Denis-Courmont"'s
+	message of "Mon, 13 Aug 2012 23:26:34 +0300")
+Message-ID: <87has4hicy.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120814132506.GB7122@quack.suse.cz>
-References: <1342868717-1712-1-git-send-email-ashish.sangwan2@gmail.com>
-	<20120814132506.GB7122@quack.suse.cz>
-Date: Wed, 15 Aug 2012 10:14:38 +0530
-Message-ID: <CAOiN93=Wrd8Mph-u1HusZ1SGNqR1r=fkkMe7RSANajdvW-ew4Q@mail.gmail.com>
-Subject: Re: [PATCH] UDF: During mount free lvid_bh before rescanning with
- different blocksize
-From: Ashish Sangwan <ashishsangwan2@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/dtV5jRsjvsYu3klxsGDXCH+381rQuZK0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: =?ISO-8859-1?Q?;R=c3=a9mi Denis-Courmont <remi@remlab.net>?=
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 06/21] userns: Print out socket uids in a user namespace aware fashion.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+"Rémi Denis-Courmont" <remi@remlab.net> writes:
 
->   Yeah, I don't think this happens in practice but in theory it could. BTW,
-> did you check whether we don't need to free other information (like VAT
-> inode etc.) when rescanning the filesystem? I think we do but currently I'm
-> catching up after a long vacation and this doesn't have high priority.
+> Le lundi 13 août 2012 23:18:20, vous avez écrit :
+>> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>> 
+>> Cc: David Miller <davem@davemloft.net>
+>> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+>> Cc: James Morris <jmorris@namei.org>
+>> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+>> Cc: Patrick McHardy <kaber@trash.net>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> Cc: Vlad Yasevich <vyasevich@gmail.com>
+>> Cc: Sridhar Samudrala <sri@us.ibm.com>
+>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 >
-Actually, it did happen in practice. That's how we discovered it.
-Currently, it seems a bug.
-We formatted a usb stick, sector size 512bytes, using mkudffs with
-default block size 2KB.
-While writing to this media we unplug the USB which left lvid in
-corrupted state.
-On remounting, first UDF tries to mount the media with sector size and
-somehow it managed to fill lvid bh
-but failed to load metadata/mirror fe because of wrong block size.
-While rescanning with 2KB block size it failed to load the correct
-lvid as it was corrupted earlier
-and ended up using the wrong one.
-After noticing this problem, we did check other info too. Everything
-else seems to be correct.
+> FWIW, ...
 
-> Anyway, I've added your patch to my tree. Thanks.
->
- Thanks for looking into the patch.
+Well I will take every bit of review I can get.  It can be terribly
+embarrassing to discover you messed up uid/gid handling and no one
+noticed the security hole for 3 kernel releases...
 
-Ashish
+> Acked-By: Rémi Denis-Courmont <remi@remlab.net>
