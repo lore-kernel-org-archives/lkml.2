@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab2HOTtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:49:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36409 "EHLO
+	id S1756396Ab2HOTtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:49:41 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36502 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab2HOTtT (ORCPT
+	with ESMTP id S1756320Ab2HOTtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:19 -0400
+	Wed, 15 Aug 2012 15:49:33 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 024/165] atm: br2684: Fix oops due to skb->dev being NULL
-Date: Wed, 15 Aug 2012 15:46:08 -0400
-Message-ID: <1345060109-9187-25-git-send-email-paul.gortmaker@windriver.com>
+CC: NeilBrown <neilb@suse.de>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 030/165] md/linear: avoid corrupting structure while waiting for rcu_free to complete.
+Date: Wed, 15 Aug 2012 15:46:14 -0400
+Message-ID: <1345060109-9187-31-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
+From: NeilBrown <neilb@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,53 +30,33 @@ From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit fbe5e29ec1886967255e76946aaf537b8cc9b81e upstream.
+commit 1b6afa17581027218088a18a9ceda600e0ddba7a upstream.
 
-This oops have been already fixed with commit
+I don't know what I was thinking putting 'rcu' after a dynamically
+sized array!  The array could still be in use when we call rcu_free()
+(That is the point) so we mustn't corrupt it.
 
-    27141666b69f535a4d63d7bc6d9e84ee5032f82a
-
-    atm: [br2684] Fix oops due to skb->dev being NULL
-
-    It happens that if a packet arrives in a VC between the call to open it on
-    the hardware and the call to change the backend to br2684, br2684_regvcc
-    processes the packet and oopses dereferencing skb->dev because it is
-    NULL before the call to br2684_push().
-
-but have been introduced again with commit
-
-    b6211ae7f2e56837c6a4849316396d1535606e90
-
-    atm: Use SKB queue and list helpers instead of doing it by-hand.
-
-Signed-off-by: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/atm/br2684.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/md/linear.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/atm/br2684.c b/net/atm/br2684.c
-index f3bae14..e9b5677 100644
---- a/net/atm/br2684.c
-+++ b/net/atm/br2684.c
-@@ -522,12 +522,13 @@ static int br2684_regvcc(struct atm_vcc *atmvcc, void __user * arg)
- 	spin_unlock_irqrestore(&rq->lock, flags);
+diff --git a/drivers/md/linear.h b/drivers/md/linear.h
+index 0ce29b6..2f2da05 100644
+--- a/drivers/md/linear.h
++++ b/drivers/md/linear.h
+@@ -10,9 +10,9 @@ typedef struct dev_info dev_info_t;
  
- 	skb_queue_walk_safe(&queue, skb, tmp) {
--		struct net_device *dev = skb->dev;
-+		struct net_device *dev;
-+
-+		br2684_push(atmvcc, skb);
-+		dev = skb->dev;
+ struct linear_private_data
+ {
++	struct rcu_head		rcu;
+ 	sector_t		array_sectors;
+ 	dev_info_t		disks[0];
+-	struct rcu_head		rcu;
+ };
  
- 		dev->stats.rx_bytes -= skb->len;
- 		dev->stats.rx_packets--;
--
--		br2684_push(atmvcc, skb);
- 	}
- 	__module_get(THIS_MODULE);
- 	return 0;
+ 
 -- 
 1.7.12.rc2
 
