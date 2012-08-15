@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2HOLme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 07:42:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46833 "EHLO mx1.redhat.com"
+	id S1754090Ab2HOMCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 08:02:55 -0400
+Received: from mail.servus.at ([193.170.194.20]:57064 "EHLO mail.servus.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab2HOLmc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 07:42:32 -0400
-Subject: Re: [Qemu-devel] [PATCH v8] kvm: notify host when the guest is panicked
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Yan Vugenfirer <yvugenfi@redhat.com>
-In-Reply-To: <20120815095630.GT11194@redhat.com>
-Date: Wed, 15 Aug 2012 14:42:20 +0300
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <68E3ABCF-001F-4611-AB98-5069D25AC90C@redhat.com>
-References: <5021D235.4050800@cn.fujitsu.com> <20120813182132.GB25268@amt.cnet> <20120814085619.GA32708@redhat.com> <502A2B7A.3070801@siemens.com> <86E2467F-0EA3-4A03-BD89-58E41F7DB808@redhat.com> <20120814154237.GA21284@amt.cnet> <87boidgvaq.fsf@codemonkey.ws> <20120814191927.GA6058@amt.cnet> <87txw5clmh.fsf@codemonkey.ws> <20120815095630.GT11194@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
+	id S1751224Ab2HOMCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 08:02:53 -0400
+Message-ID: <502B8FE3.7080501@oberhumer.com>
+Date: Wed, 15 Aug 2012 14:02:43 +0200
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.6esrpre) Gecko/20120713 Thunderbird/10.0.6
+MIME-Version: 1.0
+To: Johannes Stezenbach <js@sig21.net>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net>
+In-Reply-To: <20120814123937.GA14756@sig21.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Johannes,
 
-On Aug 15, 2012, at 12:56 PM, Gleb Natapov wrote:
-
-> On Tue, Aug 14, 2012 at 02:35:34PM -0500, Anthony Liguori wrote:
->>> Do you consider allowing support for Windows as overengineering?
->> 
->> I don't think there is a way to hook BSOD on Windows so attempting to
->> engineer something that works with Windows seems odd, no?
->> 
-> Yan says in other email that is is possible to register a bugcheck callback.
+On 2012-08-14 14:39, Johannes Stezenbach wrote:
+> On Tue, Aug 14, 2012 at 01:44:02AM +0200, Markus F.X.J. Oberhumer wrote:
+>> On 2012-07-16 20:30, Markus F.X.J. Oberhumer wrote:
+>>>
+>>> As stated in the README this version is significantly faster (typically more
+>>> than 2 times faster!) than the current version, has been thoroughly tested on
+>>> x86_64/i386/powerpc platforms and is intended to get included into the
+>>> official Linux 3.6 or 3.7 release.
+>>>
+>>> I encourage all compression users to test and benchmark this new version,
+>>> and I also would ask some official LZO maintainer to convert the updated
+>>> source files into a GIT commit and possibly push it to Linus or linux-next.
 > 
+> Sorry for not reporting earlier, but I didn't have time to do real
+> benchmarks, just a quick test on ARM926EJ-S using barebox,
+> and found in the new version decompression is slower:
+> http://lists.infradead.org/pipermail/barebox/2012-July/008268.html
 
-Here you go - http://msdn.microsoft.com/en-us/library/windows/hardware/ff553105(v=vs.85).aspx
-Already done in virtio-net for two reasons: 1. we could configure virtio-net to notify QEMU in a hacky way (write 1 to VIRTIO_PCI_ISR register) that there was a bugckeck .It was very useful debugging complex WHQL issues that involved host networking. 2. Store additional information (for example time stamps of last receive packet, last interrupt and etc) in crash dump.
+I can only guess, but maybe your ARM cpu does not have an efficient
+implementation of {get,put}_unaligned().
 
-Yan.
+Could you please try the following patch and test if you can see
+any significant speed difference?
 
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Markus
 
+
+diff --git a/lib/lzo/lzodefs.h b/lib/lzo/lzodefs.h
+index ddc8db5..efc5714 100644
+--- a/lib/lzo/lzodefs.h
++++ b/lib/lzo/lzodefs.h
+@@ -12,8 +12,15 @@
+  */
+
+
++#if defined(__arm__)
++#define COPY4(dst, src)        \
++               (dst)[0] = (src)[0]; (dst)[1] = (src)[1]; \
++               (dst)[2] = (src)[2]; (dst)[3] = (src)[3]
++#endif
++#ifndef COPY4
+ #define COPY4(dst, src)        \
+                put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
++#endif
+ #if defined(__x86_64__)
+ #define COPY8(dst, src)        \
+                put_unaligned(get_unaligned((const u64 *)(src)), (u64 *)(dst))
+
+
+> 
+> BTW, do you have userspace code matching the old and new
+> lzo versions?  It would be easier to benchmark.
+> 
+> Unfortunately I cannot claim high confidence in my benchmark results
+> due to missing time to do it properly, it would be useful if
+> someone else could do some benchmarks on ARM before merging this.
+> 
+> 
+> Johannes 
+
+-- 
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
