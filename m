@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2HOUgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:36:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36397 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253Ab2HOTtO (ORCPT
+	id S1757215Ab2HOUhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:37:08 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62752 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756255Ab2HOTtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:14 -0400
+	Wed, 15 Aug 2012 15:49:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eric Paris <eparis@redhat.com>, James Morris <james.l.morris@oracle.com>,
+CC: Jonghwan Choi <jhbird.choi@samsung.com>,
+        James Morris <james.l.morris@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 018/165] fcaps: clear the same personality flags as suid when fcaps are used
-Date: Wed, 15 Aug 2012 15:46:02 -0400
-Message-ID: <1345060109-9187-19-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 017/165] security: fix compile error in commoncap.c
+Date: Wed, 15 Aug 2012 15:46:01 -0400
+Message-ID: <1345060109-9187-18-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Paris <eparis@redhat.com>
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,38 +32,34 @@ From: Eric Paris <eparis@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d52fc5dde171f030170a6cb78034d166b13c9445 upstream.
+commit 51b79bee627d526199b2f6a6bef8ee0c0739b6d1 upstream.
 
-If a process increases permissions using fcaps all of the dangerous
-personality flags which are cleared for suid apps should also be cleared.
-Thus programs given priviledge with fcaps will continue to have address space
-randomization enabled even if the parent tried to disable it to make it
-easier to attack.
+Add missing "personality.h"
+security/commoncap.c: In function 'cap_bprm_set_creds':
+security/commoncap.c:510: error: 'PER_CLEAR_ON_SETID' undeclared (first use in this function)
+security/commoncap.c:510: error: (Each undeclared identifier is reported only once
+security/commoncap.c:510: error: for each function it appears in.)
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- security/commoncap.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ security/commoncap.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/security/commoncap.c b/security/commoncap.c
-index 3927418..c325d38 100644
+index 6166973..3927418 100644
 --- a/security/commoncap.c
 +++ b/security/commoncap.c
-@@ -466,6 +466,11 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
- 	}
- skip:
+@@ -28,6 +28,7 @@
+ #include <linux/prctl.h>
+ #include <linux/securebits.h>
+ #include <linux/syslog.h>
++#include <linux/personality.h>
  
-+	/* if we have fs caps, clear dangerous personality flags */
-+	if (!cap_issubset(new->cap_permitted, old->cap_permitted))
-+		bprm->per_clear |= PER_CLEAR_ON_SETID;
-+
-+
- 	/* Don't let someone trace a set[ug]id/setpcap binary with the revised
- 	 * credentials unless they have the appropriate permit
- 	 */
+ /*
+  * If a non-root user executes a setuid-root binary in
 -- 
 1.7.12.rc2
 
