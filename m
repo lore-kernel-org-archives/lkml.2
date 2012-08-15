@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2HOTx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:53:59 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40823 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932287Ab2HOTxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:53:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
-Date: Wed, 15 Aug 2012 21:59:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <87a9xwivqb.fsf@tucsk.pomaz.szeredi.hu> <502B448D.7050602@redhat.com>
-In-Reply-To: <502B448D.7050602@redhat.com>
+	id S1757093Ab2HOTyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:54:33 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63191 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166Ab2HOTxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:53:16 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: John Stultz <john.stultz@linaro.org>, <stable@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 111/165] timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Date: Wed, 15 Aug 2012 15:47:35 -0400
+Message-ID: <1345060109-9187-112-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208152159.51385.rjw@sisk.pl>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 15, 2012, Hans de Goede wrote:
-> Hi,
-> 
-> On 08/15/2012 07:13 AM, Miklos Szeredi wrote:
-> > Suspend oopses in generic_ide_suspend() because dev_get_drvdata()
-> > returns NULL (dev->p->driver_data == NULL) and this function is not
-> > prepared for this.
-> >
-> > I bisected it to 0998d063 (device-core: Ensure drvdata = NULL when no
-> > driver is bound).  Reverting it fixes suspend.
-> >
-> 
-> First of all, thanks for reporting and bisecting this. With that said,
-> I must say that this is very weird. The patch in question:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=0998d063
-> 
-> Only makes dev-drvdata NULL in 2 cases:
-> 1) The probe method of the driver fails
-> 2) The driver has been detached from the device by calling one of:
->     device_release_driver() or driver_detach()
-> 
-> Note that in both code paths dev->driver also gets set to NULL, and
-> other generic ide driver callbacks very much depend on that not being
-> NULL, ie:
-> 
-> static int generic_ide_remove(struct device *dev)
-> {
->          ide_drive_t *drive = to_ide_device(dev);
->          struct ide_driver *drv = to_ide_driver(dev->driver);
-> 
->          if (drv->remove)
->                  drv->remove(drive);
-> 
->          return 0;
-> }
-> 
-> Also how can a drivers suspend callback get called if dev->driver is NULL,
-> since that callback would normally be "reached" through dev->driver, so
-> something weird is going on here ...
+From: John Stultz <john.stultz@linaro.org>
 
-No, it wouldn't, because it is a bus type callback and it is invoked for
-all devices whose bus type is ide_bus_type, regardless of whether or not
-their driver field is NULL.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-It clearly should check if drive is not NULL before using that pointer.
+commit fad0c66c4bb836d57a5f125ecd38bed653ca863a upstream.
+which resolves a bug the previous commit.
 
-Thanks,
-Rafael
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
+
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ kernel/time/timekeeping.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index df1e939..f8d4877 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -759,6 +759,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
++		wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	/* Accumulate into raw time */
+-- 
+1.7.12.rc2
+
