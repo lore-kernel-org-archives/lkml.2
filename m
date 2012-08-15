@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab2HOTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:51:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62987 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab2HOTvW (ORCPT
+	id S1756903Ab2HOUOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:14:33 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:39462 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab2HOUO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:22 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 097/165] xen/timer: Missing IRQF_NO_SUSPEND in timer code broke suspend.
-Date: Wed, 15 Aug 2012 15:47:21 -0400
-Message-ID: <1345060109-9187-98-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 15 Aug 2012 16:14:29 -0400
+Date: Wed, 15 Aug 2012 22:14:26 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] scripts/modpost: add a exception for USB gadget
+	drivers
+Message-ID: <20120815201426.GA6902@merkur.ravnborg.org>
+References: <1345060759-18091-1-git-send-email-bigeasy@linutronix.de> <1345060759-18091-3-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345060759-18091-3-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+On Wed, Aug 15, 2012 at 09:59:12PM +0200, Sebastian Andrzej Siewior wrote:
+> The "driver" struct for a gadget driver is named *_driver. On module
+> load, the gadget expects a UDC driver to be loaded and avaiable. If this
+> is not the case => -ENODEV and bye bye. That means that the gadget
+> driver is initialized immediately. The initialization process includes
+> calling ->bind() for the gadget driver. Therefore it is okay to put this
+> in __init. It will never be called again, we don't (yet) allow two
+> gadgets of the same kind to be ->bind() again.
+> 
+> Commit 07a18bd716 ("usb gadget: don't save bind callback in struct
+> usb_composite_driver") move the ->bind() member from the struct to an
+> argument.
+> I'm reverting this and adding this exception. For g_zero we save around
+> 400bytes. I'm not having the conversion about how important it is to
+> save 400 bytes. I wait for configfs interface for the gadget subsystem.
+> This will remove the __init from the ->bind() because we will be able to
+> call ->bind() more than once and _after_ the init has been dropped.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Could you use the __ref / __refdata annotation?
+This would be much cleaner than this hack in modpost.
 
-commit f611f2da99420abc973c32cdbddbf5c365d0a20c upstream.
-
-The patches missed an indirect use of IRQF_NO_SUSPEND pulled in via
-IRQF_TIMER. The following patch fixes the issue.
-
-With this fixlet PV guest migration works just fine. I also booted the
-entire series as a dom0 kernel and it appeared fine.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/xen/time.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index a05bda6..fb2b388 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -396,7 +396,9 @@ void xen_setup_timer(int cpu)
- 		name = "<timer kasprintf failed>";
- 
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
--				      IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER,
-+				      IRQF_DISABLED|IRQF_PERCPU|
-+				      IRQF_NOBALANCING|IRQF_TIMER|
-+				      IRQF_FORCE_RESUME,
- 				      name, NULL);
- 
- 	evt = &per_cpu(xen_clock_events, cpu);
--- 
-1.7.12.rc2
-
+	Sam
