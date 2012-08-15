@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab2HOTP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:15:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64793 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab2HOTPY (ORCPT
+	id S1754898Ab2HOTQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:16:38 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:59508 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab2HOTQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:15:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208122326.07318.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1208110959320.21252-100000@netrider.rowland.org>
- <201208112356.26719.rjw@sisk.pl> <201208122326.07318.rjw@sisk.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Aug 2012 13:15:02 -0600
-Message-ID: <CAErSpo7XZZ=ehzSx256aL8FomDX8AjR2jYsa-y5K+9QGGHghKA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: EHCI: fix crash during hibernation on ASUS computers
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        AceLan Kao <acelan.kao@canonical.com>, alex.hung@canonical.com,
-        Oleksij Rempel <bug-track@fisher-privat.net>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 15 Aug 2012 15:16:36 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Minho Ban <mhban@samsung.com>,
+        Jaecheol Lee <jc.lee@samsung.com>,
+        Sunyoung Kang <sy0816.kang@samsung.com>,
+        Olof Johansson <olofj@chromium.org>
+Subject: [PATCH] ARM: SAMSUNG: use spin_lock_irqsave() in clk_set_parent
+Date: Wed, 15 Aug 2012 12:16:27 -0700
+Message-Id: <1345058187-18843-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 12, 2012 at 3:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Commit dbf0e4c (PCI: EHCI: fix crash during suspend on ASUS
-> computers) added a workaround for an ASUS suspend issue related to
-> USB EHCI and a bug in a number of ASUS BIOSes that attemt to shut
-> down the EHCI controller during system suspend if its PCI command
-> register doesn't contain 0 at that time.
->
-> It turns out that the same workaround is necessary in the analogous
-> hibernation code path, so add it.
->
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=45811
-> Reported-and-tested-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: stable@vger.kernel.org
-> ---
->
-> Hi Bjorn,
->
-> Please push this to Linus ASAP, we need it in 3.6 and -stable.
+>From 0cdf3aff, "ARM: SAMSUNG: use spin_lock_irqsave() in
+clk_{enable,disable}":
 
-Applied to my for-linus branch, thanks.  I'll ask Linus to pull it in
-a couple days, after it's had a chance in -next.
+  The clk_enable()and clk_disable() can be used process and ISR either.
+  And actually it is used for real product and other platforms use it
+  now. So spin_lock_irqsave() should be used instead.
 
-> ---
->  drivers/pci/pci-driver.c |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> Index: linux/drivers/pci/pci-driver.c
-> ===================================================================
-> --- linux.orig/drivers/pci/pci-driver.c
-> +++ linux/drivers/pci/pci-driver.c
-> @@ -959,6 +959,13 @@ static int pci_pm_poweroff_noirq(struct
->         if (!pci_dev->state_saved && !pci_is_bridge(pci_dev))
->                 pci_prepare_to_sleep(pci_dev);
->
-> +       /*
-> +        * The reason for doing this here is the same as for the analogous code
-> +        * in pci_pm_suspend_noirq().
-> +        */
-> +       if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
-> +               pci_write_config_word(pci_dev, PCI_COMMAND, 0);
-> +
->         return 0;
->  }
->
+We need to make a similar change in clk_set_parent(). Otherwise,
+you can potentially get spinlock recursion:
+
+BUG: spinlock recursion on CPU#0, kinteractive/68
+ lock: 807832a8, .magic: dead4ead, .owner: kinteractive/68, .owner_cpu: 0
+[<80015f54>] (unwind_backtrace+0x0/0x128) from [<804f2914>] (dump_stack+0x20/0x24)
+[<804f2914>] (dump_stack+0x20/0x24) from [<804f57b8>] (spin_dump+0x80/0x94)
+[<804f57b8>] (spin_dump+0x80/0x94) from [<804f57f8>] (spin_bug+0x2c/0x30)
+[<804f57f8>] (spin_bug+0x2c/0x30) from [<80222730>] (do_raw_spin_lock+0x54/0x150)
+[<80222730>] (do_raw_spin_lock+0x54/0x150) from [<804f96ec>] (_raw_spin_lock_irqsave+0x20/0x28)
+[<804f96ec>] (_raw_spin_lock_irqsave+0x20/0x28) from [<80022ea4>] (clk_enable+0x3c/0x84)
+[<80022ea4>] (clk_enable+0x3c/0x84) from [<8038336c>] (s5p_mfc_clock_on+0x60/0x74)
+[<8038336c>] (s5p_mfc_clock_on+0x60/0x74) from [<8038645c>] (s5p_mfc_read_info+0x20/0x38)
+[<8038645c>] (s5p_mfc_read_info+0x20/0x38) from [<8037ca3c>] (s5p_mfc_handle_frame+0x2e4/0x4bc)
+[<8037ca3c>] (s5p_mfc_handle_frame+0x2e4/0x4bc) from [<8037d420>] (s5p_mfc_irq+0x1ec/0x6cc)
+[<8037d420>] (s5p_mfc_irq+0x1ec/0x6cc) from [<8007fc74>] (handle_irq_event_percpu+0x8c/0x244)
+[<8007fc74>] (handle_irq_event_percpu+0x8c/0x244) from [<8007fe78>] (handle_irq_event+0x4c/0x6c)
+[<8007fe78>] (handle_irq_event+0x4c/0x6c) from [<80082dd8>] (handle_fasteoi_irq+0xe4/0x150)
+[<80082dd8>] (handle_fasteoi_irq+0xe4/0x150) from [<8007f424>] (generic_handle_irq+0x3c/0x50)
+[<8007f424>] (generic_handle_irq+0x3c/0x50) from [<8000f7c4>] (handle_IRQ+0x88/0xc8)
+[<8000f7c4>] (handle_IRQ+0x88/0xc8) from [<80008564>] (gic_handle_irq+0x44/0x68)
+[<80008564>] (gic_handle_irq+0x44/0x68) from [<8000e400>] (__irq_svc+0x40/0x60)
+Exception stack(0xef3cbe68 to 0xef3cbeb0)
+[<8000e400>] (__irq_svc+0x40/0x60) from [<80022cfc>] (clk_set_parent+0x30/0x74)
+[<80022cfc>] (clk_set_parent+0x30/0x74) from [<803ac7f8>] (set_apll.isra.0+0x28/0xb0)
+[<803ac7f8>] (set_apll.isra.0+0x28/0xb0) from [<803ac8e4>] (exynos5250_set_frequency+0x64/0xb8)
+[<803ac8e4>] (exynos5250_set_frequency+0x64/0xb8) from [<803ac280>] (exynos_target+0x1b0/0x220)
+[<803ac280>] (exynos_target+0x1b0/0x220) from [<803a4a0c>] (__cpufreq_driver_target+0xb0/0xd4)
+[<803a4a0c>] (__cpufreq_driver_target+0xb0/0xd4) from [<803aab80>] (cpufreq_interactive_updown_task+0x214/0x264)
+[<803aab80>] (cpufreq_interactive_updown_task+0x214/0x264) from [<80047d04>] (kthread+0x9c/0xa8)
+[<80047d04>] (kthread+0x9c/0xa8) from [<8000fa48>] (kernel_thread_exit+0x0/0x8)
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Suggested-by: Sunil Mazhavanchery <sunilm@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org
+CC: linux-samsung-soc@vger.kernel.org
+CC: Ben Dooks <ben-linux@fluff.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Minho Ban <mhban@samsung.com>
+CC: Jaecheol Lee <jc.lee@samsung.com>
+CC: Sunyoung Kang <sy0816.kang@samsung.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>
+CC: Olof Johansson <olofj@chromium.org>
+---
+ arch/arm/plat-samsung/clock.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-samsung/clock.c b/arch/arm/plat-samsung/clock.c
+index 65c5eca..80eacca 100644
+--- a/arch/arm/plat-samsung/clock.c
++++ b/arch/arm/plat-samsung/clock.c
+@@ -173,17 +173,18 @@ struct clk *clk_get_parent(struct clk *clk)
+ 
+ int clk_set_parent(struct clk *clk, struct clk *parent)
+ {
++	unsigned long flags;
+ 	int ret = 0;
+ 
+ 	if (IS_ERR(clk))
+ 		return -EINVAL;
+ 
+-	spin_lock(&clocks_lock);
++	spin_lock_irqsave(&clocks_lock, flags);
+ 
+ 	if (clk->ops && clk->ops->set_parent)
+ 		ret = (clk->ops->set_parent)(clk, parent);
+ 
+-	spin_unlock(&clocks_lock);
++	spin_unlock_irqrestore(&clocks_lock, flags);
+ 
+ 	return ret;
+ }
+-- 
+1.7.7.3
+
