@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2HOHqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 03:46:43 -0400
-Received: from luna.vmars.tuwien.ac.at ([128.130.39.29]:52712 "EHLO
-	mail.vmars.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2HOHql (ORCPT
+	id S1752722Ab2HOHvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 03:51:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43732 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab2HOHvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 03:46:41 -0400
-Message-ID: <502B53D7.8080804@vmars.tuwien.ac.at>
-Date: Wed, 15 Aug 2012 09:46:31 +0200
-From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] apple_gmux: Add support for newer hardware
-References: <1344898369-4944-1-git-send-email-mjg@redhat.com> <1344898369-4944-2-git-send-email-mjg@redhat.com> <20120814004625.GB18992@thinkpad-t410> <502A5B40.9010303@vmars.tuwien.ac.at> <502A667B.2060100@vmars.tuwien.ac.at> <20120814151543.GD18992@thinkpad-t410> <502A86B7.8010402@vmars.tuwien.ac.at>
-In-Reply-To: <502A86B7.8010402@vmars.tuwien.ac.at>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 15 Aug 2012 03:51:51 -0400
+Date: Wed, 15 Aug 2012 00:51:50 -0700 (PDT)
+Message-Id: <20120815.005150.614969789942856064.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120815.004457.1075503861038108671.davem@davemloft.net>
+References: <20120815.004457.1075503861038108671.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: David Miller <davem@davemloft.net>
+Date: Wed, 15 Aug 2012 00:44:57 -0700 (PDT)
 
-On 08/14/2012 07:11 PM, Bernhard Froemel wrote:
-> Need to play around further..
-I think I solved the communication problems concerning byte writes to
-the gmux device.
+> Please pull to get these two bug fixes.
+> 
+> Thanks!
 
-This:
-http://luna.vmars.tuwien.ac.at/~froemel/rmbp/patch-apple-gmux_v2.txt
-works reliable for me (50+ suspend/resume cycles, many brightness
-changes) *without* delays.
+Sorry, I botched the original Subject, fixed now.
 
-I looked once more through Apple's original driver and noticed that
-their cmd_done waits until bit 1 is set (not cleared!) and also does
-the final read from GMUX_PORT_DPM_RADDR only if bit 1 is not set.
-Also it seems that in case of byte writes the old interface should be
-followed as well (Apple, why?!).
-
-Bernhard
-
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAlArU9cACgkQ6iVUjPs37Jk6iACfWuZ7zpbc1vFLgJR29UroJeL2
-HvMAnja8D7/o+aqywr/qRtNrB/o217Ci
-=gcjo
------END PGP SIGNATURE-----
+> The following changes since commit 1a9b4993b70fb1884716902774dc9025b457760d:
+> 
+>   Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2012-08-01 16:47:15 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+> 
+> for you to fetch changes up to 2856cc2e4d0852c3ddaae9dcb19cb9396512eb08:
+> 
+>   sparc64: Be less verbose during vmemmap population. (2012-08-15 00:37:29 -0700)
+> 
+> ----------------------------------------------------------------
+> David S. Miller (1):
+>       sparc64: Be less verbose during vmemmap population.
+> 
+> Jiri Kosina (1):
+>       sparc64: do not clobber personality flags in sys_sparc64_personality()
+> 
+>  arch/sparc/kernel/sys_sparc_64.c | 10 +++++-----
+>  arch/sparc/mm/init_64.c          | 28 +++++++++++++++++++++++-----
+>  2 files changed, 28 insertions(+), 10 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe sparclinux" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
