@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab2HORfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:35:05 -0400
-Received: from nm1-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.27]:27214
-	"HELO nm1-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756000Ab2HORfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:35:03 -0400
-X-Yahoo-Newman-Id: 403200.70157.bm@smtp105.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: g91ktZAVM1lgXmHJozQQhMPojwHQocx1DDZLT6AApXbhQRw
- NumDm9swfr_CoHodZ769g6mOJ6GM5GOSTXRN5iGF7INtcdVngI4fsUELeqIR
- VARL8nRuXqfOkQ.mctMxm.J6mNx5YAJmWzwcwy3beL5Up5Yxd6wejsyxWwCr
- dFTZFILoDI5DqyNt_mcGJ5n4_Bx.L55mwgsAtTl2_a.capm_Rg3ltiRMNnPn
- EhupTCGBnDRrPtFKpsmIoJDSTL6zeOoyrea3B4o2e6.CVPuOUg2QVfENb5f7
- jHpzbh10JyPqKITBVt9Eep.ge_ZZL2N01ig5D8w4CpziO0n.byUAYQBSszgY
- N1yQaWz.CDHx6lM3Fw9NZXIF2GwpcPaq_2zNDbs8WWMqeT1fj8JqXvJDBtBf
- eX8KrG1oFYGC_PXP3koGp01WZgLp6isSrPLPCi2IP32Wpptyf3F9baOpUh73
- 1VgSnEnxtQxfUatkugOwaxKDdHWLQcqxFHWmpoFst
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <502BDDC2.6030502@schaufler-ca.com>
-Date: Wed, 15 Aug 2012 10:34:58 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, nbd@openwrt.org, neilb@suse.de,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        ricwheeler@gmail.com, dhowells@redhat.com, hpj@urpla.net,
-        sedat.dilek@googlemail.com, penberg@kernel.org,
-        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
-Subject: Re: [PATCH 12/13] ovl: switch to __inode_permission()
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu> <1345045700-9062-13-git-send-email-miklos@szeredi.hu> <502BD587.6090807@schaufler-ca.com> <20120815170758.GP29100@dm>
-In-Reply-To: <20120815170758.GP29100@dm>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756037Ab2HORgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:36:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755976Ab2HORgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 13:36:32 -0400
+Message-ID: <1345052191.4683.435.camel@ul30vt.home>
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 15 Aug 2012 11:36:31 -0600
+In-Reply-To: <20120815142803.GF3068@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+	 <20120815142803.GF3068@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/15/2012 10:07 AM, Andy Whitcroft wrote:
-> On Wed, Aug 15, 2012 at 09:59:51AM -0700, Casey Schaufler wrote:
->> On 8/15/2012 8:48 AM, Miklos Szeredi wrote:
->>> From: Andy Whitcroft <apw@canonical.com>
->>>
->>> When checking permissions on an overlayfs inode we do not take into
->>> account either device cgroup restrictions nor security permissions.
->>> This allows a user to mount an overlayfs layer over a restricted device
->>> directory and by pass those permissions to open otherwise restricted
->>> files.
->> Why is this a good idea? Either you're not including enough context
->> about the conditions under which this can occur, or you're suggesting
->> the introduction of a trivial mechanism for bypassing all file access
->> controls. This does not seem right.
-> It is stating that the unprotected case is how things was before this
-> patch switches us over to __inode_permisssions.  The patch is closing
-> the hole indicated.
+On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
+> On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
+> > v8:
+> > 
+> > Trying a new approach.  Nobody seems to like the internal IRQ
+> > source ID object and the interactions it implies between irqfd
+> > and eoifd, so let's get rid of it.  Instead, simply expose
+> > IRQ source IDs to userspace.  This lets the user be in charge
+> > of freeing them or hanging onto a source ID for later use.
+> 
+> In the end it turns out source ID is an optimization for shared
+> interrupts, isn't it?  Can't we apply the optimization transparently to
+> the user?  E.g. if we have some spare source IDs, allocate them, if we
+> run out, use a shared source ID?
 
-Well, that's good then. Carry on.
+Let's think about shared source IDs a bit more.  I think it's wrong that
+irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
+irqfd users can share a source ID.  We do not get the logical OR of all
+users by putting them on the same source ID, we get "last set wins".
+KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
+logical OR happens in userspace.  How would we not starve a user if we
+define KVM_IRQFD_SOURCE_ID?  What am I missing?
 
->
-> -apw
->>> Switch over to __inode_permissions.
->>>
->>> Signed-off-by: Andy Whitcroft <apw@canonical.com>
->>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->>> ---
->>>  fs/overlayfs/inode.c |   12 +-----------
->>>  1 files changed, 1 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
->>> index e854720..f3a534f 100644
->>> --- a/fs/overlayfs/inode.c
->>> +++ b/fs/overlayfs/inode.c
->>> @@ -100,19 +100,9 @@ int ovl_permission(struct inode *inode, int mask)
->>>  		if (is_upper && !IS_RDONLY(inode) && IS_RDONLY(realinode) &&
->>>  		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
->>>  			goto out_dput;
->>> -
->>> -		/*
->>> -		 * Nobody gets write access to an immutable file.
->>> -		 */
->>> -		err = -EACCES;
->>> -		if (IS_IMMUTABLE(realinode))
->>> -			goto out_dput;
->>>  	}
->>>  
->>> -	if (realinode->i_op->permission)
->>> -		err = realinode->i_op->permission(realinode, mask);
->>> -	else
->>> -		err = generic_permission(realinode, mask);
->>> +	err = __inode_permission(realinode, mask);
->>>  out_dput:
->>>  	dput(alias);
->>>  	return err;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+So I'm inclined to say source IDs are a requirement for shared
+interrupts.  That means the re-use scheme becomes complicated (ex. we
+run out of IRQ source IDs, so we start looking for sharing by re-using a
+source ID used by a different GSI).  Do we want to do that in kernel or
+userspace?  This series allows userspace to deal with that complexity.
+Please let me know if I'm thinking incorrectly about source ID re-use.
+Thanks,
+
+Alex
+
+
+> > They
+> > can also detach and re-attach components at will.  It also opens
+> > up the possibility that userspace might want to use each IRQ
+> > source ID for more than one GSI (and avoids the kernel needing
+> > to manage that).  Per suggestions, EOIFD is now IRQ_ACKFD.
+> > 
+> > I really wanted to add a de-assert-only option to irqfd so the
+> > irq_ackfd could be fed directly into an irqfd, but I'm dependent
+> > on the ordering of de-assert _then_ signal an eventfd.  Keeping
+> > that ordering doesn't seem to be possible, especially since irqfd
+> > uses a workqueue, if I attempt to make that connection.  Thanks,
+> > 
+> > Alex
+> > ---
+> > 
+> > Alex Williamson (6):
+> >       kvm: Add de-assert option to KVM_IRQ_ACKFD
+> >       kvm: KVM_IRQ_ACKFD
+> >       kvm: Add assert-only option to KVM_IRQFD
+> >       kvm: Add IRQ source ID option to KVM_IRQFD
+> >       kvm: Expose IRQ source IDs to userspace
+> >       kvm: Allow filtering of acked irqs
+> > 
+> > 
+> >  Documentation/virtual/kvm/api.txt |   53 ++++++
+> >  arch/x86/kvm/Kconfig              |    1 
+> >  arch/x86/kvm/i8254.c              |    1 
+> >  arch/x86/kvm/i8259.c              |    8 +
+> >  arch/x86/kvm/x86.c                |    8 +
+> >  include/linux/kvm.h               |   39 ++++-
+> >  include/linux/kvm_host.h          |   18 ++
+> >  virt/kvm/Kconfig                  |    3 
+> >  virt/kvm/assigned-dev.c           |    1 
+> >  virt/kvm/eventfd.c                |  315 +++++++++++++++++++++++++++++++++++++
+> >  virt/kvm/ioapic.c                 |    5 -
+> >  virt/kvm/irq_comm.c               |   28 +++
+> >  virt/kvm/kvm_main.c               |   26 +++
+> >  13 files changed, 496 insertions(+), 10 deletions(-)
+
+
 
