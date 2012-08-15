@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab2HOSmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:42:09 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54750 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab2HOSmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:42:08 -0400
-Date: Wed, 15 Aug 2012 11:41:55 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: James Morris <james.l.morris@oracle.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v2] Yama: access task_struct->comm directly
-Message-ID: <20120815184155.GA3666@www.outflux.net>
+	id S1754492Ab2HOSm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:42:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48979 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab2HOSm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:42:26 -0400
+Date: Wed, 15 Aug 2012 20:42:19 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: a.p.zijlstra@chello.nl, prasad.krishnan@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, emachado@linux.vnet.ibm.com
+Subject: Re: [PATCH v3] Hardware breakpoints: Invoke __perf_event_disable()
+ if interrupts are already disabled
+Message-ID: <20120815184216.GC19716@somewhere>
+References: <20120731134124.GD17078@somewhere.redhat.com>
+ <20120802081635.5811.17737.stgit@localhost.localdomain>
+ <502BDE3D.6070909@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+In-Reply-To: <502BDE3D.6070909@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core ptrace access checking routine holds a task lock, and when
-reporting a failure, Yama takes a separate task lock. To avoid a
-potential deadlock with two ptracers taking the opposite locks, do not
-use get_task_comm() and just use ->comm directly since accuracy is not
-important for the report.
+On Wed, Aug 15, 2012 at 11:07:01PM +0530, Naveen N. Rao wrote:
+> Hi Frederick,
+> Did you get a chance to take a look at this?
+> 
+> Regards,
+> Naveen
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-CC: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: John Johansen <john.johansen@canonical.com>
+Yeah, I'm ok with the patch. Peter, are you ok with it?
 
----
-v2: update with newly added traceme report.
----
- security/yama/yama_lsm.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index d51b7c7..0cc99a3 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -279,12 +279,9 @@ static int yama_ptrace_access_check(struct task_struct *child,
- 	}
- 
- 	if (rc) {
--		char name[sizeof(current->comm)];
- 		printk_ratelimited(KERN_NOTICE
- 			"ptrace of pid %d was attempted by: %s (pid %d)\n",
--			child->pid,
--			get_task_comm(name, current),
--			current->pid);
-+			child->pid, current->comm, current->pid);
- 	}
- 
- 	return rc;
-@@ -319,12 +316,9 @@ static int yama_ptrace_traceme(struct task_struct *parent)
- 	}
- 
- 	if (rc) {
--		char name[sizeof(current->comm)];
- 		printk_ratelimited(KERN_NOTICE
- 			"ptraceme of pid %d was attempted by: %s (pid %d)\n",
--			current->pid,
--			get_task_comm(name, parent),
--			parent->pid);
-+			current->pid, parent->comm, parent->pid);
- 	}
- 
- 	return rc;
--- 
-1.7.0.4
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks.
