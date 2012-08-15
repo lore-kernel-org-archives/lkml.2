@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2HOQet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:34:49 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60382 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2HOQer (ORCPT
+	id S1755786Ab2HOQfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:35:43 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57964 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064Ab2HOQfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:34:47 -0400
+	Wed, 15 Aug 2012 12:35:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <201208151330.02112.arnd@arndb.de>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
-	<1344966752-16102-5-git-send-email-catalin.marinas@arm.com>
-	<201208151330.02112.arnd@arndb.de>
-Date: Wed, 15 Aug 2012 18:34:46 +0200
-X-Google-Sender-Auth: otgEEInDBSbPkCmyKTVwFKu2rW8
-Message-ID: <CAMuHMdUEKNYFAU4N8KnJ0DPYgW7BRtaaJQSARDJCVjQOU2bFBw@mail.gmail.com>
-Subject: Re: [PATCH v2 04/31] arm64: MMU definitions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com>
+References: <1345045084-7292-1-git-send-email-js1304@gmail.com>
+	<000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com>
+Date: Thu, 16 Aug 2012 01:35:41 +0900
+Message-ID: <CAAmzW4M9WMnxVKpR00SqufHadY-=i0Jgf8Ktydrw5YXK8VwJ7A@mail.gmail.com>
+Subject: Re: [PATCH] slub: try to get cpu partial slab even if we get enough
+ objects for cpu freelist
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 3:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> +#define TCR_IPS_40BIT                (2 << 32)
-
-By default, constants are int, i.e. 32-bit. So you must write
-
-2ULL << 32
-
->> +#define TCR_ASID16           (1 << 36)
-
-1ULL
-
-> As a matter of coding style, I would much prefer tables like this to be
-> written as
+2012/8/16 Christoph Lameter <cl@linux.com>:
+> On Thu, 16 Aug 2012, Joonsoo Kim wrote:
 >
-> #define TCR_IRGN_MASK           0x0000000003000300
+>> s->cpu_partial determine the maximum number of objects kept
+>> in the per cpu partial lists of a processor. Currently, it is used for
+>> not only per cpu partial list but also cpu freelist. Therefore
+>> get_partial_node() doesn't work properly according to our first intention.
+>
+> The "cpu freelist" in slub is the number of free objects in a specific
+> page. There is nothing that s->cpu_partial can do about that.
+>
+> Maybe I do not understand you correctly. Could you explain this in some
+> more detail?
 
-0x0000000003000300ULL, to be safe
+I assume that cpu slab and cpu partial slab are not same thing.
 
-Gr{oetje,eeting}s,
+In my definition,
+cpu slab is in c->page,
+cpu partial slab is in c->partial
 
-                        Geert
+When we have no free objects in cpu slab and cpu partial slab, we try
+to get slab via get_partial_node().
+In that function, we call acquire_slab(). Then we hit "!object" case
+(for cpu slab).
+In that case, we test available with s->cpu_partial.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I think that s->cpu_partial is for cpu partial slab, not cpu slab.
+So this test is not proper.
+This patch is for correcting this.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks!
