@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab2HOWCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:02:44 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27022 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab2HOWCm (ORCPT
+	id S1753819Ab2HOWDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:03:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35168 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab2HOWDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:02:42 -0400
-Date: Thu, 16 Aug 2012 00:02:40 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        Sirrix AG <tpmdd@sirrix.com>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Rajiv Andrade <mail@srajiv.net>, Seiji Munetoh <munetoh@jp.ibm.com>,
-        Stefan Berger <stefanb@us.ibm.com>,
-        Reiner Sailer <sailer@watson.ibm.com>, Kylene Hall <kjhall@us.ibm.com>
-Subject: Re: [PATCH] tpm: Do not dereference NULL pointer if acpi_os_map_memory()
- fails.
-In-Reply-To: <20120815201527.GC27618@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1208160001080.7818@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1208072247490.3227@swampdragon.chaosbits.net> <20120808180750.GA24016@linux.vnet.ibm.com> <20120815201527.GC27618@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 15 Aug 2012 18:03:31 -0400
+Date: Wed, 15 Aug 2012 15:03:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Michael Cree <mcree@orcon.net.nz>, linux-alpha@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, Tony Luck <tony.luck@gmail.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        John David Anglin <dave.anglin@bell.net>, Mel Gorman <mgorman@suse.de>,
+        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] [ALPHA] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop
+ the casts
+Message-Id: <20120815150328.e1fb3676.akpm@linux-foundation.org>
+In-Reply-To: <20120812021405.GB8442@localhost>
+References: <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
+	<20120723114258.GV9222@suse.de>
+	<20120723122905.GA22476@localhost>
+	<BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
+	<20120724074844.GA9519@localhost>
+	<BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
+	<1343193053.3139.6.camel@dabdike>
+	<CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com>
+	<20120802150209.GA26601@localhost>
+	<502707D5.7020602@orcon.net.nz>
+	<20120812021405.GB8442@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012, Kent Yoder wrote:
+On Sun, 12 Aug 2012 10:14:05 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-> Hi Jesper,
+> From: Mel Gorman <mgorman@suse.de>
 > 
-> > > Unfortunately we just get NULL back, so we can't really tell the user
-> > > exactely what went wrong, but we can at least avoid crashing and
-> > > return an error (-EIO seemed more generic and more suitable here than
-> > > -ENOMEM or something else, so I picked that).
-> > 
-> > Thanks Jesper. I'd made some updates to tpm_bios.c recently but this
-> > should still apply. I'll let you know if not.
+> The following build error occurred during an alpha build:
 > 
->   Of course I'm wrong here, this code moved over into tpm_acpi.c. If you
-> can resubmit on top of my staging tree, I will apply it there.
+> net/core/sock.c:274:36: error: initializer element is not constant
 > 
-
-No problem. I'll have that patch for you in a moment when I'm done 
-fetching your tree.
-
-
-> git://github.com/shpedoikal/linux.git v3.6-rc1-tpmdd-staging
+> Dave Anglin says:
+> > Here is the line in sock.i:
+> >
+> > struct static_key memalloc_socks = ((struct static_key) { .enabled =
+> > ((atomic_t) { (0) }) });
 > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  drivers/char/tpm/tpm_bios.c | 5 +++++
-> > >  1 file changed, 5 insertions(+)
-> > > 
-> > >   Compile tested only.
-> > > 
-> > > diff --git a/drivers/char/tpm/tpm_bios.c b/drivers/char/tpm/tpm_bios.c
-> > > index 0636520..0c5c274 100644
-> > > --- a/drivers/char/tpm/tpm_bios.c
-> > > +++ b/drivers/char/tpm/tpm_bios.c
-> > > @@ -410,6 +410,11 @@ static int read_log(struct tpm_bios_log *log)
-> > >  	log->bios_event_log_end = log->bios_event_log + len;
-> > > 
-> > >  	virt = acpi_os_map_memory(start, len);
-> > > +	if (!virt) {
+> The above line contains two compound literals.  It also uses a designated
+> initializer to initialize the field enabled.  A compound literal is not a
+> constant expression.
 > 
->   Also please add kfree(log->bios_event_log); in this error path.
+> The location of the above statement isn't fully clear, but if a compound
+> literal occurs outside the body of a function, the initializer list must
+> consist of constant expressions.
 > 
-Whoops, of course, will do.
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+I'll remvoe the Cc:stable from this one - the regression is post-3.5.
