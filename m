@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2HOOnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:43:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54165 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab2HOOno convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:43:44 -0400
-Message-ID: <1345041802.31459.94.camel@twins>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+	id S1754863Ab2HOOnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:43:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50053 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754824Ab2HOOns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:43:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,773,1336374000"; 
+   d="scan'208";a="208803859"
+Message-ID: <502BB5A3.5000403@linux.intel.com>
+Date: Wed, 15 Aug 2012 07:43:47 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        vincent.guittot@linaro.org, svaidy@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Date: Wed, 15 Aug 2012 16:43:22 +0200
-In-Reply-To: <20120815131514.GC4409@x1.osrc.amd.com>
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
-	 <20120815131514.GC4409@x1.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>  <502BA7DC.7060907@linux.intel.com> <1345041548.31459.90.camel@twins>
+In-Reply-To: <1345041548.31459.90.camel@twins>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-15 at 15:15 +0200, Borislav Petkov wrote:
-> On Wed, Aug 15, 2012 at 01:05:38PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-08-13 at 20:21 +0800, Alex Shi wrote:
-> > > Since there is no power saving consideration in scheduler CFS, I has a
-> > > very rough idea for enabling a new power saving schema in CFS.
-> > 
-> > Adding Thomas, he always delights poking holes in power schemes.
-> > 
-> > > It bases on the following assumption:
-> > > 1, If there are many task crowd in system, just let few domain cpus
-> > > running and let other cpus idle can not save power. Let all cpu take the
-> > > load, finish tasks early, and then get into idle. will save more power
-> > > and have better user experience.
-> > 
-> > I'm not sure this is a valid assumption. I've had it explained to me by
-> > various people that race-to-idle isn't always the best thing. It has to
-> > do with the cost of switching power states and the duration of execution
-> > and other such things.
+On 8/15/2012 7:39 AM, Peter Zijlstra wrote:
+> On Wed, 2012-08-15 at 06:45 -0700, Arjan van de Ven wrote:
+>> On 8/15/2012 4:05 AM, Peter Zijlstra wrote:
+>>> Yay, ideally we'd also provide a 3rd option: auto, which simply switches
+>>> between the two based on AC/BAT, UPS 
+>>
+>> nooooooo!
+>>
+>> anything but this.
+>> if anyone thinks that AC/Battery matters for power sensitivity... they
+>> need to go talk to a datacenter operator ;-)
 > 
-> I think what he means here is that we might want to let all cores on
-> the node (i.e., domain) finish and then power down the whole node which
-> should bring much more power savings than letting a subset of the cores
-> idle. Alex?
+> Servers in a datacenter have battery?
 
-Sure we can do that.
+they have AC, and sometimes a battery called "UPS".
+DC is getting much more prevalent in datacenters in general.
 
-> > So I'd leave the currently implemented scheme as performance, and I
-> > don't think the above describes the current state.
-> > 
-> > > 			} else if (schedule policy == power)
-> > > 				move tasks from busiest group to
-> > > 				idlest group until busiest is just full
-> > > 				of capacity.
-> > > 				//the busiest group can balance
-> > > 				//internally after next time LB,
-> > 
-> > There's another thing we need to do, and that is collect tasks in a
-> > minimal amount of power domains.
 > 
-> Yep.
+>> seriously, there are possibly many ways to have a power/performance
+>> preference..,. but AC/battery is a very very poor one.
+>>
+> Do expand..
 > 
-> Btw, what heuristic would tell here when a domain overflows and another
-> needs to get woken? Combined load of the whole domain?
-> 
-> And if I absolutely positively don't want a node to wake up, do I
-> hotplug its cores off or are we going to have a way to tell the
-> scheduler to overcommit the non-idle domains and spread the tasks only
-> among them.
-> 
-> I'm thinking of short bursts here where it would be probably beneficial
-> to let the tasks rather wait runnable for a while then wake up the next
-> node and waste power...
 
-I was thinking of a utilization measure made of per-task weighted
-runnable averages. This should indeed cover that case and we'll overflow
-when on average there is no (significant) idle time over a period longer
-than the averaging period.
+The easy cop-out is provide the sysadmin a slider.
+The slightly less easy one is to (and we're taking this approach
+in the new P state code we're working on) say "in the default
+setting, we're going to sacrifice up to 5% performance from peak
+to give you the best power savings within that performance loss budget"
+(with a slider that can give you 0%, 2 1/2%  5% and 10%)
 
-Anyway, I'm not too set on this and I'm very sure we can tweak this ad
-infinitum, so starting with something relatively simple that works for
-most is preferred.
+on Intel PCs and servers, there usually is a bios switch/setting for this
+(there is a setting the bios does to the CPU, and we can read that. Not all bioses
+expose this setting to the end user). We could take clue from what was set there.
 
-As already stated, I think some of the Linaro people actually played
-around with something like this based on PJTs patches.
+
