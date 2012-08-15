@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab2HOPCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:02:55 -0400
-Received: from fieldses.org ([174.143.236.118]:60012 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754979Ab2HOPCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:02:52 -0400
-Date: Wed, 15 Aug 2012 11:02:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
- return
-Message-ID: <20120815150251.GB16057@fieldses.org>
-References: <20120815061115.GC32347@cucamonga.audible.transient.net>
- <20120815135854.GI32347@cucamonga.audible.transient.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815135854.GI32347@cucamonga.audible.transient.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754882Ab2HOPEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:04:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:61439 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab2HOPEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 11:04:00 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH 1/2] slub: reduce failure of this_cpu_cmpxchg in put_cpu_partial() after unfreezing
+Date: Thu, 16 Aug 2012 00:02:39 +0900
+Message-Id: <1345042960-6287-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:58:54PM +0000, Jamie Heilman wrote:
-> Jamie Heilman wrote:
-> > I'll try to get full rcpdebug traces on client and server as the delay
-> > is occuring in the hopes that helps pin things down, and post them
-> > separately.
-> 
-> OK, here are the logs from client and server, where a run of my test program
-> under strace -T resulted in:
-> 
-> utime("utime-test.c", [2012/08/15-13:35:20, 2012/08/15-13:22:04]) = 0 <0.150815>
-> open("utime-test.c", O_RDONLY)          = 3 <0.242635>
-> close(3)                                = 0 <0.147768>
-> stat("utime-test.c", {st_mode=S_IFREG|0644, st_size=696, ...}) = 0 <0.002772>
-> utime("utime-test.c", [2012/08/15-13:35:20, 2012/08/15-13:22:04]) = 0 <71.878058>
-> 
-> The client is a 64-bit v3.4.8 kernel, the server is 32-bit, v3.5.1 +
-> the two sunprc patches that will be in v3.5.2.
-> 
-> (The client's system clock is a touch faster than the server's, but
-> these logs start at the same instant.)
+In current implementation, after unfreezing, we doesn't touch oldpage,
+so it remain 'NOT NULL'. When we call this_cpu_cmpxchg()
+with this old oldpage, this_cpu_cmpxchg() is mostly be failed.
 
-Thanks for all the details.
+We can change value of oldpage to NULL after unfreezing,
+because unfreeze_partial() ensure that all the cpu partial slabs is removed
+from cpu partial list. In this time, we could expect that
+this_cpu_cmpxchg is mostly succeed.
 
-What's probably happening is that the client is returning a delegation
-with the open.  The setattr then breaks that delegation; you can see it
-getting 10008 (NFS4ERR_DELAY) replies while the server waits for the
-delegation to be returned.  But for some reason the callback to break
-the delegation isn't working.  ("NFSD: warning: no callback path to
-client 192.168.2.42/192.168.2.4 tcp UNIX 0: error -110" (110 is
-ETIMEDOUT).)  So instead you wait for the delegation to time out and get
-forcibly revoked.
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 
-The reproducer might be more reliable if you did two opens.
+---
+Hello, Pekka.
 
-It'd be worth looking at the traffic in wireshark.  You should see
-setattr, open, close, setattr, a DELAY reply to the setattr, a
-CB_RECALL, and then a DELEGRETURN that gets a succesful reply.  But for
-some reason the DELEGRETURN isn't getting through in your case, I'm not
-sure why.  I can't reproduce that.  You'll need to start wireshark
-before you mount to make sure it knows how to parse the callbacks.
+These two patches get "Acked-by: Christoph Lameter <cl@linux.com>",
+but, I don't hear any answer from U.
+Could you review these, please?
 
-I don't see anything in that range of git commits that looks suspicious,
-but I may well have overlooked something.
+Thanks!
 
---b.
+diff --git a/mm/slub.c b/mm/slub.c
+index e517d43..ca778e5 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1952,6 +1952,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 				local_irq_save(flags);
+ 				unfreeze_partials(s);
+ 				local_irq_restore(flags);
++				oldpage = NULL;
+ 				pobjects = 0;
+ 				pages = 0;
+ 				stat(s, CPU_PARTIAL_DRAIN);
+-- 
+1.7.9.5
+
