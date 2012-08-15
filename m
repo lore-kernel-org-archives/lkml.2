@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2HOQjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:39:03 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:32933 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab2HOQjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:39:00 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-7-git-send-email-glommer@parallels.com>
-	<50254475.4000201@jp.fujitsu.com> <5028BA9E.7000302@parallels.com>
-	<xr93ipcl9u7x.fsf@gthelen.mtv.corp.google.com>
-	<502B6956.5030508@parallels.com>
-Date: Wed, 15 Aug 2012 09:38:57 -0700
-In-Reply-To: <502B6956.5030508@parallels.com> (Glauber Costa's message of
-	"Wed, 15 Aug 2012 13:18:14 +0400")
-Message-ID: <xr93wr109kke.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755907Ab2HOQjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:39:32 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:44683 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755871Ab2HOQja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 12:39:30 -0400
+Date: Wed, 15 Aug 2012 18:39:23 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+Message-ID: <20120815163923.GD15989@aftab.osrc.amd.com>
+References: <20120813132438.GA18990@aftab.osrc.amd.com>
+ <1344867782.6935.119.camel@gandalf.stny.rr.com>
+ <20120813142909.GC18990@aftab.osrc.amd.com>
+ <20120813180249.GB6840@infradead.org>
+ <20120815102722.GB4640@aftab.osrc.amd.com>
+ <20120815130634.GE2370@infradead.org>
+ <20120815131806.GC4640@aftab.osrc.amd.com>
+ <1345041485.31459.89.camel@twins>
+ <20120815144255.GB15989@aftab.osrc.amd.com>
+ <20120815145935.GI2370@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815145935.GI2370@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15 2012, Glauber Costa wrote:
+On Wed, Aug 15, 2012 at 11:59:35AM -0300, Arnaldo Carvalho de Melo wrote:
+> Of course! Those are the ultimate kernel killers!
 
-> On 08/14/2012 10:58 PM, Greg Thelen wrote:
->> On Mon, Aug 13 2012, Glauber Costa wrote:
->> 
->>>>>> +	WARN_ON(mem_cgroup_is_root(memcg));
->>>>>> +	size = (1 << order) << PAGE_SHIFT;
->>>>>> +	memcg_uncharge_kmem(memcg, size);
->>>>>> +	mem_cgroup_put(memcg);
->>>> Why do we need ref-counting here ? kmem res_counter cannot work as
->>>> reference ?
->>> This is of course the pair of the mem_cgroup_get() you commented on
->>> earlier. If we need one, we need the other. If we don't need one, we
->>> don't need the other =)
->>>
->>> The guarantee we're trying to give here is that the memcg structure will
->>> stay around while there are dangling charges to kmem, that we decided
->>> not to move (remember: moving it for the stack is simple, for the slab
->>> is very complicated and ill-defined, and I believe it is better to treat
->>> all kmem equally here)
->> 
->> By keeping memcg structures hanging around until the last referring kmem
->> page is uncharged do such zombie memcg each consume a css_id and thus
->> put pressure on the 64k css_id space?  I imagine in pathological cases
->> this would prevent creation of new cgroups until these zombies are
->> dereferenced.
->
-> Yes, but although this patch makes it more likely, it doesn't introduce
-> that. If the tasks, for instance, grab a reference to the cgroup dentry
-> in the filesystem (like their CWD, etc), they will also keep the cgroup
-> around.
+Haha, this is what I'm answering next time I'm asked about what I do for
+a living :-).
 
-Fair point.  But this doesn't seems like a feature.  It's probably not
-needed initially, but what do you think about creating a
-memcg_kernel_context structure which is allocated when memcg is
-allocated?  Kernel pages charged to a memcg would have
-page_cgroup->mem_cgroup=memcg_kernel_context rather than memcg.  This
-would allow the mem_cgroup and its css_id to be deleted when the cgroup
-is unlinked from cgroupfs while allowing for the active kernel pages to
-continue pointing to a valid memcg_kernel_context.  This would be a
-reference counted structure much like you are doing with memcg.  When a
-memcg is deleted the memcg_kernel_context would be linked into its
-surviving parent memcg.  This would avoid needing to visit each kernel
-page.
+How about this?
 
->> Is there any way to see how much kmem such zombie memcg are consuming?
->> I think we could find these with
->> for_each_mem_cgroup_tree(root_mem_cgroup).
->
-> Yes, just need an interface for that. But I think it is something that
-> can be addressed orthogonaly to this work, in a separate patch, not as
-> some fundamental limitation.
+--
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 13 Aug 2012 10:23:02 -0400
+Subject: [PATCH] perf: Let O= makes handle relative paths
 
-Agreed.
+When I did a compile of perf using a relative path for the output
+directory, the build failed when it tried to compile libtraceevent. This
+is because it continues to use the same relative path when the new
+working directory is in a different path.
 
->> Basically, I'm wanting to know where kernel memory has been
->> allocated.  For live memcg, an admin can cat
->> memory.kmem.usage_in_bytes.  But for zombie memcg, I'm not sure how
->> to get this info.  It looks like the root_mem_cgroup
->> memory.kmem.usage_in_bytes is not hierarchically charged.
->> 
->
-> Not sure what you mean by not being hierarchically charged. It should
-> be, when use_hierarchy = 1. As a matter of fact, I just tested it, and I
-> do see kmem being charged all the way to the root cgroup when hierarchy
-> is used. (we just can't limit it there)
+    SUBDIR ../lib/traceevent/
+/bin/sh: line 0: cd: ../../../nobackup/perf/: No such file or directory
+Makefile:74: *** output directory "../../../nobackup/perf/" does not exist.  Stop.
+make: *** [../../../nobackup/perf///libtraceevent.a] Error 2
 
-You're correct, my mistake.
+Make the path used an absolute path when building perf with O=.
 
-I think the procedure to determine out the amount of zombie kmem is:
-  root_mem_cgroup.kmem_usage_in_bytes - 
-    sum(all top level memcg memory.kmem_usage_in_bytes)
+Boris:
+
+Teach Makefile to check whether the supplied O= directory exists and
+bail out if not. Reportedly, kernel dudes are idiots and need to be
+guarded so as not to shoot themselves in the foot when playing in the
+sandbox.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ tools/scripts/Makefile.include | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index bde8521d56bb..96ce80a3743b 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -1,6 +1,8 @@
+ ifeq ("$(origin O)", "command line")
+-	OUTPUT := $(O)/
+-	COMMAND_O := O=$(O)
++	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
++	ABSOLUTE_O := $(shell cd $(O) ; pwd)
++	OUTPUT := $(ABSOLUTE_O)/
++	COMMAND_O := O=$(ABSOLUTE_O)
+ endif
+ 
+ ifneq ($(OUTPUT),)
+-- 
+1.7.11.rc1
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
