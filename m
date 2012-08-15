@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2HOUma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:42:30 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:54952 "EHLO smtp.ispras.ru"
+	id S1756170Ab2HOUpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:45:05 -0400
+Received: from seven.medozas.de ([5.9.24.206]:35017 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab2HOUm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:42:29 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
-Date: Thu, 16 Aug 2012 00:42:25 +0400
-Message-Id: <1345063345-31131-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754152Ab2HOUpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 16:45:02 -0400
+Date: Wed, 15 Aug 2012 22:45:00 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        vm-crosstalk@vmware.com, cschamp@vmware.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [vmw_vmci 11/11] Apply the header code to make VMCI build
+In-Reply-To: <20120802202205.GA9096@merkur.ravnborg.org>
+Message-ID: <alpine.LNX.2.01.1208152240550.23372@frira.zrqbmnf.qr>
+References: <1343345980-32397-1-git-send-email-astiegmann@vmware.com> <1343345980-32397-12-git-send-email-astiegmann@vmware.com> <20120727103455.GA4639@merkur.ravnborg.org> <alpine.LNX.2.01.1208022145380.30631@frira.zrqbmnf.qr>
+ <20120802202205.GA9096@merkur.ravnborg.org>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If pci_register_driver() failed, resources allocated in
-ddb_class_create() are leaked. The patch fixes it.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+On Thursday 2012-08-02 22:22, Sam Ravnborg wrote:
+>> On Friday 2012-07-27 12:34, Sam Ravnborg wrote:
+>> >> +#ifndef _VMCI_COMMONINT_H_
+>> >> +#define _VMCI_COMMONINT_H_
+>> >> +
+>> >> +#include <linux/printk.h>
+>> >> +#include <linux/vmw_vmci_defs.h>
+>> >
+>> >Use inverse chrismas tree here.
+>> >Longer include lines first, and soret alphabetically when
+>> >lines are of the same length.
+>> 
+>> So that's where unreadable include lists come from.
+>> Depth-first lexicographically-sorted is a lot less hassle,
+>> especially when it comes to merging patches that each
+>> add one different include.
+>This is applied in many parts of the kernels and has some benefits:
+>- easy to spot duplicates
+>- clash is less likely when two commit adds includes
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/dvb/ddbridge/ddbridge-core.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Sorting already addresses the two, the christmas thing (for
+files in a single dir) seems like adding no extra value.
 
-diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
-index ebf3f05..36aa4e4 100644
---- a/drivers/media/dvb/ddbridge/ddbridge-core.c
-+++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
-@@ -1705,7 +1705,11 @@ static __init int module_init_ddbridge(void)
- 	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
- 	if (ddb_class_create())
- 		return -1;
--	return pci_register_driver(&ddb_pci_driver);
-+	if (pci_register_driver(&ddb_pci_driver) < 0) {
-+		ddb_class_destroy();
-+		return -1;
-+	}
-+	return 0;
- }
- 
- static __exit void module_exit_ddbridge(void)
--- 
-1.7.9.5
 
+>>>The kernel types are u32 not uint32_t - these types belongs in user-space.
+>Found the following somewhere on the net:
+>
+>|	- the kernel should not depend on, or pollute user-space naming.
+>|	  YOU MUST NOT USE "uint32_t" when that may not be defined, and
+>|	  user-space rules for when it is defined are arcane and totally
+>|	  arbitrary.
+
+I can see the reasoning for header files, but it seems
+irrelevant for code, in particular .c files, that never
+practically get exposed to userspace.
