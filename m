@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2HOXoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:44:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48582 "EHLO comal.ext.ti.com"
+	id S1755750Ab2HOXoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 19:44:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43891 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab2HOXoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:44:15 -0400
+	id S1753905Ab2HOXoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 19:44:18 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <linux-kernel@vger.kernel.org>
 CC: <shawn.guo@linaro.org>, <linus.walleij@linaro.org>,
@@ -15,60 +15,58 @@ CC: <shawn.guo@linaro.org>, <linus.walleij@linaro.org>,
         <ccross@android.com>, <linux-arm-kernel@lists.infradead.org>,
         <myungjoo.ham@samsung.com>, <rajagopal.venkat@linaro.org>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 0/4] [RFC] reentrancy in the common clk framework
-Date: Wed, 15 Aug 2012 16:43:30 -0700
-Message-ID: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
+Subject: [PATCH v2 4/4] [RFC] omap3+: clk: dpll: call clk_prepare directly
+Date: Wed, 15 Aug 2012 16:43:34 -0700
+Message-ID: <1345074214-17531-5-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
+References: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The second version of the reentrancy/dvfs rfc differs from the
-original[1] in that the former used per-clk mutexes and this version
-uses a global lock to protect access to a per-clk enum.  The enum can be
-in one of two states, LOCKED or UNLOCKED.
+In the commit titled "clk: new locking scheme for reentrancy" it became
+possible for nested calls to the clock api.  The OMAP3+ DPLL .set_rate
+callback has been using the __clk_prepare and __clk_unprepare calls as a
+way around this limitation, but these calls are no longer needed with
+the aforementioned patch.  Convert the .set_rate callback to use
+clk_prepare and clk_unprepare directly.
 
-The second patch in the series introduces a new common clk rate-change
-notifier handler which implements typical dynamic voltage and frequency
-scaling logic.
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ arch/arm/mach-omap2/dpll3xxx.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-The third patch uses the aforementioned common dvfs rate-change notifier
-handler.  Instead of implementing the dvfs logic directly (as in [1[)
-the driver simply registers a notifier handler using the common dvfs
-infrastructure.  Potentially all cpufreq and devfreq users could use
-this to implement voltage scaling.
-
-The fourth patch demonstrates how it is possible to call top-level clk
-api's reentrantly.  This example code switches parents of a mux clock
-and does prepare/disable directly, without using internal functions.  A
-more interesting application of this might be to have clk_set_parent
-call clk_prepare_enable clk_disable_unprepare directly when reparenting.
-
-There are wide-ranging considerations to the common clk framework in
-this series; I know some of you will be in San Diego later this month
-and hopefully I'll get some good feedback there as well as on the list.
-
-[1] http://article.gmane.org/gmane.linux.kernel/1327866
-
-Mike Turquette (4):
-  clk: new locking scheme for reentrancy
-  clk: notifier handler for dynamic voltage scaling
-  cpufreq: omap: scale regulator from clk notifier
-  omap3+: clk: dpll: call clk_prepare directly
-
- arch/arm/mach-omap2/dpll3xxx.c |    8 +-
- drivers/clk/Makefile           |    3 +-
- drivers/clk/clk.c              |  354 +++++++++++++++++++++++++++++++++++-----
- drivers/clk/dvfs.c             |  116 +++++++++++++
- drivers/cpufreq/omap-cpufreq.c |   85 +++-------
- include/linux/clk-private.h    |    1 +
- include/linux/clk-provider.h   |    4 +-
- include/linux/clk.h            |   27 ++-
- 8 files changed, 488 insertions(+), 110 deletions(-)
- create mode 100644 drivers/clk/dvfs.c
-
+diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
+index ee18d00..1cc3ec8 100644
+--- a/arch/arm/mach-omap2/dpll3xxx.c
++++ b/arch/arm/mach-omap2/dpll3xxx.c
+@@ -436,9 +436,9 @@ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	if (!dd)
+ 		return -EINVAL;
+ 
+-	__clk_prepare(dd->clk_bypass);
++	clk_prepare(dd->clk_bypass);
+ 	clk_enable(dd->clk_bypass);
+-	__clk_prepare(dd->clk_ref);
++	clk_prepare(dd->clk_ref);
+ 	clk_enable(dd->clk_ref);
+ 
+ 	if (__clk_get_rate(dd->clk_bypass) == rate &&
+@@ -483,9 +483,9 @@ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 		__clk_reparent(hw->clk, new_parent);
+ 
+ 	clk_disable(dd->clk_ref);
+-	__clk_unprepare(dd->clk_ref);
++	clk_unprepare(dd->clk_ref);
+ 	clk_disable(dd->clk_bypass);
+-	__clk_unprepare(dd->clk_bypass);
++	clk_unprepare(dd->clk_bypass);
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
