@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab2HOSnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:43:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52883 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928Ab2HOSnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:43:33 -0400
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC v2 4/7] modsig: add integrity_module_check hook
-Date: Wed, 15 Aug 2012 21:43:09 +0300
-Message-Id: <68a6f647ca1d4429d6b781b6cfeed9c93a346c14.1345055639.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-In-Reply-To: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	id S1755810Ab2HOSnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:43:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57007 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911Ab2HOSng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 14:43:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120815194426.52fd7936@pyramind.ukuu.org.uk>
+References: <20120726134748.GA20605@localhost>
+	<CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
+	<20120810015222.GA19286@localhost>
+	<CAGXu5jK_ZJqmcJ7JcnpwNb5R3x8=ay_shD16ZA3q-7Lwi8S=qg@mail.gmail.com>
+	<20120815030110.GA24836@localhost>
+	<CAGXu5j+0FUYdBqsotn_vp1EbG=dcURAA1sxv+yFzaJuUkdAh0A@mail.gmail.com>
+	<20120815130159.GA3221@redhat.com>
+	<1345041021.31459.88.camel@twins>
+	<20120815175651.GA17814@redhat.com>
+	<CAGXu5jJ+HOdSxS7Ec=TW06h6KEpEmi-rF+Jk8L5LiQsp9gyAtg@mail.gmail.com>
+	<20120815194426.52fd7936@pyramind.ukuu.org.uk>
+Date: Wed, 15 Aug 2012 11:43:34 -0700
+X-Google-Sender-Auth: SwEzhQe03rU7GbzxOyLtaAAu91A
+Message-ID: <CAGXu5jLFHjybsJOcTCZOtgaifmYYioJK0Tm0dvSA7d31HMRwHA@mail.gmail.com>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+From: Kees Cook <keescook@chromium.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMA measures/appraises modules when modprobe or insmod opens and read them.
-Unfortunately, there are no guarantees between what is read by userspace and
-what is passed to the kernel via load_module system call. This patch adds a
-hook called integrity_module_check() to verify the integrity of the module
-being loaded.
+On Wed, Aug 15, 2012 at 11:44 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> It sounds like get_task_comm shouldn't have locking at all then? It
+>> should just do a length-limited copy and make sure there is a trailing
+>> 0-byte?
+>
+> It has locking so that it has a consistent state and more importantly it
+> has an accessor function
+>
+> Directly accessing it is asking for bugs in future. If you hold the
+> needed lock then just add an
+>
+> __get_task_comm()
+>
+> method that asserts the lock is held. That way the rest of the behaviour
+> remains properly encapsulated for when someone changes it.
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
----
- include/linux/integrity.h |   10 ++++++++++
- kernel/module.c           |    9 +++++++++
- 2 files changed, 19 insertions(+)
+But what's been discussed is that no lock is needed if the caller
+doesn't care about the accuracy of the contents, which is the
+situation I'm in. Looking at other readers of ->comm, they just either
+use it directly or copy it directly. Only when accuracy matters does
+the kernel use get_task_comm.
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 66c5fe9..a80ec06 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -37,4 +37,14 @@ static inline void integrity_inode_free(struct inode *inode)
- 	return;
- }
- #endif /* CONFIG_INTEGRITY_H */
-+
-+#ifdef CONFIG_INTEGRITY_MODULES
-+int integrity_module_check(const void *hdr, const unsigned long len);
-+#else
-+static inline int integrity_module_check(const void *buf, unsigned long len)
-+{
-+	return 0;
-+}
-+#endif
-+
- #endif /* _LINUX_INTEGRITY_H */
-diff --git a/kernel/module.c b/kernel/module.c
-index 4edbd9c..791da47 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -58,6 +58,7 @@
- #include <linux/jump_label.h>
- #include <linux/pfn.h>
- #include <linux/bsearch.h>
-+#include <linux/integrity.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/module.h>
-@@ -2437,6 +2438,14 @@ static int copy_and_check(struct load_info *info,
- 
- 	info->hdr = hdr;
- 	info->len = len;
-+
-+	err = integrity_module_check(hdr, len);
-+	if (err < 0)
-+		goto free_hdr;
-+
-+	/* cut signature tail */
-+	info->len = err;
-+
- 	return 0;
- 
- free_hdr:
+-Kees
+
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
