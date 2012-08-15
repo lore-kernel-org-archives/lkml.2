@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2HOBHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 21:07:11 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60075 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab2HOBHJ (ORCPT
+	id S1755335Ab2HOBI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 21:08:29 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:37095 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2HOBIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 21:07:09 -0400
-Date: Wed, 15 Aug 2012 09:07:06 +0800
-From: kedacomkernel <kedacomkernel@gmail.com>
-To: "Andy Lutomirski" <luto@amacapital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: O_DIRECT to md raid 6 is slow
-References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201208150906343285670@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 14 Aug 2012 21:08:25 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, aarcange@redhat.com, ericvh@gmail.com,
+        netdev@vger.kernel.org, josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com>
+	<1344961490-4068-3-git-send-email-levinsasha928@gmail.com>
+	<87txw5hw0s.fsf@xmission.com> <502AF184.4010907@gmail.com>
+Date: Tue, 14 Aug 2012 18:08:09 -0700
+In-Reply-To: <502AF184.4010907@gmail.com> (Sasha Levin's message of "Wed, 15
+	Aug 2012 02:47:00 +0200")
+Message-ID: <87393phshy.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/rAtJ926uK+UsFkv5L6lexpbCQUydxfqo=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7F17Ufp019072
 
-On 2012-08-15 08:49 Andy Lutomirski <luto@amacapital.net> Wrote:
->If I do:
-># dd if=/dev/zero of=/dev/md0p1 bs=8M
->then iostat -m 5 says:
->
->avg-cpu:  %user   %nice %system %iowait  %steal   %idle
->           0.00    0.00   26.88   35.27    0.00   37.85
->
->Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
->sdb             265.20         1.16        54.79          5        273
->sdc             266.20         1.47        54.73          7        273
->sdd             264.20         1.38        54.54          6        272
->sdf             286.00         1.84        54.74          9        273
->sde             266.60         1.04        54.75          5        273
->sdg             265.00         1.02        54.74          5        273
->md0           55808.00         0.00       218.00          0       1090
->
->If I do:
-># dd if=/dev/zero of=/dev/md0p1 bs=8M oflag=direct
->then iostat -m 5 says:
->avg-cpu:  %user   %nice %system %iowait  %steal   %idle
->           0.00    0.00   11.70   12.94    0.00   75.36
->
->Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
->sdb             831.00         8.58        30.42         42        152
->sdc             832.80         8.05        29.99         40        149
->sdd             832.00         9.10        29.78         45        148
->sdf             838.40         9.11        29.72         45        148
->sde             828.80         7.91        29.79         39        148
->sdg             850.80         8.00        30.18         40        150
->md0            1012.60         0.00       101.27          0        506
->
->It looks like md isn't recognizing that I'm writing whole stripes when
->I'm in O_DIRECT mode.
->
-kernel version?
+Sasha Levin <levinsasha928@gmail.com> writes:
 
->--Andy
+> On 08/15/2012 01:52 AM, Eric W. Biederman wrote:
+>> Sasha Levin <levinsasha928@gmail.com> writes:
+>> 
+>>> Switch user_ns to use the new hashtable implementation. This reduces the amount of
+>>> generic unrelated code in user_ns.
+>> 
+>> Two concerns here.
+>> 1) When adding a new entry you recompute the hash where previously that
+>>    was not done.  I believe that will slow down adding of new entries.
 >
->-- 
->Andy Lutomirski
->AMA Capital Management, LLC
->--
->To unsubscribe from this list: send the line "unsubscribe linux-raid" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.htmlÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> I figured that the price for the extra hashing isn't significant since hash_32
+> is just a multiplication and a shift.
+>
+> I'll modify the code to calculate the key just once.
+
+Honestly I don't know either way, but it seemed a shame to give up a
+common and trivial optimization.
+
+>> 2) Using hash_32 for uids is an interesting choice.  hash_32 discards
+>>    the low bits.  Last I checked for uids the low bits were the bits
+>>    that were most likely to be different and had the most entropy.
+>> 
+>>    I'm not certain how multiplying by the GOLDEN_RATION_PRIME_32 will
+>>    affect things but I would be surprised if it shifted all of the
+>>    randomness from the low bits to the high bits.
+>
+> "Is hash_* good enough for our purpose?" - I was actually surprised that no one
+> raised that question during the RFC and assumed it was because everybody agreed
+> that it's indeed good enough.
+>
+> I can offer the following: I'll write a small module that will hash 1...10000
+> into a hashtable which uses 7 bits (just like user_ns) and post the distribution
+> we'll get.
+
+That won't hurt.  I think 1-100 then 1000-1100 may actually be more
+representative.  Not that I would mind seeing the larger range.
+Especially since I am in the process of encouraging the use of more
+uids.
+
+> If the results of the above will be satisfactory we can avoid the discussion
+> about which hash function we should really be using. If not, I guess now is a
+> good time for that :)
+
+Yes.  A small emperical test sounds good.
+
+Eric
+
