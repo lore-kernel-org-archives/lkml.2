@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2HOO1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:27:03 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42329 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2HOO07 (ORCPT
+	id S1754865Ab2HOO1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:27:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49824 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2HOO1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:26:59 -0400
+	Wed, 15 Aug 2012 10:27:07 -0400
 From: Joonsoo Kim <js1304@gmail.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH v3 0/6] system_highpri_wq 
-Date: Wed, 15 Aug 2012 23:25:35 +0900
-Message-Id: <1345040741-5508-1-git-send-email-js1304@gmail.com>
+Subject: [PATCH v3 4/6] workqueue: introduce system_highpri_wq
+Date: Wed, 15 Aug 2012 23:25:39 +0900
+Message-Id: <1345040741-5508-5-git-send-email-js1304@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <Yes>
+In-Reply-To: <1345040741-5508-1-git-send-email-js1304@gmail.com>
 References: <Yes>
+ <1345040741-5508-1-git-send-email-js1304@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change from v2
-[1/6] No change
-[2/6] Change local variable name and use it directly for TP
-[3/6] Add a comment.
-[4/6] No change
-[5/6] Add a comment. Fix ugly indentation.
-[6/6] No change
+Commit 3270476a6c0ce322354df8679652f060d66526dc ('workqueue: reimplement
+WQ_HIGHPRI using a separate worker_pool') introduce separate worker pool
+for HIGHPRI. When we handle busyworkers for gcwq, it can be normal worker
+or highpri worker. But, we don't consider this difference in rebind_workers(),
+we use just system_wq for highpri worker. It makes mismatch between
+cwq->pool and worker->pool.
 
-Change from v1
-[ALL] Add cover-letter
-[ALL] Rebase on git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
+It doesn't make error in current implementation, but possible in the future.
+Now, we introduce system_highpri_wq to use proper cwq for highpri workers
+in rebind_workers(). Following patch fix this issue properly.
 
-[1/6] No change
-[2/6] First added into this series.
-[3/6] Add change log to clarify what pacth do,
-      Add logic to handle the case "@cpu is WORK_CPU_UNBOUND"
-[4/6] Fix awsome mistake: Set WQ_HIGHPRI for system_highpri_wq
-[5/6] Adopt Tejun's comment about selection system_wq
-[6/6] No change
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-This patchset introduce system_highpri_wq
-in order to use proper cwq for highpri worker.
-
-First 3 patches are not related to that purpose.
-Just fix arbitrary issues.
-Last 3 patches are for our purpose.
-
-Joonsoo Kim (6):
-  workqueue: use enum value to set array size of pools in gcwq
-  workqueue: correct req_cpu in trace_workqueue_queue_work()
-  workqueue: change value of lcpu in __queue_delayed_work_on()
-  workqueue: introduce system_highpri_wq
-  workqueue: use system_highpri_wq for highpri workers in
-    rebind_workers()
-  workqueue: use system_highpri_wq for unbind_work
-
- kernel/workqueue.c |   42 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 31 insertions(+), 11 deletions(-)
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 32c4f79..a768ffd 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -269,12 +269,14 @@ struct workqueue_struct {
+ };
+ 
+ struct workqueue_struct *system_wq __read_mostly;
++struct workqueue_struct *system_highpri_wq __read_mostly;
+ struct workqueue_struct *system_long_wq __read_mostly;
+ struct workqueue_struct *system_nrt_wq __read_mostly;
+ struct workqueue_struct *system_unbound_wq __read_mostly;
+ struct workqueue_struct *system_freezable_wq __read_mostly;
+ struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_wq);
++EXPORT_SYMBOL_GPL(system_highpri_wq);
+ EXPORT_SYMBOL_GPL(system_long_wq);
+ EXPORT_SYMBOL_GPL(system_nrt_wq);
+ EXPORT_SYMBOL_GPL(system_unbound_wq);
+@@ -3929,6 +3931,7 @@ static int __init init_workqueues(void)
+ 	}
+ 
+ 	system_wq = alloc_workqueue("events", 0, 0);
++	system_highpri_wq = alloc_workqueue("events_highpri", WQ_HIGHPRI, 0);
+ 	system_long_wq = alloc_workqueue("events_long", 0, 0);
+ 	system_nrt_wq = alloc_workqueue("events_nrt", WQ_NON_REENTRANT, 0);
+ 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
+@@ -3937,8 +3940,8 @@ static int __init init_workqueues(void)
+ 					      WQ_FREEZABLE, 0);
+ 	system_nrt_freezable_wq = alloc_workqueue("events_nrt_freezable",
+ 			WQ_NON_REENTRANT | WQ_FREEZABLE, 0);
+-	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
+-	       !system_unbound_wq || !system_freezable_wq ||
++	BUG_ON(!system_wq || !system_highpri_wq || !system_long_wq ||
++		!system_nrt_wq || !system_unbound_wq || !system_freezable_wq ||
+ 		!system_nrt_freezable_wq);
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
