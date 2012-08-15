@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab2HOUN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:13:59 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62997 "EHLO
+	id S1756819Ab2HOTv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:51:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62987 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab2HOTv3 (ORCPT
+	with ESMTP id S1756639Ab2HOTvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:29 -0400
+	Wed, 15 Aug 2012 15:51:22 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 103/165] vm: fix vm_pgoff wrap in upward expansion
-Date: Wed, 15 Aug 2012 15:47:27 -0400
-Message-ID: <1345060109-9187-104-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 097/165] xen/timer: Missing IRQF_NO_SUSPEND in timer code broke suspend.
+Date: Wed, 15 Aug 2012 15:47:21 -0400
+Message-ID: <1345060109-9187-98-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,43 +33,36 @@ From: Hugh Dickins <hughd@google.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 42c36f63ac1366ab0ecc2d5717821362c259f517 upstream.
+commit f611f2da99420abc973c32cdbddbf5c365d0a20c upstream.
 
-Commit a626ca6a6564 ("vm: fix vm_pgoff wrap in stack expansion") fixed
-the case of an expanding mapping causing vm_pgoff wrapping when you had
-downward stack expansion.  But there was another case where IA64 and
-PA-RISC expand mappings: upward expansion.
+The patches missed an indirect use of IRQF_NO_SUSPEND pulled in via
+IRQF_TIMER. The following patch fixes the issue.
 
-This fixes that case too.
+With this fixlet PV guest migration works just fine. I also booted the
+entire series as a dom0 kernel and it appeared fine.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[PG: .34 doesn't have perf call via 3af9e859 (in .36); adjust accordingly]
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/mmap.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/x86/xen/time.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index fe9b76a..053c540 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1740,9 +1740,12 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		size = address - vma->vm_start;
- 		grow = (address - vma->vm_end) >> PAGE_SHIFT;
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index a05bda6..fb2b388 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -396,7 +396,9 @@ void xen_setup_timer(int cpu)
+ 		name = "<timer kasprintf failed>";
  
--		error = acct_stack_growth(vma, size, grow);
--		if (!error)
--			vma->vm_end = address;
-+		error = -ENOMEM;
-+		if (vma->vm_pgoff + (size >> PAGE_SHIFT) >= vma->vm_pgoff) {
-+			error = acct_stack_growth(vma, size, grow);
-+			if (!error)
-+				vma->vm_end = address;
-+		}
- 	}
- 	anon_vma_unlock(vma);
- 	return error;
+ 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+-				      IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER,
++				      IRQF_DISABLED|IRQF_PERCPU|
++				      IRQF_NOBALANCING|IRQF_TIMER|
++				      IRQF_FORCE_RESUME,
+ 				      name, NULL);
+ 
+ 	evt = &per_cpu(xen_clock_events, cpu);
 -- 
 1.7.12.rc2
 
