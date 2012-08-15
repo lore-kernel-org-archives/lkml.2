@@ -1,161 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2HORMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 13:12:23 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:56009 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2HORMV (ORCPT
+	id S1755275Ab2HORM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 13:12:27 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:35208 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2HORMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 13:12:21 -0400
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: marek.vasut@gmail.com, Tomas Hlavacek <tmshlvck@gmail.com>
-Subject: [PATCHv2 1/1] [RFC] uartclk from serial_core exposed to sysfs
-Date: Wed, 15 Aug 2012 19:12:13 +0200
-Message-Id: <1345050733-20252-1-git-send-email-tmshlvck@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	Wed, 15 Aug 2012 13:12:24 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+	<1344517279-30646-7-git-send-email-glommer@parallels.com>
+	<50254475.4000201@jp.fujitsu.com> <5028BA9E.7000302@parallels.com>
+	<xr93ipcl9u7x.fsf@gthelen.mtv.corp.google.com>
+	<502B6956.5030508@parallels.com>
+	<xr93wr109kke.fsf@gthelen.mtv.corp.google.com>
+	<502BD5AF.301@parallels.com>
+Date: Wed, 15 Aug 2012 10:12:21 -0700
+In-Reply-To: <502BD5AF.301@parallels.com> (Glauber Costa's message of "Wed, 15
+	Aug 2012 21:00:31 +0400")
+Message-ID: <xr93lihg9j0q.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added file /sys/devices/.../tty/ttySX/uartclk to allow read/modify
-uartclk value in struct uart_port in serial_core via sysfs.
+On Wed, Aug 15 2012, Glauber Costa wrote:
 
-It simplifies initialization of no-name cards that have non-standard
-oscillator speed while having no distinguishing PCI IDs to allow
-autodetection.
+> On 08/15/2012 08:38 PM, Greg Thelen wrote:
+>> On Wed, Aug 15 2012, Glauber Costa wrote:
+>> 
+>>> On 08/14/2012 10:58 PM, Greg Thelen wrote:
+>>>> On Mon, Aug 13 2012, Glauber Costa wrote:
+>>>>
+>>>>>>>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>>>>>>>> +	size = (1 << order) << PAGE_SHIFT;
+>>>>>>>> +	memcg_uncharge_kmem(memcg, size);
+>>>>>>>> +	mem_cgroup_put(memcg);
+>>>>>> Why do we need ref-counting here ? kmem res_counter cannot work as
+>>>>>> reference ?
+>>>>> This is of course the pair of the mem_cgroup_get() you commented on
+>>>>> earlier. If we need one, we need the other. If we don't need one, we
+>>>>> don't need the other =)
+>>>>>
+>>>>> The guarantee we're trying to give here is that the memcg structure will
+>>>>> stay around while there are dangling charges to kmem, that we decided
+>>>>> not to move (remember: moving it for the stack is simple, for the slab
+>>>>> is very complicated and ill-defined, and I believe it is better to treat
+>>>>> all kmem equally here)
+>>>>
+>>>> By keeping memcg structures hanging around until the last referring kmem
+>>>> page is uncharged do such zombie memcg each consume a css_id and thus
+>>>> put pressure on the 64k css_id space?  I imagine in pathological cases
+>>>> this would prevent creation of new cgroups until these zombies are
+>>>> dereferenced.
+>>>
+>>> Yes, but although this patch makes it more likely, it doesn't introduce
+>>> that. If the tasks, for instance, grab a reference to the cgroup dentry
+>>> in the filesystem (like their CWD, etc), they will also keep the cgroup
+>>> around.
+>> 
+>> Fair point.  But this doesn't seems like a feature.  It's probably not
+>> needed initially, but what do you think about creating a
+>> memcg_kernel_context structure which is allocated when memcg is
+>> allocated?  Kernel pages charged to a memcg would have
+>> page_cgroup->mem_cgroup=memcg_kernel_context rather than memcg.  This
+>> would allow the mem_cgroup and its css_id to be deleted when the cgroup
+>> is unlinked from cgroupfs while allowing for the active kernel pages to
+>> continue pointing to a valid memcg_kernel_context.  This would be a
+>> reference counted structure much like you are doing with memcg.  When a
+>> memcg is deleted the memcg_kernel_context would be linked into its
+>> surviving parent memcg.  This would avoid needing to visit each kernel
+>> page.
+>
+> You need more, you need at the res_counters to stay around as well. And
+> probably other fields.
 
-Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
----
- drivers/tty/serial/serial_core.c |   55 ++++++++++++++++++++++++++++++++++++++
- drivers/tty/tty_io.c             |   17 ++++++++++++
- include/linux/tty.h              |    2 ++
- 3 files changed, 74 insertions(+)
+I am not sure the res_counters would need to stay around.  Once a
+memcg_kernel_context has been reparented, then any future kernel page
+uncharge calls will uncharge the parent res_counter.
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a21dc8e..0929fe3 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2293,6 +2293,47 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
- 	return p->tty_driver;
- }
- 
-+static ssize_t uart_get_attr_uartclk(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	int ret;
-+
-+	struct uart_state *state = dev_get_drvdata(dev);
-+	mutex_lock(&state->port.mutex);
-+	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
-+	mutex_unlock(&state->port.mutex);
-+	return ret;
-+}
-+
-+static ssize_t uart_set_attr_uartclk(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct uart_state *state = dev_get_drvdata(dev);
-+	unsigned int val;
-+	int ret;
-+
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&state->port.mutex);
-+
-+	/*
-+	 * Check value: baud_base does not make sense to be set below 9600
-+	 * and since uartclock = (baud_base * 16) it has to be equal or greater
-+	 * than 9600 * 16 = 153600.
-+	 */
-+	if (val >= 153600)
-+		state->uart_port->uartclk = val;
-+
-+	mutex_unlock(&state->port.mutex);
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(uartclk, S_IRUGO | S_IWUSR, uart_get_attr_uartclk,
-+		uart_set_attr_uartclk);
-+
- /**
-  *	uart_add_one_port - attach a driver-defined port structure
-  *	@drv: pointer to the uart low level driver structure for this port
-@@ -2355,6 +2396,14 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	}
- 
- 	/*
-+	 * Expose uartclk in sysfs. Use driverdata of the tty device for
-+	 * referencing the UART port.
-+	 */
-+	dev_set_drvdata(tty_dev, state);
-+	if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
-+		dev_err(tty_dev, "Failed to add uartclk attr\n");
-+
-+	/*
- 	 * Ensure UPF_DEAD is not set.
- 	 */
- 	uport->flags &= ~UPF_DEAD;
-@@ -2397,6 +2446,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	mutex_unlock(&port->mutex);
- 
- 	/*
-+	 * Remove uartclk file from sysfs.
-+	 */
-+	device_remove_file(tty_lookup_device(drv->tty_driver, uport->line),
-+			&dev_attr_uartclk);
-+
-+	/*
- 	 * Remove the devices from the tty layer
- 	 */
- 	tty_unregister_device(drv->tty_driver, uport->line);
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index b425c79..8ea8622 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3049,6 +3049,23 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
- }
- EXPORT_SYMBOL(tty_unregister_device);
- 
-+/*
-+ *	tty_lookup_device - lookup a tty device
-+ *	@driver: the tty driver that describes the tty device
-+ *	@index: the index in the tty driver for this tty device
-+ *
-+ *	This function returns a struct device pointer when device has
-+ *	been found and NULL otherwise.
-+ *
-+ *	Locking: ??
-+ */
-+struct device *tty_lookup_device(struct tty_driver *driver, unsigned index)
-+{
-+	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
-+	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
-+}
-+EXPORT_SYMBOL(tty_lookup_device);
-+
- struct tty_driver *__alloc_tty_driver(int lines, struct module *owner)
- {
- 	struct tty_driver *driver;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 9f47ab5..5d408a1 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -410,6 +410,8 @@ extern int tty_register_driver(struct tty_driver *driver);
- extern int tty_unregister_driver(struct tty_driver *driver);
- extern struct device *tty_register_device(struct tty_driver *driver,
- 					  unsigned index, struct device *dev);
-+extern struct device *tty_lookup_device(struct tty_driver *driver,
-+					unsigned index);
- extern void tty_unregister_device(struct tty_driver *driver, unsigned index);
- extern int tty_read_raw_data(struct tty_struct *tty, unsigned char *bufp,
- 			     int buflen);
--- 
-1.7.10.4
+> So my fear here is that as you add fields to that structure, you can
+> defeat a bit the goal of reducing memory consumption. Still leaves the
+> css space, yes. But by doing this we can introduce some subtle bugs by
+> having a field in the wrong structure.
+>
+> Did you observe that to be a big problem in your systems?
 
+No I have not seen this yet.  But our past solutions have reparented
+kmem_cache's to root memcg so we have been avoiding zombie memcg.  My
+concerns with your approach are just a suspicion because we have been
+experimenting with accounting of even more kernel memory (e.g. vmalloc,
+kernel stacks, page tables).  As the scope of such accounting grows the
+chance of long lived charged pages grows and thus the chance of zombies
+which exhaust the css_id space grows.
