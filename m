@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab2HOWNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:13:05 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:52581 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab2HOWND convert rfc822-to-8bit (ORCPT
+	id S1757295Ab2HOWPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:15:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52513 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2HOWPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:13:03 -0400
-X-Greylist: delayed 517 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Aug 2012 18:13:03 EDT
-Message-ID: <20120816010419.r2jxuazze80448cc@webmail.welho.com>
-Date: Thu, 16 Aug 2012 01:04:19 +0300
-From: Nokia Promotion <info@bmw.org>
-Reply-to: nokiap@yahoo.cn
-To: undisclosed-recipients:;
-Subject: Claim requirements
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+	Wed, 15 Aug 2012 18:15:52 -0400
+Date: Wed, 15 Aug 2012 15:15:49 -0700 (PDT)
+Message-Id: <20120815.151549.1835466517645273818.davem@davemloft.net>
+To: jiri@resnulli.us
+Cc: bhutchings@solarflare.com, netdev@vger.kernel.org, edumazet@google.com,
+        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
+        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
+        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
+        fbl@redhat.com
+Subject: Re: [patch net-next v2 01/15] net: introduce upper device lists
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120815074612.GB1726@minipsycho.orion>
+References: <1344956748-2099-2-git-send-email-jiri@resnulli.us>
+	<1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
+	<20120815074612.GB1726@minipsycho.orion>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are receiving this message because you are a Winner of 300,000 Pounds from
-Nokia Online Lottery game 2012.
+From: Jiri Pirko <jiri@resnulli.us>
+Date: Wed, 15 Aug 2012 09:46:12 +0200
 
-Claim requirements are as follows:
-(1) Your full names
-(2) Contact Address
-(3) Age
-(4) Occupation
-(5) Telephone
-(6) Sex
-(7) Nationality
+> You are probably right. I'm not sure how to handle this correctly
+> though. Adding some hard limit number might not be correct.
 
-Contact Mr. Thomas Hillary on (nokiap@yahoo.cn) Tel: +447024081232
-
-Copyright ©2012 Nokia. All rights reserved.
-
-
+I would just use a hard limit of something like 8 for now, and if we
+need to expand this limit we can consider how to do so with real known
+usage in mind rather than pure speculation.
