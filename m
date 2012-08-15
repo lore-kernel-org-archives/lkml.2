@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab2HOTwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:52:41 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37304 "EHLO
+	id S932381Ab2HOUCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:02:47 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37347 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2HOTwe (ORCPT
+	with ESMTP id S932132Ab2HOTwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:34 -0400
+	Wed, 15 Aug 2012 15:52:41 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Sam Ravnborg <sam@ravnborg.org>, Borislav Petkov <bp@alien8.de>,
-        Dave Jones <davej@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Marek <mmarek@suse.cz>,
+CC: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 128/165] kbuild: implement several W= levels
-Date: Wed, 15 Aug 2012 15:47:52 -0400
-Message-ID: <1345060109-9187-129-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 145/165] x86, random: Architectural inlines to get random integers with RDRAND
+Date: Wed, 15 Aug 2012 15:48:09 -0400
+Message-ID: <1345060109-9187-146-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,158 +34,149 @@ From: Sam Ravnborg <sam@ravnborg.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 28bc20dccadc610c56e27255aeef2938141a0cd3 upstream.
+commit 628c6246d47b85f5357298601df2444d7f4dd3fd upstream.
 
-Building a kernel with "make W=1" produces far too much noise to be
-useful.
+Architectural inlines to get random ints and longs using the RDRAND
+instruction.
 
-Divide the warning options in three groups:
+Intel has introduced a new RDRAND instruction, a Digital Random Number
+Generator (DRNG), which is functionally an high bandwidth entropy
+source, cryptographic whitener, and integrity monitor all built into
+hardware.  This enables RDRAND to be used directly, bypassing the
+kernel random number pool.
 
-    W=1 - warnings that may be relevant and does not occur too often
-    W=2 - warnings that occur quite often but may still be relevant
-    W=3 - the more obscure warnings, can most likely be ignored
+For technical documentation, see:
 
-When building the whole kernel, those levels produce:
+http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
 
-W=1 - 4859 warnings
-W=2 - 1394 warnings
-W=3 - 86666 warnings
+In this patch, this is *only* used for the nonblocking random number
+pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
+and is therefore not a direct replacement for /dev/random.  The
+architectural hooks presented in the previous patch only feed the
+kernel internal users, which only use the nonblocking pool, and so
+this is not a problem.
 
-respectively. Warnings have been counted with Geert's script at
+Since this instruction is available in userspace, there is no reason
+to have a /dev/hw_rng device driver for the purpose of feeding rngd.
+This is especially so since RDRAND is a nonblocking source, and needs
+additional whitening and reduction (see the above technical
+documentation for details) in order to be of "pure entropy source"
+quality.
 
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/linux-log-summary.pl
+The CONFIG_EXPERT compile-time option can be used to disable this use
+of RDRAND.
 
-Many warnings occur from .h files so fixing one file may have a nice
-effect on the total number of warnings.
-
-With these changes I am actually tempted to try W=1 now and then.
-Previously there was just too much noise.
-
-Borislav:
-
-- make the W= levels exclusive
-- move very noisy and making little sense for the kernel warnings to W=3
-- drop -Woverlength-strings due to useless warning message
-- copy explanatory text for the different warning levels to 'make help'
-- recount warnings per level
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-[PG: used for 2.6.34 to better control new compilers on older code]
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Originally-by: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- Makefile               |  8 +++++--
- scripts/Makefile.build | 65 +++++++++++++++++++++++++++++---------------------
- 2 files changed, 44 insertions(+), 29 deletions(-)
+ arch/x86/Kconfig                  |  9 +++++
+ arch/x86/include/asm/archrandom.h | 73 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
+ create mode 100644 arch/x86/include/asm/archrandom.h
 
-diff --git a/Makefile b/Makefile
-index e922e609..25a8f63 100644
---- a/Makefile
-+++ b/Makefile
-@@ -103,7 +103,7 @@ ifeq ("$(origin O)", "command line")
- endif
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b99909c..0a813f8 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1460,6 +1460,15 @@ config ARCH_USES_PG_UNCACHED
+ 	def_bool y
+ 	depends on X86_PAT
  
- ifeq ("$(origin W)", "command line")
--  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := 1
-+  export KBUILD_ENABLE_EXTRA_GCC_CHECKS := $(W)
- endif
- 
- # That's our default target when none is given on the command line
-@@ -1295,7 +1295,11 @@ help:
- 	@echo  '  make O=dir [targets] Locate all output files in "dir", including .config'
- 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
- 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
--	@echo  '  make W=1   [targets] Enable extra gcc checks'
-+	@echo  '  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where'
-+	@echo  '		1: warnings which may be relevant and do not occur too often'
-+	@echo  '		2: warnings which occur quite often but may still be relevant'
-+	@echo  '		3: more obscure warnings, can most likely be ignored'
++config ARCH_RANDOM
++	def_bool y
++	prompt "x86 architectural random number generator" if EXPERT
++	---help---
++	  Enable the x86 architectural RDRAND instruction
++	  (Intel Bull Mountain technology) to generate random numbers.
++	  If supported, this is a high bandwidth, cryptographically
++	  secure hardware random number generator.
 +
- 	@echo  ''
- 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
- 	@echo  'For further info see the ./README file'
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index bd9d518..f9a413b 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -51,36 +51,47 @@ ifeq ($(KBUILD_NOPEDANTIC),)
- endif
- 
- #
--# make W=1 settings
-+# make W=... settings
- #
--# $(call cc-option... ) handles gcc -W.. options which
-+# W=1 - warnings that may be relevant and does not occur too often
-+# W=2 - warnings that occur quite often but may still be relevant
-+# W=3 - the more obscure warnings, can most likely be ignored
-+#
-+# $(call cc-option, -W...) handles gcc -W.. options which
- # are not supported by all versions of the compiler
- ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
--KBUILD_EXTRA_WARNINGS := -Wextra
--KBUILD_EXTRA_WARNINGS += -Wunused -Wno-unused-parameter
--KBUILD_EXTRA_WARNINGS += -Waggregate-return
--KBUILD_EXTRA_WARNINGS += -Wbad-function-cast
--KBUILD_EXTRA_WARNINGS += -Wcast-qual
--KBUILD_EXTRA_WARNINGS += -Wcast-align
--KBUILD_EXTRA_WARNINGS += -Wconversion
--KBUILD_EXTRA_WARNINGS += -Wdisabled-optimization
--KBUILD_EXTRA_WARNINGS += -Wlogical-op
--KBUILD_EXTRA_WARNINGS += -Wmissing-declarations
--KBUILD_EXTRA_WARNINGS += -Wmissing-format-attribute
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wmissing-include-dirs,)
--KBUILD_EXTRA_WARNINGS += -Wmissing-prototypes
--KBUILD_EXTRA_WARNINGS += -Wnested-externs
--KBUILD_EXTRA_WARNINGS += -Wold-style-definition
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Woverlength-strings,)
--KBUILD_EXTRA_WARNINGS += -Wpacked
--KBUILD_EXTRA_WARNINGS += -Wpacked-bitfield-compat
--KBUILD_EXTRA_WARNINGS += -Wpadded
--KBUILD_EXTRA_WARNINGS += -Wpointer-arith
--KBUILD_EXTRA_WARNINGS += -Wredundant-decls
--KBUILD_EXTRA_WARNINGS += -Wshadow
--KBUILD_EXTRA_WARNINGS += -Wswitch-default
--KBUILD_EXTRA_WARNINGS += $(call cc-option, -Wvla,)
--KBUILD_CFLAGS += $(KBUILD_EXTRA_WARNINGS)
-+warning-1 := -Wextra -Wunused -Wno-unused-parameter
-+warning-1 += -Wmissing-declarations
-+warning-1 += -Wmissing-format-attribute
-+warning-1 += -Wmissing-prototypes
-+warning-1 += -Wold-style-definition
-+warning-1 += $(call cc-option, -Wmissing-include-dirs)
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+new file mode 100644
+index 0000000..b7b5bc0
+--- /dev/null
++++ b/arch/x86/include/asm/archrandom.h
+@@ -0,0 +1,73 @@
++/*
++ * This file is part of the Linux kernel.
++ *
++ * Copyright (c) 2011, Intel Corporation
++ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
++ *          H. Peter Anvin <hpa@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
 +
-+warning-2 := -Waggregate-return
-+warning-2 += -Wcast-align
-+warning-2 += -Wdisabled-optimization
-+warning-2 += -Wnested-externs
-+warning-2 += -Wshadow
-+warning-2 += $(call cc-option, -Wlogical-op)
++#ifndef ASM_X86_ARCHRANDOM_H
++#define ASM_X86_ARCHRANDOM_H
 +
-+warning-3 := -Wbad-function-cast
-+warning-3 += -Wcast-qual
-+warning-3 += -Wconversion
-+warning-3 += -Wpacked
-+warning-3 += -Wpadded
-+warning-3 += -Wpointer-arith
-+warning-3 += -Wredundant-decls
-+warning-3 += -Wswitch-default
-+warning-3 += $(call cc-option, -Wpacked-bitfield-compat)
-+warning-3 += $(call cc-option, -Wvla)
++#include <asm/processor.h>
++#include <asm/cpufeature.h>
++#include <asm/alternative.h>
++#include <asm/nops.h>
 +
-+warning := $(warning-$(KBUILD_ENABLE_EXTRA_GCC_CHECKS))
++#define RDRAND_RETRY_LOOPS	10
 +
-+ifeq ("$(warning)","")
-+        $(error W=$(KBUILD_ENABLE_EXTRA_GCC_CHECKS) is unknown)
-+endif
++#define RDRAND_INT	".byte 0x0f,0xc7,0xf0"
++#ifdef CONFIG_X86_64
++# define RDRAND_LONG	".byte 0x48,0x0f,0xc7,0xf0"
++#else
++# define RDRAND_LONG	RDRAND_INT
++#endif
 +
-+KBUILD_CFLAGS += $(warning)
- endif
- 
- include scripts/Makefile.lib
++#ifdef CONFIG_ARCH_RANDOM
++
++#define GET_RANDOM(name, type, rdrand, nop)			\
++static inline int name(type *v)					\
++{								\
++	int ok;							\
++	alternative_io("movl $0, %0\n\t"			\
++		       nop,					\
++		       "\n1: " rdrand "\n\t"			\
++		       "jc 2f\n\t"				\
++		       "decl %0\n\t"                            \
++		       "jnz 1b\n\t"                             \
++		       "2:",                                    \
++		       X86_FEATURE_RDRAND,                      \
++		       ASM_OUTPUT2("=r" (ok), "=a" (*v)),       \
++		       "0" (RDRAND_RETRY_LOOPS));		\
++	return ok;						\
++}
++
++#ifdef CONFIG_X86_64
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP5);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP4);
++
++#else
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
++
++#endif /* CONFIG_X86_64 */
++
++#endif  /* CONFIG_ARCH_RANDOM */
++
++#endif /* ASM_X86_ARCHRANDOM_H */
 -- 
 1.7.12.rc2
 
