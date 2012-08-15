@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2HOTbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:31:20 -0400
-Received: from waste.org ([173.11.57.241]:56948 "EHLO waste.org"
+	id S1755867Ab2HOTcA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:32:00 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:54939 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab2HOTbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:31:18 -0400
-Message-ID: <1345059051.32116.32.camel@calx>
-Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
-From: Matt Mackall <mpm@selenic.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, mingo@kernel.org, hpa@zytor.com,
-        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-Date: Wed, 15 Aug 2012 14:30:51 -0500
-In-Reply-To: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
-References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752663Ab2HOTb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:31:59 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] HID: hidraw: improve error handling in hidraw_init()
+Date: Wed, 15 Aug 2012 23:31:45 +0400
+Message-Id: <1345059105-26827-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-13 at 10:26 -0700, H. Peter Anvin wrote:
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
-> 
-> When we write entropy into a non-empty pool, we currently don't
-> account at all for the fact that we will probabilistically overwrite
-> some of the entropy in that pool.
+Several improvements in error handling:
+- do not report success if alloc_chrdev_region() failed
+- check for error code of cdev_add()
+- use unregister_chrdev_region() instead of unregister_chrdev()
+  if class_create() failed
 
-Technically, no, nothing is overwritten. The key fact is that the mixing
-function is -reversible-. Thus, even if you mix in known data, you can't
-learn anything about the state and thus can't destroy any of the
-existing entropy.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-But you are correct, mixing new actual entropy is not purely additive
-(with saturation). For that to happen, we'd need an input mixing
-function with perfect maximal cascading. Instead we effectively cascade
-across somewhere between 6 and 64 bits. So the truth lies somewhere
-between linear and your exponential estimate (which would be the case
-for mixing a single bit into the pool with XOR), but much closer to
-linear due to combinatoric expansion.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/hid/hidraw.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-On the other hand, I don't think this sort of thing matters at all.
-There is so much more fundamentally wrong with even trying to do entropy
-accounting in the first place that these sorts of details don't even
-matter. Instead we should stop fooling ourselves and just drop the
-pretense of accounting entirely. Now that we've got a much richer set of
-inputs, I think the time is ripe... but of course, I'm no longer the
-maintainer.
-
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 36fa77b..15e6660 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -549,21 +549,28 @@ int __init hidraw_init(void)
+ 
+ 	if (result < 0) {
+ 		pr_warn("can't get major number\n");
+-		result = 0;
+ 		goto out;
+ 	}
+ 
+ 	hidraw_class = class_create(THIS_MODULE, "hidraw");
+ 	if (IS_ERR(hidraw_class)) {
+ 		result = PTR_ERR(hidraw_class);
+-		unregister_chrdev(hidraw_major, "hidraw");
+-		goto out;
++		goto error_cdev;
+ 	}
+ 
+         cdev_init(&hidraw_cdev, &hidraw_ops);
+-        cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
++	result = cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
++	if (result < 0)
++		goto error_class;
++
+ out:
+ 	return result;
++
++error_class:
++	class_destroy(hidraw_class);
++error_cdev:
++	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
++	goto out;
+ }
+ 
+ void hidraw_exit(void)
 -- 
-Mathematics is the supreme nostalgia of our time.
-
+1.7.9.5
 
