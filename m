@@ -1,141 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2HOXSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:18:22 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52198 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab2HOXSR (ORCPT
+	id S1754245Ab2HOXTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 19:19:17 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:55661 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab2HOXTQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:18:17 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-8d-502c2e376878
-Date: Thu, 16 Aug 2012 08:20:23 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC 2/2] cma: support MIGRATE_DISCARD
-Message-ID: <20120815232023.GA15225@bbox>
-References: <1344934627-8473-1-git-send-email-minchan@kernel.org>
- <1344934627-8473-3-git-send-email-minchan@kernel.org>
- <xa1t7gt1pnck.fsf@mina86.com>
+	Wed, 15 Aug 2012 19:19:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=yWrni/KjVRJEt0qfFBB
+	HDgW8ywbpAp1k+2DW2cc4Ffwlx8LxAXNVMVz2SppofDshMYO+3bmGPJ9q2ZdrMjZ
+	ZMzDIu6sKzVWxIZ4s/HCj7gXCNVjkioap/s96BlG6nneSTWIXfZ80AKkbBJTyJoZ
+	42LQVIPyDponN1G8WjYcqxqY=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.7.11.5
+Date: Wed, 15 Aug 2012 16:19:13 -0700
+Message-ID: <7v628j4uby.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1t7gt1pnck.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-Pobox-Relay-ID: A103A976-E72F-11E1-A7CF-01B42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+The latest maintenance release Git v1.7.11.5 is now available at
+the usual places.
 
-On Tue, Aug 14, 2012 at 04:19:55PM +0200, Michal Nazarewicz wrote:
-> Minchan Kim <minchan@kernel.org> writes:
-> > This patch introudes MIGRATE_DISCARD mode in migration.
-> > It drop clean cache pages instead of migration so that
-> > migration latency could be reduced. Of course, it could
-> > evict code pages but latency of big contiguous memory
-> > is more important than some background application's slow down
-> > in mobile embedded enviroment.
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> 
-> This looks good to me.
-> 
-> > ---
-> >  include/linux/migrate_mode.h |   11 +++++++---
-> >  mm/migrate.c                 |   50 +++++++++++++++++++++++++++++++++---------
-> >  mm/page_alloc.c              |    2 +-
-> >  3 files changed, 49 insertions(+), 14 deletions(-)
-> >
-> > diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
-> > index ebf3d89..04ca19c 100644
-> > --- a/include/linux/migrate_mode.h
-> > +++ b/include/linux/migrate_mode.h
-> > @@ -6,11 +6,16 @@
-> >   *	on most operations but not ->writepage as the potential stall time
-> >   *	is too significant
-> >   * MIGRATE_SYNC will block when migrating pages
-> > + * MIGRTATE_DISCARD will discard clean cache page instead of migration
-> > + *
-> > + * MIGRATE_ASYNC, MIGRATE_SYNC_LIGHT, MIGRATE_SYNC shouldn't be used
-> > + * together as OR flag.
-> >   */
-> >  enum migrate_mode {
-> > -	MIGRATE_ASYNC,
-> > -	MIGRATE_SYNC_LIGHT,
-> > -	MIGRATE_SYNC,
-> > +	MIGRATE_ASYNC = 1 << 0,
-> > +	MIGRATE_SYNC_LIGHT = 1 << 1,
-> > +	MIGRATE_SYNC = 1 << 2,
-> > +	MIGRATE_DISCARD = 1 << 3,
-> >  };
-> 
-> Since CMA is the only user of MIGRATE_DISCARD it may be worth it to
-> guard it inside an #ifdef, eg:
-> 
-> #ifdef CONFIG_CMA
-> 	MIGRATE_DISCARD = 1 << 3,
-> #define is_migrate_discard(mode) (((mode) & MIGRATE_DISCARD) == MIGRATE_DISCARD)
+The release tarballs are found at:
 
-The mode bit can be used with other bits like MIGRATE_SYNC|MIGRATE_DISCARD.
-So it is correct that (mode & MIGRATE_DISCARD).
+    http://code.google.com/p/git-core/downloads/list
 
-Anyway, I don't want to fold it into only CMA because I think we can
-have a pontential users in mm.
-For example, memory-hotplug case. No enough free memory in the system
-but lots of page cache page as a migration source, then we can remove
-page cache page instead of migration and it might be better than failing
-memory-hotremove.
+and their SHA-1 checksums are:
 
-In summary, I want to open it for potential usecases in future if anyone
-doesn't oppose strongly.
+44013d9418ef23dd8bb67e80b27c9327356bfae8  git-1.7.11.5.tar.gz
+8e19f56b2f484dc3327f1e8316c114dbe0ee2743  git-htmldocs-1.7.11.5.tar.gz
+d328241c130bbe38b12adf5702568c1edfff8623  git-manpages-1.7.11.5.tar.gz
 
-> #endif
-> 
->   
-> >  #endif		/* MIGRATE_MODE_H_INCLUDED */
-> > diff --git a/mm/migrate.c b/mm/migrate.c
-> > index 77ed2d7..8119a59 100644
-> > --- a/mm/migrate.c
-> > +++ b/mm/migrate.c
-> > @@ -685,9 +685,12 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
-> >  	int remap_swapcache = 1;
-> >  	struct mem_cgroup *mem;
-> >  	struct anon_vma *anon_vma = NULL;
-> > +	enum ttu_flags ttu_flags;
-> > +	bool discard_mode = false;
-> > +	bool file = false;
-> >  
-> >  	if (!trylock_page(page)) {
-> > -		if (!force || mode == MIGRATE_ASYNC)
-> > +		if (!force || mode & MIGRATE_ASYNC)
+Also the following public repositories all have a copy of the v1.7.11.5
+tag and the maint branch that the tag points at:
 
-It's not wrong technically but for readability, NP.
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
-> 
-> +		if (!force || (mode & MIGRATE_ASYNC))
-> 
-> >  			goto out;
-> >  
-> >  		/*
-> 
-> 
-> -- 
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Git v1.7.11.5 Release Notes
+===========================
 
+Fixes since v1.7.11.4
+---------------------
 
+ * The Makefile rule to create assembly output (primarily for
+   debugging purposes) did not create it next to the source.
 
+ * The code to avoid mistaken attempt to add the object directory
+   itself as its own alternate could read beyond end of a string while
+   comparison.
 
+ * On some architectures, "block-sha1" did not compile correctly
+   when compilers inferred alignment guarantees from our source we
+   did not intend to make.
 
--- 
-Kind regards,
-Minchan Kim
+ * When talking to a remote running ssh on IPv6 enabled host, whose
+   address is spelled as "[HOST]:PORT", we did not parse the address
+   correctly and failed to connect.
+
+ * git-blame.el (in compat/) have been updated to use Elisp more
+   correctly.
+
+ * "git checkout <branchname>" to come back from a detached HEAD state
+   incorrectly computed reachability of the detached HEAD, resulting
+   in unnecessary warnings.
+
+ * "git mergetool" did not support --tool-help option to give the list
+   of supported backends, like "git difftool" does.
+
+ * "git grep" stopped spawning an external "grep" long time ago, but a
+   duplicated test to check internal and external "grep" was left
+   behind.
+
+Also contains minor typofixes and documentation updates.
+
+----------------------------------------------------------------
+
+Changes since v1.7.11.4 are as follows:
+
+Heiko Voigt (1):
+      link_alt_odb_entry: fix read over array bounds reported by valgrind
+
+Jeff King (1):
+      checkout: don't confuse ref and object flags
+
+Jonathan Nieder (4):
+      block-sha1: avoid pointer conversion that violates alignment constraints
+      block-sha1: put expanded macro parameters in parentheses
+      Makefile: fix location of listing produced by "make subdir/foo.s"
+      Makefile: BLK_SHA1 does not require fast htonl() and unaligned loads
+
+Junio C Hamano (4):
+      mergetool: support --tool-help option like difftool does
+      Enumerate revision range specifiers in the documentation
+      Prepare for 1.7.11.5
+      Git 1.7.11.5
+
+Lawrence Mitchell (2):
+      git-blame.el: Use with-current-buffer where appropriate
+      git-blame.el: Do not use bare 0 to mean (point-min)
+
+Max Horn (1):
+      Make <refname> documentation more consistent.
+
+Michael Schubert (1):
+      Documentation/git-daemon: add missing word
+
+Ramkumar Ramachandra (1):
+      commit: document a couple of options
+
+Ramsay Allan Jones (1):
+      t7810-*.sh: Remove redundant test
+
+René Scharfe (1):
+      git: Wrong parsing of ssh urls with IPv6 literals ignores port
+
+Rüdiger Sonderfeld (2):
+      git-blame.el: use mapc instead of mapcar
+      git-blame.el: Do not use goto-line in lisp code
+
+Štěpán Němec (1):
+      doc: A few minor copy edits.
+
