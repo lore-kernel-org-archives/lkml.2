@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2HOIPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:15:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab2HOIPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:15:36 -0400
-Date: Wed, 15 Aug 2012 10:15:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 6/7] HID: picoLCD: disable version check during probe
-In-Reply-To: <20120730213859.063173c1@neptune.home>
-Message-ID: <alpine.LNX.2.00.1208151015220.7026@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home> <20120730213859.063173c1@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753292Ab2HOIUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 04:20:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45922 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2HOIUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 04:20:16 -0400
+X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Aug 2012 04:20:16 EDT
+Subject: Re: [PATCH 15/21] net sched: Pass the skb into change so it can
+ access NETLINK_CB
+From: Jamal Hadi Salim <jhs@mojatatu.com>
+Reply-To: jhs@mojatatu.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        David Miller <davem@davemloft.net>, Serge Hallyn <serge@hallyn.com>
+In-Reply-To: <1344889115-21610-15-git-send-email-ebiederm@xmission.com>
+References: <87ehnav9n5.fsf@xmission.com>
+	 <1344889115-21610-1-git-send-email-ebiederm@xmission.com>
+	 <1344889115-21610-15-git-send-email-ebiederm@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Aug 2012 04:11:54 -0400
+Message-ID: <1345018314.20443.4.camel@mojatatu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jul 2012, Bruno Prémont wrote:
-
-> Commit 4ea5454203d991ec85264f64f89ca8855fce69b0
-> [HID: Fix race condition between driver core and ll-driver] introduced
-> new locking around proce/remove functions that prevent any report/reply
-> from hardware to reach driver until it returned from probe.
+On Mon, 2012-08-13 at 13:18 -0700, Eric W. Biederman wrote:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
 > 
-> As such, the ask-reply way to checking picoLCD firmware version during
-> probe is bound to timeout and let probe fail.
+> cls_flow.c plays with uids and gids.  Unless I misread that
+> code it is possible for classifiers to depend on the specific uid and
+> gid values.  Therefore I need to know the user namespace of the
+> netlink socket that is installing the packet classifiers.  Pass
+> in the rtnetlink skb so I can access the NETLINK_CB of the passed
+> packet.  In particular I want access to sk_user_ns(NETLINK_CB(in_skb).ssk).
 > 
-> Disabling the check lets driver sucessfully probe again.
+> Pass in not the user namespace but the incomming rtnetlink skb into
+> the the classifier change routines as that is generally the more useful
+> parameter.
 > 
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> ---
->  drivers/hid/hid-picolcd_core.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-picolcd_core.c b/drivers/hid/hid-picolcd_core.c
-> index 2d7ef68..42d0791 100644
-> --- a/drivers/hid/hid-picolcd_core.c
-> +++ b/drivers/hid/hid-picolcd_core.c
-> @@ -478,13 +478,13 @@ static int picolcd_probe_lcd(struct hid_device *hdev, struct picolcd_data *data)
->  {
->  	int error;
->  
-> -	error = picolcd_check_version(hdev);
-> +/*	error = picolcd_check_version(hdev);
->  	if (error)
->  		return error;
->  
->  	if (data->version[0] != 0 && data->version[1] != 3)
->  		hid_info(hdev, "Device with untested firmware revision, please submit /sys/kernel/debug/hid/%s/rdesc for this device.\n",
-> -			 dev_name(&hdev->dev));
-> +			 dev_name(&hdev->dev)); */
+> Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 
-Please just remove it altogether, I don't see a reason to keep the 
-commented-out code in the in-tree driver.
 
-Once the locking mess is sorted out, we can re-introduce it again as 
-necessary.
+Acked-by: Jamal Hadi Salim <jhs@mojatatu.com>
 
-Thanks.
+cheers,
+jamal
 
--- 
-Jiri Kosina
-SUSE Labs
