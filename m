@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab2HOULq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:11:46 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37028 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab2HOTv5 (ORCPT
+	id S1757160Ab2HOUL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:11:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36489 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937Ab2HOULp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:57 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 114/165] timekeeping: Fix leapsecond triggered load spike issue
-Date: Wed, 15 Aug 2012 15:47:38 -0400
-Message-ID: <1345060109-9187-115-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 15 Aug 2012 16:11:45 -0400
+Date: Wed, 15 Aug 2012 15:11:35 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2 1/7] integrity: added digest calculation function
+Message-ID: <20120815201135.GA10088@amd1>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+ <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <johnstul@us.ibm.com>
+Quoting Dmitry Kasatkin (dmitry.kasatkin@intel.com):
+> There are several functions, that need to calculate digest.
+> This patch adds common function for use by integrity subsystem.
+> 
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> ---
+>  security/integrity/digsig.c    |   31 +++++++++++++++++++++++++++++--
+>  security/integrity/integrity.h |    3 +++
+>  2 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+> index 2dc167d..61a0c92 100644
+> --- a/security/integrity/digsig.c
+> +++ b/security/integrity/digsig.c
+> @@ -13,9 +13,9 @@
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+>  #include <linux/err.h>
+> -#include <linux/rbtree.h>
+>  #include <linux/key-type.h>
+>  #include <linux/digsig.h>
+> +#include <crypto/hash.h>
+>  
+>  #include "integrity.h"
+>  
+> @@ -28,7 +28,7 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+>  };
+>  
+>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> -					const char *digest, int digestlen)
+> +			    const char *digest, int digestlen)
+>  {
+>  	if (id >= INTEGRITY_KEYRING_MAX)
+>  		return -EINVAL;
+> @@ -46,3 +46,30 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+>  
+>  	return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
+>  }
+> +
+> +int integrity_calc_digest(const char *algo, const void *data, const int len,
+> +			  char *digest)
+> +{
+> +	int rc = -ENOMEM;
+> +	struct crypto_shash *tfm;
+> +
+> +	tfm = crypto_alloc_shash(algo, 0, 0);
+> +	if (IS_ERR(tfm)) {
+> +		rc = PTR_ERR(tfm);
+> +		pr_err("Can not allocate %s (reason: %d)\n", algo, rc);
+> +		return rc;
+> +	} else {
+> +		struct {
+> +			struct shash_desc shash;
+> +			char ctx[crypto_shash_descsize(tfm)];
+> +		} desc;
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Needless confusing indentation here.  Just move the struct {} desc; to the
+top and drop the else.  That will make it much more readable.
 
-commit 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51 upstream.
-
-The timekeeping code misses an update of the hrtimer subsystem after a
-leap second happened. Due to that timers based on CLOCK_REALTIME are
-either expiring a second early or late depending on whether a leap
-second has been inserted or deleted until an operation is initiated
-which causes that update. Unless the update happens by some other
-means this discrepancy between the timekeeping and the hrtimer data
-stays forever and timers are expired either early or late.
-
-The reported immediate workaround - $ data -s "`date`" - is causing a
-call to clock_was_set() which updates the hrtimer data structures.
-See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
-
-Add the missing clock_was_set() call to update_wall_time() in case of
-a leap second event. The actual update is deferred to softirq context
-as the necessary smp function call cannot be invoked from hard
-interrupt context.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/time/timekeeping.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index adfa89d..634c9ee 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -769,6 +769,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
- 		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
- 	/* Accumulate into raw time */
--- 
-1.7.12.rc2
-
+> +		desc.shash.tfm = tfm;
+> +		desc.shash.flags = 0;
+> +
+> +		rc = crypto_shash_digest(&desc.shash, data, len, digest);
+> +	}
+> +
+> +	crypto_free_shash(tfm);
+> +	return rc;
+> +}
+> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> index e21362a..48ee2d4 100644
+> --- a/security/integrity/integrity.h
+> +++ b/security/integrity/integrity.h
+> @@ -59,6 +59,9 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+>  
+>  #ifdef CONFIG_INTEGRITY_SIGNATURE
+>  
+> +int integrity_calc_digest(const char *algo, const void *data, const int len,
+> +			  char *digest);
+> +
+>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+>  					const char *digest, int digestlen);
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
