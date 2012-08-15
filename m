@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2HOUKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:10:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37037 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954Ab2HOTwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 116/165] hrtimers: Move lock held region in hrtimer_interrupt()
-Date: Wed, 15 Aug 2012 15:47:40 -0400
-Message-ID: <1345060109-9187-117-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1757169Ab2HOUKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:10:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40964 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757054Ab2HOUKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 16:10:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] cpuidle: coupled: fix sleeping while atomic in cpu notifier
+Date: Wed, 15 Aug 2012 22:16:10 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org
+References: <1343251216-24106-1-git-send-email-ccross@android.com> <201208080015.31359.rjw@sisk.pl> <CAMbhsRT5pHkVWPf5u=+hqWhAgAD_kDb+DSSx+PG-nAJ5DHdhng@mail.gmail.com>
+In-Reply-To: <CAMbhsRT5pHkVWPf5u=+hqWhAgAD_kDb+DSSx+PG-nAJ5DHdhng@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208152216.10512.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Wednesday, August 08, 2012, Colin Cross wrote:
+> On Tue, Aug 7, 2012 at 3:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, July 25, 2012, Colin Cross wrote:
+> >> The cpu hotplug notifier gets called in both atomic and non-atomic
+> >> contexts, it is not always safe to lock a mutex.  Filter out all events
+> >> except the six necessary ones, which are all sleepable, before taking
+> >> the mutex.
+> >>
+> >> Signed-off-by: Colin Cross <ccross@android.com>
+> >
+> > Has this been applied already?
+> 
+> It's not in Linus' tree, and I haven't heard anything from Len.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Len appears to be unavailable.
 
-commit 196951e91262fccda81147d2bcf7fdab08668b40 upstream.
+I'll put it into the linux-next branch of the linux-pm.git tree and will
+push it to Linus for -rc3 if Len doesn't show up till then.
 
-We need to update the base offsets from this code and we need to do
-that under base->lock. Move the lock held region around the
-ktime_get() calls. The ktime_get() calls are going to be replaced with
-a function which gets the time and the offsets atomically.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-6-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/hrtimer.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index dc41268..039db35 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1279,11 +1279,10 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
-+	raw_spin_lock(&cpu_base->lock);
- 	entry_time = now = ktime_get();
- retry:
- 	expires_next.tv64 = KTIME_MAX;
--
--	raw_spin_lock(&cpu_base->lock);
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1358,6 +1357,7 @@ retry:
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
- 	 */
-+	raw_spin_lock(&cpu_base->lock);
- 	now = ktime_get();
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
-@@ -1370,6 +1370,7 @@ retry:
- 	 */
- 	cpu_base->nr_hangs++;
- 	cpu_base->hang_detected = 1;
-+	raw_spin_unlock(&cpu_base->lock);
- 	delta = ktime_sub(now, entry_time);
- 	if (delta.tv64 > cpu_base->max_hang_time.tv64)
- 		cpu_base->max_hang_time = delta;
--- 
-1.7.12.rc2
-
+Thanks,
+Rafael
