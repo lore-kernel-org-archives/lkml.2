@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab2HOLkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 07:40:49 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:54246 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2HOLkr (ORCPT
+	id S1753599Ab2HOLlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 07:41:13 -0400
+Received: from canardo.mork.no ([148.122.252.1]:34145 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab2HOLlL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 07:40:47 -0400
+	Wed, 15 Aug 2012 07:41:11 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Miller <davem@davemloft.net>, <shchepetkov@ispras.ru>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldv-project@ispras.ru>
+Subject: Re: [PATCH 0/5] Call netif_carrier_off() after register_netdev()
+Organization: m
+References: <1344940135-17079-1-git-send-email-shchepetkov@ispras.ru>
+	<20120814.140019.1016184364798213214.davem@davemloft.net>
+	<1344984477.2690.85.camel@bwh-desktop.uk.solarflarecom.com>
+Date: Wed, 15 Aug 2012 13:40:52 +0200
+In-Reply-To: <1344984477.2690.85.camel@bwh-desktop.uk.solarflarecom.com> (Ben
+	Hutchings's message of "Tue, 14 Aug 2012 23:47:57 +0100")
+Message-ID: <87boicz8l7.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <50201BB5.9050005@jp.fujitsu.com>
-References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
-	<CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
-	<50201BB5.9050005@jp.fujitsu.com>
-Date: Wed, 15 Aug 2012 07:40:46 -0400
-Message-ID: <CA+5PVA7YejzbWDEpX=gj8s2QAQtgoxyNUUa5HhGtVGY+2BHqRA@mail.gmail.com>
-Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
-From: Josh Boyer <jwboyer@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@google.com, davej@redhat.com, mgorman@suse.de,
-        cl@linux.com, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 6, 2012 at 3:32 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> On 7/31/2012 8:33 AM, Josh Boyer wrote:
->> On Mon, Jun 11, 2012 at 5:17 AM,  <kosaki.motohiro@gmail.com> wrote:
->>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>
->>> Hi
->>>
->>> This is trivial fixes of mempolicy meory corruption issues. There
->>> are independent patches each ather. and, they don't change userland
->>> ABIs.
->>>
->>> Thanks.
->>>
->>> changes from v1: fix some typo of changelogs s.
->>>
->>> -----------------------------------------------
->>> KOSAKI Motohiro (6):
->>>   Revert "mm: mempolicy: Let vma_merge and vma_split handle
->>>     vma->vm_policy linkages"
->>>   mempolicy: Kill all mempolicy sharing
->>>   mempolicy: fix a race in shared_policy_replace()
->>>   mempolicy: fix refcount leak in mpol_set_shared_policy()
->>>   mempolicy: fix a memory corruption by refcount imbalance in
->>>     alloc_pages_vma()
->>>   MAINTAINERS: Added MEMPOLICY entry
->>>
->>>  MAINTAINERS    |    7 +++
->>>  mm/mempolicy.c |  151 ++++++++++++++++++++++++++++++++++++++++----------------
->>>  mm/shmem.c     |    9 ++--
->>>  3 files changed, 120 insertions(+), 47 deletions(-)
->>
->> I don't see these patches queued anywhere.  They aren't in linux-next,
->> mmotm, or Linus' tree.  Did these get dropped?  Is the revert still
->> needed?
+Ben Hutchings <bhutchings@solarflare.com> writes:
+
+> But if you do it beforehand then it doesn't have the intended effect.
+> (Supposed to be fixed by 22604c866889c4b2e12b73cbf1683bda1b72a313, which
+> had to be reverted: c276e098d3ee33059b4a1c747354226cec58487c.)
 >
-> Sorry. my fault. yes, it is needed. currently, Some LTP was fail since
-> Mel's "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages" patch.
+> So you have to do it after, but without dropping the RTNL lock in
+> between.
 
-The series still isn't queued anywhere.  Are you planning on resending
-it again, or should it get picked up in a particular tree?
+So you may want to add something like
 
-josh
+int register_netdev_carrier_off(struct net_device *dev)
+{
+	int err;
+
+	rtnl_lock();
+	err = register_netdevice(dev);
+        if (!err)
+                set_bit(__LINK_STATE_NOCARRIER, &dev->state)
+	rtnl_unlock();
+	return err;
+}
+
+
+for these drivers?
+
+
+
+Bjørn
