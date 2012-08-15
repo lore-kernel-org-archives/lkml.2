@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab2HOT5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:57:15 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:63176 "EHLO
+	id S932213Ab2HOTw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:58 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63159 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab2HOTw7 (ORCPT
+	with ESMTP id S932173Ab2HOTwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:59 -0400
+	Wed, 15 Aug 2012 15:52:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Sedat Dilek <sedat.dilek@gmail.com>,
+CC: "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 161/165] random: remove rand_initialize_irq()
-Date: Wed, 15 Aug 2012 15:48:25 -0400
-Message-ID: <1345060109-9187-162-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 155/165] random: add new get_random_bytes_arch() function
+Date: Wed, 15 Aug 2012 15:48:19 -0400
+Message-ID: <1345060109-9187-156-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -31,187 +31,114 @@ From: Theodore Ts'o <tytso@mit.edu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c5857ccf293968348e5eb4ebedc68074de3dcda6 upstream.
+commit c2557a303ab6712bb6e09447df828c557c710ac9 upstream.
 
-With the new interrupt sampling system, we are no longer using the
-timer_rand_state structure in the irq descriptor, so we can stop
-initializing it now.
+Create a new function, get_random_bytes_arch() which will use the
+architecture-specific hardware random number generator if it is
+present.  Change get_random_bytes() to not use the HW RNG, even if it
+is avaiable.
 
-[ Merged in fixes from Sedat to find some last missing references to
-  rand_initialize_irq() ]
+The reason for this is that the hw random number generator is fast (if
+it is present), but it requires that we trust the hardware
+manufacturer to have not put in a back door.  (For example, an
+increasing counter encrypted by an AES key known to the NSA.)
+
+It's unlikely that Intel (for example) was paid off by the US
+Government to do this, but it's impossible for them to prove otherwise
+ --- especially since Bull Mountain is documented to use AES as a
+whitener.  Hence, the output of an evil, trojan-horse version of
+RDRAND is statistically indistinguishable from an RDRAND implemented
+to the specifications claimed by Intel.  Short of using a tunnelling
+electronic microscope to reverse engineer an Ivy Bridge chip and
+disassembling and analyzing the CPU microcode, there's no way for us
+to tell for sure.
+
+Since users of get_random_bytes() in the Linux kernel need to be able
+to support hardware systems where the HW RNG is not present, most
+time-sensitive users of this interface have already created their own
+cryptographic RNG interface which uses get_random_bytes() as a seed.
+So it's much better to use the HW RNG to improve the existing random
+number generator, by mixing in any entropy returned by the HW RNG into
+/dev/random's entropy pool, but to always _use_ /dev/random's entropy
+pool.
+
+This way we get almost of the benefits of the HW RNG without any
+potential liabilities.  The only benefits we forgo is the
+speed/performance enhancements --- and generic kernel code can't
+depend on depend on get_random_bytes() having the speed of a HW RNG
+anyway.
+
+For those places that really want access to the arch-specific HW RNG,
+if it is available, we provide get_random_bytes_arch().
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-[PG: in .34 the irqdesc.h content is in irq.h instead.]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/ia64/kernel/irq_ia64.c |  1 -
- drivers/char/random.c       | 55 ---------------------------------------------
- drivers/mfd/ab3100-core.c   |  3 ---
- include/linux/irq.h         |  1 -
- include/linux/random.h      |  2 --
- kernel/irq/manage.c         | 17 --------------
- 6 files changed, 79 deletions(-)
+ drivers/char/random.c  | 27 +++++++++++++++++++++++----
+ include/linux/random.h |  1 +
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
-index 6404793..73a3f5b 100644
---- a/arch/ia64/kernel/irq_ia64.c
-+++ b/arch/ia64/kernel/irq_ia64.c
-@@ -23,7 +23,6 @@
- #include <linux/ioport.h>
- #include <linux/kernel_stat.h>
- #include <linux/ptrace.h>
--#include <linux/random.h>	/* for rand_initialize_irq() */
- #include <linux/signal.h>
- #include <linux/smp.h>
- #include <linux/threads.h>
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 14f1f23..1644b8e 100644
+index f41a9f3..8dc4c16 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -629,43 +629,6 @@ struct timer_rand_state {
- 	unsigned dont_count_entropy:1;
- };
+@@ -1031,11 +1031,28 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
  
--#ifndef CONFIG_GENERIC_HARDIRQS
--
--static struct timer_rand_state *irq_timer_state[NR_IRQS];
--
--static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
--{
--	return irq_timer_state[irq];
--}
--
--static void set_timer_rand_state(unsigned int irq,
--				 struct timer_rand_state *state)
--{
--	irq_timer_state[irq] = state;
--}
--
--#else
--
--static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
--{
--	struct irq_desc *desc;
--
--	desc = irq_to_desc(irq);
--
--	return desc->timer_rand_state;
--}
--
--static void set_timer_rand_state(unsigned int irq,
--				 struct timer_rand_state *state)
--{
--	struct irq_desc *desc;
--
--	desc = irq_to_desc(irq);
--
--	desc->timer_rand_state = state;
--}
--#endif
--
  /*
-  * Add device- or boot-specific data to the input and nonblocking
-  * pools to help initialize them to unique values.
-@@ -1134,24 +1097,6 @@ static int rand_initialize(void)
- }
- module_init(rand_initialize);
- 
--void rand_initialize_irq(int irq)
--{
--	struct timer_rand_state *state;
--
--	state = get_timer_rand_state(irq);
--
--	if (state)
--		return;
--
--	/*
--	 * If kzalloc returns null, we just won't use that entropy
--	 * source.
--	 */
--	state = kzalloc(sizeof(struct timer_rand_state), GFP_KERNEL);
--	if (state)
--		set_timer_rand_state(irq, state);
--}
--
- #ifdef CONFIG_BLOCK
- void rand_initialize_disk(struct gendisk *disk)
- {
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index 2a193dc..5b7f5a90 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -890,9 +890,6 @@ static int __init ab3100_probe(struct i2c_client *client,
- 
- 	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
- 				IRQF_ONESHOT, "ab3100-core", ab3100);
--	/* This real unpredictable IRQ is of course sampled for entropy */
--	rand_initialize_irq(client->irq);
--
- 	if (err)
- 		goto exit_no_irq;
- 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 707ab12..7c2e4bf 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -174,7 +174,6 @@ struct irq_2_iommu;
+  * This function is the exported kernel interface.  It returns some
+- * number of good random numbers, suitable for seeding TCP sequence
+- * numbers, etc.
++ * number of good random numbers, suitable for key generation, seeding
++ * TCP sequence numbers, etc.  It does not use the hw random number
++ * generator, if available; use get_random_bytes_arch() for that.
   */
- struct irq_desc {
- 	unsigned int		irq;
--	struct timer_rand_state *timer_rand_state;
- 	unsigned int            *kstat_irqs;
- #ifdef CONFIG_INTR_REMAP
- 	struct irq_2_iommu      *irq_2_iommu;
+ void get_random_bytes(void *buf, int nbytes)
+ {
++	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
++}
++EXPORT_SYMBOL(get_random_bytes);
++
++/*
++ * This function will use the architecture-specific hardware random
++ * number generator if it is available.  The arch-specific hw RNG will
++ * almost certainly be faster than what we can do in software, but it
++ * is impossible to verify that it is implemented securely (as
++ * opposed, to, say, the AES encryption of a sequence number using a
++ * key known by the NSA).  So it's useful if we need the speed, but
++ * only if we're willing to trust the hardware manufacturer not to
++ * have put in a back door.
++ */
++void get_random_bytes_arch(void *buf, int nbytes)
++{
+ 	char *p = buf;
+ 
+ 	while (nbytes) {
+@@ -1050,9 +1067,11 @@ void get_random_bytes(void *buf, int nbytes)
+ 		nbytes -= chunk;
+ 	}
+ 
+-	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
++	if (nbytes)
++		extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
+ }
+-EXPORT_SYMBOL(get_random_bytes);
++EXPORT_SYMBOL(get_random_bytes_arch);
++
+ 
+ /*
+  * init_std_data - initialize pool with system data
 diff --git a/include/linux/random.h b/include/linux/random.h
-index 5a376bc..1864957 100644
+index 7451093..5a376bc 100644
 --- a/include/linux/random.h
 +++ b/include/linux/random.h
-@@ -44,8 +44,6 @@ struct rand_pool_info {
+@@ -52,6 +52,7 @@ extern void add_input_randomness(unsigned int type, unsigned int code,
+ extern void add_interrupt_randomness(int irq, int irq_flags);
  
- #ifdef __KERNEL__
+ extern void get_random_bytes(void *buf, int nbytes);
++extern void get_random_bytes_arch(void *buf, int nbytes);
+ void generate_random_uuid(unsigned char uuid_out[16]);
  
--extern void rand_initialize_irq(int irq);
--
- extern void add_device_randomness(const void *, unsigned int);
- extern void add_input_randomness(unsigned int type, unsigned int code,
- 				 unsigned int value);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 46f10b1..9080985 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -652,22 +652,6 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 
- 	if (desc->chip == &no_irq_chip)
- 		return -ENOSYS;
--	/*
--	 * Some drivers like serial.c use request_irq() heavily,
--	 * so we have to be careful not to interfere with a
--	 * running system.
--	 */
--	if (new->flags & IRQF_SAMPLE_RANDOM) {
--		/*
--		 * This function might sleep, we want to call it first,
--		 * outside of the atomic block.
--		 * Yes, this might clear the entropy pool if the wrong
--		 * driver is attempted to be loaded, without actually
--		 * installing a new handler, but is this really a problem,
--		 * only the sysadmin is able to do this.
--		 */
--		rand_initialize_irq(irq);
--	}
- 
- 	/* Oneshot interrupts are not allowed with shared */
- 	if ((new->flags & IRQF_ONESHOT) && (new->flags & IRQF_SHARED))
-@@ -1040,7 +1024,6 @@ EXPORT_SYMBOL(free_irq);
-  *
-  *	IRQF_SHARED		Interrupt is shared
-  *	IRQF_DISABLED	Disable local interrupts while processing
-- *	IRQF_SAMPLE_RANDOM	The interrupt can be used for entropy
-  *	IRQF_TRIGGER_*		Specify active edge(s) or level
-  *
-  */
+ #ifndef MODULE
 -- 
 1.7.12.rc2
 
