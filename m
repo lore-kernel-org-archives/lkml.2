@@ -1,101 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab2HOHa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 03:30:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49181 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2HOHax (ORCPT
+	id S1751863Ab2HOHks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 03:40:48 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37134 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750946Ab2HOHkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 03:30:53 -0400
-Date: Wed, 15 Aug 2012 09:30:45 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Andy Gospodarek <gospo@redhat.com>, netdev@vger.kernel.org,
-        davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
-        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
-        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
-        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
-        fbl@redhat.com
-Subject: Re: [patch net-next v2 00/15] net: introduce upper device lists and
- remove dev->master
-Message-ID: <20120815073045.GA1726@minipsycho.orion>
-References: <1344956748-2099-1-git-send-email-jiri@resnulli.us>
- <20120814201950.GA17781@quad.redhat.com>
- <1344976373.2690.41.camel@bwh-desktop.uk.solarflarecom.com>
+	Wed, 15 Aug 2012 03:40:46 -0400
+Date: Wed, 15 Aug 2012 11:40:42 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 3/8] procfs: Add ability to plug in auxiliary fdinfo
+ providers
+Message-ID: <20120815074042.GB23657@moon>
+References: <20120814140342.354405844@openvz.org>
+ <20120814140620.033884909@openvz.org>
+ <20120814183142.GH23464@ZenIV.linux.org.uk>
+ <20120814183558.GA1551@moon>
+ <20120814195649.GB31043@moon>
+ <20120814212721.GJ23464@ZenIV.linux.org.uk>
+ <20120814215616.GC31043@moon>
+ <20120814222147.GA21674@moon>
+ <20120815000703.GL23464@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1344976373.2690.41.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <20120815000703.GL23464@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tue, Aug 14, 2012 at 10:32:53PM CEST, bhutchings@solarflare.com wrote:
->On Tue, 2012-08-14 at 16:19 -0400, Andy Gospodarek wrote:
->> On Tue, Aug 14, 2012 at 05:05:33PM +0200, Jiri Pirko wrote:
->> > Hi all.
->> > 
->> > Recent discussion around
->> > "[net-next] bonding: don't allow the master to become its slave"
->> > forced me to think about upper<->lower device connections.
->> > 
->> > This patchset adds a possibility to record upper device linkage.
->> > All upper<->lower devices are converted to use this mechanism right after.
->> > That leads to dev->master removal because this info becomes redundant since
->> > "unique links" have the same value.
->> > 
->> > After all changes, there is no longer possible to do:
->> > "bond->someotherdevice->samebond"
->> > 
->> > Also I think that drivers like cxgb3, qlcnic, qeth would benefit by this
->> > in future by being able to get more appropriate info about l3 addresses.
->> > 
->> > v1->v2:
->> > - s/unique/master/ better naming + stays closer to the history
->> > - fixed vlan err goto
->> > - original patch 15 (WARN_ON change) is squashed into the first patch
->> > - fixed netdev_unique_upper_dev_get_rcu() case of upper==NULL
->> I just started to review v1 when v2 came out, but luckily the changes
->> were not too significant that I need to start all over.
->> 
->> The first note is that I didn't like the use of the term 'upper' -- it
->> seems like 'stacked' might be a better alternative as these are stacked
->> devices.
->
->When linking any two devices in a stack, one will be upper and the other
->lower.  The lower device might itself be stacked on top of a further
->device, so 'stacked' is not a useful distinguishing adjective in
->variable names.  It might be a useful term in the commit messages and
->kernel-doc, though.
->
->> One thing to note is that I don't see any clear changelog that states
->> the current goals for this.  You have stated in several places that it
->> will no longer be possible to create bonds of bonds, but there are
->> probably a few more things it might be wise to intentionally outlaw.
->>
->> What about teams of teams?  Or teams of bonds?  Or bonds of teams?
->> Bonds of vlans?
->[...]
->
->It doesn't disallow bonds of bonds (unless I'm missing something).  It
->disallows loops that involve any or all of those types of stacked
->devices.
+On Wed, Aug 15, 2012 at 01:07:03AM +0100, Al Viro wrote:
+> On Wed, Aug 15, 2012 at 02:21:47AM +0400, Cyrill Gorcunov wrote:
+> > > Hmm, in very first versions I've been using one ->show method, but
+> > > then I thought that this is not very correlate with seq-files idea
+> > > where for each record show/next sequence is called. I'll update (this
+> > > for sure will make code simplier, and I'll have to check for seq-file
+> > > overflow after seq_printf call to not continue printing data for too
+> > > long if buffer already out of space).
+> > 
+> > Al, I'll cook the whole series tomorrow and resend it for review,
+> > also I guess the new show_fdinfo() member in file-operations should
+> > be guarded with CONFIG_PROC_FS, right?
+> 
+> I seriously doubt that it's worth bothering.  If somebody cares, they
+> can add making it conditional later.
 
-Exactly. It's every "upper driver" responsibility to check which device
-it allows to be added as lower.
+That's what I've beed testing, does it looks good for you?
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: procfs: Add ability to plug in auxiliary fdinfo providers
 
->
->Ben.
->
->-- 
->Ben Hutchings, Staff Engineer, Solarflare
->Not speaking for my employer; that's the marketing department's job.
->They asked us to note that Solarflare product names are trademarked.
->
+This patch brings ability to print out auxiliary data associated
+with file in procfs interface /proc/pid/fdinfo/fd.
+
+Inparticular further patches make eventfd, evenpoll, signalfd
+and fsnotify to print additional information complete enough
+to restore these objects after checkpoint.
+
+To simplify the code we add show_fdinfo callback into
+struct file_operations (as Al proposed).
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+---
+ fs/proc/fd.c       |   51 ++++++++++++++++++++++++++++++++++++---------------
+ include/linux/fs.h |    3 +++
+ 2 files changed, 39 insertions(+), 15 deletions(-)
+
+Index: linux-2.6.git/fs/proc/fd.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/fd.c
++++ linux-2.6.git/fs/proc/fd.c
+@@ -15,11 +15,11 @@
+ #include "fd.h"
+ 
+ struct proc_fdinfo {
+-	loff_t	f_pos;
+-	int	f_flags;
++	struct file	*f_file;
++	int		f_flags;
+ };
+ 
+-static int fdinfo_open_helper(struct inode *inode, int *f_flags, struct path *path)
++static int fdinfo_open_helper(struct inode *inode, int *f_flags, struct file **f_file, struct path *path)
+ {
+ 	struct files_struct *files = NULL;
+ 	struct task_struct *task;
+@@ -49,6 +49,10 @@ static int fdinfo_open_helper(struct ino
+ 				*path = fd_file->f_path;
+ 				path_get(&fd_file->f_path);
+ 			}
++			if (f_file) {
++				*f_file = fd_file;
++				get_file(fd_file);
++			}
+ 			ret = 0;
+ 		}
+ 		spin_unlock(&files->file_lock);
+@@ -61,28 +65,44 @@ static int fdinfo_open_helper(struct ino
+ static int seq_show(struct seq_file *m, void *v)
+ {
+ 	struct proc_fdinfo *fdinfo = m->private;
+-	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
+-		   (long long)fdinfo->f_pos,
+-		   fdinfo->f_flags);
+-	return 0;
++	int ret;
++
++	ret = seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
++			 (long long)fdinfo->f_file->f_pos,
++			 fdinfo->f_flags);
++
++	if (!ret && fdinfo->f_file->f_op->show_fdinfo)
++		ret = fdinfo->f_file->f_op->show_fdinfo(m, fdinfo->f_file);
++
++	return ret;
+ }
+ 
+ static int seq_fdinfo_open(struct inode *inode, struct file *file)
+ {
+-	struct proc_fdinfo *fdinfo = NULL;
+-	int ret = -ENOENT;
++	struct proc_fdinfo *fdinfo;
++	struct seq_file *m;
++	int ret;
+ 
+ 	fdinfo = kzalloc(sizeof(*fdinfo), GFP_KERNEL);
+ 	if (!fdinfo)
+ 		return -ENOMEM;
+ 
+-	ret = fdinfo_open_helper(inode, &fdinfo->f_flags, NULL);
+-	if (!ret) {
+-		ret = single_open(file, seq_show, fdinfo);
+-		if (!ret)
+-			fdinfo = NULL;
++	ret = fdinfo_open_helper(inode, &fdinfo->f_flags, &fdinfo->f_file, NULL);
++	if (ret)
++		goto err_free;
++
++	ret = single_open(file, seq_show, fdinfo);
++	if (ret) {
++		put_filp(fdinfo->f_file);
++		goto err_free;
+ 	}
+ 
++	m = file->private_data;
++	m->private = fdinfo;
++
++	return ret;
++
++err_free:
+ 	kfree(fdinfo);
+ 	return ret;
+ }
+@@ -92,6 +112,7 @@ static int seq_fdinfo_release(struct ino
+ 	struct seq_file *m = file->private_data;
+ 	struct proc_fdinfo *fdinfo = m->private;
+ 
++	put_filp(fdinfo->f_file);
+ 	kfree(fdinfo);
+ 
+ 	return single_release(inode, file);
+@@ -173,7 +194,7 @@ static const struct dentry_operations ti
+ 
+ static int proc_fd_link(struct dentry *dentry, struct path *path)
+ {
+-	return fdinfo_open_helper(dentry->d_inode, NULL, path);
++	return fdinfo_open_helper(dentry->d_inode, NULL, NULL, path);
+ }
+ 
+ static struct dentry *
+Index: linux-2.6.git/include/linux/fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/fs.h
++++ linux-2.6.git/include/linux/fs.h
+@@ -1775,6 +1775,8 @@ struct block_device_operations;
+ #define HAVE_COMPAT_IOCTL 1
+ #define HAVE_UNLOCKED_IOCTL 1
+ 
++struct seq_file;
++
+ struct file_operations {
+ 	struct module *owner;
+ 	loff_t (*llseek) (struct file *, loff_t, int);
+@@ -1803,6 +1805,7 @@ struct file_operations {
+ 	int (*setlease)(struct file *, long, struct file_lock **);
+ 	long (*fallocate)(struct file *file, int mode, loff_t offset,
+ 			  loff_t len);
++	int (*show_fdinfo)(struct seq_file *m, struct file *f);
+ };
+ 
+ struct inode_operations {
