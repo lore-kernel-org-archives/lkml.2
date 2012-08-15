@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab2HONjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:39:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52069 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab2HONjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:39:19 -0400
-Message-ID: <502BA72B.6070205@redhat.com>
-Date: Wed, 15 Aug 2012 21:42:03 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1754708Ab2HONji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:39:38 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:42325 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab2HONjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 09:39:33 -0400
+Message-ID: <502BA6B4.9020106@gmail.com>
+Date: Wed, 15 Aug 2012 15:40:04 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: jhs@mojatatu.com
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH] act_mirred: do not drop packets when fails to mirror
- it
-References: <20120815093756.22238.80872.stgit@amd-6168-8-1.englab.nay.redhat.com> <1345034141.20443.12.camel@mojatatu>
-In-Reply-To: <1345034141.20443.12.camel@mojatatu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
+References: <1344961490-4068-1-git-send-email-levinsasha928@gmail.com> <1344961490-4068-3-git-send-email-levinsasha928@gmail.com> <87txw5hw0s.fsf@xmission.com> <502AF184.4010907@gmail.com> <87393phshy.fsf@xmission.com> <502AFCD5.6070104@gmail.com> <87obmchmpu.fsf@xmission.com> <20120815033155.GA32653@Krystal>
+In-Reply-To: <20120815033155.GA32653@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 08:35 PM, Jamal Hadi Salim wrote:
-> On Wed, 2012-08-15 at 17:37 +0800, Jason Wang wrote:
->> We drop packet unconditionally when we fail to mirror it. This is not intended
->> in some cases.
-> Hi Jason,
-> Did you actually notice the behavior you described or were you going by
-> the XXX comment I had in the code?
->
-> cheers,
-> jamal
-Hi Jamal:
+On 08/15/2012 05:31 AM, Mathieu Desnoyers wrote:
+> * Eric W. Biederman (ebiederm@xmission.com) wrote:
+>> Sasha Levin <levinsasha928@gmail.com> writes:
+>>
+>>> On 08/15/2012 03:08 AM, Eric W. Biederman wrote:
+>>>>> I can offer the following: I'll write a small module that will hash 1...10000
+>>>>>> into a hashtable which uses 7 bits (just like user_ns) and post the distribution
+>>>>>> we'll get.
+>>>> That won't hurt.  I think 1-100 then 1000-1100 may actually be more
+>>>> representative.  Not that I would mind seeing the larger range.
+>>>> Especially since I am in the process of encouraging the use of more
+>>>> uids.
+>>>>
+>>>
+>>> Alrighty, the results are in (numbers are objects in bucket):
+>>>
+>>> For the 0...10000 range:
+>>>
+>>> Average: 78.125
+>>> Std dev: 1.4197704151
+>>> Min: 75
+>>> Max: 80
+>>>
+>>>
+>>> For the 1...100 range:
+>>>
+>>> Average: 0.78125
+>>> Std dev: 0.5164613088
+>>> Min: 0
+>>> Max: 2
+>>>
+>>>
+>>> For the 1000...1100 range:
+>>>
+>>> Average: 0.7890625
+>>> Std dev: 0.4964812206
+>>> Min: 0
+>>> Max: 2
+>>>
+>>>
+>>> Looks like hash_32 is pretty good with small numbers.
+>>
+>> Yes hash_32 seems reasonable for the uid hash.   With those long hash
+>> chains I wouldn't like to be on a machine with 10,000 processes with
+>> each with a different uid, and a processes calling setuid in the fast
+>> path.
+>>
+>> The uid hash that we are playing with is one that I sort of wish that
+>> the hash table could grow in size, so that we could scale up better.
+> 
+> Hi Eric,
+> 
+> If you want to try out something that has more features than a basic
+> hash table, already exists and is available for you to play with, you
+> might want to have a look at the RCU lock-free resizable hash table.
+> It's initially done in userspace, but shares the same RCU semantic as
+> the kernel, and has chunk-based kernel-friendly index backends (thanks
+> to Lai Jiangshan), very useful to integrate with the kernel page
+> allocator.
 
-I met it actually through the following steps:
-
-- start a kvm guest with tap and make it to be an interface of the bridge
-- mirror the ingress traffic of the bridge to the tap
-- terminate the qemu process, the tap device is then removed
-- all packet goes to bridge would be dropped, so the network of guests 
-in the same bridge would be broken
-
-It's hard for the management to forcast the termination of the porcess 
-and clean the mirroring before. The realistic way is to remove the 
-mirroring after the termination of the process. So, if we drop the 
-packets when the mirred device (tap) is removed, in the gap between the 
-qemu termitnaion and disabling mirroring, the bridge ( and other VMs 
-using the it) would not recevie any packet.
-
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I'm guessing that once this static hashtable is stable, a
+DEFINE_DYNAMIC_HASHTABLE() will get introduced which will evolve into something
+similar to what Mathieu has pointed out in the urcu.
 
