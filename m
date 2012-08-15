@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab2HOUUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:20:41 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62944 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2HOTuw (ORCPT
+	id S1756877Ab2HOUU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:20:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691Ab2HOUUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:52 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Anton Blanchard <anton@samba.org>,
-        James Bottomley <JBottomley@parallels.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 066/165] ipr: Always initiate hard reset in kdump kernel
-Date: Wed, 15 Aug 2012 15:46:50 -0400
-Message-ID: <1345060109-9187-67-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 15 Aug 2012 16:20:52 -0400
+Date: Wed, 15 Aug 2012 13:20:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, davej@redhat.com, mgorman@suse.de, cl@linux.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
+Message-Id: <20120815132050.12f4dec4.akpm@linux-foundation.org>
+In-Reply-To: <CA+5PVA7YejzbWDEpX=gj8s2QAQtgoxyNUUa5HhGtVGY+2BHqRA@mail.gmail.com>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+	<CA+5PVA4CE0kwD1FmV=081wfCObVYe5GFYBQFO9_kVL4JWJBqpA@mail.gmail.com>
+	<50201BB5.9050005@jp.fujitsu.com>
+	<CA+5PVA7YejzbWDEpX=gj8s2QAQtgoxyNUUa5HhGtVGY+2BHqRA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+On Wed, 15 Aug 2012 07:40:46 -0400
+Josh Boyer <jwboyer@gmail.com> wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> >> I don't see these patches queued anywhere.  They aren't in linux-next,
+> >> mmotm, or Linus' tree.  Did these get dropped?  Is the revert still
+> >> needed?
+> >
+> > Sorry. my fault. yes, it is needed. currently, Some LTP was fail since
+> > Mel's "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages" patch.
+> 
+> The series still isn't queued anywhere.  Are you planning on resending
+> it again, or should it get picked up in a particular tree?
 
-commit 5d7c20b7fa5c6ca19e871b4050e321c99d32bd43 upstream.
+The patches need a refresh and a retest please, including incorporation
+of Christoph's changelog modifications.
 
-During kdump testing I noticed timeouts when initialising each IPR
-adapter. While the driver has logic to detect an adapter in an
-indeterminate state, it wasn't triggering and each adapter went
-through a 5 minute timeout before finally going operational.
-
-Some analysis showed the needs_hard_reset flag wasn't getting set.
-We can check the reset_devices kernel parameter which is set by
-kdump and force a full reset. This fixes the problem.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/scsi/ipr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 520461b..771eb42 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -8543,7 +8543,7 @@ static int __devinit ipr_probe_ioa(struct pci_dev *pdev,
- 	uproc = readl(ioa_cfg->regs.sense_uproc_interrupt_reg32);
- 	if ((mask & IPR_PCII_HRRQ_UPDATED) == 0 || (uproc & IPR_UPROCI_RESET_ALERT))
- 		ioa_cfg->needs_hard_reset = 1;
--	if (interrupts & IPR_PCII_ERROR_INTERRUPTS)
-+	if ((interrupts & IPR_PCII_ERROR_INTERRUPTS) || reset_devices)
- 		ioa_cfg->needs_hard_reset = 1;
- 	if (interrupts & IPR_PCII_IOA_UNIT_CHECKED)
- 		ioa_cfg->ioa_unit_checked = 1;
--- 
-1.7.12.rc2
-
+And for gawd's sake, please stop using my google address!  It messes me
+all up.
