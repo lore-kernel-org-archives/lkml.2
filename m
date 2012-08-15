@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2HOOuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:50:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47089 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab2HOOuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:50:01 -0400
-Date: Wed, 15 Aug 2012 07:49:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based
- implementation for ARMv6+
-Message-ID: <20120815144956.GB6320@kroah.com>
-References: <20120813201746.448504360@linuxfoundation.org>
- <20120813201748.202917513@linuxfoundation.org>
- <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
- <20120815140808.GD22871@kroah.com>
- <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754304Ab2HOOww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:52:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32030 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab2HOOwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 10:52:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,773,1336374000"; 
+   d="asc'?scan'208";a="186752242"
+Message-ID: <1345042639.3393.150.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
+ parameter
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 15 Aug 2012 17:57:19 +0300
+In-Reply-To: <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-KTfC9aqn+exDdi0EZY1t"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 03:11:41PM +0100, Ben Hutchings wrote:
-> On Wed, 2012-08-15 at 07:08 -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Aug 15, 2012 at 02:56:22PM +0100, Ben Hutchings wrote:
-> > > On Mon, 2012-08-13 at 13:18 -0700, Greg Kroah-Hartman wrote:
-> > > > From: Greg KH <gregkh@linuxfoundation.org>
-> > > > 
-> > > > 3.5-stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Will Deacon <will.deacon@arm.com>
-> > > > 
-> > > > commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
-> > > > 
-> > > > The open-coded mutex implementation for ARMv6+ cores suffers from a
-> > > > severe lack of barriers, so in the uncontended case we don't actually
-> > > > protect any accesses performed during the critical section.
-> > > > 
-> > > > Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
-> > > > code but optimised to remove a branch instruction, as the mutex fastpath
-> > > > was previously inlined. Now that this is executed out-of-line, we can
-> > > > reuse the atomic access code for the locking (in fact, we use the xchg
-> > > > code as this produces shorter critical sections).
-> > > > 
-> > > > This patch uses the generic xchg based implementation for mutexes on
-> > > > ARMv6+, which introduces barriers to the lock/unlock operations and also
-> > > > has the benefit of removing a fair amount of inline assembly code.
-> > > [...]
-> > > 
-> > > Here also, I think this should be deferred.
-> > 
-> > "also"?  Am I missing some context here?  Why should we deferr this one?
-> > What do we need to wait for?
-> 
-> This is the same as 3.4.9-rc1 patch 10/65, which I queried as it
-> apparently caused a regression.
-> 
-> Will Deacon wrote:
-> > The additional patch should also be CC'd to stable and is sitting in -tip
-> > somewhere I believe, so it shouldn't be long before it does hit mainline.
-> > 
-> > Without this patch there's a memory-ordering bug (which we seem to have hit
-> > once in > 5 years). With the patch there's a mutex lockup issue on SMP systems
-> > that I can provoke with enough hackbenching, so you may want to hold off for
-> > now.
 
-Ah, ok, missed that.
+--=-KTfC9aqn+exDdi0EZY1t
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-How about I just drop this for now, and when someone (Will?) feels it is
-"good enough time to wait", they will resend it to
-stable@vger.kernel.org so that we can add it then?  Otherwise I'll just
-loose it somewhere.
+On Tue, 2012-07-10 at 18:23 +0200, Richard Genoud wrote:
+> This patch provides the possibility to adjust the "maximum expected numbe=
+r of
+> bad blocks per 1024 blocks" (max_beb_per1024) for each mtd device.
+>=20
+> The majority of NAND devices have their max_beb_per1024 equal to 20, but
+> sometimes it's more.
+> Now, we can adjust that via a kernel parameter:
+> ubi.mtd=3D<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]]
+> and via UBI_IOCATT ioctl which is now:
+> struct ubi_attach_req {
+> 	__s32 ubi_num;
+> 	__s32 mtd_num;
+> 	__s32 vid_hdr_offset;
+> 	__u8 max_beb_per1024;
+> 	__s8 padding[11];
+> };
+>=20
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-Now dropped.
+Would you please split this patch on 2 - first adds the kernel module
+parameter, the second changes the ioctl.
 
-greg k-h
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-KTfC9aqn+exDdi0EZY1t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQK7jPAAoJECmIfjd9wqK0UUYP/3N1LiU5R430C02XisTY3uF9
+qP5lQcjJaZB1abBiCa9/j4J9xKU+vjpG4Ya2n3xPQW9wswMceHlbE07JPo2b3Ov1
+LSKwZphXvTP2F/iqra6gao1CPNkUvjU+FtovVA85GnS2U073kZdB9AcKKzMuxQES
+YejSu7iibS9kYPQDdKqlbLZSKc/egWI8liN7S9ljLKFGVZ04cmgzY0AilEG8Mn/f
+BbkM2SOFCYJrctFH5Fv7ZYYS9E0kHtAtuasL6yf9jdIVKmWj8eI+6A78tVuGQmd4
+UMGkcHKw/CyEekD4QyOUI830042mbj/Jj4JM28f+tlDNokQqBtGkdfl4j2RODu+h
+r23sC7r7jMT9QN2jET2CNMrj5MPBx28o4G8CL9maPr0VMQCCyo1ekvQJjo7p7vlc
+ZKDLR993aSlvdqCzpvk9TdtbOsyuU23CC4Nk/6ViNKMg5vTq3TN01IysWmAwWx6j
+oIM7PskvkgdUJf2L38UaK+ftVcrPXoqr2Lqy7FFOtvuBNQCvUZlJ8POGZIcKPlB9
+rwdnA+Nl9ReOnNf7S2IACpqfZl7ouKwy08OsSKiykp1NSx8yjTw3rFJ1Tqeb+Fsi
+XhCqVyPNsY8hOPOyExUeyff6z5Ws/ToCEXhNdgYpsdTyZS52C9VijtU10JRgu5BM
+9oVpgmVNvW40ndb7nH/x
+=J9jG
+-----END PGP SIGNATURE-----
+
+--=-KTfC9aqn+exDdi0EZY1t--
+
