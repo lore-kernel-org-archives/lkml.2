@@ -1,94 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab2HOBXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 21:23:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54200 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2HOBXU (ORCPT
+	id S1755435Ab2HOBXf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 21:23:35 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:32528 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab2HOBXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 21:23:20 -0400
-Date: Wed, 15 Aug 2012 09:23:38 +0800
-From: kedacomkernel <kedacomkernel@gmail.com>
-To: "Andy Lutomirski" <luto@amacapital.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: Re: O_DIRECT to md raid 6 is slow
-References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <201208150906343285670@gmail.com>, 
-	<CALCETrUnb5jk7GdQnaXki8PVTjNFr7TG8Vfmyd-=0BuSqtii8g@mail.gmail.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
-Mime-Version: 1.0
-Message-ID: <201208150923354686934@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 14 Aug 2012 21:23:33 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-131.messagelabs.com!1344993812!24210952!1
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/7] staging: comedi: dnya_pci10xx: remove thisboard and devpriv macros
+Date: Tue, 14 Aug 2012 18:23:24 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208141823.24406.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7F1NPWj019127
 
-On 2012-08-15 09:12 Andy Lutomirski <luto@amacapital.net> Wrote:
->Ubuntu's 3.2.0-27-generic.  I can test on a newer kernel tomorrow.
-I guess maybe miss the blk_plug function.
-Can you add this patch and retest.
+These macros rely on local variables having a specific name. Replace
+them with local variables where used. Use the comedi_board() helper
+to get the thisboard pointer.
 
-Move unplugging for direct I/O from around ->direct_IO() down to
-do_blockdev_direct_IO(). This implicitly adds plugging for direct
-writes.
- 
-CC: Li Shaohua <shli@fusionio.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/direct-io.c |    5 +++++
- mm/filemap.c   |    4 ----
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/dyna_pci10xx.c | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+index 064be9a..7884a94 100644
+--- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
++++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+@@ -104,9 +104,6 @@ struct dyna_pci10xx_private {
+ 	unsigned long BADR3;
+ };
  
---- linux-next.orig/mm/filemap.c 2012-08-05 16:24:47.859465122 +0800
-+++ linux-next/mm/filemap.c 2012-08-05 16:24:48.407465135 +0800
-@@ -1412,12 +1412,8 @@ generic_file_aio_read(struct kiocb *iocb
-  retval = filemap_write_and_wait_range(mapping, pos,
-  pos + iov_length(iov, nr_segs) - 1);
-  if (!retval) {
-- struct blk_plug plug;
+-#define thisboard ((const struct boardtype *)dev->board_ptr)
+-#define devpriv ((struct dyna_pci10xx_private *)dev->private)
 -
-- blk_start_plug(&plug);
-  retval = mapping->a_ops->direct_IO(READ, iocb,
-  iov, pos, nr_segs);
-- blk_finish_plug(&plug);
-  }
-  if (retval > 0) {
-  *ppos = pos + retval;
---- linux-next.orig/fs/direct-io.c 2012-07-07 21:46:39.531508198 +0800
-+++ linux-next/fs/direct-io.c 2012-08-05 16:24:48.411465136 +0800
-@@ -1062,6 +1062,7 @@ do_blockdev_direct_IO(int rw, struct kio
-  unsigned long user_addr;
-  size_t bytes;
-  struct buffer_head map_bh = { 0, };
-+ struct blk_plug plug;
+ /******************************************************************************/
+ /************************** READ WRITE FUNCTIONS ******************************/
+ /******************************************************************************/
+@@ -116,6 +113,8 @@ static int dyna_pci10xx_insn_read_ai(struct comedi_device *dev,
+ 			struct comedi_subdevice *s,
+ 			struct comedi_insn *insn, unsigned int *data)
+ {
++	const struct boardtype *thisboard = comedi_board(dev);
++	struct dyna_pci10xx_private *devpriv = dev->private;
+ 	int n, counter;
+ 	u16 d = 0;
+ 	unsigned int chan, range;
+@@ -159,6 +158,8 @@ static int dyna_pci10xx_insn_write_ao(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
++	const struct boardtype *thisboard = comedi_board(dev);
++	struct dyna_pci10xx_private *devpriv = dev->private;
+ 	int n;
+ 	unsigned int chan, range;
  
-  if (rw & WRITE)
-  rw = WRITE_ODIRECT;
-@@ -1177,6 +1178,8 @@ do_blockdev_direct_IO(int rw, struct kio
-  PAGE_SIZE - user_addr / PAGE_SIZE);
-  }
+@@ -181,6 +182,7 @@ static int dyna_pci10xx_di_insn_bits(struct comedi_device *dev,
+ 			      struct comedi_subdevice *s,
+ 			      struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dyna_pci10xx_private *devpriv = dev->private;
+ 	u16 d = 0;
  
-+ blk_start_plug(&plug);
+ 	mutex_lock(&devpriv->mutex);
+@@ -200,6 +202,8 @@ static int dyna_pci10xx_do_insn_bits(struct comedi_device *dev,
+ 			      struct comedi_subdevice *s,
+ 			      struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dyna_pci10xx_private *devpriv = dev->private;
 +
-  for (seg = 0; seg < nr_segs; seg++) {
-  user_addr = (unsigned long)iov[seg].iov_base;
-  sdio.size += bytes = iov[seg].iov_len;
-@@ -1235,6 +1238,8 @@ do_blockdev_direct_IO(int rw, struct kio
-  if (sdio.bio)
-  dio_bio_submit(dio, &sdio);
+ 	/* The insn data is a mask in data[0] and the new data
+ 	 * in data[1], each channel cooresponding to a bit.
+ 	 * s->state contains the previous write data
+@@ -257,20 +261,22 @@ static struct pci_dev *dyna_pci10xx_find_pci_dev(struct comedi_device *dev,
+ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
++	const struct boardtype *thisboard;
++	struct dyna_pci10xx_private *devpriv;
+ 	struct pci_dev *pcidev;
+ 	struct comedi_subdevice *s;
+ 	int ret;
  
-+ blk_finish_plug(&plug);
-+
-  /*
-   * It is possible that, we return short IO due to end of file.
-   * In that case, we need to release all the pages we got hold on.
+-	if (alloc_private(dev, sizeof(struct dyna_pci10xx_private)) < 0) {
+-		printk(KERN_ERR "comedi: dyna_pci10xx: "
+-			"failed to allocate memory!\n");
+-		return -ENOMEM;
+-	}
++	ret = alloc_private(dev, sizeof(*devpriv));
++	if (ret)
++		return ret;
++	devpriv = dev->private;
  
+ 	pcidev = dyna_pci10xx_find_pci_dev(dev, it);
+ 	if (!pcidev)
+ 		return -EIO;
+ 	comedi_set_hw_dev(dev, &pcidev->dev);
++	thisboard = comedi_board(dev);
  
---
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ 	dev->board_name = thisboard->name;
+ 	dev->irq = 0;
+@@ -342,6 +348,7 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ static void dyna_pci10xx_detach(struct comedi_device *dev)
+ {
+ 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
++	struct dyna_pci10xx_private *devpriv = dev->private;
+ 
+ 	if (devpriv)
+ 		mutex_destroy(&devpriv->mutex);
+-- 
+1.7.11
+
