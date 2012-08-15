@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2HOUcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:32:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36519 "EHLO
+	id S1757258Ab2HOUc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:32:29 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36517 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab2HOTtj (ORCPT
+	with ESMTP id S1756378Ab2HOTti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:39 -0400
+	Wed, 15 Aug 2012 15:49:38 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eric Van Hensbergen <ericvh@gmail.com>,
+CC: "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 036/165] net/9p: fix client code to fail more gracefully on protocol error
-Date: Wed, 15 Aug 2012 15:46:20 -0400
-Message-ID: <1345060109-9187-37-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 034/165] ARM: davinci: da850 EVM: read mac address from SPI flash
+Date: Wed, 15 Aug 2012 15:46:18 -0400
+Message-ID: <1345060109-9187-35-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Van Hensbergen <ericvh@gmail.com>
+From: "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,32 +32,94 @@ From: Eric Van Hensbergen <ericvh@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b85f7d92d7bd7e3298159e8b1eed8cb8cbbb0348 upstream.
+commit 810198bc9c109489dfadc57131c5183ce6ad2d7d upstream.
 
-There was a BUG_ON to protect against a bad id which could be dealt with
-more gracefully.
+DA850/OMAP-L138 EMAC driver uses random mac address instead of
+a fixed one because the mac address is not stuffed into EMAC
+platform data.
 
-Reported-by: Natalie Orlin <norlin@us.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+This patch provides a function which reads the mac address
+stored in SPI flash (registered as MTD device) and populates the
+EMAC platform data. The function which reads the mac address is
+registered as a callback which gets called upon addition of MTD
+device.
+
+NOTE: In case the MAC address stored in SPI flash is erased, follow
+the instructions at [1] to restore it.
+
+[1] http://processors.wiki.ti.com/index.php/GSG:_OMAP-L138_DVEVM_Additional_Procedures#Restoring_MAC_address_on_SPI_Flash
+
+Modifications in v2:
+Guarded registering the mtd_notifier only when MTD is enabled.
+Earlier this was handled using mtd_has_partitions() call, but
+this has been removed in Linux v3.0.
+
+Modifications in v3:
+a. Guarded da850_evm_m25p80_notify_add() function and
+   da850evm_spi_notifier structure with CONFIG_MTD macros.
+b. Renamed da850_evm_register_mtd_user() function to
+   da850_evm_setup_mac_addr() and removed the struct mtd_notifier
+   argument to this function.
+c. Passed the da850evm_spi_notifier structure to register_mtd_user()
+   function.
+
+Modifications in v4:
+Moved the da850_evm_setup_mac_addr() function within the first
+CONFIG_MTD ifdef construct.
+
+Signed-off-by: Rajashekhara, Sudhakar <sudhakar.raj@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/9p/client.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-davinci/board-da850-evm.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/net/9p/client.c b/net/9p/client.c
-index 0aa79fa..583fd03 100644
---- a/net/9p/client.c
-+++ b/net/9p/client.c
-@@ -272,7 +272,8 @@ struct p9_req_t *p9_tag_lookup(struct p9_client *c, u16 tag)
- 	 * buffer to read the data into */
- 	tag++;
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 411284d..cc4e5cb 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -44,6 +44,32 @@
  
--	BUG_ON(tag >= c->max_tag);
-+	if(tag >= c->max_tag)
-+		return NULL;
+ #define DA850_MII_MDIO_CLKEN_PIN	GPIO_TO_PIN(2, 6)
  
- 	row = tag / P9_ROW_MAXTAG;
- 	col = tag % P9_ROW_MAXTAG;
++#ifdef CONFIG_MTD
++static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
++{
++	char *mac_addr = davinci_soc_info.emac_pdata->mac_addr;
++	size_t retlen;
++
++	if (!strcmp(mtd->name, "MAC-Address")) {
++		mtd->read(mtd, 0, ETH_ALEN, &retlen, mac_addr);
++		if (retlen == ETH_ALEN)
++			pr_info("Read MAC addr from SPI Flash: %pM\n",
++				mac_addr);
++	}
++}
++
++static struct mtd_notifier da850evm_spi_notifier = {
++	.add	= da850_evm_m25p80_notify_add,
++};
++
++static void da850_evm_setup_mac_addr(void)
++{
++	register_mtd_user(&da850evm_spi_notifier);
++}
++#else
++static void da850_evm_setup_mac_addr(void) { }
++#endif
++
+ static struct mtd_partition da850_evm_norflash_partition[] = {
+ 	{
+ 		.name           = "bootloaders + env",
+@@ -726,6 +752,8 @@ static __init void da850_evm_init(void)
+ 	if (ret)
+ 		pr_warning("da850_evm_init: suspend registration failed: %d\n",
+ 				ret);
++
++	da850_evm_setup_mac_addr();
+ }
+ 
+ #ifdef CONFIG_SERIAL_8250_CONSOLE
 -- 
 1.7.12.rc2
 
