@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2HOImX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:42:23 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:41390 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab2HOImT (ORCPT
+	id S1753340Ab2HOIuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 04:50:10 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:64154 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298Ab2HOIuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:42:19 -0400
-Message-ID: <20120815114216.209814z4mq3hxqe8@www.81.fi>
-Date: Wed, 15 Aug 2012 11:42:16 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?b?TfxsbGVy?= 
-	<tilo.mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler
- implementation
-References: <20120527144919.GE17705@kronos.redsun>
-In-Reply-To: <20120527144919.GE17705@kronos.redsun>
+	Wed, 15 Aug 2012 04:50:03 -0400
+Message-ID: <502B62AC.2030801@metafoo.de>
+Date: Wed, 15 Aug 2012 10:49:48 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "jic23@kernel.org" <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH v2] iio: adc: add new lp8788 adc driver
+References: <A874F61F95741C4A9BA573A70FE3998F41EEF1F7@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EEF1F7@DQHE02.ent.ti.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Johannes Goetzfried  
-<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>:
+On 08/10/2012 09:06 AM, Kim, Milo wrote:
+> [...]
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		*val = result;
+> +		return IIO_VAL_INT;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		*val = adc_const[id] * ((result * 1000 + 500) / 1000);
 
-> This patch adds a x86_64/avx assembler implementation of the Twofish block
-> cipher. The implementation processes eight blocks in parallel (two 4 block
-> chunk AVX operations). The table-lookups are done in general-purpose  
-> registers.
-> For small blocksizes the 3way-parallel functions from the twofish-x86_64-3way
-> module are called. A good performance increase is provided for blocksizes
-> greater or equal to 128B.
->
-> Patch has been tested with tcrypt and automated filesystem tests.
->
-> Tcrypt benchmark results:
->
-> Intel Core i5-2500 CPU (fam:6, model:42, step:7)
+This looks wrong. The IIO_CHAN_INFO_SCALE attribute is the factor by which
+IIO_CHAN_INFO_RAW needs to be multiplied to get the value in the proper unit,
+which is specified in the IIO ABI spec. E.g. milli volts for voltages.
 
-I started thinking about the performance on AMD Bulldozer.  
-vmovq/vmovd/vpextr*/vpinsr* between FPU and general purpose registers  
-on AMD CPU is alot slower (latencies from 8 to 12 cycles) than on  
-Intel sandy-bridge (where instructions have latency of 1 to 2). See:  
-http://www.agner.org/optimize/instruction_tables.pdf
+What you return here seems to be the IIO_CHAN_INFO_PROCESSED attribute. Which
+basically is raw * scale.
 
-It would be really good, if implementation could be tested on AMD CPU  
-to determinate, if it causes performance regression. However I don't  
-have access to machine with such CPU.
+> +		*val2 = 0;
+> +		return IIO_VAL_INT_PLUS_MICRO;
+> +	default:
+> +		break;
+> +	}
+> +
+> +err:
+> +	return -EINVAL;
+> +}
+> +
+> [...]
+> +}
+> +
+> +static struct iio_chan_spec lp8788_adc_channels[] = {
 
--Jussi
+const
+
+> +	[LPADC_VBATT_5P5] = LP8788_CHAN(VBATT_5P5, IIO_VOLTAGE),
+> +	[LPADC_VIN_CHG]   = LP8788_CHAN(VIN_CHG, IIO_VOLTAGE),
+> +	[LPADC_IBATT]     = LP8788_CHAN(IBATT, IIO_CURRENT),
+> +	[LPADC_IC_TEMP]   = LP8788_CHAN(IC_TEMP, IIO_TEMP),
+> +	[LPADC_VBATT_6P0] = LP8788_CHAN(VBATT_6P0, IIO_VOLTAGE),
+> +	[LPADC_VBATT_5P0] = LP8788_CHAN(VBATT_5P0, IIO_VOLTAGE),
+> +	[LPADC_ADC1]      = LP8788_CHAN(ADC1, IIO_VOLTAGE),
+> +	[LPADC_ADC2]      = LP8788_CHAN(ADC2, IIO_VOLTAGE),
+> +	[LPADC_VDD]       = LP8788_CHAN(VDD, IIO_VOLTAGE),
+> +	[LPADC_VCOIN]     = LP8788_CHAN(VCOIN, IIO_VOLTAGE),
+> +	[LPADC_VDD_LDO]   = LP8788_CHAN(VDD_LDO, IIO_VOLTAGE),
+> +	[LPADC_ADC3]      = LP8788_CHAN(ADC3, IIO_VOLTAGE),
+> +	[LPADC_ADC4]      = LP8788_CHAN(ADC4, IIO_VOLTAGE),
+> +};
+> +
+
 
