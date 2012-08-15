@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab2HOQOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:14:54 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50030 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754064Ab2HOQOx (ORCPT
+	id S1754800Ab2HOQQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:16:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:49957 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab2HOQQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:14:53 -0400
-Date: Wed, 15 Aug 2012 12:14:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / Runtime: Fix rpm_resume() return value for
- power.no_callbacks set
-In-Reply-To: <201208142338.18797.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1208151212490.1674-100000@iolanthe.rowland.org>
+	Wed, 15 Aug 2012 12:16:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 14/31] arm64: DMA mapping API
+Date: Wed, 15 Aug 2012 16:16:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208151616.01114.arnd@arndb.de>
+X-Provags-ID: V02:K0:bVI/DnhKstTPzFCBjZaNsFPcp4aPpYk1b7wKbrS2uuE
+ HfUrNHpiSkRl2NJ9lCSd2l2f9veojnnr8C9ZtWQ1JpD/2tlFuz
+ rBCxv0+oqHpfnHWKVwp3KPx2Wvba3a1B/sSdLPVPRRfvNDtLGs
+ 2LAMT6FRKGbWjisI7K8X6dHlwQQA5qFJGYMvqYbJBRmlMmY6Ki
+ GPaYo7TK2JY5BAMJ1TFV7AAAjxQxGSDQac3fkzMd6VtyCl0m5k
+ /+sOF7OFDz1PtoBz52p9Su0whhtnsqD3a7nAF+Wwj5pF1vKVXO
+ H85s2Mo92gwTDCtfZKyl+ytM/i8BK7S9+ijcKriL4pIUYeaWLU
+ iyLSKoW1qkHfVCH7oHiw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Aug 2012, Rafael J. Wysocki wrote:
+On Tuesday 14 August 2012, Catalin Marinas wrote:
+> +static struct dma_map_ops arm64_swiotlb_dma_ops = {
+> +       .alloc = arm64_swiotlb_alloc_coherent,
+> +       .free = arm64_swiotlb_free_coherent,
+> +       .map_page = arm64_swiotlb_map_page,
+> +       .unmap_page = arm64_swiotlb_unmap_page,
+> +       .map_sg = arm64_swiotlb_map_sg_attrs,
+> +       .unmap_sg = arm64_swiotlb_unmap_sg_attrs,
+> +       .sync_single_for_cpu = arm64_swiotlb_sync_single_for_cpu,
+> +       .sync_single_for_device = arm64_swiotlb_sync_single_for_device,
+> +       .sync_sg_for_cpu = arm64_swiotlb_sync_sg_for_cpu,
+> +       .sync_sg_for_device = arm64_swiotlb_sync_sg_for_device,
+> +       .dma_supported = swiotlb_dma_supported,
+> +       .mapping_error = swiotlb_dma_mapping_error,
+> +};
+> +
+> +void __init swiotlb_init_with_default_size(size_t default_size, int verbose);
+> +
+> +void __init arm64_swiotlb_init(size_t max_size)
+> +{
+> +       dma_ops = &arm64_swiotlb_dma_ops;
+> +       swiotlb_init_with_default_size(min((size_t)SZ_64M, max_size), 1);
+> +}
 
-> 
-> For devices whose power.no_callbacks flag is set, rpm_resume()
-> should return 1 if the device's parent is already active, so that
-> the callers of pm_runtime_get() don't think that they have to wait
-> for the device to resume (asynchronously) in that case (the core
-> won't queue up an asynchronous resume in that case, so there's
-> nothing to wait for anyway).
-> 
-> Modify the code accordingly (and make sure that an idle notification
-> will be queued up on success, even if 1 is to be returned).
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/runtime.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Index: linux/drivers/base/power/runtime.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/runtime.c
-> +++ linux/drivers/base/power/runtime.c
-> @@ -584,6 +584,7 @@ static int rpm_resume(struct device *dev
->  		    || dev->parent->power.runtime_status == RPM_ACTIVE) {
->  			atomic_inc(&dev->parent->power.child_count);
->  			spin_unlock(&dev->parent->power.lock);
-> +			retval = 1;
->  			goto no_callback;	/* Assume success. */
->  		}
->  		spin_unlock(&dev->parent->power.lock);
-> @@ -664,7 +665,7 @@ static int rpm_resume(struct device *dev
->  	}
->  	wake_up_all(&dev->power.wait_queue);
->  
-> -	if (!retval)
-> +	if (retval >= 0)
->  		rpm_idle(dev, RPM_ASYNC);
->  
->   out:
+Why is swiotlb the default? I would expect that most devices can in fact
+use the entire 64 bit address space, so you can use a simple linear
+implementation for those.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
+	Arnd
