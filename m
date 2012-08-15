@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab2HOS0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 14:26:52 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56718 "EHLO
+	id S1753218Ab2HOSaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 14:30:16 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54763 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab2HOS0u (ORCPT
+	with ESMTP id S1751863Ab2HOSaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 14:26:50 -0400
-Date: Wed, 15 Aug 2012 11:26:45 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [ 36/44] x86, microcode: Sanitize per-cpu microcode reloading
- interface
-Message-ID: <20120815182645.GA25870@kroah.com>
-References: <20120813220142.113186818@linuxfoundation.org>
- <20120813220145.337264645@linuxfoundation.org>
- <20120815002654.GA11666@khazad-dum.debian.net>
- <20120815140655.GC22871@kroah.com>
- <20120815163046.GA30736@khazad-dum.debian.net>
+	Wed, 15 Aug 2012 14:30:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815163046.GA30736@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120815181711.GA19018@redhat.com>
+References: <20120726134748.GA20605@localhost>
+	<CAGXu5j+xjud3w4cYXADM-KvFPvnkaKp49j5x-wdZ66wUJjkX0g@mail.gmail.com>
+	<20120810015222.GA19286@localhost>
+	<CAGXu5jK_ZJqmcJ7JcnpwNb5R3x8=ay_shD16ZA3q-7Lwi8S=qg@mail.gmail.com>
+	<20120815030110.GA24836@localhost>
+	<CAGXu5j+0FUYdBqsotn_vp1EbG=dcURAA1sxv+yFzaJuUkdAh0A@mail.gmail.com>
+	<20120815130159.GA3221@redhat.com>
+	<1345041021.31459.88.camel@twins>
+	<20120815175651.GA17814@redhat.com>
+	<CAGXu5jJ+HOdSxS7Ec=TW06h6KEpEmi-rF+Jk8L5LiQsp9gyAtg@mail.gmail.com>
+	<20120815181711.GA19018@redhat.com>
+Date: Wed, 15 Aug 2012 11:30:12 -0700
+X-Google-Sender-Auth: fJ-s4KS3cSvTfeCfA10ptiLyYNQ
+Message-ID: <CAGXu5j+9o+82tFv93C1f-2tkf+GcbCjH_pKqSb+Bi7O9sB168Q@mail.gmail.com>
+Subject: Re: yama_ptrace_access_check(): possible recursive locking detected
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:30:46PM -0300, Henrique de Moraes Holschuh wrote:
-> On Wed, 15 Aug 2012, Greg Kroah-Hartman wrote:
-> > On Tue, Aug 14, 2012 at 09:26:54PM -0300, Henrique de Moraes Holschuh wrote:
-> > > I believe the patch bellow, which was required on 3.2, will also be
-> > > necessary.
-> > 
-> > Will it be necessary to apply this before this patch goes in the series,
-> > or after it?
-> 
-> Applying after fixes a build error.  Applying before might avoid the build
-> error altogether (error happens when #undef CONFIG_SMP), AFAIK.
+On Wed, Aug 15, 2012 at 11:17 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/15, Kees Cook wrote:
+>>
+>> It sounds like get_task_comm shouldn't have locking at all then? It
+>> should just do a length-limited copy
+>
+> Without task_lock() get_task_comm() can copy incomplete new name.
+>
+> Honestly, I do not know any user which "strictly" needs the correct
+> name. may be proc.
 
-Ok, it doesn't apply directly, but looks easy enough to fix up by hand,
-I'll go work on that right now...
+Right, which is my point -- if the race to read against
+set_task_comm() isn't useful to anything, why lock in get_task_comm at
+all?
 
-greg k-h
+>
+>> and make sure there is a trailing
+>> 0-byte?
+>
+> get_task_comm()->strncpy() should always see (and copy) 0-byte.
+> comm[TASK_COMM_LEN - 1] == '\0' and this byte is never changed.
+>
+> set_task_comm()->strlcpy() can write to this byte, but it can
+> only write 0 again.
+
+Right, and set_task_comm even does a memset() of 0 over the whole area
+before the strlcpy too.
+
+Regardless, it sounds like just using ->comm directly is fine; I'll
+send a patch.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
