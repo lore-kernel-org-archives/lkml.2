@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab2HOPsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 11:48:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63107 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669Ab2HOPsC (ORCPT
+	id S1755744Ab2HOPs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 11:48:59 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:61961 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab2HOPrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 11:48:02 -0400
+	Wed, 15 Aug 2012 11:47:48 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,10 +15,11 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
         ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com, dhowells@redhat.com,
         hpj@urpla.net, sedat.dilek@googlemail.com, penberg@kernel.org,
-        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
-Subject: [PATCH 13/13] overlayfs: copy up i_uid/i_gid from the underlying inode
-Date: Wed, 15 Aug 2012 17:48:20 +0200
-Message-Id: <1345045700-9062-14-git-send-email-miklos@szeredi.hu>
+        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz,
+        Robin Dong <hao.bigrat@gmail.com>, Robin Dong <sanbai@taobao.com>
+Subject: [PATCH 10/13] overlayfs: create new inode in ovl_link
+Date: Wed, 15 Aug 2012 17:48:17 +0200
+Message-Id: <1345045700-9062-11-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
 References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
@@ -26,97 +27,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Whitcroft <apw@canonical.com>
+From: Robin Dong <hao.bigrat@gmail.com>
 
-YAMA et al rely on on i_uid/i_gid to be populated in order to perform
-their checks.  While these really cannot be guarenteed as the underlying
-filesystem may not even have the concept, they are expected to be filled
-when possible.  To quote Al Viro:
+Imaging using ext4 as upperdir which has a file "hello" and lowdir is
+totally empty.
 
-    "Ideally, yes, we'd want to have ->i_uid used only by fs-specific
-     code and helpers used by that fs (including those that are
-     implicit defaults). [...]   In practice we have enough places
-     where uid/gid is used directly to make setting them practically
-     a requirement - places like /proc/<pid>/ can get away with
-     not doing that, but only because shitloads of syscalls are
-     not allowed on those anyway, permissions or no permissions.
-     In anything general-purpose you really need to set it."
+1. mount -t overlayfs overlayfs -o lowerdir=/lower,upperdir=/upper /overlay
+2. cd /overlay
+3. ln hello bye
 
-Copy up the underlying filesystem information into the overlayfs inode
-when we create it.
+then the overlayfs code will call vfs_link to create a real ext4
+dentry for "bye" and create
+a new overlayfs dentry point to overlayfs inode (which standed for
+"hello"). That means:
+	two overlayfs dentries and only one overlayfs inode.
 
-BugLink: http://bugs.launchpad.net/bugs/944386
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+and then
+
+4. umount /overlay
+5. mount -t overlayfs overlayfs -o lowerdir=/lower,upperdir=/upper
+/overlay (again)
+6. cd /overlay
+7. ls hello bye
+
+the overlayfs will create two inodes(one for the "hello", another
+for the "bye") and two dentries (each point a inode).That means:
+	two dentries and two inodes.
+
+As above, with different order of "create link" and "mount", the
+result is not the same.
+
+In order to make the behavior coherent, we need to create inode in ovl_link.
+
+Signed-off-by: Robin Dong <sanbai@taobao.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/overlayfs/dir.c       |    2 ++
- fs/overlayfs/inode.c     |    2 ++
- fs/overlayfs/overlayfs.h |    6 ++++++
- fs/overlayfs/super.c     |    1 +
- 4 files changed, 11 insertions(+), 0 deletions(-)
+ fs/overlayfs/dir.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
-index 40650c4..c4446c4 100644
+index 6b50823..40650c4 100644
 --- a/fs/overlayfs/dir.c
 +++ b/fs/overlayfs/dir.c
-@@ -304,6 +304,7 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
+@@ -417,6 +417,7 @@ static int ovl_link(struct dentry *old, struct inode *newdir,
+ 	struct dentry *olddentry;
+ 	struct dentry *newdentry;
+ 	struct dentry *upperdir;
++	struct inode *newinode;
+ 
+ 	err = ovl_copy_up(old);
+ 	if (err)
+@@ -441,13 +442,17 @@ static int ovl_link(struct dentry *old, struct inode *newdir,
+ 			err = -ENOENT;
+ 			goto out_unlock;
  		}
- 	}
- 	ovl_dentry_update(dentry, newdentry);
-+	ovl_copyattr(newdentry->d_inode, inode);
- 	d_instantiate(dentry, inode);
- 	inode = NULL;
- 	newdentry = NULL;
-@@ -446,6 +447,7 @@ static int ovl_link(struct dentry *old, struct inode *newdir,
- 				new->d_fsdata);
- 		if (!newinode)
- 			goto link_fail;
-+		ovl_copyattr(upperdir->d_inode, newinode);
++		newinode = ovl_new_inode(old->d_sb, newdentry->d_inode->i_mode,
++				new->d_fsdata);
++		if (!newinode)
++			goto link_fail;
  
  		ovl_dentry_version_inc(new->d_parent);
  		ovl_dentry_update(new, newdentry);
-diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
-index f3a534f..e7ab09b 100644
---- a/fs/overlayfs/inode.c
-+++ b/fs/overlayfs/inode.c
-@@ -31,6 +31,8 @@ int ovl_setattr(struct dentry *dentry, struct iattr *attr)
  
- 	mutex_lock(&upperdentry->d_inode->i_mutex);
- 	err = notify_change(upperdentry, attr);
-+	if (!err)
-+		ovl_copyattr(upperdentry->d_inode, dentry->d_inode);
- 	mutex_unlock(&upperdentry->d_inode->i_mutex);
+-		ihold(old->d_inode);
+-		d_instantiate(new, old->d_inode);
++		d_instantiate(new, newinode);
+ 	} else {
++link_fail:
+ 		if (ovl_dentry_is_opaque(new))
+ 			ovl_whiteout(upperdir, new);
+ 		dput(newdentry);
+@@ -579,7 +584,6 @@ out_unlock:
  
- 	return err;
-diff --git a/fs/overlayfs/overlayfs.h b/fs/overlayfs/overlayfs.h
-index fe1241d..1cba38f 100644
---- a/fs/overlayfs/overlayfs.h
-+++ b/fs/overlayfs/overlayfs.h
-@@ -56,6 +56,12 @@ int ovl_removexattr(struct dentry *dentry, const char *name);
- 
- struct inode *ovl_new_inode(struct super_block *sb, umode_t mode,
- 			    struct ovl_entry *oe);
-+static inline void ovl_copyattr(struct inode *from, struct inode *to)
-+{
-+	to->i_uid = from->i_uid;
-+	to->i_gid = from->i_gid;
-+}
-+
- /* dir.c */
- extern const struct inode_operations ovl_dir_inode_operations;
- 
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 64d2695..9808408 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -343,6 +343,7 @@ static int ovl_do_lookup(struct dentry *dentry)
- 				      oe);
- 		if (!inode)
- 			goto out_dput;
-+		ovl_copyattr(realdentry->d_inode, inode);
- 	}
- 
- 	if (upperdentry)
+ const struct inode_operations ovl_dir_inode_operations = {
+ 	.lookup		= ovl_lookup,
+-	.atomic_open	= ovl_atomic_open,
+ 	.mkdir		= ovl_mkdir,
+ 	.symlink	= ovl_symlink,
+ 	.unlink		= ovl_unlink,
 -- 
 1.7.7
 
