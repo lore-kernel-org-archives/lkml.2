@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab2HOT54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:57:56 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40861 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932193Ab2HOT5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:57:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] PCI / ACPI: Do not request control of ASPM if the BIOS has disabled it
-Date: Wed, 15 Aug 2012 22:03:48 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Wei Kong <wkong@novell.com>, Jean Delvare <jdelvare@suse.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201205242245.45888.rjw@sisk.pl> <CAErSpo4LQsWH7eX=3YNSGUdZjNyMQeyoZPrx2ZUto3gWLYSWEQ@mail.gmail.com>
-In-Reply-To: <CAErSpo4LQsWH7eX=3YNSGUdZjNyMQeyoZPrx2ZUto3gWLYSWEQ@mail.gmail.com>
+	id S932329Ab2HOT6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:58:33 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37399 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab2HOTwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:52:55 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: NeilBrown <neilb@suse.de>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 122/165] NFS/sunrpc: don't use a credential with extra groups.
+Date: Wed, 15 Aug 2012 15:47:46 -0400
+Message-ID: <1345060109-9187-123-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208152203.48377.rjw@sisk.pl>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 15, 2012, Bjorn Helgaas wrote:
-> On Thu, May 24, 2012 at 2:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > We want to report that the kernel supports ASPM to the BIOS even if
-> > the BIOS signals us that it doesn't.  So, we need the flags to include
-> > (OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
-> > before calling acpi_pci_osc_support(root, flags) in
-> > acpi_pci_root_add() (unless there's a command line telling us that
-> > ASPM is not to be supported).
-> >
-> > However, knowing that the BIOS doesn't support ASPM, we shouldn't
-> > request the control of it, so we should remove
-> > (OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
-> > from the flags before calling acpi_pci_osc_control_set() in those
-> > cases.  Failing to do so causes the evaluation of _OSC for the PCI
-> > root bridge to return error codes on some systems where it should
-> > work correctly.
-> >
-> > Reported-and-tested-by: Wei Kong <wkong@novell.com>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >
-> > -stable material, I think.
-> 
-> Len, since you've applied recent patches in this area, can you take
-> care of this, too?
+From: NeilBrown <neilb@suse.de>
 
-No, please don't.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-I'd discussed that with Matthew and we concluded that it would break things
-sometimes.  Please disregard it (and sorry for not saying that earlier).
+commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
 
-Thanks,
-Rafael
+The sunrpc layer keeps a cache of recently used credentials and
+'unx_match' is used to find the credential which matches the current
+process.
 
+However unx_match allows a match when the cached credential has extra
+groups at the end of uc_gids list which are not in the process group list.
 
-> > ---
-> >  drivers/acpi/pci_root.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > Index: linux/drivers/acpi/pci_root.c
-> > ===================================================================
-> > --- linux.orig/drivers/acpi/pci_root.c
-> > +++ linux/drivers/acpi/pci_root.c
-> > @@ -574,6 +574,10 @@ static int __devinit acpi_pci_root_add(s
-> >         if (flags != base_flags)
-> >                 acpi_pci_osc_support(root, flags);
-> >
-> > +       if (!pcie_aspm_enabled())
-> > +               flags &= ~(OSC_ACTIVE_STATE_PWR_SUPPORT |
-> > +                       OSC_CLOCK_PWR_CAPABILITY_SUPPORT);
-> > +
-> >         if (!pcie_ports_disabled
-> >             && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
-> >                 flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
-> 
-> 
+So if a process with a list of (say) 4 group accesses a file and gains
+access because of the last group in the list, then another process
+with the same uid and gid, and a gid list being the first tree of the
+gids of the original process tries to access the file, it will be
+granted access even though it shouldn't as the wrong rpc credential
+will be used.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ net/sunrpc/auth_unix.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net/sunrpc/auth_unix.c b/net/sunrpc/auth_unix.c
+index aac2f8b..c16f25d 100644
+--- a/net/sunrpc/auth_unix.c
++++ b/net/sunrpc/auth_unix.c
+@@ -130,6 +130,9 @@ unx_match(struct auth_cred *acred, struct rpc_cred *rcred, int flags)
+ 	for (i = 0; i < groups ; i++)
+ 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
+ 			return 0;
++	if (groups < NFS_NGROUPS &&
++	    cred->uc_gids[groups] != NOGROUP)
++		return 0;
+ 	return 1;
+ }
+ 
+-- 
+1.7.12.rc2
 
