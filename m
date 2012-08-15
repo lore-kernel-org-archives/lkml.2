@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2HOUTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:19:40 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62954 "EHLO
+	id S1756734Ab2HOUTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:19:38 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62956 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756700Ab2HOTu6 (ORCPT
+	with ESMTP id S1756701Ab2HOTu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:50:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+CC: Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 084/165] nfsd4: Remove check for a 32-bit cookie in nfsd4_readdir()
-Date: Wed, 15 Aug 2012 15:47:08 -0400
-Message-ID: <1345060109-9187-85-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 086/165] ASoC: wm8940: Properly set codec->dapm.bias_level
+Date: Wed, 15 Aug 2012 15:47:10 -0400
+Message-ID: <1345060109-9187-87-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+From: Axel Lin <axel.lin@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,33 +32,29 @@ From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 832023bffb4b493f230be901f681020caf3ed1f8 upstream.
+commit 5927f94700e860ae27ff24e7f3bc9e4f7b9922eb upstream.
 
-Fan Yong <yong.fan@whamcloud.com> noticed setting
-FMODE_32bithash wouldn't work with nfsd v4, as
-nfsd4_readdir() checks for 32 bit cookies. However, according to RFC 3530
-cookies have a 64 bit type and cookies are also defined as u64 in
-'struct nfsd4_readdir'. So remove the test for >32-bit values.
-
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Chris Paulson-Ellis <chris@edesix.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[PG: in .34 it uses codec->bias_level and not codec->dapm.bias_level]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/nfsd/nfs4proc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8940.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 5046e8b..3b9fcb2 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -678,7 +678,7 @@ nfsd4_readdir(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
- 	readdir->rd_bmval[1] &= nfsd_suppattrs1(cstate->minorversion);
- 	readdir->rd_bmval[2] &= nfsd_suppattrs2(cstate->minorversion);
+diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+index 0c04b47..0dab4fe 100644
+--- a/sound/soc/codecs/wm8940.c
++++ b/sound/soc/codecs/wm8940.c
+@@ -473,6 +473,8 @@ static int wm8940_set_bias_level(struct snd_soc_codec *codec,
+ 		break;
+ 	}
  
--	if ((cookie > ~(u32)0) || (cookie == 1) || (cookie == 2) ||
-+	if ((cookie == 1) || (cookie == 2) ||
- 	    (cookie == 0 && memcmp(readdir->rd_verf.data, zeroverf.data, NFS4_VERIFIER_SIZE)))
- 		return nfserr_bad_cookie;
++	codec->bias_level = level;
++
+ 	return ret;
+ }
  
 -- 
 1.7.12.rc2
