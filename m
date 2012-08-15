@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2HOWDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 18:03:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab2HOWDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 18:03:31 -0400
-Date: Wed, 15 Aug 2012 15:03:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Michael Cree <mcree@orcon.net.nz>, linux-alpha@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Tony Luck <tony.luck@gmail.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        John David Anglin <dave.anglin@bell.net>, Mel Gorman <mgorman@suse.de>,
-        kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@parisc-linux.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] [ALPHA] Redefine ATOMIC_INIT and ATOMIC64_INIT to drop
- the casts
-Message-Id: <20120815150328.e1fb3676.akpm@linux-foundation.org>
-In-Reply-To: <20120812021405.GB8442@localhost>
-References: <1343042420.3027.11.camel@dabdike.int.hansenpartnership.com>
-	<20120723114258.GV9222@suse.de>
-	<20120723122905.GA22476@localhost>
-	<BLU0-SMTP2254F8872DDE5FA6035CDE97DD0@phx.gbl>
-	<20120724074844.GA9519@localhost>
-	<BLU0-SMTP6C7CFCFF734FE10A39B6E97DC0@phx.gbl>
-	<1343193053.3139.6.camel@dabdike>
-	<CA+8MBbJkGN+zGBdD5Hg26wW_6E9L_ufoutn7wj+Y+nhtW7WKWg@mail.gmail.com>
-	<20120802150209.GA26601@localhost>
-	<502707D5.7020602@orcon.net.nz>
-	<20120812021405.GB8442@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754099Ab2HOWG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 18:06:27 -0400
+Received: from fieldses.org ([174.143.236.118]:37835 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab2HOWGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 18:06:25 -0400
+Date: Wed, 15 Aug 2012 18:06:23 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120815220622.GA28054@fieldses.org>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <20120815204546.GC25062@fieldses.org>
+ <20120815210237.GF25421@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815210237.GF25421@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Aug 2012 10:14:05 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
+On Thu, Aug 16, 2012 at 01:02:37AM +0400, Cyrill Gorcunov wrote:
+> On Wed, Aug 15, 2012 at 04:45:46PM -0400, J. Bruce Fields wrote:
+> > On Wed, Aug 15, 2012 at 01:21:20PM +0400, Cyrill Gorcunov wrote:
+> > > To provide fsnotify object inodes being watched without
+> > > binding to alphabetical path we need to encode them with
+> > > exportfs help. This patch adds a helper which operates
+> > > with plain inodes directly.
+> > 
+> > I don't get it--this seems like a really roundabout way to get inode and
+> > generation number, if that's all you want.
+> 
+> We can re-open the targets via filehandle on restore, this was the idea.
+> All this series aimed to achieve the way to restore objects after checkpoit,
+> thus we need to provide additional information which would be enough.
 
-> From: Mel Gorman <mgorman@suse.de>
-> 
-> The following build error occurred during an alpha build:
-> 
-> net/core/sock.c:274:36: error: initializer element is not constant
-> 
-> Dave Anglin says:
-> > Here is the line in sock.i:
-> >
-> > struct static_key memalloc_socks = ((struct static_key) { .enabled =
-> > ((atomic_t) { (0) }) });
-> 
-> The above line contains two compound literals.  It also uses a designated
-> initializer to initialize the field enabled.  A compound literal is not a
-> constant expression.
-> 
-> The location of the above statement isn't fully clear, but if a compound
-> literal occurs outside the body of a function, the initializer list must
-> consist of constant expressions.
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+For this to work it'll need to be something you can pass to
+open_by_handle_at, won't it?
 
-I'll remvoe the Cc:stable from this one - the regression is post-3.5.
+> > On the other hand, if you want a real filehandle then wouldn't you want
+> > to e.g. call the filesystem's ->encode_fh() if necessary, as
+> > exportfs_encode_fh() does?
+> 
+> Well, one of the problem I hit when I've been trying to use encode_fh
+> is that every new implementation of encode_fh will require some size
+> (even unknown) in buffer where encoded data pushed. Correct me please
+> if I'm wrong. But with export_encode_inode_fh there is a small buffer
+> with pretty known size needed on stack needed for printing data in
+> fdinfo.
+
+You can just give encode_fh a too-small data and let it fail if it's not
+big enough.
+
+(In practice I think everyone supports NFSv3 filehandles which have a
+maximum size of 64 bytes.)
+
+--b.
