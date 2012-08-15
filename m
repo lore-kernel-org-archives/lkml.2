@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2HOUIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:08:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37066 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756996Ab2HOTwH (ORCPT
+	id S1757002Ab2HOUJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:09:02 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63062 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756984Ab2HOTwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:07 -0400
+	Wed, 15 Aug 2012 15:52:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alexandre Bounine <alexandre.bounine@idt.com>, Chul Kim <chul.kim@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 104/165] drivers/net/rionet.c: fix ethernet address macros for LE platforms
-Date: Wed, 15 Aug 2012 15:47:28 -0400
-Message-ID: <1345060109-9187-105-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 125/165] PM / Suspend: Off by one in pm_suspend()
+Date: Wed, 15 Aug 2012 15:47:49 -0400
+Message-ID: <1345060109-9187-126-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -28,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -36,38 +32,32 @@ From: Alexandre Bounine <alexandre.bounine@idt.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e0c87bd95e8dad455c23bc56513af8dcb1737e55 upstream.
+commit 528f7ce6e439edeac38f6b3f8561f1be129b5e91 upstream.
 
-Modify Ethernet addess macros to be compatible with BE/LE platforms
+In enter_state() we use "state" as an offset for the pm_states[]
+array.  The pm_states[] array only has PM_SUSPEND_MAX elements so
+this test is off by one.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Chul Kim <chul.kim@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/rionet.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/power/suspend.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
-index 07eb884..0f6cbc8 100644
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -88,8 +88,8 @@ static struct rio_dev **rionet_active;
- #define dev_rionet_capable(dev) \
- 	is_rionet_capable(dev->pef, dev->src_ops, dev->dst_ops)
- 
--#define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
--#define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
-+#define RIONET_MAC_MATCH(x)	(!memcmp((x), "\00\01\00\01", 4))
-+#define RIONET_GET_DESTID(x)	((*((u8 *)x + 4) << 8) | *((u8 *)x + 5))
- 
- static int rionet_rx_clean(struct net_device *ndev)
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 56e7dbb..7d4ae3b 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -297,7 +297,7 @@ int enter_state(suspend_state_t state)
+  */
+ int pm_suspend(suspend_state_t state)
  {
+-	if (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX)
++	if (state > PM_SUSPEND_ON && state < PM_SUSPEND_MAX)
+ 		return enter_state(state);
+ 	return -EINVAL;
+ }
 -- 
 1.7.12.rc2
 
