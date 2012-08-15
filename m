@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab2HOUfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:35:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62765 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299Ab2HOTtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:20 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 021/165] USB: ftdi_sio: add Calao reference board support
-Date: Wed, 15 Aug 2012 15:46:05 -0400
-Message-ID: <1345060109-9187-22-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.rc2
-In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757322Ab2HOUgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:36:15 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:39337 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756311Ab2HOUgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 16:36:13 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>
+Subject: [PATCH] rapidio/tsi721: fix unused variable compiler warning
+Date: Wed, 15 Aug 2012 16:35:13 -0400
+Message-Id: <1345062913-29590-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Fix unused variable compiler warning when built with CONFIG_RAPIDIO_DEBUG
+option off.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+This patch is applicable to kernel versions starting from v3.2
 
-commit c96fbdd0ab97235f930ebf24b38fa42a2e3458cf upstream.
-
-Calao use on there dev kits a FT2232 where the port 0 is used for the JTAG and
-port 1 for the UART
-
-They use the same VID and PID as FTDI Chip but they program the manufacturer
-name in the eeprom
-
-So use this information to detect it
-
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
 ---
- drivers/usb/serial/ftdi_sio.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index c7e4fb8..e8bc908 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -105,6 +105,7 @@ static int   ftdi_jtag_probe(struct usb_serial *serial);
- static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
- static int   ftdi_NDI_device_setup(struct usb_serial *serial);
- static int   ftdi_stmclite_probe(struct usb_serial *serial);
-+static int   ftdi_8u2232c_probe(struct usb_serial *serial);
- static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
- static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index c0d6a04..5d44252 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2219,7 +2219,7 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 				  const struct pci_device_id *id)
+ {
+ 	struct tsi721_device *priv;
+-	int i, cap;
++	int cap;
+ 	int err;
+ 	u32 regval;
  
-@@ -132,6 +133,10 @@ static struct ftdi_sio_quirk ftdi_stmclite_quirk = {
- 	.probe	= ftdi_stmclite_probe,
- };
+@@ -2239,12 +2239,15 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
+ 	priv->pdev = pdev;
  
-+static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
-+	.probe	= ftdi_8u2232c_probe,
-+};
-+
- /*
-  * The 8U232AM has the same API as the sio except for:
-  * - it can support MUCH higher baudrates; up to:
-@@ -181,7 +186,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_ALT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
--	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) ,
-+		.driver_info = (kernel_ulong_t)&ftdi_8u2232c_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RELAIS_PID) },
-@@ -1749,6 +1755,18 @@ static int ftdi_jtag_probe(struct usb_serial *serial)
- 	return 0;
- }
- 
-+static int ftdi_8u2232c_probe(struct usb_serial *serial)
-+{
-+	struct usb_device *udev = serial->dev;
-+
-+	dbg("%s", __func__);
-+
-+	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
-+		return ftdi_jtag_probe(serial);
-+
-+	return 0;
-+}
-+
- /*
-  * First and second port on STMCLiteadaptors is reserved for JTAG interface
-  * and the forth port for pio
+ #ifdef DEBUG
++	{
++	int i;
+ 	for (i = 0; i <= PCI_STD_RESOURCE_END; i++) {
+ 		dev_dbg(&pdev->dev, "res[%d] @ 0x%llx (0x%lx, 0x%lx)\n",
+ 			i, (unsigned long long)pci_resource_start(pdev, i),
+ 			(unsigned long)pci_resource_len(pdev, i),
+ 			pci_resource_flags(pdev, i));
+ 	}
++	}
+ #endif
+ 	/*
+ 	 * Verify BAR configuration
 -- 
-1.7.12.rc2
+1.7.8.4
 
