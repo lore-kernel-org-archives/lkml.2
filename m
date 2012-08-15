@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab2HOUXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:23:15 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62908 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756614Ab2HOTue (ORCPT
+	id S1756814Ab2HOUXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:23:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36810 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756603Ab2HOTud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:34 -0400
+	Wed, 15 Aug 2012 15:50:33 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Nelson Elhage <nelhage@nelhage.com>, Dave Jones <davej@redhat.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+CC: Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jakub Jelinek <jakub@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 070/165] epoll: fix spurious lockdep warnings
-Date: Wed, 15 Aug 2012 15:46:54 -0400
-Message-ID: <1345060109-9187-71-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 069/165] x86: Fix compilation bug in kprobes' twobyte_is_boostable
+Date: Wed, 15 Aug 2012 15:46:53 -0400
+Message-ID: <1345060109-9187-70-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nelson Elhage <nelhage@nelhage.com>
+From: Josh Stone <jistone@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,138 +35,93 @@ From: Nelson Elhage <nelhage@nelhage.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d8805e633e054c816c47cb6e727c81f156d9253d upstream.
+commit 315eb8a2a1b7f335d40ceeeb11b9e067475eb881 upstream.
 
-epoll can acquire recursively acquire ep->mtx on multiple "struct
-eventpoll"s at once in the case where one epoll fd is monitoring another
-epoll fd.  This is perfectly OK, since we're careful about the lock
-ordering, but it causes spurious lockdep warnings.  Annotate the recursion
-using mutex_lock_nested, and add a comment explaining the nesting rules
-for good measure.
+When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
+noticed a warning about the asm operand for test_bit in kprobes'
+can_boost.  I discovered that this caused only the first long of
+twobyte_is_boostable[] to be output.
 
-Recent versions of systemd are triggering this, and it can also be
-demonstrated with the following trivial test program:
+Jakub filed and fixed gcc PR50571 to correct the warning and this output
+issue.  But to solve it for less current gcc, we can make kprobes'
+twobyte_is_boostable[] non-const, and it won't be optimized out.
 
---------------------8<--------------------
+Before:
 
-int main(void) {
-   int e1, e2;
-   struct epoll_event evt = {
-       .events = EPOLLIN
-   };
+    CC      arch/x86/kernel/kprobes.o
+  In file included from include/linux/bitops.h:22:0,
+                   from include/linux/kernel.h:17,
+                   from [...]/arch/x86/include/asm/percpu.h:44,
+                   from [...]/arch/x86/include/asm/current.h:5,
+                   from [...]/arch/x86/include/asm/processor.h:15,
+                   from [...]/arch/x86/include/asm/atomic.h:6,
+                   from include/linux/atomic.h:4,
+                   from include/linux/mutex.h:18,
+                   from include/linux/notifier.h:13,
+                   from include/linux/kprobes.h:34,
+                   from arch/x86/kernel/kprobes.c:43:
+  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
+  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input
+        without lvalue in asm operand 1 is deprecated [enabled by default]
 
-   e1 = epoll_create1(0);
-   e2 = epoll_create1(0);
-   epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
-   return 0;
-}
---------------------8<--------------------
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
+                          554: R_386_32	.rodata.cst4
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Tested-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+  Contents of section .rodata.cst4:
+   0000 4c030000                             L...
+
+Only a single long of twobyte_is_boostable[] is in the object file.
+
+After, without the const on twobyte_is_boostable:
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
+                          554: R_386_32	.data
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+   0010 00000000 00000000 00000000 00000000  ................
+   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
+   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
+
+Now all 32 bytes are output into .data instead.
+
+Signed-off-by: Josh Stone <jistone@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/eventpoll.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ arch/x86/kernel/kprobes.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 85c5a9f..34ca5ca 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -70,6 +70,15 @@
-  * simultaneous inserts (A into B and B into A) from racing and
-  * constructing a cycle without either insert observing that it is
-  * going to.
-+ * It is necessary to acquire multiple "ep->mtx"es at once in the
-+ * case when one epoll fd is added to another. In this case, we
-+ * always acquire the locks in the order of nesting (i.e. after
-+ * epoll_ctl(e1, EPOLL_CTL_ADD, e2), e1->mtx will always be acquired
-+ * before e2->mtx). Since we disallow cycles of epoll file
-+ * descriptors, this ensures that the mutexes are well-ordered. In
-+ * order to communicate this nesting to lockdep, when walking a tree
-+ * of epoll file descriptors, we use the current recursion depth as
-+ * the lockdep subkey.
-  * It is possible to drop the "ep->mtx" and to use the global
-  * mutex "epmutex" (together with "ep->lock") to have it working,
-  * but having "ep->mtx" will make the interface more scalable.
-@@ -454,13 +463,15 @@ static void ep_unregister_pollwait(struct eventpoll *ep, struct epitem *epi)
-  * @ep: Pointer to the epoll private data structure.
-  * @sproc: Pointer to the scan callback.
-  * @priv: Private opaque data passed to the @sproc callback.
-+ * @depth: The current depth of recursive f_op->poll calls.
-  *
-  * Returns: The same integer error code returned by the @sproc callback.
-  */
- static int ep_scan_ready_list(struct eventpoll *ep,
- 			      int (*sproc)(struct eventpoll *,
- 					   struct list_head *, void *),
--			      void *priv)
-+			      void *priv,
-+			      int depth)
- {
- 	int error, pwake = 0;
- 	unsigned long flags;
-@@ -471,7 +482,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
- 	 * We need to lock this because we could be hit by
- 	 * eventpoll_release_file() and epoll_ctl().
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index ac4ed92..9619315 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
+ 	/*
+ 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
+ 	 * Groups, and some special opcodes can not boost.
++	 * This is non-const to keep gcc from statically optimizing it out, as
++	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
  	 */
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, depth);
- 
- 	/*
- 	 * Steal the ready list, and re-init the original one to the
-@@ -660,7 +671,7 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- 
- static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
- {
--	return ep_scan_ready_list(priv, ep_read_events_proc, NULL);
-+	return ep_scan_ready_list(priv, ep_read_events_proc, NULL, call_nests + 1);
- }
- 
- static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
-@@ -726,7 +737,7 @@ void eventpoll_release_file(struct file *file)
- 
- 		ep = epi->ep;
- 		list_del_init(&epi->fllink);
--		mutex_lock(&ep->mtx);
-+		mutex_lock_nested(&ep->mtx, 0);
- 		ep_remove(ep, epi);
- 		mutex_unlock(&ep->mtx);
- 	}
-@@ -1123,7 +1134,7 @@ static int ep_send_events(struct eventpoll *ep,
- 	esed.maxevents = maxevents;
- 	esed.events = events;
- 
--	return ep_scan_ready_list(ep, ep_send_events_proc, &esed);
-+	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0);
- }
- 
- static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
-@@ -1218,7 +1229,7 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
- 	struct rb_node *rbp;
- 	struct epitem *epi;
- 
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, call_nests + 1);
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		epi = rb_entry(rbp, struct epitem, rbn);
- 		if (unlikely(is_file_epoll(epi->ffd.file))) {
-@@ -1360,7 +1371,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 	}
- 
- 
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, 0);
- 
- 	/*
- 	 * Try to lookup the file inside our RB tree, Since we grabbed "mtx"
+-static const u32 twobyte_is_boostable[256 / 32] = {
++static u32 twobyte_is_boostable[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
+ 	/*      ----------------------------------------------          */
+ 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
 -- 
 1.7.12.rc2
 
