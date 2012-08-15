@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab2HOA5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:57:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15128 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab2HOA5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:57:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,770,1336374000"; 
-   d="scan'208";a="186499081"
-Message-ID: <502AF3E6.3050709@intel.com>
-Date: Wed, 15 Aug 2012 08:57:10 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [tip:auto-latest 18/37] kernel/sched/core.c:6460:1: error: 'SD_PREFER_LOCAL'
- undeclared (first use in this function)
-References: <20120814203654.GA20732@localhost>
-In-Reply-To: <20120814203654.GA20732@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754984Ab2HOBHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 21:07:11 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60075 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2HOBHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 21:07:09 -0400
+Date: Wed, 15 Aug 2012 09:07:06 +0800
+From: kedacomkernel <kedacomkernel@gmail.com>
+To: "Andy Lutomirski" <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201208150906343285670@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7F17Ufp019072
 
-On 08/15/2012 04:36 AM, Fengguang Wu wrote:
+On 2012-08-15 08:49 Andy Lutomirski <luto@amacapital.net> Wrote:
+>If I do:
+># dd if=/dev/zero of=/dev/md0p1 bs=8M
+>then iostat -m 5 says:
+>
+>avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+>           0.00    0.00   26.88   35.27    0.00   37.85
+>
+>Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+>sdb             265.20         1.16        54.79          5        273
+>sdc             266.20         1.47        54.73          7        273
+>sdd             264.20         1.38        54.54          6        272
+>sdf             286.00         1.84        54.74          9        273
+>sde             266.60         1.04        54.75          5        273
+>sdg             265.00         1.02        54.74          5        273
+>md0           55808.00         0.00       218.00          0       1090
+>
+>If I do:
+># dd if=/dev/zero of=/dev/md0p1 bs=8M oflag=direct
+>then iostat -m 5 says:
+>avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+>           0.00    0.00   11.70   12.94    0.00   75.36
+>
+>Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+>sdb             831.00         8.58        30.42         42        152
+>sdc             832.80         8.05        29.99         40        149
+>sdd             832.00         9.10        29.78         45        148
+>sdf             838.40         9.11        29.72         45        148
+>sde             828.80         7.91        29.79         39        148
+>sdg             850.80         8.00        30.18         40        150
+>md0            1012.60         0.00       101.27          0        506
+>
+>It looks like md isn't recognizing that I'm writing whole stripes when
+>I'm in O_DIRECT mode.
+>
+kernel version?
 
-> Hi Alex,
-> 
-> FYI, kernel build failed on
-> 
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git auto-latest
-> head:   e42942691c8262b7fe2a7b88577623082b988217
-> commit: f03542a7019c600163ac4441d8a826c92c1bd510 [18/37] sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code clean up
-> config: tile-tilegx_defconfig (attached as .config)
-> 
-> All related error/warning messages:
-> 
-> kernel/sched/core.c: In function 'sd_init_CPU':
-> kernel/sched/core.c:6460:1: error: 'SD_PREFER_LOCAL' undeclared (first use in this function)
-> kernel/sched/core.c:6460:1: note: each undeclared identifier is reported only once for each function it appears in
-> 
-
-
-Sorry for this mistaken!
-The following is fixing patch
-
-============
->From 033c87bfde319e7b0bdd090a76e5731930332c41 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Wed, 15 Aug 2012 08:14:36 +0800
-Subject: [PATCH] sched: remove SD_PREFER_LOCAL in tile arch
-
-commit (sched: recover SD_WAKE_AFFINE in select_task_rq_fair and code
-clean up) remove SD_PREFER_LOCAL definition, but left a SD_PREFER_LOCAL
-usage in tile arch code. That cause tile arch out of work.
-
-This patch removes the died code from tile arch.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/tile/include/asm/topology.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index 7a7ce39..d5e86c9 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -69,7 +69,6 @@ static inline const struct cpumask *cpumask_of_node(int node)
- 				| 1*SD_BALANCE_FORK			\
- 				| 0*SD_BALANCE_WAKE			\
- 				| 0*SD_WAKE_AFFINE			\
--				| 0*SD_PREFER_LOCAL			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
--- 
-1.7.5.4
-
+>--Andy
+>
+>-- 
+>Andy Lutomirski
+>AMA Capital Management, LLC
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-raid" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.htmlÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
