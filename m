@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab2HOTwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:52:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37022 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866Ab2HOTvy (ORCPT
+	id S1757013Ab2HOTwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:52:10 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:63050 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756969Ab2HOTwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:54 -0400
+	Wed, 15 Aug 2012 15:52:01 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
         Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 112/165] time: Move common updates to a function
-Date: Wed, 15 Aug 2012 15:47:36 -0400
-Message-ID: <1345060109-9187-113-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 117/165] timekeeping: Provide hrtimer update function
+Date: Wed, 15 Aug 2012 15:47:41 -0400
+Message-ID: <1345060109-9187-118-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -35,69 +32,88 @@ From: Thomas Gleixner <tglx@linutronix.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit cc06268c6a87db156af2daed6e96a936b955cc82 upstream.
+commit f6c06abfb3972ad4914cef57d8348fcb2932bc3b upstream.
 
-While not a bugfix itself, it allows following fixes to backport
-in a more straightforward manner.
+To finally fix the infamous leap second issue and other race windows
+caused by functions which change the offsets between the various time
+bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
+function which atomically gets the current monotonic time and updates
+the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
+overhead. The previous patch which provides ktime_t offsets allows us
+to make this function almost as cheap as ktime_get() which is going to
+be replaced in hrtimer_interrupt().
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/time/timekeeping.c | 20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ include/linux/hrtimer.h   |  2 +-
+ kernel/time/timekeeping.c | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 0325598..887d1e7 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -319,7 +319,7 @@ static inline void clock_was_set_delayed(void) { }
+ 
+ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+-
++extern ktime_t ktime_get_update_offsets(ktime_t *offs_real);
+ 
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index f8d4877..adfa89d 100644
+index 3d443b4..0b4f6d1 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -166,6 +166,18 @@ static struct timespec total_sleep_time;
-  */
- struct timespec raw_time;
- 
-+/* must hold write on xtime_lock */
-+static void timekeeping_update(bool clearntp)
-+{
-+	if (clearntp) {
-+		timekeeper.ntp_error = 0;
-+		ntp_clear();
-+	}
-+	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
-+}
-+
-+
-+
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
-@@ -330,10 +342,7 @@ int do_settimeofday(struct timespec *tv)
- 
- 	update_xtime_cache(0);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -858,8 +867,7 @@ void update_wall_time(void)
- 	nsecs = clocksource_cyc2ns(offset, timekeeper.mult, timekeeper.shift);
- 	update_xtime_cache(nsecs);
- 
--	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
-+	timekeeping_update(false);
+@@ -969,3 +969,35 @@ struct timespec get_monotonic_coarse(void)
+ 				now.tv_nsec + mono.tv_nsec);
+ 	return now;
  }
- 
- /**
++
++#ifdef CONFIG_HIGH_RES_TIMERS
++/**
++ * ktime_get_update_offsets - hrtimer helper
++ * @real:	pointer to storage for monotonic -> realtime offset
++ *
++ * Returns current monotonic time and updates the offsets
++ * Called from hrtimer_interupt() or retrigger_next_event()
++ */
++ktime_t ktime_get_update_offsets(ktime_t *real)
++{
++	ktime_t now;
++	unsigned int seq;
++	u64 secs, nsecs;
++
++	do {
++		seq = read_seqbegin(&xtime_lock);
++
++		secs = xtime.tv_sec;
++		nsecs = xtime.tv_nsec;
++		nsecs += timekeeping_get_ns();
++		/* If arch requires, add in gettimeoffset() */
++		nsecs += arch_gettimeoffset();
++
++		*real = offs_real;
++	} while (read_seqretry(&xtime_lock, seq));
++
++	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
++	now = ktime_sub(now, *real);
++	return now;
++}
++#endif
 -- 
 1.7.12.rc2
 
