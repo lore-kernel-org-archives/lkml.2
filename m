@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab2HOUiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:38:08 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62743 "EHLO
+	id S1756339Ab2HOUic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:38:32 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62738 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756094Ab2HOTtH (ORCPT
+	with ESMTP id S1756224Ab2HOTtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:49:07 -0400
+	Wed, 15 Aug 2012 15:49:05 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alex Williamson <alex.williamson@redhat.com>, Yang Bai <hamo.by@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+CC: Carlos Maiolino <cmaiolino@redhat.com>, Alex Elder <aelder@sgi.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 015/165] KVM: Device assignment permission checks
-Date: Wed, 15 Aug 2012 15:45:59 -0400
-Message-ID: <1345060109-9187-16-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 013/165] xfs: Fix possible memory corruption in xfs_readlink
+Date: Wed, 15 Aug 2012 15:45:57 -0400
+Message-ID: <1345060109-9187-14-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Carlos Maiolino <cmaiolino@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,142 +31,70 @@ From: Alex Williamson <alex.williamson@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3d27e23b17010c668db311140b17bbbb70c78fb9 upstream.
+commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream.
 
-Only allow KVM device assignment to attach to devices which:
+Fixes a possible memory corruption when the link is larger than
+MAXPATHLEN and XFS_DEBUG is not enabled. This also remove the
+S_ISLNK assert, since the inode mode is checked previously in
+xfs_readlink_by_handle() and via VFS.
 
- - Are not bridges
- - Have BAR resources (assume others are special devices)
- - The user has permissions to use
+Updated to address concerns raised by Ben Hutchings about the loose
+attention paid to 32- vs 64-bit values, and the lack of handling a
+potentially negative pathlen value:
+ - Changed type of "pathlen" to be xfs_fsize_t, to match that of
+   ip->i_d.di_size
+ - Added checking for a negative pathlen to the too-long pathlen
+   test, and generalized the message that gets reported in that case
+   to reflect the change
+As a result, if a negative pathlen were encountered, this function
+would return EFSCORRUPTED (and would fail an assertion for a debug
+build)--just as would a too-long pathlen.
 
-Assigning a bridge is a configuration error, it's not supported, and
-typically doesn't result in the behavior the user is expecting anyway.
-Devices without BAR resources are typically chipset components that
-also don't have host drivers.  We don't want users to hold such devices
-captive or cause system problems by fencing them off into an iommu
-domain.  We determine "permission to use" by testing whether the user
-has access to the PCI sysfs resource files.  By default a normal user
-will not have access to these files, so it provides a good indication
-that an administration agent has granted the user access to the device.
-
-[Yang Bai: add missing #include]
-[avi: fix comment style]
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Yang Bai <hamo.by@gmail.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-[PG: Drop Documentation api.txt chunk; 2.6.34 doesn't have the file]
+Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Carlos Maiolino <cmaiolino@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+[PG: no xfs_alert in 2.6.34; use xfs_fs_cmn_err(CE_ALERT, ...) instead]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- virt/kvm/assigned-dev.c | 75 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
+ fs/xfs/xfs_vnodeops.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index 1f97473..f427ecc 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -17,6 +17,8 @@
- #include <linux/pci.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/namei.h>
-+#include <linux/fs.h>
- #include "irq.h"
- 
- static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
-@@ -502,12 +504,73 @@ out:
- 	return r;
- }
- 
-+/*
-+ * We want to test whether the caller has been granted permissions to
-+ * use this device.  To be able to configure and control the device,
-+ * the user needs access to PCI configuration space and BAR resources.
-+ * These are accessed through PCI sysfs.  PCI config space is often
-+ * passed to the process calling this ioctl via file descriptor, so we
-+ * can't rely on access to that file.  We can check for permissions
-+ * on each of the BAR resource files, which is a pretty clear
-+ * indicator that the user has been granted access to the device.
-+ */
-+static int probe_sysfs_permissions(struct pci_dev *dev)
-+{
-+#ifdef CONFIG_SYSFS
-+	int i;
-+	bool bar_found = false;
-+
-+	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
-+		char *kpath, *syspath;
-+		struct path path;
-+		struct inode *inode;
-+		int r;
-+
-+		if (!pci_resource_len(dev, i))
-+			continue;
-+
-+		kpath = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
-+		if (!kpath)
-+			return -ENOMEM;
-+
-+		/* Per sysfs-rules, sysfs is always at /sys */
-+		syspath = kasprintf(GFP_KERNEL, "/sys%s/resource%d", kpath, i);
-+		kfree(kpath);
-+		if (!syspath)
-+			return -ENOMEM;
-+
-+		r = kern_path(syspath, LOOKUP_FOLLOW, &path);
-+		kfree(syspath);
-+		if (r)
-+			return r;
-+
-+		inode = path.dentry->d_inode;
-+
-+		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
-+		path_put(&path);
-+		if (r)
-+			return r;
-+
-+		bar_found = true;
-+	}
-+
-+	/* If no resources, probably something special */
-+	if (!bar_found)
-+		return -EPERM;
-+
-+	return 0;
-+#else
-+	return -EINVAL; /* No way to control the device without sysfs */
-+#endif
-+}
-+
- static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 				      struct kvm_assigned_pci_dev *assigned_dev)
+diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
+index 4498f07..c682c5d 100644
+--- a/fs/xfs/xfs_vnodeops.c
++++ b/fs/xfs/xfs_vnodeops.c
+@@ -554,7 +554,7 @@ xfs_readlink(
+ 	char		*link)
  {
- 	int r = 0, idx;
- 	struct kvm_assigned_dev_kernel *match;
- 	struct pci_dev *dev;
-+	u8 header_type;
+ 	xfs_mount_t	*mp = ip->i_mount;
+-	int		pathlen;
++	xfs_fsize_t	pathlen;
+ 	int		error = 0;
  
- 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
- 		return -EINVAL;
-@@ -538,6 +601,18 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
- 		r = -EINVAL;
- 		goto out_free;
- 	}
-+
-+	/* Don't allow bridges to be assigned */
-+	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
-+	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
-+		r = -EPERM;
-+		goto out_put;
+ 	xfs_itrace_entry(ip);
+@@ -564,13 +564,19 @@ xfs_readlink(
+ 
+ 	xfs_ilock(ip, XFS_ILOCK_SHARED);
+ 
+-	ASSERT((ip->i_d.di_mode & S_IFMT) == S_IFLNK);
+-	ASSERT(ip->i_d.di_size <= MAXPATHLEN);
+-
+ 	pathlen = ip->i_d.di_size;
+ 	if (!pathlen)
+ 		goto out;
+ 
++	if (pathlen < 0 || pathlen > MAXPATHLEN) {
++		xfs_fs_cmn_err(CE_ALERT, mp,
++			 "%s: inode (%llu) bad symlink length (%lld)", __func__,
++			 (unsigned long long) ip->i_ino, (long long) pathlen);
++		ASSERT(0);
++		return XFS_ERROR(EFSCORRUPTED);
 +	}
 +
-+	r = probe_sysfs_permissions(dev);
-+	if (r)
-+		goto out_put;
 +
- 	if (pci_enable_device(dev)) {
- 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
- 		r = -EBUSY;
+ 	if (ip->i_df.if_flags & XFS_IFINLINE) {
+ 		memcpy(link, ip->i_df.if_u1.if_data, pathlen);
+ 		link[pathlen] = '\0';
 -- 
 1.7.12.rc2
 
