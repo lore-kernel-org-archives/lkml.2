@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab2HOOHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:07:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54074 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab2HOOHB (ORCPT
+	id S1755217Ab2HOOIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:08:17 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34109 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2HOOIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:07:01 -0400
-Date: Wed, 15 Aug 2012 07:06:55 -0700
+	Wed, 15 Aug 2012 10:08:15 -0400
+Date: Wed, 15 Aug 2012 07:08:08 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Ben Hutchings <ben@decadent.org.uk>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [ 36/44] x86, microcode: Sanitize per-cpu microcode reloading
- interface
-Message-ID: <20120815140655.GC22871@kroah.com>
-References: <20120813220142.113186818@linuxfoundation.org>
- <20120813220145.337264645@linuxfoundation.org>
- <20120815002654.GA11666@khazad-dum.debian.net>
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based
+ implementation for ARMv6+
+Message-ID: <20120815140808.GD22871@kroah.com>
+References: <20120813201746.448504360@linuxfoundation.org>
+ <20120813201748.202917513@linuxfoundation.org>
+ <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120815002654.GA11666@khazad-dum.debian.net>
+In-Reply-To: <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 09:26:54PM -0300, Henrique de Moraes Holschuh wrote:
-> I believe the patch bellow, which was required on 3.2, will also be
-> necessary.
+On Wed, Aug 15, 2012 at 02:56:22PM +0100, Ben Hutchings wrote:
+> On Mon, 2012-08-13 at 13:18 -0700, Greg Kroah-Hartman wrote:
+> > From: Greg KH <gregkh@linuxfoundation.org>
+> > 
+> > 3.5-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Will Deacon <will.deacon@arm.com>
+> > 
+> > commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
+> > 
+> > The open-coded mutex implementation for ARMv6+ cores suffers from a
+> > severe lack of barriers, so in the uncontended case we don't actually
+> > protect any accesses performed during the critical section.
+> > 
+> > Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
+> > code but optimised to remove a branch instruction, as the mutex fastpath
+> > was previously inlined. Now that this is executed out-of-line, we can
+> > reuse the atomic access code for the locking (in fact, we use the xchg
+> > code as this produces shorter critical sections).
+> > 
+> > This patch uses the generic xchg based implementation for mutexes on
+> > ARMv6+, which introduces barriers to the lock/unlock operations and also
+> > has the benefit of removing a fair amount of inline assembly code.
+> [...]
+> 
+> Here also, I think this should be deferred.
 
-Will it be necessary to apply this before this patch goes in the series,
-or after it?
+"also"?  Am I missing some context here?  Why should we deferr this one?
+What do we need to wait for?
 
-thanks,
+confused,
 
 greg k-h
