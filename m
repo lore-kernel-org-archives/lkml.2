@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2HOXow (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:44:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55545 "EHLO
+	id S1755455Ab2HOXou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 19:44:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55547 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673Ab2HOXoS (ORCPT
+	with ESMTP id S1754911Ab2HOXoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:44:18 -0400
+	Wed, 15 Aug 2012 19:44:21 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: <linux-kernel@vger.kernel.org>
 CC: <shawn.guo@linaro.org>, <linus.walleij@linaro.org>,
@@ -16,9 +16,9 @@ CC: <shawn.guo@linaro.org>, <linus.walleij@linaro.org>,
         <ccross@android.com>, <linux-arm-kernel@lists.infradead.org>,
         <myungjoo.ham@samsung.com>, <rajagopal.venkat@linaro.org>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 1/4] [RFC] clk: new locking scheme for reentrancy
-Date: Wed, 15 Aug 2012 16:43:31 -0700
-Message-ID: <1345074214-17531-2-git-send-email-mturquette@linaro.org>
+Subject: [PATCH v2 2/4] [RFC] clk: notifier handler for dynamic voltage scaling
+Date: Wed, 15 Aug 2012 16:43:32 -0700
+Message-ID: <1345074214-17531-3-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
 References: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
@@ -28,637 +28,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global prepare_lock mutex prevents concurrent operations in the clk
-api.  This incurs a performance penalty when unrelated clock subtrees
-are contending for the lock.
+Dynamic voltage and frequency scaling (dvfs) is a common power saving
+technique in many of today's modern processors.  This patch introduces a
+common clk rate-change notifier handler which scales voltage
+appropriately whenever clk_set_rate is called on an affected clock.
 
-Additionally there are use cases which benefit from reentrancy into the
-clk api.  A simple example is reparenting a mux clock with a call to
-clk_set_rate.  Patch #4 in this series demonstrates this without the use
-of internal helper functions.
+There are three prerequisites to using this feature:
 
-A more complex example is performing dynamic frequency and voltage
-scaling from clk_set_rate.  Patches #2 and #3 in this series demonstrate
-this.
+1) the affected clocks must be using the common clk framework
+2) voltage must be scaled using the regulator framework
+3) clock frequency and regulator voltage values must be paired via the
+OPP library
 
-This commit affects users of the global prepare_lock mutex, namely
-clk_prepare, clk_unprepare, clk_set_rate and clk_set_parent.
-
-This patch introduces an enum inside of struct clk which tracks whether
-the framework has LOCKED or UNLOCKED the clk.
-
-Access to clk->state must be protected by the global prepare_lock mutex.
-In the future maybe the global mutex can be dropped and all operations
-will only use a global spinlock to protect access to the per-clk enums.
-A general outline of the new locking scheme is as follows:
-
-1) hold the global prepare_lock mutex
-2) traverse the tree checking to make sure that any clk's needed are
-UNLOCKED and not LOCKED
-	a) if a clk in the subtree of affected clk's is LOCKED then
-	   release the global lock, wait_for_completion and then try
-	   again up to a maximum of WAIT_TRIES times
-	b) After WAIT_TRIES times return -EBUSY
-3) if all clk's are UNLOCKED then mark them as LOCKED
-4) release the global prepare_lock mutex
-5) do the real work
-6) hold the global prepare_lock mutex
-7) set all of the clocks previously marked as LOCKED to UNLOCKED
-8) release the global prepare_lock mutex and return
-
-The primary down-side to this approach is that the clk api's might
-return -EBUSY due to lock contention.  This is only after having tried
-several times.  Bailing out like this is necessary to prevent deadlocks.
-
-The enum approach in this version of the patchset does not benefit from
-lockdep checking the lock order (but neither did v1).  It is possible
-for circular dependencies to pop up for the careless developer and
-bailing out after a number of unsuccessful tries is the sanest strategy.
+If your platform or device meets these requirements then using the
+notifier handler is easy.  A struct device is used as the basis for
+performing initial look-ups for clocks via clk_get and regulators via
+regulator_get.  This means that notifiers and subscribed on a per-device
+basis and multiple devices can have notifiers subscribed to the same
+clock.  Put another way, the voltage chosen for a rail during a call to
+clk_set_rate is a function of the device, not the clock.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/clk.c            |  354 +++++++++++++++++++++++++++++++++++++-----
- include/linux/clk-private.h  |    1 +
- include/linux/clk-provider.h |    4 +-
- 3 files changed, 318 insertions(+), 41 deletions(-)
+ drivers/clk/Makefile |    3 +-
+ drivers/clk/dvfs.c   |  116 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h  |   27 +++++++++++-
+ 3 files changed, 144 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/clk/dvfs.c
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 51a29d1..92bb516 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -17,6 +17,9 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/of.h>
-+#include <linux/completion.h>
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 02ffdf6..8f1faa0 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -1,7 +1,8 @@
+ # common clock types
+ obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
+-				   clk-mux.o clk-divider.o clk-fixed-factor.o
++				   clk-mux.o clk-divider.o clk-fixed-factor.o \
++				   dvfs.o
+ # SoCs specific
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs/
+diff --git a/drivers/clk/dvfs.c b/drivers/clk/dvfs.c
+new file mode 100644
+index 0000000..9f5d1ba
+--- /dev/null
++++ b/drivers/clk/dvfs.c
+@@ -0,0 +1,116 @@
++/*
++ * Copyright (C) 2011-2012 Linaro Ltd <mturquette@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Helper functions for dynamic voltage & frequency transitions using
++ * the OPP library.
++ */
 +
-+#define WAIT_TRIES	5
- 
- static DEFINE_SPINLOCK(enable_lock);
- static DEFINE_MUTEX(prepare_lock);
-@@ -25,6 +28,8 @@ static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
- static LIST_HEAD(clk_notifier_list);
- 
-+static DECLARE_COMPLETION(clk_completion);
++#include <linux/clk.h>
++#include <linux/regulator/consumer.h>
++#include <linux/opp.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/module.h>
 +
- /***        debugfs support        ***/
- 
- #ifdef CONFIG_COMMON_CLK_DEBUG
-@@ -372,23 +377,51 @@ struct clk *__clk_lookup(const char *name)
- 
- /***        clk api        ***/
- 
--void __clk_unprepare(struct clk *clk)
-+static struct clk *__clk_unprepare_lock(struct clk *clk)
- {
-+	struct clk *top;
++/*
++ * XXX clk, regulator & tolerance should be stored in the OPP table?
++ */
++struct dvfs_info {
++	struct device *dev;
++	struct clk *clk;
++	struct regulator *reg;
++	int tol;
++	/* FIXME struct device_opp *dev_opp */
++	struct notifier_block nb;
++};
 +
- 	if (!clk)
--		return;
-+		return ERR_PTR(-ENOENT);
++#define to_dvfs_info(_nb) container_of(_nb, struct dvfs_info, nb)
 +
-+	if (clk->state == LOCKED)
-+		return ERR_PTR(-EBUSY);
- 
- 	if (WARN_ON(clk->prepare_count == 0))
--		return;
-+		return ERR_PTR(-EPERM);
- 
--	if (--clk->prepare_count > 0)
--		return;
-+	if (clk->prepare_count > 1 || clk->flags & CLK_IS_ROOT) {
-+		top = clk;
-+		clk->state = LOCKED;
-+		clk->prepare_count--;
-+	} else {
-+		top = __clk_unprepare_lock(clk->parent);
-+		if (IS_ERR(top))
-+			goto out;
- 
--	WARN_ON(clk->enable_count > 0);
-+		clk->state = LOCKED;
-+		clk->prepare_count--;
-+	}
- 
-+out:
-+	return top;
-+}
-+
-+void __clk_unprepare(struct clk *clk, struct clk *top)
++static int dvfs_clk_notifier_handler(struct notifier_block *nb,
++		unsigned long flags, void *data)
 +{
- 	if (clk->ops->unprepare)
- 		clk->ops->unprepare(clk->hw);
- 
--	__clk_unprepare(clk->parent);
-+	if (clk != top)
-+		__clk_unprepare(clk->parent, top);
-+}
++	struct clk_notifier_data *cnd = data;
++	struct dvfs_info *di = to_dvfs_info(nb);
++	int ret, volt_new, volt_old;
++	struct opp *opp;
 +
-+static void __clk_prepare_unlock(struct clk *clk, struct clk *top)
-+{
-+	clk->state = UNLOCKED;
++	volt_old = regulator_get_voltage(di->reg);
++	opp = opp_find_freq_floor(di->dev, &cnd->new_rate);
++	volt_new = opp_get_voltage(opp);
 +
-+	if (clk != top)
-+		__clk_prepare_unlock(clk->parent, top);
- }
- 
- /**
-@@ -404,35 +437,94 @@ void __clk_unprepare(struct clk *clk)
-  */
- void clk_unprepare(struct clk *clk)
- {
-+	struct clk *top = ERR_PTR(-EBUSY);
-+	int tries = 0;
++	/* scaling up?  scale voltage before frequency */
++	if (flags & PRE_RATE_CHANGE && cnd->new_rate > cnd->old_rate) {
++		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
++				__func__, volt_old, volt_new);
 +
-+	/*
-+	 * walk the list of parents checking clk->state along the way.  If all
-+	 * clk->state is UNLOCKED then continue.  If a clk->state is LOCKED then
-+	 * bail out with -EBUSY.
-+	 */
-+	while (IS_ERR(top)) {
-+		mutex_lock(&prepare_lock);
-+		top = __clk_unprepare_lock(clk);
-+		mutex_unlock(&prepare_lock);
-+
-+		if (IS_ERR(top)) {
-+			pr_debug("%s: %s failed with %ld on attempt %d\n",
-+					__func__, clk->name, PTR_ERR(top),
-+					tries);
-+			wait_for_completion(&clk_completion);
-+			if (WAIT_TRIES == ++tries)
-+				break;
-+		} else
-+			break;
-+	}
-+
-+	if (WAIT_TRIES == tries) {
-+		pr_warning("%s: failed to lock clocks; cyclical dependency?\n",
-+				__func__);
-+		return;
-+	}
-+
-+	/* unprepare the list of clocks from clk to top */
-+	__clk_unprepare(clk, top);
-+
-+	/* set clk->state from LOCKED to UNLOCKED and fire off completion */
- 	mutex_lock(&prepare_lock);
--	__clk_unprepare(clk);
-+	__clk_prepare_unlock(clk, top);
- 	mutex_unlock(&prepare_lock);
-+
-+	complete(&clk_completion);
- }
- EXPORT_SYMBOL_GPL(clk_unprepare);
- 
--int __clk_prepare(struct clk *clk)
-+static struct clk *__clk_prepare_lock(struct clk *clk)
- {
--	int ret = 0;
-+	struct clk *top;
- 
- 	if (!clk)
--		return 0;
-+		return ERR_PTR(-ENOENT);
-+
-+	if (clk->state == LOCKED)
-+		return ERR_PTR(-EBUSY);
- 
--	if (clk->prepare_count == 0) {
--		ret = __clk_prepare(clk->parent);
-+	if (clk->prepare_count > 0 || clk->flags & CLK_IS_ROOT) {
-+		top = clk;
-+		clk->state = LOCKED;
-+		clk->prepare_count++;
-+	} else {
-+		top = __clk_prepare_lock(clk->parent);
-+		if (IS_ERR(top))
-+			goto out;
-+
-+		clk->state = LOCKED;
-+		clk->prepare_count++;
-+	}
-+
-+out:
-+	return top;
-+}
-+
-+int __clk_prepare(struct clk *clk, struct clk *top)
-+{
-+	int ret = 0;
-+
-+	if (clk != top) {
-+		ret = __clk_prepare(clk->parent, top);
- 		if (ret)
- 			return ret;
- 
- 		if (clk->ops->prepare) {
- 			ret = clk->ops->prepare(clk->hw);
- 			if (ret) {
--				__clk_unprepare(clk->parent);
-+				/* this is safe since clk != top */
-+				__clk_unprepare(clk->parent, top);
- 				return ret;
- 			}
- 		}
- 	}
- 
--	clk->prepare_count++;
--
- 	return 0;
- }
- 
-@@ -450,13 +542,42 @@ int __clk_prepare(struct clk *clk)
-  */
- int clk_prepare(struct clk *clk)
- {
--	int ret;
-+	struct clk *top = ERR_PTR(-EBUSY);
-+	int tries = 0;
-+
-+	while(IS_ERR(top)) {
-+		mutex_lock(&prepare_lock);
-+		top = __clk_prepare_lock(clk);
-+		mutex_unlock(&prepare_lock);
-+
-+		if (IS_ERR(top)) {
-+			pr_debug("%s: %s failed with %ld on attempt %d\n",
-+					__func__, clk->name, PTR_ERR(top),
-+					tries);
-+			wait_for_completion(&clk_completion);
-+			if (WAIT_TRIES == ++tries)
-+				break;
-+		} else
-+			break;
-+	}
-+
-+	if (WAIT_TRIES == tries) {
-+		pr_err("%s: failed to lock clocks; cyclical dependency?\n",
-+				__func__);
-+		return -EBUSY;
-+	}
- 
-+	/* unprepare the list of clocks from clk to top */
-+	__clk_prepare(clk, top);
-+
-+	/* set clk->state from LOCKED to UNLOCKED and fire off completion */
- 	mutex_lock(&prepare_lock);
--	ret = __clk_prepare(clk);
-+	__clk_prepare_unlock(clk, top);
- 	mutex_unlock(&prepare_lock);
- 
--	return ret;
-+	complete(&clk_completion);
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(clk_prepare);
- 
-@@ -730,12 +851,12 @@ static int __clk_speculate_rates(struct clk *clk, unsigned long parent_rate)
- 	if (clk->notifier_count)
- 		ret = __clk_notify(clk, PRE_RATE_CHANGE, clk->rate, new_rate);
- 
--	if (ret == NOTIFY_BAD)
-+	if (ret & NOTIFY_STOP_MASK)
- 		goto out;
- 
- 	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
- 		ret = __clk_speculate_rates(child, new_rate);
--		if (ret == NOTIFY_BAD)
-+		if (ret & NOTIFY_STOP_MASK)
- 			break;
- 	}
- 
-@@ -759,15 +880,89 @@ static void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
- 	}
- }
- 
-+static int clk_test_lock_subtree(struct clk *clk)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+	int ret = 0;
-+
-+	if (clk->state != UNLOCKED)
-+		return -EBUSY;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-+		ret = clk_test_lock_subtree(child);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int clk_test_lock_additional_subtree(struct clk *clk, struct clk *avoid)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+	int ret = 0;
-+
-+	if (clk == avoid)
-+		return 0;
-+
-+	if (clk->state != UNLOCKED)
-+		return -EBUSY;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-+		ret = clk_test_lock_additional_subtree(child, avoid);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static void clk_lock_subtree(struct clk *clk)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-+		clk->state = LOCKED;
-+	}
-+}
-+
-+static void clk_lock_additional_subtree(struct clk *clk, struct clk *avoid)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+
-+	if (clk == avoid)
-+		return;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-+		clk->state = LOCKED;
-+		clk_lock_additional_subtree(child, avoid);
-+	}
-+}
-+
-+static void clk_unlock_subtree(struct clk *clk)
-+{
-+	struct clk *child;
-+	struct hlist_node *tmp;
-+
-+	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-+		clk->state = UNLOCKED;
-+	}
-+}
-+
- /*
-- * calculate the new rates returning the topmost clock that has to be
-- * changed.
-+ * calculate the new rates returning the topmost clock that has to be changed.
-+ * Caller must set clk->state to LOCKED for clk and all of its children
-  */
- static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
- {
- 	struct clk *top = clk;
- 	unsigned long best_parent_rate = 0;
- 	unsigned long new_rate;
-+	int ret = 0;
- 
- 	/* sanity */
- 	if (IS_ERR_OR_NULL(clk))
-@@ -794,6 +989,19 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
- 	}
- 
- 	if (!clk->ops->round_rate) {
-+		/* set parent and all additional children as LOCKED */
-+		mutex_lock(&prepare_lock);
-+		ret = clk_test_lock_additional_subtree(clk->parent, clk);
-+		if (!ret)
-+			clk_lock_additional_subtree(clk->parent, clk);
-+		mutex_unlock(&prepare_lock);
-+
-+		if (ret == -EBUSY) {
-+			pr_err("%s: %s: failed with EBUSY\n", __func__, clk->name);
-+			/* FIXME the right thing to do? */
-+			return NULL;
-+		}
-+
- 		top = clk_calc_new_rates(clk->parent, rate);
- 		new_rate = clk->parent->new_rate;
- 
-@@ -803,6 +1011,18 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
- 	new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
- 
- 	if (best_parent_rate != clk->parent->rate) {
-+		mutex_lock(&prepare_lock);
-+		ret = clk_test_lock_additional_subtree(clk->parent, clk);
-+		if (!ret)
-+			clk_lock_additional_subtree(clk->parent, clk);
-+		mutex_unlock(&prepare_lock);
-+
-+		if (ret == -EBUSY) {
-+			pr_err("%s: %s: failed with EBUSY\n", __func__, clk->name);
-+			/* FIXME the right thing to do? */
-+			return NULL;
-+		}
-+
- 		top = clk_calc_new_rates(clk->parent, best_parent_rate);
- 
- 		goto out;
-@@ -830,8 +1050,11 @@ static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long even
- 
- 	if (clk->notifier_count) {
- 		ret = __clk_notify(clk, event, clk->rate, clk->new_rate);
--		if (ret == NOTIFY_BAD)
-+		if (ret & NOTIFY_STOP_MASK)
- 			fail_clk = clk;
-+		if (notifier_to_errno(ret) == -EBUSY)
-+			WARN(1, "%s: %s: possible cyclical dependency?\n",
-+					__func__, clk->name);
- 	}
- 
- 	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-@@ -897,11 +1120,35 @@ static void clk_change_rate(struct clk *clk)
-  */
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
--	struct clk *top, *fail_clk;
--	int ret = 0;
-+	struct clk *top = clk, *fail_clk;
-+	int ret = -EBUSY, i = 0, tries = 0;
-+
-+	if (!clk)
-+		return 0;
- 
- 	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
-+	while (ret) {
-+		mutex_lock(&prepare_lock);
-+		ret = clk_test_lock_subtree(clk);
-+		if (!ret)
-+			clk_lock_subtree(clk);
-+		mutex_unlock(&prepare_lock);
++		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
 +
 +		if (ret) {
-+			pr_debug("%s: %s failed with %d on attempt %d\n",
-+					__func__, clk->name, ret, tries);
-+			wait_for_completion(&clk_completion);
-+			if (WAIT_TRIES == ++tries)
-+				break;
-+		} else
-+			break;
++			dev_warn(di->dev, "%s: unable to scale voltage up.\n",
++				 __func__);
++			return notifier_from_errno(ret);
++		}
 +	}
 +
-+	if (i == WAIT_TRIES) {
-+		pr_err("%s: failed to lock clocks; cyclical dependency?\n",
-+				__func__);
-+		return ret;
-+	}
- 
- 	/* bail early if nothing to do */
- 	if (rate == clk->rate)
-@@ -932,12 +1179,13 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	/* change the rates */
- 	clk_change_rate(top);
- 
--	mutex_unlock(&prepare_lock);
--
--	return 0;
- out:
-+	mutex_lock(&prepare_lock);
-+	clk_unlock_subtree(top);
- 	mutex_unlock(&prepare_lock);
- 
-+	complete(&clk_completion);
++	/* scaling down?  scale voltage after frequency */
++	if (flags & POST_RATE_CHANGE && cnd->new_rate < cnd->old_rate) {
++		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
++				__func__, volt_old, volt_new);
 +
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
-@@ -1095,12 +1343,12 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 
- 	/* migrate prepare and enable */
- 	if (clk->prepare_count)
--		__clk_prepare(parent);
-+		clk_prepare(parent);
- 
- 	/* FIXME replace with clk_is_enabled(clk) someday */
- 	spin_lock_irqsave(&enable_lock, flags);
- 	if (clk->enable_count)
--		__clk_enable(parent);
-+		clk_enable(parent);
- 	spin_unlock_irqrestore(&enable_lock, flags);
- 
- 	/* change clock input source */
-@@ -1109,11 +1357,11 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 	/* clean up old prepare and enable */
- 	spin_lock_irqsave(&enable_lock, flags);
- 	if (clk->enable_count)
--		__clk_disable(old_parent);
-+		clk_disable(old_parent);
- 	spin_unlock_irqrestore(&enable_lock, flags);
- 
- 	if (clk->prepare_count)
--		__clk_unprepare(old_parent);
-+		clk_unprepare(old_parent);
- 
- out:
- 	return ret;
-@@ -1133,7 +1381,7 @@ out:
-  */
- int clk_set_parent(struct clk *clk, struct clk *parent)
- {
--	int ret = 0;
-+	int ret = 0, i = 0, tries = 0;
- 
- 	if (!clk || !clk->ops)
- 		return -EINVAL;
-@@ -1141,19 +1389,42 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (!clk->ops->set_parent)
- 		return -ENOSYS;
- 
--	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
--
- 	if (clk->parent == parent)
- 		goto out;
- 
-+	/* prevent racing with updates to the clock topology */
-+	while (ret) {
-+		mutex_lock(&prepare_lock);
-+		ret = clk_test_lock_subtree(clk);
-+		if (!ret)
-+			clk_lock_subtree(clk);
-+		mutex_unlock(&prepare_lock);
++		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
 +
 +		if (ret) {
-+			pr_debug("%s: %s failed with %d on attempt %d\n",
-+					__func__, clk->name, ret, tries);
-+			wait_for_completion(&clk_completion);
-+			if (WAIT_TRIES == ++tries)
-+				break;
-+		} else
-+			break;
++			dev_warn(di->dev, "%s: unable to scale voltage down.\n",
++				 __func__);
++			return notifier_from_errno(ret);
++		}
 +	}
 +
-+	if (i == WAIT_TRIES) {
-+		pr_err("%s: failed to lock clocks; cyclical dependency?\n",
-+				__func__);
-+		return ret;
++	return NOTIFY_OK;
++}
++
++struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii)
++{
++	struct dvfs_info *di;
++	int ret = 0;
++
++	if (!dii)
++		return ERR_PTR(-EINVAL);
++
++	di = kzalloc(sizeof(struct dvfs_info), GFP_KERNEL);
++	if (!di)
++		return ERR_PTR(-ENOMEM);
++
++	di->dev = dii->dev;
++	di->clk = clk_get(di->dev, dii->con_id);
++	if (IS_ERR(di->clk))
++		return ERR_PTR(-ENOMEM);
++	di->reg = regulator_get(di->dev, dii->reg_id);
++	if (IS_ERR(di->reg))
++		return ERR_PTR(-ENOMEM);
++	di->tol = dii->tol;
++	di->nb.notifier_call = dvfs_clk_notifier_handler;
++
++	ret = clk_notifier_register(di->clk, &di->nb);
++
++	if (ret) {
++		kfree(di);
++		return ERR_PTR(ret);
 +	}
 +
- 	/* propagate PRE_RATE_CHANGE notifications */
- 	if (clk->notifier_count)
- 		ret = __clk_speculate_rates(clk, parent->rate);
- 
- 	/* abort if a driver objects */
--	if (ret == NOTIFY_STOP)
-+	if (ret & NOTIFY_STOP_MASK) {
-+		ret = notifier_to_errno(ret);
- 		goto out;
-+	}
- 
- 	/* only re-parent if the clock is not in use */
- 	if ((clk->flags & CLK_SET_PARENT_GATE) && clk->prepare_count)
-@@ -1171,6 +1442,8 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	__clk_reparent(clk, parent);
- 
- out:
-+	mutex_lock(&prepare_lock);
-+	clk_unlock_subtree(clk);
- 	mutex_unlock(&prepare_lock);
- 
- 	return ret;
-@@ -1307,6 +1580,9 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	if (clk->ops->init)
- 		clk->ops->init(clk->hw);
- 
-+	/* everything looks good, mark this clock's state as ready */
-+	clk->state = UNLOCKED;
++	return di;
++}
++EXPORT_SYMBOL_GPL(dvfs_clk_notifier_register);
 +
- 	clk_debug_register(clk);
++void dvfs_clk_notifier_unregister(struct dvfs_info *di)
++{
++	clk_notifier_unregister(di->clk, &di->nb);
++	clk_put(di->clk);
++	regulator_put(di->reg);
++	kfree(di);
++}
++EXPORT_SYMBOL_GPL(dvfs_clk_notifier_unregister);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 6587b52..643376b 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -78,9 +78,34 @@ struct clk_notifier_data {
+ 	unsigned long		new_rate;
+ };
  
- out:
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 9c7f580..751ad6c 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -41,6 +41,7 @@ struct clk {
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
- 	unsigned int		notifier_count;
-+	enum {UNLOCKED, LOCKED}	state;
- #ifdef CONFIG_COMMON_CLK_DEBUG
- 	struct dentry		*dentry;
+-int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
++/**
++ * struct dvfs_info_init - data needs to initialize struct dvfs_info
++ * @dev:	device related to this frequency-voltage pair
++ * @con_id:	string name of clock connection
++ * @reg_id:	string name of regulator
++ * @tol:	voltage tolerance for this device
++ *
++ * Provides the data needed to register a common dvfs sequence in a clk
++ * notifier handler.  The clk and regulator lookups are stored in a
++ * private struct and the notifier handler is registered with the clk
++ * framework with a call to dvfs_clk_notifier_register.
++ *
++ * FIXME stuffing @tol here is a hack.  It belongs in the opp table.
++ * Maybe clk & regulator will also live in the opp table some day.
++ */
++struct dvfs_info_init {
++	struct device *dev;
++	const char *con_id;
++	const char *reg_id;
++	int tol;
++};
++
++struct dvfs_info;
+ 
++int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
+ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
++struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii);
++void dvfs_clk_notifier_unregister(struct dvfs_info *di);
+ 
  #endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 77335fa..b3eb074 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -344,8 +344,8 @@ struct clk *__clk_lookup(const char *name);
- /*
-  * FIXME clock api without lock protection
-  */
--int __clk_prepare(struct clk *clk);
--void __clk_unprepare(struct clk *clk);
-+int __clk_prepare(struct clk *clk, struct clk *top);
-+void __clk_unprepare(struct clk *clk, struct clk *top);
- void __clk_reparent(struct clk *clk, struct clk *new_parent);
- unsigned long __clk_round_rate(struct clk *clk, unsigned long rate);
  
 -- 
 1.7.9.5
