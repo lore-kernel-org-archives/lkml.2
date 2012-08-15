@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab2HOTqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:46:18 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:34818 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab2HOTqR (ORCPT
+	id S1756097Ab2HOTrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:47:47 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54868 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab2HOTrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:46:17 -0400
-Date: Wed, 15 Aug 2012 12:46:16 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: regression with poll(2)?
-Message-ID: <alpine.DEB.2.00.1208151226250.15721@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 15 Aug 2012 15:47:45 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201205242245.45888.rjw@sisk.pl>
+References: <201205242245.45888.rjw@sisk.pl>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 15 Aug 2012 13:47:23 -0600
+Message-ID: <CAErSpo4LQsWH7eX=3YNSGUdZjNyMQeyoZPrx2ZUto3gWLYSWEQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI / ACPI: Do not request control of ASPM if the BIOS
+ has disabled it
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Wei Kong <wkong@novell.com>, Jean Delvare <jdelvare@suse.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm experiencing a stall with Ceph daemons communicating over TCP that 
-occurs reliably with 3.6-rc1 (and linus/master) but not 3.5.  The basic 
-situation is:
+On Thu, May 24, 2012 at 2:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> We want to report that the kernel supports ASPM to the BIOS even if
+> the BIOS signals us that it doesn't.  So, we need the flags to include
+> (OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
+> before calling acpi_pci_osc_support(root, flags) in
+> acpi_pci_root_add() (unless there's a command line telling us that
+> ASPM is not to be supported).
+>
+> However, knowing that the BIOS doesn't support ASPM, we shouldn't
+> request the control of it, so we should remove
+> (OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
+> from the flags before calling acpi_pci_osc_control_set() in those
+> cases.  Failing to do so causes the evaluation of _OSC for the PCI
+> root bridge to return error codes on some systems where it should
+> work correctly.
+>
+> Reported-and-tested-by: Wei Kong <wkong@novell.com>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>
+> -stable material, I think.
 
- - the socket is two processes communicating over TCP on the same host, e.g. 
+Len, since you've applied recent patches in this area, can you take
+care of this, too?
 
-tcp        0 2164849 10.214.132.38:6801      10.214.132.38:51729     ESTABLISHED
-
- - one end writes a bunch of data in
- - the other end consumes data, but at some point stalls.
- - reads are nonblocking, e.g.
-
-  int got = ::recv( sd, buf, len, MSG_DONTWAIT );
-
- and between those calls we wait with
-
-  struct pollfd pfd;
-  short evmask;
-  pfd.fd = sd;
-  pfd.events = POLLIN;
-#if defined(__linux__)
-  pfd.events |= POLLRDHUP;
-#endif
-
-  if (poll(&pfd, 1, msgr->timeout) <= 0)
-    return -1;
-
- - in my case the timeout is ~15 minutes.  at that point it errors out, 
-and the daemons reconnect and continue for a while until hitting this 
-again.
-
- - at the time of the stall, the reading process is blocked on that 
-poll(2) call.  There are a bunch of threads stuck on poll(2), some of them 
-stuck and some not, but they all have stacks like
-
-[<ffffffff8118f6f9>] poll_schedule_timeout+0x49/0x70
-[<ffffffff81190baf>] do_sys_poll+0x35f/0x4c0
-[<ffffffff81190deb>] sys_poll+0x6b/0x100
-[<ffffffff8163d369>] system_call_fastpath+0x16/0x1b
-
- - you'll note that the netstat output shows data queued:
-
-tcp        0 1163264 10.214.132.36:6807      10.214.132.36:41738     ESTABLISHED
-tcp        0 1622016 10.214.132.36:41738     10.214.132.36:6807      ESTABLISHED
-
-etc.
-
-Is this a known regression?  Or might I be misusing the API?  What 
-information would help track it down?
-
-Thanks!
-sage
-
-
+> ---
+>  drivers/acpi/pci_root.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> Index: linux/drivers/acpi/pci_root.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/pci_root.c
+> +++ linux/drivers/acpi/pci_root.c
+> @@ -574,6 +574,10 @@ static int __devinit acpi_pci_root_add(s
+>         if (flags != base_flags)
+>                 acpi_pci_osc_support(root, flags);
+>
+> +       if (!pcie_aspm_enabled())
+> +               flags &= ~(OSC_ACTIVE_STATE_PWR_SUPPORT |
+> +                       OSC_CLOCK_PWR_CAPABILITY_SUPPORT);
+> +
+>         if (!pcie_ports_disabled
+>             && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
+>                 flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
