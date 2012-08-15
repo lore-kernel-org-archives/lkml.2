@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2HOUVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:21:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41283 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab2HOUVu (ORCPT
+	id S932177Ab2HOUW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:22:29 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36832 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756638Ab2HOTum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:21:50 -0400
+	Wed, 15 Aug 2012 15:50:42 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Johannes Stezenbach <js@sig21.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 071/165] usbmon vs. tcpdump: fix dropped packet count
+Date: Wed, 15 Aug 2012 15:46:55 -0400
+Message-ID: <1345060109-9187-72-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
-References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Aug 2012 14:21:28 -0600
-Message-ID: <CAErSpo66quAss14Hcdq7o3RSuR=DsE6xjyp=Eah=-XxtDRMTgQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 1/6] PCI: change PCI device management logic to
- better follow device model
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 3, 2012 at 11:16 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> From: Jiang Liu <liuj97@gmail.com>
->
-> According to device model documentation, the way to add/remove device
-> object should be symmetric.
+From: Johannes Stezenbach <js@sig21.net>
 
-I think this 6-patch series has been folded into your "[RFC PATCH v1
-00/22] introduce PCI bus lock to serialize PCI hotplug operations"
-series posted August 8, right?
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-I'll ignore these 6 patches on that assumption, so let me know if otherwise.
+commit 236c448cb6e7f82096101e1ace4b77f8b38f82c8 upstream.
 
-> /**
->  * device_del - delete device from system.
->  * @dev: device.
->  *
->  * This is the first part of the device unregistration
->  * sequence. This removes the device from the lists we control
->  * from here, has it removed from the other driver model
->  * subsystems it was added to in device_add(), and removes it
->  * from the kobject hierarchy.
->  *
->  * NOTE: this should be called manually _iff_ device_add() was
->  * also called manually.
->  */
->
-> The rule here is to either use
-> 1) device_register()/device_unregister()
-> or
-> 2) device_initialize()/device_add()/device_del()/put_device().
->
-> So change PCI core to follow the rule and get rid of the redundant
-> pci_dev_get()/pci_dev_put() pair.
->
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  drivers/pci/probe.c  |    1 -
->  drivers/pci/remove.c |    4 ++--
->  2 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 0840409..dacca26 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
->         device_initialize(&dev->dev);
->         dev->dev.release = pci_release_dev;
-> -       pci_dev_get(dev);
->
->         dev->dev.dma_mask = &dev->dma_mask;
->         dev->dev.dma_parms = &dev->dma_parms;
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 04a4861..6c07bc5 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
->         if (dev->is_added) {
->                 pci_proc_detach_device(dev);
->                 pci_remove_sysfs_dev_files(dev);
-> -               device_unregister(&dev->dev);
-> +               device_del(&dev->dev);
->                 dev->is_added = 0;
->         }
->
-> @@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
->         up_write(&pci_bus_sem);
->
->         pci_free_resources(dev);
-> -       pci_dev_put(dev);
-> +       put_device(&dev->dev);
->  }
->
->  /**
-> --
-> 1.7.1
->
->
+Report the number of dropped packets instead of zero
+when using the binary usbmon interface with tcpdump.
+
+# tcpdump -i usbmon1 -w dump
+tcpdump: listening on usbmon1, link-type USB_LINUX_MMAPPED (USB with padded Linux header), capture size 65535 bytes
+^C2155 packets captured
+2155 packets received by filter
+1019 packets dropped by kernel
+
+Signed-off-by: Johannes Stezenbach <js@sig21.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/usb/mon/mon_bin.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/mon/mon_bin.c b/drivers/usb/mon/mon_bin.c
+index 6ee9d76..45f9705 100644
+--- a/drivers/usb/mon/mon_bin.c
++++ b/drivers/usb/mon/mon_bin.c
+@@ -1080,7 +1080,7 @@ static int mon_bin_ioctl(struct inode *inode, struct file *file,
+ 		nevents = mon_bin_queued(rp);
+ 
+ 		sp = (struct mon_bin_stats __user *)arg;
+-		if (put_user(rp->cnt_lost, &sp->dropped))
++		if (put_user(ndropped, &sp->dropped))
+ 			return -EFAULT;
+ 		if (put_user(nevents, &sp->queued))
+ 			return -EFAULT;
+-- 
+1.7.12.rc2
+
