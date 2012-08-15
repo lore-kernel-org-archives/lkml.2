@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab2HOQfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 12:35:43 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57964 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab2HOQfm (ORCPT
+	id S1755768Ab2HOQg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 12:36:58 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58612 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab2HOQg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 12:35:42 -0400
+	Wed, 15 Aug 2012 12:36:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com>
-References: <1345045084-7292-1-git-send-email-js1304@gmail.com>
-	<000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com>
-Date: Thu, 16 Aug 2012 01:35:41 +0900
-Message-ID: <CAAmzW4M9WMnxVKpR00SqufHadY-=i0Jgf8Ktydrw5YXK8VwJ7A@mail.gmail.com>
-Subject: Re: [PATCH] slub: try to get cpu partial slab even if we get enough
- objects for cpu freelist
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+In-Reply-To: <20120809083127.GC14102@arm.com>
+References: <1344324343-3817-1-git-send-email-walken@google.com>
+ <1344324343-3817-4-git-send-email-walken@google.com> <CANN689EOZ64V_AO8B6N0-_B0_HdQZVk3dH8Ce5c=m5Q=ySDKUg@mail.gmail.com>
+ <20120809083127.GC14102@arm.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 15 Aug 2012 17:36:35 +0100
+X-Google-Sender-Auth: mF8GJFA1G7WEnUx2sEcNcDFC0Jg
+Message-ID: <CAHkRjk4pQOktEGFZy9Jd5NDth8f_+JUC0OrgcRUaCFGUEUOTKg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] kmemleak: use rbtree instead of prio tree
+To: Michel Lespinasse <walken@google.com>
+Cc: "riel@redhat.com" <riel@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vrajesh@umich.edu" <vrajesh@umich.edu>,
+        "daniel.santos@pobox.com" <daniel.santos@pobox.com>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/16 Christoph Lameter <cl@linux.com>:
-> On Thu, 16 Aug 2012, Joonsoo Kim wrote:
+On 9 August 2012 09:31, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Wed, Aug 08, 2012 at 06:07:39PM +0100, Michel Lespinasse wrote:
+>> kmemleak uses a tree where each node represents an allocated memory object
+>> in order to quickly find out what object a given address is part of.
+>> However, the objects don't overlap, so rbtrees are a better choice than
+>> prio tree for this use. They are both faster and have lower memory overhead.
+>>
+>> Tested by booting a kernel with kmemleak enabled, loading the kmemleak_test
+>> module, and looking for the expected messages.
+>>
+>> Signed-off-by: Michel Lespinasse <walken@google.com>
 >
->> s->cpu_partial determine the maximum number of objects kept
->> in the per cpu partial lists of a processor. Currently, it is used for
->> not only per cpu partial list but also cpu freelist. Therefore
->> get_partial_node() doesn't work properly according to our first intention.
->
-> The "cpu freelist" in slub is the number of free objects in a specific
-> page. There is nothing that s->cpu_partial can do about that.
->
-> Maybe I do not understand you correctly. Could you explain this in some
-> more detail?
+> The patch looks fine to me but I'll give it a test later today and let
+> you know.
 
-I assume that cpu slab and cpu partial slab are not same thing.
+Couldn't test it because the patch got messed up somewhere on the
+email path (tabs replaced with spaces). Is there a Git tree I can grab
+it from (or you could just send it to me separately as attachment)?
 
-In my definition,
-cpu slab is in c->page,
-cpu partial slab is in c->partial
+Thanks,
 
-When we have no free objects in cpu slab and cpu partial slab, we try
-to get slab via get_partial_node().
-In that function, we call acquire_slab(). Then we hit "!object" case
-(for cpu slab).
-In that case, we test available with s->cpu_partial.
-
-I think that s->cpu_partial is for cpu partial slab, not cpu slab.
-So this test is not proper.
-This patch is for correcting this.
-
-Thanks!
+Catalin
