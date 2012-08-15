@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab2HOUPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:15:52 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36937 "EHLO
+	id S932504Ab2HOUPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:15:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36936 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab2HOTvX (ORCPT
+	with ESMTP id S1756727Ab2HOTvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:23 -0400
+	Wed, 15 Aug 2012 15:51:22 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jean Delvare <jdelvare@suse.de>, Paul Mundt <lethal@linux-sh.org>,
-        Sebastian Siewior <bigeasy@linutronix.de>,
+CC: Al Viro <viro@zeniv.linux.org.uk>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 092/165] carminefb: Fix module parameters permissions
-Date: Wed, 15 Aug 2012 15:47:16 -0400
-Message-ID: <1345060109-9187-93-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 100/165] deal with races in /proc/*/{syscall,stack,personality}
+Date: Wed, 15 Aug 2012 15:47:24 -0400
+Message-ID: <1345060109-9187-101-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,61 +31,180 @@ From: Jean Delvare <jdelvare@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c84c14224bbca6ec60d5851fcc87be0e34df2f44 upstream.
+commit a9712bc12c40c172e393f85a9b2ba8db4bf59509 upstream.
 
-The third parameter of module_param is supposed to be an octal value.
-The missing leading "0" causes the following:
+All of those are rw-r--r-- and all are broken for suid - if you open
+a file before the target does suid-root exec, you'll be still able
+to access it.  For personality it's not a big deal, but for syscall
+and stack it's a real problem.
 
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_displays
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode_str
+Fix: check that task is tracable for you at the time of read().
 
-After fixing the perm parameter, we get the expected:
-
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_displays
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode_str
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Sebastian Siewior <bigeasy@linutronix.de>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[PG: in .34 cred_guard_mutex is in task, not task->signal]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/video/carminefb.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/proc/base.c | 69 ++++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 50 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/video/carminefb.c b/drivers/video/carminefb.c
-index d8345fc..96b52a4 100644
---- a/drivers/video/carminefb.c
-+++ b/drivers/video/carminefb.c
-@@ -32,11 +32,11 @@
- #define CARMINEFB_DEFAULT_VIDEO_MODE	1
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 08741b0..16af014 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -329,6 +329,23 @@ static int proc_pid_wchan(struct task_struct *task, char *buffer)
+ }
+ #endif /* CONFIG_KALLSYMS */
  
- static unsigned int fb_mode = CARMINEFB_DEFAULT_VIDEO_MODE;
--module_param(fb_mode, uint, 444);
-+module_param(fb_mode, uint, 0444);
- MODULE_PARM_DESC(fb_mode, "Initial video mode as integer.");
++static int lock_trace(struct task_struct *task)
++{
++	int err = mutex_lock_killable(&task->cred_guard_mutex);
++	if (err)
++		return err;
++	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
++		mutex_unlock(&task->cred_guard_mutex);
++		return -EPERM;
++	}
++	return 0;
++}
++
++static void unlock_trace(struct task_struct *task)
++{
++	mutex_unlock(&task->cred_guard_mutex);
++}
++
+ #ifdef CONFIG_STACKTRACE
  
- static char *fb_mode_str;
--module_param(fb_mode_str, charp, 444);
-+module_param(fb_mode_str, charp, 0444);
- MODULE_PARM_DESC(fb_mode_str, "Initial video mode in characters.");
+ #define MAX_STACK_TRACE_DEPTH	64
+@@ -338,6 +355,7 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ {
+ 	struct stack_trace trace;
+ 	unsigned long *entries;
++	int err;
+ 	int i;
+ 
+ 	entries = kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(*entries), GFP_KERNEL);
+@@ -348,15 +366,20 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 	trace.max_entries	= MAX_STACK_TRACE_DEPTH;
+ 	trace.entries		= entries;
+ 	trace.skip		= 0;
+-	save_stack_trace_tsk(task, &trace);
+ 
+-	for (i = 0; i < trace.nr_entries; i++) {
+-		seq_printf(m, "[<%p>] %pS\n",
+-			   (void *)entries[i], (void *)entries[i]);
++	err = lock_trace(task);
++	if (!err) {
++		save_stack_trace_tsk(task, &trace);
++
++		for (i = 0; i < trace.nr_entries; i++) {
++			seq_printf(m, "[<%p>] %pS\n",
++				   (void *)entries[i], (void *)entries[i]);
++		}
++		unlock_trace(task);
+ 	}
+ 	kfree(entries);
+ 
+-	return 0;
++	return err;
+ }
+ #endif
+ 
+@@ -528,18 +551,22 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
+ {
+ 	long nr;
+ 	unsigned long args[6], sp, pc;
++	int res = lock_trace(task);
++	if (res)
++		return res;
+ 
+ 	if (task_current_syscall(task, &nr, args, 6, &sp, &pc))
+-		return sprintf(buffer, "running\n");
+-
+-	if (nr < 0)
+-		return sprintf(buffer, "%ld 0x%lx 0x%lx\n", nr, sp, pc);
+-
+-	return sprintf(buffer,
++		res = sprintf(buffer, "running\n");
++	else if (nr < 0)
++		res = sprintf(buffer, "%ld 0x%lx 0x%lx\n", nr, sp, pc);
++	else
++		res = sprintf(buffer,
+ 		       "%ld 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+ 		       nr,
+ 		       args[0], args[1], args[2], args[3], args[4], args[5],
+ 		       sp, pc);
++	unlock_trace(task);
++	return res;
+ }
+ #endif /* CONFIG_HAVE_ARCH_TRACEHOOK */
+ 
+@@ -2561,8 +2588,12 @@ static int proc_tgid_io_accounting(struct task_struct *task, char *buffer)
+ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *task)
+ {
+-	seq_printf(m, "%08x\n", task->personality);
+-	return 0;
++	int err = lock_trace(task);
++	if (!err) {
++		seq_printf(m, "%08x\n", task->personality);
++		unlock_trace(task);
++	}
++	return err;
+ }
  
  /*
-@@ -46,7 +46,7 @@ MODULE_PARM_DESC(fb_mode_str, "Initial video mode in characters.");
-  * 0b010 Display 1
-  */
- static int fb_displays = CARMINE_USE_DISPLAY0 | CARMINE_USE_DISPLAY1;
--module_param(fb_displays, int, 444);
-+module_param(fb_displays, int, 0444);
- MODULE_PARM_DESC(fb_displays, "Bit mode, which displays are used");
- 
- struct carmine_hw {
+@@ -2581,14 +2612,14 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("environ",    S_IRUSR, proc_environ_operations),
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+-	ONE("personality", S_IRUSR, proc_pid_personality),
++	ONE("personality", S_IRUGO, proc_pid_personality),
+ 	INF("limits",	  S_IRUSR, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",    S_IRUSR, proc_pid_syscall),
++	INF("syscall",    S_IRUGO, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+@@ -2616,7 +2647,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("wchan",      S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUSR, proc_pid_stack),
++	ONE("stack",      S_IRUGO, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
+@@ -2921,14 +2952,14 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+-	ONE("personality", S_IRUSR, proc_pid_personality),
++	ONE("personality", S_IRUGO, proc_pid_personality),
+ 	INF("limits",	 S_IRUSR, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",   S_IRUSR, proc_pid_syscall),
++	INF("syscall",   S_IRUGO, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+@@ -2955,7 +2986,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("wchan",     S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUSR, proc_pid_stack),
++	ONE("stack",      S_IRUGO, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
 -- 
 1.7.12.rc2
 
