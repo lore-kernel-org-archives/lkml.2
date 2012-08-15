@@ -1,76 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2HOIaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 04:30:25 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54491 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2HOIaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 04:30:18 -0400
-Date: Wed, 15 Aug 2012 01:30:13 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.5-rc6 configfs BUG_ON
-Message-ID: <20120815083013.GM31083@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120711192558.GA3393@redhat.com>
- <20120715205845.GE18682@dhcp-172-17-9-228.mtv.corp.google.com>
- <20120715235831.GA21952@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120715235831.GA21952@redhat.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753822Ab2HOIfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 04:35:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26560 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753321Ab2HOIfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 04:35:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87ipckrgal.fsf@rustcorp.com.au>
+References: <87ipckrgal.fsf@rustcorp.com.au> <87d32us55c.fsf@rustcorp.com.au> <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk> <32504.1344953290@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, Jonas Gorski <jonas.gorski@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH] MIPS: fix module.c build for 32 bit
+Date: Wed, 15 Aug 2012 09:34:58 +0100
+Message-ID: <1171.1345019698@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 07:58:31PM -0400, Dave Jones wrote:
-> On Sun, Jul 15, 2012 at 01:58:46PM -0700, Joel Becker wrote:
->  
->  > > Call Trace:
->  > >  [<ffffffff811ec74f>] d_kill+0xaf/0x120
->  > >  [<ffffffff811ec8a2>] dput+0xe2/0x1d0
->  > >  [<ffffffff811dfaea>] path_put+0x1a/0x30
->  > >  [<ffffffff811d9705>] vfs_fstatat+0x55/0x70
->  > >  [<ffffffff811d973e>] vfs_lstat+0x1e/0x20
->  > >  [<ffffffff811d99ca>] sys_newlstat+0x1a/0x40
->  > >  [<ffffffff81696aed>] system_call_fastpath+0x1a/0x1f
->  > > Code: f6 43 40 01 75 eb 48 8b 7b 50 e8 41 4d f6 ff 48 8b 3d c2 bf 7f 01 48 89 de e8 a2 52 f6 ff 4c 89 e7 e8 1a b5 f9 ff 5b 41 5c 5d c3 <0f> 0b be 9c 00 00 00 48 c7 c7 30 a2 9e 81 e8 42 2e e1 ff eb a7 
->  > > RIP  [<ffffffff812562fb>] configfs_d_iput+0x8b/0xa0
->  > >  RSP <ffff88014325be08>
->  > > ---[ end trace 65e130035db36f7d ]---
->  > > 
->  > >   58         if (sd) {
->  > >   59                 BUG_ON(sd->s_dentry != dentry);
->  > > 
->  > 
->  > Dave,
->  > 	What were you doing at the time?  Is this ocfs2, dlm, target, or
->  > what?
->  > 
->  > Joel
->  > 
-> 
-> See  http://codemonkey.org.uk/projects/trinity/
-> Running that with -c newlstat should trigger it.
-> (load configfs module first, no further config necessary)
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Cool tool.  I presume that -c newlstat just randomly picks paths to
-newlstat.  I think I see what's happening, but I can't see what gets the
-dirent into that state.  Now to get a VM I can break.
+> For a build fix????
 
-Joel
+Linux hasn't pulled the asm-generic cleanup patch yet - you missed the merge
+window, I think.  Jonas detected the problem in linux-next.
 
--- 
-
-"The trouble with being punctual is that nobody's there to
- appreciate it."
-	- Franklin P. Jones
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+David
