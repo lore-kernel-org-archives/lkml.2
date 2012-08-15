@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2HOTu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:50:59 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62947 "EHLO
+	id S1756688Ab2HOTux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:50:53 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62940 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab2HOTuy (ORCPT
+	with ESMTP id S1756552Ab2HOTuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:50:54 -0400
+	Wed, 15 Aug 2012 15:50:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jiri Kosina <jkosina@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+CC: Peter Stuge <peter@stuge.se>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 082/165] kmod: prevent kmod_loop_msg overflow in __request_module()
-Date: Wed, 15 Aug 2012 15:47:06 -0400
-Message-ID: <1345060109-9187-83-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 078/165] USB: ftdi_sio: Support TI/Luminary Micro Stellaris BD-ICDI Board
+Date: Wed, 15 Aug 2012 15:47:02 -0400
+Message-ID: <1345060109-9187-79-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Peter Stuge <peter@stuge.se>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,40 +31,51 @@ From: Jiri Kosina <jkosina@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 37252db6aa576c34fd794a5a54fb32d7a8b3a07a upstream.
+commit 3687f641307eeff6f7fe31a88dc39db88e89238b upstream.
 
-Due to post-increment in condition of kmod_loop_msg in __request_module(),
-the system log can be spammed by much more than 5 instances of the 'runaway
-loop' message if the number of events triggering it makes the kmod_loop_msg
-to overflow.
+Some Stellaris evaluation kits have the JTAG/SWD FTDI chip onboard,
+and some, like EK-LM3S9B90, come with a separate In-Circuit Debugger
+Interface Board. The ICDI board can also be used stand-alone, for
+other boards and chips than the kit it came with. The ICDI has both
+old style 20-pin JTAG connector and new style JTAG/SWD 10-pin 1.27mm
+pitch connector.
 
-Fix that by making sure we never increment it past the threshold.
+Tested with EK-LM3S9B90, where the BD-ICDI board is included.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Peter Stuge <peter@stuge.se>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/kmod.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index bf0e231..f50a996 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -106,10 +106,12 @@ int __request_module(bool wait, const char *fmt, ...)
- 	atomic_inc(&kmod_concurrent);
- 	if (atomic_read(&kmod_concurrent) > max_modprobes) {
- 		/* We may be blaming an innocent here, but unlikely */
--		if (kmod_loop_msg++ < 5)
-+		if (kmod_loop_msg < 5) {
- 			printk(KERN_ERR
- 			       "request_module: runaway loop modprobe %s\n",
- 			       module_name);
-+			kmod_loop_msg++;
-+		}
- 		atomic_dec(&kmod_concurrent);
- 		return -ENOMEM;
- 	}
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 27cd4a1..90dfdb1 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -748,6 +748,8 @@ static struct usb_device_id id_table_combined [] = {
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, LMI_LM3S_EVAL_BOARD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, LMI_LM3S_ICDI_BOARD_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TURTELIZER_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 7d7f138..1167732 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -53,6 +53,7 @@
+ /* FTDI 2332C Dual channel device, side A=245 FIFO (JTAG), Side B=RS232 UART */
+ #define LMI_LM3S_DEVEL_BOARD_PID	0xbcd8
+ #define LMI_LM3S_EVAL_BOARD_PID		0xbcd9
++#define LMI_LM3S_ICDI_BOARD_PID		0xbcda
+ 
+ #define FTDI_TURTELIZER_PID	0xBDC8 /* JTAG/RS-232 adapter by egnite GmbH */
+ 
 -- 
 1.7.12.rc2
 
