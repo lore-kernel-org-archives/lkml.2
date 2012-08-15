@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab2HOTwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:52:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37045 "EHLO
+	id S932475Ab2HOUIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:08:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37066 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866Ab2HOTwC (ORCPT
+	with ESMTP id S1756996Ab2HOTwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:52:02 -0400
+	Wed, 15 Aug 2012 15:52:07 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
+CC: Alexandre Bounine <alexandre.bounine@idt.com>, Chul Kim <chul.kim@idt.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 118/165] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-Date: Wed, 15 Aug 2012 15:47:42 -0400
-Message-ID: <1345060109-9187-119-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 104/165] drivers/net/rionet.c: fix ethernet address macros for LE platforms
+Date: Wed, 15 Aug 2012 15:47:28 -0400
+Message-ID: <1345060109-9187-105-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <johnstul@us.ibm.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,129 +36,38 @@ From: John Stultz <johnstul@us.ibm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 5baefd6d84163443215f4a99f6a20f054ef11236 upstream.
+commit e0c87bd95e8dad455c23bc56513af8dcb1737e55 upstream.
 
-The update of the hrtimer base offsets on all cpus cannot be made
-atomically from the timekeeper.lock held and interrupt disabled region
-as smp function calls are not allowed there.
+Modify Ethernet addess macros to be compatible with BE/LE platforms
 
-clock_was_set(), which enforces the update on all cpus, is called
-either from preemptible process context in case of do_settimeofday()
-or from the softirq context when the offset modification happened in
-the timer interrupt itself due to a leap second.
-
-In both cases there is a race window for an hrtimer interrupt between
-dropping timekeeper lock, enabling interrupts and clock_was_set()
-issuing the updates. Any interrupt which arrives in that window will
-see the new time but operate on stale offsets.
-
-So we need to make sure that an hrtimer interrupt always sees a
-consistent state of time and offsets.
-
-ktime_get_update_offsets() allows us to get the current monotonic time
-and update the per cpu hrtimer base offsets from hrtimer_interrupt()
-to capture a consistent state of monotonic time and the offsets. The
-function replaces the existing ktime_get() calls in hrtimer_interrupt().
-
-The overhead of the new function vs. ktime_get() is minimal as it just
-adds two store operations.
-
-This ensures that any changes to realtime or boottime offsets are
-noticed and stored into the per-cpu hrtimer base structures, prior to
-any hrtimer expiration and guarantees that timers are not expired early.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Chul Kim <chul.kim@idt.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/hrtimer.c | 27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
+ drivers/net/rionet.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 039db35..6b6835f 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -603,6 +603,12 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- 	return res;
- }
+diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
+index 07eb884..0f6cbc8 100644
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -88,8 +88,8 @@ static struct rio_dev **rionet_active;
+ #define dev_rionet_capable(dev) \
+ 	is_rionet_capable(dev->pef, dev->src_ops, dev->dst_ops)
  
-+static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-+{
-+	ktime_t *offs_real = &base->clock_base[CLOCK_REALTIME].offset;
-+
-+	return ktime_get_update_offsets(offs_real);
-+}
+-#define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
+-#define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
++#define RIONET_MAC_MATCH(x)	(!memcmp((x), "\00\01\00\01", 4))
++#define RIONET_GET_DESTID(x)	((*((u8 *)x + 4) << 8) | *((u8 *)x + 5))
  
- /*
-  * Retrigger next event is called after clock was set
-@@ -612,26 +618,15 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
+ static int rionet_rx_clean(struct net_device *ndev)
  {
- 	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset;
--	unsigned long seq;
- 
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	do {
--		seq = read_seqbegin(&xtime_lock);
--		set_normalized_timespec(&realtime_offset,
--					-wall_to_monotonic.tv_sec,
--					-wall_to_monotonic.tv_nsec);
--	} while (read_seqretry(&xtime_lock, seq));
--
- 	base = &__get_cpu_var(hrtimer_bases);
- 
- 	/* Adjust CLOCK_REALTIME offset */
- 	raw_spin_lock(&base->lock);
--	base->clock_base[CLOCK_REALTIME].offset =
--		timespec_to_ktime(realtime_offset);
--
-+	hrtimer_update_base(base);
- 	hrtimer_force_reprogram(base, 0);
- 	raw_spin_unlock(&base->lock);
- }
-@@ -731,7 +726,6 @@ static int hrtimer_switch_to_hres(void)
- 	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
--
- 	/* "Retrigger" the interrupt to get things going */
- 	retrigger_next_event(NULL);
- 	local_irq_restore(flags);
-@@ -1280,7 +1274,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	dev->next_event.tv64 = KTIME_MAX;
- 
- 	raw_spin_lock(&cpu_base->lock);
--	entry_time = now = ktime_get();
-+	entry_time = now = hrtimer_update_base(cpu_base);
- retry:
- 	expires_next.tv64 = KTIME_MAX;
- 	/*
-@@ -1356,9 +1350,12 @@ retry:
- 	 * We need to prevent that we loop forever in the hrtimer
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
-+	 *
-+	 * Acquire base lock for updating the offsets and retrieving
-+	 * the current time.
- 	 */
- 	raw_spin_lock(&cpu_base->lock);
--	now = ktime_get();
-+	now = hrtimer_update_base(cpu_base);
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
- 		goto retry;
 -- 
 1.7.12.rc2
 
