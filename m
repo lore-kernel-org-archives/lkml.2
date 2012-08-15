@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2HOLAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 07:00:25 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:51628 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab2HOLAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 07:00:23 -0400
-Message-ID: <20120815140016.76673zs818g2hagw@www.81.fi>
-Date: Wed, 15 Aug 2012 14:00:16 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?b?TfxsbGVy?= 
-	<tilo.mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler
- implementation
-References: <20120527144919.GE17705@kronos.redsun>
- <20120815114216.209814z4mq3hxqe8@www.81.fi>
- <20120815092804.GA14676@x1.osrc.amd.com>
-In-Reply-To: <20120815092804.GA14676@x1.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+	id S1754110Ab2HOLBC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 07:01:02 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:42982 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab2HOLBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 07:01:00 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org
+Subject: [PATCH] scripts/decodecode: Fixup trapping instruction marker
+Date: Wed, 15 Aug 2012 13:00:51 +0200
+Message-Id: <1345028451-14709-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Borislav Petkov <bp@alien8.de>:
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-> On Wed, Aug 15, 2012 at 11:42:16AM +0300, Jussi Kivilinna wrote:
->> I started thinking about the performance on AMD Bulldozer.
->> vmovq/vmovd/vpextr*/vpinsr* between FPU and general purpose registers
->> on AMD CPU is alot slower (latencies from 8 to 12 cycles) than on
->> Intel sandy-bridge (where instructions have latency of 1 to 2). See:
->> http://www.agner.org/optimize/instruction_tables.pdf
->>
->> It would be really good, if implementation could be tested on AMD CPU
->> to determinate, if it causes performance regression. However I don't
->> have access to machine with such CPU.
->
-> But I do. :)
->
-> And if you tell me exactly how to run the tests and on what kernel, I'll
-> try to do so.
->
+When dumping "Code: " sections from an oops, the trapping instruction %rip
+points to can be a string copy
 
-Twofish-avx (CONFIG_TWOFISH_AVX_X86_64) is available in 3.6-rc1. For  
-testing you need CRYPTO_TEST build as module. You should turn off  
-turbo-core, freq-scaling, etc.
+  2b:*  f3 a5                   rep movsl %ds:(%rsi),%es:(%rdi)
 
-Testing twofish-avx ('async twofish' speed test):
-  modprobe twofish-avx-x86_64
-  modprobe tcrypt mode=504 sec=1
+and the line contain a bunch of ":". Current "cut" selects only the
+and the second field output looks funnily overlaid this:
 
-Testing twofish-x86_64-3way ('sync twofish' speed test):
-  modprobe twofish-x86_64-3way
-  modprobe tcrypt mode=202 sec=1
+  2b:*  f3 a5                   rep movsl %ds     <-- trapping instruction:(%rsi),%es:(%rdi
 
-Loading tcrypt will block until tests are complete, after which  
-modprobe will return with error. This is expected. Results are in  
-kernel log.
+Fix this by selecting the remaining fields too.
 
--Jussi
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kbuild@vger.kernel.org
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ scripts/decodecode | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> HTH.
->
-> --
-> Regards/Gruss,
-> Boris.
->
->
-
-
+diff --git a/scripts/decodecode b/scripts/decodecode
+index 18ba881c3415..4f8248d5a11f 100755
+--- a/scripts/decodecode
++++ b/scripts/decodecode
+@@ -89,7 +89,7 @@ echo $code >> $T.s
+ disas $T
+ cat $T.dis >> $T.aa
+ 
+-faultline=`cat $T.dis | head -1 | cut -d":" -f2`
++faultline=`cat $T.dis | head -1 | cut -d":" -f2-`
+ faultline=`echo "$faultline" | sed -e 's/\[/\\\[/g; s/\]/\\\]/g'`
+ 
+ cat $T.oo | sed -e "s/\($faultline\)/\*\1     <-- trapping instruction/g"
+-- 
+1.7.11.rc1
 
