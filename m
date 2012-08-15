@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab2HOE3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 00:29:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55644 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751052Ab2HOE3n (ORCPT
+	id S1751837Ab2HOElU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 00:41:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61826 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab2HOElS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 00:29:43 -0400
-Message-ID: <1345004966.824.214.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 10/65] ARM: 7467/1: mutex: use generic xchg-based
- implementation for ARMv6+
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 15 Aug 2012 05:29:26 +0100
-In-Reply-To: <20120813221415.872342783@linuxfoundation.org>
-References: <20120813221414.965154048@linuxfoundation.org>
-	 <20120813221415.872342783@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-6rNr8/vYg6FZb9d/gjQ3"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 15 Aug 2012 00:41:18 -0400
+Date: Wed, 15 Aug 2012 01:41:11 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: aborigines <7aborigines7@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add support bluetooth usb 0489:e046 Foxconn / Hon Hai
+Message-ID: <20120815044111.GG3344@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	aborigines <7aborigines7@gmail.com>, marcel@holtmann.org,
+	padovan@profusion.mobi, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1344757304-11555-1-git-send-email-7aborigines7@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344757304-11555-1-git-send-email-7aborigines7@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* aborigines <7aborigines7@gmail.com> [2012-08-12 14:41:44 +0700]:
 
---=-6rNr8/vYg6FZb9d/gjQ3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> $ usb-deveices
+> T: Bus=01 Lev=02 Prnt=02 Port=02 Cnt=03 Dev#= 5 Spd=12 MxCh= 0
+> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+> P: Vendor=0489 ProdID=e046 Rev=01.12
+> S: Manufacturer=Broadcom Corp
+> S: Product=BCM20702A0
+> S: SerialNumber=C01885F67F9E
+> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> $ lsusb
+> Bus 001 Device 005: ID 0489:e046 Foxconn / Hon Hai
+> ---
+>  drivers/bluetooth/btusb.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index fc4bcd6..fb54c70 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -110,6 +110,7 @@ static struct usb_device_id btusb_table[] = {
+>  
+>  	/* Foxconn - Hon Hai */
+>  	{ USB_DEVICE(0x0489, 0xe033) },
+> +	{ USB_DEVICE(0x0489, 0xe046) },
+>  
+>  	{ }	/* Terminating entry */
+>  };
 
-On Mon, 2012-08-13 at 15:13 -0700, Greg Kroah-Hartman wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
->=20
-> 3.4-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Will Deacon <will.deacon@arm.com>
->=20
-> commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
->=20
-> The open-coded mutex implementation for ARMv6+ cores suffers from a
-> severe lack of barriers, so in the uncontended case we don't actually
-> protect any accesses performed during the critical section.
->=20
-> Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
-> code but optimised to remove a branch instruction, as the mutex fastpath
-> was previously inlined. Now that this is executed out-of-line, we can
-> reuse the atomic access code for the locking (in fact, we use the xchg
-> code as this produces shorter critical sections).
->=20
-> This patch uses the generic xchg based implementation for mutexes on
-> ARMv6+, which introduces barriers to the lock/unlock operations and also
-> has the benefit of removing a fair amount of inline assembly code.
-[...]
+Can you try the following patch and see if it works for you.
 
-I understand that a further fix is needed on top of this
-<http://article.gmane.org/gmane.linux.ports.arm.kernel/181693> but it's
-not in Linus's tree yet.  Is it better to apply this on its own or to
-wait for the complete fix?
+	Gustavo
 
-Ben.
+---
+commit 8d2952f43af434f0aa5d109a9ae50c5886a9322c (HEAD, master)
+Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Date:   Wed Aug 15 01:38:11 2012 -0300
 
---=20
-Ben Hutchings
-I say we take off; nuke the site from orbit.  It's the only way to be sure.
+    Bluetooth: Add USB_VENDOR_AND_INTERFACE_INFO() for Broadcom/Foxconn
+    
+    Foxconn devices has a vendor specific class of device, we will match them
+    differently now.
+    
+    Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
---=-6rNr8/vYg6FZb9d/gjQ3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index f637c25..f077f4d 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -101,7 +101,7 @@ static struct usb_device_id btusb_table[] = {
+        { USB_DEVICE(0x413c, 0x8197) },
+ 
+        /* Foxconn - Hon Hai */
+-       { USB_DEVICE(0x0489, 0xe033) },
++       { USB_VENDOR_AND_INTERFACE_INFO(0x0489, 0xff, 0x01, 0x01) },
+ 
+        { }     /* Terminating entry */
+ };
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUCslpue/yOyVhhEJAQpBYg//WvdyqHBnS7Qk5BvpMDiI9eIq3kPLvvOz
-mjCc0Qe9aZ3WXwgWMou5phVCpkXfpm9jj5sdn6km/oIpY8AdU7hMJ+xhzqKgKeFR
-+idbgSPAn2taT+RKVCbPfhfi7VgRMcQBOeKOOBqUKeTSUSx1JImPU3G+1AHOtlCd
-UX/ZqxlFXtaq7okWC76lUvmo/8fY9HD+8AOG9ipWPqml1+KoTgsTOa7OSBBNBbnU
-G8XGPYw7cbdl2xCRccjGW1h6khHeYxve4EV0J3/xV77qbdGafUCPnvd5eQitAc8t
-y8mTCcs0qeo0Tcv8DtKf9lFCWpRpaGb3ZAFRZaq6/pXkfiwbzbXXaYs2f3Tc9FdL
-mn5RRZf8Dxv4mgEM0i5MMAgFcgU2h9FqdsQM5tUUc+9FxlgSgXCDrsVqXadMHQb2
-9o5e4++2SMEteXqFbqLQ83bCtfjPw/Ufx1MCnb8xMrMxKVSYPqLaXbOCnbAem50o
-c3+D2XmJ12ebi0SWkAjWFTe8ywIcPEK5aI8/cpsDratuMdIk09oeY3dHOEc4KMhF
-7d5eGYyi2LsrwzezLWKhnN25JZ/3sNimnnyIO4sPJGg5wMV6naZYWlxV0Z4LnMSA
-C7u0utfMtDxiptcPPiCcD4zkeNFJsnBi6XIVb+JGWlduP4vxJyEFDvdES2pqDmaW
-qIK9vzwisv0=
-=aNmX
------END PGP SIGNATURE-----
-
---=-6rNr8/vYg6FZb9d/gjQ3--
