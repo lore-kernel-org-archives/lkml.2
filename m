@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab2HOUOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:14:31 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36949 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab2HOTv0 (ORCPT
+	id S1756801Ab2HOTvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:51:25 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62984 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756613Ab2HOTvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:26 -0400
+	Wed, 15 Aug 2012 15:51:21 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Filip Palian <s3810@pjwstk.edu.pl>,
-        Filip Palian <filip.palian@pjwstk.edu.pl>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+CC: Ming Lei <tom.leiming@gmail.com>, Ming Lei <ming.lei@canonical.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 102/165] Bluetooth: l2cap and rfcomm: fix 1 byte infoleak to userspace.
-Date: Wed, 15 Aug 2012 15:47:26 -0400
-Message-ID: <1345060109-9187-103-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 093/165] uvcvideo: Set alternate setting 0 on resume if the bus has been reset
+Date: Wed, 15 Aug 2012 15:47:17 -0400
+Message-ID: <1345060109-9187-94-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Filip Palian <s3810@pjwstk.edu.pl>
+From: Ming Lei <tom.leiming@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,45 +33,78 @@ From: Filip Palian <s3810@pjwstk.edu.pl>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8d03e971cf403305217b8e62db3a2e5ad2d6263f upstream.
+commit d59a7b1dbce8b972ec2dc9fcaaae0bfa23687423 upstream.
 
-Structures "l2cap_conninfo" and "rfcomm_conninfo" have one padding
-byte each. This byte in "cinfo" is copied to userspace uninitialized.
+If the bus has been reset on resume, set the alternate setting to 0.
+This should be the default value, but some devices crash or otherwise
+misbehave if they don't receive a SET_INTERFACE request before any other
+video control request.
 
-Signed-off-by: Filip Palian <filip.palian@pjwstk.edu.pl>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-[PG: l2cap_sock.c chunk is in l2cap.c in a 2.6.34 context/baseline]
+Microdia's 0c45:6437 camera has been found to require this change or it
+will stop sending video data after resume.
+
+uvc_video.c]
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bluetooth/l2cap.c       | 1 +
- net/bluetooth/rfcomm/sock.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/media/video/uvc/uvc_driver.c |  2 +-
+ drivers/media/video/uvc/uvc_video.c  | 10 +++++++++-
+ drivers/media/video/uvc/uvcvideo.h   |  2 +-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index b21e319..0b6cf87 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1898,6 +1898,7 @@ static int l2cap_sock_getsockopt_old(struct socket *sock, int optname, char __us
- 			break;
- 		}
+diff --git a/drivers/media/video/uvc/uvc_driver.c b/drivers/media/video/uvc/uvc_driver.c
+index 838b56f..590b817 100644
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -1885,7 +1885,7 @@ static int __uvc_resume(struct usb_interface *intf, int reset)
  
-+		memset(&cinfo, 0, sizeof(cinfo));
- 		cinfo.hci_handle = l2cap_pi(sk)->conn->hcon->handle;
- 		memcpy(cinfo.dev_class, l2cap_pi(sk)->conn->hcon->dev_class, 3);
+ 	list_for_each_entry(stream, &dev->streams, list) {
+ 		if (stream->intf == intf)
+-			return uvc_video_resume(stream);
++			return uvc_video_resume(stream, reset);
+ 	}
  
-diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
-index 8ed3c37..b045bbb 100644
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -882,6 +882,7 @@ static int rfcomm_sock_getsockopt_old(struct socket *sock, int optname, char __u
+ 	uvc_trace(UVC_TRACE_SUSPEND, "Resume: video streaming USB interface "
+diff --git a/drivers/media/video/uvc/uvc_video.c b/drivers/media/video/uvc/uvc_video.c
+index 687c970..a96f9ea 100644
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -1056,10 +1056,18 @@ int uvc_video_suspend(struct uvc_streaming *stream)
+  * buffers, making sure userspace applications are notified of the problem
+  * instead of waiting forever.
+  */
+-int uvc_video_resume(struct uvc_streaming *stream)
++int uvc_video_resume(struct uvc_streaming *stream, int reset)
+ {
+ 	int ret;
  
- 		l2cap_sk = rfcomm_pi(sk)->dlc->session->sock->sk;
++	/* If the bus has been reset on resume, set the alternate setting to 0.
++	 * This should be the default value, but some devices crash or otherwise
++	 * misbehave if they don't receive a SET_INTERFACE request before any
++	 * other video control request.
++	 */
++	if (reset)
++		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++
+ 	stream->frozen = 0;
  
-+		memset(&cinfo, 0, sizeof(cinfo));
- 		cinfo.hci_handle = l2cap_pi(l2cap_sk)->conn->hcon->handle;
- 		memcpy(cinfo.dev_class, l2cap_pi(l2cap_sk)->conn->hcon->dev_class, 3);
- 
+ 	ret = uvc_commit_video(stream, &stream->ctrl);
+diff --git a/drivers/media/video/uvc/uvcvideo.h b/drivers/media/video/uvc/uvcvideo.h
+index d1f8840..1180ec7 100644
+--- a/drivers/media/video/uvc/uvcvideo.h
++++ b/drivers/media/video/uvc/uvcvideo.h
+@@ -596,7 +596,7 @@ extern const struct v4l2_file_operations uvc_fops;
+ /* Video */
+ extern int uvc_video_init(struct uvc_streaming *stream);
+ extern int uvc_video_suspend(struct uvc_streaming *stream);
+-extern int uvc_video_resume(struct uvc_streaming *stream);
++extern int uvc_video_resume(struct uvc_streaming *stream, int reset);
+ extern int uvc_video_enable(struct uvc_streaming *stream, int enable);
+ extern int uvc_probe_video(struct uvc_streaming *stream,
+ 		struct uvc_streaming_control *probe);
 -- 
 1.7.12.rc2
 
