@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab2HOUSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:18:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36880 "EHLO
+	id S1756560Ab2HOTvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:51:03 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36852 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab2HOTvF (ORCPT
+	with ESMTP id S1756683Ab2HOTuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:05 -0400
+	Wed, 15 Aug 2012 15:50:52 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+CC: Jerry Huang <r66093@freescale.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 089/165] KVM: s390: check cpu_id prior to using it
-Date: Wed, 15 Aug 2012 15:47:13 -0400
-Message-ID: <1345060109-9187-90-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 079/165] QE/FHCI: fixed the CONTROL bug
+Date: Wed, 15 Aug 2012 15:47:03 -0400
+Message-ID: <1345060109-9187-80-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Otte <cotte@de.ibm.com>
+From: Jerry Huang <r66093@freescale.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,54 +31,66 @@ From: Carsten Otte <cotte@de.ibm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4d47555a80495657161a7e71ec3014ff2021e450 upstream.
+commit 273d23574f9dacd9c63c80e7d63639a669aad441 upstream.
 
-We use the cpu id provided by userspace as array index here. Thus we
-clearly need to check it first. Ooops.
+For USB CONTROL transaction, when the data length is zero,
+the IN package is needed to finish this transaction in status stage.
 
-CC: <stable@vger.kernel.org>
-Signed-off-by: Carsten Otte <cotte@de.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Jerry Huang <r66093@freescale.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/s390/kvm/kvm-s390.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/usb/host/fhci-sched.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index ee7c713..a6015d1 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -311,11 +311,17 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
- struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm,
- 				      unsigned int id)
- {
--	struct kvm_vcpu *vcpu = kzalloc(sizeof(struct kvm_vcpu), GFP_KERNEL);
--	int rc = -ENOMEM;
-+	struct kvm_vcpu *vcpu;
-+	int rc = -EINVAL;
+diff --git a/drivers/usb/host/fhci-sched.c b/drivers/usb/host/fhci-sched.c
+index ff43747..b13d78a 100644
+--- a/drivers/usb/host/fhci-sched.c
++++ b/drivers/usb/host/fhci-sched.c
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale QUICC Engine USB Host Controller Driver
+  *
+- * Copyright (c) Freescale Semicondutor, Inc. 2006.
++ * Copyright (c) Freescale Semicondutor, Inc. 2006, 2011.
+  *               Shlomi Gridish <gridish@freescale.com>
+  *               Jerry Huang <Chang-Ming.Huang@freescale.com>
+  * Copyright (c) Logic Product Development, Inc. 2007
+@@ -810,9 +810,11 @@ void fhci_queue_urb(struct fhci_hcd *fhci, struct urb *urb)
+ 		ed->dev_addr = usb_pipedevice(urb->pipe);
+ 		ed->max_pkt_size = usb_maxpacket(urb->dev, urb->pipe,
+ 			usb_pipeout(urb->pipe));
++		/* setup stage */
+ 		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++, FHCI_TA_SETUP,
+ 			USB_TD_TOGGLE_DATA0, urb->setup_packet, 8, 0, 0, true);
+ 
++		/* data stage */
+ 		if (data_len > 0) {
+ 			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
+ 				usb_pipeout(urb->pipe) ? FHCI_TA_OUT :
+@@ -820,9 +822,18 @@ void fhci_queue_urb(struct fhci_hcd *fhci, struct urb *urb)
+ 				USB_TD_TOGGLE_DATA1, data, data_len, 0, 0,
+ 				true);
+ 		}
+-		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
+-			usb_pipeout(urb->pipe) ? FHCI_TA_IN : FHCI_TA_OUT,
+-			USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
 +
-+	if (id >= KVM_MAX_VCPUS)
-+		goto out;
++		/* status stage */
++		if (data_len > 0)
++			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
++				(usb_pipeout(urb->pipe) ? FHCI_TA_IN :
++							  FHCI_TA_OUT),
++				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
++		else
++			 td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
++				FHCI_TA_IN,
++				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
 +
-+	rc = -ENOMEM;
- 
-+	vcpu = kzalloc(sizeof(struct kvm_vcpu), GFP_KERNEL);
- 	if (!vcpu)
--		goto out_nomem;
-+		goto out;
- 
- 	vcpu->arch.sie_block = (struct kvm_s390_sie_block *)
- 					get_zeroed_page(GFP_KERNEL);
-@@ -350,7 +356,7 @@ out_free_sie_block:
- 	free_page((unsigned long)(vcpu->arch.sie_block));
- out_free_cpu:
- 	kfree(vcpu);
--out_nomem:
-+out:
- 	return ERR_PTR(rc);
- }
- 
+ 		urb_state = US_CTRL_SETUP;
+ 		break;
+ 	case FHCI_TF_ISO:
 -- 
 1.7.12.rc2
 
