@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab2HOUdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:33:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36509 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab2HOTtf (ORCPT
+	id S1757274Ab2HOUdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:33:22 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62785 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab2HOTtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Aug 2012 15:49:35 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Michal Schmidt <mschmidt@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 028/165] GRO: fix merging a paged skb after non-paged skbs
-Date: Wed, 15 Aug 2012 15:46:12 -0400
-Message-ID: <1345060109-9187-29-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 033/165] xen/smp: Warn user why they keel over - nosmp or noapic and what to use instead.
+Date: Wed, 15 Aug 2012 15:46:17 -0400
+Message-ID: <1345060109-9187-34-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,64 +31,52 @@ From: Michal Schmidt <mschmidt@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d1dc7abf2fafa34b0ffcd070fd59405aa9c0a4d8 upstream.
+commit ed467e69f16e6b480e2face7bc5963834d025f91 upstream.
 
-Suppose that several linear skbs of the same flow were received by GRO. They
-were thus merged into one skb with a frag_list. Then a new skb of the same flow
-arrives, but it is a paged skb with data starting in its frags[].
+We have hit a couple of customer bugs where they would like to
+use those parameters to run an UP kernel - but both of those
+options turn of important sources of interrupt information so
+we end up not being able to boot. The correct way is to
+pass in 'dom0_max_vcpus=1' on the Xen hypervisor line and
+the kernel will patch itself to be a UP kernel.
 
-Before adding the skb to the frag_list skb_gro_receive() will of course adjust
-the skb to throw away the headers. It correctly modifies the page_offset and
-size of the frag, but it leaves incorrect information in the skb:
- ->data_len is not decreased at all.
- ->len is decreased only by headlen, as if no change were done to the frag.
-Later in a receiving process this causes skb_copy_datagram_iovec() to return
--EFAULT and this is seen in userspace as the result of the recv() syscall.
+Fixes bug: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=637308
 
-In practice the bug can be reproduced with the sfc driver. By default the
-driver uses an adaptive scheme when it switches between using
-napi_gro_receive() (with skbs) and napi_gro_frags() (with pages). The bug is
-reproduced when under rx load with enough successful GRO merging the driver
-decides to switch from the former to the latter.
-
-Manual control is also possible, so reproducing this is easy with netcat:
- - on machine1 (with sfc): nc -l 12345 > /dev/null
- - on machine2: nc machine1 12345 < /dev/zero
- - on machine1:
-   echo 1 > /sys/module/sfc/parameters/rx_alloc_method  # use skbs
-   echo 2 > /sys/module/sfc/parameters/rx_alloc_method  # use pages
- - See that nc has quit suddenly.
-
-[v2: Modified by Eric Dumazet to avoid advancing skb->data past the end
-     and to use a temporary variable.]
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/skbuff.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/xen/smp.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 9e7214e..7865bec 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2749,8 +2749,12 @@ int skb_gro_receive(struct sk_buff **head, struct sk_buff *skb)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index d2dfbf5..9aac865 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -31,6 +31,7 @@
+ #include <xen/page.h>
+ #include <xen/events.h>
  
- merge:
- 	if (offset > headlen) {
--		skbinfo->frags[0].page_offset += offset - headlen;
--		skbinfo->frags[0].size -= offset - headlen;
-+		unsigned int eat = offset - headlen;
++#include <xen/hvc-console.h>
+ #include "xen-ops.h"
+ #include "mmu.h"
+ 
+@@ -181,6 +182,15 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	unsigned cpu;
+ 
++	if (skip_ioapic_setup) {
++		char *m = (max_cpus == 0) ?
++			"The nosmp parameter is incompatible with Xen; " \
++			"use Xen dom0_max_vcpus=1 parameter" :
++			"The noapic parameter is incompatible with Xen";
 +
-+		skbinfo->frags[0].page_offset += eat;
-+		skbinfo->frags[0].size -= eat;
-+		skb->data_len -= eat;
-+		skb->len -= eat;
- 		offset = headlen;
- 	}
++		xen_raw_printk(m);
++		panic(m);
++	}
+ 	xen_init_lock_cpu(0);
  
+ 	smp_store_cpu_info(0);
 -- 
 1.7.12.rc2
 
