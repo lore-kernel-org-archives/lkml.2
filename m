@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab2HOTvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 15:51:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36974 "EHLO
+	id S1756833Ab2HOTva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:51:30 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36926 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756843Ab2HOTvg (ORCPT
+	with ESMTP id S1756597Ab2HOTvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 15:51:36 -0400
+	Wed, 15 Aug 2012 15:51:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Lan Tianyu <tianyu.lan@intel.com>, Len Brown <len.brown@intel.com>,
+CC: Richard Weinberger <richard@nod.at>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 108/165] ACPI/AC: prevent OOPS on some boxes due to missing check power_supply_register() return value check
-Date: Wed, 15 Aug 2012 15:47:32 -0400
-Message-ID: <1345060109-9187-109-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 096/165] um: fix ubd cow size
+Date: Wed, 15 Aug 2012 15:47:20 -0400
+Message-ID: <1345060109-9187-97-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.rc2
 In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Richard Weinberger <richard@nod.at>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,43 +31,66 @@ From: Lan Tianyu <tianyu.lan@intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f197ac13f6eeb351b31250b9ab7d0da17434ea36 upstream.
+commit 8535639810e578960233ad39def3ac2157b0c3ec upstream.
 
-In the ac.c, power_supply_register()'s return value is not checked.
+ubd_file_size() cannot use ubd_dev->cow.file because at this time
+ubd_dev->cow.file is not initialized.
+Therefore, ubd_file_size() will always report a wrong disk size when
+COW files are used.
+Reading from /dev/ubd* would crash the kernel.
 
-As a result, the driver's add() ops may return success
-even though the device failed to initialize.
+We have to read the correct disk size from the COW file's backing
+file.
 
-For example, some BIOS may describe two ACADs in the same DSDT.
-The second ACAD device will fail to register,
-but ACPI driver's add() ops returns sucessfully.
-The ACPI device will receive ACPI notification and cause OOPS.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=772730
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/acpi/ac.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/um/drivers/ubd_kern.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
-index 56205a0..4ea5daf 100644
---- a/drivers/acpi/ac.c
-+++ b/drivers/acpi/ac.c
-@@ -288,7 +288,9 @@ static int acpi_ac_add(struct acpi_device *device)
- 	ac->charger.properties = ac_props;
- 	ac->charger.num_properties = ARRAY_SIZE(ac_props);
- 	ac->charger.get_property = get_ac_property;
--	power_supply_register(&ac->device->dev, &ac->charger);
-+	result = power_supply_register(&ac->device->dev, &ac->charger);
-+	if (result)
-+		goto end;
- #endif
+diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+index 3d63b83..1cbad01 100644
+--- a/arch/um/drivers/ubd_kern.c
++++ b/arch/um/drivers/ubd_kern.c
+@@ -511,8 +511,37 @@ __uml_exitcall(kill_io_thread);
+ static inline int ubd_file_size(struct ubd *ubd_dev, __u64 *size_out)
+ {
+ 	char *file;
++	int fd;
++	int err;
++
++	__u32 version;
++	__u32 align;
++	char *backing_file;
++	time_t mtime;
++	unsigned long long size;
++	int sector_size;
++	int bitmap_offset;
++
++	if (ubd_dev->file && ubd_dev->cow.file) {
++		file = ubd_dev->cow.file;
++
++		goto out;
++	}
  
- 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+-	file = ubd_dev->cow.file ? ubd_dev->cow.file : ubd_dev->file;
++	fd = os_open_file(ubd_dev->file, global_openflags, 0);
++	if (fd < 0)
++		return fd;
++
++	err = read_cow_header(file_reader, &fd, &version, &backing_file, \
++		&mtime, &size, &sector_size, &align, &bitmap_offset);
++	os_close_file(fd);
++
++	if(err == -EINVAL)
++		file = ubd_dev->file;
++	else
++		file = backing_file;
++
++out:
+ 	return os_file_size(file, size_out);
+ }
+ 
 -- 
 1.7.12.rc2
 
