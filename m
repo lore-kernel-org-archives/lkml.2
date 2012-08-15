@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab2HON4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 09:56:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57362 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab2HON4M (ORCPT
+	id S1755001Ab2HON4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 09:56:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59527 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751913Ab2HON4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 09:56:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 08/31] arm64: CPU support
-Date: Wed, 15 Aug 2012 13:56:05 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208151356.05416.arnd@arndb.de>
-X-Provags-ID: V02:K0:eURON+FoDP7bbrdFNqX4VUGsE5VvlgWoHrMfZuk5N3b
- +AGDvNsts+RoWtI1qmRMS/39sk8edndRLFtvZQxd5XWHNNWjew
- l1m1WFTbxELyl0LP1PBev310hP7ABg6u1X2Lcv28JGo73Zlo67
- 1auQiqcozFRtPyoiRM6twaO2QKffPQLZDia86IAsBytmTEMuj2
- SzAG67MdGH89RThBO4I6K86FMWLG1G/B/jsuy6WAshzqS5DtUc
- Bw5IXHVk3QSR6+X5GS6bA68kXJ9lbhjsR/ePExUiumaznDphw6
- mXzTjlq2RvuZB5O6+8MeDGim18nsPVCA2A5aNcbohwCW+lccA0
- IcnPPxzUhpkw/RpN5R5I=
+	Wed, 15 Aug 2012 09:56:34 -0400
+Message-ID: <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based
+ implementation for ARMv6+
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@linaro.org>, Shan Kang <kangshan0910@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Wed, 15 Aug 2012 14:56:22 +0100
+In-Reply-To: <20120813201748.202917513@linuxfoundation.org>
+References: <20120813201746.448504360@linuxfoundation.org>
+	 <20120813201748.202917513@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-bTQsdjREUCQctVQ8MOEy"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 August 2012, Catalin Marinas wrote:
 
-> diff --git a/arch/arm64/include/asm/procinfo.h b/arch/arm64/include/asm/procinfo.h
-> new file mode 100644
-> index 0000000..81fece9
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/procinfo.h
-> @@ -0,0 +1,44 @@
-> +/*
-> + * Based on arch/arm/include/asm/procinfo.h
-> + *
-> + * Copyright (C) 1996-1999 Russell King
-> + * Copyright (C) 2012 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef __ASM_PROCINFO_H
-> +#define __ASM_PROCINFO_H
-> +
-> +#ifdef __KERNEL__
-> +
-> +/*
-> + * Note!  struct processor is always defined if we're
-> + * using MULTI_CPU, otherwise this entry is unused,
-> + * but still exists.
-> + *
-> + * NOTE! The following structure is defined by assembly
-> + * language, NOT C code.  For more information, check:
-> + *  arch/arm/mm/proc-*.S and arch/arm/kernel/head.S
-> + */
-> +struct proc_info_list {
-> +	unsigned int		cpu_val;
-> +	unsigned int		cpu_mask;
-> +	unsigned long		__cpu_flush;		/* used by head.S */
-> +	const char		*cpu_name;
-> +};
-> +
-> +#else	/* __KERNEL__ */
-> +#include <asm/elf.h>
-> +#warning "Please include asm/elf.h instead"
-> +#endif	/* __KERNEL__ */
-> +#endif
+--=-bTQsdjREUCQctVQ8MOEy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I think you forgot to remove this file when you removed MULTI_CPU.
+On Mon, 2012-08-13 at 13:18 -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+>=20
+> 3.5-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Will Deacon <will.deacon@arm.com>
+>=20
+> commit a76d7bd96d65fa5119adba97e1b58d95f2e78829 upstream.
+>=20
+> The open-coded mutex implementation for ARMv6+ cores suffers from a
+> severe lack of barriers, so in the uncontended case we don't actually
+> protect any accesses performed during the critical section.
+>=20
+> Furthermore, the code is largely a duplication of the ARMv6+ atomic_dec
+> code but optimised to remove a branch instruction, as the mutex fastpath
+> was previously inlined. Now that this is executed out-of-line, we can
+> reuse the atomic access code for the locking (in fact, we use the xchg
+> code as this produces shorter critical sections).
+>=20
+> This patch uses the generic xchg based implementation for mutexes on
+> ARMv6+, which introduces barriers to the lock/unlock operations and also
+> has the benefit of removing a fair amount of inline assembly code.
+[...]
 
-	Arnd
+Here also, I think this should be deferred.
+
+Ben.
+
+--=20
+Ben Hutchings
+I say we take off; nuke the site from orbit.  It's the only way to be sure.
+
+--=-bTQsdjREUCQctVQ8MOEy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUCuqhue/yOyVhhEJAQroNxAAvRR27KZHp7xN4FOD7lHCczWA8YHRBYeo
+2KUtZ2HrXgWgQ6HE+upyJO1GbWnMHr0+YSElYuQAT2Gk/eTXVpv6II84pMr4c/Ko
+JuIuXDFs5NQ2wYkV9k86Wa64UY4I9oiYgcVt1BUhwHisW7oRhj0VyQ1LDWESFAqt
+qlPM6TvuRVaQ4RVVuwCcp6LHbmPF6KHFeTULVlRKMNzZ6C5gghr28mWrXCCLZjqK
+EKEibLA3+bt6r3mFXnqLq+kqipVgk7Attv9KcssUjSe7SwEBkeKtzC8KTKsN9VqW
+of0jE6uWpLt9ZxMTX9/AP9wRRLSunBNn4IYPMUOEI4e52KVaDF9JXDsG2IQtpNb8
+9thgKvdhG81cJQ4XjZKua+u+RFT3EFIIUnQvp2dMhLtY/IG9vnjEv5QbOff1n+Zb
+FUm6rp6JS+u5HcSSmJhI5hfF8k9KZmc8ktYzew5YrWc2CwJgok2qXXAfkkq/11nl
+6ViGjZKnDW+0fA9IJZ5xdjbLnPy/9A6aV+Cz6OscTEyvf4f3XXOlJgWYhLjzuVpH
+iz3zCIJvki/io9MX6dqybQqkRXDvknBgEjSSnMxYzGRDwP3sVBsyFPSBX8/sKJIo
+P61S0uJlDYilDJaRy+7TOAqurFTCMFRHJ9tXN/y45N/OvpmZ1JfzPdhrTRvzWQoM
+QP+T7raoH1c=
+=NLYj
+-----END PGP SIGNATURE-----
+
+--=-bTQsdjREUCQctVQ8MOEy--
