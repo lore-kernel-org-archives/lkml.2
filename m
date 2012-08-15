@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2HOU3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:29:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42194 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756518Ab2HOU3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:29:01 -0400
-Date: Thu, 16 Aug 2012 06:28:32 +1000
-From: NeilBrown <neilb@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        ricwheeler@gmail.com, dhowells@redhat.com, hpj@urpla.net,
-        sedat.dilek@googlemail.com, penberg@kernel.org,
-        goran.cetusic@gmail.com, romain@orebokech.com, mszeredi@suse.cz
-Subject: Re: [PATCH 01/13] vfs: add i_op->open()
-Message-ID: <20120816062832.36a48cb0@notabene.brown>
-In-Reply-To: <20120815172150.GA25062@fieldses.org>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	<1345045700-9062-2-git-send-email-miklos@szeredi.hu>
-	<20120815172150.GA25062@fieldses.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/z1Be2cKuAwf83O.coF/weKT"; protocol="application/pgp-signature"
+	id S1756508Ab2HOTuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 15:50:00 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36580 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756457Ab2HOTt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:49:57 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Marek Vasut <marek.vasut@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 047/165] ASIX: Add AX88772B USB ID
+Date: Wed, 15 Aug 2012 15:46:31 -0400
+Message-ID: <1345060109-9187-48-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/z1Be2cKuAwf83O.coF/weKT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Marek Vasut <marek.vasut@gmail.com>
 
-On Wed, 15 Aug 2012 13:21:50 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-wrote:
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> On Wed, Aug 15, 2012 at 05:48:08PM +0200, Miklos Szeredi wrote:
-> > From: Miklos Szeredi <mszeredi@suse.cz>
-> >=20
-> > Add a new inode operation i_op->open().  This is for stacked
->=20
-> Shouldn't that "->open()" be "->dentry_open()" ?
->=20
-> --b.
->=20
-> > filesystems that want to return a struct file from a different
-> > filesystem.
-> >=20
-> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> > ---
-> >  Documentation/filesystems/Locking |    2 ++
-> >  Documentation/filesystems/vfs.txt |    7 +++++++
-> >  fs/namei.c                        |    9 ++++++---
-> >  fs/open.c                         |   23 +++++++++++++++++++++--
-> >  include/linux/fs.h                |    2 ++
-> >  5 files changed, 38 insertions(+), 5 deletions(-)
-> >=20
-> > diff --git a/Documentation/filesystems/Locking b/Documentation/filesyst=
-ems/Locking
-> > index 0f103e3..d222b6a 100644
-> > --- a/Documentation/filesystems/Locking
-> > +++ b/Documentation/filesystems/Locking
-> > @@ -64,6 +64,7 @@ prototypes:
-> >  	int (*atomic_open)(struct inode *, struct dentry *,
-> >  				struct file *, unsigned open_flag,
-> >  				umode_t create_mode, int *opened);
-> > +	int (*dentry_open)(struct dentry *, struct file *, const struct cred =
-*);
-> > =20
-> >  locking rules:
-> >  	all may block
-> > @@ -92,6 +93,7 @@ removexattr:	yes
-> >  fiemap:		no
-> >  update_time:	no
-> >  atomic_open:	yes
-> > +open:		no
-> > =20
+commit 308859097831831a979f2e82cbeef0a94f438080 upstream.
 
-and that last line should be
-    +dentry_open:       no
-??
+This device can be found in Acer Iconia TAB W500 tablet dock.
 
-NeilBrown
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/net/usb/asix.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---Sig_/z1Be2cKuAwf83O.coF/weKT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index 35f56fc..60e882f 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -1473,6 +1473,10 @@ static const struct usb_device_id	products [] = {
+ 	USB_DEVICE (0x04f1, 0x3008),
+ 	.driver_info = (unsigned long) &ax8817x_info,
+ }, {
++	// ASIX AX88772B 10/100
++	USB_DEVICE (0x0b95, 0x772b),
++	.driver_info = (unsigned long) &ax88772_info,
++}, {
+ 	// ASIX AX88772 10/100
+ 	USB_DEVICE (0x0b95, 0x7720),
+ 	.driver_info = (unsigned long) &ax88772_info,
+-- 
+1.7.12.rc2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUCwGcDnsnt1WYoG5AQJ6mQ/9G5l2x1b/Kxh97A0a/hqYxy+tXDYn5yLF
-pvJrsofEFZPYI/cU1XEwrTZr4AGuqcZOaW8/MYf5arTikbyBHLfl3lqDnzIM5FYm
-sXn2Dtoe74Ad+dUVp8B4vr1NNoSCf1fHN0r1mRmaHgH5W/aON1Rct4tznV8KCj9f
-hL5MV7O6+Bcy+SJnPyFYcFxGDHq8j3l99C1X8ip6JnzWJpRS/tXVYKSOUCJ7CujN
-5iZ9KD3Tzh8BAXZg/FAEfOtqR42RbUqwdU7gueWtyDfeOXxsH/TO0D9aU4PWaKAO
-9RqgKm4Nj4TpeKVvPtMWzga8xbmB3IzeYG6OON9oEZfhqYRCAoU9+1ZKImrQ7fcp
-gP6nIiDLE+Lz6u3Cc0JZlcr5kG2yvCZzKPbbND0CFkt/pBOG3YMAJDXsidfoeaWG
-4T/M5qBqnL56S10QPWpeKpFL8ql76kiW+neP2SrGyzVHNqL4R0Vfnkx3HACeqgY7
-2FaBZ+k19XSSRihedYgCY8mzBdea6pj+WltDgP/7qpWi/12MvHoxm5R3bUHy4d0n
-JGB+eYky2RKqa1VLCTJSdUQD5HtHEtpSja92S8IWiwSYuWh2BeeKjlnGYpihyMC2
-p3LxDRwYFWhkBcmJzQ1jllqDpZWeCB8GPML3wlUy1Myj2SbMSQEVUo8xe2zTfkfx
-3BO4wBmowgk=
-=Hu33
------END PGP SIGNATURE-----
-
---Sig_/z1Be2cKuAwf83O.coF/weKT--
