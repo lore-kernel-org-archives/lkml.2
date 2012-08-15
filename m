@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab2HOAvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Aug 2012 20:51:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48647 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab2HOAvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Aug 2012 20:51:17 -0400
-Message-ID: <502AF27D.2010902@zytor.com>
-Date: Tue, 14 Aug 2012 17:51:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755129Ab2HOAyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Aug 2012 20:54:12 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57171 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751044Ab2HOAyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Aug 2012 20:54:10 -0400
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
-        mjg@redhat.com
-Subject: Re: [PATCH] efi: add efi_runtime state checking
-References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com> <1340832957-7386-1-git-send-email-olof@lixom.net> <4FEB80A5.8020806@zytor.com> <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
-In-Reply-To: <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120814211200.GA32249@core.coreip.homeip.net>
+References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
+	<1344807757-2217-3-git-send-email-rydberg@euromail.se>
+	<CAF8JNhJzu9wW52PbydVuH9y8TwOs=mPO0DJn0aJBpsh-wETzuQ@mail.gmail.com>
+	<2226930.JeU38gc4Sp@dtor-d630.eng.vmware.com>
+	<CAF8JNh+sLixXBw7zLFnLSnhR8rq+=cxXm724yJoF9+v9-4fOyA@mail.gmail.com>
+	<20120814211200.GA32249@core.coreip.homeip.net>
+Date: Tue, 14 Aug 2012 17:54:08 -0700
+Message-ID: <CAF8JNhJZC5QBW7mMTCag613zeC8ST-b1U1EhosxesPmPO2f1qQ@mail.gmail.com>
+Subject: Re: [PATCH 02/19] Input: Improve the events-per-packet estimate
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 10:02 AM, Olof Johansson wrote:
-> On Wed, Jun 27, 2012 at 2:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 06/27/2012 02:35 PM, Olof Johansson wrote:
->>>
->>> This adds an efi_runtime variable indicating whether the
->>> efi runtime services are available. The only time they are
->>> expected to not be available is when a 32-bit kernel has been
->>> booted using 64-but EFI and vice versa.
->>>
->>> It also adds checking to the two locations where functions are
->>> called; x86 reboot and efivars.
->>>
+On Tue, Aug 14, 2012 at 2:12 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> >> On Sun, Aug 12, 2012 at 2:42 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> >> > Many MT devices send a number of keys along with the mt information.
+> >> > This patch makes sure that there is room for them in the packet
+> >> > buffer.
 >>
->> OK, stupid question:
+>> So, what device are we talking about here? I thought it is a touch
+>> device with a few extra buttons, which are reported as key events. Am
+>> I missing something?
+>
+> I was talking about a bog-standard computer keyboard here.
+>
 >>
->> Why is this different from the efi_enabled variable, or rather: why is it
->> different from what the efi_enabled variable *should* be?  If runtime
->> services aren't available the only "EFI" that is available to the kernel are
->> the data structures passed in, and those can be checked directly...
+>> If it is a touch device, we won't have too many buttons. So,
+>> test_bit(i, dev->keybit) won't be true for more than the number of
+>> buttons that declared by __set_bit().
 >
-> Excellent question, and I think it would work to turn off efi_enabled
-> towards the end of setup_arch() for non-native boots. That'd solve all
-> these problems, I believe.
+> input_estimate_events_per_packet() is a generic routine that is used for
+> all devices, not only [multi]touch.
+
+I understand you are talking about standard keyboard. And I know this
+routine is for all devices.
+
+However, from the commit comments, the patch is to address an MT
+issue. If it is not just for MT, we need either to make it clear in
+the comments or to verify the type of the device in the code.
+
+>> I would think we could play a keyboard (this keyboard does not have
+>> letters on it ;-) with ten fingers.
 >
-> I'll try it out and revise this patch. It might take me a day or two
-> to get cycles for it.
->
+> But even that keyboard would have more than 10 keys, right? So even
+> though max_events should be 10 + 10 + 1 (10 keys, 10 msc, syn) your loop
+> would produce what 88 + 88 + 1 for full size music keyboard?
 
-Ping?
+No, I was not talking about implementing full music keyboard functions
+in the kernel. My point was: why do we take 7 instead of 10, or
+another number?
 
-	-hpa
+In fact, 7 works for me as long as we explain the rationale behind the
+decision. I do not have a device that needs to post 10 button events
+simultaneously, yet ;-).
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Ping
