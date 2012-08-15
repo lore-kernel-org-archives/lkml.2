@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2HOO4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 10:56:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37103 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750781Ab2HOO4O (ORCPT
+	id S1754765Ab2HOO5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 10:57:32 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:52721 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753251Ab2HOO5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 10:56:14 -0400
-Date: Wed, 15 Aug 2012 15:55:53 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@linaro.org>,
-        Shan Kang <kangshan0910@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [ 20/82] ARM: 7467/1: mutex: use generic xchg-based
- implementation for ARMv6+
-Message-ID: <20120815145552.GI29448@mudshark.cambridge.arm.com>
-References: <20120813201746.448504360@linuxfoundation.org>
- <20120813201748.202917513@linuxfoundation.org>
- <1345038982.824.216.camel@deadeye.wl.decadent.org.uk>
- <20120815140808.GD22871@kroah.com>
- <1345039901.824.221.camel@deadeye.wl.decadent.org.uk>
- <20120815144956.GB6320@kroah.com>
+	Wed, 15 Aug 2012 10:57:31 -0400
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Aug 2012 10:57:30 EDT
+Date: Wed, 15 Aug 2012 14:47:57 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Michal Hocko <mhocko@suse.cz>
+cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+In-Reply-To: <20120815123931.GF23985@dhcp22.suse.cz>
+Message-ID: <000001392ac15404-43a3fd2c-a6d3-4985-b173-74bb586ad47c-000000@email.amazonses.com>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-5-git-send-email-glommer@parallels.com> <20120814162144.GC6905@dhcp22.suse.cz> <502B6D03.1080804@parallels.com> <20120815123931.GF23985@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815144956.GB6320@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 03:49:56PM +0100, Greg Kroah-Hartman wrote:
-> > Will Deacon wrote:
-> > > The additional patch should also be CC'd to stable and is sitting in -tip
-> > > somewhere I believe, so it shouldn't be long before it does hit mainline.
-> > > 
-> > > Without this patch there's a memory-ordering bug (which we seem to have hit
-> > > once in > 5 years). With the patch there's a mutex lockup issue on SMP systems
-> > > that I can provoke with enough hackbenching, so you may want to hold off for
-> > > now.
-> 
-> Ah, ok, missed that.
-> 
-> How about I just drop this for now, and when someone (Will?) feels it is
-> "good enough time to wait", they will resend it to
-> stable@vger.kernel.org so that we can add it then?  Otherwise I'll just
-> loose it somewhere.
+On Wed, 15 Aug 2012, Michal Hocko wrote:
 
-Fine by me. It doesn't conflict with the other patch either, so it won't be
-a problem if you get that one first.
+> > That is not what the kernel does, in general. We assume that if he wants
+> > that memory and we can serve it, we should. Also, not all kernel memory
+> > is unreclaimable. We can shrink the slabs, for instance. Ying Han
+> > claims she has patches for that already...
+>
+> Are those patches somewhere around?
 
-Will
+You can already shrink the reclaimable slabs (dentries / inodes) via
+calls to the subsystem specific shrinkers. Did Ying Han do anything to
+go beyond that?
+
