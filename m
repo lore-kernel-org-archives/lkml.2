@@ -1,73 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab2HOUhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:37:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17275 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756242Ab2HOUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:37:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,774,1336374000"; 
-   d="scan'208";a="186891343"
-Message-ID: <502C0883.2030904@linux.intel.com>
-Date: Wed, 15 Aug 2012 13:37:23 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756211Ab2HOUiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:38:08 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62743 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756094Ab2HOTtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:49:07 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Alex Williamson <alex.williamson@redhat.com>, Yang Bai <hamo.by@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 015/165] KVM: Device assignment permission checks
+Date: Wed, 15 Aug 2012 15:45:59 -0400
+Message-ID: <1345060109-9187-16-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, mingo@kernel.org, hpa@zytor.com,
-        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
-References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com> <1345059051.32116.32.camel@calx>
-In-Reply-To: <1345059051.32116.32.camel@calx>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 12:30 PM, Matt Mackall wrote:
-> On Mon, 2012-08-13 at 10:26 -0700, H. Peter Anvin wrote:
->> From: "H. Peter Anvin" <hpa@linux.intel.com>
->>
->> When we write entropy into a non-empty pool, we currently don't
->> account at all for the fact that we will probabilistically overwrite
->> some of the entropy in that pool.
-> 
-> Technically, no, nothing is overwritten. The key fact is that the mixing
-> function is -reversible-. Thus, even if you mix in known data, you can't
-> learn anything about the state and thus can't destroy any of the
-> existing entropy.
-> 
-> But you are correct, mixing new actual entropy is not purely additive
-> (with saturation). For that to happen, we'd need an input mixing
-> function with perfect maximal cascading. Instead we effectively cascade
-> across somewhere between 6 and 64 bits. So the truth lies somewhere
-> between linear and your exponential estimate (which would be the case
-> for mixing a single bit into the pool with XOR), but much closer to
-> linear due to combinatoric expansion.
-> 
+From: Alex Williamson <alex.williamson@redhat.com>
 
-I think you have it backwards; if the input was a FIFO, with no mixing
-at all, and no reuse, the linear estimate would be correct.  The mixing
-into an already-existent and potentially-observed pool is what causes
-the exponential estimate to apply... although it is assuming perfect
-mixing.  However, I believe it is still correct in the aggregate.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> On the other hand, I don't think this sort of thing matters at all.
-> There is so much more fundamentally wrong with even trying to do entropy
-> accounting in the first place that these sorts of details don't even
-> matter. Instead we should stop fooling ourselves and just drop the
-> pretense of accounting entirely. Now that we've got a much richer set of
-> inputs, I think the time is ripe... but of course, I'm no longer the
-> maintainer.
+commit 3d27e23b17010c668db311140b17bbbb70c78fb9 upstream.
 
-If we're going to fundamentally change the structure perhaps we should
-actually take the suggestions long offered from the cryptographic
-community, and look at structures like Fortuna.
+Only allow KVM device assignment to attach to devices which:
 
-	-hpa
+ - Are not bridges
+ - Have BAR resources (assume others are special devices)
+ - The user has permissions to use
+
+Assigning a bridge is a configuration error, it's not supported, and
+typically doesn't result in the behavior the user is expecting anyway.
+Devices without BAR resources are typically chipset components that
+also don't have host drivers.  We don't want users to hold such devices
+captive or cause system problems by fencing them off into an iommu
+domain.  We determine "permission to use" by testing whether the user
+has access to the PCI sysfs resource files.  By default a normal user
+will not have access to these files, so it provides a good indication
+that an administration agent has granted the user access to the device.
+
+[Yang Bai: add missing #include]
+[avi: fix comment style]
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[PG: Drop Documentation api.txt chunk; 2.6.34 doesn't have the file]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ virt/kvm/assigned-dev.c | 75 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 75 insertions(+)
+
+diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+index 1f97473..f427ecc 100644
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -17,6 +17,8 @@
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
++#include <linux/namei.h>
++#include <linux/fs.h>
+ #include "irq.h"
+ 
+ static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
+@@ -502,12 +504,73 @@ out:
+ 	return r;
+ }
+ 
++/*
++ * We want to test whether the caller has been granted permissions to
++ * use this device.  To be able to configure and control the device,
++ * the user needs access to PCI configuration space and BAR resources.
++ * These are accessed through PCI sysfs.  PCI config space is often
++ * passed to the process calling this ioctl via file descriptor, so we
++ * can't rely on access to that file.  We can check for permissions
++ * on each of the BAR resource files, which is a pretty clear
++ * indicator that the user has been granted access to the device.
++ */
++static int probe_sysfs_permissions(struct pci_dev *dev)
++{
++#ifdef CONFIG_SYSFS
++	int i;
++	bool bar_found = false;
++
++	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++) {
++		char *kpath, *syspath;
++		struct path path;
++		struct inode *inode;
++		int r;
++
++		if (!pci_resource_len(dev, i))
++			continue;
++
++		kpath = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
++		if (!kpath)
++			return -ENOMEM;
++
++		/* Per sysfs-rules, sysfs is always at /sys */
++		syspath = kasprintf(GFP_KERNEL, "/sys%s/resource%d", kpath, i);
++		kfree(kpath);
++		if (!syspath)
++			return -ENOMEM;
++
++		r = kern_path(syspath, LOOKUP_FOLLOW, &path);
++		kfree(syspath);
++		if (r)
++			return r;
++
++		inode = path.dentry->d_inode;
++
++		r = inode_permission(inode, MAY_READ | MAY_WRITE | MAY_ACCESS);
++		path_put(&path);
++		if (r)
++			return r;
++
++		bar_found = true;
++	}
++
++	/* If no resources, probably something special */
++	if (!bar_found)
++		return -EPERM;
++
++	return 0;
++#else
++	return -EINVAL; /* No way to control the device without sysfs */
++#endif
++}
++
+ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+ 				      struct kvm_assigned_pci_dev *assigned_dev)
+ {
+ 	int r = 0, idx;
+ 	struct kvm_assigned_dev_kernel *match;
+ 	struct pci_dev *dev;
++	u8 header_type;
+ 
+ 	if (!(assigned_dev->flags & KVM_DEV_ASSIGN_ENABLE_IOMMU))
+ 		return -EINVAL;
+@@ -538,6 +601,18 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
+ 		r = -EINVAL;
+ 		goto out_free;
+ 	}
++
++	/* Don't allow bridges to be assigned */
++	pci_read_config_byte(dev, PCI_HEADER_TYPE, &header_type);
++	if ((header_type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL) {
++		r = -EPERM;
++		goto out_put;
++	}
++
++	r = probe_sysfs_permissions(dev);
++	if (r)
++		goto out_put;
++
+ 	if (pci_enable_device(dev)) {
+ 		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
+ 		r = -EBUSY;
+-- 
+1.7.12.rc2
+
