@@ -1,169 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab2HOUEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 16:04:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40913 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310Ab2HOUEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 16:04:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [UPDATE][PATCH -v3 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
-Date: Wed, 15 Aug 2012 22:10:35 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <1344994983-9092-1-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1344994983-9092-1-git-send-email-ying.huang@intel.com>
+	id S932437Ab2HOUFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 16:05:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37255 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090Ab2HOTwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 15:52:32 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Josh Boyer <jwboyer@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 139/165] USB: add quirk for Logitech C600 web cam
+Date: Wed, 15 Aug 2012 15:48:03 -0400
+Message-ID: <1345060109-9187-140-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.rc2
+In-Reply-To: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208152210.35938.rjw@sisk.pl>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 15, 2012, Huang Ying wrote:
-> This patch fixes the following bug:
-> 
-> http://marc.info/?l=linux-pci&m=134338059022620&w=2
-> 
-> Where lspci does not work properly if a device and the corresponding
-> parent bridge (such as PCIe port) is suspended.  This is because the
-> device configuration space registers will be not accessible if the
-> corresponding parent bridge is suspended or the device is put into
-> D3cold state.
-> 
-> To solve the issue, the bridge/PCIe port connected to the device is
-> put into active state before read/write configuration space registers.
-> If the device is in D3cold state, it will be put into active state
-> too.
-> 
-> To avoid resume/suspend PCIe port for each configuration register
-> read/write, a small delay is added before the PCIe port to go
-> suspended.
-> 
-> Reported-by: Bjorn Mork <bjorn@mork.no>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Although the delay might have been #defined.
+commit 60c71ca972a2dd3fd9d0165b405361c8ad48349b upstream.
 
-> ---
->  drivers/pci/pci-sysfs.c        |   42 +++++++++++++++++++++++++++++++++++++++++
->  drivers/pci/pcie/portdrv_pci.c |    9 ++++++++
->  2 files changed, 51 insertions(+)
-> 
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -458,6 +458,40 @@ boot_vga_show(struct device *dev, struct
->  }
->  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
->  
-> +static void
-> +pci_config_pm_runtime_get(struct pci_dev *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device *parent = dev->parent;
-> +
-> +	if (parent)
-> +		pm_runtime_get_sync(parent);
-> +	pm_runtime_get_noresume(dev);
-> +	/*
-> +	 * pdev->current_state is set to PCI_D3cold during suspending,
-> +	 * so wait until suspending completes
-> +	 */
-> +	pm_runtime_barrier(dev);
-> +	/*
-> +	 * Only need to resume devices in D3cold, because config
-> +	 * registers are still accessible for devices suspended but
-> +	 * not in D3cold.
-> +	 */
-> +	if (pdev->current_state == PCI_D3cold)
-> +		pm_runtime_resume(dev);
-> +}
-> +
-> +static void
-> +pci_config_pm_runtime_put(struct pci_dev *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device *parent = dev->parent;
-> +
-> +	pm_runtime_put(dev);
-> +	if (parent)
-> +		pm_runtime_put_sync(parent);
-> +}
-> +
->  static ssize_t
->  pci_read_config(struct file *filp, struct kobject *kobj,
->  		struct bin_attribute *bin_attr,
-> @@ -484,6 +518,8 @@ pci_read_config(struct file *filp, struc
->  		size = count;
->  	}
->  
-> +	pci_config_pm_runtime_get(dev);
-> +
->  	if ((off & 1) && size) {
->  		u8 val;
->  		pci_user_read_config_byte(dev, off, &val);
-> @@ -529,6 +565,8 @@ pci_read_config(struct file *filp, struc
->  		--size;
->  	}
->  
-> +	pci_config_pm_runtime_put(dev);
-> +
->  	return count;
->  }
->  
-> @@ -549,6 +587,8 @@ pci_write_config(struct file* filp, stru
->  		count = size;
->  	}
->  	
-> +	pci_config_pm_runtime_get(dev);
-> +
->  	if ((off & 1) && size) {
->  		pci_user_write_config_byte(dev, off, data[off - init_off]);
->  		off++;
-> @@ -587,6 +627,8 @@ pci_write_config(struct file* filp, stru
->  		--size;
->  	}
->  
-> +	pci_config_pm_runtime_put(dev);
-> +
->  	return count;
->  }
->  
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -140,9 +140,17 @@ static int pcie_port_runtime_resume(stru
->  {
->  	return 0;
->  }
-> +
-> +static int pcie_port_runtime_idle(struct device *dev)
-> +{
-> +	/* Delay for a short while to prevent too frequent suspend/resume */
-> +	pm_schedule_suspend(dev, 10);
-> +	return -EBUSY;
-> +}
->  #else
->  #define pcie_port_runtime_suspend	NULL
->  #define pcie_port_runtime_resume	NULL
-> +#define pcie_port_runtime_idle		NULL
->  #endif
->  
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
-> @@ -155,6 +163,7 @@ static const struct dev_pm_ops pcie_port
->  	.resume_noirq	= pcie_port_resume_noirq,
->  	.runtime_suspend = pcie_port_runtime_suspend,
->  	.runtime_resume = pcie_port_runtime_resume,
-> +	.runtime_idle	= pcie_port_runtime_idle,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-> 
-> 
+We've had another report of the "chipmunk" sound on a Logitech C600 webcam.
+This patch resolves the issue.
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 241a0d6..f1b7442 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -47,6 +47,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Logitech Webcam B/C500 */
+ 	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Logitech Webcam C600 */
++	{ USB_DEVICE(0x046d, 0x0808), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Webcam Pro 9000 */
+ 	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-- 
+1.7.12.rc2
 
