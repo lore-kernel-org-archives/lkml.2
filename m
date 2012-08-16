@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab2HPShH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:37:07 -0400
-Received: from shutemov.name ([176.9.204.213]:48102 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2HPShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:37:04 -0400
-Date: Thu, 16 Aug 2012 21:37:25 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3 6/7] mm: make clear_huge_page cache clear only around
- the fault address
-Message-ID: <20120816183725.GA30284@shutemov.name>
-References: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1345130154-9602-7-git-send-email-kirill.shutemov@linux.intel.com>
- <20120816161647.GM11188@redhat.com>
- <20120816164356.GA30106@shutemov.name>
- <20120816182944.GN11188@redhat.com>
+	id S1756832Ab2HPSh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:37:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56110 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab2HPShx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:37:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816182944.GN11188@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <66e0f332c823b82701a48aba320f589cec27e904.1345055639.git.dmitry.kasatkin@intel.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<66e0f332c823b82701a48aba320f589cec27e904.1345055639.git.dmitry.kasatkin@intel.com>
+Date: Thu, 16 Aug 2012 14:37:52 -0400
+Message-ID: <CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
+Subject: Re: [RFC v2 3/7] integrity: create and inititialize a keyring with
+ builtin public key
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 08:29:44PM +0200, Andrea Arcangeli wrote:
-> On Thu, Aug 16, 2012 at 07:43:56PM +0300, Kirill A. Shutemov wrote:
-> > Hm.. I think with static_key we can avoid cache overhead here. I'll try.
-> 
-> Could you elaborate on the static_key? Is it some sort of self
-> modifying code?
+On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
+> From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+>
+> Create and initialize a keyring with the builtin public key. This could
+> be an ephemeral key, created and destroyed during module install for
+> custom built kernels, or a key used to label the entire filesystem for
+> EVM/IMA-appraisal. Uses .incbin based on David Howell's post.
+>
+> Load the builtin public key on the specified keyring, creating the
+> keyring if it doesn't already exist.
+>
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> ---
+>  security/integrity/Kconfig         |   10 ++++
+>  security/integrity/Makefile        |   17 +++++++
+>  security/integrity/digsig_pubkey.c |   96 ++++++++++++++++++++++++++++++++++++
+>  security/integrity/integrity.h     |   10 ++++
+>  4 files changed, 133 insertions(+)
+>  create mode 100644 security/integrity/digsig_pubkey.c
+>
+> diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+> index 5bd1cc1..f789018 100644
+> --- a/security/integrity/Kconfig
+> +++ b/security/integrity/Kconfig
+> @@ -17,5 +17,15 @@ config INTEGRITY_SIGNATURE
+>           This is useful for evm and module keyrings, when keys are
+>           usually only added from initramfs.
+>
+> +config INTEGRITY_PUBKEY
+> +       boolean "Create a keyring and initialize with builtin public key"
+> +       depends on INTEGRITY_SIGNATURE
+> +       default n
+> +       help
+> +         Create and initialize a keyring with the builtin public key. This could
+> +         be an ephemeral key, created and destroyed during module install for
+> +         custom built kernels, or a key used to label the entire filesystem for
+> +         EVM/IMA-appraisal.
+> +
 
-Runtime code patching. See Documentation/static-keys.txt. We can patch it
-on sysctl.
+It could also be a key that is reused explicitly for signing kernels
+and kernel modules but has nothing to do with EVM/IMA filesystem
+labels, right?  E.g. a distro key.  I think the commit log and help
+text is a bit too restrictive here.
 
-> 
-> > Thanks, for review. Could you take a look at huge zero page patchset? ;)
-> 
-> I've noticed that too, nice :). I'm checking some detail on the
-> wrprotect fault behavior but I'll comment there.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> +int integrity_init_keyring(const unsigned int id)
+> +{
+> +       const struct cred *cred = current_cred();
+> +       struct user_struct *user = cred->user;
+> +       struct key *new_keyring, *key;
+> +       u8 digest[SHA1_DIGEST_SIZE];
+> +       char keyid[20];
+> +       int ret, pubkey_size = pubkey_end - pubkey;
+> +
+> +       if (pubkey_size == 0) {
+> +               pr_info("pubkey is missing, skipping...\n");
+> +               return 0;
+> +       }
+> +
+> +       new_keyring = keyring_alloc(keyring_name[id], user->uid, (gid_t) -1,
+> +                                   cred, KEY_ALLOC_NOT_IN_QUOTA,
+> +                                   user->uid_keyring);
+> +       if (IS_ERR(new_keyring)) {
+> +               ret = PTR_ERR(new_keyring);
+> +               goto out;
+> +       }
+> +
+> +       ret = integrity_calc_digest("sha1", pubkey, pubkey_size, digest);
+> +       if (ret < 0)
+> +               goto out;
+> +
+> +       sprintf(keyid, "%llX", __be64_to_cpup((uint64_t *)(digest+12)));
 
--- 
- Kirill A. Shutemov
+keyid is only 20 bytes.  Is there a guarantee somewhere that restricts
+the digest+12 value to be 20 bytes or less and NUL termintated?  If
+not, should you use snprintf?
+
+> +
+> +       key = key_alloc(&key_type_user, keyid, 0, 0, current_cred(),
+> +                       (KEY_POS_ALL & ~KEY_POS_SETATTR) |
+> +                       KEY_USR_VIEW | KEY_USR_SEARCH | KEY_USR_READ,
+> +                       KEY_ALLOC_NOT_IN_QUOTA);
+> +       if (IS_ERR(key)) {
+> +               ret = PTR_ERR(key);
+> +               goto out;
+
+You leak new_keyring if here, right?
+
+> +       }
+> +
+> +       ret = key_instantiate_and_link(key, pubkey, pubkey_end - pubkey,
+> +                                      new_keyring, NULL);
+> +out:
+> +       pr_info("integrity: loaded public key %s on %s %s\n", keyid,
+> +               keyring_name[id], !ret ? "succeeded" : "failed");
+> +       return ret;
+> +}
+
+josh
