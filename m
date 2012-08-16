@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab2HPXYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 19:24:53 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:41075 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756961Ab2HPXYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 19:24:51 -0400
-Message-ID: <502D80E8.3080008@xenotime.net>
-Date: Thu, 16 Aug 2012 16:23:20 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] scripts/kernel-doc: fix fatal script error
-References: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
-In-Reply-To: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754039Ab2HPXeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 19:34:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:38927 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab2HPXeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 19:34:09 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: K Prasad <prasad@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
+In-reply-to: <1345117498.29668.23.camel@twins>
+References: <28857.1345091034@neuling.org> <1345102812.31459.114.camel@twins> <20344.1345115849@neuling.org> <1345117498.29668.23.camel@twins>
+Comments: In-reply-to Peter Zijlstra <a.p.zijlstra@chello.nl>
+   message dated "Thu, 16 Aug 2012 13:44:58 +0200."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Fri, 17 Aug 2012 09:34:07 +1000
+Message-ID: <8649.1345160047@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+> > > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
+> > > > despite there being no breakpoint on this CPU.  This is because the call
+> > > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
+> > > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
+> > > > return ENOSPC.
+> > > 
+> > > I think this comes from the ptrace legacy, we register a breakpoint on
+> > > all cpus because when we migrate a task it cannot fail to migrate the
+> > > breakpoint.
+> > > 
+> > > Its one of the things I hate most about the hwbp stuff as it relates to
+> > > perf.
+> > > 
+> > > Frederic knows more...
+> > 
+> > Maybe I should wait for Frederic to respond but I'm not sure I
+> > understand what you're saying.
+> > 
+> > I can see how using ptrace hw breakpoints and perf hw breakpoints at the
+> > same time could be a problem, but I'm not sure how this would stop it.
+> 
+> ptrace uses perf for hwbp support so we're stuck with all kinds of
+> stupid ptrace constraints.. or somesuch.
 
-Fix fatal error in scripts/kernel-doc by ignoring the "__weak" attribute:
+OK
 
-Error(drivers/pci/pci.c:2820): cannot understand prototype: 'char * __weak pcibios_setup(char *str) '
+> > Are you saying that we need to keep at least 1 slot free at all times,
+> > so that we can use it for ptrace?
+> 
+> No, I'm saying perf-hwbp is weird because of ptrace, maybe the ptrace
+> weirdness shouldn't live in perf-hwpb but in the ptrace-perf glue
+> however..
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- scripts/kernel-doc |    1 +
- 1 file changed, 1 insertion(+)
+OK.
 
---- lnx-36-rc2.orig/scripts/kernel-doc
-+++ lnx-36-rc2/scripts/kernel-doc
-@@ -1786,6 +1786,7 @@ sub dump_function($$) {
-     $prototype =~ s/__init +//;
-     $prototype =~ s/__init_or_module +//;
-     $prototype =~ s/__must_check +//;
-+    $prototype =~ s/__weak +//;
-     $prototype =~ s/^#\s*define\s+//; #ak added
-     $prototype =~ s/__attribute__\s*\(\([a-z,]*\)\)//;
- 
+> > Is "perf record -e mem:0x10000000 true" ever going to be able to work on
+> > POWER7 with only one hw breakpoint resource per CPU?  
+> 
+> I think it should work... but I'm fairly sure it currently doesn't
+> because of how things are done. 'perf record -ie mem:0x100... true'
+> might just work.
+
+Adding -i doesn't help. 
+
+Mikey
