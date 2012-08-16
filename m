@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab2HPPPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:15:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63479 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551Ab2HPPP2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:15:28 -0400
-Message-ID: <502D0E79.9000103@gmail.com>
-Date: Thu, 16 Aug 2012 23:15:05 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
- ports without native PCIe hotplug capability
-References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
-In-Reply-To: <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S964809Ab2HPPPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:15:47 -0400
+Received: from mx1.zhaw.ch ([160.85.104.50]:48934 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932558Ab2HPPPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:15:43 -0400
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] openrisc: Use schedule_preempt_disabled()
+Date: Thu, 16 Aug 2012 17:04:28 +0200
+Message-Id: <1345129468-1870-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.5.4
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.8.16.145125
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ HTML_NO_HTTP 0.1, MULTIPLE_RCPTS 0.1, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, NO_URI_FOUND 0, __HAS_FROM 0, __HAS_HTML 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MULTIPLE_RCPTS_CC_X2 0, __SANE_MSGID 0, __TO_MALFORMED_2 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 03:12 AM, Bjorn Helgaas wrote:
-> On Mon, Jun 4, 2012 at 1:44 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
->> Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
->> ignore root bridges using PCIe native hotplug) added code that made the
->> acpiphp driver completely ignore PCIe root complexes for which the kernel
->> had been granted control of the native PCIe hotplug feature by the BIOS
->> through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
->> "PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
->> the constraints to allow acpiphp driver handle non-PCIe bridges under
->> such a complex. The constraint needs to be relaxed further to allow
->> acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
-> 
-> Gerry, I assume you'll refresh and repost this after we get the PCIe
-> capability stuff squared away, so I'll ignore this patch for now.
-> 
-Hi Bjorn,
-	Please just ignore it and I will rework it after the PCIe capabilities
-patches are done.
-	Regards!
-	Gerry
+Follow bd2f5536 (sched/rt: Use schedule_preempt_disabled()).
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ arch/openrisc/kernel/idle.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/arch/openrisc/kernel/idle.c b/arch/openrisc/kernel/idle.c
+index 7d618fe..e09dbcf 100644
+--- a/arch/openrisc/kernel/idle.c
++++ b/arch/openrisc/kernel/idle.c
+@@ -71,8 +71,6 @@ void cpu_idle(void)
+ 
+ 		rcu_idle_exit();
+ 		tick_nohz_idle_exit();
+-		preempt_enable_no_resched();
+-		schedule();
+-		preempt_disable();
++		schedule_preempt_disabled();
+ 	}
+ }
+-- 
+1.7.5.4
 
