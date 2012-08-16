@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab2HPKOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:14:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50649 "EHLO
+	id S1757217Ab2HPKO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:14:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56989 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab2HPKOF (ORCPT
+	with ESMTP id S1756947Ab2HPKOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:14:05 -0400
-Date: Thu, 16 Aug 2012 19:13:58 +0900 (JST)
-Message-Id: <20120816.191358.127675610.hdk@igel.co.jp>
-To: m.szyprowski@samsung.com
-Cc: laurent.pinchart@ideasonboard.com, linux@arm.linux.org.uk,
-        pawel@osciak.com, kyungmin.park@samsung.com, mchehab@infradead.org,
-        FlorianSchandinat@gmx.de, perex@perex.cz, tiwai@suse.de,
-        t.stanislaws@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org,
-        matsu@igel.co.jp, dhobsong@igel.co.jp
-Subject: Re: [PATCH v3 3/4] media: videobuf2-dma-contig: use
- dma_mmap_coherent if available
+	Thu, 16 Aug 2012 06:14:25 -0400
 From: Hideki EIRAKU <hdk@igel.co.jp>
-In-Reply-To: <012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
-References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
-	<1344246924-32620-4-git-send-email-hdk@igel.co.jp>
-	<012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v4] fbdev: sh_mobile_lcdc: use dma_mmap_coherent
+Date: Thu, 16 Aug 2012 19:13:20 +0900
+Message-Id: <1345112000-22738-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+fb_mmap() implemented in fbmem.c uses smem_start as the physical
+address of the frame buffer.  In the sh_mobile_lcdc driver, the
+smem_start is a dma_addr_t that is not a physical address when IOMMU is
+enabled.  dma_mmap_coherent() maps the address correctly.
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH v3 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent if available
-Date: Tue, 07 Aug 2012 16:53:25 +0200
+Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+---
+ drivers/video/sh_mobile_lcdcfb.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-> I'm sorry for bringing this issue now, once you have already created v3 of your
-> patches, but similar patch has been already proposed some time ago. It is already
-> processed together with general videobuf2-dma-contig redesign and dma-buf extensions
-> by Tomasz Stanislawski.
-> 
-> See post http://thread.gmane.org/gmane.comp.video.dri.devel/70402/focus=49461 and
-> http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/49438 
-> 
-> It doesn't use conditional code inside videobuf2 allocator and rely entirely on 
-> dma-mapping subsystem to provide a working dma_mmap_coherent/writecombine/attrs() 
-> function. When it was posted, it relied on the dma-mapping extensions, which now
-> have been finally merged to v3.6-rc1. Now I wonder if there are any architectures, 
-> which don't use dma_map_ops based dma-mapping framework, which might use 
-> videobuf2-dma-conting module. 
-
-Thank you for telling me about videobuf2-dma-contig and v3.6-rc1.  The
-videobuf2-dma-contig patch I sent is now unnecessary.  So I will
-remove the patch.  I will remove the patch defining
-ARCH_HAS_DMA_MMAP_COHERENT too because the v3.6-rc1 kernel has generic
-dma_mmap_coherent() API for every architecture.
-
-I will also remove the Laurent's patch I sent because it was related
-to ARCH_HAS_DMA_MMAP_COHERENT.
-
-The remaining patch is sh_mobile_lcdc.  I will remove ifdefs from the
-patch and re-post it as a patch v4.
-
+diff --git a/drivers/video/sh_mobile_lcdcfb.c b/drivers/video/sh_mobile_lcdcfb.c
+index 699487c..bccfd7e 100644
+--- a/drivers/video/sh_mobile_lcdcfb.c
++++ b/drivers/video/sh_mobile_lcdcfb.c
+@@ -1614,6 +1614,15 @@ static int sh_mobile_lcdc_overlay_blank(int blank, struct fb_info *info)
+ 	return 1;
+ }
+ 
++static int
++sh_mobile_lcdc_overlay_mmap(struct fb_info *info, struct vm_area_struct *vma)
++{
++	struct sh_mobile_lcdc_overlay *ovl = info->par;
++
++	return dma_mmap_coherent(ovl->channel->lcdc->dev, vma, ovl->fb_mem,
++				 ovl->dma_handle, ovl->fb_size);
++}
++
+ static struct fb_ops sh_mobile_lcdc_overlay_ops = {
+ 	.owner          = THIS_MODULE,
+ 	.fb_read        = fb_sys_read,
+@@ -1626,6 +1635,7 @@ static struct fb_ops sh_mobile_lcdc_overlay_ops = {
+ 	.fb_ioctl       = sh_mobile_lcdc_overlay_ioctl,
+ 	.fb_check_var	= sh_mobile_lcdc_overlay_check_var,
+ 	.fb_set_par	= sh_mobile_lcdc_overlay_set_par,
++	.fb_mmap	= sh_mobile_lcdc_overlay_mmap,
+ };
+ 
+ static void
+@@ -2093,6 +2103,15 @@ static int sh_mobile_lcdc_blank(int blank, struct fb_info *info)
+ 	return 0;
+ }
+ 
++static int
++sh_mobile_lcdc_mmap(struct fb_info *info, struct vm_area_struct *vma)
++{
++	struct sh_mobile_lcdc_chan *ch = info->par;
++
++	return dma_mmap_coherent(ch->lcdc->dev, vma, ch->fb_mem,
++				 ch->dma_handle, ch->fb_size);
++}
++
+ static struct fb_ops sh_mobile_lcdc_ops = {
+ 	.owner          = THIS_MODULE,
+ 	.fb_setcolreg	= sh_mobile_lcdc_setcolreg,
+@@ -2108,6 +2127,7 @@ static struct fb_ops sh_mobile_lcdc_ops = {
+ 	.fb_release	= sh_mobile_lcdc_release,
+ 	.fb_check_var	= sh_mobile_lcdc_check_var,
+ 	.fb_set_par	= sh_mobile_lcdc_set_par,
++	.fb_mmap	= sh_mobile_lcdc_mmap,
+ };
+ 
+ static void
 -- 
-Hideki EIRAKU <hdk@igel.co.jp>
+1.7.0.4
+
