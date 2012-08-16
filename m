@@ -1,136 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab2HPMFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:05:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58952 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab2HPMFt (ORCPT
+	id S1754012Ab2HPMIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:08:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62123 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab2HPMIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:05:49 -0400
-Date: Thu, 16 Aug 2012 14:05:41 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Borislav Petkov <bp@alien8.de>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120816120541.GA10154@avionic-0098.adnet.avionic-design.de>
-References: <20120731151600.GA19412@redhat.com>
- <20120731170741.GA4735@x1.osrc.amd.com>
- <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
- <20120816111044.GA12029@x1.osrc.amd.com>
+	Thu, 16 Aug 2012 08:08:49 -0400
+Message-ID: <502CDD8C.3000006@landley.net>
+Date: Thu, 16 Aug 2012 06:46:20 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <20120816111044.GA12029@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:ks7I6WUSkwn8kxX6BrVbwXkDjCzPiQm+3omh0dKDxIG
- XtBAvddtVxbJq24dD5AdfyOH2U6IcXFJ7euAJXI+HxZWESXBEs
- T5H1M2lKyimSszYZ5a8TM6H4K5SdXrWpSVocKCFewazLscc9S4
- FyXAEJQBI9qL2NS/Q1T6rGEtWrOrTFKlHOKb7MzeqYHt6t5uY+
- 5bNxcBc6PdatQi8NhKI4lv4NSmHppDyOBnbgY4QpjUO/YLartn
- ZYVbSLRyK92J3MNtUOGqXQ6oYpKbm6h+J+gGnG2hSnK8fef1rD
- u9AL4M4toKJsBZtg8BaDTT2y898L821zn+lHqvvvKyixGnyBW/
- JicVOGdvcAftfMyslXhd2zW6J8WLhc8dcx0VpMyzRkDF23EInc
- X73/Aq1ReWCwTzHb3xBGg8Wzm0mqCFduHY=
+To: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+CC: Milton Miller <miltonm@bga.com>, Borislav Petkov <bp@alien8.de>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Jan Engelhardt <jengelh@inai.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] netconsole.txt: "nc" needs "-p" to specify the listening
+ port
+References: <gilii4nnxb.fsf@mx10.gouders.net> <kernel-nc-hints@mdm.bga.com> <501937F7.2070600@landley.net> <gi3946lin5.fsf@mx10.gouders.net> <gisjc5hvun.fsf@mx10.gouders.net>
+In-Reply-To: <gisjc5hvun.fsf@mx10.gouders.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2012 03:39 PM, Dirk Gouders wrote:
+> Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
+> 
+>> Rob Landley <rob@landley.net> writes:
+>>
+>>> On 07/29/2012 03:40 AM, Milton Miller wrote:
+>>>> [adding Rob as Doc maintanier]
+>>>>
+>>>> On Sat, 28 Jul 2012 about 11:08:16 -0000, Dirk Gouders wrote:
+>>>>> Borislav Petkov <bp@alien8.de> writes:
+>>>>>
+>>>>>> On Fri, Jul 27, 2012 at 11:24:53AM +0200, Dirk Gouders wrote:
+>>>>>>> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>>>>>>>
+>>>>>>>> On Fri, Jul 27, 2012 at 2:35 PM, Dirk Gouders
+>>>>>>>> <gouders@et.bocholt.fh-gelsenkirchen.de> wrote:
+>>>>>>>>> Hi Jesse,
+>>>>>>>>>
+>>>>>>>>> I would like to ask you to check if the documentation of "nc" in
+>>>>>>>>> netconsole.txt is still correct.  I tried two different netcat packages
+>>>>>>>>> and both require "-p" to specify the listening port.  I am wondering if
+>>>>>>>>> that changed after the use of "nc" has been documented.
+>>>>>>>>
+>>>>>>>> On Fedora 16, `nc -u -l <port number>` works fine.
+>>>>>>>
+>>>>>>> Thanks for checking that.
+>>>>>>>
+>>>>>>> If the information I found is correct, Fedora uses OpenBSD's nc
+>>>>>>> codebase.  The two netcat packages I tested on a Gentoo system differ in
+>>>>>>> requiring the -p switch for the port specification.
+>>>>>>
+>>>>>> So say exactly that in the doc: that the *BSD's version of nc doesn't
+>>>>>> need the port number specified with '-p' and you're covered.
+>>>>> OK, I tried that in the attached patch.
+>>>>> I'm not sure if every exeption needs to/should be documented, though.
+>>>>>
+>>>>> >From 3cdeac3e814471053129145c5fa8391acb365fd8 Mon Sep 17 00:00:00 2001
+>>>>> From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+>>>>> Date: Sat, 28 Jul 2012 12:32:49 +0200
+>>>>> Subject: [PATCH] netconsole.txt: non-BSD versions of nc(1) require '-p'
+>>>>>  switch
+>>>>>
+>>>>> Gentoo for example uses non-BSD versions of nc(1) which require
+>>>>> the '-p' switch to specify the listening port.
+>>>>>
+>>>>> ---
+>>>>> Documentation/networking/netconsole.txt |    3 ++-
+>>>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>>
+>>> Did this ever resolve to a specific recommended patch? The one at the
+>>> start of the thread:
+>>>
+>>>  http://lkml.indiana.edu/hypermail/linux/kernel/1207.3/01995.html
+>>>
+>>> Apparently isn't it...?
+>>
+>> Sorry for the delay.
+>> I tested the situation on a few distributions and am still thinking
+>> about a proper way to write it in a way without netconsole.txt becoming
+>> a kind of "netcat.txt".
+>>
+>> I would be glad about comments to what I currently have -- also, because
+>> I am not a native English speaker:
+>>
+>> ------------------------------------------------------------------------
+>> The remote host can run syslogd or netcat to receive the kernel
+>> messages.  On distributions using a BSD-based netcat version
+>> (e.g. Fedora, openSUSE and Ubuntu) the listening port must be
+>> specified without the -p switch:
+>>
+>> 'nc -u -l -p <port>' / 'nc -u -l <port>' or
+>> 'netcat -u -l -p <port>' / 'netcat -u -l <port>'
+>> ------------------------------------------------------------------------
+>>
+>> At the end, I also attach what I have noted during the tests with the
+>> different distributions.
+>>
+>> Dirk
+>>
+>> ------------------------------------------------------------------------
+>> Problem on systems where the gnu-netcat package provides a symbolic
+>> link /usr/bin/nc -> /usr/bin/netcat:
+>>
+>> gnu-netcat requires -p to specify the local port but does not complain
+>> if invoked as `nc -l -u <port>'; you need to use -v to see that it
+>> does not do what you might expect:
+>>
+>> # nc -l -u 4444 -v
+>> Warning: Inverse name lookup failed for `0.0.17.92'
+>> ------------------------------------------------------------------------
+>>
+>> Distro		Package						needs -p
+>> 		Command invocation
+>> ========================================================================
+>> Arch		gnu-netcat					yes
+>> (Website	nc | netcat
+>>  documentation)
+>> 		openbsd-netcat					no
+>> 		nc.openbsd
+>> ------------------------------------------------------------------------
+>> Debian-6.0.5	netcat-openbsd					no 
+>> 		nc | netcat | nc.openbsd		   
+>> 		                                   
+>> 		netcat / netcat-traditional (preinstalled)	yes
+>> 		nc | netcat
+>> 		                                   
+>> 		netcat6						yes
+>> 		nc | netcat | nc6
+>> ------------------------------------------------------------------------
+>> Fedora-17	nc (preinstalled)				no
+>> 		nc
+>>
+>> 		nc6
+>> 		nc6						yes
+>> ------------------------------------------------------------------------
+>> Gentoo		gnu-netcat					yes
+>> 		netcat
+>>
+>> 		netcat						yes
+>> 		nc
+>>
+>> 		netcat6						yes
+>> 		nc | nc6
+>> ------------------------------------------------------------------------
+>> OpenSUSE-12.1	netcat-openbsd					no
+>> 		nc | netcat
+>> ------------------------------------------------------------------------
+>> Ubuntu-12.04	netcat-openbsd (preinstalled)			no 
+>> Desktop		nc | netcat | nc.openbsd
+>> 		                                   
+>> 		netcat / netcat-traditional			yes
+>> 		nc | netcat		   
+>> 		                                   
+>> 		netcat6						yes
+>> 		nc | netcat | nc6
+>> ------------------------------------------------------------------------
+> 
+> Here is a patch that also includes Jan's suggestion for socat(1).
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Or you could use the bash built-in functionality of /dev/udp/host/port
+with redirection. Or you can write a program to do it using the C API.
 
-On Thu, Aug 16, 2012 at 01:10:44PM +0200, Borislav Petkov wrote:
-> On Thu, Aug 16, 2012 at 11:54:39AM +0200, Thierry Reding wrote:
-> > How does the attached patch look?
-> >=20
-> > Thierry
->=20
-> > From cd3199b94e697cccd38766b4a60d2e91474d0539 Mon Sep 17 00:00:00 2001
-> > From: Thierry Reding <thierry.reding@avionic-design.de>
-> > Date: Thu, 16 Aug 2012 08:01:21 +0200
-> > Subject: [PATCH] pwm: Improve Kconfig help text
-> >=20
-> > The Kconfig help text should help the user understand what functionality
-> > is provided by an option. This is especially true for new subsystems. An
-> > improved help text is provided by this commit in the hopes of clarifying
-> > the usefulness of the PWM framework.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > ---
-> >  drivers/pwm/Kconfig | 24 ++++++++++++++++++------
-> >  1 file changed, 18 insertions(+), 6 deletions(-)
-> >=20
-> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> > index 8fc3808..88ddb9e 100644
-> > --- a/drivers/pwm/Kconfig
-> > +++ b/drivers/pwm/Kconfig
-> > @@ -1,12 +1,24 @@
-> >  menuconfig PWM
-> > -	bool "PWM Support"
-> > +	bool "Pulse-Width Modulation (PWM) Support"
-> >  	depends on !MACH_JZ4740 && !PUV3_PWM
-> >  	help
-> > -	  This enables PWM support through the generic PWM framework.
-> > -	  You only need to enable this, if you also want to enable
-> > -	  one or more of the PWM drivers below.
-> > -
-> > -	  If unsure, say N.
-> > +	  Generic Pulse-Width Modulation (PWM) support.
-> > +
-> > +	  This framework provides a generic interface to PWM devices
-> > +	  within the Linux kernel. On the driver side it provides an API
-> > +	  to register and unregister a PWM chip, an abstraction of a PWM
-> > +	  controller, that supports one or more PWM devices. Client
-> > +	  drivers can request PWM devices and use the generic framework
-> > +	  to configure as well as enable and disable them.
-> > +
-> > +	  The new generic framework replaces the legacy PWM framework
-> > +	  which allows only a single driver implementing the required
-> > +	  API. Not all legacy implementations have been ported to the
-> > +	  new framework yet. The new framework provides an API that is
-> > +	  backward compatible with the legacy framework so that existing
-> > +	  client drivers continue to work as expected.
-> > +
-> > +	  If unsure, say no.
->=20
-> Yes, this is much better than what we had before. I'd suggest though,
-> that instead of describing the high-level software design of the PWM
-> subsystem, the text should be more addressed to the simple user like me
-> who would like to know what this thing is and why do I want to enable
-> it. Basically summarize what PWN devices are and what they're used for.
-> I.e., https://en.wikipedia.org/wiki/Pulse-width_modulation#Applications
-> but in 4-5 lines of text.
->=20
-> IMHO, of course.
+This seems about as silly as trying to document /proc/sys/vm/drop-caches
+by listing the various ways you can write to a file.
 
-Okay, I'll add something along those lines in addition to the above.
-That way everybody should find something useful in it.
-
-Thanks,
-Thierry
-
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQLOIVAAoJEN0jrNd/PrOhhooQAK2z1N0laLt2GOE6AU6TDmDJ
-7Z1QN1Sjyo/pfpNJg/l9fN1PRvpWW0BSbYBfRSY3RTEmBvFMl5QYrnet+NrneGGH
-pHhWdAdWdIqlcfaJ45tjmQlI3HEWE/xFnw2Z5lKFB7Co0G4QLFUQx+Bc5KPGgRqR
-XuVm1ATNtQwz9fN64Kf8T19PMM+LQyVXBNDq+aHUkRSSXxfXTlAZsvQtR43OlD+Y
-3sIsgQBrtD72iypXtTpVxpygX5DTWRLTCsIu+gqkhiUMh91d8eXTEjaICNAoIc17
-q+eIypeEGbbQfiqWBfLm4D17PpZUeoOdILTuHc32llpb89TpamLvm1xrlXzyGy9W
-knQs59Df8TGfHP2O+bCuRS838xCxgKX8FAnP7qrQTyI1Jtpj0bWgLGHfeaPehcDV
-DscPpze/msO+BQ216Ubo15tAPXu/Hx6Gohkq7zBNclyMDu6XqHpI62EorIwZp1AY
-30LHsTbGts/mY5SmjgzNWQGTmDri5MQlZX5UF6KAhI75ACZTvDXt7Oi98UAHvCjA
-RvW5/uziTosCV4se4DSSMhfL80fWm1Aymom8MkVrVKOoIEDcbXotdEFtWXzJtSGF
-pFqsa0T/5cgaiKsqDfT47XCkIHOSTRoZnMRZJ8Yr/0BFCNemNUqlC1R8Ig3TbKMZ
-2ZT1zzFrB35GHaqVPx3O
-=Ndpy
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
