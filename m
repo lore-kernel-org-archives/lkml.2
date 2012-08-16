@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab2HPNnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:43:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55778 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab2HPNnn (ORCPT
+	id S1755415Ab2HPNpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:45:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35217 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2HPNpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:43:43 -0400
-Date: Thu, 16 Aug 2012 14:43:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816134339.GQ23464@ZenIV.linux.org.uk>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.591460800@openvz.org>
- <20120815204546.GC25062@fieldses.org>
- <20120815210237.GF25421@moon>
- <20120815220622.GA28054@fieldses.org>
- <20120816062448.GA32081@moon>
- <20120816123814.GD1209@moon>
+	Thu, 16 Aug 2012 09:45:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816123814.GD1209@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120816133521.GP22226@titan.lakedaemon.net>
+References: <20120814193613.GS22226@titan.lakedaemon.net>
+	<1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20120814232256.GX22226@titan.lakedaemon.net>
+	<20120816133521.GP22226@titan.lakedaemon.net>
+Date: Thu, 16 Aug 2012 15:45:00 +0200
+Message-ID: <CABJ1b_Q0TuhoUvM_hGVecLWnPn9pWf_UvUPyyUscK1yf8g7Q-g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate
+ FreeAgent Dockstar
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
+On 8/16/12, Jason Cooper <jason@lakedaemon.net> wrote:
+> Unless I hear otherwise from you in the next day or so, I'm going to
+> collapse the fix into your patch and push it that way.
 
-> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
-> convenient since it operates with dentries while our fdinfo output deals
-> with inodes. Thus I should either provide some new encode_fh variant
-> which would deal with inodes directly without "parents". Which doesn't
-> look for me anyhow better than the new export_encode_inode_fh helper.
+Jason,
 
-Huh?  You do have dentries, for crying out loud...
+please feel free to fix the patch. I am behind corporate firewall ATM
+and cannot update the patch quickly.
+
+Sebastian
