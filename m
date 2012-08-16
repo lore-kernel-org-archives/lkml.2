@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030380Ab2HPT4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:56:46 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43355 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933221Ab2HPT4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:56:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>, Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
-Date: Thu, 16 Aug 2012 22:02:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, David Miller <davem@davemloft.net>
-References: <Pine.LNX.4.44L0.1208161232001.31195-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1208161232001.31195-100000@netrider.rowland.org>
+	id S1030443Ab2HPT5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:57:07 -0400
+Received: from [213.199.154.208] ([213.199.154.208]:56672 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S932536Ab2HPTyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:54:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah1155h)
+X-WSS-ID: 0M8V5WZ-01-68M-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/8] perf tools: Fix type for evsel->ids and add size check for ids
+Date: Thu, 16 Aug 2012 21:10:17 +0200
+Message-ID: <1345144224-27280-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
+References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208162202.40929.rjw@sisk.pl>
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 16, 2012, Alan Stern wrote:
-> On Thu, 16 Aug 2012, Miklos Szeredi wrote:
-> 
-> > Yes, this appears to work.  Following patch fixes the suspend oops.
-> > 
-> > Thanks,
-> > Miklos
+Use same type for ids everywhere.
 
-OK
+In case of writing to perf.data the size is u32. In pipe mode it is
+limited to header.size (less than u16). Adding a size check here.
 
-Miklos, can you please send that to Dave with a proper changelog and
-sign-off (please add my ACK too)?  Please make it clear that this is a
-regression fix and which commit has introduced the regression.
+Size overflow due to casting shouldn't actually happen in practice,
+but during development this may cause type missmatch warninngs/errors,
+unifying types avoids this.
 
-> > ---
-> >  drivers/ide/ide-pm.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/ide/ide-pm.c b/drivers/ide/ide-pm.c
-> > index 9240609..8d1e32d 100644
-> > --- a/drivers/ide/ide-pm.c
-> > +++ b/drivers/ide/ide-pm.c
-> > @@ -4,7 +4,7 @@
-> >  
-> >  int generic_ide_suspend(struct device *dev, pm_message_t mesg)
-> >  {
-> > -	ide_drive_t *drive = dev_get_drvdata(dev);
-> > +	ide_drive_t *drive = to_ide_device(dev);
-> >  	ide_drive_t *pair = ide_get_pair_dev(drive);
-> >  	ide_hwif_t *hwif = drive->hwif;
-> >  	struct request *rq;
-> > @@ -40,7 +40,7 @@ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
-> >  
-> >  int generic_ide_resume(struct device *dev)
-> >  {
-> > -	ide_drive_t *drive = dev_get_drvdata(dev);
-> > +	ide_drive_t *drive = to_ide_device(dev);
-> >  	ide_drive_t *pair = ide_get_pair_dev(drive);
-> >  	ide_hwif_t *hwif = drive->hwif;
-> >  	struct request *rq;
-> 
-> And now you can get rid of the useless dev_set_drvdata() call.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/util/evsel.h  |    2 +-
+ tools/perf/util/header.c |   11 +++++++----
+ tools/perf/util/header.h |    2 +-
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
-That was in the other patch I think.
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 65f39fd..94f6ba1 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -53,7 +53,7 @@ struct perf_evsel {
+ 	u64			*id;
+ 	struct perf_counts	*counts;
+ 	int			idx;
+-	int			ids;
++	u32			ids;
+ 	struct hists		hists;
+ 	char			*name;
+ 	struct event_format	*tp_format;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 77832b8..471b0c4 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2240,7 +2240,7 @@ out_delete_evlist:
+ }
+ 
+ int perf_event__synthesize_attr(struct perf_tool *tool,
+-				struct perf_event_attr *attr, u16 ids, u64 *id,
++				struct perf_event_attr *attr, u32 ids, u64 *id,
+ 				perf_event__handler_t process)
+ {
+ 	union perf_event *ev;
+@@ -2261,9 +2261,12 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
+ 	memcpy(ev->attr.id, id, ids * sizeof(u64));
+ 
+ 	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
+-	ev->attr.header.size = size;
++	ev->attr.header.size = (u16)size;
+ 
+-	err = process(tool, ev, NULL, NULL);
++	if (ev->attr.header.size == size)
++		err = process(tool, ev, NULL, NULL);
++	else
++		err = -E2BIG;
+ 
+ 	free(ev);
+ 
+@@ -2292,7 +2295,7 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ int perf_event__process_attr(union perf_event *event,
+ 			     struct perf_evlist **pevlist)
+ {
+-	unsigned int i, ids, n_ids;
++	u32 i, ids, n_ids;
+ 	struct perf_evsel *evsel;
+ 	struct perf_evlist *evlist = *pevlist;
+ 
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 2d42b3e..24962e7 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -99,7 +99,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+ 
+ int perf_event__synthesize_attr(struct perf_tool *tool,
+-				struct perf_event_attr *attr, u16 ids, u64 *id,
++				struct perf_event_attr *attr, u32 ids, u64 *id,
+ 				perf_event__handler_t process);
+ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 				 struct perf_session *session,
+-- 
+1.7.8.6
 
-Thanks,
-Rafael
+
