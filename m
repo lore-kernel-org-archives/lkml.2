@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab2HPFAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:00:37 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:57689 "EHLO e5.ny.us.ibm.com"
+	id S1753377Ab2HPFB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:01:56 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42472 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab2HPFAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:00:35 -0400
-Date: Thu, 16 Aug 2012 10:30:30 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linuxppc-dev@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, michael@ellerman.id.au,
-        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120816050030.GA12060@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop>
+	id S1752914Ab2HPFBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 01:01:54 -0400
+Date: Thu, 16 Aug 2012 06:01:52 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] more drm fixes
+Message-ID: <alpine.DEB.2.00.1208160600330.24165@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345066913.11751.4.camel@pasglop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081605-5930-0000-0000-00000AEC3B23
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 07:41:53AM +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2012-08-15 at 18:59 +0200, Oleg Nesterov wrote:
-> > On 07/26, Ananth N Mavinakayanahalli wrote:
-> > >
-> > > From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> > >
-> > > This is the port of uprobes to powerpc. Usage is similar to x86.
-> > 
-> > I am just curious why this series was ignored by powerpc maintainers...
-> 
-> Because it arrived too late for the previous merge window considering my
-> limited bandwidth for reviewing things and that nobody else seems to
-> have reviewed it :-)
-> 
-> It's still on track for the next one, and I'm hoping to dedicate most of
-> next week going through patches & doing a powerpc -next.
 
-Thanks Ben!
+Just some intel and nouveau ones this time, intel has more edp panel fixes 
+for macbooks and nouveau has a suspend/resume regression fix in there.
 
-> > Of course I can not review this code, I know nothing about powerpc,
-> > but the patches look simple/straightforward.
-> > 
-> > Paul, Benjamin?
-> > 
-> > Just one question... Shouldn't arch_uprobe_pre_xol() forbid to probe
-> > UPROBE_SWBP_INSN (at least) ?
-> > 
-> > (I assume that emulate_step() can't handle this case but of course I
-> >  do not understand arch/powerpc/lib/sstep.c)
-> > 
-> > Note that uprobe_pre_sstep_notifier() sets utask->state = UTASK_BP_HIT
-> > without any checks. This doesn't look right if it was UTASK_SSTEP...
-> > 
-> > But again, I do not know what powepc will actually do if we try to
-> > single-step over UPROBE_SWBP_INSN.
-> 
-> Ananth ?
+Dave.
 
-set_swbp() will return -EEXIST to install_breakpoint if we are trying to
-put a breakpoint on UPROBE_SWBP_INSN. So, the arch agnostic code itself
-takes care of this case... or am I missing something?
+The following changes since commit 7bac6b46607f2f44075cb45dd5b0b4d2e7c80695:
 
-However, I see that we need a powerpc specific is_swbp_insn()
-implementation since we will have to take care of all the trap variants.
+  Merge branch 'drm-fixes-3.6' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2012-08-14 09:25:01 +1000)
 
-I will need to update the patches based on changes being made by Oleg
-and Sebastien for the single-step issues. Will incorporate the powerpc
-specific is_swbp_insn() change along with the changes required for the
-single-step part and send out the next version.
+are available in the git repository at:
 
-Ananth
 
+  git://people.freedesktop.org/~airlied/linux.git drm-fixes
+
+for you to fetch changes up to 2e26c73a1e410448fbd2c0fbd34f06d98eaf8e48:
+
+  Merge branch 'drm-nouveau-fixes' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes (2012-08-15 20:31:22 +1000)
+
+----------------------------------------------------------------
+
+Ben Skeggs (2):
+      drm/nve0/fifo: add support for the flip completion swmthd
+      drm/nouveau/aux: mask off higher bits of auxch index in i2c table entry
+
+Chris Wilson (1):
+      drm/i915: Apply post-sync write for pipe control invalidates
+
+Christoph Bumiller (1):
+      drm/nvd0/disp: mask off high 16 bit of negative cursor x-coordinate
+
+Daniel Vetter (2):
+      drm/i915: ignore eDP bpc settings from vbt
+      drm/i915: reorder edp disabling to fix ivb MacBook Air
+
+Dave Airlie (2):
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-nouveau-fixes' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+
+Henrik Rydberg (1):
+      drm/nouveau: disable copy engine on NVAF
+
+Jani Nikula (1):
+      drm/i915: ensure i2c adapter is all set before adding it
+
+Maarten Lankhorst (1):
+      nouveau: fixup scanout enable in nvc0_pm
+
+Maxim Levitsky (1):
+      drm/nv86/fifo: suspend fix
+
+Takashi Iwai (1):
+      drm/i915: Fix blank panel at reopening lid
+
+ drivers/gpu/drm/i915/intel_display.c    |   11 ---------
+ drivers/gpu/drm/i915/intel_dp.c         |   14 +++++------
+ drivers/gpu/drm/i915/intel_i2c.c        |    7 +++---
+ drivers/gpu/drm/i915/intel_panel.c      |   13 +++++++---
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   41 +++++++++++++++++--------------
+ drivers/gpu/drm/nouveau/nouveau_i2c.c   |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_state.c |    1 -
+ drivers/gpu/drm/nouveau/nv84_fifo.c     |    9 +++++++
+ drivers/gpu/drm/nouveau/nvc0_pm.c       |    2 +-
+ drivers/gpu/drm/nouveau/nvd0_display.c  |    2 +-
+ drivers/gpu/drm/nouveau/nve0_fifo.c     |   37 +++++++++++++++++++++++++---
+ 11 files changed, 88 insertions(+), 51 deletions(-)
