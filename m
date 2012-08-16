@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab2HPOl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:41:58 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38157 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2HPOl4 (ORCPT
+	id S932576Ab2HPOmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:42:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289Ab2HPOm3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:41:56 -0400
-Date: Thu, 16 Aug 2012 15:41:52 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816144152.GT23464@ZenIV.linux.org.uk>
-References: <20120815210237.GF25421@moon>
- <20120815220622.GA28054@fieldses.org>
- <20120816062448.GA32081@moon>
- <20120816123814.GD1209@moon>
- <20120816134339.GQ23464@ZenIV.linux.org.uk>
- <502CF9DA.8030701@parallels.com>
- <20120816135019.GS23464@ZenIV.linux.org.uk>
- <20120816135448.GP32081@moon>
- <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
- <20120816141553.GF1209@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816141553.GF1209@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Aug 2012 10:42:29 -0400
+Message-ID: <1345128138.29668.42.camel@twins>
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU
+ goes down.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Date: Thu, 16 Aug 2012 16:42:18 +0200
+In-Reply-To: <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+References: <1345124749.31092.2.camel@localhost.localdomain>
+	 <1345125384.29668.30.camel@twins>
+	 <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 06:15:53PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 16, 2012 at 02:03:00PM +0000, James Bottomley wrote:
-> > > > What's wrong with saying "we don't support idiotify"?
-> > > 
-> > > Al, we need some way to restore inotifies after checkpoint.
-> > > At the very early versions of these patches I simply added
-> > > dentry to the inotify mark thus once inotify created we always
-> > > have a dentry to refer on in encode_fh, but I'm not sure if
-> > > this will be good design.
-> > 
-> > Actually, I was about to suggest this.  This can be done internally
-> > within fs/notify without actually modifying the syscall interface, can't
-> > it, since they take a path which is used to obtain the inode?  It looks
-> > like the whole of the inotify interface could be internally recast to
-> > use dentries instead of inodes.  Unless I've missed something obvious?
-> 
-> Well, after looking into do_sys_name_to_handle->exportfs_encode_fh
-> sequence more precisely it seems it will be easier to extend
-> exportfs_encode_fh to support inodes directly instead of playing
-> with notify code (again, if i'm not missing something too).
-> i'm cooking a patch to show (once it's tested i'll send it out).
+On Thu, 2012-08-16 at 20:28 +0600, Rakib Mullick wrote:
 
-Good luck doing that with e.g. VFAT...  And then there's such thing
-as filesystems that don't have ->encode_fh() for a lot of very good
-reasons; just try to do that on sysfs, for example.  Or on ramfs,
-for that matter...  And while saying "you can't export that over
-NFS" seems to work fine, idiotify-lovers will screech if you try
-to ban their perversion of choice on those filesystems.
+> I'm not sure which parts are missing from Changelog to patch. And this
+> patch assumes that, sleeping tasks won't be scattered. From
+> select_fallback_rq(), sleeping tasks might get scattered due to
+> various cases like. if CPU is down, task isn't allowed to move a
+> particular CPU. Other than that, dest cpu supposed to be the same.
+
+Sure but affinities and cpusets can still scatter, and therefore your
+logic doesn't hold up, but see below.
+
+> > Furthermore there should be absolutely no impact on load calculation
+> > what so ever. nr_uninterruptible is only ever useful as a sum over all
+> > cpus, this total sum doesn't change regardless of where you put the
+> > value.
+> >
+> > Worse, there's absolutely no relation to the tasks on the runqueue
+> > (sleeping or otherwise) and nr_uninterruptible, so coupling these
+> > actions makes no sense what so ever.
+> >
+> nr_uninterruptible is coupled with tasks on the runqueue to calculate
+> nr_active numbers.
+
+It is not.. nr_uninterruptible is incremented on the cpu the task goes
+to sleep and decremented on the cpu doing the wakeup.
+
+This means that nr_uninterruptible is a complete mess and any per-cpu
+value isn't meaningful at all.
+
+It is quite possible to always have the inc on cpu0 and the decrement on
+cpu1, yielding results like:
+
+{1000, -1000} for an effective nr_uninterruptible = 0. Taking either cpu
+down will then migrate whatever delta it has to another cpu, but there
+might only be a single task, yet the delta is +-1000.
+
+> In calc_load_fold_active(), this nr_active numbers are used to
+> calculate delta. This is how I understand this part and seeing some
+> impact.
+
+You understand wrong, please re-read the comment added in commit
+5167e8d5.
