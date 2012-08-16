@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab2HPH4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 03:56:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42687 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752507Ab2HPH4X (ORCPT
+	id S1756046Ab2HPIAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:00:23 -0400
+Received: from cust23-dsl91-135-1.idnet.net ([91.135.1.23]:40173 "EHLO
+	drevil.shawell.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab2HPIAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 03:56:23 -0400
-Message-ID: <1345103778.3259.12.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>,
-        Jens Axboe <axboe@kernel.dk>
-Date: Thu, 16 Aug 2012 08:56:18 +0100
-In-Reply-To: <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com>
-References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
-	 <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
-	 <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
-	 <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 16 Aug 2012 04:00:21 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Aug 2012 04:00:21 EDT
+From: Steve Glendinning <steve.glendinning@shawell.net>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, trivial@rustcorp.com.au,
+        Steve Glendinning <steve.glendinning@shawell.net>
+Subject: [PATCH] smsc75xx: add missing entry to MAINTAINERS
+Date: Thu, 16 Aug 2012 08:53:38 +0100
+Message-Id: <1345103618-22753-1-git-send-email-steve.glendinning@shawell.net>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 10:35 +0900, Chanho Min wrote:
-> > functions will occur in line.  I also don't see why the sdev reference
-> > couldn't drop to zero here.
-> scsi_request_fn is called under the lock of request_queue->queue_lock.
-> If we drop the sdev reference to zero here,
-> scsi_device_dev_release_usercontext is
-> invoked and make request_queue to NULL. When caller of scsi_request_fn try to
-> unlock request_queue->queue_lock, the oops is occurred.
+Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
+---
+ MAINTAINERS |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I don't understand this explanation.
-
-sdev->request_queue goes to NULL if the sdev refcount goes to zero (and
-blk.  We have a copy though in the q variable, which is what we unlock.
-That q variable only goes invalid if the queue ref count goes to zero.
-If that happens, the queue release function will try to take the lock to
-free the elevator and your patch will cause a deadlock.
-
-There are only two possibilities here:
-
-     1. The queue refcount can never reach zero within a request
-        function because block ensures that it can unlock the queue lock
-        on exit.  We could then remove this lock drop and acquire on the
-        grounds that it is superfluous.
-     2. The queue refcount does indeed go to zero and the queue gets
-        released.  This would mean that all our lock; request_fn; unlock
-        patterns do a use after free (in the block layer).  Your
-        proposed patch doesn't fix this (and indeed would cause a
-        deadlock on the release path).
-
-I've cc'd Jens, because I don't entirely see why our
-
-lock; request_fn; unlock
-
-is safe against a racing blk_cleanup_queue().
-
-James
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index f875890..560bd30 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7289,6 +7289,12 @@ W:	http://www.connecttech.com
+ S:	Supported
+ F:	drivers/usb/serial/whiteheat*
+ 
++USB SMSC75XX ETHERNET DRIVER
++M:	Steve Glendinning <steve.glendinning@shawell.net>
++L:	netdev@vger.kernel.org
++S:	Maintained
++F:	drivers/net/usb/smsc75xx.*
++
+ USB SMSC95XX ETHERNET DRIVER
+ M:	Steve Glendinning <steve.glendinning@shawell.net>
+ L:	netdev@vger.kernel.org
+-- 
+1.7.9.5
 
