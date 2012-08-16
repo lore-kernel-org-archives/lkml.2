@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2HPKYC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:24:02 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47089 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab2HPKX6 (ORCPT
+	id S1754630Ab2HPK1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:27:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48618 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2HPK1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:23:58 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
-Subject: Re: [PATCH 04/13] overlay filesystem
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	<1345045700-9062-5-git-send-email-miklos@szeredi.hu>
-	<87zk5v5p73.fsf@xmission.com>
-Date: Thu, 16 Aug 2012 12:25:14 +0200
-In-Reply-To: <87zk5v5p73.fsf@xmission.com> (Eric W. Biederman's message of
-	"Wed, 15 Aug 2012 23:24:48 -0700")
-Message-ID: <87wr0zcewl.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 16 Aug 2012 06:27:17 -0400
+Date: Thu, 16 Aug 2012 11:31:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tomas Hlavacek <tmshlvck@gmail.com>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        marek.vasut@gmail.com
+Subject: Re: [PATCH 1/1] [RFC] uartclk from serial_core exposed to sysfs
+Message-ID: <20120816113152.73838695@pyramind.ukuu.org.uk>
+In-Reply-To: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+References: <CAEB7QLAJXkK6NDPVDi36n_U_X_DGh5niHJhH6FpqBUZFmXQ2Xg@mail.gmail.com>
+	<1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
 
-> Miklos Szeredi <miklos@szeredi.hu> writes:
->
-> Minor nits below.
->
->> diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
->> new file mode 100644
->> index 0000000..6b50823
->> --- /dev/null
->> +++ b/fs/overlayfs/dir.c
->> @@ -0,0 +1,598 @@
->> +/*
->> + *
->> + * Copyright (C) 2011 Novell Inc.
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms of the GNU General Public License version 2 as published by
->> + * the Free Software Foundation.
->> + */
->> +
->> +#include <linux/fs.h>
->> +#include <linux/namei.h>
->> +#include <linux/xattr.h>
->> +#include <linux/security.h>
->> +#include <linux/cred.h>
->> +#include "overlayfs.h"
->> +
->> +static const char *ovl_whiteout_symlink = "(overlay-whiteout)";
->> +
->> +static int ovl_whiteout(struct dentry *upperdir, struct dentry *dentry)
->> +{
->> +	int err;
->> +	struct dentry *newdentry;
->> +	const struct cred *old_cred;
->> +	struct cred *override_cred;
->> +
->> +	/* FIXME: recheck lower dentry to see if whiteout is really
->>  	needed */
->
-> Is that FIXME still valid?
+> +	/*
+> +	 * Check value: baud_base has to be more than 9600
+> +	 * and uartclock = baud_base * 16 .
+> +	 */
+> +	if (val >= 153600)
+> +		state->uart_port->uartclk = val;
+> +
+> +	mutex_unlock(&state->port.mutex);
+> +
+> +	return count;
 
-It is, but it's not an important feature.  Lacking this will mean once a
-file/directory is marked whiteout or opaque on the upper filesystem it
-will remain so forever even after the file/directory it is masking out
-has been removed from the lower filesystem.
+This breaks if for example the port is in use. Fixing that looks pretty
+horrible as you need a valid tty pointer to stop and restart the pot.
 
-However this cannot be observed by looking at the overlay, only by
-looking at the underlying filesystems.
+It's also not calling the verfy method of the port as is expected.
 
+At minimum I think you need to be able to do the same work
+uart_get_info/uart_set_info perform and with the same checks on ->verify
+etc.
 
->
->> +	err = -ENOMEM;
->> +	override_cred = prepare_creds();
->> +	if (!override_cred)
->> +		goto out;
->> +
->> +	/*
->> +	 * CAP_SYS_ADMIN for setxattr
->> +	 * CAP_DAC_OVERRIDE for symlink creation
->> +	 * CAP_FOWNER for unlink in sticky directory
->> +	 */
->> +	cap_raise(override_cred->cap_effective, CAP_SYS_ADMIN);
->> +	cap_raise(override_cred->cap_effective, CAP_DAC_OVERRIDE);
->> +	cap_raise(override_cred->cap_effective, CAP_FOWNER);
->> +	override_cred->fsuid = 0;
->> +	override_cred->fsgid = 0;
->
-> Could you please make these GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
-> instead of 0?  Otherwise this code won't compile with the usernamespace
-> bits enabled.
+I'm not 100% sure the drvdata on the tty_dev is clear to use. It does
+seem to be in all the drivers I looked at. I'd rather however it pointed
+to the tty_port that each tty device has (or very soon will be required
+to have). You can still find the uart_foo structs from that but it means
+we can do the dev_set_drvdata() in a consistent manner for all tty
+devices in the kernel. That in turn means we can make some of the sysfs
+valid the same way.
 
-Okay.
+I want to have think about the setting side of it. Can you submit a
+revised version that just allows the user to read the value this way but
+does the drvdata setting etc and sysfs node create/delete.
 
-Thanks for the review.
+I'll merge that and we can throw it over the parapet and see if anything
+explodes.
 
-Miklos
+To make the setting part work properly I think I need to sort out
+uart_get_info/set_info so the core part of it can be called with kernel
+space structures and the caller handling locks.
+
+Alan
