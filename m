@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab2HPNsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:48:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50212 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367Ab2HPNsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:48:36 -0400
-Date: Thu, 16 Aug 2012 15:48:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tomas Racek <tracek@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: x86, nops settings result in kernel crash
-Message-ID: <20120816134834.GA11974@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tomas Racek <tracek@redhat.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-	qemu-devel@nongnu.org
-References: <1104118228.1760802.1345121009530.JavaMail.root@redhat.com>
- <711271179.1776875.1345124112800.JavaMail.root@redhat.com>
+	id S1756821Ab2HPNsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:48:53 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55012 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2HPNsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:48:51 -0400
+Date: Thu, 16 Aug 2012 14:48:48 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120816134848.GR23464@ZenIV.linux.org.uk>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <20120815204546.GC25062@fieldses.org>
+ <20120815210237.GF25421@moon>
+ <20120815220622.GA28054@fieldses.org>
+ <20120816062448.GA32081@moon>
+ <20120816123814.GD1209@moon>
+ <20120816134339.GQ23464@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <711271179.1776875.1345124112800.JavaMail.root@redhat.com>
+In-Reply-To: <20120816134339.GQ23464@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 09:35:12AM -0400, Tomas Racek wrote:
-> Hi,
+On Thu, Aug 16, 2012 at 02:43:39PM +0100, Al Viro wrote:
+> On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
 > 
-> I am writing a file system test which I execute in qemu with kernel compiled from latest git sources and running it causes this error:
+> > Hi Bruce, thinking a bit more I guess using general encode_fh is not that
+> > convenient since it operates with dentries while our fdinfo output deals
+> > with inodes. Thus I should either provide some new encode_fh variant
+> > which would deal with inodes directly without "parents". Which doesn't
+> > look for me anyhow better than the new export_encode_inode_fh helper.
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=45971
-> 
-> It works with v3.5, so I ran git bisect which pointed me to:
-> 
-> d6250a3f12edb3a86db9598ffeca3de8b4a219e9 x86, nops: Missing break resulting in incorrect selection on Intel
-> 
-> To be quite honest, I don't understand this stuff much but I tried to do some debugging and I figured out (I hope) that the crash is caused by setting ideal_nops to p6_nops (k8_nops was used before the break statement was added).
+> Huh?  You do have dentries, for crying out loud...
 
-Maybe I overlooked it or maybe it was implied but did you try reverting
-the patch and rerunning your test? Does it work ok then?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Oww...  You are using it for idiotify and the rest of that pile of
+garbage?  What a mess...
