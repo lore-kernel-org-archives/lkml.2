@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab2HPQrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:47:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37080 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab2HPQrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:47:13 -0400
-Date: Thu, 16 Aug 2012 18:47:04 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-In-Reply-To: <20120816183021.68c37f37@neptune.home>
-Message-ID: <alpine.LNX.2.00.1208161846240.28475@pobox.suse.cz>
-References: <20120730213656.0a9f6d30@neptune.home> <alpine.LNX.2.00.1208151016221.7026@pobox.suse.cz> <20120815114236.0f7db40e@neptune.home> <alpine.LNX.2.00.1208151409500.7026@pobox.suse.cz> <20120815171635.2564a4a8@neptune.home> <alpine.LNX.2.00.1208152329580.7026@pobox.suse.cz>
- <20120816183021.68c37f37@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753986Ab2HPQs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:48:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36242 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab2HPQsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:48:54 -0400
+Message-ID: <502D2471.407@pobox.com>
+Date: Thu, 16 Aug 2012 12:48:49 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andi Kleen <andi@firstfloor.org>
+CC: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com> <502D100D.2030609@pobox.com> <20120816162051.GK11413@one.firstfloor.org>
+In-Reply-To: <20120816162051.GK11413@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Bruno Prémont wrote:
+On 08/16/2012 12:20 PM, Andi Kleen wrote:
+>> If you think a little bit, I bet you could come up with a solution that
+>> operates at cacheline-aligned granularity, something that would be _even
+>> faster_ than simply fixing the code to do aligned accesses.
+>
+> Cache aligned compression is unlikely to compress anything at all.
+> Compression algorithms are usually by definition unaligned.
 
-> > I don't really understand this explanation. Once usb_kill_urb() returns, 
-> > the URB should be available for future use (and therefore all queues 
-> > completely drained).
-> 
-> I won't have time today to check, though my guess is that on each
-> echo $usb-id > bind; echo $usb-id > unbind
-> under /sys/bus/hid/drivers/hid-picolcd/ the USB urb queue fills a bit does
-> not get cleared.
-> 
-> Is usb_kill_urb() called when unbinding just the specific hid driver? 
+Sure it's a bitstream, but that does not imply the impossibility of 
+reading data in in an word-aligned manner.
 
-Yup, through hid_hw_stop() -> usbhid_stop().
+Maybe cache-aligned is ambitious, because of resultant code bloat, but 
+machine-int-aligned is doable and reasonable.
 
-> If so my short timing between bind/unbind must be triggering something 
-> else...
-> 
-> Otherwise I'm missing something as at first time I got no "output queue full"
-> messages, but as I repeated the bind/unbind sequences the prints per bind/unbind
-> iteration increased in number.
-> 
-> Anyhow, on Friday evening/week-end I will continue digging and report back with my
-> findings.
+	Jeff
 
-Thank you, Bruno.
 
--- 
-Jiri Kosina
-SUSE Labs
+
+
