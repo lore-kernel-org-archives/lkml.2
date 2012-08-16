@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab2HPOC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:02:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:57002 "EHLO ozlabs.org"
+	id S932642Ab2HPOCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:02:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54251 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757149Ab2HPOCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:02:25 -0400
-Message-ID: <1345125747.20062.12.camel@concordia>
-Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        K Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Date: Fri, 17 Aug 2012 00:02:27 +1000
-In-Reply-To: <1345117498.29668.23.camel@twins>
-References: <28857.1345091034@neuling.org>
-	 <1345102812.31459.114.camel@twins> <20344.1345115849@neuling.org>
-	 <1345117498.29668.23.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932621Ab2HPOCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:02:35 -0400
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+To: LMML <linux-media@vger.kernel.org>
+CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH] media: davinci: vpif: add check for NULL handler
+Date: Thu, 16 Aug 2012 19:32:00 +0530
+Message-ID: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 13:44 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-08-16 at 21:17 +1000, Michael Neuling wrote:
-> > Peter,
-> > 
-> > > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
-> > > > despite there being no breakpoint on this CPU.  This is because the call
-> > > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
-> > > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
-> > > > return ENOSPC.
-> > > 
-> > > I think this comes from the ptrace legacy, we register a breakpoint on
-> > > all cpus because when we migrate a task it cannot fail to migrate the
-> > > breakpoint.
-> > > 
-> > > Its one of the things I hate most about the hwbp stuff as it relates to
-> > > perf.
-> > > 
-> > > Frederic knows more...
-> > 
-> > Maybe I should wait for Frederic to respond but I'm not sure I
-> > understand what you're saying.
-> > 
-> > I can see how using ptrace hw breakpoints and perf hw breakpoints at the
-> > same time could be a problem, but I'm not sure how this would stop it.
-> 
-> ptrace uses perf for hwbp support so we're stuck with all kinds of
-> stupid ptrace constraints.. or somesuch.
-> 
-> > Are you saying that we need to keep at least 1 slot free at all times,
-> > so that we can use it for ptrace?
-> 
-> No, I'm saying perf-hwbp is weird because of ptrace, maybe the ptrace
-> weirdness shouldn't live in perf-hwpb but in the ptrace-perf glue
-> however..
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-But how else would it work, even if ptrace wasn't in the picture?
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
+ drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
-You do want to guarantee that the task will always be subject to the
-breakpoint, even if it moves cpus. So is there any way to guarantee that
-other than reserving a breakpoint slot on every cpu ahead of time?
-
-Or can a hwbp event go into error state if it can't be installed on the
-new cpu, like a pinned event does? I can't see any code that does that.
-
-cheers
-
-
-
+diff --git a/drivers/media/video/davinci/vpif_capture.c b/drivers/media/video/davinci/vpif_capture.c
+index 266025e..a87b7a5 100644
+--- a/drivers/media/video/davinci/vpif_capture.c
++++ b/drivers/media/video/davinci/vpif_capture.c
+@@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	}
+ 
+ 	/* configure 1 or 2 channel mode */
+-	ret = vpif_config_data->setup_input_channel_mode
+-					(vpif->std_info.ycmux_mode);
++	if (vpif_config_data->setup_input_channel_mode) {
++		ret = vpif_config_data->setup_input_channel_mode
++						(vpif->std_info.ycmux_mode);
+ 
+-	if (ret < 0) {
+-		vpif_dbg(1, debug, "can't set vpif channel mode\n");
+-		return ret;
++		if (ret < 0) {
++			vpif_dbg(1, debug, "can't set vpif channel mode\n");
++			return ret;
++		}
+ 	}
+ 
+ 	/* Call vpif_set_params function to set the parameters and addresses */
+diff --git a/drivers/media/video/davinci/vpif_display.c b/drivers/media/video/davinci/vpif_display.c
+index e129c98..1e35f92 100644
+--- a/drivers/media/video/davinci/vpif_display.c
++++ b/drivers/media/video/davinci/vpif_display.c
+@@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	}
+ 
+ 	/* clock settings */
+-	ret =
+-	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+-					ch->vpifparams.std_info.hd_sd);
+-	if (ret < 0) {
+-		vpif_err("can't set clock\n");
+-		return ret;
++	if (vpif_config_data->set_clock) {
++		ret =
++		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
++						ch->vpifparams.std_info.hd_sd);
++		if (ret < 0) {
++			vpif_err("can't set clock\n");
++			return ret;
++		}
+ 	}
+ 
+ 	/* set the parameters and addresses */
+-- 
+1.7.0.4
 
