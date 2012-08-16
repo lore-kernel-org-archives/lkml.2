@@ -1,58 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab2HPQLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:11:38 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:65167 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab2HPQLf (ORCPT
+	id S1030204Ab2HPQNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:13:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32101 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab2HPQNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:11:35 -0400
-Message-ID: <502D1A30.4010109@gmail.com>
-Date: Thu, 16 Aug 2012 18:05:04 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: bhalevy@tonian.com, jack@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
-        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] vfs: remove lock and unlock functions for super block
-References: <502CC499.4030109@gmail.com> <502CE700.3070709@panasas.com>
-In-Reply-To: <502CE700.3070709@panasas.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 12:13:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [PATCH] Boot PV guests with more than 128GB (v3) for v3.7.
+Date: Thu, 16 Aug 2012 12:03:18 -0400
+Message-Id: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/08/2012 14:26, Boaz Harrosh ha scritto:
-> On 08/16/2012 12:59 PM, Marco Stornelli wrote:
->
->> From: Marco Stornelli <marco.stornelli@gmail.com>
->>
->> Remove lock_super and unlock_super from VFS.
->>
->> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
->
->
-> You can't remove the lock here. After this patch the tree will
-> not compile, and will not be bisectable. You must move this patch
-> to be last.
->
-> Each patch should leave the tree compileable and with out any
-> regressions.
->
-> Boaz
->
+Since (v2): http://lists.xen.org/archives/html/xen-devel/2012-07/msg01864.html
+ - fixed a bug if guest booted with non-PMD aligned size (say, 899MB).
+ - fixed smack warnings
+ - moved a memset(xen_start_info->mfn_list, 0xff,.. ) from one patch to another.
+Since v1: [http://lists.xen.org/archives/html/xen-devel/2012-07/msg01561.html]
+ - added more comments, and #ifdefs
+ - squashed The L4 and L4, L3, and L2 recycle patches together
+ - Added Acked-by's
 
-Yep, you're right. I'll resend it in the right order at the end of first 
-review.
+These patches are quite baked by now. If you already looked at this before
+I would just skip over it and just look at the last patch.
 
-Thanks,
+The explanation of these patches is exactly what v1 had:
 
-Marco
+The details of this problem are nicely explained in:
+
+ [PATCH 4/6] xen/p2m: Add logic to revector a P2M tree to use __va
+ [PATCH 5/6] xen/mmu: Copy and revector the P2M tree.
+ [PATCH 6/6] xen/mmu: Remove from __ka space PMD entries for
+
+and the supporting patches are just nice optimizations. Pasting in
+what those patches mentioned:
+
+
+During bootup Xen supplies us with a P2M array. It sticks
+it right after the ramdisk, as can be seen with a 128GB PV guest:
+
+(certain parts removed for clarity):
+xc_dom_build_image: called
+xc_dom_alloc_segment:   kernel       : 0xffffffff81000000 -> 0xffffffff81e43000 
+ (pfn 0x1000 + 0xe43 pages)
+xc_dom_pfn_to_ptr: domU mapping: pfn 0x1000+0xe43 at 0x7f097d8bf000
+xc_dom_alloc_segment:   ramdisk      : 0xffffffff81e43000 -> 0xffffffff925c7000 
+ (pfn 0x1e43 + 0x10784 pages)
+xc_dom_pfn_to_ptr: domU mapping: pfn 0x1e43+0x10784 at 0x7f0952dd2000
+xc_dom_alloc_segment:   phys2mach    : 0xffffffff925c7000 -> 0xffffffffa25c7000 
+ (pfn 0x125c7 + 0x10000 pages)
+xc_dom_pfn_to_ptr: domU mapping: pfn 0x125c7+0x10000 at 0x7f0942dd2000
+xc_dom_alloc_page   :   start info   : 0xffffffffa25c7000 (pfn 0x225c7)
+xc_dom_alloc_page   :   xenstore     : 0xffffffffa25c8000 (pfn 0x225c8)
+xc_dom_alloc_page   :   console      : 0xffffffffa25c9000 (pfn 0x225c9)
+nr_page_tables: 0x0000ffffffffffff/48: 0xffff000000000000 -> 
+0xffffffffffffffff, 1 table(s)
+nr_page_tables: 0x0000007fffffffff/39: 0xffffff8000000000 -> 
+0xffffffffffffffff, 1 table(s)
+nr_page_tables: 0x000000003fffffff/30: 0xffffffff80000000 -> 
+0xffffffffbfffffff, 1 table(s)
+nr_page_tables: 0x00000000001fffff/21: 0xffffffff80000000 -> 
+0xffffffffa27fffff, 276 table(s)
+xc_dom_alloc_segment:   page tables  : 0xffffffffa25ca000 -> 0xffffffffa26e1000 
+ (pfn 0x225ca + 0x117 pages)
+xc_dom_pfn_to_ptr: domU mapping: pfn 0x225ca+0x117 at 0x7f097d7a8000
+xc_dom_alloc_page   :   boot stack   : 0xffffffffa26e1000 (pfn 0x226e1)
+xc_dom_build_image  : virt_alloc_end : 0xffffffffa26e2000
+xc_dom_build_image  : virt_pgtab_end : 0xffffffffa2800000
+
+So the physical memory and virtual (using __START_KERNEL_map addresses)
+layout looks as so:
+
+  phys                             __ka
+/------------\                   /-------------------\
+| 0          | empty             | 0xffffffff80000000|
+| ..         |                   | ..                |
+| 16MB       | <= kernel starts  | 0xffffffff81000000|
+| ..         |                   |                   |
+| 30MB       | <= kernel ends => | 0xffffffff81e43000|
+| ..         |  & ramdisk starts | ..                |
+| 293MB      | <= ramdisk ends=> | 0xffffffff925c7000|
+| ..         |  & P2M starts     | ..                |
+| ..         |                   | ..                |
+| 549MB      | <= P2M ends    => | 0xffffffffa25c7000|
+| ..         | start_info        | 0xffffffffa25c7000|
+| ..         | xenstore          | 0xffffffffa25c8000|
+| ..         | cosole            | 0xffffffffa25c9000|
+| 549MB      | <= page tables => | 0xffffffffa25ca000|
+| ..         |                   |                   |
+| 550MB      | <= PGT end     => | 0xffffffffa26e1000|
+| ..         | boot stack        |                   |
+\------------/                   \-------------------/
+
+As can be seen, the ramdisk, P2M and pagetables are taking
+a bit of __ka addresses space. Which is a problem since the
+MODULES_VADDR starts at 0xffffffffa0000000 - and P2M sits
+right in there! This results during bootup with the inability to
+load modules, with this error:
+
+------------[ cut here ]------------
+WARNING: at /home/konrad/ssd/linux/mm/vmalloc.c:106 
+vmap_page_range_noflush+0x2d9/0x370()
+Call Trace:
+ [<ffffffff810719fa>] warn_slowpath_common+0x7a/0xb0
+ [<ffffffff81030279>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
+ [<ffffffff81071a45>] warn_slowpath_null+0x15/0x20
+ [<ffffffff81130b89>] vmap_page_range_noflush+0x2d9/0x370
+ [<ffffffff81130c4d>] map_vm_area+0x2d/0x50
+ [<ffffffff811326d0>] __vmalloc_node_range+0x160/0x250
+ [<ffffffff810c5369>] ? module_alloc_update_bounds+0x19/0x80
+ [<ffffffff810c6186>] ? load_module+0x66/0x19c0
+ [<ffffffff8105cadc>] module_alloc+0x5c/0x60
+ [<ffffffff810c5369>] ? module_alloc_update_bounds+0x19/0x80
+ [<ffffffff810c5369>] module_alloc_update_bounds+0x19/0x80
+ [<ffffffff810c70c3>] load_module+0xfa3/0x19c0
+ [<ffffffff812491f6>] ? security_file_permission+0x86/0x90
+ [<ffffffff810c7b3a>] sys_init_module+0x5a/0x220
+ [<ffffffff815ce339>] system_call_fastpath+0x16/0x1b
+---[ end trace fd8f7704fdea0291 ]---
+vmalloc: allocation failure, allocated 16384 of 20480 bytes
+modprobe: page allocation failure: order:0, mode:0xd2
+
+Since the __va and __ka are 1:1 up to MODULES_VADDR and
+cleanup_highmap rids __ka of the ramdisk mapping, what
+we want to do is similar - get rid of the P2M in the __ka
+address space. There are two ways of fixing this:
+
+ 1) All P2M lookups instead of using the __ka address would
+    use the __va address. This means we can safely erase from
+    __ka space the PMD pointers that point to the PFNs for
+    P2M array and be OK.
+ 2). Allocate a new array, copy the existing P2M into it,
+    revector the P2M tree to use that, and return the old
+    P2M to the memory allocate. This has the advantage that
+    it sets the stage for using XEN_ELF_NOTE_INIT_P2M
+    feature. That feature allows us to set the exact virtual
+    address space we want for the P2M - and allows us to
+    boot as initial domain on large machines.
+
+So we pick option 2).
+
+This patch only lays the groundwork in the P2M code. The patch
+that modifies the MMU is called "xen/mmu: Copy and revector the P2M tree."
+
+-- xen/mmu: Copy and revector the P2M tree:
+
+The 'xen_revector_p2m_tree()' function allocates a new P2M tree
+copies the contents of the old one in it, and returns the new one.
+
+At this stage, the __ka address space (which is what the old
+P2M tree was using) is partially disassembled. The cleanup_highmap
+has removed the PMD entries from 0-16MB and anything past _brk_end
+up to the max_pfn_mapped (which is the end of the ramdisk).
+
+We have revectored the P2M tree (and the one for save/restore as well)
+to use new shiny __va address to new MFNs. The xen_start_info
+has been taken care of already in 'xen_setup_kernel_pagetable()' and
+xen_start_info->shared_info in 'xen_setup_shared_info()', so
+we are free to roam and delete PMD entries - which is exactly what
+we are going to do. We rip out the __ka for the old P2M array.
+
+-- xen/mmu:   Remove from __ka space PMD entries for
+
+At this stage, the __ka address space (which is what the old
+P2M tree was using) is partially disassembled. The cleanup_highmap
+has removed the PMD entries from 0-16MB and anything past _brk_end
+up to the max_pfn_mapped (which is the end of the ramdisk).
+
+The xen_remove_p2m_tree and code around has ripped out the __ka for
+the old P2M array.
+
+Here we continue on doing it to where the Xen page-tables were.
+It is safe to do it, as the page-tables are addressed using __va.
+For good measure we delete anything that is within MODULES_VADDR
+and up to the end of the PMD.
+
+At this point the __ka only contains PMD entries for the start
+of the kernel up to __brk.
+
