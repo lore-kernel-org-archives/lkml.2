@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2HPPDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:03:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37529 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2HPPDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:03:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345125049.26882.16.camel@joe2Laptop>
-References: <CAMuHMdVEKpVYn+Yr5rzdOvV5zUWrD12Fas197Mn2oVDC5YgVgw@mail.gmail.com>
-	<1345125049.26882.16.camel@joe2Laptop>
-Date: Thu, 16 Aug 2012 17:03:49 +0200
-X-Google-Sender-Auth: EMxFFFwT664oapZ3U9hW3b-yoWA
-Message-ID: <CAMuHMdVed0OU+D_tdrG-UtFiLzFp0KQKWVpY+OS9M1oCs_4SnQ@mail.gmail.com>
-Subject: Re: Regression: Spurious "^A" in UML output
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1753704Ab2HPPEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:04:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26420 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524Ab2HPPEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:04:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
+   d="scan'208";a="202769230"
+Date: Thu, 16 Aug 2012 16:21:36 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: leroy christophe <christophe.leroy@c-s.fr>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] Powerpc 8xx CPM_UART delay in receive
+Message-ID: <20120816162136.059b64b4@bob.linux.org.uk>
+In-Reply-To: <502D054B.3010606@c-s.fr>
+References: <201208141426.q7EEQSPc003956@localhost.localdomain>
+	<20120814155227.018988da@pyramind.ukuu.org.uk>
+	<502CF2A0.8080109@c-s.fr>
+	<20120816152918.5ed2649f@pyramind.ukuu.org.uk>
+	<502D054B.3010606@c-s.fr>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+> MAX_IDL: Maximum idle characters. When a character is received, the 
+> receiver begins counting idle characters. If MAX_IDL idle characters
+> are received before the next data character, an idle timeout occurs
+> and the buffer is closed,
+> generating a maskable interrupt request to the core to receive the
+> data from the buffer. Thus, MAX_IDL offers a way to demarcate frames.
+> To disable the feature, clear MAX_IDL. The bit length of an idle
+> character is calculated as follows: 1 + data length (5–9) + 1 (if
+> parity is used) 
+> + number of stop bits (1–2). For 8 data bits, no parity, and 1 stop
+> bit, the character length is 10 bits
 
-On Thu, Aug 16, 2012 at 3:50 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2012-08-16 at 15:17 +0200, Geert Uytterhoeven wrote:
->> In v3.6-rc1 UML, I see spurious "^A" (ASCII 1, SOH) characters in some kernel
->> messages:
->>
->> Calibrating delay loop... 4640.76 BogoMIPS (lpj=23203840)
->> pid_max: default: 32768 minimum: 301
->> Mount-cache hash table entries: 256
->> ^AChecking that host ptys support output SIGIO...Yes
->> ^AChecking that host ptys support SIGIO on close...No, enabling workaround
->> ^AUsing 2.6 host AIO
->> NET: Registered protocol family 16
->> bio: create slab <bio-0> at 0
->> Switching to clocksource itimer
->>
->> This happens for all output using the "printk(UM_KERN_XXX ...)" idiom.
->
-> Were these emitted with "KERN_<LEVEL>" string constants
-> before this change (not <[0-7]>", but the string text
-> KERN_INFO, KERN_WARNING, etc...)?
 
-They were emitted with the "<x>" string constants.
+So if you have slightly bursty high speed data as its quite typical
+before your change you would get one interrupt per buffer of 32 bytes,
+with it you'll get a lot more interrupts.
 
-This is used in the userspace part of UML, which runs as a userspace
-application on the host. Hence it cannot include kernel header files
-directly.
+You have two available hints about the way to set this - one of them is
+the baud rate (low baud rates mean the fifo isn't a big win and the
+latency is high), the other is the low_latency flag if the driver
+supports the low latency feature (and arguably you can still use a
+request for it as a hint even if you refuse the actual feature).
 
-However, now include/linux/kern_levels.h is fairly self-container, perhaps
-we should just include that file directly instead of, and get rid of all
-DEFINE_STR() users.
+So I think a reasonable approach would be set the idle timeout down for
+low baud rates or if low_latency is requested.
 
-Gr{oetje,eeting}s,
+> generated if there is at least one word in the FIFO and for a time 
+> equivalent to the transmission of four characters
 
-                        Geert
+Which is a bit more reasonable than one, although problematic at low
+speed (hence the fifo on/off).
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
