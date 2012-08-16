@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab2HPKGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:06:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43413 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754305Ab2HPKFz (ORCPT
+	id S1756239Ab2HPKFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:05:49 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50669 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab2HPKFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:05:55 -0400
-Date: Thu, 16 Aug 2012 11:05:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 03/31] arm64: Exception handling
-Message-ID: <20120816100536.GF31784@mudshark.cambridge.arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-4-git-send-email-catalin.marinas@arm.com>
- <201208151303.47743.arnd@arndb.de>
+	Thu, 16 Aug 2012 06:05:47 -0400
+Message-ID: <502CC477.4060005@gmail.com>
+Date: Thu, 16 Aug 2012 11:59:19 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208151303.47743.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
+        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
+        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 0/8] remove lock and unlock super
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 02:03:47PM +0100, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
-> 
-> > +#ifdef CONFIG_AARCH32_EMULATION
-> > +#define compat_thumb_mode(regs) \
-> > +	(((regs)->pstate & COMPAT_PSR_T_BIT))
-> > +#else
-> > +#define compat_thumb_mode(regs) (0)
-> > +#endif
-> 
-> The symbol we use on other platforms is CONFIG_COMPAT. I don't think you
-> need to have a separate CONFIG_AARCH32_EMULATION
+Hi all,
 
-Using COMPAT does preclude the possibility of doing something like the x32
-ABI later on though. Some other architectures seem to do something similar
-(MIPS32_COMPAT, IA32_EMULATION).
+I'm trying to remove the functions lock_super/unlock_super and to push 
+the lock into each single fs. Currently these fs use these functions: 
+ext3, ext4, fat, hpfs, exofs, sysv, ufs. At the moment I used the more 
+conservative approach, I created a new mutex s_lock in the private sb 
+info for each fs, so nothing change but a couple of notes:
 
-Will
+1) exofs/hpfs: they use lock_super only in one function so the lock 
+seems completely not needed and I removed it, do you see collateral effect?
+
+2) fat/ufs: they have already got functions to lock the fs with a mutex, 
+I don't know at the moment if a general review of the code can give us 
+the possibility to "merge" the locks.
+
+Bugs, comments, review are welcome especially from fs maintainers. Maybe 
+this work can be a first cleaning, after that each fs can adjust its 
+lock policy.
+
+The patch is against 3.6-rc1.
+
+Marco
