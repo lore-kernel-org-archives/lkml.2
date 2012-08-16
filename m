@@ -1,70 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab2HPVFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:05:53 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:55510 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757287Ab2HPVFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:05:52 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
-Date: Fri, 17 Aug 2012 01:05:38 +0400
-Message-Id: <1345151138-12855-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757749Ab2HPVI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:08:29 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:30139
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754967Ab2HPVI1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 17:08:27 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 19
+X-BigFish: PS19(z4971pzzz1202h1c0crzzz2ei2a8h668h839hc60hd24hf0ah107ah10d2h)
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: $650,500.00 USD.
+To: Recipients <erjohnson2@liberty.edu>
+From: United Nations Trust Funds <erjohnson2@liberty.edu>
+Date: Fri, 17 Aug 2012 05:08:10 +0800
+Reply-To: <trustfund002@kimo.com>
+X-Antivirus: avast! (VPS 120816-0, 08/16/2012), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <52a6078c-ba78-4e3a-95cf-30b5c9a76f64@BY2PRD0510HT002.namprd05.prod.outlook.com>
+X-Originating-IP: [116.197.4.103]
+X-OriginatorOrg: liberty.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If pci_register_driver() failed, resources allocated in
-ddb_class_create() are leaked. The patch fixes it
-as well as it replaces -1 with correct error code
-in ddb_class_create().
-
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/dvb/ddbridge/ddbridge-core.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
-index ebf3f05..feff57e 100644
---- a/drivers/media/dvb/ddbridge/ddbridge-core.c
-+++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
-@@ -1497,7 +1497,7 @@ static int ddb_class_create(void)
- 	ddb_class = class_create(THIS_MODULE, DDB_NAME);
- 	if (IS_ERR(ddb_class)) {
- 		unregister_chrdev(ddb_major, DDB_NAME);
--		return -1;
-+		return PTR_ERR(ddb_class);
- 	}
- 	ddb_class->devnode = ddb_devnode;
- 	return 0;
-@@ -1701,11 +1701,18 @@ static struct pci_driver ddb_pci_driver = {
- 
- static __init int module_init_ddbridge(void)
- {
-+	int ret;
-+
- 	printk(KERN_INFO "Digital Devices PCIE bridge driver, "
- 	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
--	if (ddb_class_create())
--		return -1;
--	return pci_register_driver(&ddb_pci_driver);
-+
-+	ret = ddb_class_create();
-+	if (ret < 0)
-+		return ret;
-+	ret = pci_register_driver(&ddb_pci_driver);
-+	if (ret < 0)
-+		ddb_class_destroy();
-+	return ret;
- }
- 
- static __exit void module_exit_ddbridge(void)
--- 
-1.7.9.5
+Reply with this details to claim.
+Full Name:.....................
+Address:.......................
+Phone Number:..................
+Country:......................
 
