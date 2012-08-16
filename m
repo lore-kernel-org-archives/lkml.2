@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab2HPXMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 19:12:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29322 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755488Ab2HPXMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 19:12:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,781,1336374000"; 
-   d="scan'208";a="203082086"
-Date: Thu, 16 Aug 2012 16:12:47 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-mm@kvack.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH, RFC 0/9] Introduce huge zero page
-Message-ID: <20120816231247.GA4461@tassilo.jf.intel.com>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120816122023.c0e9bbc0.akpm@linux-foundation.org>
- <20120816194024.GP11188@redhat.com>
+	id S1757762Ab2HPXYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 19:24:53 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:41075 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756961Ab2HPXYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 19:24:51 -0400
+Message-ID: <502D80E8.3080008@xenotime.net>
+Date: Thu, 16 Aug 2012 16:23:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] scripts/kernel-doc: fix fatal script error
+References: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
+In-Reply-To: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816194024.GP11188@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Because this is done the right way (i.e. to allocate an hugepage at
-> the first wp fault, and to fallback exclusively if compaction fails)
-> it will help much less than the 4k zero pages if the zero pages are
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-The main benefit is that you have a zero page with THP enabled.
-So it lowers the cost of having THP on (for workloads that benefit
-from a zero page)
+Fix fatal error in scripts/kernel-doc by ignoring the "__weak" attribute:
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+Error(drivers/pci/pci.c:2820): cannot understand prototype: 'char * __weak pcibios_setup(char *str) '
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ scripts/kernel-doc |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- lnx-36-rc2.orig/scripts/kernel-doc
++++ lnx-36-rc2/scripts/kernel-doc
+@@ -1786,6 +1786,7 @@ sub dump_function($$) {
+     $prototype =~ s/__init +//;
+     $prototype =~ s/__init_or_module +//;
+     $prototype =~ s/__must_check +//;
++    $prototype =~ s/__weak +//;
+     $prototype =~ s/^#\s*define\s+//; #ak added
+     $prototype =~ s/__attribute__\s*\(\([a-z,]*\)\)//;
+ 
