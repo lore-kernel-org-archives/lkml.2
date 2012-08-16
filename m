@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2HPKsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:48:47 -0400
-Received: from ozlabs.org ([203.10.76.45]:57128 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab2HPKsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:48:46 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, Jonas Gorski <jonas.gorski@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH] MIPS: fix module.c build for 32 bit
-In-Reply-To: <1171.1345019698@warthog.procyon.org.uk>
-References: <87ipckrgal.fsf@rustcorp.com.au> <87d32us55c.fsf@rustcorp.com.au> <1344332473-19842-1-git-send-email-jonas.gorski@gmail.com> <31154.1344872382@warthog.procyon.org.uk> <32504.1344953290@warthog.procyon.org.uk> <1171.1345019698@warthog.procyon.org.uk>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 16 Aug 2012 20:10:25 +0930
-Message-ID: <87a9xvce7a.fsf@rustcorp.com.au>
+	id S1755996Ab2HPKvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:51:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44996 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751255Ab2HPKvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 06:51:42 -0400
+Date: Thu, 16 Aug 2012 11:51:34 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 25/31] arm64: Performance counters support
+Message-ID: <20120816105134.GJ31784@mudshark.cambridge.arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-26-git-send-email-catalin.marinas@arm.com>
+ <201208151511.11612.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151511.11612.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012 09:34:58 +0100, David Howells <dhowells@redhat.com> wrote:
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
+On Wed, Aug 15, 2012 at 04:11:11PM +0100, Arnd Bergmann wrote:
+> On Tuesday 14 August 2012, Catalin Marinas wrote:
+> > From: Will Deacon <will.deacon@arm.com>
+> > 
+> > This patch adds support for the AArch64 performance counters.
+> > 
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > ---
+> >  arch/arm64/include/asm/perf_event.h |   22 +
+> >  arch/arm64/include/asm/pmu.h        |   82 +++
+> >  arch/arm64/kernel/perf_event.c      | 1368 +++++++++++++++++++++++++++++++++++
+> >  tools/perf/perf.h                   |    6 +
 > 
-> > For a build fix????
-> 
-> Linux hasn't pulled the asm-generic cleanup patch yet - you missed the merge
-> window, I think.  Jonas detected the problem in linux-next.
+> Can you explain how AArch64 performance counters differ from the 32
+> bit ones? Do they work for AArch32 user space under AArch64 kernels?
+> Is it possible to share parts of the implementation with arch/arm?
 
-Yes, I missed the window but asked Linus to pull anyway.  Was delaying
-for the other module patch, left it too long.
+Perf should work for compat tasks, yes. I'd like to share some of the code
+with arch/arm/ and I've started reworking the arch/arm/ stuff to accomodate
+this better:
 
-This cleanup won't benefit from more stewing in linux-next, since it sat
-there for quite a while already.  Feel free to add my Acked-by and push
-it straight to Linus, otherwise I'll roll them together for next window.
+  git://git.kernel.org/pub/scm/linux/kernel/git/will/linux.git perf/updates
 
-Thanks,
-Rusty.
+I'm not sure how well it will fit in drivers/ but I'm certainly willing to
+give it a try.
+
+Will
