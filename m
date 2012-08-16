@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030243Ab2HPQPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:15:54 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62249 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964789Ab2HPQPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:15:49 -0400
-Message-ID: <502D1B32.7020005@gmail.com>
-Date: Thu, 16 Aug 2012 18:09:22 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1030262Ab2HPQQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:16:13 -0400
+Received: from antcom.de ([188.40.178.216]:36603 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964789Ab2HPQQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:16:07 -0400
+Message-ID: <502D1CC2.9020901@antcom.de>
+Date: Thu, 16 Aug 2012 18:16:02 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: dedekind1@gmail.com, bhalevy@tonian.com, jack@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
-        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
-References: <502CC4AA.6040702@gmail.com> <1345119652.3393.220.camel@sauron.fi.intel.com> <502CE840.4060802@panasas.com>
-In-Reply-To: <502CE840.4060802@panasas.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        gregkh@linuxfoundation.org, arnd@arndb.de, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: Re: [PATCH] usb: gadget: lpc32xx_udc: Port to new start/stop interface
+References: <1345131276-28982-1-git-send-email-stigge@antcom.de> <502D1A49.20603@linutronix.de>
+In-Reply-To: <502D1A49.20603@linutronix.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/08/2012 14:32, Boaz Harrosh ha scritto:
-> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
->
->> On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
->>> From: Marco Stornelli <marco.stornelli@gmail.com>
->>>
->>> Remove lock and unlock super operation.
->>>
->>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+On 08/16/2012 06:05 PM, Sebastian Andrzej Siewior wrote:
+>> --- linux-2.6.orig/drivers/usb/gadget/lpc32xx_udc.c
+>> +++ linux-2.6/drivers/usb/gadget/lpc32xx_udc.c
+>> @@ -2987,14 +2986,14 @@ static irqreturn_t lpc32xx_usb_vbus_irq(
+>>       return IRQ_HANDLED;
+>>   }
 >>
->> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
->>
->
->
-> Are you sure? It used to be that exofs_sync_fs() could be called
-> concurrently.
->
-> What about two "bash -c sync" calls or a sync and an unmount
-> in parallel. anything protecting that?
->
-> If so then sure, but please let me test first.
-> Boaz
->
-> .
->
+>> -static int lpc32xx_start(struct usb_gadget_driver *driver,
+>> -             int (*bind)(struct usb_gadget *))
+>> +static int lpc32xx_start(struct usb_gadget *gadget,
+>> +             struct usb_gadget_driver *driver)
+>>   {
+>> -    struct lpc32xx_udc *udc =&controller;
+> 
+> I assume controller is a global var created at probe time and could be
+> removed now, right?
 
-Yes Boaz, I agree, it's the reason I asked for a comments for exofs and 
-hpfs. The only reason to have a lock here is to serialize operations in 
-parallel on the same super block.
-
-Marco
+Yes!
