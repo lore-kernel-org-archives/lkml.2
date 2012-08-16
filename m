@@ -1,106 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2HPFQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:16:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36364 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2HPFQR (ORCPT
+	id S1753920Ab2HPFUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:20:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:32324 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab2HPFUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:16:17 -0400
-Date: Thu, 16 Aug 2012 15:16:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: build failure after merge of the final tree (regulator
- tree related)
-Message-Id: <20120816151605.b0a9932005b541956288ce96@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//"
+	Thu, 16 Aug 2012 01:20:45 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-47-502c8328ea47
+Message-id: <502C8247.7070209@samsung.com>
+Date: Thu, 16 Aug 2012 14:16:55 +0900
+From: IAN CHEN <ian.cy.chen@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
+        subhashj@codeaurora.org, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
+        jh80.chung@samsung.com, ian.cy.chen@samsung.com
+Subject: [PATCH v4] mmc: card: Skip secure option for MoviNAND.
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV2NZp0AgzMPuSwu75rDZnHkfz+j
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBlXrvSyFGySrJjZcoq5gfGqaBcjJ4eEgIlE14pVzBC2
+	mMSFe+vZuhi5OIQEpjNKbNg+nwnCec0ocf7zHUaQKl4BLYkNn3+ygdgsAqoSPx5+AetmE9CQ
+	+H7wCViNqECYxKL3B1gh6gUlfky+xwIySERgI6PE6Y69YA6zQCOjxLx308GqhAXsJd7PuMwE
+	YjML6Ejsb53GBmHLS2xe85Z5AiPfLCTDZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4AB7JrWDcWWDxSFGAQ5GJR5eCSadACHWxLLiytxDjBIczEoivLdrgUK8KYmVValF
+	+fFFpTmpxYcYpTlYlMR5jb2/+gsJpCeWpGanphakFsFkmTg4pRoYg+/NmHT+v3tVxQ9zrpUc
+	Juf+JTFf5/JsPSFmPFFR/qeBDuPETtv0wk3lOy962Rr0rXr+ijd80hePpTdDWfSWPdy2wUZv
+	2Z1VOxU90+8lMi6eO/lx7m3RQg6/CVNPlP67r3vHTtnoW6Nj4nFu84q8CY5Sc3Uqt2x5e9rt
+	l8lsteK1l+UL7wptV2Ipzkg01GIuKk4EALInVeQsAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For several MoviNAND, there are some known issue with secure option.
+For these specific MoviNAND device, we skip secure option.
 
-Hi all,
+You could refer this discussion in XDA developers.
+http://forum.xda-developers.com/showthread.php?t=1644364
+https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
-
-drivers/regulator/twl-regulator.c: In function 'twlreg_probe':
-drivers/regulator/twl-regulator.c:1229:3: error: implicit declaration of fu=
-nction 'kfree' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commit 537fbe92d723 ("regulator: twl: make twl_info tables
-const") from the regulator tree.
-
-I have added the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 16 Aug 2012 15:11:22 +1000
-Subject: [PATCH] regulator: using kfree() requires including slab.h
-
-Fixes this build error:
-
-drivers/regulator/twl-regulator.c: In function 'twlreg_probe':
-drivers/regulator/twl-regulator.c:1229:3: error: implicit declaration of fu=
-nction 'kfree' [-Werror=3Dimplicit-function-declaration]
-
-Also added string.h for kmemdup().
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
 ---
- drivers/regulator/twl-regulator.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
+ include/linux/mmc/card.h |    1 +
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regu=
-lator.c
-index a836522..564acae 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -10,6 +10,8 @@
-  */
-=20
- #include <linux/module.h>
-+#include <linux/string.h>
-+#include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/err.h>
- #include <linux/platform_device.h>
---=20
-1.7.10.280.gaa39
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index f1c84de..0377885 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
+struct request *req)
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+-		if (req->cmd_flags & REQ_SECURE)
++		if (req->cmd_flags & REQ_SECURE &&
++			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
+ 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
+ 		else
+ 			ret = mmc_blk_issue_discard_rq(mq, req);
+@@ -1716,6 +1717,7 @@ force_ro_fail:
+ #define CID_MANFID_SANDISK	0x2
+ #define CID_MANFID_TOSHIBA	0x11
+ #define CID_MANFID_MICRON	0x13
++#define CID_MANFID_SAMSUNG	0x15
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ static const struct mmc_fixup blk_fixups[] =
+ {
+@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
+ 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
+ 		  MMC_QUIRK_LONG_READ_TIME),
 
---Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//
-Content-Type: application/pgp-signature
++	/*
++	 * Some issue about secure erase/secure trim for Samsung MoviNAND
++	 */
++	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
++		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
++
+ 	END_FIXUP
+ };
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQLIIVAAoJEECxmPOUX5FEkDUP/0Hqut54Leul3xtmVqEeY43j
-ITwVeT7Tqix9zYkMHykLSijnO/s7wksGe2qiO4nkpgop7p8dzaZmoJAN5RPCKu2d
-8wM5XLAmEFbNjz0e4U1n2YGzAa1q8nGreZagg5fldrQ8gD19Y/qr4YSk7I1eJEPV
-5AYmt2C1syuCEzPBfGv4M4H7VEy0CUVY2buvDg5KOMxGcvkQgDkkVQSZ/fOcRonS
-UsvKXw64wfSrgG6QS8TGOVgqtrqHuum4fHdiuKLa3fYpgrEoKvEwzdII0yy6UBN1
-FsGnB3rZ1CGH8oFTL13DVU3cAJZUjuZ+W0HrtTG87Avue+cZoF5p6y/OT/HXnCCg
-4F2x5dep5v5bSUXlQuYghHDKhmXleE5mhrewyvEciqJJoo5Tm3mkJKypIRrsa/oq
-ADAjT8FQ0eiYpQPB8oAwkQHQ4jZujxmg0AJ5iq/aanVStoiiEn7dl8/vZihmr+ni
-iEPQ1PMpbekgvjJ4jznfQ2JOJCtlMxwEkk0Qlmc4bSWMgfaXQ6znvx+nRFxIc/Dx
-D4v7H65gKDFIcV/1HezDN0zQ1FIbdMK0LCarRPemsiBg4lawQVNZAZC7vdH7mIs3
-AIaZqdgnaaPuvvXnlGRU9qUO6WlrIe4bJyFlLGAiyn1ElSPBfs50TGfnMjZr7i1Z
-nJXF6HD+TzxpwEr/bves
-=bxas
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//--
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 111aca5..4b27f9f 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -239,6 +239,7 @@ struct mmc_card {
+ #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
+multiblock */
+ #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
+bytes in */
+ #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
++#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for
+erase/trim */
+ 						/* byte mode */
+ 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
+ #define MMC_NO_POWER_NOTIFICATION	0
+-- 
+1.7.0.4
