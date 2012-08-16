@@ -1,165 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab2HPU2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:28:43 -0400
-Received: from incomingmail.riverbed.com ([208.70.196.45]:64888 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab2HPU2l convert rfc822-to-8bit (ORCPT
+	id S932676Ab2HPUbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:31:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:57343 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757291Ab2HPUbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:28:41 -0400
-From: Jiang Wang <Jiang.Wang@riverbed.com>
-To: Michael Chan <mchan@broadcom.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgCAAHtYAP//kWDw
-Date: Thu, 16 Aug 2012 20:28:36 +0000
-Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
-References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
- <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
- <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-In-Reply-To: <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.205.249]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Aug 2012 16:31:49 -0400
 MIME-Version: 1.0
+In-Reply-To: <CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+Date: Thu, 16 Aug 2012 16:31:48 -0400
+Message-ID: <CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
+ sign modules
+From: Josh Boyer <jwboyer@gmail.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK. I see what you mean. In fact, I am working on an old RHEL based kernel and it still reports the link via ethtool_op_get_link. That is why I got the inconsistent report from the ethtool as I described in the patch. (the ethtool showed the link is up, but speed is unknown, duplex is half).
+On Thu, Aug 16, 2012 at 4:12 PM, Kasatkin, Dmitry
+<dmitry.kasatkin@intel.com> wrote:
+>>> 1. signed_modules_install
+>>> This target creates an ephemeral key pair, signs the kernel modules with
+>>> the private key, destroys the private key, and embeds the public key in
+>>> the kernel. (Thanks to Dave Hansen for the target name.)
+>>
+>> This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
+>> anything useful with the signed modules, correct?
+>>
+>
+> Correct. It does not make sense to sign module if module support is disabled.
+> But there scripts/genkey.sh and ksign.sh which works without Makefiles.
+> So possible to generate keys and sign a module...
 
-I guess I can just port in the patch for bnx2_get_link() to solve this problem.
+Right, but it won't actually do anything if the config option isn't set.
+Which means someone calling 'make signed_modules_install' won't actually
+get signed modules.  That's confusing.
 
-Also, I have another comment related to link state.
+>>> 2. modules_install
+>>> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
+>>> private key to sign kernel modules.
+>>
+>> If the answer to the above question is yes, then why can't we stick
+>> with a single modules_install command for signing?  It would seem to me
+>> that calling signed_modules_install could use an existing key or
+>> generate an ephemeral key in the absence of one and install the signed
+>> modules, and modules_install would simply install unsigned modules.
+>>
+>> Or, alternatively, just make modules_install sign or not sign depending
+>> on whether CONFIG_INTEGRITY_MODULES is enabled.
+>
+> This is what "make modules_install" does. It uses existing private key
+> and does not remove it after install.
 
-Right now, the bnx2 driver powers up the device in bnx2_init_board(), regardless the netif_carrier is on or off. This may introduce following inconsistent behaviors:
-1) suppose the cable is plugged in to the NIC and the other end is connected to a switch
-2) user powers up the box
-3) the Linux does not bring up the interface; i.e, ifconfig ethx shows it is down
-4) ethtool ethx will show no link
-5) if the user goes to check the light on the physical NIC, he will see the green link light is ON. That means the link is up, right? 
+Right.  I should have been more clear.  I was suggesting that "make
+modules_install" generate a key as well if one does not already exist.
+Essentially removing the necessity for sign_modules_install.
 
-I think it is better to power down the device until bnx2_open is called. In this way, ethtool report and the physical link light will be consistent. 
+>>  I don't see why you
+>> would overload a target or create two different ones when both depend
+>> on that option.
+>>
+>> Could you explain the reasoning behind that a bit more?
+>
+> The reason for "signed_modules_install" is to limit existence of private key.
+> Private key is generate just before install, modules installed and
+> signed, then key is destroyed.
+> So existence of private key is limited to "time make
+> signed_modules_install" execution time.
+>
+> We had a debate about it, and strong message was that we might want to
+> do it like that...
 
-Any suggestions? Thanks.
+I guess I personally don't see the need to destroy they key so quickly.
+Is the concern that an intruder might grab the key and use it to sign a
+module that the developer would then later on somehow load?  Or
+similarly someone would grab a temporary key from a distro build
+machine?  That limits the attack surface, sure, but I'm not sure it's
+really reasonable.
 
-Regards,
+For a developer that isn't distributing kernels to others, it's just
+adding more time to the compile (which I know can be disabled, but
+still).  For a distribution, most of them are either using a private
+key already or they have a buildsystem that destroys a buildroot after
+a build completes.  The key is already going to be destroyed in that
+scenario.
 
-Jiang
-
------Original Message-----
-From: Michael Chan [mailto:mchan@broadcom.com] 
-Sent: Thursday, August 16, 2012 12:29 PM
-To: Jiang Wang
-Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-
-On Thu, 2012-08-16 at 19:15 +0000, Jiang Wang wrote: 
-> Hi Michael,
-> 
-> I just checked the code for netif_carrier_off(), and it will return if 
-> the dev is not initialized (registered) as follows:
-> 
-> void netif_carrier_off(struct net_device *dev) {
->         if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
->                 if (dev->reg_state == NETREG_UNINITIALIZED)
->                         return;
->                 linkwatch_fire_event(dev);
->         }
-> }
-> 
-> So linkwatch_fire_event should not fire in this case, right? Thanks 
-> for the quick response.
-> 
-Yes, you're right.  Your patch should not cause any problem then.
-
-But I still don't understand what problem you're trying to solve.  The link status from ethtool is determined by bnx2_get_link() and it should always return link down before bnx2_open() is called.  Can you please elborate?  Thanks.
-
-> Regards,
-> 
-> Jiang
-> 
-> -------------------------------------
-> Jiang Wang
-> Member of Technical Staff
-> Riverbed Technology
-> Tel: (408) 522-5109
-> Email: Jiang.Wang@riverbed.com
-> www.riverbed.com
-> 
-> 
-> -----Original Message-----
-> From: Michael Chan [mailto:mchan@broadcom.com]
-> Sent: Thursday, August 16, 2012 11:57 AM
-> To: Jiang Wang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya 
-> Lala; Francis St. Amant; Jiang Wang
-> Subject: Re: [PATCH] bnx2: turn off the network statck during 
-> initialization
-> 
-> On Thu, 2012-08-16 at 11:21 -0700, Jiang Wang wrote: 
-> > The initialization state of bnx2 driver is wrong. It does not turn 
-> > of the Linux network stack using netif_carrier_off. This may lead to 
-> > inconsistent report from ethtool as the link is up but speed is 
-> > unknown when the cable is not plugged in.
-> > 
-> > E.g.
-> >         Speed: Unknown! (0)<--------------------------------------
-> >         Duplex: Half       <--------------------------------------
-> >         MDI: Unknown! (0)
-> >         Port: Twisted Pair
-> >         PHYAD: 1
-> >         Transceiver: internal
-> >         Auto-negotiation: on
-> >         Supports Wake-on: g
-> >         Wake-on: d
-> >         Link detected: yes <---------------------------------------
-> > 
-> > This patches fixed the problem by turning off the network stack 
-> > during initialization.
-> > 
-> > Signed-off-by: Jiang Wang <jwang@riverbed.com>
-> > ---
-> >  drivers/net/ethernet/broadcom/bnx2.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/ethernet/broadcom/bnx2.c
-> > b/drivers/net/ethernet/broadcom/bnx2.c
-> > index ac7b744..ce4548d 100644
-> > --- a/drivers/net/ethernet/broadcom/bnx2.c
-> > +++ b/drivers/net/ethernet/broadcom/bnx2.c
-> > @@ -8463,6 +8463,10 @@ bnx2_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
-> >  	dev->features |= dev->hw_features;
-> >  	dev->priv_flags |= IFF_UNICAST_FLT;
-> >  
-> > +	/* tell the stack to leave us alone until bnx2_open() is called */
-> > +	netif_carrier_off(dev);
-> 
-> We have tried this before and this didn't work.  netif_carrier_off() 
-> calls linkwatch_fire_event() to schedule the event.  If
-> register_netdev() fails for whatever reason, the netdev will be freed but the link_watch event may still be scheduled.
-> 
-> Calling netif_carrier_off() after register_netdev() returns successfully also may not work as it will race with bnx2_open() which enables IRQ.
-> An linkup IRQ can happen at time and we may end up with the wrong carrier state because of the race condition.
-> 
-> > +	netif_stop_queue(dev);
-> > +
-> >  	if ((rc = register_netdev(dev))) {
-> >  		dev_err(&pdev->dev, "Cannot register net device\n");
-> >  		goto error;
-> 
-> 
-> 
-> 
-
-
-
+josh
