@@ -1,51 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab2HPITU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:19:20 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:42387 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756116Ab2HPITR (ORCPT
+	id S932116Ab2HPIVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:21:46 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49617 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756184Ab2HPIVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:19:17 -0400
-Message-ID: <502CACFF.3000105@metafoo.de>
-Date: Thu, 16 Aug 2012 10:19:11 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
-MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: Jonathan Cameron <jic23@kernel.org>, "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 1/3] iio: add iio_read_channel_offset() consumer api
-References: <A874F61F95741C4A9BA573A70FE3998F41EEFD6E@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EEFD6E@DQHE02.ent.ti.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 04:21:43 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-de-502cad930903
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 2/5] perf ui/tui: Add tui.h header
+Date: Thu, 16 Aug 2012 17:14:51 +0900
+Message-Id: <1345104894-14205-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
+References: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 09:39 AM, Kim, Milo wrote:
-> This allows the iio consumer to get the offset of the channel.
-> The value of offset can be used when calculating the result such
-> as 'result = raw * scale + offset'.
+Consolidate TUI-relate header files and declarations into tui.h.
 
-result = (raw + offset) * scale
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile          |  1 +
+ tools/perf/ui/helpline.h     |  2 --
+ tools/perf/ui/tui/helpline.c |  5 +----
+ tools/perf/ui/tui/setup.c    | 12 +-----------
+ tools/perf/ui/tui/tui.h      | 21 +++++++++++++++++++++
+ tools/perf/ui/tui/util.c     | 10 +---------
+ 6 files changed, 25 insertions(+), 26 deletions(-)
+ create mode 100644 tools/perf/ui/tui/tui.h
 
-Otherwise it looks good, except for:
-
-> +/**
-> + * iio_read_channel_offset() - read offset from a given channel
-> + * @channel:		The channel being queried.
-> + * @val:		Offset Value read back.
-> + *
-> + * Note offset can be used in the consumer when calculating the result
-> + * such as 'result = raw * scale + offset'.
-> + */
-
-The documentation should go in the c file.
-
-> +int iio_read_channel_offset(struct iio_channel *chan, int *val);
->  #endif
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 483fb69fa4ae..14c0b744d98e 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -581,6 +581,7 @@ else
+ 		LIB_H += ui/progress.h
+ 		LIB_H += ui/util.h
+ 		LIB_H += ui/ui.h
++		LIB_H += ui/tui/tui.h
+ 	endif
+ endif
+ 
+diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
+index 61118b2bc242..d9e97f771245 100644
+--- a/tools/perf/ui/helpline.h
++++ b/tools/perf/ui/helpline.h
+@@ -11,8 +11,6 @@ struct ui_helpline {
+ 
+ extern struct ui_helpline *helpline_fns;
+ 
+-void ui_helpline__init(void);
+-
+ void ui_helpline__pop(void);
+ void ui_helpline__push(const char *msg);
+ void ui_helpline__vpush(const char *fmt, va_list ap);
+diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
+index b4e521ef2170..62bd9432f12a 100644
+--- a/tools/perf/ui/tui/helpline.c
++++ b/tools/perf/ui/tui/helpline.c
+@@ -3,10 +3,7 @@
+ #include <string.h>
+ #include <pthread.h>
+ 
+-#include "../../util/debug.h"
+-#include "../helpline.h"
+-#include "../ui.h"
+-#include "../libslang.h"
++#include "tui.h"
+ 
+ 
+ static void tui_helpline__pop(void)
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index e813c1d17346..e247bf51d247 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -1,22 +1,12 @@
+-#include <newt.h>
+ #include <signal.h>
+ #include <stdbool.h>
+ 
+-#include "../../util/cache.h"
+-#include "../../util/debug.h"
+-#include "../browser.h"
+-#include "../helpline.h"
+-#include "../ui.h"
+-#include "../util.h"
+-#include "../libslang.h"
+-#include "../keysyms.h"
++#include "tui.h"
+ 
+ pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+ static volatile int ui__need_resize;
+ 
+-extern struct perf_error_ops perf_tui_eops;
+-
+ void ui__refresh_dimensions(bool force)
+ {
+ 	if (force || ui__need_resize) {
+diff --git a/tools/perf/ui/tui/tui.h b/tools/perf/ui/tui/tui.h
+new file mode 100644
+index 000000000000..51e8cb527fcc
+--- /dev/null
++++ b/tools/perf/ui/tui/tui.h
+@@ -0,0 +1,21 @@
++#ifndef _PERF_TUI_H_
++#define _PERF_TUI_H_
++
++#include <newt.h>
++
++#include "../../util/debug.h"
++#include "../../util/cache.h"
++#include "../ui.h"
++#include "../util.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "../libslang.h"
++#include "../keysyms.h"
++
++extern struct perf_error_ops perf_tui_eops;
++
++extern struct ui_helpline tui_helpline_fns;
++
++void ui_helpline__init(void);
++
++#endif /* _PERF_TUI_H */
+diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
+index 092902e30cee..b555ae839b2a 100644
+--- a/tools/perf/ui/tui/util.c
++++ b/tools/perf/ui/tui/util.c
+@@ -1,17 +1,9 @@
+-#include "../../util/util.h"
+ #include <signal.h>
+ #include <stdbool.h>
+ #include <string.h>
+ #include <sys/ttydefaults.h>
+ 
+-#include "../../util/cache.h"
+-#include "../../util/debug.h"
+-#include "../browser.h"
+-#include "../keysyms.h"
+-#include "../helpline.h"
+-#include "../ui.h"
+-#include "../util.h"
+-#include "../libslang.h"
++#include "tui.h"
+ 
+ static void ui_browser__argv_write(struct ui_browser *browser,
+ 				   void *entry, int row)
+-- 
+1.7.11.2
 
