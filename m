@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964852Ab2HPP2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:28:30 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:47461 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2HPP23 (ORCPT
+	id S1757587Ab2HPPcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:32:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47869 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab2HPPcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:28:29 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: drbd fixes
-Date: Thu, 16 Aug 2012 17:28:26 +0200
-Message-ID: <4092615.Zqxn9JocAf@fat-tyre>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-27-generic; KDE/4.8.4; x86_64; ; )
+	Thu, 16 Aug 2012 11:32:45 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1345128138.29668.42.camel@twins>
+References: <1345124749.31092.2.camel@localhost.localdomain>
+	<1345125384.29668.30.camel@twins>
+	<CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+	<1345128138.29668.42.camel@twins>
+Date: Thu, 16 Aug 2012 21:32:45 +0600
+Message-ID: <CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On 8/16/12, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-08-16 at 20:28 +0600, Rakib Mullick wrote:
+>
+>> nr_uninterruptible is coupled with tasks on the runqueue to calculate
+>> nr_active numbers.
+>
+> It is not.. nr_uninterruptible is incremented on the cpu the task goes
+> to sleep and decremented on the cpu doing the wakeup.
+>
+If nr_uninterruptible's life cycle is this simple then,  while CPU
+goes down, nr_uninterruptible count will be decremented when all the
+tasks are moved to other CPUs and should be fine.
 
-Please consider to pull these 3 fixes in for 3.6.
+> This means that nr_uninterruptible is a complete mess and any per-cpu
+> value isn't meaningful at all.
+>
+Well, if nr_uninterruptible is a mess, then this patch has no meaning.
+And also I think migrate_nr_uninterruptible() is meaning less too.
 
-Best,
- Phil
+> It is quite possible to always have the inc on cpu0 and the decrement on
+> cpu1, yielding results like:
+>
+> {1000, -1000} for an effective nr_uninterruptible = 0. Taking either cpu
+> down will then migrate whatever delta it has to another cpu, but there
+> might only be a single task, yet the delta is +-1000.
+>
+>> In calc_load_fold_active(), this nr_active numbers are used to
+>> calculate delta. This is how I understand this part and seeing some
+>> impact.
+>
+> You understand wrong, please re-read the comment added in commit
+> 5167e8d5.
+>
+Yes, reading.
 
-The following changes since commit a73ff3231df59a4b92ccd0dd4e73897c5822489b:
-
-  drbd: announce FLUSH/FUA capability to upper layers (2012-07-24 15:14:28 +0200)
-
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens
-
-for you to fetch changes up to d1aa4d04da8de5c89d73859e077d89c4c71d8ed1:
-
-  drbd: Write all pages of the bitmap after an online resize (2012-08-16 17:17:35 +0200)
-
-----------------------------------------------------------------
-Lars Ellenberg (1):
-      drbd: fix drbd wire compatibility for empty flushes
-
-Philipp Reisner (2):
-      drbd: Finish requests that completed while IO was frozen
-      drbd: Write all pages of the bitmap after an online resize
-
- drivers/block/drbd/drbd_bitmap.c |   15 ++++++++++++++-
- drivers/block/drbd/drbd_int.h    |    1 +
- drivers/block/drbd/drbd_main.c   |   28 ++++++++++++----------------
- drivers/block/drbd/drbd_nl.c     |    4 ++--
- drivers/block/drbd/drbd_req.c    |   36 ++++++++++++++++++++++++++++++++----
- 5 files changed, 61 insertions(+), 23 deletions(-)
-
+Thanks,
+Rakib.
