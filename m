@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab2HPNX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:23:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64548 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932367Ab2HPNXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932455Ab2HPNXy (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 16 Aug 2012 09:23:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="asc'?scan'208";a="202666619"
-Message-ID: <1345123718.3393.235.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
- parameter
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 16:28:38 +0300
-In-Reply-To: <20120816115713.726da8f2@pixies.home.jungo.com>
-References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
-	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
-	 <20120816115713.726da8f2@pixies.home.jungo.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-C+Dqd7NvvuNIwTsmb3Zc"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+Received: from natasha.panasas.com ([67.152.220.90]:36937 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab2HPNXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:23:53 -0400
+Message-ID: <502CF446.9010107@panasas.com>
+Date: Thu, 16 Aug 2012 16:23:18 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: <dedekind1@gmail.com>
+CC: Marco Stornelli <marco.stornelli@gmail.com>, <bhalevy@tonian.com>,
+        <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        <adilger.kernel@dilger.ca>, <tytso@mit.edu>,
+        <hirofumi@mail.parknet.co.jp>, <mikulas@artax.karlin.mff.cuni.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>, <hch@infradead.org>,
+        <dushistov@mail.ru>, <osd-dev@open-osd.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
+References: <502CC4AA.6040702@gmail.com>  <1345119652.3393.220.camel@sauron.fi.intel.com>  <502CE840.4060802@panasas.com> <1345122611.3393.225.camel@sauron.fi.intel.com> <502CF259.9040300@panasas.com>
+In-Reply-To: <502CF259.9040300@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/16/2012 04:15 PM, Boaz Harrosh wrote:
 
---=-C+Dqd7NvvuNIwTsmb3Zc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On 08/16/2012 04:10 PM, Artem Bityutskiy wrote:
+> 
+>> On Thu, 2012-08-16 at 15:32 +0300, Boaz Harrosh wrote:
+>>> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
+>>>
+>>>> On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
+>>>>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>>>>>
+>>>>> Remove lock and unlock super operation.
+>>>>>
+>>>>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>>>>
+>>>> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>>>>
+>>>
+>>>
+>>> Are you sure? It used to be that exofs_sync_fs() could be called
+>>> concurrently.
+>>>
+>>> What about two "bash -c sync" calls or a sync and an unmount
+>>> in parallel. anything protecting that?
+>>>
+>>> If so then sure, but please let me test first.
+>>
+>> Umm, actually we will probably end up writing the same twice without the
+>> lock. 
+>>
+> 
+> 
+> No we are not allowed to run exofs_sync_fs() concurrently because it uses
+> a per-alllocated scratch buffer to do it's stuff so you can end up with data
+> corruption on disk.
+> 
 
-On Thu, 2012-08-16 at 11:57 +0300, Shmulik Ladkani wrote:
->=20
-> For the simplest systems (those having one ubi device) that need a
-> limit
-> *other* than the default (20 per 1024), they can simply set the config
-> to their chosen value, as they were used to.
->=20
-> With you approach, these system MUST pass the limit parameter via the
-> ioctl / module-parameter.=20
 
-Yeah, when you change the default, you usually need to do an extra step.
-It does not feel too bad, and I would not keep additional configuration
-option for a hypothetical user. If someone suffers, we can add an option
-to change the default. But I'd start without it. So, I think it is OK to
-remove this.
+I take that back. We kmalloc. (We used to not too).
 
+In theory the counter in question could change mid flight and the IOs can
+be submitted out of order, But the chance for that is very very slim. So
+It's fine. It's a deprecated counter anyway, so I'm OK to drop it.
 
---=20
-Best Regards,
-Artem Bityutskiy
+I'll completely remove it the next time I increment the sb version
+number. 
 
---=-C+Dqd7NvvuNIwTsmb3Zc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Thanks
+Boaz
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> And we cannot use a spin-lock because we might sleep in ore_write()
+> 
+> There are some optimizations I can do here, but lets for now just do
+> the sb->s_lock thing, and I might decide to completely revamp the
+> all thing later.
+> 
+> Thanks
+> Boaz
 
-iQIcBAABAgAGBQJQLPWGAAoJECmIfjd9wqK0GBAP/1dV3BhnwXtipZwe5IvGJMwT
-DqduvAUExu635i2zhTauvftDwa4z+Bhefmy60XpY3SzVUknio6Rt4oakjAU8ywKL
-08493jO90eJ7Z0hMf7HV9/TrHJh1g2ypJ2MW7LBPjaFmoch7PqB7KmYV4RS7INoA
-67x/xXaifJHcU/lFvopxYa7GgVOCa+DUsC+PcBGL+1ZE9PzmslGP952bJ/quH9ps
-d2oHlcasuoiuE2Fhx1V1AtJhUjSGnzzaCoHhh5BsJakcODboFOzukl6gWX3iB/LV
-N7+m3TIqIP88gCqXIwyFQdUz8PmeD3N7xuIZi9mzmU6y4gSOxTJSVfzYph0yNNti
-LWfnBoEev/LfbvEvNEdkMUaSy9hfA/3OvAc9d1LDgazch/xL9jnnatJJLklXov/7
-LhHgrAkB0bWs3+CNY1bl+CzQkfJcR4q6kNQosk8fFHmfoahTyqkduuUZoXAvaajz
-BMNtBoVc3zaZuESHv5yj2yEwQkw/dZyy1YrCAGg7t75/+/5IuaTwpVcpFAnHhTmH
-z79t4YBlqoZfBdkYoyiZFtHFSqu/3la8AEa6Truvps93b26ljid7YW/SuvOuf4sT
-jP/5g3pPUprIT/MZwQy4H518yvGCk4F//PplnyfUp2/TFW57LKbO9isZE81bnmmk
-AdigokURDqjbT4xrwnUv
-=q1D9
------END PGP SIGNATURE-----
-
---=-C+Dqd7NvvuNIwTsmb3Zc--
 
