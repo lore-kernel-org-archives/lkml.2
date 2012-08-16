@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2HPMiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:38:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62786 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab2HPMiE (ORCPT
+	id S1754996Ab2HPMiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:38:23 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40493 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753962Ab2HPMiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:38:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 16/31] arm64: ELF definitions
-Date: Thu, 16 Aug 2012 12:37:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151415.39570.arnd@arndb.de> <20120816102300.GG31784@mudshark.cambridge.arm.com>
-In-Reply-To: <20120816102300.GG31784@mudshark.cambridge.arm.com>
+	Thu, 16 Aug 2012 08:38:18 -0400
+Date: Thu, 16 Aug 2012 16:38:14 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120816123814.GD1209@moon>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <20120815204546.GC25062@fieldses.org>
+ <20120815210237.GF25421@moon>
+ <20120815220622.GA28054@fieldses.org>
+ <20120816062448.GA32081@moon>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208161237.53594.arnd@arndb.de>
-X-Provags-ID: V02:K0:U34WyDebidwvn+VW4XCt/ZOgyygVkCzV6tr9Wdupv8U
- 0R64lNt4E2OhnOJeIsvwpcFCGUdLb+jjyCUnYASMhafq53seXY
- sIwbhMWsJODdceUoE9RgJS4LkXb9/iLkqYWPs26uA97tH7e80x
- hJJplw10enkwdL80q4EsAebFFsAtqRFVIfPNQATtL9BcrmnMOj
- RTHDHc4uFyOD6+IxqFhNqoONN/9Ok3DCUFp+rU6VUH8mQXnJjD
- vpEDeS4HeonjNOS2moQa8yTcVHPMXXDo/t16lsueqRNsHRnC0M
- /0Omc+vAazJrtQzGJgZrweG7qDepwUlfhmFydr/f67CpzRJt53
- +/RTfkRyrYafq0o5Sjs8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816062448.GA32081@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Will Deacon wrote:
-> > This looks wrong: PER_LINUX/PER_LINUX32 decides over the output of the
-> > uname system call, while TIF_32BIT decides over the instruction set
-> > when returning to user space. You definitely should not set the personality
-> > to the value you pass from the elf loader. Instead, just do
+On Thu, Aug 16, 2012 at 10:24:48AM +0400, Cyrill Gorcunov wrote:
+> > > > On the other hand, if you want a real filehandle then wouldn't you want
+> > > > to e.g. call the filesystem's ->encode_fh() if necessary, as
+> > > > exportfs_encode_fh() does?
+> > > 
+> > > Well, one of the problem I hit when I've been trying to use encode_fh
+> > > is that every new implementation of encode_fh will require some size
+> > > (even unknown) in buffer where encoded data pushed. Correct me please
+> > > if I'm wrong. But with export_encode_inode_fh there is a small buffer
+> > > with pretty known size needed on stack needed for printing data in
+> > > fdinfo.
 > > 
-> > #define SET_PERSONALITY(ex) clear_thread_flag(TIF_32BIT);
-> > #defined COMPAT_SET_PERSONALITY(ex) set_thread_flag(TIF_32BIT);
+> > You can just give encode_fh a too-small data and let it fail if it's not
+> > big enough.
+> > 
+> > (In practice I think everyone supports NFSv3 filehandles which have a
+> > maximum size of 64 bytes.)
 > 
-> In this case, won't uname be incorrect (aarch64l) for aarch32 tasks (which
-> expect something like armv8l)?
+> I'll think about it, thanks!
 
-No, the uname output is meant to tell you about the system, not the
-instruction set that you are using (you already know that in compiled
-code).
+Hi Bruce, thinking a bit more I guess using general encode_fh is not that
+convenient since it operates with dentries while our fdinfo output deals
+with inodes. Thus I should either provide some new encode_fh variant
+which would deal with inodes directly without "parents". Which doesn't
+look for me anyhow better than the new export_encode_inode_fh helper.
 
-The main use case is to fool stuff like autoconf into assuming your
-architecture is the other one, e.g. when building a 32 bit package
-on using a 64 bit /bin/bash to run ./configure or vice versa.
+After all, if the use of encode_fh become a mandatory rule we can easily
+extend fsnotify fdinfo output to support new scheme without breaking
+user space, because output looks like
 
-	Arnd
+ | fhandle-type:        1 f_handle: 49b1060023552153
+
+(ie if something is changed than these fields will be simply updated).
+
+Or maybe I miss something?
+
+	Cyrill
