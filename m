@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030241Ab2HPQOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:14:17 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21487 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab2HPQNW (ORCPT
+	id S1030243Ab2HPQPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:15:54 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62249 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964789Ab2HPQPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:13:22 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 10/11] xen/mmu: Remove from __ka space PMD entries for pagetables.
-Date: Thu, 16 Aug 2012 12:03:28 -0400
-Message-Id: <1345133009-21941-11-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 16 Aug 2012 12:15:49 -0400
+Message-ID: <502D1B32.7020005@gmail.com>
+Date: Thu, 16 Aug 2012 18:09:22 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+MIME-Version: 1.0
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: dedekind1@gmail.com, bhalevy@tonian.com, jack@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
+        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
+        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
+References: <502CC4AA.6040702@gmail.com> <1345119652.3393.220.camel@sauron.fi.intel.com> <502CE840.4060802@panasas.com>
+In-Reply-To: <502CE840.4060802@panasas.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please first read the description in "xen/mmu: Copy and revector the
-P2M tree."
+Il 16/08/2012 14:32, Boaz Harrosh ha scritto:
+> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
+>
+>> On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
+>>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>>>
+>>> Remove lock and unlock super operation.
+>>>
+>>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>>
+>> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>>
+>
+>
+> Are you sure? It used to be that exofs_sync_fs() could be called
+> concurrently.
+>
+> What about two "bash -c sync" calls or a sync and an unmount
+> in parallel. anything protecting that?
+>
+> If so then sure, but please let me test first.
+> Boaz
+>
+> .
+>
 
-At this stage, the __ka address space (which is what the old
-P2M tree was using) is partially disassembled. The cleanup_highmap
-has removed the PMD entries from 0-16MB and anything past _brk_end
-up to the max_pfn_mapped (which is the end of the ramdisk).
+Yes Boaz, I agree, it's the reason I asked for a comments for exofs and 
+hpfs. The only reason to have a lock here is to serialize operations in 
+parallel on the same super block.
 
-The xen_remove_p2m_tree and code around has ripped out the __ka for
-the old P2M array.
-
-Here we continue on doing it to where the Xen page-tables were.
-It is safe to do it, as the page-tables are addressed using __va.
-For good measure we delete anything that is within MODULES_VADDR
-and up to the end of the PMD.
-
-At this point the __ka only contains PMD entries for the start
-of the kernel up to __brk.
-
-[v1: Per Stefano's suggestion wrapped the MODULES_VADDR in debug]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e0919c5..5a880b8 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1240,6 +1240,25 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
- 			xen_start_info->mfn_list = new_mfn_list;
- 		}
- 	}
-+	/* At this stage, cleanup_highmap has already cleaned __ka space
-+	 * from _brk_limit way up to the max_pfn_mapped (which is the end of
-+	 * the ramdisk). We continue on, erasing PMD entries that point to page
-+	 * tables - do note that they are accessible at this stage via __va.
-+	 * For good measure we also round up to the PMD - which means that if
-+	 * anybody is using __ka address to the initial boot-stack - and try
-+	 * to use it - they are going to crash. The xen_start_info has been
-+	 * taken care of already in xen_setup_kernel_pagetable. */
-+	addr = xen_start_info->pt_base;
-+	size = roundup(xen_start_info->nr_pt_frames * PAGE_SIZE, PMD_SIZE);
-+
-+	xen_cleanhighmap(addr, addr + size);
-+	xen_start_info->pt_base = (unsigned long)__va(__pa(xen_start_info->pt_base));
-+#ifdef DEBUG
-+	/* This is superflous and is not neccessary, but you know what
-+	 * lets do it. The MODULES_VADDR -> MODULES_END should be clear of
-+	 * anything at this stage. */
-+	xen_cleanhighmap(MODULES_VADDR, roundup(MODULES_VADDR, PUD_SIZE) - 1);
-+#endif
- #endif
- 	xen_post_allocator_init();
- }
--- 
-1.7.7.6
-
+Marco
