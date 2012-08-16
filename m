@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab2HPOBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:01:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59170 "EHLO mga03.intel.com"
+	id S932593Ab2HPOC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:02:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:57002 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757149Ab2HPOBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:01:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="scan'208";a="181798977"
-Message-ID: <502CFD35.5000801@linux.intel.com>
-Date: Thu, 16 Aug 2012 07:01:25 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: preeti <preeti@linux.vnet.ibm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <502C98E8.20800@linux.vnet.ibm.com>
-In-Reply-To: <502C98E8.20800@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757149Ab2HPOCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:02:25 -0400
+Message-ID: <1345125747.20062.12.camel@concordia>
+Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        K Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Date: Fri, 17 Aug 2012 00:02:27 +1000
+In-Reply-To: <1345117498.29668.23.camel@twins>
+References: <28857.1345091034@neuling.org>
+	 <1345102812.31459.114.camel@twins> <20344.1345115849@neuling.org>
+	 <1345117498.29668.23.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> *Power policy*:
+On Thu, 2012-08-16 at 13:44 +0200, Peter Zijlstra wrote:
+> On Thu, 2012-08-16 at 21:17 +1000, Michael Neuling wrote:
+> > Peter,
+> > 
+> > > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
+> > > > despite there being no breakpoint on this CPU.  This is because the call
+> > > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
+> > > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
+> > > > return ENOSPC.
+> > > 
+> > > I think this comes from the ptrace legacy, we register a breakpoint on
+> > > all cpus because when we migrate a task it cannot fail to migrate the
+> > > breakpoint.
+> > > 
+> > > Its one of the things I hate most about the hwbp stuff as it relates to
+> > > perf.
+> > > 
+> > > Frederic knows more...
+> > 
+> > Maybe I should wait for Frederic to respond but I'm not sure I
+> > understand what you're saying.
+> > 
+> > I can see how using ptrace hw breakpoints and perf hw breakpoints at the
+> > same time could be a problem, but I'm not sure how this would stop it.
 > 
-> So how is power policy different? As Peter says,'pack more than spread
-> more'.
+> ptrace uses perf for hwbp support so we're stuck with all kinds of
+> stupid ptrace constraints.. or somesuch.
+> 
+> > Are you saying that we need to keep at least 1 slot free at all times,
+> > so that we can use it for ptrace?
+> 
+> No, I'm saying perf-hwbp is weird because of ptrace, maybe the ptrace
+> weirdness shouldn't live in perf-hwpb but in the ptrace-perf glue
+> however..
 
-this is ... a dubiously general statement.
+But how else would it work, even if ptrace wasn't in the picture?
 
-for good power, at least on Intel cpus, you want to spread. Parallelism is efficient.
+You do want to guarantee that the task will always be subject to the
+breakpoint, even if it moves cpus. So is there any way to guarantee that
+other than reserving a breakpoint slot on every cpu ahead of time?
 
-the only thing you do not want to do, is wake cpus up for
-tasks that only run extremely briefly (think "100 usec" or less).
+Or can a hwbp event go into error state if it can't be installed on the
+new cpu, like a pinned event does? I can't see any code that does that.
 
-so maybe the balance interval is slightly different, or more, you don't balance tasks that
-historically ran only for brief periods
+cheers
+
+
 
 
