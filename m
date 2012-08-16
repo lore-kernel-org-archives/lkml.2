@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab2HPSTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:19:00 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41087 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab2HPSS6 (ORCPT
+	id S933109Ab2HPSTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:19:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59783 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932153Ab2HPSTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:18:58 -0400
+	Thu, 16 Aug 2012 14:19:45 -0400
+Date: Thu, 16 Aug 2012 19:19:31 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120816181931.GA19401@mudshark.cambridge.arm.com>
+References: <20120711174802.GG13498@mudshark.cambridge.arm.com>
+ <20120712111659.GF21013@tiehlicka.suse.cz>
+ <20120712112645.GG2816@mudshark.cambridge.arm.com>
+ <20120712115708.GG21013@tiehlicka.suse.cz>
+ <20120807160337.GC16877@mudshark.cambridge.arm.com>
+ <20120808162607.GA7885@dhcp22.suse.cz>
+ <20120816160954.GA4330@mudshark.cambridge.arm.com>
+ <20120816172527.GA12578@dhcp22.suse.cz>
+ <20120816173459.GB7203@mudshark.cambridge.arm.com>
+ <20120816180614.GB12578@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20120816175234.GL11413@one.firstfloor.org>
-References: <50299142.2030504@oberhumer.com>
-	<20120814123937.GA14756@sig21.net>
-	<502B8FE3.7080501@oberhumer.com>
-	<20120815144539.GA8300@sig21.net>
-	<502C92C3.7090701@oberhumer.com>
-	<20120816150647.GA22010@sig21.net>
-	<20120816232549.4d14a6aa@natsu>
-	<20120816175234.GL11413@one.firstfloor.org>
-Date: Thu, 16 Aug 2012 20:18:57 +0200
-X-Google-Sender-Auth: jNSMTtfME9kf4QuTX0XuaksgpO4
-Message-ID: <CAMuHMdWK_Y=QwkgQD6K8tFBLaO04Fy0yVAzEpb2OYW6Ec0hGoA@mail.gmail.com>
-Subject: Re: [GIT PULL] Update LZO compression
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Roman Mamedov <rm@romanrm.ru>, Johannes Stezenbach <js@sig21.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816180614.GB12578@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 7:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> I have locked the Allwinner A10 CPU in my Mele A2000 to 60 MHz using cpufreq-set,
->> and ran your test. rnd.lzo is a 9 MB file from /dev/urandom compressed with lzo.
->> There doesn't seem to be a significant difference between all three variants.
->
-> I found that in compression benchmarks it depends a lot on the data
-> compressed.
->
-> urandom (which should be essentially incompressible) will be handled
-> by different code paths in the compressor than other more compressible data.
-> It becomes a complicated memcpy then.
+On Thu, Aug 16, 2012 at 07:06:14PM +0100, Michal Hocko wrote:
+> On Thu 16-08-12 18:34:59, Will Deacon wrote:
+> > I just did it that way to match the flag clearing for normal pages. I can
+> > move it into dequeue if you think it's worthwhile but in the worst case it
+> > just adds a clear_bit call, so I doubt it's measurable.
+> 
+> I do not have a strong opinion on that but the flags come in cleared when
+> they are freshly allocated (gather_surplus_pages) so then it would be
+> more appropriate in free_huge_page when enqueue_huge_page is called.
 
-In addition, locking the CPU to 60 MHz may improve the memory access penalty,
-as a cache miss may cost much less cycles.
+Makes sense, I'll move the call into free_huge_page.
 
-Gr{oetje,eeting}s,
+Cheers,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Will
