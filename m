@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab2HPOjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:39:01 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:41646 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2HPOjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:39:00 -0400
-Date: Thu, 16 Aug 2012 16:38:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
-Message-ID: <20120816143851.GI19716@somewhere>
-References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
- <1344953810-20564-2-git-send-email-fweisbec@gmail.com>
- <20120815170347.323507b1@de.ibm.com>
- <20120815190901.GD19716@somewhere>
- <20120816095336.4eeb3ce1@de.ibm.com>
- <1345109897.11751.31.camel@pasglop>
- <20120816125556.GG19716@somewhere>
- <20120816160044.1941f6f4@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816160044.1941f6f4@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932625Ab2HPOjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:39:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932395Ab2HPOjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:39:03 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-scsi@vger.kernel.org
+Cc: JBottomley@parallels.com, tytso@mit.edu, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
+Date: Thu, 16 Aug 2012 16:38:45 +0200
+Message-Id: <1345127925-32042-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 04:00:44PM +0200, Martin Schwidefsky wrote:
-> On Thu, 16 Aug 2012 14:55:59 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Thu, Aug 16, 2012 at 07:38:17PM +1000, Benjamin Herrenschmidt wrote:
-> > > On Thu, 2012-08-16 at 09:53 +0200, Martin Schwidefsky wrote:
-> > > > Hmm, ok. But then the description should be reworded not to be specific to
-> > > > the power architecture (the part of the message about "This also enables
-> > > > accounting of stolen time on logically-partitioned systems running on IBM
-> > > > POWER5-based machines."). 
-> > > 
-> > > Which is not very helpful to somebody running on a POWER6 or 7 (which
-> > > also support that option just fine :-)
-> > > 
-> > > So yes, the description should definitely be improved.
-> > 
-> > All right. How about something like the below?
-> > 
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 894b073..5f5f8c2 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -276,9 +276,9 @@ config VIRT_CPU_ACCOUNTING
-> >  	  accounting.  This is done by reading a CPU counter on each
-> >  	  kernel entry and exit and on transitions within the kernel
-> >  	  between system, softirq and hardirq state, so there is a
-> > -	  small performance impact.  This also enables accounting of
-> > -	  stolen time on logically-partitioned systems running on
-> > -	  IBM POWER5-based machines.
-> > +	  small performance impact.  In the case of IBM POWER > 5, this
-> > +	  also enables accounting of stolen time on logically-partitioned
-> > +	  systems.
-> > 
-> >  config BSD_PROCESS_ACCT
-> >  	bool "BSD Process Accounting"
-> > 
-> 
-> VIRT_CPU_ACCOUNTING will enable steal time for s390 as well.
+Currently it is possible to unmap one more block than user requested to
+due to the off-by-one error in unmap_region(). This is probably due to
+the fact that the end variable despite its name actually points to the
+last block to unmap + 1. However in the condition it is handled as the
+last block of the region to unmap.
 
-Ah right. Fixed below:
+The bug was not previously spotted probably due to the fact that the
+region was not zeroed, which has changed with commit
+be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
+to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
+enabled using fstrim.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 894b073..c40d0fb 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -276,9 +276,9 @@ config VIRT_CPU_ACCOUNTING
- 	  accounting.  This is done by reading a CPU counter on each
- 	  kernel entry and exit and on transitions within the kernel
- 	  between system, softirq and hardirq state, so there is a
--	  small performance impact.  This also enables accounting of
--	  stolen time on logically-partitioned systems running on
--	  IBM POWER5-based machines.
-+	  small performance impact.  In the case of s390 or IBM POWER > 5,
-+	  this also enables accounting of stolen time on logically-partitioned
-+	  systems.
+Since the 'end' semantic is the same in several functions there this
+commit just fixes the condition to use the 'end' variable correctly in
+that context.
+
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+---
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 182d5a5..f4cc413 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, unsigned int len)
+ 		block = lba + alignment;
+ 		rem = do_div(block, granularity);
  
- config BSD_PROCESS_ACCT
- 	bool "BSD Process Accounting"
+-		if (rem == 0 && lba + granularity <= end && block < map_size) {
++		if (rem == 0 && lba + granularity < end && block < map_size) {
+ 			clear_bit(block, map_storep);
+ 			if (scsi_debug_lbprz)
+ 				memset(fake_storep +
+-- 
+1.7.7.6
+
