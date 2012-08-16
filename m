@@ -1,51 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab2HPTNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:13:06 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:33076 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab2HPTNC (ORCPT
+	id S932624Ab2HPTPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:15:34 -0400
+Received: from smtp.riverbed.com ([208.70.196.45]:20545 "EHLO
+	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab2HPTPc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:13:02 -0400
+	Thu, 16 Aug 2012 15:15:32 -0400
+From: Jiang Wang <Jiang.Wang@riverbed.com>
+To: Michael Chan <mchan@broadcom.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
+        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
+Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgA=
+Date: Thu, 16 Aug 2012 19:15:30 +0000
+Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
+References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
+ <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+In-Reply-To: <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.205.250]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1345144127.3402.2.camel@falcor.watson.ibm.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<ec8635c36005ba5ea3784276214fb905720ee3ec.1345055639.git.dmitry.kasatkin@intel.com>
-	<CA+5PVA71WegBSBbgZDBZopORkAMN9G8i2MXHmAGdpiSjWzo9RQ@mail.gmail.com>
-	<1345144127.3402.2.camel@falcor.watson.ibm.com>
-Date: Thu, 16 Aug 2012 15:13:01 -0400
-Message-ID: <CA+5PVA6bwH1RKwT8DiZU2J3xo_c_R5d=0Zo9qHXkq+JhtZeG3Q@mail.gmail.com>
-Subject: Re: [RFC v2 2/7] keys: initialize root uid and session keyrings early
-From: Josh Boyer <jwboyer@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 3:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> > +#include "internal.h"
->> > +static int __init init_root_keyring(void)
->> > +{
->> > +       return install_user_keyrings();
->> > +}
->> > +
->> > +late_initcall(init_root_keyring);
->> > --
->>
->> Why is this in an entirely new file instead of just being added to
->> process_keys.c ?
->>
->> josh
->
-> Only when "CONFIG_INTEGRITY_SIGNATURE" is selected, does this get built.
+Hi Michael,
 
-Yes, I noticed that.  It doesn't explain why it's in its own file.  You
-could accomplish the same thing by wrapping the function and initcall
-in #ifdef CONFIG_INTEGRITY_SIGNATURE in process_keys.c.
+I just checked the code for netif_carrier_off(), and it will return if the dev is not initialized (registered) as follows:
 
-josh
+void netif_carrier_off(struct net_device *dev)
+{
+        if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
+                if (dev->reg_state == NETREG_UNINITIALIZED)
+                        return;
+                linkwatch_fire_event(dev);
+        }
+}
+
+So linkwatch_fire_event should not fire in this case, right? Thanks for the quick response.
+
+Regards,
+
+Jiang
+
+-------------------------------------
+Jiang Wang
+Member of Technical Staff
+Riverbed Technology
+Tel: (408) 522-5109
+Email: Jiang.Wang@riverbed.com
+www.riverbed.com
+
+
+-----Original Message-----
+From: Michael Chan [mailto:mchan@broadcom.com] 
+Sent: Thursday, August 16, 2012 11:57 AM
+To: Jiang Wang
+Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant; Jiang Wang
+Subject: Re: [PATCH] bnx2: turn off the network statck during initialization
+
+On Thu, 2012-08-16 at 11:21 -0700, Jiang Wang wrote: 
+> The initialization state of bnx2 driver is wrong. It does not turn of 
+> the Linux network stack using netif_carrier_off. This may lead to 
+> inconsistent report from ethtool as the link is up but speed is 
+> unknown when the cable is not plugged in.
+> 
+> E.g.
+>         Speed: Unknown! (0)<--------------------------------------
+>         Duplex: Half       <--------------------------------------
+>         MDI: Unknown! (0)
+>         Port: Twisted Pair
+>         PHYAD: 1
+>         Transceiver: internal
+>         Auto-negotiation: on
+>         Supports Wake-on: g
+>         Wake-on: d
+>         Link detected: yes <---------------------------------------
+> 
+> This patches fixed the problem by turning off the network stack during 
+> initialization.
+> 
+> Signed-off-by: Jiang Wang <jwang@riverbed.com>
+> ---
+>  drivers/net/ethernet/broadcom/bnx2.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/broadcom/bnx2.c 
+> b/drivers/net/ethernet/broadcom/bnx2.c
+> index ac7b744..ce4548d 100644
+> --- a/drivers/net/ethernet/broadcom/bnx2.c
+> +++ b/drivers/net/ethernet/broadcom/bnx2.c
+> @@ -8463,6 +8463,10 @@ bnx2_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	dev->features |= dev->hw_features;
+>  	dev->priv_flags |= IFF_UNICAST_FLT;
+>  
+> +	/* tell the stack to leave us alone until bnx2_open() is called */
+> +	netif_carrier_off(dev);
+
+We have tried this before and this didn't work.  netif_carrier_off() calls linkwatch_fire_event() to schedule the event.  If
+register_netdev() fails for whatever reason, the netdev will be freed but the link_watch event may still be scheduled.
+
+Calling netif_carrier_off() after register_netdev() returns successfully also may not work as it will race with bnx2_open() which enables IRQ.
+An linkup IRQ can happen at time and we may end up with the wrong carrier state because of the race condition.
+
+> +	netif_stop_queue(dev);
+> +
+>  	if ((rc = register_netdev(dev))) {
+>  		dev_err(&pdev->dev, "Cannot register net device\n");
+>  		goto error;
+
+
+
