@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab2HPPVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:21:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847Ab2HPPVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:21:30 -0400
-Date: Thu, 16 Aug 2012 16:28:07 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@vpn-8-20.rdu.redhat.com
-To: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-cc: "Theodore Ts'o" <tytso@mit.edu>, Paolo Bonzini <pbonzini@redhat.com>,
-        "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" 
-	<linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4fs error "ext4_mb_generate_buddy:741:group 16, 8160 clusters
- in bitmap, 4064 in gd" (with repro)
-In-Reply-To: <alpine.LFD.2.00.1208151116530.4904@dhcp-1-248.brq.redhat.com>
-Message-ID: <alpine.LFD.2.00.1208161619440.2459@vpn-8-20.rdu.redhat.com>
-References: <50238A29.3060808@redhat.com> <20120809170640.GA6607@thunk.org> <alpine.LFD.2.00.1208151116530.4904@dhcp-1-248.brq.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757534Ab2HPPWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:22:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39373 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755847Ab2HPPWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:22:03 -0400
+Message-ID: <502D100D.2030609@pobox.com>
+Date: Thu, 16 Aug 2012 11:21:49 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="185209864-1526929049-1345127291=:2459"
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+CC: Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com>
+In-Reply-To: <502C92C3.7090701@oberhumer.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 08/16/2012 02:27 AM, Markus F.X.J. Oberhumer wrote:
+> On 2012-08-15 16:45, Johannes Stezenbach wrote:
+>> On Wed, Aug 15, 2012 at 02:02:43PM +0200, Markus F.X.J. Oberhumer wrote:
+>>> On 2012-08-14 14:39, Johannes Stezenbach wrote:
+>>>> On Tue, Aug 14, 2012 at 01:44:02AM +0200, Markus F.X.J. Oberhumer wrote:
+>>>>> On 2012-07-16 20:30, Markus F.X.J. Oberhumer wrote:
+>>>>>>
+>>>>>> As stated in the README this version is significantly faster (typically more
+>>>>>> than 2 times faster!) than the current version, has been thoroughly tested on
+>>>>>> x86_64/i386/powerpc platforms and is intended to get included into the
+>>>>>> official Linux 3.6 or 3.7 release.
+>>>>>>
+>>>>>> I encourage all compression users to test and benchmark this new version,
+>>>>>> and I also would ask some official LZO maintainer to convert the updated
+>>>>>> source files into a GIT commit and possibly push it to Linus or linux-next.
+>>>>
+>>>> Sorry for not reporting earlier, but I didn't have time to do real
+>>>> benchmarks, just a quick test on ARM926EJ-S using barebox,
+>>>> and found in the new version decompression is slower:
+>>>> http://lists.infradead.org/pipermail/barebox/2012-July/008268.html
+>>>
+>>> I can only guess, but maybe your ARM cpu does not have an efficient
+>>> implementation of {get,put}_unaligned().
+>>
+>> Yes, ARMv5 cannot do unaligned access.  ARMv6+ could, but
+>> I think the Linux kernel normally traps it for debug,
+>> all ARM seem to use generic {get,put}_unaligned() implementation
+>> which use byte access and shift.
+>
+> Hmm - I could imagine that we're wasting a lot of possible speed gain
+> by not exploiting that feature on ARMv6+.
 
---185209864-1526929049-1345127291=:2459
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Or you could just realize that unaligned accesses are slow in the best 
+case, and are simply not supported on some processors.
 
-On Wed, 15 Aug 2012, Luká¨ Czerner wrote:
+If you think a little bit, I bet you could come up with a solution that 
+operates at cacheline-aligned granularity, something that would be _even 
+faster_ than simply fixing the code to do aligned accesses.
 
-> Date: Wed, 15 Aug 2012 11:17:57 +0200 (CEST)
-> From: Luká¨ Czerner <lczerner@redhat.com>
-> To: Theodore Ts'o <tytso@mit.edu>
-> Cc: Lukas Czerner <lczerner@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
->     "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List"
->     <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-> Subject: Re: ext4fs error
->     "ext4_mb_generate_buddy:741:group 16, 8160 clusters in bitmap, 4064 in gd"
->      (with repro)
-> 
-> On Thu, 9 Aug 2012, Theodore Ts'o wrote:
-> 
-> > Date: Thu, 9 Aug 2012 13:06:40 -0400
-> > From: Theodore Ts'o <tytso@mit.edu>
-> > To: Lukas Czerner <lczerner@redhat.com>
-> > Cc: Paolo Bonzini <pbonzini@redhat.com>,
-> >     "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List"
-> >     <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-> > Subject: Re: ext4fs error
-> >     "ext4_mb_generate_buddy:741:group 16, 8160 clusters in bitmap, 4064 in gd"
-> >      (with repro)
-> > 
-> > On Thu, Aug 09, 2012 at 12:00:09PM +0200, Paolo Bonzini wrote:
-> > > Here is how to reproduce it.  It happens during fstrim.  I found other
-> > > occurrences of the error in the mailing list, but they were not related
-> > > to trim so they may be something different.
-> > > 
-> > > modprobe scsi_debug dev_size_mb=256 lbpws=1
-> > > dd if=/dev/zero of=/dev/sdb bs=1M      
-> > > fdisk /dev/sdb
-> > >  >> create a new partition accepting all defaults
-> > > fdisk -lu /dev/sdb|tail -1
-> > >  >> should show: /dev/sdb1     57      524285      262114+  83  Linux
-> > > 
-> > > mkfs.ext4 /dev/sdb1
-> > > mkdir test
-> > > mount /dev/sdb1 test
-> > > fstrim ./test
-> > 
-> > I can confirm that this accurately reproduces file system corruption
-> > using a 3.5 kernel.  It looks like some block allocation bitmap blocks
-> > is getting trimmed when it shouldn't have been.  Lukas, can you take a
-> > look at this?
-> > 
-> > 					- Ted
-> 
-> Hi Ted,
-> 
-> sorry for the delay, I've just got back from my vacation. I'll take
-> a look at it.
-> 
-> Thanks!
-> -Lukas
-
-This does not seem like an ext4 problem. The code seems unable to
-actually discard blocks which are allocated. Moreover I was not able
-to reproduce the problem on the loop device with the same setting as
-the reported scsi_debug device (1024 bs file system on the 256MB image
-residing on the 1024 bs filesystem) 
-
-After a little bit of tracing with the systemtap and blktrace ext4
-does not seem to be doing anything wrong and yet we get part of the
-block bitmap trimmed. This lead me to the scsi_debug driver itself
-and indeed it seems that we have off-by-one bug there in the
-unamp_region() which is causing the problem.
-
-Here is the patch which fixes the problem for me, I'll resend the
-proper patch in a bit.
-
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index 182d5a5..f4cc413 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, unsigned int len)
- 		block = lba + alignment;
- 		rem = do_div(block, granularity);
- 
--		if (rem == 0 && lba + granularity <= end && block < map_size) {
-+		if (rem == 0 && lba + granularity < end && block < map_size) {
- 			clear_bit(block, map_storep);
- 			if (scsi_debug_lbprz)
- 				memset(fake_storep +
+	Jeff
 
 
-Thanks!
--Lukas
---185209864-1526929049-1345127291=:2459--
+
+
