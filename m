@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab2HPRZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:25:55 -0400
-Received: from len.romanrm.net ([176.31.121.172]:44456 "EHLO len.romanrm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab2HPRZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:25:53 -0400
-Date: Thu, 16 Aug 2012 23:25:49 +0600
-From: Roman Mamedov <rm@romanrm.ru>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] Update LZO compression
-Message-ID: <20120816232549.4d14a6aa@natsu>
-In-Reply-To: <20120816150647.GA22010@sig21.net>
-References: <50299142.2030504@oberhumer.com>
-	<20120814123937.GA14756@sig21.net>
-	<502B8FE3.7080501@oberhumer.com>
-	<20120815144539.GA8300@sig21.net>
-	<502C92C3.7090701@oberhumer.com>
-	<20120816150647.GA22010@sig21.net>
-Organization: http://version6.ru/
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/=C.lUB/2VdSczshZJsDxK4."; protocol="application/pgp-signature"
+	id S1756316Ab2HPR1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:27:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37672 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754333Ab2HPR1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:27:15 -0400
+Date: Thu, 16 Aug 2012 10:27:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>, devel@driverdev.osuosl.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: show_uevent() and general protection fault
+Message-ID: <20120816172711.GB27415@kroah.com>
+References: <20120713083140.GA19738@localhost>
+ <20120713084616.GA20037@localhost>
+ <20120717013342.GD21914@kroah.com>
+ <20120718051552.GA9124@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718051552.GA9124@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=C.lUB/2VdSczshZJsDxK4.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 18, 2012 at 01:15:52PM +0800, Fengguang Wu wrote:
+> On Mon, Jul 16, 2012 at 06:33:42PM -0700, Greg Kroah-Hartman wrote:
+> > On Fri, Jul 13, 2012 at 04:46:16PM +0800, Fengguang Wu wrote:
+> > > This is another kconfig, produced a bit different call trace, however
+> > > also related to sysfs_read_file().
+> > 
+> > Any hint as to which file is being read?
+> 
+> Good idea! I added this debugging aid:
+> 
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -129,6 +129,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+>  {
+>         struct sysfs_buffer * buffer = file->private_data;
+>         ssize_t retval = 0;
+> +       char pathname[300], *path;
+> +
+> +       path = d_path(&(file->f_path), pathname, sizeof(pathname));
+> +       if (!IS_ERR(path))
+> +               printk("%s\n", path);
+>  
+>         mutex_lock(&buffer->mutex);
+>         if (buffer->needs_read_fill || *ppos == 0) {
+> 
+> And find some sysfs files that triggered the errors:
+> 
+> wfg@waimea ~/kvm% grep -hB1 'kernel paging request' /tmp/dmesg-kvm_bisect-waimea-*|grep /sys/               
+> [   28.995741] /sys/module/tpm_tis/parameters/hid
+> [   60.885798] /sys/module/tpm_tis/parameters/hid
+> 
+> wfg@waimea ~/kvm% grep -hB1 'general protection fault' /tmp/dmesg-kvm_bisect-waimea-*|grep -o /sys/.* | sort -u
+> /sys/devices/LNXSYSTM:00/device:00/PNP0103:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0303:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0400:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0501:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0700:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0B00:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0F13:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:00/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:01/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:02/uevent
+> /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:03/uevent
+> /sys/devices/LNXSYSTM:00/LNXCPU:00/uevent
+> /sys/devices/LNXSYSTM:00/LNXCPU:01/uevent
+> /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0/uevent
+> /sys/devices/LNXSYSTM:00/LNXPWRBN:00/uevent
+> /sys/devices/LNXSYSTM:00/uevent
+> /sys/devices/platform/i8042/serio0/input/input1/uevent
 
-On Thu, 16 Aug 2012 17:06:47 +0200
-Johannes Stezenbach <js@sig21.net> wrote:
+This is odd, I can't duplicate it at all, is it still showing up for
+you?
 
-> Well, ~2x speedup on x86 is certainly a good achievement, but there
-> are more ARM based devices than there are PCs, and I guess many
-> embedded devices use lzo compressed kernels and file systems
-> while I'm not convinced many PCs rely on lzo in the kernel.
-
-Keep in mind that a major user of LZO is the BTRFS filesystem, and I believ=
-e it
-is used much more often on larger machines than on ARM, in fact it had prob=
-lems
-operating on ARM at all, until quite recently.
-
-> I know everyone's either busy or on vacation, but it would
-> be so cool if someone could test on a more modern ARM core,
-> with the userspace test code I posted it should be easy to do.
-
-I have locked the Allwinner A10 CPU in my Mele A2000 to 60 MHz using cpufre=
-q-set,
-and ran your test. rnd.lzo is a 9 MB file from /dev/urandom compressed with=
- lzo.
-There doesn't seem to be a significant difference between all three variant=
-s.
-
-# time for i in {1..20}; do old/unlzop < rnd.lzo >/dev/null ; done
-
-real	0m11.353s
-user	0m3.060s
-sys	0m8.170s
-# time for i in {1..20}; do new/unlzop < rnd.lzo >/dev/null ; done
-
-real	0m11.416s
-user	0m3.030s
-sys	0m8.200s
-# time for i in {1..20}; do test/unlzop < rnd.lzo >/dev/null ; done
-
-real	0m11.310s
-user	0m3.100s
-sys	0m8.150s
-
---=20
-With respect,
-Roman
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-"Stallman had a printer,
-with code he could not see.
-So he began to tinker,
-and set the software free."
-
---Sig_/=C.lUB/2VdSczshZJsDxK4.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAtLR0ACgkQTLKSvz+PZwiO5ACgiTDInffOSNH2Gi6UsYyydH53
-5lwAoJB3qOltOGc3UxJgkYbOP9sfBkh9
-=UjHj
------END PGP SIGNATURE-----
-
---Sig_/=C.lUB/2VdSczshZJsDxK4.--
+greg k-h
