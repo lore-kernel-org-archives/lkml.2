@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab2HPNFf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:05:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60734 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756178Ab2HPNFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:05:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="asc'?scan'208";a="202649737"
-Message-ID: <1345122611.3393.225.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>, bhalevy@tonian.com,
-        jack@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
-        adilger.kernel@dilger.ca, tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Date: Thu, 16 Aug 2012 16:10:11 +0300
-In-Reply-To: <502CE840.4060802@panasas.com>
-References: <502CC4AA.6040702@gmail.com>
-	 <1345119652.3393.220.camel@sauron.fi.intel.com>
-	 <502CE840.4060802@panasas.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-7pqpxobN4N0X1bCzyMF0"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S932179Ab2HPNHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:07:49 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:43923 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932088Ab2HPNHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:07:48 -0400
+Date: Thu, 16 Aug 2012 16:03:46 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] scripts/modpost: add a exception for USB gadget
+ drivers
+Message-ID: <20120816130344.GD26408@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1345060759-18091-1-git-send-email-bigeasy@linutronix.de>
+ <1345060759-18091-3-git-send-email-bigeasy@linutronix.de>
+ <CAAe_U6KyAt8KuzOR0dpPmN0NFDLUupzCmdfB=d5ibbN_m4nFTA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pZs/OQEoSSbxGlYw"
+Content-Disposition: inline
+In-Reply-To: <CAAe_U6KyAt8KuzOR0dpPmN0NFDLUupzCmdfB=d5ibbN_m4nFTA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-7pqpxobN4N0X1bCzyMF0
-Content-Type: text/plain; charset="UTF-8"
+--pZs/OQEoSSbxGlYw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2012-08-16 at 15:32 +0300, Boaz Harrosh wrote:
-> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
+On Thu, Aug 16, 2012 at 06:35:07PM +0530, ABRAHAM, KISHON VIJAY wrote:
+> Hi Sebastian,
 >=20
-> > On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
-> >> From: Marco Stornelli <marco.stornelli@gmail.com>
-> >>
-> >> Remove lock and unlock super operation.
-> >>
-> >> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> >=20
-> > Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> >=20
->=20
->=20
-> Are you sure? It used to be that exofs_sync_fs() could be called
-> concurrently.
->=20
-> What about two "bash -c sync" calls or a sync and an unmount
-> in parallel. anything protecting that?
->=20
-> If so then sure, but please let me test first.
+> On Thu, Aug 16, 2012 at 1:29 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+> > The "driver" struct for a gadget driver is named *_driver. On module
+> > load, the gadget expects a UDC driver to be loaded and avaiable. If this
+> > is not the case =3D> -ENODEV and bye bye. That means that the gadget
+> Will this be taken care of in your future series (with configfs?).
+> There might be cases when your gadget driver gets loaded before the
+> UDC driver.
 
-Umm, actually we will probably end up writing the same twice without the
-lock.=20
+with configfs that won't be a problem because even though function
+drivers are loaded, they won't bind to any controller until we tell them
+to through configfs. IOW, functions will only bind to UDCs after we
+assign them to a particular usb interface through configfs.
 
 --=20
-Best Regards,
-Artem Bityutskiy
+balbi
 
---=-7pqpxobN4N0X1bCzyMF0
+--pZs/OQEoSSbxGlYw
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQLPEzAAoJECmIfjd9wqK0RbAP/RTo+4b5WdFNp7LlbXbhC1iE
-fpKaqras3r8JudcpePQ/9nKdWqOx85nu1ZaXjov9uL//hRnJVxJ2h7ghTlaQ9/jc
-gaTm+cHqh5HsS6CxfGnnz/LwUN/Kounb/YekxSNogsry1+8GXxYr5wTLPR/7LlVi
-8BA9NyWOIzxOqX8S0KeZtZs5ww31bRl8hPTLqiUazGOtDcwMixSm8R7bgHov8guw
-enJBxK3ONv+b6BC9id0AA82sxOQNXZuzd/SabiplWsGCVjLtbpeI/V0QbIQMqznU
-HfTLP5cXCCD/5nEUYXQ8IbN0niUoOcCA7Gwv2bcbuVlQKjx5JduXM6mSnfkx5xKM
-0YiiifU5WweWGtWk7tZUr7qNj8Uo8FqgVndDeZgD5LWZHuRImSi7cFWof4dwv4t1
-2WB3fjc2wUOd3ZTbJFeRJGn0zJtkFOW4QeceFCC7wk/QIEFfn9zQs/qD79zdQ1BU
-Yxj5KZ2qXNEY5IKO2OLzSQbgssc5zBwTQY/6rT03YGL3AJxEcPrCX3Qezs1twWtd
-/L++4WirDw2L8bIkr4FGd7A1kaMWRQGWfvDZWp9UakSy3PDuifSc9XcpjxXlgjCV
-xLRrb4UIZYDAhSeq6Qr8chLEIwRBSKiTU8R5UZmIuky8CfsLXtOzap6awwVJ5Ruz
-sv8Ls9QhmMVVr7S/GLC9
-=xgEu
+iQIcBAEBAgAGBQJQLO+wAAoJEIaOsuA1yqREULYP/RmJHoyN3oezLo+xt15fVR6l
+we94SZkY3BKF1bZaEr37BD/M0kWQI0Q2B8Chv9EgbB3vYfzv4A4/S9dGCc+TVzer
+uxJJQDW5lD+N+9ENQYp6zPF+uO4zhFEIu1QXiO+k+FfQxJr4beBzmKyOqw04xR/s
+ScvcLUBZFe+GyCrvLd9OiuWv0c8QH485d3FOsX0MLv/7KatyFxftkObISNRpBArD
+n5Q/kIPG3z0P7iVS1m0G73roGq4a/2lZRQyq0DlJbvrr26XAYrsvl5yOwH6rr65J
+qxX0gNjKP5mBeT3AH7SCBRwib4qUuoyIDwzr0OZGyAKvkC3CUDlJMB3eT97XDkTv
+JFxVUaZFPZb9X2zgtpCNCu20Hfe/L1xes5CL/M/InqbRIvlFfOgyABQgpSUeULO/
+1L4DPOhFHEURSIgkZ0EZh2ggw7J1zjSlGe10yE+tBs/is8gAltbapo2H4qDlIQYu
+xakCuSZl+3EiYDTqP4cmvy1ZcVUhx+g5K1KEUYs+of0/iJH9Nl1iJhpr3IF6tu6q
+GqScRe51oNJzJByK3PMjECHYsiXfNz8+aleicNyhrkUkmvFRlRvXOLIrggOUXr+a
+Eltq1HcIykt8nLJ/AX3Lxm0pOJfrKwOlFPcyVEB3fQgHRH6kbs8j+QlyLV+BQUKi
+wHvFsTvxTewGPQ8RmX2s
+=iRWT
 -----END PGP SIGNATURE-----
 
---=-7pqpxobN4N0X1bCzyMF0--
-
+--pZs/OQEoSSbxGlYw--
