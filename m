@@ -1,144 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab2HPTaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:30:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50643 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab2HPTa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:30:26 -0400
-Message-ID: <1345145332.3402.13.camel@falcor.watson.ibm.com>
-Subject: Re: [RFC v2 3/7] integrity: create and inititialize a keyring with
- builtin public key
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Date: Thu, 16 Aug 2012 15:28:52 -0400
-In-Reply-To: <CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	 <66e0f332c823b82701a48aba320f589cec27e904.1345055639.git.dmitry.kasatkin@intel.com>
-	 <CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081619-7182-0000-0000-0000024F6071
+	id S932715Ab2HPTfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:35:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65405 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab2HPTfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:35:41 -0400
+Date: Thu, 16 Aug 2012 12:35:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com,
+        jagrelo@cisco.com
+Subject: Re: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
+ structures
+Message-ID: <20120816193537.GA14719@kroah.com>
+References: <1345130600-2862-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345130600-2862-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 14:37 -0400, Josh Boyer wrote:
-> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
-> <dmitry.kasatkin@intel.com> wrote:
-> > From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> >
-> > Create and initialize a keyring with the builtin public key. This could
-> > be an ephemeral key, created and destroyed during module install for
-> > custom built kernels, or a key used to label the entire filesystem for
-> > EVM/IMA-appraisal. Uses .incbin based on David Howell's post.
-> >
-> > Load the builtin public key on the specified keyring, creating the
-> > keyring if it doesn't already exist.
-> >
-> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> > ---
-> >  security/integrity/Kconfig         |   10 ++++
-> >  security/integrity/Makefile        |   17 +++++++
-> >  security/integrity/digsig_pubkey.c |   96 ++++++++++++++++++++++++++++++++++++
-> >  security/integrity/integrity.h     |   10 ++++
-> >  4 files changed, 133 insertions(+)
-> >  create mode 100644 security/integrity/digsig_pubkey.c
-> >
-> > diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-> > index 5bd1cc1..f789018 100644
-> > --- a/security/integrity/Kconfig
-> > +++ b/security/integrity/Kconfig
-> > @@ -17,5 +17,15 @@ config INTEGRITY_SIGNATURE
-> >           This is useful for evm and module keyrings, when keys are
-> >           usually only added from initramfs.
-> >
-> > +config INTEGRITY_PUBKEY
-> > +       boolean "Create a keyring and initialize with builtin public key"
-> > +       depends on INTEGRITY_SIGNATURE
-> > +       default n
-> > +       help
-> > +         Create and initialize a keyring with the builtin public key. This could
-> > +         be an ephemeral key, created and destroyed during module install for
-> > +         custom built kernels, or a key used to label the entire filesystem for
-> > +         EVM/IMA-appraisal.
-> > +
+On Thu, Aug 16, 2012 at 08:23:20AM -0700, K. Y. Srinivasan wrote:
+> Use explicitly sized types in data structures defining the host/guest
+> protocol. I would like to thank Juan Sanchez-Agrelo  <jagrelo@cisco.com> 
+> for reporting this.
 > 
-> It could also be a key that is reused explicitly for signing kernels
-> and kernel modules but has nothing to do with EVM/IMA filesystem
-> labels, right?  E.g. a distro key.  I think the commit log and help
-> text is a bit too restrictive here.
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-Definitely!  The cover letter included the distro scenario, but I missed
-updating it here.
+If someone reports a problem, mark it as:
+	Reported-by: Juan Sanchez-Agrelo <jagrelo@cisco.com>
+in the signed-off-by: area of the patch.
 
-> > +int integrity_init_keyring(const unsigned int id)
-> > +{
-> > +       const struct cred *cred = current_cred();
-> > +       struct user_struct *user = cred->user;
-> > +       struct key *new_keyring, *key;
-> > +       u8 digest[SHA1_DIGEST_SIZE];
-> > +       char keyid[20];
-> > +       int ret, pubkey_size = pubkey_end - pubkey;
-> > +
-> > +       if (pubkey_size == 0) {
-> > +               pr_info("pubkey is missing, skipping...\n");
-> > +               return 0;
-> > +       }
-> > +
-> > +       new_keyring = keyring_alloc(keyring_name[id], user->uid, (gid_t) -1,
-> > +                                   cred, KEY_ALLOC_NOT_IN_QUOTA,
-> > +                                   user->uid_keyring);
-> > +       if (IS_ERR(new_keyring)) {
-> > +               ret = PTR_ERR(new_keyring);
-> > +               goto out;
-> > +       }
-> > +
-> > +       ret = integrity_calc_digest("sha1", pubkey, pubkey_size, digest);
-> > +       if (ret < 0)
-> > +               goto out;
-> > +
-> > +       sprintf(keyid, "%llX", __be64_to_cpup((uint64_t *)(digest+12)));
-> 
-> keyid is only 20 bytes.  Is there a guarantee somewhere that restricts
-> the digest+12 value to be 20 bytes or less and NUL termintated?  If
-> not, should you use snprintf?
+Does this need to go into 3.6, and possibly older kernels?  Or can it
+wait for 3.7?
 
-Correct, and SHA1 shouldn't be hardcoded either, but configurable.
+thanks,
 
-> 
-> > +
-> > +       key = key_alloc(&key_type_user, keyid, 0, 0, current_cred(),
-> > +                       (KEY_POS_ALL & ~KEY_POS_SETATTR) |
-> > +                       KEY_USR_VIEW | KEY_USR_SEARCH | KEY_USR_READ,
-> > +                       KEY_ALLOC_NOT_IN_QUOTA);
-> > +       if (IS_ERR(key)) {
-> > +               ret = PTR_ERR(key);
-> > +               goto out;
-> 
-> You leak new_keyring if here, right?
-
-thanks
-
-> > +       }
-> > +
-> > +       ret = key_instantiate_and_link(key, pubkey, pubkey_end - pubkey,
-> > +                                      new_keyring, NULL);
-> > +out:
-> > +       pr_info("integrity: loaded public key %s on %s %s\n", keyid,
-> > +               keyring_name[id], !ret ? "succeeded" : "failed");
-> > +       return ret;
-> > +}
-> 
-> josh
-
-Mimi
-
+greg k-h
