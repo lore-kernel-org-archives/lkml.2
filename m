@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab2HPW3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 18:29:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39994 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082Ab2HPW3n (ORCPT
+	id S1030537Ab2HPWeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 18:34:24 -0400
+Received: from eng.riverbed.com ([208.70.196.45]:29570 "EHLO
+	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933424Ab2HPWeX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 18:29:43 -0400
-Date: Thu, 16 Aug 2012 23:29:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Porter <mporter@ti.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, cjb@laptop.org,
-        grant.likely@secretlab.ca,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] dmaengine: add TI EDMA DMA engine driver
-Message-ID: <20120816222912.GA15883@n2100.arm.linux.org.uk>
-References: <1345153471-22757-1-git-send-email-mporter@ti.com> <1345153471-22757-2-git-send-email-mporter@ti.com>
+	Thu, 16 Aug 2012 18:34:23 -0400
+From: Jiang Wang <Jiang.Wang@riverbed.com>
+To: Michael Chan <mchan@broadcom.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
+        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
+Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgCAAHtYAP//kWDwgACL2ID//48v0AAQs62AAA55TsA=
+Date: Thu, 16 Aug 2012 22:34:21 +0000
+Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2CA2@SFO1EXC-MBXP06.nbttech.com>
+References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
+ <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
+ <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
+ <1345151593.6916.62.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <CEE05A0D7856E14880AD5560634EBEA834DB2C2B@SFO1EXC-MBXP06.nbttech.com>
+ <1345156059.6916.67.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+In-Reply-To: <1345156059.6916.67.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.205.254]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345153471-22757-2-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 05:44:29PM -0400, Matt Porter wrote:
-> Add a DMA engine driver for the TI EDMA controller. This driver
-> is implemented as a wrapper around the existing DaVinci private
-> DMA implementation. This approach allows for incremental conversion
-> of each peripheral driver to the DMA engine API. The EDMA driver
-> supports slave transfers but does not yet support cyclic transfers.
+Got it. Thank you very much.
 
-Have you looked at the virt-dma support?  That should allow you to
-avoid some common errors, like forgetting that stuff submitted but
-not issued should not be started even if the channel is currently
-running.
+Regards,
+
+Jiang
+
+-------------------------------------
+Jiang Wang
+Member of Technical Staff
+Riverbed Technology
+Tel: (408) 522-5109
+Email: Jiang.Wang@riverbed.com
+www.riverbed.com
+
+
+-----Original Message-----
+From: Michael Chan [mailto:mchan@broadcom.com] 
+Sent: Thursday, August 16, 2012 3:28 PM
+To: Jiang Wang
+Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant
+Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
+
+On Thu, 2012-08-16 at 21:48 +0000, Jiang Wang wrote:
+> ---- I see. I was confused by the name of bnx2_set_power_state()  and 
+> I think the PHY is actually powered up by bnx2_reset_nic, right?
+
+bnx2_init_phy() in bnx2_init_nic() will bring up the PHY if it is down.
+
+> 
+> 
+
+
