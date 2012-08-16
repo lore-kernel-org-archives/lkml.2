@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030334Ab2HPSWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:22:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39982 "EHLO mx1.redhat.com"
+	id S1030396Ab2HPSYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:24:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56657 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030305Ab2HPSWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:22:07 -0400
-Message-Id: <20120816174453.154143248@napanee.usersys.redhat.com>
+	id S1030318Ab2HPSWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:22:10 -0400
+Message-Id: <20120816174453.810280866@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 16 Aug 2012 13:44:53 -0400
+Date: Thu, 16 Aug 2012 13:44:55 -0400
 From: aris@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
         Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>,
         Lennart Poettering <lpoetter@redhat.com>
-Subject: [PATCH v6 0/4] cgroup: add xattr support
+Subject: [PATCH v6 2/4] cgroup: revise how we re-populate root directory
+References: <20120816174453.154143248@napanee.usersys.redhat.com>
+Content-Disposition: inline; filename=cgroup2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series are a refreshed version of a patchset submitted by Li Zefan back
-in march:
-	https://lkml.org/lkml/2012/3/1/13
+From: Li Zefan <lizefan@huawei.com>
 
-With Li's permission, I refreshed the patches to apply over the latest upstream
-and added the modifications suggested by others in the thread:
-- using a mount option instead of config option to enable the xattr support
-- reinitialize the list in kmem_xattrs_free()
-- renamed functions to simple_xattr_*()
+When remounting cgroupfs with some subsystems added to it and some
+removed, cgroup will remove all the files in root directory and then
+re-popluate it.
 
-There're two users for this patchset:
-- SELinux: to be able to control access to cgroupfs inside containers
-- systemd: to store meta information such as main PID in a service cgroup,
-  set specific services special options in the cgroup.
+What I'm doing here is, only remove files which belong to subsystems that
+are to be unbinded, and only create files for newly-added subsystems.
+The purpose is to have all other files untouched.
 
-While the xattrs will use kernel memory like tmpfs, they're restricted to
-'security' (which controls the format of the value) and 'trusted' (which
-requires CAP_SYS_ADMIN). If kernel memory usage is still a concern, we're
-not far from having memcg account for kernel memory.
+This is a preparation for cgroup xattr support.
 
 v6:
-- only allow trusted and security
-- replace subsys_bits by something more meaningful
+- no changes
 v5:
-- check for permissions for user xattr namespace
+- no changes
 v4:
-- implemented requested changes by Tejun Heo in patch #2
+- refactored cgroup_clear_directory() to not use cgroup_rm_file()
+- instead of going thru the list of files, get the file list using the
+  subsystems
+- use 'subsys_mask' instead of {added,removed}_bits and made
+  cgroup_populate_dir() to match the parameters with cgroup_clear_directory()
+v3:
+- refresh patches after recent refactoring
 
 Cc: Li Zefan <lizefan@huawei.com>
 Cc: Tejun Heo <tj@kernel.org>
@@ -56,5 +55,148 @@ Cc: Lennart Poettering <lpoetter@redhat.com>
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
--- 
-Aristeu
+---
+ kernel/cgroup.c |   61 ++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 48 insertions(+), 13 deletions(-)
+
+Index: github/kernel/cgroup.c
+===================================================================
+--- github.orig/kernel/cgroup.c	2012-08-16 11:28:12.683272452 -0400
++++ github/kernel/cgroup.c	2012-08-16 11:28:42.592089681 -0400
+@@ -824,7 +824,8 @@
+ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode);
+ static struct dentry *cgroup_lookup(struct inode *, struct dentry *, unsigned int);
+ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry);
+-static int cgroup_populate_dir(struct cgroup *cgrp);
++static int cgroup_populate_dir(struct cgroup *cgrp, bool base_files,
++			       unsigned long subsys_mask);
+ static const struct inode_operations cgroup_dir_inode_operations;
+ static const struct file_operations proc_cgroupstats_operations;
+ 
+@@ -963,12 +964,29 @@
+ 	return -ENOENT;
+ }
+ 
+-static void cgroup_clear_directory(struct dentry *dir)
++/**
++ * cgroup_clear_directory - selective removal of base and subsystem files
++ * @dir: directory containing the files
++ * @base_files: true if the base files should be removed
++ * @subsys_mask: mask of the subsystem ids whose files should be removed
++ */
++static void cgroup_clear_directory(struct dentry *dir, bool base_files,
++				   unsigned long subsys_mask)
+ {
+ 	struct cgroup *cgrp = __d_cgrp(dir);
++	struct cgroup_subsys *ss;
+ 
+-	while (!list_empty(&cgrp->files))
+-		cgroup_rm_file(cgrp, NULL);
++	for_each_subsys(cgrp->root, ss) {
++		struct cftype_set *set;
++		if (!test_bit(ss->subsys_id, &subsys_mask))
++			continue;
++		list_for_each_entry(set, &ss->cftsets, node)
++			cgroup_rm_file(cgrp, set->cfts);
++	}
++	if (base_files) {
++		while (!list_empty(&cgrp->files))
++			cgroup_rm_file(cgrp, NULL);
++	}
+ }
+ 
+ /*
+@@ -977,8 +995,9 @@
+ static void cgroup_d_remove_dir(struct dentry *dentry)
+ {
+ 	struct dentry *parent;
++	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
+ 
+-	cgroup_clear_directory(dentry);
++	cgroup_clear_directory(dentry, true, root->subsys_bits);
+ 
+ 	parent = dentry->d_parent;
+ 	spin_lock(&parent->d_lock);
+@@ -1339,6 +1358,7 @@
+ 	struct cgroupfs_root *root = sb->s_fs_info;
+ 	struct cgroup *cgrp = &root->top_cgroup;
+ 	struct cgroup_sb_opts opts;
++	unsigned long added_bits, removed_bits;
+ 
+ 	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
+ 	mutex_lock(&cgroup_mutex);
+@@ -1354,6 +1374,9 @@
+ 		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
+ 			   task_tgid_nr(current), current->comm);
+ 
++	added_bits = opts.subsys_bits & ~root->subsys_bits;
++	removed_bits = root->subsys_bits & ~opts.subsys_bits;
++
+ 	/* Don't allow flags or name to change at remount */
+ 	if (opts.flags != root->flags ||
+ 	    (opts.name && strcmp(opts.name, root->name))) {
+@@ -1369,8 +1392,9 @@
+ 	}
+ 
+ 	/* clear out any existing files and repopulate subsystem files */
+-	cgroup_clear_directory(cgrp->dentry);
+-	cgroup_populate_dir(cgrp);
++	cgroup_clear_directory(cgrp->dentry, false, removed_bits);
++	/* re-populate subsystem files */
++	cgroup_populate_dir(cgrp, false, added_bits);
+ 
+ 	if (opts.release_agent)
+ 		strcpy(root->release_agent_path, opts.release_agent);
+@@ -1669,7 +1693,7 @@
+ 		BUG_ON(root->number_of_cgroups != 1);
+ 
+ 		cred = override_creds(&init_cred);
+-		cgroup_populate_dir(root_cgrp);
++		cgroup_populate_dir(root_cgrp, true, root->subsys_bits);
+ 		revert_creds(cred);
+ 		mutex_unlock(&cgroup_root_mutex);
+ 		mutex_unlock(&cgroup_mutex);
+@@ -3843,18 +3867,29 @@
+ 	{ }	/* terminate */
+ };
+ 
+-static int cgroup_populate_dir(struct cgroup *cgrp)
++/**
++ * cgroup_populate_dir - selectively creation of files in a directory
++ * @cgrp: target cgroup
++ * @base_files: true if the base files should be added
++ * @subsys_mask: mask of the subsystem ids whose files should be added
++ */
++static int cgroup_populate_dir(struct cgroup *cgrp, bool base_files,
++			       unsigned long subsys_mask)
+ {
+ 	int err;
+ 	struct cgroup_subsys *ss;
+ 
+-	err = cgroup_addrm_files(cgrp, NULL, files, true);
+-	if (err < 0)
+-		return err;
++        if (base_files) {
++		err = cgroup_addrm_files(cgrp, NULL, files, true);
++		if (err < 0)
++			return err;
++	}
+ 
+ 	/* process cftsets of each subsystem */
+ 	for_each_subsys(cgrp->root, ss) {
+ 		struct cftype_set *set;
++		if (!test_bit(ss->subsys_id, &subsys_mask))
++			continue;
+ 
+ 		list_for_each_entry(set, &ss->cftsets, node)
+ 			cgroup_addrm_files(cgrp, ss, set->cfts, true);
+@@ -3988,7 +4023,7 @@
+ 
+ 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+ 
+-	err = cgroup_populate_dir(cgrp);
++	err = cgroup_populate_dir(cgrp, true, root->subsys_bits);
+ 	/* If err < 0, we have a half-filled directory - oh well ;) */
+ 
+ 	mutex_unlock(&cgroup_mutex);
+
