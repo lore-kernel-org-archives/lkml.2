@@ -1,76 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2HPBfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:35:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab2HPBfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:35:50 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/25] KEYS: RSA: Fix signature verification for shorter
- signatures
-To: rusty@rustcorp.com.au
-Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:35:41 +0100
-Message-ID: <20120816013540.872.21488.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1757247Ab2HPBgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:36:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:65388 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab2HPBgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:36:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
+References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
+	<CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
+	<1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
+Date: Thu, 16 Aug 2012 10:35:59 +0900
+Message-ID: <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
+From: Chanho Min <chanho0207@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gpg can produce a signature file where length of signature is less than the
-modulus size because the amount of space an MPI takes up is kept as low as
-possible by discarding leading zeros.  This regularly happens for several
-modules during the build.
+> functions will occur in line.  I also don't see why the sdev reference
+> couldn't drop to zero here.
+scsi_request_fn is called under the lock of request_queue->queue_lock.
+If we drop the sdev reference to zero here,
+scsi_device_dev_release_usercontext is
+invoked and make request_queue to NULL. When caller of scsi_request_fn try to
+unlock request_queue->queue_lock, the oops is occurred.
 
-Fix it by relaxing check in RSA verification code.
-
-Thanks to Tomas Mraz and Miloslav Trmac for help.
-
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/crypto/crypto_rsa.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-
-diff --git a/security/keys/crypto/crypto_rsa.c b/security/keys/crypto/crypto_rsa.c
-index 6e95e60..796ed1d 100644
---- a/security/keys/crypto/crypto_rsa.c
-+++ b/security/keys/crypto/crypto_rsa.c
-@@ -222,15 +222,23 @@ static int RSA_verify_signature(const struct public_key *key,
- 		return -ENOTSUPP;
- 
- 	/* (1) Check the signature size against the public key modulus size */
--	k = (mpi_get_nbits(key->rsa.n) + 7) / 8;
-+	k = mpi_get_nbits(key->rsa.n);
-+	tsize = mpi_get_nbits(sig->rsa.s);
- 
--	tsize = (mpi_get_nbits(sig->rsa.s) + 7) / 8;
-+	/* According to RFC 4880 sec 3.2, length of MPI is computed starting
-+	 * from most significant bit.  So the RFC 3447 sec 8.2.2 size check
-+	 * must be relaxed to conform with shorter signatures - so we fail here
-+	 * only if signature length is longer than modulus size.
-+	 */
- 	pr_devel("step 1: k=%zu size(S)=%zu\n", k, tsize);
--	if (tsize != k) {
-+	if (k < tsize) {
- 		ret = -EBADMSG;
- 		goto error;
- 	}
- 
-+	/* Round up and convert to octets */
-+	k = (k + 7) / 8;
-+
- 	/* (2b) Apply the RSAVP1 verification primitive to the public key */
- 	ret = RSAVP1(key, sig->rsa.s, &m);
- 	if (ret < 0)
-
+Thanks, Chanho
