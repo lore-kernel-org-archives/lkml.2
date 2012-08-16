@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab2HPUtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:49:32 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:33837 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062Ab2HPUta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:49:30 -0400
-Date: Thu, 16 Aug 2012 16:49:13 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH RESEND 0/4] device_cgroup: replace internally whitelist
- with exception list
-Message-ID: <20120816204913.GG28505@cathedrallabs.org>
-References: <20120809190414.773462171@muttley.lan.cathedral>
- <20120816130844.6f26530d.akpm@linux-foundation.org>
+	id S933333Ab2HPUuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:50:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49373 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932636Ab2HPUud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 16:50:33 -0400
+Date: Thu, 16 Aug 2012 13:50:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk
+Subject: Re: [PATCH V2 04/18] Drivers: hv: kvp: Support the new IP injection
+ messages
+Message-ID: <20120816205029.GA9176@kroah.com>
+References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-1-git-send-email-kys@microsoft.com>
+ <1344877627-21779-4-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816130844.6f26530d.akpm@linux-foundation.org>
+In-Reply-To: <1344877627-21779-4-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 01:08:44PM -0700, Andrew Morton wrote:
-> On Thu, 09 Aug 2012 15:04:14 -0400
-> aris@ruivo.org wrote:
-> 
-> > The original model of device_cgroup is having a whitelist where all the
-> > allowed devices are listed. The problem with this approach is that is
-> > impossible to have the case of allowing everything but few devices.
-> > 
-> > The reason for that lies in the way the whitelist is handled internally:
-> > since there's only a whitelist, the "all devices" entry would have to be
-> > removed and replaced by the entire list of possible devices but the ones
-> > that are being denied.  Since dev_t is 32 bits long, representing the allowed
-> > devices as a bitfield is not memory efficient.
-> > 
-> > This patch replaces the "whitelist" by a "exceptions" list and the default
-> > policy is kept as "deny_all" variable in dev_cgroup structure.
-> 
-> The patches look reasonable to me.  I suggest you resend them after
-> kernel summit and cc a few additional people: Serge Hallyn, Pavel
-> Emelyanov and James Morris.
+On Mon, Aug 13, 2012 at 10:06:53AM -0700, K. Y. Srinivasan wrote:
+> +	default:
+> +		utf16s_to_utf8s((wchar_t *)in->kvp_ip_val.adapter_id,
+> +				MAX_ADAPTER_ID_SIZE,
+> +				UTF16_LITTLE_ENDIAN,
+> +				(__u8 *)out->body.kvp_ip_val.adapter_id,
+> +				MAX_ADAPTER_ID_SIZE);
+> +
+> +		out->body.kvp_ip_val.addr_family =
+> +		in->kvp_ip_val.addr_family;
 
-thanks, will do. will include the checkpatch fixes as well.
+That's some wierd indenting, did you really mean to do that?
 
--- 
-Aristeu
-
+greg k-h
