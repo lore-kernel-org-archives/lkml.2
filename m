@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab2HPNAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:00:00 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:39008 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753977Ab2HPM77 (ORCPT
+	id S932148Ab2HPNAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:00:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52947 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab2HPNAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:59:59 -0400
-Date: Thu, 16 Aug 2012 15:56:08 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH] usb: hcd: use *resource_size_t* for specifying resource
- data
-Message-ID: <20120816125607.GB26408@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1345121659-24873-1-git-send-email-kishon@ti.com>
+	Thu, 16 Aug 2012 09:00:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 26/31] arm64: Miscellaneous library functions
+Date: Thu, 16 Aug 2012 13:00:32 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151521.14663.arnd@arndb.de> <20120816105709.GK31784@mudshark.cambridge.arm.com>
+In-Reply-To: <20120816105709.GK31784@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R3G7APHDIzY6R/pk"
-Content-Disposition: inline
-In-Reply-To: <1345121659-24873-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208161300.32830.arnd@arndb.de>
+X-Provags-ID: V02:K0:RhwUSoSH6n1x6qaIYo/MGjb9Ae6IcjthNOIkOOa02+Q
+ MJX937b34+KEmvHMaiDdsgD7+rr9hLgYV+1zkA4nFjKHoU2KjV
+ MGtQFzb5SMyNUVv7rztf5+NsQNy8QUaO6aj+f9xJrY3NiSqSKY
+ G1X9pt1Q7R9XWLAyd5/u/uGQZ/1uo+dqDmRw6lERtRfDslx4pG
+ UzS9lgqMbNBhsJmMeSc/O0lykoylJQY9rCJZ+imiknEpK4+iec
+ 1TZkRndecGf4uzV01b+vGSAgnWfvKZhF2I+blAbudGUpgZImdj
+ LagTBZ829PaKzCQ1/qRKy4NYQQDFyh2E91FT9iPK4HcurlESYM
+ wt/tjnjb6uGBTNJzFOLM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 16 August 2012, Will Deacon wrote:
+> > > +
+> > > +#include <linux/kernel.h>
+> > > +#include <linux/spinlock.h>
+> > > +#include <linux/atomic.h>
+> > > +
+> > > +#ifdef CONFIG_SMP
+> > > +arch_spinlock_t __atomic_hash[ATOMIC_HASH_SIZE] __lock_aligned = {
+> > > +       [0 ... (ATOMIC_HASH_SIZE-1)]  = __ARCH_SPIN_LOCK_UNLOCKED
+> > > +};
+> > > +#endif
+> > 
+> > What?
+> > 
+> > I suppose this is a leftover from an earlier version using the
+> > generic bitops, right?
+> 
+> We currently use the generic atomic bitops (asm-generic/bitops/atomic.h)
+> which contains:
+> 
+> #  define ATOMIC_HASH(a) (&(__atomic_hash[ (((unsigned long) a)/L1_CACHE_BYTES) & (ATOMIC_HASH_SIZE-1) ]))
+> 
+> so we have to provide a definition for the array. We have additional patches
+> containing optimised assembly implementations of the atomic bitops which we
+> will push later, once we've got some hardware to benchmark with.
+> 
 
---R3G7APHDIzY6R/pk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah, I was confusing this with the asm/atomic.h stuff, for which you already
+provide an optimized version.
 
-Hi,
+The generic atomic bitops are really horrible in performance and I would
+expect that there is just one obvious way to implement bitops using ldaxr/stlxr,
+so I recommend just doing that even if you have no hardware for benchmarking.
 
-On Thu, Aug 16, 2012 at 06:24:19PM +0530, Kishon Vijay Abraham I wrote:
-> Changed the type of rsrc_start and rsrc_len from u64 to resource_size_t
-> so that it behaves well with resource API's like *resource_size()* on both
-> 32bit and 64bit devices.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+The s390 version should be fairly easy to adapt.
 
-looks correct to me. FWIW:
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-> ---
->  include/linux/usb/hcd.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-> index c5fdb14..608050b 100644
-> --- a/include/linux/usb/hcd.h
-> +++ b/include/linux/usb/hcd.h
-> @@ -135,8 +135,8 @@ struct usb_hcd {
-> =20
->  	unsigned int		irq;		/* irq allocated */
->  	void __iomem		*regs;		/* device memory/io */
-> -	u64			rsrc_start;	/* memory/io resource start */
-> -	u64			rsrc_len;	/* memory/io resource length */
-> +	resource_size_t		rsrc_start;	/* memory/io resource start */
-> +	resource_size_t		rsrc_len;	/* memory/io resource length */
->  	unsigned		power_budget;	/* in mA, 0 =3D no limit */
-> =20
->  	/* bandwidth_mutex should be taken before adding or removing
-> --=20
-> 1.7.9.5
->=20
-
---=20
-balbi
-
---R3G7APHDIzY6R/pk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQLO3nAAoJEIaOsuA1yqREmdwP/22809D/7zsZ9blk/WDvbBc0
-eugsxbTk7FuGrpAqJPdnjoDvxCagWv4H6oNk4dJqagpAmPusPe77TcnctzmxmEOd
-610dQNHpAP27GE2JuSm79qFhYKP/VFgc/LCpWnYKSYfyXtjXe8cgmZ7zFQL7HUX1
-y5QrOUAfnFPQpdo7Gx/Bs5SDJusslOPFTKt9f+NrUbdR1rHANsVgx8O6uQ8JQ4Bs
-3IUTislDjd13fHNTsscZ5E663hXl34ygU8y1/v65g0j6pUCPeWnOLKZdqWLktf/P
-C+6TIUTS/k/kXzsIbnDJp3UDRYdxnEym5FLvZXPZjw8NcFM0pabFMT4l4Hizcsqj
-s37naltDaSp74bgaoy+++bLXaox6bD92+P211llb4utBpd3ghoGCfKLXF+Gz51Kg
-guwvgkGI9yUHMYAaZChJOCYig227Hht1bA1n4v74SEiioUUh4RDs2OdTHxDuZing
-JeNYth49CM9xvv+j8gNKPA8LqNQOEPg4dGGwqCfh3yMKdl0TZhnj8RxSgNeX3xsj
-mkgc8XhkJZXd7G9di7puQMXColnhbxHS6eE58iUgKcidLy5c3UkVrgKs0MjXBaNO
-dseHut54Pk/ezRZHEaH6mAGHXfVHRwB3MGtYKnbbL4T4VLnInZE00JgcP9jzGIiN
-EHFpITGTpgjCM0RgV82y
-=cHlh
------END PGP SIGNATURE-----
-
---R3G7APHDIzY6R/pk--
+	Arnd
