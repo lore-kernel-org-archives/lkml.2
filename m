@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab2HPO06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:26:58 -0400
-Received: from antcom.de ([188.40.178.216]:51212 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753060Ab2HPO04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:26:56 -0400
-Message-ID: <502D032D.1000301@antcom.de>
-Date: Thu, 16 Aug 2012 16:26:53 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1755820Ab2HPO21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:28:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57872 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753007Ab2HPO2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:28:25 -0400
+Date: Thu, 16 Aug 2012 10:28:22 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
+Message-ID: <20120816142821.GC29703@Krystal>
+References: <502AFCD5.6070104@gmail.com> <87obmchmpu.fsf@xmission.com> <AE90C24D6B3A694183C094C60CF0A2F6026B6FB5@saturn3.aculab.com>
 MIME-Version: 1.0
-To: artem.bityutskiy@linux.intel.com
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 1/2] mtd: lpc32xx_slc: Adjust to pl08x DMA interface changes
-References: <1342095778-13403-1-git-send-email-stigge@antcom.de>  <1342095778-13403-2-git-send-email-stigge@antcom.de> <1345027069.3393.124.camel@sauron.fi.intel.com>
-In-Reply-To: <1345027069.3393.124.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6FB5@saturn3.aculab.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 08/15/2012 12:37 PM, Artem Bityutskiy wrote:
-> On Thu, 2012-07-12 at 14:22 +0200, Roland Stigge wrote:
->> This patch adjusts the LPC32xx SLC NAND driver to the new pl08x
->> DMA interface, fixing the compile error resulting from changed
->> pl08x structures.
->> 
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
+* David Laight (David.Laight@ACULAB.COM) wrote:
+> > Yes hash_32 seems reasonable for the uid hash.   With those long hash
+> > chains I wouldn't like to be on a machine with 10,000 processes with
+> > each with a different uid, and a processes calling setuid in the fast
+> > path.
+> > 
+> > The uid hash that we are playing with is one that I sort of wish that
+> > the hash table could grow in size, so that we could scale up better.
 > 
-> This patch breaks compilation:
+> Since uids are likely to be allocated in dense blocks, maybe an
+> unhashed multi-level lookup scheme might be appropriate.
 > 
-> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko]
-> undefined!
+> Index an array with the low 8 (say) bits of the uid.
+> Each item can be either:  
+>   1) NULL => free entry.
+>   2) a pointer to a uid structure (check uid value).
+>   3) a pointer to an array to index with the next 8 bits.
+> (2) and (3) can be differentiated by the low address bit.
+
+I'm currently experimenting with "Judy arrays", which would likely be a
+good fit for this kind of use-case.
+
+It's basically a 256-ary trie, with fixed depth that depends on the key
+size, that uses various encoding (compaction) schemes to compress
+internal nodes depending on their density. The original implementation
+made by HP has been criticised as somewhat too complex (20k lines of
+code), but I'm currently working (in my spare time) on a more elegant
+solution, that supports RCU lookups and distributed locking, and uses
+much simpler node compaction schemes, and focus on having good cache
+locality (and minimal number of cache line hits) for lookups.
+
+I'll be presenting my ongoing work at Plumbers, if you are interested.
+
+Best regards,
+
+Mathieu
+
+> I think that is updateable with cmpxchg.
 > 
-> Please, send a fix. The defconfig I used is attached.
+> Clearly this is a bad algorithm if uids are all multiples of 2^24
+> but that is true or any hash function.
+> 
+> 	David
+> 
+> 
+> 
 
-Please see my just posted patches:
-
-mtd: lpc32xx_slc: Make driver independent of AMBA DMA engine driver
-mtd: lpc32xx_mlc: Make driver independent of AMBA DMA engine driver
-
-This also fixes the above problem by getting rid of the reference to
-pl08x_filter_id.
-
-Thanks,
-
-Roland
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
