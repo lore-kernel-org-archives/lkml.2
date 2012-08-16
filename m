@@ -1,224 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030267Ab2HPQOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:14:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21484 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757662Ab2HPQNW (ORCPT
+	id S1030257Ab2HPQOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:14:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32116 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757660Ab2HPQNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:13:22 -0400
+	Thu, 16 Aug 2012 12:13:21 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 08/11] xen/p2m: Add logic to revector a P2M tree to use __va leafs.
-Date: Thu, 16 Aug 2012 12:03:26 -0400
-Message-Id: <1345133009-21941-9-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 06/11] xen/mmu: For 64-bit do not call xen_map_identity_early
+Date: Thu, 16 Aug 2012 12:03:24 -0400
+Message-Id: <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
 References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During bootup Xen supplies us with a P2M array. It sticks
-it right after the ramdisk, as can be seen with a 128GB PV guest:
-
-(certain parts removed for clarity):
-xc_dom_build_image: called
-xc_dom_alloc_segment:   kernel       : 0xffffffff81000000 -> 0xffffffff81e43000  (pfn 0x1000 + 0xe43 pages)
-xc_dom_pfn_to_ptr: domU mapping: pfn 0x1000+0xe43 at 0x7f097d8bf000
-xc_dom_alloc_segment:   ramdisk      : 0xffffffff81e43000 -> 0xffffffff925c7000  (pfn 0x1e43 + 0x10784 pages)
-xc_dom_pfn_to_ptr: domU mapping: pfn 0x1e43+0x10784 at 0x7f0952dd2000
-xc_dom_alloc_segment:   phys2mach    : 0xffffffff925c7000 -> 0xffffffffa25c7000  (pfn 0x125c7 + 0x10000 pages)
-xc_dom_pfn_to_ptr: domU mapping: pfn 0x125c7+0x10000 at 0x7f0942dd2000
-xc_dom_alloc_page   :   start info   : 0xffffffffa25c7000 (pfn 0x225c7)
-xc_dom_alloc_page   :   xenstore     : 0xffffffffa25c8000 (pfn 0x225c8)
-xc_dom_alloc_page   :   console      : 0xffffffffa25c9000 (pfn 0x225c9)
-nr_page_tables: 0x0000ffffffffffff/48: 0xffff000000000000 -> 0xffffffffffffffff, 1 table(s)
-nr_page_tables: 0x0000007fffffffff/39: 0xffffff8000000000 -> 0xffffffffffffffff, 1 table(s)
-nr_page_tables: 0x000000003fffffff/30: 0xffffffff80000000 -> 0xffffffffbfffffff, 1 table(s)
-nr_page_tables: 0x00000000001fffff/21: 0xffffffff80000000 -> 0xffffffffa27fffff, 276 table(s)
-xc_dom_alloc_segment:   page tables  : 0xffffffffa25ca000 -> 0xffffffffa26e1000  (pfn 0x225ca + 0x117 pages)
-xc_dom_pfn_to_ptr: domU mapping: pfn 0x225ca+0x117 at 0x7f097d7a8000
-xc_dom_alloc_page   :   boot stack   : 0xffffffffa26e1000 (pfn 0x226e1)
-xc_dom_build_image  : virt_alloc_end : 0xffffffffa26e2000
-xc_dom_build_image  : virt_pgtab_end : 0xffffffffa2800000
-
-So the physical memory and virtual (using __START_KERNEL_map addresses)
-layout looks as so:
-
-  phys                             __ka
-/------------\                   /-------------------\
-| 0          | empty             | 0xffffffff80000000|
-| ..         |                   | ..                |
-| 16MB       | <= kernel starts  | 0xffffffff81000000|
-| ..         |                   |                   |
-| 30MB       | <= kernel ends => | 0xffffffff81e43000|
-| ..         |  & ramdisk starts | ..                |
-| 293MB      | <= ramdisk ends=> | 0xffffffff925c7000|
-| ..         |  & P2M starts     | ..                |
-| ..         |                   | ..                |
-| 549MB      | <= P2M ends    => | 0xffffffffa25c7000|
-| ..         | start_info        | 0xffffffffa25c7000|
-| ..         | xenstore          | 0xffffffffa25c8000|
-| ..         | cosole            | 0xffffffffa25c9000|
-| 549MB      | <= page tables => | 0xffffffffa25ca000|
-| ..         |                   |                   |
-| 550MB      | <= PGT end     => | 0xffffffffa26e1000|
-| ..         | boot stack        |                   |
-\------------/                   \-------------------/
-
-As can be seen, the ramdisk, P2M and pagetables are taking
-a bit of __ka addresses space. Which is a problem since the
-MODULES_VADDR starts at 0xffffffffa0000000 - and P2M sits
-right in there! This results during bootup with the inability to
-load modules, with this error:
-
-------------[ cut here ]------------
-WARNING: at /home/konrad/ssd/linux/mm/vmalloc.c:106 vmap_page_range_noflush+0x2d9/0x370()
-Call Trace:
- [<ffffffff810719fa>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81030279>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81071a45>] warn_slowpath_null+0x15/0x20
- [<ffffffff81130b89>] vmap_page_range_noflush+0x2d9/0x370
- [<ffffffff81130c4d>] map_vm_area+0x2d/0x50
- [<ffffffff811326d0>] __vmalloc_node_range+0x160/0x250
- [<ffffffff810c5369>] ? module_alloc_update_bounds+0x19/0x80
- [<ffffffff810c6186>] ? load_module+0x66/0x19c0
- [<ffffffff8105cadc>] module_alloc+0x5c/0x60
- [<ffffffff810c5369>] ? module_alloc_update_bounds+0x19/0x80
- [<ffffffff810c5369>] module_alloc_update_bounds+0x19/0x80
- [<ffffffff810c70c3>] load_module+0xfa3/0x19c0
- [<ffffffff812491f6>] ? security_file_permission+0x86/0x90
- [<ffffffff810c7b3a>] sys_init_module+0x5a/0x220
- [<ffffffff815ce339>] system_call_fastpath+0x16/0x1b
----[ end trace fd8f7704fdea0291 ]---
-vmalloc: allocation failure, allocated 16384 of 20480 bytes
-modprobe: page allocation failure: order:0, mode:0xd2
-
-Since the __va and __ka are 1:1 up to MODULES_VADDR and
-cleanup_highmap rids __ka of the ramdisk mapping, what
-we want to do is similar - get rid of the P2M in the __ka
-address space. There are two ways of fixing this:
-
- 1) All P2M lookups instead of using the __ka address would
-    use the __va address. This means we can safely erase from
-    __ka space the PMD pointers that point to the PFNs for
-    P2M array and be OK.
- 2). Allocate a new array, copy the existing P2M into it,
-    revector the P2M tree to use that, and return the old
-    P2M to the memory allocate. This has the advantage that
-    it sets the stage for using XEN_ELF_NOTE_INIT_P2M
-    feature. That feature allows us to set the exact virtual
-    address space we want for the P2M - and allows us to
-    boot as initial domain on large machines.
-
-So we pick option 2).
-
-This patch only lays the groundwork in the P2M code. The patch
-that modifies the MMU is called "xen/mmu: Copy and revector the P2M tree."
+B/c we do not need it. During the startup the Xen provides
+us with all the memory mapped that we need to function.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/p2m.c     |   70 ++++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/xen/xen-ops.h |    1 +
- 2 files changed, 71 insertions(+), 0 deletions(-)
+ arch/x86/xen/mmu.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 6a2bfa4..bbfd085 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -394,7 +394,77 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 	 * Xen provided pagetable). Do it later in xen_reserve_internals.
- 	 */
- }
-+#ifdef CONFIG_X86_64
-+#include <linux/bootmem.h>
-+unsigned long __init xen_revector_p2m_tree(void)
-+{
-+	unsigned long va_start;
-+	unsigned long va_end;
-+	unsigned long pfn;
-+	unsigned long *mfn_list = NULL;
-+	unsigned long size;
-+
-+	va_start = xen_start_info->mfn_list;
-+	/*We copy in increments of P2M_PER_PAGE * sizeof(unsigned long),
-+	 * so make sure it is rounded up to that */
-+	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+	va_end = va_start + size;
-+
-+	/* If we were revectored already, don't do it again. */
-+	if (va_start <= __START_KERNEL_map && va_start >= __PAGE_OFFSET)
-+		return 0;
-+
-+	mfn_list = alloc_bootmem_align(size, PAGE_SIZE);
-+	if (!mfn_list) {
-+		pr_warn("Could not allocate space for a new P2M tree!\n");
-+		return xen_start_info->mfn_list;
-+	}
-+	/* Fill it out with INVALID_P2M_ENTRY value */
-+	memset(mfn_list, 0xFF, size);
-+
-+	for (pfn = 0; pfn < ALIGN(MAX_DOMAIN_PAGES, P2M_PER_PAGE); pfn += P2M_PER_PAGE) {
-+		unsigned topidx = p2m_top_index(pfn);
-+		unsigned mididx;
-+		unsigned long *mid_p;
-+
-+		if (!p2m_top[topidx])
-+			continue;
-+
-+		if (p2m_top[topidx] == p2m_mid_missing)
-+			continue;
-+
-+		mididx = p2m_mid_index(pfn);
-+		mid_p = p2m_top[topidx][mididx];
-+		if (!mid_p)
-+			continue;
-+		if ((mid_p == p2m_missing) || (mid_p == p2m_identity))
-+			continue;
-+
-+		if ((unsigned long)mid_p == INVALID_P2M_ENTRY)
-+			continue;
-+
-+		/* The old va. Rebase it on mfn_list */
-+		if (mid_p >= (unsigned long *)va_start && mid_p <= (unsigned long *)va_end) {
-+			unsigned long *new;
-+
-+			new = &mfn_list[pfn];
-+
-+			copy_page(new, mid_p);
-+			p2m_top[topidx][mididx] = &mfn_list[pfn];
-+			p2m_top_mfn_p[topidx][mididx] = virt_to_mfn(&mfn_list[pfn]);
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 7247e5a..a59070b 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -84,6 +84,7 @@
+  */
+ DEFINE_SPINLOCK(xen_reservation_lock);
  
-+		}
-+		/* This should be the leafs allocated for identity from _brk. */
-+	}
-+	return (unsigned long)mfn_list;
-+
-+}
-+#else
-+unsigned long __init xen_revector_p2m_tree(void)
-+{
-+	return 0;
-+}
++#ifdef CONFIG_X86_32
+ /*
+  * Identity map, in addition to plain kernel map.  This needs to be
+  * large enough to allocate page table pages to allocate the rest.
+@@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
+  */
+ #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
+ static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
+-
 +#endif
- unsigned long get_phys_to_machine(unsigned long pfn)
+ #ifdef CONFIG_X86_64
+ /* l3 pud for userspace vsyscall mapping */
+ static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
+@@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
+ 	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
+ 		BUG();
+ }
+-
++#ifdef CONFIG_X86_32
+ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
  {
- 	unsigned topidx, mididx, idx;
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 2230f57..bb5a810 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -45,6 +45,7 @@ void xen_hvm_init_shared_info(void);
- void xen_unplug_emulated_devices(void);
+ 	unsigned pmdidx, pteidx;
+@@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
  
- void __init xen_build_dynamic_phys_to_machine(void);
-+unsigned long __init xen_revector_p2m_tree(void);
+ 	set_page_prot(pmd, PAGE_KERNEL_RO);
+ }
+-
++#endif
+ void __init xen_setup_machphys_mapping(void)
+ {
+ 	struct xen_machphys_mapping mapping;
+@@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	/* Note that we don't do anything with level1_fixmap_pgt which
+ 	 * we don't need. */
  
- void xen_init_irq_ops(void);
- void xen_setup_timer(int cpu);
+-	/* Set up identity map */
+-	xen_map_identity_early(level2_ident_pgt, max_pfn);
+-
+ 	/* Make pagetable pieces RO */
+ 	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
+ 	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
+ 	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
+ 	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
++	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
+ 	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+ 	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
+ 
 -- 
 1.7.7.6
 
