@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab2HPRIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:08:32 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:39897 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752426Ab2HPRIY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:08:24 -0400
-Date: Thu, 16 Aug 2012 17:08:23 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: JoonSoo Kim <js1304@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] slub: try to get cpu partial slab even if we get enough
- objects for cpu freelist
-In-Reply-To: <CAAmzW4MMY5TmjMjG50idZNgRUW3qC0kNMnfbGjGXaoxtba8gGQ@mail.gmail.com>
-Message-ID: <00000139306844c8-bb717c88-ca56-48b3-9b8f-9186053359d3-000000@email.amazonses.com>
-References: <1345045084-7292-1-git-send-email-js1304@gmail.com> <000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com> <CAAmzW4M9WMnxVKpR00SqufHadY-=i0Jgf8Ktydrw5YXK8VwJ7A@mail.gmail.com>
- <000001392b579d4f-bb5ccaf5-1a2c-472c-9b76-05ec86297706-000000@email.amazonses.com> <CAAmzW4MMY5TmjMjG50idZNgRUW3qC0kNMnfbGjGXaoxtba8gGQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+	id S1753307Ab2HPRKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:10:19 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3610 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab2HPRKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:10:17 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH v2 linux-next] usbduxfast: Declare MODULE_FIRMWARE usage
+Date: Thu, 16 Aug 2012 11:09:28 -0600
+Message-Id: <1345136968-11947-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120814011638.GA18000@kroah.com>
+References: <20120814011638.GA18000@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, JoonSoo Kim wrote:
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+Cc: devel@driverdev.osuosl.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/staging/comedi/drivers/usbduxfast.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> But, if you prefer that s->cpu_partial is for both cpu slab and cpu
-> partial slab,
-> get_partial_node() needs an another minor fix.
-> We should add number of objects in cpu slab when we refill cpu partial slab.
-> Following is my suggestion.
->
-> @@ -1546,7 +1546,7 @@ static void *get_partial_node(struct kmem_cache *s,
->         spin_lock(&n->list_lock);
->         list_for_each_entry_safe(page, page2, &n->partial, lru) {
->                 void *t = acquire_slab(s, n, page, object == NULL);
-> -               int available;
-> +               int available, nr = 0;
->
->                 if (!t)
->                         break;
-> @@ -1557,10 +1557,10 @@ static void *get_partial_node(struct kmem_cache *s,
->                         object = t;
->                         available =  page->objects - page->inuse;
->                 } else {
-> -                       available = put_cpu_partial(s, page, 0);
-> +                       nr = put_cpu_partial(s, page, 0);
->                         stat(s, CPU_PARTIAL_NODE);
->                 }
-> -               if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
-> +               if (kmem_cache_debug(s) || (available + nr) >
-> s->cpu_partial / 2)
->                         break;
->
->         }
->
-> If you agree with this suggestion, I send a patch for this.
-
-What difference does this patch make? At the end of the day you need the
-total number of objects available in the partial slabs and the cpu slab
-for comparison.
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index d991158..8eb41257 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -57,6 +57,7 @@
+ /*
+  * constants for "firmware" upload and download
+  */
++#define FIRMWARE		"usbduxfast_firmware.bin"
+ #define USBDUXFASTSUB_FIRMWARE	0xA0
+ #define VENDOR_DIR_IN		0xC0
+ #define VENDOR_DIR_OUT		0x40
+@@ -1706,7 +1707,7 @@ static int usbduxfast_usb_probe(struct usb_interface *uinterf,
+ 
+ 	ret = request_firmware_nowait(THIS_MODULE,
+ 				      FW_ACTION_HOTPLUG,
+-				      "usbduxfast_firmware.bin",
++				      FIRMWARE,
+ 				      &udev->dev,
+ 				      GFP_KERNEL,
+ 				      usbduxfastsub + index,
+@@ -1774,3 +1775,4 @@ module_comedi_usb_driver(usbduxfast_driver, usbduxfast_usb_driver);
+ MODULE_AUTHOR("Bernd Porr, BerndPorr@f2s.com");
+ MODULE_DESCRIPTION("USB-DUXfast, BerndPorr@f2s.com");
+ MODULE_LICENSE("GPL");
++MODULE_FIRMWARE(FIRMWARE);
+-- 
+1.7.9.5
 
