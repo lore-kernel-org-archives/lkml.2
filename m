@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2HPRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:19:29 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4470 "EHLO mail.tpi.com"
+	id S1755576Ab2HPRXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:23:17 -0400
+Received: from bar.sig21.net ([80.81.252.164]:42690 "EHLO bar.sig21.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752794Ab2HPRT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:19:28 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bernd Porr <berndporr@f2s.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH v2 linux-next] usbduxsigma: Declare MODULE_FIRMWARE usage
-Date: Thu, 16 Aug 2012 11:19:11 -0600
-Message-Id: <1345137551-12763-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120814011709.GC18000@kroah.com>
-References: <20120814011709.GC18000@kroah.com>
+	id S1753137Ab2HPRXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:23:15 -0400
+Date: Thu, 16 Aug 2012 19:22:51 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        linux-kernel@vger.kernel.org, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+Message-ID: <20120816172251.GA25640@sig21.net>
+References: <50299142.2030504@oberhumer.com>
+ <20120814123937.GA14756@sig21.net>
+ <502B8FE3.7080501@oberhumer.com>
+ <20120815144539.GA8300@sig21.net>
+ <502C92C3.7090701@oberhumer.com>
+ <502D100D.2030609@pobox.com>
+ <20120816162051.GK11413@one.firstfloor.org>
+ <502D2471.407@pobox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502D2471.407@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bernd Porr <berndporr@f2s.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: devel@driverdev.osuosl.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/staging/comedi/drivers/usbduxsigma.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+On Thu, Aug 16, 2012 at 12:48:49PM -0400, Jeff Garzik wrote:
+> On 08/16/2012 12:20 PM, Andi Kleen wrote:
+> >>If you think a little bit, I bet you could come up with a solution that
+> >>operates at cacheline-aligned granularity, something that would be _even
+> >>faster_ than simply fixing the code to do aligned accesses.
+> >
+> >Cache aligned compression is unlikely to compress anything at all.
+> >Compression algorithms are usually by definition unaligned.
+> 
+> Sure it's a bitstream, but that does not imply the impossibility of
+> reading data in in an word-aligned manner.
+> 
+> Maybe cache-aligned is ambitious, because of resultant code bloat,
+> but machine-int-aligned is doable and reasonable.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 543e604..f54ab8c 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -63,6 +63,7 @@ Status: testing
- #define BULK_TIMEOUT 1000
- 
- /* constants for "firmware" upload and download */
-+#define FIRMWARE "usbduxsigma_firmware.bin"
- #define USBDUXSUB_FIRMWARE 0xA0
- #define VENDOR_DIR_IN  0xC0
- #define VENDOR_DIR_OUT 0x40
-@@ -2780,7 +2781,7 @@ static int usbduxsigma_usb_probe(struct usb_interface *uinterf,
- 
- 	ret = request_firmware_nowait(THIS_MODULE,
- 				      FW_ACTION_HOTPLUG,
--				      "usbduxsigma_firmware.bin",
-+				      FIRMWARE,
- 				      &udev->dev,
- 				      GFP_KERNEL,
- 				      usbduxsub + index,
-@@ -2845,3 +2846,4 @@ module_comedi_usb_driver(usbduxsigma_driver, usbduxsigma_usb_driver);
- MODULE_AUTHOR("Bernd Porr, BerndPorr@f2s.com");
- MODULE_DESCRIPTION("Stirling/ITL USB-DUX SIGMA -- Bernd.Porr@f2s.com");
- MODULE_LICENSE("GPL");
-+MODULE_FIRMWARE(FIRMWARE);
--- 
-1.7.9.5
+Well, I for one would be content if the old and new lzo versions
+could be merged based on CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS.
 
+(Assuming that the slowdown on ARM is due to unaligned access,
+since the old version also uses get/put_unaligned, is the new
+version actually using more unaligned accesses?)
+
+
+Johannes
