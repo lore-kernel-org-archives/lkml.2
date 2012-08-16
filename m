@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab2HPRmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:42:08 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36272 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756544Ab2HPRmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:42:06 -0400
-Date: Thu, 16 Aug 2012 13:32:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/p2m: Fix for 32-bit builds the
- "Reserve 8MB of _brk space for P2M"
-Message-ID: <20120816173215.GB9790@phenom.dumpdata.com>
-References: <1345132214-15298-1-git-send-email-konrad.wilk@oracle.com>
- <1345132214-15298-2-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345132214-15298-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S932941Ab2HPRpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:45:36 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52290 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756634Ab2HPRpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:45:33 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [RFC PATCH -v2 2/4] perf: Add persistent events
+Date: Thu, 16 Aug 2012 19:45:21 +0200
+Message-Id: <1345139123-15212-3-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
+In-Reply-To: <1345139123-15212-1-git-send-email-bp@amd64.org>
+References: <1345139123-15212-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 11:50:13AM -0400, Konrad Rzeszutek Wilk wrote:
-> The git commit 5bc6f9888db5739abfa0cae279b4b442e4db8049
-> xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
-> 
-> extended the _brk space to fit 1048576 PFNs. The math is that each
-> P2M leaf can cover PAGE_SIZE/sizeof(unsigned long) PFNs. In 64-bit
-> that means 512 PFNs, on 32-bit that is 1024. If on 64-bit machines
-> we want to cover 4GB of PFNs, that means having enough for space
-> to fit 1048576 unsigned longs.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Scratch that patch. This is better, but even with that I am still
-hitting some weird 32-bit cases.
+Add the needed pieces for persistent events which are process-agnostic.
+Also, make their buffers read-only when mmaping them from userspace.
+Add a descriptor struct collecting all that is needed for a persistent
+event, for ease of handling in the code later.
 
- 
->From 5502d44e8c7293f6d81a7fdabe25e49845c25cf8 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 16 Aug 2012 10:57:09 -0400
-Subject: [PATCH] xen/p2m: Fix for 32-bit builds the "Reserve 8MB of _brk
- space for P2M"
-
-The git commit 5bc6f9888db5739abfa0cae279b4b442e4db8049
-xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
-
-extended the _brk space to fit 1048576 PFNs. The math is that each
-P2M leaf can cover PAGE_SIZE/sizeof(unsigned long) PFNs. In 64-bit
-that means 512 PFNs, on 32-bit that is 1024. If on 64-bit machines
-we want to cover 4GB of PFNs, that means having enough for space
-to fit 1048576 unsigned longs.
-
-On 64-bit:
-1048576 * sizeof(unsigned long) (8) bytes = 8MB
-
-On 32-bit:
-1048576 * sizeof(unsigned long) (4) bytes = 4MB
-
-.. But if you look in the comment it says 3GB not 4GB, so
-lets also fix that and reserve enough space for 3GB of PFNs.
-
-We fix that by using the above mentioned math instead of predefined
-PMD_SIZE.
-
-CC: stable@vger.kernel.org #only for 3.5
-[v2: 4GB/3GB]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/xen/p2m.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/perf_event.h | 17 ++++++++++++++++-
+ kernel/events/core.c       |  5 ++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index b2e91d4..29244d0 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -196,9 +196,9 @@ RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 7602ccb3f40e..252aab74e64d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -254,8 +254,9 @@ struct perf_event_attr {
  
- /* When we populate back during bootup, the amount of pages can vary. The
-  * max we have is seen is 395979, but that does not mean it can't be more.
-- * But some machines can have 3GB I/O holes even. So lets reserve enough
-- * for 4GB of I/O and E820 holes. */
--RESERVE_BRK(p2m_populated, PMD_SIZE * 4);
-+ * Some machines can have 3GB I/O holes so lets reserve for that. */
-+RESERVE_BRK(p2m_populated, 786432 * sizeof(unsigned long));
+ 				exclude_host   :  1, /* don't count in host   */
+ 				exclude_guest  :  1, /* don't count in guest  */
++				persistent     :  1, /* always-on event */
+ 
+-				__reserved_1   : 43;
++				__reserved_1   : 42;
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+@@ -1078,6 +1079,20 @@ struct perf_output_handle {
+ 	int				page;
+ };
+ 
++/*
++ * perf event descriptor to collect all attributes belonging to an event
++ */
++struct perf_event_desc {
++	struct perf_event *event;
++	struct perf_event_attr *pattr;
++	const struct file_operations *fops;
++	/* debugfs entry */
++	struct dentry *dentry;
++	const char *dir_name;
++	const char *fname;
++	int fd;
++};
 +
- static inline unsigned p2m_top_index(unsigned long pfn)
- {
- 	BUG_ON(pfn >= MAX_P2M_PFN);
+ #ifdef CONFIG_PERF_EVENTS
+ 
+ extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b7935fcec7d9..95026f2b3d55 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3589,7 +3589,10 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	if (event->cpu == -1 && event->attr.inherit)
+ 		return -EINVAL;
+ 
+-	if (!(vma->vm_flags & VM_SHARED))
++	if (!(vma->vm_flags & VM_SHARED) && !event->attr.persistent)
++		return -EINVAL;
++
++	if (event->attr.persistent && (vma->vm_flags & VM_WRITE))
+ 		return -EINVAL;
+ 
+ 	vma_size = vma->vm_end - vma->vm_start;
 -- 
-1.7.7.6
+1.7.11.rc1
 
