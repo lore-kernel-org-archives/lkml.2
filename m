@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2HPWog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 18:44:36 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43255 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab2HPWoe (ORCPT
+	id S1754911Ab2HPWp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 18:45:28 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61472 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2HPWp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 18:44:34 -0400
+	Thu, 16 Aug 2012 18:45:26 -0400
+Message-ID: <502D77FB.1000502@windriver.com>
+Date: Thu, 16 Aug 2012 18:45:15 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120816222629.GG31346@thunk.org>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
-	<20120816024654.GB3781@thunk.org>
-	<20120816111051.GA16036@localhost>
-	<20120816152513.GA31346@thunk.org>
-	<CANP3RGdMfM0tZbaJS9dFetRhXoGtyS0Nx4hZER_Qv0a061X_dQ@mail.gmail.com>
-	<20120816211948.GF31346@thunk.org>
-	<CANP3RGd62=voh5T6NACyFE-NqX=Huk1hkewSakPs67vC+uuTuw@mail.gmail.com>
-	<20120816222629.GG31346@thunk.org>
-Date: Thu, 16 Aug 2012 15:44:32 -0700
-Message-ID: <CANP3RGfwQCJu7TLF4KXAJ-qPrHQDbuPzRCd72O41CUi2G1azJg@mail.gmail.com>
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>, Michael Ellerman <michael@ellerman.id.au>
+Subject: Re: [v2.6.34-stable 016/165] KVM: Ensure all vcpus are consistent
+ with in-kernel irqchip settings
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-17-git-send-email-paul.gortmaker@windriver.com> <20120816193017.GA17364@herton-Z68MA-D2H-B3>
+In-Reply-To: <20120816193017.GA17364@herton-Z68MA-D2H-B3>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks, that's really helpful.   I can say that using a 4MB journal and
-> running fsstress is _not_ enough to trigger the problem.
->
-> Looking more closely at what might be needed to trigger the bug, 'i'
-> gets left uninitialized when err is set to -EAGAIN, and that happens
-> when ext4_ext_truncate_extend_restart() is unable to extend the
-> journal transaction.  But that also means we need to be deleting a
-> sufficiently large enough file that the blocks span multiple block
-> groups (which is why we need to extend the transaction, so we can
-> modify more bitmap blocks) at the point when there is no more room in
-> the journal, so we have to close the current transaction, and then
-> retry it again with a new journal handle in a new transaction.
->
-> So that implies that untaring a bunch of kernels probably won't be
-> sufficient, since the files will be too small.  What we probably will
-> need to do is to fill a large file system with lots of large files,
-> use a small journal, and then try to do an rm -rf.
->
->                                              - Ted
+On 12-08-16 03:30 PM, Herton Ronaldo Krzesinski wrote:
+> On Wed, Aug 15, 2012 at 03:46:00PM -0400, Paul Gortmaker wrote:
+>> From: Avi Kivity <avi@redhat.com>
+>>
+>>                    -------------------
+>>     This is a commit scheduled for the next v2.6.34 longterm release.
+>>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>>     If you see a problem with using this for longterm, please comment.
+>>                    -------------------
+>>
+> [...]
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index c82ae24..559af38 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1322,6 +1322,10 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
+>>  		return r;
+>>  
+>>  	mutex_lock(&kvm->lock);
+>> +	if (!kvm_vcpu_compatible(vcpu)) {
+>> +		r = -EINVAL;
+>> +		goto unlock_vcpu_destroy;
+>> +	}
+>>  	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
+>>  		r = -EINVAL;
+>>  		goto vcpu_destroy;
+> 
+> Fails to build:
+> 
+> linux-stable/arch/x86/kvm/../../../virt/kvm/kvm_main.c: In function 'kvm_vm_ioctl_create_vcpu':
+> linux-stable/arch/x86/kvm/../../../virt/kvm/kvm_main.c:1327: error: label 'unlock_vcpu_destroy' used but not defined
+> 
+> Looking at it, vcpu_destroy would be label name to be used instead.
 
-My suggestion of untarring kernels was to cause the big multi gigabyte
-files created later on to be massively fragmented, and thus have tons
-of extents and a relatively deep extent tree.
-But maybe that's not needed to trigger this bug, if as you say, it is
-caused by the absolute number of disks blocks being freed and not by
-the size/depth/complexity of the extent tree.
-My knowledge of the internals of ext4 is pretty much non-existent. ;-)
- In this case I'm just an end user.
+Thanks Herton.  I'm not sure how I missed that in my allyesconfig
+builds -- I must have got distracted by the noise coming from
+building (or failing to) from the stuff in Documentation / samples
+
+Re-doing x86 & x86-64 allyesconfig testing and will push the fix
+once they complete.
+
+Thanks again,
+Paul.
+--
+
+> 
