@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2HPMjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:39:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63798 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab2HPMjf (ORCPT
+	id S1755149Ab2HPMkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:40:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46846 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2HPMkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:39:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 21/31] arm64: 32-bit (compat) applications support
-Date: Thu, 16 Aug 2012 12:39:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151434.05145.arnd@arndb.de> <20120816102808.GH31784@mudshark.cambridge.arm.com>
-In-Reply-To: <20120816102808.GH31784@mudshark.cambridge.arm.com>
+	Thu, 16 Aug 2012 08:40:07 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208161239.31409.arnd@arndb.de>
-X-Provags-ID: V02:K0:vzZmdiAkDRw0zrQ1YkCDHLIeQNpNPEbzmV9CRRvEz+2
- +7F9EQ1ZXBtoPivQPwmmPiaO3mdgxLMgi0TFzykg5xowgZyeCh
- 74LBTr3lwqdwCWdCXsrnHwl6b9rADB2ORhNME23UTEhtP7Xtef
- NuDQrocAYuOIs9dN+XlRzL5N38I+ZREXkj8ZmI8F0PEHf4uot3
- bOi0nzTcAHoXVxe72MkLT8vqmoZDRHMkw1FUBZocv4HWwrOVd/
- mBthkhQv9JHYVGVPjUpR3aOEDvVPsoebbkDSuIXuPcaUdfTsRX
- IGQ4IewwqiBnCDlnAiFXKCT8dUKWm+mXZg1mdD+4a+ODVR7/zp
- hUTZ5Bnhuyq34unAGxpA=
+In-Reply-To: <1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+	<1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+Date: Thu, 16 Aug 2012 14:40:06 +0200
+Message-ID: <CACRpkdYJngvG92BJ_jMyx5KZcr2WmMwGtat6=wKsq+RLk3ECgA@mail.gmail.com>
+Subject: Re: [PATCH v2 28/31] arm64: Generic timers support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Will Deacon wrote:
-> 
-> On Wed, Aug 15, 2012 at 03:34:04PM +0100, Arnd Bergmann wrote:
-> > On Tuesday 14 August 2012, Catalin Marinas wrote:
-> > > +asmlinkage int compat_sys_personality(compat_ulong_t personality)
-> > > +{
-> > > +   int ret;
-> > > +
-> > > +   if (personality(current->personality) == PER_LINUX32 &&
-> > > +           personality == PER_LINUX)
-> > > +           personality = PER_LINUX32;
-> > > +   ret = sys_personality(personality);
-> > > +   if (ret == PER_LINUX32)
-> > > +           ret = PER_LINUX;
-> > > +   return ret;
-> > > +}
-> > 
-> > Where did you get this from?
-> > 
-> > You should not need compat_sys_personality, just call the native function.
-> 
-> Hmm, but in that case an aarch32 application doing a personality(PER_LINUX)
-> syscall will start seeing the wrong uname.
+On Tue, Aug 14, 2012 at 7:52 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
 
-Not the wrong uname, just the default one, which is correct.
+> From: Marc Zyngier <marc.zyngier@arm.com>
+(...)
+> +static void __init arch_timer_calibrate(void)
 
-	Arnd
+I think you wrot in the last review thread that this should be renamed
+"arch_timer_get_freq()".
+
+> +{
+> +       if (arch_timer_rate == 0) {
+> +               arch_timer_reg_write(ARCH_TIMER_REG_CTRL, 0);
+> +               arch_timer_rate = arch_timer_reg_read(ARCH_TIMER_REG_FREQ);
+> +
+> +               /* Check the timer frequency. */
+> +               if (arch_timer_rate == 0)
+> +                       panic("Architected timer frequency is set to zero.\n"
+> +                             "You must set this in your .dts file\n");
+
+This comment about the .dts file is completely out-of-place.
+The error message should be about the register containing 0, right?
+
+Also, at this very point in the code, I think you should convert that panic()
+to pr_err() and insert:
+
+#include <linux/clk.h>
+
+struct clk *clk;
+
+clk = clk_get_sys("arm_generic_timer", NULL);
+if (IS_ERR(clk))
+               panic("Not even a clk to get freq off! Giving up.\n");
+err = clk_prepare_enable(clk);
+if (err) {
+           pr_err("smp_twd: clock failed to prepare: %d\n", err);
+           clk_put(clk);
+           panic("Not even a clk to get freq off! Giving up.\n");
+}
+arch_timer_rate = clk_get_rate(clk);
+
+Possibly the clk should even be able to override the register value,
+then it's the other way around.
+
+> +       }
+> +
+> +       /* Cache the sched_clock multiplier to save a divide in the hot path. */
+> +
+> +       sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
+> +
+> +       pr_info("Architected local timer running at %u.%02uMHz.\n",
+> +                arch_timer_rate / 1000000, (arch_timer_rate / 10000) % 100);
+
+This multiplier and print should be moved below the call site since
+the DT frequency
+overrides it and then you get no print which is sad, and incorrect
+sched_clock_mult
+which is a bug.
+
+> +}
+
+(...)
+> +       /* Try to determine the frequency from the device tree or CNTFRQ */
+> +       if (!of_property_read_u32(np, "clock-frequency", &freq))
+> +               arch_timer_rate = freq;
+> +       arch_timer_calibrate();
+
+rename arch_timer_get_freq()
+
+And move that print here.
+
+Yours,
+Linus Walleij
