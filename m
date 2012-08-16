@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab2HPN5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:57:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33721 "EHLO mga14.intel.com"
+	id S932611Ab2HPN6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:58:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53300 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab2HPN5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:57:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="scan'208";a="181797557"
-Message-ID: <502CFC41.1030501@linux.intel.com>
-Date: Thu, 16 Aug 2012 06:57:21 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+	id S1755461Ab2HPN6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:58:24 -0400
+Date: Thu, 16 Aug 2012 14:58:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rik van Riel <riel@redhat.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <20120815161911.GA14534@srcf.ucam.org> <502C7F24.6020900@intel.com>
-In-Reply-To: <502C7F24.6020900@intel.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC 1/2] cma: remove __reclaim_pages
+Message-ID: <20120816135817.GS4177@suse.de>
+References: <1344934627-8473-1-git-send-email-minchan@kernel.org>
+ <1344934627-8473-2-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1344934627-8473-2-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/15/2012 10:03 PM, Alex Shi wrote:
-> On 08/16/2012 12:19 AM, Matthew Garrett wrote:
+On Tue, Aug 14, 2012 at 05:57:06PM +0900, Minchan Kim wrote:
+> Now cma reclaims too many pages by __reclaim_pages which says
+> following as
 > 
->> On Mon, Aug 13, 2012 at 08:21:00PM +0800, Alex Shi wrote:
->>
->>> power aware scheduling), this proposal will adopt the
->>> sched_balance_policy concept and use 2 kind of policy: performance, power.
->>
->> Are there workloads in which "power" might provide more performance than 
->> "performance"? If so, don't use these terms.
->>
+>         * Reclaim enough pages to make sure that contiguous allocation
+>         * will not starve the system.
 > 
+> Starve? What does it starve the system? The function which allocate
+> free page for migration target would wake up kswapd and do direct reclaim
+> if needed during migration so system doesn't starve.
 > 
-> Power scheme should no chance has better performance in design.
 
-ehm.....
+I thought this patch was overkill at the time it was introduced but
+didn't have a concrete reason to reject it when I commented on it
+https://lkml.org/lkml/2012/1/30/136 . Marek did want this and followed
+up with "contiguous allocations should have higher priority than others"
+which I took to mean that he was also ok with excessive reclaim.
 
-so in reality, the very first thing that helps power, is to run software efficiently.
+> Let remove __reclaim_pages and related function and fields.
+> 
 
-anything else is completely secondary.
+That should be one patch and I don't object to it being removed as such
+but it's Marek's call.
 
-if placement policy leads to a placement that's different from the most efficient placement,
-you're already burning extra power...
+> I modified split_free_page slightly because I removed __reclaim_pages,
+> isolate_freepages_range can fail by split_free_page's watermark check.
+> It's very critical in CMA because it ends up failing alloc_contig_range.
+> 
 
+This is a big change and should have been in a patch on its
+own. split_free_page checks watermarks because if the watermarks are
+not obeyed a zone can become fully allocated. This can cause a system to
+livelock under certain circumstances if a page cannot be allocated and a
+free page is required before other pages can be freed.
+
+> I think we don't need the check in case of CMA because CMA allocates
+> free pages by alloc_pages, not isolate_freepages_block in migrate_pages
+> so watermark is already checked in alloc_pages.
+
+It uses alloc_pages when migrating pages out of the CMA area but note
+that it uses isolate_freepages_block when allocating the CMA buffer when
+alloc_contig_range calls isolate_freepages_range
+
+isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
+{
+	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
+               isolated = isolate_freepages_block(pfn, block_end_pfn,
+                                                   &freelist, true);
+	}
+	map_pages(&freelist);
+}
+
+so the actual CMA allocation itself is not using alloc_pages. By removing
+the watermark check you allow the CMA to breach watermarks and puts the
+system at risk of livelock.
+
+I'm not keen on the split_free_page() change at all.
+
+-- 
+Mel Gorman
+SUSE Labs
