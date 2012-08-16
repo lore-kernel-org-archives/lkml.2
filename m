@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab2HPO21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:28:27 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57872 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753007Ab2HPO2Z (ORCPT
+	id S1756448Ab2HPO3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:29:01 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38691 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab2HPO27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:28:25 -0400
-Date: Thu, 16 Aug 2012 10:28:22 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH 02/16] user_ns: use new hashtable implementation
-Message-ID: <20120816142821.GC29703@Krystal>
-References: <502AFCD5.6070104@gmail.com> <87obmchmpu.fsf@xmission.com> <AE90C24D6B3A694183C094C60CF0A2F6026B6FB5@saturn3.aculab.com>
+	Thu, 16 Aug 2012 10:28:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6FB5@saturn3.aculab.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1345125384.29668.30.camel@twins>
+References: <1345124749.31092.2.camel@localhost.localdomain>
+	<1345125384.29668.30.camel@twins>
+Date: Thu, 16 Aug 2012 20:28:58 +0600
+Message-ID: <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
+Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Laight (David.Laight@ACULAB.COM) wrote:
-> > Yes hash_32 seems reasonable for the uid hash.   With those long hash
-> > chains I wouldn't like to be on a machine with 10,000 processes with
-> > each with a different uid, and a processes calling setuid in the fast
-> > path.
-> > 
-> > The uid hash that we are playing with is one that I sort of wish that
-> > the hash table could grow in size, so that we could scale up better.
-> 
-> Since uids are likely to be allocated in dense blocks, maybe an
-> unhashed multi-level lookup scheme might be appropriate.
-> 
-> Index an array with the low 8 (say) bits of the uid.
-> Each item can be either:  
->   1) NULL => free entry.
->   2) a pointer to a uid structure (check uid value).
->   3) a pointer to an array to index with the next 8 bits.
-> (2) and (3) can be differentiated by the low address bit.
+On 8/16/12, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-08-16 at 19:45 +0600, Rakib Mullick wrote:
+>> When a CPU is about to go down, it moves all it's sleeping task to an
+>> active CPU, then nr_uninterruptible counts are
+>> also moved. When moving nr_uninterruptible count, currently it chooses a
+>> randomly picked CPU from the active CPU mask
+>> to keep the global nr_uninterruptible count intact. But, it would be
+>> precise to move nr_uninterruptible counts to the
+>> CPU where all the sleeping tasks were moved and it also might have subtle
+>> impact over rq's load calculation. So, this
+>> patch is prepared to address this issue.
+>
+> The Changelog is ill-formated. Other than that, the patch doesn't appear
+> to actually do what it says. The sleeping tasks can be scattered to any
+> number of cpus as decided by select_fallback_rq().
+>
+I'm not sure which parts are missing from Changelog to patch. And this
+patch assumes that, sleeping tasks won't be scattered. From
+select_fallback_rq(), sleeping tasks might get scattered due to
+various cases like. if CPU is down, task isn't allowed to move a
+particular CPU. Other than that, dest cpu supposed to be the same.
 
-I'm currently experimenting with "Judy arrays", which would likely be a
-good fit for this kind of use-case.
+> Furthermore there should be absolutely no impact on load calculation
+> what so ever. nr_uninterruptible is only ever useful as a sum over all
+> cpus, this total sum doesn't change regardless of where you put the
+> value.
+>
+> Worse, there's absolutely no relation to the tasks on the runqueue
+> (sleeping or otherwise) and nr_uninterruptible, so coupling these
+> actions makes no sense what so ever.
+>
+nr_uninterruptible is coupled with tasks on the runqueue to calculate
+nr_active numbers.
+In calc_load_fold_active(), this nr_active numbers are used to
+calculate delta. This is how I understand this part and seeing some
+impact.
 
-It's basically a 256-ary trie, with fixed depth that depends on the key
-size, that uses various encoding (compaction) schemes to compress
-internal nodes depending on their density. The original implementation
-made by HP has been criticised as somewhat too complex (20k lines of
-code), but I'm currently working (in my spare time) on a more elegant
-solution, that supports RCU lookups and distributed locking, and uses
-much simpler node compaction schemes, and focus on having good cache
-locality (and minimal number of cache line hits) for lookups.
-
-I'll be presenting my ongoing work at Plumbers, if you are interested.
-
-Best regards,
-
-Mathieu
-
-> I think that is updateable with cmpxchg.
-> 
-> Clearly this is a bad algorithm if uids are all multiples of 2^24
-> but that is true or any hash function.
-> 
-> 	David
-> 
-> 
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Thanks,
+Rakib
