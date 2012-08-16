@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab2HPIXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:23:55 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58556 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185Ab2HPIVo (ORCPT
+	id S1756403Ab2HPIZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:25:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33156 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2HPIZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:21:44 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-ef-502cad96f31f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH v2 3/5] perf ui/gtk: Implement helpline_fns
-Date: Thu, 16 Aug 2012 17:14:52 +0900
-Message-Id: <1345104894-14205-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
-References: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 16 Aug 2012 04:25:14 -0400
+Date: Thu, 16 Aug 2012 11:25:07 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: dedekind1@gmail.com
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] UBI: use the whole MTD device size to get
+ bad_peb_limit
+Message-ID: <20120816112507.01b7c0f0@pixies.home.jungo.com>
+In-Reply-To: <1345043331.3393.151.camel@sauron.fi.intel.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+	<1341937423-16516-4-git-send-email-richard.genoud@gmail.com>
+	<1345043331.3393.151.camel@sauron.fi.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helpline API implementation to GTK front-end.
+Hi Artem, Richard,
 
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile          |  1 +
- tools/perf/ui/gtk/gtk.h      |  2 ++
- tools/perf/ui/gtk/helpline.c | 31 +++++++++++++++++++++++++++++++
- tools/perf/ui/gtk/setup.c    |  1 +
- 4 files changed, 35 insertions(+)
- create mode 100644 tools/perf/ui/gtk/helpline.c
+On Wed, 15 Aug 2012 18:08:51 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> 1. Invalid blocks are block that contain one or more bad bits beyond
+> ECC.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 14c0b744d98e..91f16e26fd0d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -601,6 +601,7 @@ else
- 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
- 		# Make sure that it'd be included only once.
- 		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
- 			LIB_OBJS += $(OUTPUT)ui/setup.o
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index a4d0f2b4a2dc..793cb6116ddf 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -29,6 +29,8 @@ static inline bool perf_gtk__is_active_context(struct perf_gtk_context *ctx)
- struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
- int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
- 
-+void perf_gtk__init_helpline(void);
-+
- #ifndef HAVE_GTK_INFO_BAR
- static inline GtkWidget *perf_gtk__setup_info_bar(void)
- {
-diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
-new file mode 100644
-index 000000000000..9180fea920d5
---- /dev/null
-+++ b/tools/perf/ui/gtk/helpline.c
-@@ -0,0 +1,31 @@
-+#include "gtk.h"
-+#include "../helpline.h"
-+
-+
-+static void gtk_helpline_pop(void)
-+{
-+	if (!perf_gtk__is_active_context(pgctx))
-+		return;
-+
-+	gtk_statusbar_pop(GTK_STATUSBAR(pgctx->statbar),
-+			  pgctx->statbar_ctx_id);
-+}
-+
-+static void gtk_helpline_push(const char *msg)
-+{
-+	if (!perf_gtk__is_active_context(pgctx))
-+		return;
-+
-+	gtk_statusbar_push(GTK_STATUSBAR(pgctx->statbar),
-+			   pgctx->statbar_ctx_id, msg);
-+}
-+
-+static struct ui_helpline gtk_helpline_fns = {
-+	.pop	= gtk_helpline_pop,
-+	.push	= gtk_helpline_push,
-+};
-+
-+void perf_gtk__init_helpline(void)
-+{
-+	helpline_fns = &gtk_helpline_fns;
-+}
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 92879ce61e2f..ad40b3626fdb 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -7,6 +7,7 @@ extern struct perf_error_ops perf_gtk_eops;
- int perf_gtk__init(void)
- {
- 	perf_error__register(&perf_gtk_eops);
-+	perf_gtk__init_helpline();
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
- }
- 
--- 
-1.7.11.2
+I would remove this one sentence from the log, it is misleading; invalid
+blocks are not necessarily related to ECC.
 
+>  		if (CONFIG_MTD_UBI_BEB_LIMIT > 0) {
+> -			int percent = CONFIG_MTD_UBI_BEB_LIMIT;
+> -			int limit = mult_frac(ubi->peb_count, percent, 100);
+> +			int per1024 = CONFIG_MTD_UBI_BEB_LIMIT;
+> +			int limit, device_pebs;
+> +			uint64_t device_size;
+> +
+> +			/*
+> +			 * Here we are using size of the entire flash chip and
+> +			 * not just the MTD partition size because the maximum
+> +			 * number of bad eraseblocks is a percentage of the
+> +			 * whole device and bad eraseblocks are not fairly
+> +			 * distributed over the flash chip. So the worst case
+> +			 * is that all the bad eraseblocks of the chip are in
+> +			 * the MTD partition we are attaching (ubi->mtd).
+> +			 */
+> +			device_size = mtd_get_device_size(ubi->mtd);
+> +			device_pebs = mtd_div_by_eb(device_size, ubi->mtd);
+> +			limit = mult_frac(device_pebs, per1024, 1024);
+>  
+>  			/* Round it up */
+> -			if (mult_frac(limit, 100, percent) < ubi->peb_count)
+> +			if (mult_frac(limit, 1024, per1024) < ubi->peb_count)
+
+Oops... should be: 
+
++			if (mult_frac(limit, 1024, per1024) < device_pebs)
+
+Regards,
+Shmulik
