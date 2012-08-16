@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab2HPT4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:56:30 -0400
-Received: from [216.32.180.14] ([216.32.180.14]:52371 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S933221Ab2HPTyM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:54:12 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jagrelo@cisco.com" <jagrelo@cisco.com>
-Subject: RE: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
- structures
-Thread-Topic: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
- structures
-Thread-Index: AQHNe8D81m4DRZTLZUuq2hIWRVG9dJdc1R2AgAACGPA=
-Date: Thu, 16 Aug 2012 19:52:00 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C17D1@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1345130600-2862-1-git-send-email-kys@microsoft.com>
- <20120816193537.GA14719@kroah.com>
-In-Reply-To: <20120816193537.GA14719@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1030380Ab2HPT4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:56:46 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43355 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933221Ab2HPT4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:56:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>, Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
+Date: Thu, 16 Aug 2012 22:02:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, David Miller <davem@davemloft.net>
+References: <Pine.LNX.4.44L0.1208161232001.31195-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1208161232001.31195-100000@netrider.rowland.org>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CISCO.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208162202.40929.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, August 16, 2012 3:36 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com;
-> jagrelo@cisco.com
-> Subject: Re: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
-> structures
+On Thursday, August 16, 2012, Alan Stern wrote:
+> On Thu, 16 Aug 2012, Miklos Szeredi wrote:
 > 
-> On Thu, Aug 16, 2012 at 08:23:20AM -0700, K. Y. Srinivasan wrote:
-> > Use explicitly sized types in data structures defining the host/guest
-> > protocol. I would like to thank Juan Sanchez-Agrelo  <jagrelo@cisco.com>
-> > for reporting this.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> 
-> If someone reports a problem, mark it as:
-> 	Reported-by: Juan Sanchez-Agrelo <jagrelo@cisco.com>
-> in the signed-off-by: area of the patch.
+> > Yes, this appears to work.  Following patch fixes the suspend oops.
+> > 
+> > Thanks,
+> > Miklos
 
-Will do. 
-> 
-> Does this need to go into 3.6, and possibly older kernels?  Or can it
-> wait for 3.7?
+OK
 
-Given the "stable kernel rules",  I don't think this needs to go into older kernels.
-This can wait for 3.7.
+Miklos, can you please send that to Dave with a proper changelog and
+sign-off (please add my ACK too)?  Please make it clear that this is a
+regression fix and which commit has introduced the regression.
+
+> > ---
+> >  drivers/ide/ide-pm.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/ide/ide-pm.c b/drivers/ide/ide-pm.c
+> > index 9240609..8d1e32d 100644
+> > --- a/drivers/ide/ide-pm.c
+> > +++ b/drivers/ide/ide-pm.c
+> > @@ -4,7 +4,7 @@
+> >  
+> >  int generic_ide_suspend(struct device *dev, pm_message_t mesg)
+> >  {
+> > -	ide_drive_t *drive = dev_get_drvdata(dev);
+> > +	ide_drive_t *drive = to_ide_device(dev);
+> >  	ide_drive_t *pair = ide_get_pair_dev(drive);
+> >  	ide_hwif_t *hwif = drive->hwif;
+> >  	struct request *rq;
+> > @@ -40,7 +40,7 @@ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
+> >  
+> >  int generic_ide_resume(struct device *dev)
+> >  {
+> > -	ide_drive_t *drive = dev_get_drvdata(dev);
+> > +	ide_drive_t *drive = to_ide_device(dev);
+> >  	ide_drive_t *pair = ide_get_pair_dev(drive);
+> >  	ide_hwif_t *hwif = drive->hwif;
+> >  	struct request *rq;
+> 
+> And now you can get rid of the useless dev_set_drvdata() call.
+
+That was in the other patch I think.
 
 Thanks,
-
-K. Y
- 
-
-
-
+Rafael
