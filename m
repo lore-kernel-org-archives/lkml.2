@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2HPMx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:53:58 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48870 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752556Ab2HPMx5 (ORCPT
+	id S1756143Ab2HPMye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:54:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39319 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab2HPMyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:53:57 -0400
-Date: Thu, 16 Aug 2012 13:53:24 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Message-ID: <20120816125324.GB30876@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
- <201208151320.02313.arnd@arndb.de>
+	Thu, 16 Aug 2012 08:54:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208151320.02313.arnd@arndb.de>
-Thread-Topic: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120727162038.GD12244@redhat.com>
+References: <20120724203613.GA9637@redhat.com>
+	<20120727162038.GD12244@redhat.com>
+Date: Thu, 16 Aug 2012 20:54:31 +0800
+Message-ID: <CACVXFVO-_bP33syDr22TkX2Rsfhb6rNmUNBtsQBnnyqJxdXRyw@mail.gmail.com>
+Subject: Re: lockdep trace from posix timers
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 02:20:02PM +0100, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
-> 
-> > +The AArch64 exception model is made up of a number of exception levels
-> > +(EL0 - EL3), with EL0 and EL1 having a secure and a non-secure
-> > +counterpart.  EL2 is the hypervisor level and exists only in non-secure
-> > +mode. EL3 is the highest priority level and exists only in secure mode.
-> 
-> I'm always confused by a description like this. It sounds like you cannot
-> have a hypervisor if you have code running in secure mode in EL3. What
-> I instead understand is that you enter non-secure mode by going from
-> EL3 into EL2.
+On Sat, Jul 28, 2012 at 12:20 AM, Dave Jones <davej@redhat.com> wrote:
+> On Tue, Jul 24, 2012 at 04:36:13PM -0400, Dave Jones wrote:
+>  > Linus tree as of 5fecc9d8f59e765c2a48379dd7c6f5cf88c7d75a
+>  >
+>  >      Dave
+>  >
+>  > ======================================================
+>  > [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+>  > 3.5.0+ #122 Not tainted
+>  > ------------------------------------------------------
+>  > trinity-child2/5327 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+>  > blocked:  (tasklist_lock){.+.+..}, instance: ffffffff81c05098, at: [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+>  >
+>  > and this task is already holding:
+>  > blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+>  > which would create a new lock dependency:
+>  >  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
+>  >
+>  > but this new dependency connects a HARDIRQ-irq-safe lock:
+>  >  (&(&new_timer->it_lock)->rlock){-.-...}
+>  > ... which became HARDIRQ-irq-safe at:
+>
+> Shall I start bisecting this ? I can trigger it very easily, but if you
+> can give me a set of commits to narrow down, it'll speed up the bisection.
 
->From EL3 you can drop to either EL2 (non-secure) or EL1 (secure or
-non-secure), it's the highest privilege level. But we don't support the
-kernel entering at EL3, the SoC firmware runs in this mode. I'll try to
-make it clearer.
+It should a real possible deadlock, could you test the below patch to
+see if it can fix the warning?
 
-> > +2. Setup the device tree
-> > +-------------------------
-> > +
-> > +Requirement: MANDATORY
-> > +
-> > +The device tree blob (dtb) must be no bigger than 2 megabytes in size
-> > +and placed at a 2-megabyte boundary within the first 512 megabytes from
-> > +the start of the kernel image. This is to allow the kernel to map the
-> > +blob using a single section mapping in the initial page tables.
-> 
-> I've seen people put firmware for some peripherals into the device tree,
-> so that a device driver can grab a blob from there and load it into the
-> device, rather than calling request_firmware() which would fail if the
-> OS running on the system does not contain the blob. If such firmware is
-> too large, you end up violating the 2 MB limit you impose here.
-> 
-> Should we keep that limit and declare those use cases as invalid, or
-> should we try to make the boot protocol more flexible?
+--
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 125cb67..29f6a8e 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -420,7 +420,7 @@ static int posix_cpu_timer_del(struct k_itimer *timer)
+ 	int ret = 0;
 
-I would be ok to allowing larger range here but we currently don't get
-the information about the size of the dtb early enough to know how much
-to map. We could make some other arbitrary choice if needed like being
-in the first 16MB of RAM and we map this range.
+ 	if (likely(p != NULL)) {
+-		read_lock(&tasklist_lock);
++		/* tasklist_lock held already in timer_delete */
+ 		if (unlikely(p->sighand == NULL)) {
+ 			/*
+ 			 * We raced with the reaping of the task.
+@@ -435,7 +435,6 @@ static int posix_cpu_timer_del(struct k_itimer *timer)
+ 				list_del(&timer->it.cpu.entry);
+ 			spin_unlock(&p->sighand->siglock);
+ 		}
+-		read_unlock(&tasklist_lock);
 
+ 		if (!ret)
+ 			put_task_struct(p);
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 69185ae..222d24c 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -884,15 +884,31 @@ SYSCALL_DEFINE1(timer_delete, timer_t, timer_id)
+ 	struct k_itimer *timer;
+ 	unsigned long flags;
+
++	/*
++	 * hold tasklist_lock to protect tsk->sighand which might be
++	 * accessed inside ->timer_del. It should be held before
++	 * timer->it_lock to avoid the below deadlock:
++	 * 	CPU0			CPU1
++	 *	lock(tasklist_lock)
++	 *				timer_delete()
++	 *					lock(timer->it_lock)
++	 *					lock(tasklist_lock)
++	 *	<timer interrupt>
++	 *		lock(timer->it_lock)
++	 */
++	read_lock(&tasklist_lock);
+ retry_delete:
+ 	timer = lock_timer(timer_id, &flags);
+-	if (!timer)
++	if (!timer) {
++		read_unlock(&tasklist_lock);
+ 		return -EINVAL;
++	}
+
+ 	if (timer_delete_hook(timer) == TIMER_RETRY) {
+ 		unlock_timer(timer, flags);
+ 		goto retry_delete;
+ 	}
++	read_unlock(&tasklist_lock);
+
+ 	spin_lock(&current->sighand->siglock);
+ 	list_del(&timer->list);
+
+
+Thanks,
 -- 
-Catalin
+Ming Lei
