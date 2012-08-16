@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab2HPOsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:48:42 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64695 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756084Ab2HPOsj (ORCPT
+	id S932725Ab2HPOtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:49:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63823 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932654Ab2HPOtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:48:39 -0400
-Date: Thu, 16 Aug 2012 18:48:35 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816144835.GC13066@moon>
-References: <20120815220622.GA28054@fieldses.org>
- <20120816062448.GA32081@moon>
- <20120816123814.GD1209@moon>
- <20120816134339.GQ23464@ZenIV.linux.org.uk>
- <502CF9DA.8030701@parallels.com>
- <20120816135019.GS23464@ZenIV.linux.org.uk>
- <20120816135448.GP32081@moon>
- <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
- <20120816141553.GF1209@moon>
- <20120816144152.GT23464@ZenIV.linux.org.uk>
+	Thu, 16 Aug 2012 10:49:12 -0400
+Message-ID: <502D0859.2000602@gmail.com>
+Date: Thu, 16 Aug 2012 21:48:57 +0700
+From: Maxim Nikulin <m.a.nikulin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.3) Gecko/20120330 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816144152.GT23464@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: trivial@kernel.org
+CC: Corentin Chary <corentincj@iksaif.net>,
+        acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH][TRIVIAL] platform/x86: fix asus_laptop.wled_type description
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 03:41:52PM +0100, Al Viro wrote:
-> On Thu, Aug 16, 2012 at 06:15:53PM +0400, Cyrill Gorcunov wrote:
-> > On Thu, Aug 16, 2012 at 02:03:00PM +0000, James Bottomley wrote:
-> > > > > What's wrong with saying "we don't support idiotify"?
-> > > > 
-> > > > Al, we need some way to restore inotifies after checkpoint.
-> > > > At the very early versions of these patches I simply added
-> > > > dentry to the inotify mark thus once inotify created we always
-> > > > have a dentry to refer on in encode_fh, but I'm not sure if
-> > > > this will be good design.
-> > > 
-> > > Actually, I was about to suggest this.  This can be done internally
-> > > within fs/notify without actually modifying the syscall interface, can't
-> > > it, since they take a path which is used to obtain the inode?  It looks
-> > > like the whole of the inotify interface could be internally recast to
-> > > use dentries instead of inodes.  Unless I've missed something obvious?
-> > 
-> > Well, after looking into do_sys_name_to_handle->exportfs_encode_fh
-> > sequence more precisely it seems it will be easier to extend
-> > exportfs_encode_fh to support inodes directly instead of playing
-> > with notify code (again, if i'm not missing something too).
-> > i'm cooking a patch to show (once it's tested i'll send it out).
-> 
-> Good luck doing that with e.g. VFAT...  And then there's such thing
-> as filesystems that don't have ->encode_fh() for a lot of very good
 
-Wait, Al, it seems I messed up. If some fs has no encode_fh() implemented
-the default encoding with FILEID_INO32_GEN_PARENT will be used for that.
+MODULE_PARM_DESC for wlan_status is further in the same file
 
-> reasons; just try to do that on sysfs, for example.  Or on ramfs,
-> for that matter...  And while saying "you can't export that over
-> NFS" seems to work fine, idiotify-lovers will screech if you try
-> to ban their perversion of choice on those filesystems.
+Signed-off-by: Maxim A. Nikulin <M.A.Nikulin@gmail.com>
+---
+ drivers/platform/x86/asus-laptop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	Cyrill
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index e38f91b..f5b9d91 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -85,7 +85,7 @@ static char *wled_type = "unknown";
+ static char *bled_type = "unknown";
+ 
+ module_param(wled_type, charp, 0444);
+-MODULE_PARM_DESC(wlan_status, "Set the wled type on boot "
++MODULE_PARM_DESC(wled_type, "Set the wled type on boot "
+                 "(unknown, led or rfkill). "
+                 "default is unknown");
+ 
+-- 
+1.7.2.5
