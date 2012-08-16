@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270Ab2HPN7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:59:33 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:57774 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab2HPN7b (ORCPT
+	id S1757285Ab2HPOAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:00:54 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:39428 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab2HPOAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:59:31 -0400
-Date: Thu, 16 Aug 2012 15:59:22 +0200
+	Thu, 16 Aug 2012 10:00:52 -0400
+Date: Thu, 16 Aug 2012 16:00:44 +0200
 From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Paul Mackerras <paulus@samba.org>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 3/4] cputime: Consolidate vtime handling on context
- switch
-Message-ID: <20120816155922.5de4f1e3@de.ibm.com>
-In-Reply-To: <20120816125030.GF19716@somewhere>
+Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+Message-ID: <20120816160044.1941f6f4@de.ibm.com>
+In-Reply-To: <20120816125556.GG19716@somewhere>
 References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
-	<1344953810-20564-4-git-send-email-fweisbec@gmail.com>
-	<20120815172219.4e4d5ef5@de.ibm.com>
-	<20120815192813.GE19716@somewhere>
-	<20120816095032.16611651@de.ibm.com>
-	<20120816125030.GF19716@somewhere>
+	<1344953810-20564-2-git-send-email-fweisbec@gmail.com>
+	<20120815170347.323507b1@de.ibm.com>
+	<20120815190901.GD19716@somewhere>
+	<20120816095336.4eeb3ce1@de.ibm.com>
+	<1345109897.11751.31.camel@pasglop>
+	<20120816125556.GG19716@somewhere>
 Organization: IBM Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081613-8372-0000-0000-0000037B839F
+x-cbid: 12081614-3548-0000-0000-000002D7AFFC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012 14:50:33 +0200
+On Thu, 16 Aug 2012 14:55:59 +0200
 Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Thu, Aug 16, 2012 at 09:50:32AM +0200, Martin Schwidefsky wrote:
-> > On Wed, 15 Aug 2012 21:28:17 +0200
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Thu, Aug 16, 2012 at 07:38:17PM +1000, Benjamin Herrenschmidt wrote:
+> > On Thu, 2012-08-16 at 09:53 +0200, Martin Schwidefsky wrote:
+> > > Hmm, ok. But then the description should be reworded not to be specific to
+> > > the power architecture (the part of the message about "This also enables
+> > > accounting of stolen time on logically-partitioned systems running on IBM
+> > > POWER5-based machines."). 
 > > 
-> > > On Wed, Aug 15, 2012 at 05:22:19PM +0200, Martin Schwidefsky wrote:
-> > > > On Tue, 14 Aug 2012 16:16:49 +0200
-> > > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > 
-> > > > > The archs that implement virtual cputime accounting all
-> > > > > flush the cputime of a task when it gets descheduled
-> > > > > and sometimes set up some ground initialization for the
-> > > > > next task to account its cputime.
-> > > > > 
-> > > > > These archs all put their own hooks in their context
-> > > > > switch callbacks and handle the off-case themselves.
-> > > > > 
-> > > > > Consolidate this by creating a new account_switch_vtime()
-> > > > > callback called in generic code right after a context switch
-> > > > > and that these archs must implement to flush the prev task
-> > > > > cputime and initialize the next task cputime related state.
-> > > > 
-> > > > That change requires that the accounting for the previous process
-> > > > can be done before finish_arch_switch() completed. With the old
-> > > > code the architecture could to the accounting call in the middle
-> > > > of finish_arch_switch, that is not possible anymore. Dunno if this
-> > > > is relevant or not. For s390 the new code should work fine.
-> > > 
-> > > I'm not sure how this could potentially cause a problem. Interrupts are disabled
-> > > between while we switch_to() until finish_lock_switch(). So nothing
-> > > should be able to mess up with the accounting of the prev task.
-> > > 
-> > > I don't really understand what you mean actually.
+> > Which is not very helpful to somebody running on a POWER6 or 7 (which
+> > also support that option just fine :-)
 > > 
-> > It is more a theoretical consideration. If the finish_arch_switch code
-> > updates fields that are required to do the cputime accounting then the
-> > order could be important. But then you could move that necessary code
-> > from finish_arch_switch to account_switch_vtime.
-> > As said that change is fine for s390, so I'm good with it.
+> > So yes, the description should definitely be improved.
 > 
-> Ah ok. Well like you said this is fine for s390. And it looks also fine
-> to me on ia64 and powerpc as it doesn't look like we depend on something
-> done in finish_arch_switch() there. They were flush the previous task
-> cputime from switch_to() anyway.
+> All right. How about something like the below?
 > 
-> Thanks.
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 894b073..5f5f8c2 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -276,9 +276,9 @@ config VIRT_CPU_ACCOUNTING
+>  	  accounting.  This is done by reading a CPU counter on each
+>  	  kernel entry and exit and on transitions within the kernel
+>  	  between system, softirq and hardirq state, so there is a
+> -	  small performance impact.  This also enables accounting of
+> -	  stolen time on logically-partitioned systems running on
+> -	  IBM POWER5-based machines.
+> +	  small performance impact.  In the case of IBM POWER > 5, this
+> +	  also enables accounting of stolen time on logically-partitioned
+> +	  systems.
 > 
-> PS: can I add your ack?
+>  config BSD_PROCESS_ACCT
+>  	bool "BSD Process Accounting"
+> 
 
-Sure, feel free to add my Acked-by.
+VIRT_CPU_ACCOUNTING will enable steal time for s390 as well.
 
 -- 
 blue skies,
