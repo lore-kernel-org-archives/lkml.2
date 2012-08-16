@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab2HPPNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:13:36 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:36291 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754602Ab2HPPNe (ORCPT
+	id S1757393Ab2HPPPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:15:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63479 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab2HPPP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:13:34 -0400
-Date: Thu, 16 Aug 2012 11:13:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Hans de Goede <hdegoede@redhat.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Miklos Szeredi <miklos@szeredi.hu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
-In-Reply-To: <502CDADA.2070507@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1208161106350.24305-100000@netrider.rowland.org>
+	Thu, 16 Aug 2012 11:15:28 -0400
+Message-ID: <502D0E79.9000103@gmail.com>
+Date: Thu, 16 Aug 2012 23:15:05 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
+ ports without native PCIe hotplug capability
+References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
+In-Reply-To: <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Hans de Goede wrote:
-
-> Ah right, these are bus_driver operations. That explains some things, so I've
-> done some more research asking myself: "Why does generic_ide_suspend(), which
-> is a *bus* op, call dev_get_drvdata?", the answer to that seems to be that
-> the ide subsystem is abusing (IMHO) drvdata to store per device bus_driver
-> data. Which I believe is not how drvdata is intended to be used.
+On 08/16/2012 03:12 AM, Bjorn Helgaas wrote:
+> On Mon, Jun 4, 2012 at 1:44 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+>> Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
+>> ignore root bridges using PCIe native hotplug) added code that made the
+>> acpiphp driver completely ignore PCIe root complexes for which the kernel
+>> had been granted control of the native PCIe hotplug feature by the BIOS
+>> through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
+>> "PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
+>> the constraints to allow acpiphp driver handle non-PCIe bridges under
+>> such a complex. The constraint needs to be relaxed further to allow
+>> acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
 > 
-> With that said, the above knowledge has allowed me to write an (ugly) fix for
-> the regression Miklos is seeing. Miklos can you give the attached patch a
-> try please?
+> Gerry, I assume you'll refresh and repost this after we get the PCIe
+> capability stuff squared away, so I'll ignore this patch for now.
 > 
-> > It clearly should check if drive is not NULL before using that pointer.
-> 
-> I assume you mean drive*r*, yes I agree that generic_ide_remove should
-> check for that. So who is going to write a patch for that?
-
-The existing code could certainly be improved.  Your patch does:
-
-> +               /*
-> +                * device_register() will have cleared drvdata on
-> +                * device_attach failure, but we use drvdata to store per
-> +                * device bus info, rather then for driver info, so restore it.
-> +                */
-> +               dev_set_drvdata(dev, drive);
-
-But at this point, dev is defined by:
-
-		struct device *dev = &drive->gendev;
-
-So why bother setting anything?  It seems to me that 
-generic_ide_suspend() and generic_ide_resume() could easily replace
-
-	ide_drive_t *drive = dev_get_drvdata(dev);
-
-with
-
-	ide_drive_t *drive = dev_to_ide_drive(dev);
-
-where dev_to_ide_drive is defined as "container_of(dev, ide_drive_t,
-gendev)" (if this isn't defined already).
-
-Alan Stern
+Hi Bjorn,
+	Please just ignore it and I will rework it after the PCIe capabilities
+patches are done.
+	Regards!
+	Gerry
 
