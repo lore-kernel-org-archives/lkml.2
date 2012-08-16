@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab2HPRqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:46:03 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:52298 "EHLO mail.x86-64.org"
+	id S933102Ab2HPRqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:46:01 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52285 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756649Ab2HPRpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756544Ab2HPRpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 13:45:33 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
@@ -12,9 +12,9 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [RFC PATCH -v2 4/4] persistent test
-Date: Thu, 16 Aug 2012 19:45:23 +0200
-Message-Id: <1345139123-15212-5-git-send-email-bp@amd64.org>
+Subject: [RFC PATCH -v2 1/4] trace events: Interface to add files to debugfs
+Date: Thu, 16 Aug 2012 19:45:20 +0200
+Message-Id: <1345139123-15212-2-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
 In-Reply-To: <1345139123-15212-1-git-send-email-bp@amd64.org>
 References: <1345139123-15212-1-git-send-email-bp@amd64.org>
@@ -24,93 +24,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
+This generic interface is supposed to be used to add files to
+(debugfs)/tracing/events/<subsys>/<event_name>/ which are supposed to
+export additional events functionality to users.
+
+For example, the file descriptor of a persistent event can be exported
+like this in the 'pers' node:
+
+/mnt/dbg/tracing/events/mce/mce_record/
+|-- enable
+|-- filter
+|-- format
+|-- id
+`-- persistent
+
+So that userspace tools can read it out and map it directly.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/include/asm/mce.h       |  1 +
- arch/x86/kernel/cpu/mcheck/mce.c |  5 +++++
- kernel/events/persistent.c       | 41 +++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 46 insertions(+), 1 deletion(-)
+ include/linux/ftrace_event.h |  3 +++
+ kernel/trace/trace.c         |  4 ++++
+ kernel/trace/trace.h         |  1 +
+ kernel/trace/trace_events.c  | 35 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 43 insertions(+)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a3ac52b29cbf..e46b05dff64a 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -256,5 +256,6 @@ struct cper_sec_mem_err;
- extern void apei_mce_report_mem_error(int corrected,
- 				      struct cper_sec_mem_err *mem_err);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 642928cf57b4..f4f283954cbf 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -265,6 +265,9 @@ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 			      int is_signed, int filter_type);
+ extern int trace_add_event_call(struct ftrace_event_call *call);
+ extern void trace_remove_event_call(struct ftrace_event_call *call);
++extern struct dentry *
++trace_add_file(const char *dir_name, const char *fname, umode_t mode,
++		void *data, const struct file_operations *fops);
  
-+extern int perf_get_mce_event_id(void);
- #endif /* __KERNEL__ */
- #endif /* _ASM_X86_MCE_H */
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 292d0258311c..cacd45bfac01 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2445,3 +2445,8 @@ static int __init mcheck_debugfs_init(void)
+ #define is_signed_type(type)	(((type)(-1)) < 0)
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81496ce..e45479572328 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4641,6 +4641,10 @@ struct dentry *trace_create_file(const char *name,
+ 	return ret;
  }
- late_initcall(mcheck_debugfs_init);
- #endif
-+
-+int perf_get_mce_event_id(void)
+ 
++void trace_remove_file(struct dentry *d)
 +{
-+	return event_mce_record.event.type;
++	return debugfs_remove(d);
 +}
-diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index 33d45396dc02..edb07640d5f1 100644
---- a/kernel/events/persistent.c
-+++ b/kernel/events/persistent.c
-@@ -10,7 +10,7 @@
  
- #include <asm/mce.h>
- 
--static int pers_open_generic(struct inode *inode, struct file *filp)
-+int pers_open_generic(struct inode *inode, struct file *filp)
+ static struct dentry *trace_options_init_dentry(void)
  {
- 	filp->private_data = inode->i_private;
- 	return 0;
-@@ -127,3 +127,42 @@ void perf_rm_persistent_event(struct perf_event_desc *desc)
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 55e1f7f0db12..fd639f45c425 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -338,6 +338,7 @@ struct dentry *trace_create_file(const char *name,
+ 				 struct dentry *parent,
+ 				 void *data,
+ 				 const struct file_operations *fops);
++void trace_remove_file(struct dentry *d);
  
- 	perf_event_release_kernel(event);
+ struct dentry *tracing_init_dentry(void);
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da1d100..5eda4f584380 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1199,6 +1199,41 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 	return 0;
  }
-+
-+static struct perf_event_attr pattr = {
-+	.type		= PERF_TYPE_TRACEPOINT,
-+	.size		= sizeof(pattr),
-+	.sample_type	= PERF_SAMPLE_RAW,
-+	.persistent	= 1,
-+};
-+
-+static struct perf_event_desc pdesc = {
-+	.dir_name	= "mce_record",
-+};
-+
-+static int __init pers_init(void)
+ 
++static struct dentry *__trace_add_file(struct ftrace_event_call *call,
++				       const char *fname, umode_t mode,
++				       void *data,
++				       const struct file_operations *fops)
 +{
-+	struct perf_event *event;
-+	char *fname;
-+	int cpu = 1;
++	struct dentry *ret;
 +
-+	fname = kzalloc(10 + 4, GFP_KERNEL);
-+	if (!fname)
-+		return -ENOMEM;
++	mutex_lock(&event_mutex);
++	ret = trace_create_file(fname, mode, call->dir, data, fops);
++	mutex_unlock(&event_mutex);
 +
-+	snprintf(fname, 14, "persistent%d", cpu);
-+	pdesc.fname = fname;
-+
-+	pattr.config = perf_get_mce_event_id();
-+	pattr.sample_period = 1;
-+	pattr.wakeup_events = 1,
-+	pdesc.pattr = &pattr;
-+
-+	event = perf_add_persistent_on_cpu(cpu, &pdesc, 4);
-+	if (IS_ERR(event)) {
-+		pr_err("%s: Error adding persistent event!\n", __func__);
-+		return -EINVAL;
-+	}
-+	return 0;
++	return ret;
 +}
 +
-+late_initcall(pers_init);
++/*
++ * Assumptions:
++ * - event debugfs dir is already initialized
++ * - trace event is not declared in a module
++ */
++struct dentry *trace_add_file(const char *dir_name, const char *fname,
++			      umode_t mode, void *data,
++			      const struct file_operations *fops)
++{
++	struct ftrace_event_call *call;
++
++	if (!strlen(fname))
++		return NULL;
++
++	list_for_each_entry(call, &ftrace_events, list) {
++		if (!strncmp(call->name, dir_name, strlen(dir_name)))
++			return __trace_add_file(call, fname, mode, data, fops);
++	}
++	return NULL;
++}
++
+ static int
+ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
+ 		       const struct file_operations *id,
 -- 
 1.7.11.rc1
 
