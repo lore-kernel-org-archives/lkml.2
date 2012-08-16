@@ -1,109 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab2HPLFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:05:30 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:51605 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab2HPLF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:05:29 -0400
-Message-ID: <502CD3F8.70001@hardwarefreak.com>
-Date: Thu, 16 Aug 2012 06:05:28 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1751226Ab2HPLKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:10:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52448 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab2HPLKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 07:10:48 -0400
+Date: Thu, 16 Aug 2012 13:10:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120816111044.GA12029@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Miquel van Smoorenburg <mikevs@xs4all.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: O_DIRECT to md raid 6 is slow
-References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl>
-In-Reply-To: <201208152307.q7FN7hMR008630@xs8.xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/15/2012 6:07 PM, Miquel van Smoorenburg wrote:
-> In article <xs4all.502C1C01.1040509@hardwarefreak.com> you write:
->> It's time to blow away the array and start over.  You're already
->> misaligned, and a 512KB chunk is insanely unsuitable for parity RAID,
->> but for a handful of niche all streaming workloads with little/no
->> rewrite, such as video surveillance or DVR workloads.
->>
->> Yes, 512KB is the md 1.2 default.  And yes, it is insane.  Here's why:
->> Deleting a single file changes only a few bytes of directory metadata.
->> With your 6 drive md/RAID6 with 512KB chunk, you must read 3MB of data,
->> modify the directory block in question, calculate parity, then write out
->> 3MB of data to rust.  So you consume 6MB of bandwidth to write less than
->> a dozen bytes.  With a 12 drive RAID6 that's 12MB of bandwidth to modify
->> a few bytes of metadata.  Yes, insane.
+On Thu, Aug 16, 2012 at 11:54:39AM +0200, Thierry Reding wrote:
+> How does the attached patch look?
 > 
-> Ehrm no. If you modify, say, a 4K block on a RAID5 array, you just have
-> to read that 4K block, and the corresponding 4K block on the
-> parity drive, recalculate parity, and write back 4K of data and 4K
-> of parity. (read|read) modify (write|write). You do not have to
-> do I/O in chunksize, ehm, chunks, and you do not have to rmw all disks.
+> Thierry
 
-See:  http://www.spinics.net/lists/xfs/msg12627.html
-
-Dave usually knows what he's talking about, and I didn't see Neil nor
-anyone else correcting him on his description of md RMW behavior.  What
-I stated above is pretty much exactly what Dave stated, but for the fact
-I got the RMW read bytes wrong--should be 2MB/3MB for a 6 drive md/RAID6
-and 5MB/6MB for 12 drives.
-
->> Parity RAID sucks in general because of RMW, but it is orders of
->> magnitude worse when one chooses to use an insane chunk size to boot,
->> and especially so with a large drive count.
-[snip]
-> Also, 256K or 512K isn't all that big nowadays, there's not much
-> latency difference between reading 32K or 512K..
-
-You're forgetting 3 very important things:
-
-1.  All filesystems have metadata
-2.  All (worth using) filesystems have a metadata journal
-3.  All workloads include some, if not major, metadata operations
-
-When writing journal and directory metadata there is a huge difference
-between a 32KB and 512KB chunk especially as the drive count in the
-array increases.  Rarely does a filesystem pack enough journal
-operations into a single writeout to fill a 512KB stripe, let alone a
-4MB stripe.  With a 32KB chunk you see full stripe width journal writes
-frequently, minimizing the number of RMW writes to the journal, even up
-to 16 data spindle parity arrays (18 drive RAID6).   Using a 512KB chunk
-will cause most journal writes to be partial stripe writes, triggering
-RMW for most journal writes.  The same is true for directory metadata
-writes.
-
-Everyone knows that parity RAID sucks for anything but purely streaming
-workloads with little metadata.  With most/all other workloads, using a
-large chunk size, such as the md metadata 1.2 default of 512KB, with
-parity RAID, simply makes it much worse, whether the RMW cycle affects
-all disks or just one data disk and one parity disk.
-
->> Recreate your array, partition aligned, and manually specify a sane
->> chunk size of something like 32KB.  You'll be much happier with real
->> workloads.
+> From cd3199b94e697cccd38766b4a60d2e91474d0539 Mon Sep 17 00:00:00 2001
+> From: Thierry Reding <thierry.reding@avionic-design.de>
+> Date: Thu, 16 Aug 2012 08:01:21 +0200
+> Subject: [PATCH] pwm: Improve Kconfig help text
 > 
-> Aligning is a good idea, 
+> The Kconfig help text should help the user understand what functionality
+> is provided by an option. This is especially true for new subsystems. An
+> improved help text is provided by this commit in the hopes of clarifying
+> the usefulness of the PWM framework.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  drivers/pwm/Kconfig | 24 ++++++++++++++++++------
+>  1 file changed, 18 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 8fc3808..88ddb9e 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -1,12 +1,24 @@
+>  menuconfig PWM
+> -	bool "PWM Support"
+> +	bool "Pulse-Width Modulation (PWM) Support"
+>  	depends on !MACH_JZ4740 && !PUV3_PWM
+>  	help
+> -	  This enables PWM support through the generic PWM framework.
+> -	  You only need to enable this, if you also want to enable
+> -	  one or more of the PWM drivers below.
+> -
+> -	  If unsure, say N.
+> +	  Generic Pulse-Width Modulation (PWM) support.
+> +
+> +	  This framework provides a generic interface to PWM devices
+> +	  within the Linux kernel. On the driver side it provides an API
+> +	  to register and unregister a PWM chip, an abstraction of a PWM
+> +	  controller, that supports one or more PWM devices. Client
+> +	  drivers can request PWM devices and use the generic framework
+> +	  to configure as well as enable and disable them.
+> +
+> +	  The new generic framework replaces the legacy PWM framework
+> +	  which allows only a single driver implementing the required
+> +	  API. Not all legacy implementations have been ported to the
+> +	  new framework yet. The new framework provides an API that is
+> +	  backward compatible with the legacy framework so that existing
+> +	  client drivers continue to work as expected.
+> +
+> +	  If unsure, say no.
 
-Understatement of the century.  Just as critical, if not more so, FS
-stripe alignment is mandatory with parity RAID lest full stripe writeout
-can/will trigger RMW.
+Yes, this is much better than what we had before. I'd suggest though,
+that instead of describing the high-level software design of the PWM
+subsystem, the text should be more addressed to the simple user like me
+who would like to know what this thing is and why do I want to enable
+it. Basically summarize what PWN devices are and what they're used for.
+I.e., https://en.wikipedia.org/wiki/Pulse-width_modulation#Applications
+but in 4-5 lines of text.
 
-> and on modern distributions partitions,
-> LVM lv's etc are generally created with 1MB alignment. But using
-> a small chunksize like 32K? That depends on the workload, but
-> in most cases I'd advise against it.
+IMHO, of course.
 
-People should ignore your advice in this regard.  A small chunk size is
-optimal for nearly all workloads on a parity array for the reasons I
-stated above.  It's the large chunk that is extremely workload
-dependent, as again, it only fits well with low metadata streaming
-workloads.
+Thanks.
 
 -- 
-Stan
-
+Regards/Gruss,
+Boris.
