@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2HPKGp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:06:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41293 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756280Ab2HPKGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:06:05 -0400
-Date: Thu, 16 Aug 2012 12:05:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (hid
- tree related)
-In-Reply-To: <20120816152538.7f850ee1a3b8ce90d9f749a2@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1208161204520.7026@pobox.suse.cz>
-References: <20120816152538.7f850ee1a3b8ce90d9f749a2@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757136Ab2HPKG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:06:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64266 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab2HPKGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 06:06:54 -0400
+Message-ID: <502CC4BA.3040702@gmail.com>
+Date: Thu, 16 Aug 2012 12:00:26 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
+        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
+        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 3/8] ext3: remove lock/unlock super
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Stephen Rothwell wrote:
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/hid/hid-picolcd_fb.c: In function 'picolcd_fb_destroy':
-> drivers/hid/hid-picolcd_fb.c:350:2: error: implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
-> drivers/hid/hid-picolcd_fb.c: In function 'picolcd_init_framebuffer':
-> drivers/hid/hid-picolcd_fb.c:508:2: error: implicit declaration of function 'vmalloc' [-Werror=implicit-function-declaration]
-> drivers/hid/hid-picolcd_fb.c:508:12: warning: assignment makes pointer from integer without a cast [enabled by default]
-> 
-> Caused by commit fabdbf2fd22f ("HID: picoLCD: split driver code") from
-> the hid tree.
+Replaced lock and unlock super with a new fs mutex s_lock.
 
-Hmm, seems config dependent, doesn't trigger here. Probably vmalloc.h gets 
-sucked in some other way under certain config options.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
 
-Anyway I have now applied your patch Stephen, so you should be able to 
-drop it from your pile.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+diff -Nurp linux-3.6-rc1-orig/fs/ext3/ext3.h linux-3.6-rc1/fs/ext3/ext3.h
+--- linux-3.6-rc1-orig/fs/ext3/ext3.h	2012-08-16 09:37:31.000000000 +0200
++++ linux-3.6-rc1/fs/ext3/ext3.h	2012-08-16 09:46:39.000000000 +0200
+@@ -672,6 +672,7 @@ struct ext3_sb_info {
+ 	char *s_qf_names[MAXQUOTAS];		/* Names of quota files with journalled quota */
+ 	int s_jquota_fmt;			/* Format of quota to use */
+ #endif
++	struct mutex s_lock;
+ };
+  static inline spinlock_t *
+diff -Nurp linux-3.6-rc1-orig/fs/ext3/super.c linux-3.6-rc1/fs/ext3/super.c
+--- linux-3.6-rc1-orig/fs/ext3/super.c	2012-08-16 09:37:31.000000000 +0200
++++ linux-3.6-rc1/fs/ext3/super.c	2012-08-16 09:49:11.000000000 +0200
+@@ -1939,6 +1939,7 @@ static int ext3_fill_super (struct super
+ 	sbi->s_gdb_count = db_count;
+ 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
+ 	spin_lock_init(&sbi->s_next_gen_lock);
++	mutex_init(&sbi->s_lock);
+  	/* per fileystem reservation list head & lock */
+ 	spin_lock_init(&sbi->s_rsv_window_lock);
+@@ -2582,11 +2583,11 @@ out:
+ static int ext3_unfreeze(struct super_block *sb)
+ {
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+-		lock_super(sb);
++		mutex_lock(&EXT3_SB(sb)->s_lock);
+ 		/* Reser the needs_recovery flag before the fs is unlocked. */
+ 		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+ 		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+-		unlock_super(sb);
++		mutex_unlock(&EXT3_SB(sb)->s_lock);
+ 		journal_unlock_updates(EXT3_SB(sb)->s_journal);
+ 	}
+ 	return 0;
+@@ -2606,7 +2607,7 @@ static int ext3_remount (struct super_bl
+ #endif
+  	/* Store the original options */
+-	lock_super(sb);
++	mutex_lock(&EXT3_SB(sb)->s_lock);
+ 	old_sb_flags = sb->s_flags;
+ 	old_opts.s_mount_opt = sbi->s_mount_opt;
+ 	old_opts.s_resuid = sbi->s_resuid;
+@@ -2712,7 +2713,7 @@ static int ext3_remount (struct super_bl
+ 		    old_opts.s_qf_names[i] != sbi->s_qf_names[i])
+ 			kfree(old_opts.s_qf_names[i]);
+ #endif
+-	unlock_super(sb);
++	mutex_unlock(&EXT3_SB(sb)->s_lock);
+  	if (enable_quota)
+ 		dquot_resume(sb, -1);
+@@ -2732,7 +2733,7 @@ restore_opts:
+ 		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
+ 	}
+ #endif
+-	unlock_super(sb);
++	mutex_unlock(&EXT3_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
