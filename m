@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab2HPNrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:47:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43868 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2HPNrT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:47:19 -0400
-Message-ID: <502CF9E3.2010608@linutronix.de>
-Date: Thu, 16 Aug 2012 15:47:15 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1756671Ab2HPNrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:47:35 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:35704 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752282Ab2HPNrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:47:33 -0400
+Message-ID: <502CF9DA.8030701@parallels.com>
+Date: Thu, 16 Aug 2012 17:47:06 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-CC: "'Joel Becker'" <jlbec@evilplan.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com> <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com> <000501cd5e79$a770be50$f6523af0$%p@samsung.com> <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com> <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
-In-Reply-To: <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120815092116.700948346@openvz.org> <20120815092409.591460800@openvz.org> <20120815204546.GC25062@fieldses.org> <20120815210237.GF25421@moon> <20120815220622.GA28054@fieldses.org> <20120816062448.GA32081@moon> <20120816123814.GD1209@moon> <20120816134339.GQ23464@ZenIV.linux.org.uk>
+In-Reply-To: <20120816134339.GQ23464@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 03:17 PM, Andrzej Pietrasiewicz wrote:
-> A lun is "opened" on storing the "file" attribute of the lun, it is in
-> fsg_lun_store_file, storage_common.c. So, again, this is a configfs
-> callback.
->
-> On storing the connect attribute, the following happens: a composite driver
-> is probed, then all the configurations are iterated over, their functions
-> being bound in turn. After the gadget is set up this way, the host notices
-> connecting a new mass storage device.
+On 08/16/2012 05:43 PM, Al Viro wrote:
+> On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
+> 
+>> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
+>> convenient since it operates with dentries while our fdinfo output deals
+>> with inodes. Thus I should either provide some new encode_fh variant
+>> which would deal with inodes directly without "parents". Which doesn't
+>> look for me anyhow better than the new export_encode_inode_fh helper.
+> 
+> Huh?  You do have dentries, for crying out loud...
 
-The configuration has to remain unchanged until the "connect" attribute
-is changed (i.e. unconnected). That means the gadget can only be
-reconfigured once it is not active.
+Sometimes we don't -- the inotify thing gets an inode only.
+Unlike other notifies that have dentries at hands...
 
-> So it seems the only chance to call config_item_depend is in a configfs
-> callback. Or is it?
->
-> Thanks,
->
-> Andrzej
+> .
+> 
 
-Sebastian
+Thanks,
+Pavel
