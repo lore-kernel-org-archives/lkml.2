@@ -1,101 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030484Ab2HPUVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:21:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43351 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030338Ab2HPUVN convert rfc822-to-8bit (ORCPT
+	id S1757653Ab2HPU2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:28:43 -0400
+Received: from incomingmail.riverbed.com ([208.70.196.45]:64888 "EHLO
+	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab2HPU2l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:21:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120816152513.GA31346@thunk.org>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
-	<20120816024654.GB3781@thunk.org>
-	<20120816111051.GA16036@localhost>
-	<20120816152513.GA31346@thunk.org>
-Date: Thu, 16 Aug 2012 13:21:12 -0700
-Message-ID: <CANP3RGdMfM0tZbaJS9dFetRhXoGtyS0Nx4hZER_Qv0a061X_dQ@mail.gmail.com>
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Fengguang Wu <fengguang.wu@intel.com>,
-        Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Aug 2012 16:28:41 -0400
+From: Jiang Wang <Jiang.Wang@riverbed.com>
+To: Michael Chan <mchan@broadcom.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
+        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
+Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
+Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgCAAHtYAP//kWDw
+Date: Thu, 16 Aug 2012 20:28:36 +0000
+Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
+References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
+ <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
+ <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+In-Reply-To: <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.205.249]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This would probably be much more readable code if the 'i=0' init was
-before path=kzalloc.
+OK. I see what you mean. In fact, I am working on an old RHEL based kernel and it still reports the link via ethtool_op_get_link. That is why I got the inconsistent report from the ethtool as I described in the patch. (the ethtool showed the link is up, but speed is unknown, duplex is half).
 
-On Thu, Aug 16, 2012 at 8:25 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Thu, Aug 16, 2012 at 07:10:51PM +0800, Fengguang Wu wrote:
->>
->> Here is the dmesg. BTW, it seems 3.5.0 don't have this issue.
->
-> Fengguang,
->
-> It sounds like you have a (at least fairly) reliable reproduction for
-> this problem?  Is it something you can share?  It would be good to get
-> this into our test suites, since it was _not_ something that was
-> caught by xfstests, apparently.
->
-> Can you see if this patch addresses it?  (The first two patch hunks
-> are the same debugging additions I had posted before.)
->
-> It looks like the responsible commit is 968dee7722: "ext4: fix hole
-> punch failure when depth is greater than 0".  I had thought this patch
-> was low risk if you weren't using the new punch ioctl, but it turns
-> out it did make a critical change in the non-punch (i.e., truncate)
-> code path, which is what the addition of "i = 0;" in the patch below
-> addresses.
->
-> Regards,
->
->                                           - Ted
->
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index 769151d..fa829dc 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
->
->         /* the header must be checked already in ext4_ext_remove_space() */
->         ext_debug("truncate since %u in leaf to %u\n", start, end);
-> +       if (!path[depth].p_hdr && !path[depth].p_bh) {
-> +               EXT4_ERROR_INODE(inode, "depth %d", depth);
-> +               BUG_ON(1);
-> +       }
->         if (!path[depth].p_hdr)
->                 path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
->         eh = path[depth].p_hdr;
-> @@ -2730,6 +2734,10 @@ cont:
->                 /* this is index block */
->                 if (!path[i].p_hdr) {
->                         ext_debug("initialize header\n");
-> +                       if (!path[i].p_hdr && !path[i].p_bh) {
-> +                               EXT4_ERROR_INODE(inode, "i=%d", i);
-> +                               BUG_ON(1);
-> +                       }
->                         path[i].p_hdr = ext_block_hdr(path[i].p_bh);
->                 }
->
-> @@ -2828,6 +2836,7 @@ out:
->         kfree(path);
->         if (err == -EAGAIN) {
->                 path = NULL;
-> +               i = 0;
->                 goto again;
+I guess I can just port in the patch for bnx2_get_link() to solve this problem.
+
+Also, I have another comment related to link state.
+
+Right now, the bnx2 driver powers up the device in bnx2_init_board(), regardless the netif_carrier is on or off. This may introduce following inconsistent behaviors:
+1) suppose the cable is plugged in to the NIC and the other end is connected to a switch
+2) user powers up the box
+3) the Linux does not bring up the interface; i.e, ifconfig ethx shows it is down
+4) ethtool ethx will show no link
+5) if the user goes to check the light on the physical NIC, he will see the green link light is ON. That means the link is up, right? 
+
+I think it is better to power down the device until bnx2_open is called. In this way, ethtool report and the physical link light will be consistent. 
+
+Any suggestions? Thanks.
+
+Regards,
+
+Jiang
+
+-----Original Message-----
+From: Michael Chan [mailto:mchan@broadcom.com] 
+Sent: Thursday, August 16, 2012 12:29 PM
+To: Jiang Wang
+Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant
+Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
+
+On Thu, 2012-08-16 at 19:15 +0000, Jiang Wang wrote: 
+> Hi Michael,
+> 
+> I just checked the code for netif_carrier_off(), and it will return if 
+> the dev is not initialized (registered) as follows:
+> 
+> void netif_carrier_off(struct net_device *dev) {
+>         if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
+>                 if (dev->reg_state == NETREG_UNINITIALIZED)
+>                         return;
+>                 linkwatch_fire_event(dev);
 >         }
->         ext4_journal_stop(handle);
+> }
+> 
+> So linkwatch_fire_event should not fire in this case, right? Thanks 
+> for the quick response.
+> 
+Yes, you're right.  Your patch should not cause any problem then.
+
+But I still don't understand what problem you're trying to solve.  The link status from ethtool is determined by bnx2_get_link() and it should always return link down before bnx2_open() is called.  Can you please elborate?  Thanks.
+
+> Regards,
+> 
+> Jiang
+> 
+> -------------------------------------
+> Jiang Wang
+> Member of Technical Staff
+> Riverbed Technology
+> Tel: (408) 522-5109
+> Email: Jiang.Wang@riverbed.com
+> www.riverbed.com
+> 
+> 
+> -----Original Message-----
+> From: Michael Chan [mailto:mchan@broadcom.com]
+> Sent: Thursday, August 16, 2012 11:57 AM
+> To: Jiang Wang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya 
+> Lala; Francis St. Amant; Jiang Wang
+> Subject: Re: [PATCH] bnx2: turn off the network statck during 
+> initialization
+> 
+> On Thu, 2012-08-16 at 11:21 -0700, Jiang Wang wrote: 
+> > The initialization state of bnx2 driver is wrong. It does not turn 
+> > of the Linux network stack using netif_carrier_off. This may lead to 
+> > inconsistent report from ethtool as the link is up but speed is 
+> > unknown when the cable is not plugged in.
+> > 
+> > E.g.
+> >         Speed: Unknown! (0)<--------------------------------------
+> >         Duplex: Half       <--------------------------------------
+> >         MDI: Unknown! (0)
+> >         Port: Twisted Pair
+> >         PHYAD: 1
+> >         Transceiver: internal
+> >         Auto-negotiation: on
+> >         Supports Wake-on: g
+> >         Wake-on: d
+> >         Link detected: yes <---------------------------------------
+> > 
+> > This patches fixed the problem by turning off the network stack 
+> > during initialization.
+> > 
+> > Signed-off-by: Jiang Wang <jwang@riverbed.com>
+> > ---
+> >  drivers/net/ethernet/broadcom/bnx2.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/ethernet/broadcom/bnx2.c
+> > b/drivers/net/ethernet/broadcom/bnx2.c
+> > index ac7b744..ce4548d 100644
+> > --- a/drivers/net/ethernet/broadcom/bnx2.c
+> > +++ b/drivers/net/ethernet/broadcom/bnx2.c
+> > @@ -8463,6 +8463,10 @@ bnx2_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  	dev->features |= dev->hw_features;
+> >  	dev->priv_flags |= IFF_UNICAST_FLT;
+> >  
+> > +	/* tell the stack to leave us alone until bnx2_open() is called */
+> > +	netif_carrier_off(dev);
+> 
+> We have tried this before and this didn't work.  netif_carrier_off() 
+> calls linkwatch_fire_event() to schedule the event.  If
+> register_netdev() fails for whatever reason, the netdev will be freed but the link_watch event may still be scheduled.
+> 
+> Calling netif_carrier_off() after register_netdev() returns successfully also may not work as it will race with bnx2_open() which enables IRQ.
+> An linkup IRQ can happen at time and we may end up with the wrong carrier state because of the race condition.
+> 
+> > +	netif_stop_queue(dev);
+> > +
+> >  	if ((rc = register_netdev(dev))) {
+> >  		dev_err(&pdev->dev, "Cannot register net device\n");
+> >  		goto error;
+> 
+> 
+> 
+> 
 
 
 
--- 
-Maciej A. Żenczykowski
-Kernel Networking Developer @ Google
-1600 Amphitheatre Parkway, Mountain View, CA 94043
-tel: +1 (650) 253-0062
