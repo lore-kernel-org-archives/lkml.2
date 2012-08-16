@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab2HPSex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:34:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48737 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab2HPSeu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:34:50 -0400
+	id S1755341Ab2HPShH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:37:07 -0400
+Received: from shutemov.name ([176.9.204.213]:48102 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938Ab2HPShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:37:04 -0400
+Date: Thu, 16 Aug 2012 21:37:25 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v3 6/7] mm: make clear_huge_page cache clear only around
+ the fault address
+Message-ID: <20120816183725.GA30284@shutemov.name>
+References: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1345130154-9602-7-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120816161647.GM11188@redhat.com>
+ <20120816164356.GA30106@shutemov.name>
+ <20120816182944.GN11188@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120814141513.GA17776@phenom.dumpdata.com>
-References: <20120814141513.GA17776@phenom.dumpdata.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 16 Aug 2012 11:34:28 -0700
-X-Google-Sender-Auth: WMU70QQkMAYIuuSycLT4zGl4mk4
-Message-ID: <CA+55aFzDNMNKvibE9ddoUUHp1e3nkti4G3Bj1ummG2XRX49T6g@mail.gmail.com>
-Subject: Re: [GIT PULL] (xen) stable/for-linus-3.6-rc1-tag
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816182944.GN11188@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 7:15 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->
->  arch/x86/xen/p2m.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
->
-> Konrad Rzeszutek Wilk (1):
->       xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
+On Thu, Aug 16, 2012 at 08:29:44PM +0200, Andrea Arcangeli wrote:
+> On Thu, Aug 16, 2012 at 07:43:56PM +0300, Kirill A. Shutemov wrote:
+> > Hm.. I think with static_key we can avoid cache overhead here. I'll try.
+> 
+> Could you elaborate on the static_key? Is it some sort of self
+> modifying code?
 
-There's something wrong with your statistics generation. You have done
-the diff the wrong way around, and show 5 deletions, when there are
-actually 5 insertions.
+Runtime code patching. See Documentation/static-keys.txt. We can patch it
+on sysctl.
 
-Please fix your script.
+> 
+> > Thanks, for review. Could you take a look at huge zero page patchset? ;)
+> 
+> I've noticed that too, nice :). I'm checking some detail on the
+> wrprotect fault behavior but I'll comment there.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-              Linus
+-- 
+ Kirill A. Shutemov
