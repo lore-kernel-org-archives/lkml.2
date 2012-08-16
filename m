@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2HPEOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 00:14:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:37362 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab2HPEOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 00:14:07 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-6b-502c738c609e
-Message-id: <502C738B.4080701@samsung.com>
-Date: Thu, 16 Aug 2012 13:14:03 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: IAN CHEN <ian.cy.chen@samsung.com>
-Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, cjb@laptop.org,
-        linkinjeon@gmail.com, adrian.hunter@intel.com, subhashj@codeaurora.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        d.j.shin@samsung.com, jongtae22.kim@samsung.com,
-        kyungmin.park@samsung.com, jh80.chung@samsung.com
-Subject: Re: [PATCH v3] mmc: card: Skip secure option for MoviNAND.
-References: <5029F8F6.1080207@samsung.com>
- <CACRpkdYNKxjRXC=4no0p55ADkUvXTEcfW3b2z+Exg=cpHCtAAQ@mail.gmail.com>
- <000f01cd7b64$f70f6620$e52e3260$%cy.chen@samsung.com>
-In-reply-to: <000f01cd7b64$f70f6620$e52e3260$%cy.chen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jAd2eYp0Agw99JhaXd81hszjyv5/R
-	gcnj8ya5AMYoLpuU1JzMstQifbsErow/Py6zF5zjrXg3l7uBcQF3FyMnh4SAicSStmnMELaY
-	xIV769m6GLk4hAQWMUosPPySCcJ5ySixYnMTWBWvgJbEpct/2EFsFgFVieuX+8BsNgEdie3f
-	jjOB2KICIRLX92xghKgXlPgx+R4LiC0ioCaxa9dtsA3MAiuZgJpvgRUJCzhLPNvzBGrbSkaJ
-	p61bwSZxCjhJdC78CVbEDLRhf+s0NghbXmLzmrfMExgFZiFZMgtJ2SwkZQsYmVcxiqYWJBcU
-	J6XnGuoVJ+YWl+al6yXn525iBIfjM6kdjCsbLA4xCnAwKvHwSjDpBAixJpYVV+YeYpTgYFYS
-	4f1xSjtAiDclsbIqtSg/vqg0J7X4EKM0B4uSOK+x91d/IYH0xJLU7NTUgtQimCwTB6dUA2NI
-	RW2VuYr9JcueM9WmK2sez7tiXOdlKK2QuGjebe2389KfbxETYzVdIWI+787tyBJepX13viX8
-	fPTv/J7mDTGBB1YcnjcxdV5Fu0NaVHzLxB9SyY29kp9bGBtfVGXLpEj//M2TxaLjaXXrAMdD
-	n23rux2mtUUwSOR05dx7r8fyvntWyFvedUosxRmJhlrMRcWJAHZJKoBDAgAA
-X-TM-AS-MML: No
+	id S1752089Ab2HPEYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 00:24:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:59016 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329Ab2HPEX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 00:23:59 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: K Prasad <prasad@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+X-GPG-Fingerprint: 9B25 DC2A C58D 2C8D 47C2  457E 0887 E86F 32E6 BE16
+X-GPG-Fingerprint: 9365 87D7 A7EF 4721 420B  91D9 CD5B 874B EAC1 B3F5
+MIME-Version: 1.0
+Subject: powerpc/perf: hw breakpoints return ENOSPC
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Thu, 16 Aug 2012 14:23:54 +1000
+Message-ID: <28857.1345091034@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 01:09 PM, IAN CHEN wrote:
-> MMC_QUIRK_SEC_ERASE_TRIM_BROKEN seems quite clear but I might not use "SEC"
-> due to it could be Samsung Electronics Corporation.
-I didn't think so.
-MMC developers didn't think that SEC means Samsung Electronics Corporation.
-Already we used the flags with "_SEC_"
-It's no problem.
+Hi,
 
-Best Regards,
-Jaehoon Chung
-> So, how about MMC_QUIRK_SECDISCARD_BROKEN which was used in
-> mmc_blk_issue_secdiscard_rq() naming, the function we skip.
-> Or, MMC_QUIRK_SECERASE_SECTRIM_BROKEN?
-> 
-> Regards,
-> Ian
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org] 
-> Sent: Tuesday, August 14, 2012 5:07 PM
-> To: IAN CHEN
-> Cc: cjb@laptop.org; linkinjeon@gmail.com; adrian.hunter@intel.com;
-> subhashj@codeaurora.org; linux-mmc@vger.kernel.org;
-> linux-kernel@vger.kernel.org; d.j.shin@samsung.com;
-> jongtae22.kim@samsung.com; kyungmin.park@samsung.com; jh80.chung@samsung.com
-> Subject: Re: [PATCH v3] mmc: card: Skip secure option for MoviNAND.
-> 
-> On Tue, Aug 14, 2012 at 9:06 AM, IAN CHEN <ian.cy.chen@samsung.com> wrote:
-> 
->> +#define MMC_QUIRK_SECURE_MODE_BROKEN (1<<10)   /* Skip secure for
->> erase/trim */
-> 
-> OK this will work and sorry for being picky, but we are working with RPMB
-> support and that's some other "secure mode" so to avoid any
-> misuderstandings it's better to name the flag like I proposed,
-> MMC_QUIRK_SEC_ERASE_TRIM_BROKEN
-> 
-> I won't die if this goes in though :-)
-> 
-> Yours,
-> Linus Walleij
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+I've been trying to get hardware breakpoints with perf to work on POWER7
+but I'm getting the following:
 
+  % perf record -e mem:0x10000000 true
+
+    Error: sys_perf_event_open() syscall returned with 28 (No space left on device).  /bin/dmesg may provide additional information.
+
+    Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+
+  true: Terminated
+
+(FWIW adding -a and it works fine)
+
+Debugging it seems that __reserve_bp_slot() is returning ENOSPC because
+it thinks there are no free breakpoint slots on this CPU.
+
+I have a 2 CPUs, so perf userspace is doing two perf_event_open syscalls
+to add a counter to each CPU [1].  The first syscall succeeds but the
+second is failing.
+
+On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
+despite there being no breakpoint on this CPU.  This is because the call
+the task_bp_pinned, checks all CPUs, rather than just the current CPU.
+POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
+return ENOSPC.
+
+The following patch fixes this by checking the associated CPU for each
+breakpoint in task_bp_pinned.  I'm not familiar with this code, so it's
+provided as a reference to the above issue.
+
+Mikey
+
+1. not sure why it doesn't just do one syscall and specify all CPUs, but
+that's another issue.  Using two syscalls should work.
+
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index bb38c4d..e092daa 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -111,14 +111,16 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
+  * Count the number of breakpoints of the same type and same task.
+  * The given event must be not on the list.
+  */
+-static int task_bp_pinned(struct perf_event *bp, enum bp_type_idx type)
++static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
+ {
+ 	struct task_struct *tsk = bp->hw.bp_target;
+ 	struct perf_event *iter;
+ 	int count = 0;
+ 
+ 	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
+-		if (iter->hw.bp_target == tsk && find_slot_idx(iter) == type)
++		if (iter->hw.bp_target == tsk &&
++		    find_slot_idx(iter) == type &&
++		    cpu == iter->cpu)
+ 			count += hw_breakpoint_weight(iter);
+ 	}
+ 
+@@ -141,7 +143,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		if (!tsk)
+ 			slots->pinned += max_task_bp_pinned(cpu, type);
+ 		else
+-			slots->pinned += task_bp_pinned(bp, type);
++			slots->pinned += task_bp_pinned(cpu, bp, type);
+ 		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
+ 
+ 		return;
+@@ -154,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		if (!tsk)
+ 			nr += max_task_bp_pinned(cpu, type);
+ 		else
+-			nr += task_bp_pinned(bp, type);
++			nr += task_bp_pinned(cpu, bp, type);
+ 
+ 		if (nr > slots->pinned)
+ 			slots->pinned = nr;
+@@ -188,7 +190,7 @@ static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
+ 	int old_idx = 0;
+ 	int idx = 0;
+ 
+-	old_count = task_bp_pinned(bp, type);
++	old_count = task_bp_pinned(cpu, bp, type);
+ 	old_idx = old_count - 1;
+ 	idx = old_idx + weight;
+ 
