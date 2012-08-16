@@ -1,146 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2HPHKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 03:10:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37419 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab2HPHKt (ORCPT
+	id S1755486Ab2HPHRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 03:17:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56092 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab2HPHRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 03:10:49 -0400
-Date: Thu, 16 Aug 2012 00:01:04 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Christoph Lameter <cl@linux.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, linux-mm@kvack.org,
-        patches@linaro.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org,
-        ce-android-mainline@lists.linuxfoundation.org
-Subject: [ANN] Userspace low memory killer daemon
-Message-ID: <20120816070103.GA18949@lizard>
+	Thu, 16 Aug 2012 03:17:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [PATCH V3 3/5] clk: mmp: add clock definition for pxa910
+Date: Thu, 16 Aug 2012 07:17:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
+        s.hauer@pengutronix.de, chao.xie@marvell.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com> <1345086525-12328-4-git-send-email-xiechao.mail@gmail.com>
+In-Reply-To: <1345086525-12328-4-git-send-email-xiechao.mail@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208160717.03707.arnd@arndb.de>
+X-Provags-ID: V02:K0:/kWJHo7DtqpnvnNJH+RLKd3SjM5lLq8C4utlB98li2e
+ TcwsnDViXqdwE2DUu9WNCtwPBOJdH2Gufxe/IvBDDUyF12XRMT
+ 6y9GyPn5rlwF7iT30JvuXKf5mVoa6LlJvpz0cXHh65NpkbX9ml
+ ZPy2Hm+v56BWgezkUzSIBPb3AgR5uhFWBTlkxlqPZZyKdz2Igb
+ UM68eL6RRyHDUGXjQlyIp2VVm5MK51/7BimzCJURV8LoRVQQ0k
+ uib4g2xFA6W/dVhrIGtksgvQI+u6U0DR9s0COgZ+Hnr8uYWy+D
+ 7z6DPGtCJj7vZJKvoyf7ag9NqF9edaVGyNIRsjZWU7JZjwtSyv
+ bfGczJ08nBDaKyDQiDCo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thursday 16 August 2012, Chao Xie wrote:
 
-This quite long email (sorry!) has two purposes: to announce userland
-lowmemory killer daemon to a broader audience, and to resume discussion
-on lowmemory notifications.
+> +enum {
+> +	clk32, vctcxo, pll1, pll1_2, pll1_4, pll1_8, pll1_16, pll1_6, pll1_12,
+> +	pll1_24, pll1_48, pll1_96, pll1_13, pll1_13_1_5, pll1_2_1_5,
+> +	pll1_3_16, uart_pll, twsi0, twsi1, gpio, kpc, rtc, pwm0, pwm1, pwm2,
+> +	pwm3, uart0_mux, uart0, uart1_mux, uart1, uart2_mux, uart2,
+> +	ssp0_mux, ssp0, ssp1_mux, ssp1, dfc, sdh0_mux, sdh0, sdh1_mux, sdh1,
+> +	usb, sph, disp0_mux, disp0, ccic0_mux, ccic0, ccic0_phy_mux,
+> +	ccic0_phy, ccic0_sphy_div, ccic0_sphy, clk_max
+> +};
 
-The userland lowmemory killer daemon (ulmkd), behaves the same way as
-kernel's lowmemorykiller (LMK) driver, except that the policy now lives
-in the userland, and the daemon expects some 'low memory notification'
-services from the kernel (currently, the main backend is cgroups).
+I wonder whether you should just get rid of this enum
 
-Plus, with userland approach now we can send not only SIGKILL, but also
-user-specific events, upon which programs would not just quit, but would
-e.g.  release/garbage collect memory or we could even try to
-preemptively suspend and put selected "currently not important"
-processes into swap (something, I believe, Windows 8 does nowadays,
-sorry for the analogy.  :-) This also seem to slightly relate to
-fallocate volatile work: the trend is to make resource management a bit
-smarter, export userland's knowledge about resources to the kernel, give
-the kernel some hints.
+> +void __init pxa910_clk_init(void)
+> +{
+> +	struct clk *clocks[clk_max];
 
-ulmkd is a drop-in replacement for lowmemorykiller driver; one can
-disable CONFIG_ANDROID_LOW_MEMORY_KILLER in the kernel config, start
-ulmkd, and everything should behave the same way.
+and this array,
 
-Also, I do hope the code would be useful not only for Android, so if
-anybody wants to extend it, you're more than welcome.
+> +	clocks[clk32] =
+> +	    clk_register_fixed_rate(NULL, "clk32", NULL, CLK_IS_ROOT, 3200);
+> +	clk_register_clkdev(clocks[clk32], "clk32", NULL);
+> +
+> +	clocks[vctcxo] =
+> +	    clk_register_fixed_rate(NULL, "vctcxo", NULL, CLK_IS_ROOT,
+> +				    26000000);
+> +	clk_register_clkdev(clocks[vctcxo], "vctcxo", NULL);
 
-The code is tiny, and is available in this git repo:
+because now that the "obfuscation" macro is gone, it's clear that each index
+is used only once here and then passed right into the next function. If you
+write it like:
 
-	git://git.infradead.org/users/cbou/ulmkd.git
+	struct clk *clk;
 
-(The repo is three months old since the stuff seem to just work, at
-least with cgroups.)
+	clk = clk_register_fixed_rate(NULL, "clk32", NULL, CLK_IS_ROOT, 3200);
+	clk_register_clkdev(clk, "clk32", NULL);
 
-The daemon consists of two parts,
+it becomes much shorter, partly because things start fitting into one
+line again. The only exception in this file is 
 
-- Low memory notifications handling;
-- Task list management.
+> +	clocks[uart_pll] =
+> +	    mmp_clk_register_factor("uart_pll", "pll1_4", 0,
+> +				    mpmu_base + MPMU_UART_PLL,
+> +				    &uart_factor_masks, uart_factor_tbl,
+> +				    ARRAY_SIZE(uart_factor_tbl));
+> +	clk_set_rate(clocks[uart_pll], 14745600);
+> +	clk_register_clkdev(clocks[uart_pll], "uart_pll", NULL);
 
-For notifications, there are two backends: cgroups and vmevent. Vmevent
-support is quite outdated, but it is still there just to show the idea.
-I plan to substitute it with deferred timer polling + shrinker
-notifications (see below).
+with
 
-For task list management, two methods implemented: /proc based (the
-daemon reads PIDs and oom_adj values from the /proc directory), and
-shared memory based, where it is expected that Android Activity Manager
-(or Maemo, or Tizen manager, or whatever) would keep the task list in
-the memory, and share it with the killer daemon. The demo_shm.c file
-provides a small example, it "proxies" task list from /proc to a shared
-memory.  (The Android Activity Manager already manages its own task
-list, we just need to teach it to share it with the daemon.)
+> +	clocks[uart0_mux] =
+> +	    clk_register_mux(NULL, "uart0_mux", uart_parent,
+> +			     ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
+> +			     apbc_base + APBC_UART0, 4, 3, 0, &clk_lock);
+> +	clk_set_parent(clocks[uart0_mux], clocks[uart_pll]);
+> +	clk_register_clkdev(clocks[uart0_mux], "uart_mux.0", NULL);
+> +
+> +	clocks[uart0] =
+> +	    mmp_clk_register_apbc("uart0", "uart0_mux", apbc_base + APBC_UART0,
+> +				  10, 0, &clk_lock);
+> +	clk_register_clkdev(clocks[uart0], NULL, "pxa2xx-uart.0");
 
-Note that we have to implement LMK as a separate small daemon, the
-reason behind this is best described in Android example: in JVM we can't
-guarantee 'no new new memory allocations', we're out of control of what
-JVM does with memory. Plus, we don't want the killer to be swapped out,
-and so in ulmkd we call mlockall(), thus locking just the small daemon,
-not the whole JVM.
+so just add another
 
-Some words about latency: the reaction time is not a big issue in "Low
-Memory Killer" duties, this is because LMK triggers when we have plenty
-of free memory and time (tens and hundreds of megabytes), and OOMK
-(in-kernel OOM killer) will help us if we're too slow. So ulmkd by no
-means is going to "replace" OOMK.
+	struct clk *clk_uart;
 
-Note that no matter if we choose to kill processes from kernel or
-userspace, current in-kernel LMK driver would still need a lot of rework
-to get it right.
+	clk_uart = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
+			mpmu_base + MPMU_UART_PLL, &uart_factor_masks, uart_factor_tbl,
+			ARRAY_SIZE(uart_factor_tbl));
 
-The main problem is vm_stat counters. The vm_stat counters are per-node,
-per-cpu, and gathering the statistics from all the nodes might be quite
-expensive: e.g. on SMP to synchronize global counters, we'd need to
-issue an IPI, which, if we presume that we need a low-latency LMK, would
-disturb the system quite a lot, and the whole point of "light weight"
-LMK driver defeats itself.
 
-In-kernel LMK started when most users where UP/"embedded", so it was all
-straightforward. But now SMP is quite common setup even on embedded
-devices, and so we will need to "adjust" LMK to a new reality, sooner or
-later. And we'd better do it in the best possible way, right from the
-start.
 
-(Note that adding another LRUs, like "easily reclaimable list", doesn't
-solve the vm_stat issue. Identifying which pages are easily reclaimable
-is one thing, but statistics is another.)
-
-So, in-kernel LMK shares the same issues with vmevent lowmemory
-notification approach, because both use vm_stat, which we can't update
-frequently, and so the statistics are not up to date anyway.
-
-In ulmkd I want to try another approach (in addition to cgroups):
-
-- Considering that we don't have to be super-low-latency, we can just
-  poll /proc/vmstat from userland very infrequently *and* using deferred
-  timers approach to save power, as we did in vmevents -- we won't wake
-  up the system needlessly. As far as I can see, there is no such thing
-  as deferred timers for userland yet, so this is going to be a key
-  part.
-
-- Export shrinker notifications to userland (via vmevents API?). This
-  would zap all the discussions about what to consider "low memory", as
-  shrinker is just a small hint that kernel is short on the memory, and
-  we'll OOM pretty soon (assuming no swap).
-
-Does it sound viable? Note that nothing is set in stone here, before
-going all-in into it, I'd really want to hear opinions and more ideas.
-
-Thanks!
-
-Anton.
+	Arnd
