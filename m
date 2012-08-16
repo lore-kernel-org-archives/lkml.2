@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab2HOXx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 19:53:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36016 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab2HOXxZ (ORCPT
+	id S1753077Ab2HPAEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 20:04:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64660 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2HPAEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 19:53:25 -0400
-Date: Wed, 15 Aug 2012 16:53:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: shuah.khan@hp.com
-Cc: "Christoph Lameter (Open Source)" <cl@linux.com>, penberg@kernel.org,
-        glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
-Subject: Re: [PATCH v3] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-Message-Id: <20120815165324.f6e16eee.akpm@linux-foundation.org>
-In-Reply-To: <1344789618.5128.5.camel@lorien2>
-References: <1342221125.17464.8.camel@lorien2>
-	<CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	<1344224494.3053.5.camel@lorien2>
-	<1344266096.2486.17.camel@lorien2>
-	<CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	<1344272614.2486.40.camel@lorien2>
-	<1344287631.2486.57.camel@lorien2>
-	<alpine.DEB.2.02.1208090911100.15909@greybox.home>
-	<1344531695.2393.27.camel@lorien2>
-	<alpine.DEB.2.02.1208091406590.20908@greybox.home>
-	<1344540801.2393.42.camel@lorien2>
-	<1344789618.5128.5.camel@lorien2>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Aug 2012 20:04:13 -0400
+MIME-Version: 1.0
+X-Originating-IP: [72.73.18.11]
+Date: Wed, 15 Aug 2012 20:04:12 -0400
+Message-ID: <CAO9zADxc3fVUwRhxzbirQvjVLjun3_Dt150KYakoCUOzB3aksg@mail.gmail.com>
+Subject: 3.5.1: WARNING: at include/linux/iocontext.h:140 copy_process.part.56+0x1041/0x1190()
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Aug 2012 10:40:18 -0600
-Shuah Khan <shuah.khan@hp.com> wrote:
+Hi,
 
-> kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
-> is defined. These checks interspersed with the regular code path has
-> lead to compile time warnings when compiled without CONFIG_DEBUG_VM
-> defined. Restructuring the code to move the integrity checks in to a new
-> function would eliminate the current compile warning problem and also
-> will allow for future changes to the debug only code to evolve without
-> introducing new warnings in the regular path. This restructuring work
-> is based on the discussion in the following thread:
+Kernel: 3.5.1 x86_64
+Just FYI, this may have been due to an NFS issue (remote host turned
+off during dump possibly) but reporting just incase:
 
-Your patch appears to be against some ancient old kernel, such as 3.5. 
-I did this:
+[41793.725267] ------------[ cut here ]------------
+[41793.725273] WARNING: at include/linux/iocontext.h:140
+copy_process.part.56+0x1041/0x1190()
+[41793.725274] Hardware name: X9SCL/X9SCM
+[41793.725276] Pid: 20378, comm: dump Not tainted 3.5.1 #2
+[41793.725276] Call Trace:
+[41793.725279]  [<ffffffff8102f0d5>] warn_slowpath_common+0x75/0xb0
+[41793.725280]  [<ffffffff8102f1e5>] warn_slowpath_null+0x15/0x20
+[41793.725282]  [<ffffffff8102e371>] copy_process.part.56+0x1041/0x1190
+[41793.725283]  [<ffffffff8102e62b>] do_fork+0x13b/0x2f0
+[41793.725285]  [<ffffffff8103cc02>] ? recalc_sigpending+0x12/0x30
+[41793.725287]  [<ffffffff8103f4aa>] ? __set_current_blocked+0x3a/0x60
+[41793.725290]  [<ffffffff8100a1e3>] sys_clone+0x23/0x30
+[41793.725293]  [<ffffffff815c0a33>] stub_clone+0x13/0x20
+[41793.725294]  [<ffffffff815c07e6>] ? system_call_fastpath+0x1a/0x1f
+[41793.725295] ---[ end trace 6afd1df8f82f60e4 ]---
 
---- a/mm/slab_common.c~mm-slab_commonc-restructure-kmem_cache_create-to-move-debug-cache-integrity-checks-into-a-new-function-fix
-+++ a/mm/slab_common.c
-@@ -101,15 +101,8 @@ struct kmem_cache *kmem_cache_create(con
- 
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
--
--	if (kmem_cache_sanity_check(name, size))
--		goto oops;
--
--	s = __kmem_cache_create(name, size, align, flags, ctor);
--
--#ifdef CONFIG_DEBUG_VM
--oops:
--#endif
-+	if (kmem_cache_sanity_check(name, size) == 0)
-+		s = __kmem_cache_create(name, size, align, flags, ctor);
- 	mutex_unlock(&slab_mutex);
- 	put_online_cpus();
- 
-_
-
+Justin.
