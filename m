@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2HPHSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 03:18:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60628 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab2HPHSP (ORCPT
+	id S1755537Ab2HPHZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 03:25:29 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3275 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab2HPHZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 03:18:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Subject: Re: [PATCH V3 1/5] clk: mmp: add mmp specific clocks
-Date: Thu, 16 Aug 2012 07:18:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, chao.xie@marvell.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com> <1345086525-12328-2-git-send-email-xiechao.mail@gmail.com>
-In-Reply-To: <1345086525-12328-2-git-send-email-xiechao.mail@gmail.com>
+	Thu, 16 Aug 2012 03:25:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 16 Aug 2012 00:25:24 -0700
+Message-ID: <502C9C4F.8090300@nvidia.com>
+Date: Thu, 16 Aug 2012 12:37:59 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] i2c: tegra: I2_M_NOSTART functionality not supported
+ in Tegra20
+References: <1344935949-26709-1-git-send-email-ldewangan@nvidia.com> <502A817C.4000601@wwwdotorg.org>
+In-Reply-To: <502A817C.4000601@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208160718.01769.arnd@arndb.de>
-X-Provags-ID: V02:K0:3+l4JXWa9qETPJyZe7+H6vUAmwTvWRDs8251WHYPunl
- dtTWYKfQ1syMWLKlBhB+Ce3YHsd8IadzJ1Tnq8ZI8Y/ZLuSYy7
- 47If2zTAI4WpOFynSpqqXX1DyXxcSBMGkFVmSm9CBKc7/OG/Nx
- PXat/FCWqV4g6+1J+HlKlApRFwwDJyePpHsZ3VE6E3h52xN14f
- IYN0A9oDbWq/aiott68BkQd8npNy+2NBCCMgEKkha2nL0kGecH
- kkKNWtOE1VzrDCl9WNhjxCv8ddi3xOgGYKe8J9XyRLbAbrEuiV
- B89BipAYLflJysA+BcTw2jIHlot5pNlaf4KoSSx5teKrOHD6da
- /zfnXQg3R8TIrJyEAdLk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Chao Xie wrote:
-> +static int clk_apbc_prepare(struct clk_hw *hw)
-> +{
-> +       struct clk_apbc *apbc = to_clk_apbc(hw);
-> +       unsigned int data;
-> +       unsigned long flags = 0;
-> +
-> +       /*
-> +        * It may share same register as MUX clock,
-> +        * and it will impact FNCLK enable. Spinlock is needed
-> +        */
-> +       if (apbc->lock)
-> +               spin_lock_irqsave(apbc->lock, flags);
-> +
-> +       data = __raw_readl(apbc->base);
-> +       if (apbc->flags & APBC_POWER_CTRL)
-> +               data |= APBC_POWER;
-> +       data |= APBC_FNCLK;
-> +       __raw_writel(data, apbc->base);
+On Tuesday 14 August 2012 10:19 PM, Stephen Warren wrote:
+> On 08/14/2012 03:19 AM, Laxman Dewangan wrote:
+>> Tegra20 i2c controller does not support the continue transfer
+>> which implements the I2C_M_NOSTART functionality of i2c
+>> protocol mangling.
+>> Removing the I2C_M_NOSTART functionality for Tegra20.
+>>
+>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+>> Reported-by: Stephen Warren<swarren@nvidia.com>
+> Tested-by: Stephen Warren<swarren@wwwdotorg.org>
+>
+> Note that if I take Laxman's I2C driver clock patches through the Tegra
+> tree, and Wolfram takes this patch through the I2C tree, there will be a
+> very slight conflict, since adjacent lines are touched. However, the
+> resolution is simple and obvious, so I think that's fine.
 
-It seems you have missed a few __raw_readl/__raw_writel that still
-want to get changed to readl_relaxed/writel_relaxed.
+Stephen/Wolfram,
+I have 2 more change to implement runtime PM and dynamic clock control 
+for fast clock which I have planned for 3.7.
+I think it will be better if this also goes on same tree where the clock 
+related change are available to avoid the merge conflict.
 
-	Arnd
