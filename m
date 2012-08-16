@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab2HPNrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:47:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:35704 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab2HPNrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:47:33 -0400
-Message-ID: <502CF9DA.8030701@parallels.com>
-Date: Thu, 16 Aug 2012 17:47:06 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1756641Ab2HPNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:47:59 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44267 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2HPNr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:47:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 173.50.127.139
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/yETkc/bbz4L1fOTRxQu6QOC5sSY93oms=
+Date: Thu, 16 Aug 2012 09:47:49 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate
+ FreeAgent Dockstar
+Message-ID: <20120816134749.GR22226@titan.lakedaemon.net>
+References: <20120814193613.GS22226@titan.lakedaemon.net>
+ <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20120814232256.GX22226@titan.lakedaemon.net>
+ <20120816133521.GP22226@titan.lakedaemon.net>
+ <CABJ1b_Q0TuhoUvM_hGVecLWnPn9pWf_UvUPyyUscK1yf8g7Q-g@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-References: <20120815092116.700948346@openvz.org> <20120815092409.591460800@openvz.org> <20120815204546.GC25062@fieldses.org> <20120815210237.GF25421@moon> <20120815220622.GA28054@fieldses.org> <20120816062448.GA32081@moon> <20120816123814.GD1209@moon> <20120816134339.GQ23464@ZenIV.linux.org.uk>
-In-Reply-To: <20120816134339.GQ23464@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABJ1b_Q0TuhoUvM_hGVecLWnPn9pWf_UvUPyyUscK1yf8g7Q-g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 05:43 PM, Al Viro wrote:
-> On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
+On Thu, Aug 16, 2012 at 03:45:00PM +0200, Sebastian Hesselbarth wrote:
+> On 8/16/12, Jason Cooper <jason@lakedaemon.net> wrote:
+> > Unless I hear otherwise from you in the next day or so, I'm going to
+> > collapse the fix into your patch and push it that way.
 > 
->> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
->> convenient since it operates with dentries while our fdinfo output deals
->> with inodes. Thus I should either provide some new encode_fh variant
->> which would deal with inodes directly without "parents". Which doesn't
->> look for me anyhow better than the new export_encode_inode_fh helper.
-> 
-> Huh?  You do have dentries, for crying out loud...
+> please feel free to fix the patch. I am behind corporate firewall ATM
+> and cannot update the patch quickly.
 
-Sometimes we don't -- the inotify thing gets an inode only.
-Unlike other notifies that have dentries at hands...
+Done.
 
-> .
-> 
+thx,
 
-Thanks,
-Pavel
+Jason.
