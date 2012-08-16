@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2HPBiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:38:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6607 "EHLO mx1.redhat.com"
+	id S1757633Ab2HPBiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:38:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42366 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757344Ab2HPBiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:38:01 -0400
+	id S1757344Ab2HPBiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:38:12 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 20/25] MODSIGN: Provide module signing public keys to the
- kernel
+Subject: [PATCH 21/25] MODSIGN: Module signature verification
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         jmorris@namei.org, keyrings@linux-nfs.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:37:51 +0100
-Message-ID: <20120816013751.872.688.stgit@warthog.procyon.org.uk>
+Date: Thu, 16 Aug 2012 02:38:02 +0100
+Message-ID: <20120816013802.872.20099.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,148 +24,373 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include a PGP keyring containing the public keys required to perform module
-verification in the kernel image during build and create a special keyring
-during boot which is then populated with keys of crypto type holding the public
-keys found in the PGP keyring.
+Apply signature checking to modules on module load, checking the signature
+against the ring of public keys compiled into the kernel (if enabled by
+CONFIG_MODULE_SIG).
 
-These can be seen by root:
+There are several reasons why these patches are useful, amongst which are:
 
-[root@andromeda ~]# cat /proc/keys
-07ad4ee0 I-----     1 perm 3f010000     0     0 crypto    modsign.0: RSA 87b9b3bd []
-15c7f8c3 I-----     1 perm 1f030000     0     0 keyring   .module_sign: 1/4
-...
+ (1) to prevent accidentally corrupted modules from causing damage;
 
-It is probably worth permitting root to invalidate these keys, resulting in
-their removal and preventing further modules from being loaded with that key.
+ (2) to prevent maliciously modified modules from causing damage;
+
+ (3) to allow a sysadmin (or more likely an IT department) to enforce a policy
+     that only known and approved modules shall be loaded onto machines which
+     they're expected to support;
+
+ (4) to allow other support providers to do likewise, or at least to _detect_
+     the fact that unsupported modules are loaded;
+
+ (5) to allow the detection of modules replaced by a second-order distro or a
+     preloaded Linux purveyor.
+
+These patches have two main appeals: (a) preventing malicious modules from
+being loaded, and (b) reducing support workload by pointing out modules on a
+crashing box that aren't what they're expected to be.
+
+Note that this is not a complete solution by any means: the core kernel is not
+protected, and nor are /dev/mem or /dev/kmem, but it denies (or at least
+controls) one relatively simple attack vector.  To protect the kernel image
+would be the responsibility of the boot loader or the system BIOS.
+
+This facility is optional: the builder of a kernel is by no means under any
+requirement to actually enable it, let alone force the set of loadable modules
+to be restricted to just those that the builder provides (there are degrees of
+restriction available).
+
+If CONFIG_MODULE_SIG_FORCE is enabled or "enforcemodulesig=1" is supplied on
+the kernel command line, the kernel will _only_ load validly signed modules
+for which it has a public key.  Otherwise, it will also load modules that are
+unsigned.  Any module for which the kernel has a key, but which proves to have
+a signature mismatch will not be permitted to load.
+
+This table indicates the behaviours in the various situations:
+
+	MODULE STATE				PERMISSIVE MODE	ENFORCING MODE
+	=======================================	===============	===============
+	Unsigned				Ok		EKEYREJECTED
+	Signed, no public key			ENOKEY		ENOKEY
+	Validly signed, public key		Ok		Ok
+	Invalidly signed, public key		EKEYREJECTED	EKEYREJECTED
+	Validly signed, expired key		EKEYEXPIRED	EKEYEXPIRED
+	Signed, hash algorithm unavailable	ENOPKG		ENOPKG
+	Signed, pubkey algorithm unavailable	ENOPKG		ENOPKG
+	Signature without sig packet		ENOMSG		ENOMSG
+	Corrupt signature			EBADMSG		EBADMSG
+	Corrupt file				ELIBBAD		ELIBBAD
+
+
+=======================
+!!!IMPORTANT WARNING!!!
+=======================
+
+Signed modules generated by this kernel very likely CANNOT be used with
+existing packaging and installation infrastructure.  For example, in Fedora's
+environment, the module is potentially stripped at least twice:
+
+ (1) by rpmbuild when the debuginfo is detached from the module, and
+
+ (2) by the initrd image composer to reduce the module size.
+
+Both of these will potentially result in the module signature being discarded
+or rendered unverifiable, resulting in the module load just going ahead if the
+signature magic is not found and enforcemodulesig=1 not being supplied or
+-EKEYREJECTED being given or a panic being forced if FIPS mode is engaged.
+
+To aid with (2), the module is completely stripped prior to signing as it
+cannot be stripped after signing.  Both "strip -x -g" and "eu-strip" are
+applied as the use of both of these results in a smaller binary.
+
+That, however, means there is no debug information directly available for the
+module.
+
+The original unstripped binary for the foo.ko module can be found as
+foo.ko.unsigned in the build tree.  It may be possible to use this as the debug
+info source.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- kernel/Makefile         |    3 ++
- kernel/modsign-pubkey.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/module-verify.h  |   14 +++++++++
- 3 files changed, 91 insertions(+)
- create mode 100644 kernel/modsign-pubkey.c
- create mode 100644 kernel/module-verify.h
+ include/linux/module.h |    3 +
+ kernel/Makefile        |    2 -
+ kernel/module-verify.c |  136 ++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/module-verify.h |    6 ++
+ kernel/module.c        |   26 +++++++--
+ 5 files changed, 167 insertions(+), 6 deletions(-)
+ create mode 100644 kernel/module-verify.c
 
 
+diff --git a/include/linux/module.h b/include/linux/module.h
+index fbcafe2..7391833 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -227,6 +227,9 @@ struct module
+ 	/* Unique handle for this module */
+ 	char name[MODULE_NAME_LEN];
+ 
++	/* Is this module GPG signed */
++	bool gpgsig_ok;
++
+ 	/* Sysfs stuff. */
+ 	struct module_kobject mkobj;
+ 	struct module_attribute *modinfo_attrs;
 diff --git a/kernel/Makefile b/kernel/Makefile
-index c0cc67a..84f6c04 100644
+index 84f6c04..895bef0 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -55,6 +55,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+@@ -55,7 +55,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
  obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
  obj-$(CONFIG_UID16) += uid16.o
  obj-$(CONFIG_MODULES) += module.o
-+obj-$(CONFIG_MODULE_SIG) += modsign-pubkey.o
+-obj-$(CONFIG_MODULE_SIG) += modsign-pubkey.o
++obj-$(CONFIG_MODULE_SIG) += module-verify.o modsign-pubkey.o
  obj-$(CONFIG_KALLSYMS) += kallsyms.o
  obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
  obj-$(CONFIG_KEXEC) += kexec.o
-@@ -131,3 +132,5 @@ quiet_cmd_timeconst  = TIMEC   $@
- targets += timeconst.h
- $(obj)/timeconst.h: $(src)/timeconst.pl FORCE
- 	$(call if_changed,timeconst)
-+
-+kernel/modsign-pubkey.o: modsign.pub
-diff --git a/kernel/modsign-pubkey.c b/kernel/modsign-pubkey.c
+diff --git a/kernel/module-verify.c b/kernel/module-verify.c
 new file mode 100644
-index 0000000..ce14c9a
+index 0000000..6684e24
 --- /dev/null
-+++ b/kernel/modsign-pubkey.c
-@@ -0,0 +1,74 @@
-+/* Public keys for module signature verification
++++ b/kernel/module-verify.c
+@@ -0,0 +1,136 @@
++/* Module signature verification
 + *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
++ * The code in this file examines a signed kernel module and attempts to
++ * determine if the PGP signature attached to the end of the module matches the
++ * entire content of the module without the signature attached.
++ *
++ * Copyright (C) 2004, 2011, 2012 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
++ * - Method specified by Rusty Russell.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public Licence
 + * as published by the Free Software Foundation; either version
 + * 2 of the Licence, or (at your option) any later version.
 + */
-+
 +#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
 +#include <linux/sched.h>
-+#include <linux/cred.h>
++#include <linux/modsign.h>
++#include <linux/moduleparam.h>
 +#include <keys/crypto-type.h>
 +#include "module-verify.h"
 +
-+struct key *modsign_keyring;
-+
-+extern __initdata const u8 modsign_public_keys[];
-+extern __initdata const u8 modsign_public_keys_end[];
-+asm(".section .init.data,\"aw\"\n"
-+    "modsign_public_keys:\n"
-+    ".incbin \"modsign.pub\"\n"
-+    "modsign_public_keys_end:"
-+    );
-+
-+/*
-+ * We need to make sure ccache doesn't cache the .o file as it doesn't notice
-+ * if modsign.pub changes.
-+ */
-+static __initdata const char annoy_ccache[] = __TIME__ "foo";
-+
-+/*
-+ * Load the compiled-in keys
-+ */
-+static __init int module_verify_init(void)
-+{
-+	pr_notice("Initialise module verification\n");
-+
-+	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
-+				    0, 0, current_cred(),
-+				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+				    KEY_USR_VIEW | KEY_USR_READ,
-+				    KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(modsign_keyring))
-+		panic("Can't allocate module signing keyring\n");
-+
-+	if (key_instantiate_and_link(modsign_keyring, NULL, 0, NULL, NULL) < 0)
-+		panic("Can't instantiate module signing keyring\n");
-+
-+	return 0;
-+}
-+
-+/*
-+ * Must be initialised before we try and load the keys into the keyring.
-+ */
-+device_initcall(module_verify_init);
-+
-+/*
-+ * Load the compiled-in keys
-+ */
-+static __init int modsign_pubkey_init(void)
-+{
-+	pr_notice("Load module verification keys\n");
-+
-+	if (preload_pgp_keys(modsign_public_keys,
-+			     modsign_public_keys_end - modsign_public_keys,
-+			     modsign_keyring) < 0)
-+		panic("Can't load module signing keys\n");
-+
-+	return 0;
-+}
-+late_initcall(modsign_pubkey_init);
-diff --git a/kernel/module-verify.h b/kernel/module-verify.h
-new file mode 100644
-index 0000000..2f6cc16
---- /dev/null
-+++ b/kernel/module-verify.h
-@@ -0,0 +1,14 @@
-+/* Module verification definitions
-+ *
-+ * Copyright (C) 2004, 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifdef CONFIG_MODULE_SIG
-+extern struct key *modsign_keyring;
++#ifdef CONFIG_MODULE_SIG_FORCE
++#define modsign_signedonly true
++#else
++static bool modsign_signedonly;
 +#endif
++
++static const char modsign_magic[] = "This Is A Crypto Signed Module";
++
++/*
++ * Verify a module's signature, if it has one
++ *
++ * Returns 0 if module is validly signed, 1 if there's no signature and a
++ * negative error code otherwise.
++ */
++static int module_verify_signature(const void *data, size_t size)
++{
++	struct crypto_sig_verify_context *mod_sig;
++	const char *cp, *sig;
++	char *end;
++	size_t magic_size, sig_size, mod_size;
++	int ret;
++
++	magic_size = sizeof(modsign_magic) - 1;
++	if (size <= 5 + magic_size)
++		return 1;
++
++	if (memcmp(data + size - magic_size, modsign_magic, magic_size) != 0)
++		return 1;
++	size -= 5 + magic_size;
++
++	cp = data + size;
++	sig_size = simple_strtoul(cp, &end, 10);
++	if (sig_size >= size || (*end != ' ' && *end != 'T'))
++		return -ELIBBAD;
++
++	mod_size = size - sig_size;
++	sig = data + mod_size;
++
++	/* Find the crypto key for the module signature
++	 * - !!! if this tries to load the required hash algorithm module,
++	 *       we will deadlock!!!
++	 */
++	mod_sig = verify_sig_begin(modsign_keyring, sig, sig_size);
++	if (IS_ERR(mod_sig)) {
++		pr_err("Couldn't initiate module signature verification: %ld\n",
++		       PTR_ERR(mod_sig));
++		return PTR_ERR(mod_sig);
++	}
++
++	/* Load the module contents into the digest */
++	ret = verify_sig_add_data(mod_sig, data, mod_size);
++	if (ret < 0) {
++		verify_sig_cancel(mod_sig);
++		return ret;
++	}
++
++	/* Do the actual signature verification */
++	ret = verify_sig_end(mod_sig, sig, sig_size);
++	pr_devel("verify-sig : %d\n", ret);
++	return ret;
++}
++
++/*
++ * Verify a module's integrity
++ */
++int module_verify(const void *data, size_t size, bool *_gpgsig_ok)
++{
++	int ret;
++
++	pr_devel("-->module_verify(,%zu,)\n", size);
++
++	ret = module_verify_signature(data, size);
++
++	pr_devel("module_verify_signature() = %d\n", ret);
++
++	switch (ret) {
++	case 0:			/* Good signature */
++		*_gpgsig_ok = true;
++		break;
++	case 1:			/* Unsigned module */
++		if (modsign_signedonly) {
++			pr_err("An attempt to load unsigned module was rejected\n");
++			return -EKEYREJECTED;
++		}
++		ret = 0;
++		break;
++	case -ELIBBAD:
++		pr_err("Module format error encountered\n");
++		break;
++	case -EBADMSG:
++		pr_err("Module signature error encountered\n");
++		break;
++	case -EKEYREJECTED:	/* Signature mismatch or number format error */
++		pr_err("Module signature verification failed\n");
++		break;
++	case -ENOKEY:		/* Signed, but we don't have the public key */
++		pr_err("Module signed with unknown public key\n");
++		break;
++	default:		/* Other error (probably ENOMEM) */
++		break;
++	}
++	return ret;
++}
++
++static int __init sign_setup(char *str)
++{
++#ifndef CONFIG_MODULE_SIG_FORCE
++	modsign_signedonly = true;
++#endif
++	return 0;
++}
++__setup("enforcemodulesig", sign_setup);
+diff --git a/kernel/module-verify.h b/kernel/module-verify.h
+index 2f6cc16..d59e7c9 100644
+--- a/kernel/module-verify.h
++++ b/kernel/module-verify.h
+@@ -11,4 +11,10 @@
+ 
+ #ifdef CONFIG_MODULE_SIG
+ extern struct key *modsign_keyring;
++extern int module_verify(const void *data, size_t size, bool *_gpgsig_ok);
++#else
++static inline int module_verify(const void *data, size_t size, bool *_gpgsig_ok)
++{
++	return 0;
++}
+ #endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 4edbd9c..30f0c0f 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -58,6 +58,7 @@
+ #include <linux/jump_label.h>
+ #include <linux/pfn.h>
+ #include <linux/bsearch.h>
++#include "module-verify.h"
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -2402,7 +2403,8 @@ static inline void kmemleak_load_module(const struct module *mod,
+ /* Sets info->hdr and info->len. */
+ static int copy_and_check(struct load_info *info,
+ 			  const void __user *umod, unsigned long len,
+-			  const char __user *uargs)
++			  const char __user *uargs,
++			  bool *_gpgsig_ok)
+ {
+ 	int err;
+ 	Elf_Ehdr *hdr;
+@@ -2435,6 +2437,12 @@ static int copy_and_check(struct load_info *info,
+ 		goto free_hdr;
+ 	}
+ 
++	/* Verify the module's contents */
++	*_gpgsig_ok = false;
++	err = module_verify(hdr, len, _gpgsig_ok);
++	if (err < 0)
++		goto free_hdr;
++
+ 	info->hdr = hdr;
+ 	info->len = len;
+ 	return 0;
+@@ -2777,7 +2785,8 @@ int __weak module_frob_arch_sections(Elf_Ehdr *hdr,
+ 	return 0;
+ }
+ 
+-static struct module *layout_and_allocate(struct load_info *info)
++static struct module *layout_and_allocate(struct load_info *info,
++					  bool gpgsig_ok)
+ {
+ 	/* Module within temporary copy. */
+ 	struct module *mod;
+@@ -2787,6 +2796,7 @@ static struct module *layout_and_allocate(struct load_info *info)
+ 	mod = setup_load_info(info);
+ 	if (IS_ERR(mod))
+ 		return mod;
++	mod->gpgsig_ok = gpgsig_ok;
+ 
+ 	err = check_modinfo(mod, info);
+ 	if (err)
+@@ -2870,17 +2880,18 @@ static struct module *load_module(void __user *umod,
+ 	struct load_info info = { NULL, };
+ 	struct module *mod;
+ 	long err;
++	bool gpgsig_ok;
+ 
+ 	pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
+ 	       umod, len, uargs);
+ 
+ 	/* Copy in the blobs from userspace, check they are vaguely sane. */
+-	err = copy_and_check(&info, umod, len, uargs);
++	err = copy_and_check(&info, umod, len, uargs, &gpgsig_ok);
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+ 	/* Figure out module layout, and allocate all the memory. */
+-	mod = layout_and_allocate(&info);
++	mod = layout_and_allocate(&info, gpgsig_ok);
+ 	if (IS_ERR(mod)) {
+ 		err = PTR_ERR(mod);
+ 		goto free_copy;
+@@ -3517,8 +3528,13 @@ void print_modules(void)
+ 	printk(KERN_DEFAULT "Modules linked in:");
+ 	/* Most callers should already have preempt disabled, but make sure */
+ 	preempt_disable();
+-	list_for_each_entry_rcu(mod, &modules, list)
++	list_for_each_entry_rcu(mod, &modules, list) {
+ 		printk(" %s%s", mod->name, module_flags(mod, buf));
++#ifdef CONFIG_MODULE_SIG
++		if (!mod->gpgsig_ok)
++			printk("(U)");
++#endif
++	}
+ 	preempt_enable();
+ 	if (last_unloaded_module[0])
+ 		printk(" [last unloaded: %s]", last_unloaded_module);
 
