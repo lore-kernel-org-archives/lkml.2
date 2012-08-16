@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2HPNfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:35:18 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:42195 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab2HPNfQ (ORCPT
+	id S1754294Ab2HPNgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:36:00 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19270 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab2HPNf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:35:16 -0400
-Date: Thu, 16 Aug 2012 09:35:12 -0400 (EDT)
-From: Tomas Racek <tracek@redhat.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org
-Message-ID: <711271179.1776875.1345124112800.JavaMail.root@redhat.com>
-In-Reply-To: <1104118228.1760802.1345121009530.JavaMail.root@redhat.com>
-Subject: x86, nops settings result in kernel crash
+	Thu, 16 Aug 2012 09:35:57 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 173.50.127.139
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/GepkhbwSC3S8ENsb3YxCpSr0xAmpJlTE=
+Date: Thu, 16 Aug 2012 09:35:21 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate
+ FreeAgent Dockstar
+Message-ID: <20120816133521.GP22226@titan.lakedaemon.net>
+References: <20120814193613.GS22226@titan.lakedaemon.net>
+ <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20120814232256.GX22226@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.34.27.4]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120814232256.GX22226@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 14, 2012 at 07:22:56PM -0400, Jason Cooper wrote:
+> On Tue, Aug 14, 2012 at 10:43:41PM +0200, Sebastian Hesselbarth wrote:
+> > This add a DT compatible board specific setup for the Seagate
+> > FreeAgent Dockstar.
+> > 
+> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> > ---
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: linux-kernel@vger.kernel.org
+> > 
+> > v2: rebased on git://git.infradead.org/users/jcooper/linux.git fixes-for-v3.6
+> 
+> patches [1/2] and [2/2] of this series applied to:
+> 
+>   git://git.infradead.org/users/jcooper/linux.git boards-for-v3.7
+> 
+> patch [2/2] depends upon:
+> 
+>   bda63c1 ARM: Kirkwood: fix Makefile.boot
+> 
+> which should be in an upcoming v3.6-rc
 
-I am writing a file system test which I execute in qemu with kernel compiled from latest git sources and running it causes this error:
+Oops, building with both legacy and DT support for the Dockstar yields
+the following error:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=45971
+arch/arm/mach-kirkwood/dockstar-setup.c:81:20: error: static declaration
+of 'dockstar_init' follows non-static declaration
+arch/arm/mach-kirkwood/common.h:86:6: note: previous declaration of
+'dockstar_init' was here
+make[1]: *** [arch/arm/mach-kirkwood/dockstar-setup.o] Error 1
+make: *** [arch/arm/mach-kirkwood] Error 2
 
-It works with v3.5, so I ran git bisect which pointed me to:
+As a quick fix I renamed your dockstar_init() to dockstar_dt_init()
+across your patch.  This compiles clean.  Unfortunately, I can't send
+this fix up as a separate patch (a bisect may land in between it and
+yours).
 
-d6250a3f12edb3a86db9598ffeca3de8b4a219e9 x86, nops: Missing break resulting in incorrect selection on Intel
+Unless I hear otherwise from you in the next day or so, I'm going to
+collapse the fix into your patch and push it that way.
 
-To be quite honest, I don't understand this stuff much but I tried to do some debugging and I figured out (I hope) that the crash is caused by setting ideal_nops to p6_nops (k8_nops was used before the break statement was added).
+thx,
 
-Here is cpuinfo from guest machine:
-
-[root@test ~]# cat /proc/cpuinfo 
-processor       : 0
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 2
-model name      : QEMU Virtual CPU version 0.15.1
-stepping        : 3
-microcode       : 0x1
-cpu MHz         : 2591.580
-cache size      : 4096 KB
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 4
-wp              : yes
-flags           : fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pse36 clflush mmx fxsr sse sse2 syscall nx lm up rep_good nopl pni cx16 popcnt hypervisor lahf_lm
-bogomips        : 5183.16
-clflush size    : 64
-cache_alignment : 64
-address sizes   : 40 bits physical, 48 bits virtual
-
-And from host machine:
-
-processor       : 0
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 42
-model name      : Intel(R) Core(TM) i5-2540M CPU @ 2.60GHz
-stepping        : 7
-microcode       : 0x28
-cpu MHz         : 800.000
-cache size      : 3072 KB
-physical id     : 0
-siblings        : 4
-core id         : 0
-cpu cores       : 2
-apicid          : 0
-initial apicid  : 0
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 13
-wp              : yes
-flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm constant_tsc arch_perfmon pebs bts nopl xtopology nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid
-bogomips        : 5183.17
-clflush size    : 64
-cache_alignment : 64
-address sizes   : 36 bits physical, 48 bits virtual
-power management:
-
-If I use "qemu-kvm -cpu host", it works correctly. I hope you'll find something useful in it. 
-Thanks for your time.
-
-Regards,
-Tomas
+Jason.
