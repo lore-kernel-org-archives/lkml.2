@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab2HPRpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:45:36 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:52290 "EHLO mail.x86-64.org"
+	id S932797Ab2HPRpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:45:35 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52289 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756634Ab2HPRpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756565Ab2HPRpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 13:45:33 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
@@ -12,81 +12,70 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [RFC PATCH -v2 2/4] perf: Add persistent events
-Date: Thu, 16 Aug 2012 19:45:21 +0200
-Message-Id: <1345139123-15212-3-git-send-email-bp@amd64.org>
+Subject: [RFC PATCH -v2 0/4] Persistent events
+Date: Thu, 16 Aug 2012 19:45:19 +0200
+Message-Id: <1345139123-15212-1-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <1345139123-15212-1-git-send-email-bp@amd64.org>
-References: <1345139123-15212-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add the needed pieces for persistent events which are process-agnostic.
-Also, make their buffers read-only when mmaping them from userspace.
-Add a descriptor struct collecting all that is needed for a persistent
-event, for ease of handling in the code later.
+Hi all,
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- include/linux/perf_event.h | 17 ++++++++++++++++-
- kernel/events/core.c       |  5 ++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
+off and on I get some free time to work on that, here's the latest
+incarnation. It contains review feedback from the earlier round.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 7602ccb3f40e..252aab74e64d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -254,8 +254,9 @@ struct perf_event_attr {
- 
- 				exclude_host   :  1, /* don't count in host   */
- 				exclude_guest  :  1, /* don't count in guest  */
-+				persistent     :  1, /* always-on event */
- 
--				__reserved_1   : 43;
-+				__reserved_1   : 42;
- 
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-@@ -1078,6 +1079,20 @@ struct perf_output_handle {
- 	int				page;
- };
- 
-+/*
-+ * perf event descriptor to collect all attributes belonging to an event
-+ */
-+struct perf_event_desc {
-+	struct perf_event *event;
-+	struct perf_event_attr *pattr;
-+	const struct file_operations *fops;
-+	/* debugfs entry */
-+	struct dentry *dentry;
-+	const char *dir_name;
-+	const char *fname;
-+	int fd;
-+};
-+
- #ifdef CONFIG_PERF_EVENTS
- 
- extern int perf_pmu_register(struct pmu *pmu, char *name, int type);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b7935fcec7d9..95026f2b3d55 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3589,7 +3589,10 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	if (event->cpu == -1 && event->attr.inherit)
- 		return -EINVAL;
- 
--	if (!(vma->vm_flags & VM_SHARED))
-+	if (!(vma->vm_flags & VM_SHARED) && !event->attr.persistent)
-+		return -EINVAL;
-+
-+	if (event->attr.persistent && (vma->vm_flags & VM_WRITE))
- 		return -EINVAL;
- 
- 	vma_size = vma->vm_end - vma->vm_start;
+Patch 1/4 adds a trace_add_file() interface which adds an additional
+file to debugfs, in this case the "persistent" file which contains the
+normal perf file descriptor sys_perf_event_open gives to the perf tool.
+
+IOW, one gets:
+
+/mnt/dbg/tracing/events/mce/mce_record/
+|-- enable
+|-- filter
+|-- format
+|-- id
+`-- persistent1
+
+0 directories, 5 files
+
+ [ 1 is the CPU number so sticking all per-CPU descriptors in this
+ directory could get a little cluttered and ugly so I'll have to think
+ about that a bit more. ]
+
+3/4 is the meat which adds <kernel/events/persistent.c> and 4/4 shows
+how one can init a persistent event on a CPU.
+
+What remains is adding code which can enable events on boot from the
+kernel cmdline and more testing.
+
+As always, comments and suggestions are appreciated.
+
+Thanks.
+
+Borislav Petkov (4):
+  trace events: Interface to add files to debugfs
+  perf: Add persistent events
+  perf: Add persistent event facilities
+  persistent test
+
+ arch/x86/include/asm/mce.h       |   1 +
+ arch/x86/kernel/cpu/mcheck/mce.c |   5 ++
+ include/linux/ftrace_event.h     |   3 +
+ include/linux/perf_event.h       |  24 +++++-
+ kernel/events/Makefile           |   2 +-
+ kernel/events/core.c             |  18 +++--
+ kernel/events/internal.h         |   2 +
+ kernel/events/persistent.c       | 168 +++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace.c             |   4 +
+ kernel/trace/trace.h             |   1 +
+ kernel/trace/trace_events.c      |  35 ++++++++
+ 11 files changed, 254 insertions(+), 9 deletions(-)
+ create mode 100644 kernel/events/persistent.c
+
 -- 
 1.7.11.rc1
 
