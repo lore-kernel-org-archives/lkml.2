@@ -1,36 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab2HPBgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:36:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:65388 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab2HPBgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:36:01 -0400
+	id S1757346Ab2HPBgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:36:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756747Ab2HPBgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:36:11 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 10/25] PGPLIB: Basic packet parser
+To: rusty@rustcorp.com.au
+Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 16 Aug 2012 02:36:02 +0100
+Message-ID: <20120816013602.872.86918.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
+References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
-References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
-	<CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
-	<1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
-Date: Thu, 16 Aug 2012 10:35:59 +0900
-Message-ID: <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com>
-Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
-From: Chanho Min <chanho0207@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> functions will occur in line.  I also don't see why the sdev reference
-> couldn't drop to zero here.
-scsi_request_fn is called under the lock of request_queue->queue_lock.
-If we drop the sdev reference to zero here,
-scsi_device_dev_release_usercontext is
-invoked and make request_queue to NULL. When caller of scsi_request_fn try to
-unlock request_queue->queue_lock, the oops is occurred.
+Provide a simple parser that extracts the packets from a PGP packet blob and
+passes the desirous ones to the given processor function:
 
-Thanks, Chanho
+	struct pgp_parse_context {
+		u64 types_of_interest;
+		int (*process_packet)(struct pgp_parse_context *context,
+				      enum pgp_packet_tag type,
+				      u8 headerlen,
+				      const u8 *data,
+				      size_t datalen);
+	};
+
+	int pgp_parse_packets(const u8 *data, size_t datalen,
+			      struct pgp_parse_context *ctx);
+
+This is configured on with CONFIG_PGP_LIBRARY.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ include/linux/pgplib.h             |   47 ++++++
+ security/keys/crypto/Kconfig       |    6 +
+ security/keys/crypto/Makefile      |    1 
+ security/keys/crypto/pgp_library.c |  268 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 322 insertions(+)
+ create mode 100644 include/linux/pgplib.h
+ create mode 100644 security/keys/crypto/pgp_library.c
+
+
+diff --git a/include/linux/pgplib.h b/include/linux/pgplib.h
+new file mode 100644
+index 0000000..a045b3a
+--- /dev/null
++++ b/include/linux/pgplib.h
+@@ -0,0 +1,47 @@
++/* PGP library definitions (RFC 4880)
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef _LINUX_PGPLIB_H
++#define _LINUX_PGPLIB_H
++
++#if defined(CONFIG_PGP_LIBRARY) || defined(CONFIG_PGP_LIBRARY_MODULE)
++
++#include <linux/pgp.h>
++
++/*
++ * PGP library packet parser
++ */
++struct pgp_parse_context {
++	u64 types_of_interest;
++	int (*process_packet)(struct pgp_parse_context *context,
++			      enum pgp_packet_tag type,
++			      u8 headerlen,
++			      const u8 *data,
++			      size_t datalen);
++};
++
++extern int pgp_parse_packets(const u8 *data, size_t datalen,
++			     struct pgp_parse_context *ctx);
++
++struct pgp_parse_pubkey {
++	enum pgp_key_version version : 8;
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	time_t		creation_time;
++	time_t		expires_at;
++};
++
++extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
++				struct pgp_parse_pubkey *pk);
++
++
++#endif /* CONFIG_PGP_LIBRARY */
++
++#endif /* _LINUX_PGPLIB_H */
+diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
+index 4e3777e..88ce0e2 100644
+--- a/security/keys/crypto/Kconfig
++++ b/security/keys/crypto/Kconfig
+@@ -22,3 +22,9 @@ config CRYPTO_KEY_PKEY_ALGO_RSA
+ 	select MPILIB_EXTRA
+ 	help
+ 	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
++
++config PGP_LIBRARY
++	tristate "PGP parsing library"
++	help
++	  This option enables a library that provides a number of simple
++	  utility functions for parsing PGP (RFC 4880) packet-based messages.
+diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
+index b6b1a5a..5fbe54e 100644
+--- a/security/keys/crypto/Makefile
++++ b/security/keys/crypto/Makefile
+@@ -7,3 +7,4 @@ crypto_keys-y := crypto_type.o crypto_verify.o
+ 
+ obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
+ obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
++obj-$(CONFIG_PGP_LIBRARY) += pgp_library.o
+diff --git a/security/keys/crypto/pgp_library.c b/security/keys/crypto/pgp_library.c
+new file mode 100644
+index 0000000..39d2878
+--- /dev/null
++++ b/security/keys/crypto/pgp_library.c
+@@ -0,0 +1,268 @@
++/* PGP packet parser (RFC 4880)
++ *
++ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#define pr_fmt(fmt) "PGP: "fmt
++#include <linux/pgplib.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++
++MODULE_LICENSE("GPL");
++
++const char *const pgp_hash_algorithms[PGP_HASH__LAST] = {
++	[PGP_HASH_MD5]			= "md5",
++	[PGP_HASH_SHA1]			= "sha1",
++	[PGP_HASH_RIPE_MD_160]		= "rmd160",
++	[PGP_HASH_SHA256]		= "sha256",
++	[PGP_HASH_SHA384]		= "sha384",
++	[PGP_HASH_SHA512]		= "sha512",
++	[PGP_HASH_SHA224]		= "sha224",
++};
++EXPORT_SYMBOL_GPL(pgp_hash_algorithms);
++
++/**
++ * pgp_parse_packet_header - Parse a PGP packet header
++ * @_data: Start of the PGP packet (updated to PGP packet data)
++ * @_datalen: Amount of data remaining in buffer (decreased)
++ * @_type: Where the packet type will be returned
++ * @_headerlen: Where the header length will be returned
++ *
++ * Parse a set of PGP packet header [RFC 4880: 4.2].
++ *
++ * Returns packet data size on success; non-zero on error.  If successful,
++ * *_data and *_datalen will have been updated and *_headerlen will be set to
++ * hold the length of the packet header.
++ */
++static ssize_t pgp_parse_packet_header(const u8 **_data, size_t *_datalen,
++				       enum pgp_packet_tag *_type,
++				       u8 *_headerlen)
++{
++	enum pgp_packet_tag type;
++	const u8 *data = *_data;
++	size_t size, datalen = *_datalen;
++
++	pr_devel("-->pgp_parse_packet_header(,%zu,,)\n", datalen);
++
++	if (datalen < 2)
++		goto short_packet;
++
++	pr_devel("pkthdr %02x, %02x\n", data[0], data[1]);
++
++	type = *data++;
++	datalen--;
++	if (!(type & 0x80)) {
++		pr_debug("Packet type does not have MSB set\n");
++		return -EBADMSG;
++	}
++	type &= ~0x80;
++
++	if (type & 0x40) {
++		/* New packet length format */
++		type &= ~0x40;
++		pr_devel("new format: t=%u\n", type);
++		switch (data[0]) {
++		case 0x00 ... 0xbf:
++			/* One-byte length */
++			size = data[0];
++			data++;
++			datalen--;
++			*_headerlen = 2;
++			break;
++		case 0xc0 ... 0xdf:
++			/* Two-byte length */
++			if (datalen < 2)
++				goto short_packet;
++			size = (data[0] - 192) * 256;
++			size += data[1] + 192;
++			data += 2;
++			datalen -= 2;
++			*_headerlen = 3;
++			break;
++		case 0xff:
++			/* Five-byte length */
++			if (datalen < 5)
++				goto short_packet;
++			size =  data[1] << 24;
++			size |= data[2] << 16;
++			size |= data[3] << 8;
++			size |= data[4];
++			data += 5;
++			datalen -= 5;
++			*_headerlen = 6;
++			break;
++		default:
++			pr_debug("Partial body length packet not supported\n");
++			return -EBADMSG;
++		}
++	} else {
++		/* Old packet length format */
++		u8 length_type = type & 0x03;
++		type >>= 2;
++		pr_devel("old format: t=%u lt=%u\n", type, length_type);
++
++		switch (length_type) {
++		case 0:
++			/* One-byte length */
++			size = data[0];
++			data++;
++			datalen--;
++			*_headerlen = 2;
++			break;
++		case 1:
++			/* Two-byte length */
++			if (datalen < 2)
++				goto short_packet;
++			size  = data[0] << 8;
++			size |= data[1];
++			data += 2;
++			datalen -= 2;
++			*_headerlen = 3;
++			break;
++		case 2:
++			/* Four-byte length */
++			if (datalen < 4)
++				goto short_packet;
++			size  = data[0] << 24;
++			size |= data[1] << 16;
++			size |= data[2] << 8;
++			size |= data[3];
++			data += 4;
++			datalen -= 4;
++			*_headerlen = 5;
++			break;
++		default:
++			pr_debug("Indefinite length packet not supported\n");
++			return -EBADMSG;
++		}
++	}
++
++	pr_devel("datalen=%zu size=%zu", datalen, size);
++	if (datalen < size)
++		goto short_packet;
++	if ((int)size < 0)
++		goto too_big;
++
++	*_data = data;
++	*_datalen = datalen;
++	*_type = type;
++	pr_devel("Found packet type=%u size=%zd\n", type, size);
++	return size;
++
++short_packet:
++	pr_debug("Attempt to parse short packet\n");
++	return -EBADMSG;
++too_big:
++	pr_debug("Signature subpacket size >2G\n");
++	return -EMSGSIZE;
++}
++
++/**
++ * pgp_parse_packets - Parse a set of PGP packets
++ * @_data: Data to be parsed (updated)
++ * @_datalen: Amount of data (updated)
++ * @ctx: Parsing context
++ *
++ * Parse a set of PGP packets [RFC 4880: 4].
++ */
++int pgp_parse_packets(const u8 *data, size_t datalen,
++		      struct pgp_parse_context *ctx)
++{
++	enum pgp_packet_tag type;
++	ssize_t pktlen;
++	u8 headerlen;
++	int ret;
++
++	while (datalen > 2) {
++		pktlen = pgp_parse_packet_header(&data, &datalen, &type,
++						 &headerlen);
++		if (pktlen < 0)
++			return pktlen;
++
++		if ((ctx->types_of_interest >> type) & 1) {
++			ret = ctx->process_packet(ctx, type, headerlen,
++						  data, pktlen);
++			if (ret < 0)
++				return ret;
++		}
++		data += pktlen;
++		datalen -= pktlen;
++	}
++
++	if (datalen != 0) {
++		pr_debug("Excess octets in packet stream\n");
++		return -EBADMSG;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pgp_parse_packets);
++
++/**
++ * pgp_parse_public_key - Parse the common part of a PGP pubkey packet
++ * @_data: Content of packet (updated)
++ * @_datalen: Length of packet remaining (updated)
++ * @pk: Public key data
++ *
++ * Parse the common data struct for a PGP pubkey packet [RFC 4880: 5.5.2].
++ */
++int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
++			 struct pgp_parse_pubkey *pk)
++{
++	const u8 *data = *_data;
++	size_t datalen = *_datalen;
++	__be32 tmp;
++
++	if (datalen < 12) {
++		pr_debug("Public key packet too short\n");
++		return -EBADMSG;
++	}
++
++	pk->version = *data++;
++	switch (pk->version) {
++	case PGP_KEY_VERSION_2:
++	case PGP_KEY_VERSION_3:
++	case PGP_KEY_VERSION_4:
++		break;
++	default:
++		pr_debug("Public key packet with unhandled version %d\n",
++			   pk->version);
++		return -EBADMSG;
++	}
++
++	tmp  = *data++ << 24;
++	tmp |= *data++ << 16;
++	tmp |= *data++ << 8;
++	tmp |= *data++;
++	pk->creation_time = tmp;
++	if (pk->version == PGP_KEY_VERSION_4) {
++		pk->expires_at = 0; /* Have to get it from the selfsignature */
++	} else {
++		unsigned short ndays;
++		ndays  = *data++ << 8;
++		ndays |= *data++;
++		if (ndays)
++			pk->expires_at = pk->creation_time + ndays * 86400UL;
++		else
++			pk->expires_at = 0;
++		datalen -= 2;
++	}
++
++	pk->pubkey_algo = *data++;
++	datalen -= 6;
++
++	pr_devel("%x,%x,%lx,%lx",
++		 pk->version, pk->pubkey_algo, pk->creation_time,
++		 pk->expires_at);
++
++	*_data = data;
++	*_datalen = datalen;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pgp_parse_public_key);
+
