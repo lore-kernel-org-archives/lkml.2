@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2HPOjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:39:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395Ab2HPOjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:39:03 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-scsi@vger.kernel.org
-Cc: JBottomley@parallels.com, tytso@mit.edu, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
-Date: Thu, 16 Aug 2012 16:38:45 +0200
-Message-Id: <1345127925-32042-1-git-send-email-lczerner@redhat.com>
+	id S1756789Ab2HPOl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:41:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38157 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2HPOl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:41:56 -0400
+Date: Thu, 16 Aug 2012 15:41:52 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120816144152.GT23464@ZenIV.linux.org.uk>
+References: <20120815210237.GF25421@moon>
+ <20120815220622.GA28054@fieldses.org>
+ <20120816062448.GA32081@moon>
+ <20120816123814.GD1209@moon>
+ <20120816134339.GQ23464@ZenIV.linux.org.uk>
+ <502CF9DA.8030701@parallels.com>
+ <20120816135019.GS23464@ZenIV.linux.org.uk>
+ <20120816135448.GP32081@moon>
+ <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
+ <20120816141553.GF1209@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816141553.GF1209@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is possible to unmap one more block than user requested to
-due to the off-by-one error in unmap_region(). This is probably due to
-the fact that the end variable despite its name actually points to the
-last block to unmap + 1. However in the condition it is handled as the
-last block of the region to unmap.
+On Thu, Aug 16, 2012 at 06:15:53PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 16, 2012 at 02:03:00PM +0000, James Bottomley wrote:
+> > > > What's wrong with saying "we don't support idiotify"?
+> > > 
+> > > Al, we need some way to restore inotifies after checkpoint.
+> > > At the very early versions of these patches I simply added
+> > > dentry to the inotify mark thus once inotify created we always
+> > > have a dentry to refer on in encode_fh, but I'm not sure if
+> > > this will be good design.
+> > 
+> > Actually, I was about to suggest this.  This can be done internally
+> > within fs/notify without actually modifying the syscall interface, can't
+> > it, since they take a path which is used to obtain the inode?  It looks
+> > like the whole of the inotify interface could be internally recast to
+> > use dentries instead of inodes.  Unless I've missed something obvious?
+> 
+> Well, after looking into do_sys_name_to_handle->exportfs_encode_fh
+> sequence more precisely it seems it will be easier to extend
+> exportfs_encode_fh to support inodes directly instead of playing
+> with notify code (again, if i'm not missing something too).
+> i'm cooking a patch to show (once it's tested i'll send it out).
 
-The bug was not previously spotted probably due to the fact that the
-region was not zeroed, which has changed with commit
-be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
-to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
-enabled using fstrim.
-
-Since the 'end' semantic is the same in several functions there this
-commit just fixes the condition to use the 'end' variable correctly in
-that context.
-
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
----
- drivers/scsi/scsi_debug.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index 182d5a5..f4cc413 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, unsigned int len)
- 		block = lba + alignment;
- 		rem = do_div(block, granularity);
- 
--		if (rem == 0 && lba + granularity <= end && block < map_size) {
-+		if (rem == 0 && lba + granularity < end && block < map_size) {
- 			clear_bit(block, map_storep);
- 			if (scsi_debug_lbprz)
- 				memset(fake_storep +
--- 
-1.7.7.6
-
+Good luck doing that with e.g. VFAT...  And then there's such thing
+as filesystems that don't have ->encode_fh() for a lot of very good
+reasons; just try to do that on sysfs, for example.  Or on ramfs,
+for that matter...  And while saying "you can't export that over
+NFS" seems to work fine, idiotify-lovers will screech if you try
+to ban their perversion of choice on those filesystems.
