@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab2HPNqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:46:15 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:38495 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2HPNqM (ORCPT
+	id S1756570Ab2HPNrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:47:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46691 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2HPNrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:46:12 -0400
-Subject: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes
- down.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: peterz@infradead.org, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Aug 2012 19:45:49 +0600
-Message-ID: <1345124749.31092.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 09:47:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <000001392b579d4f-bb5ccaf5-1a2c-472c-9b76-05ec86297706-000000@email.amazonses.com>
+References: <1345045084-7292-1-git-send-email-js1304@gmail.com>
+	<000001392af5ab4e-41dbbbe4-5808-484b-900a-6f4eba102376-000000@email.amazonses.com>
+	<CAAmzW4M9WMnxVKpR00SqufHadY-=i0Jgf8Ktydrw5YXK8VwJ7A@mail.gmail.com>
+	<000001392b579d4f-bb5ccaf5-1a2c-472c-9b76-05ec86297706-000000@email.amazonses.com>
+Date: Thu, 16 Aug 2012 22:47:04 +0900
+Message-ID: <CAAmzW4MMY5TmjMjG50idZNgRUW3qC0kNMnfbGjGXaoxtba8gGQ@mail.gmail.com>
+Subject: Re: [PATCH] slub: try to get cpu partial slab even if we get enough
+ objects for cpu freelist
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
- When a CPU is about to go down, it moves all it's sleeping task to an active CPU, then nr_uninterruptible counts are
-also moved. When moving nr_uninterruptible count, currently it chooses a randomly picked CPU from the active CPU mask
-to keep the global nr_uninterruptible count intact. But, it would be precise to move nr_uninterruptible counts to the
-CPU where all the sleeping tasks were moved and it also might have subtle impact over rq's load calculation. So, this
-patch is prepared to address this issue.
+>> I think that s->cpu_partial is for cpu partial slab, not cpu slab.
+>
+> Ummm... Not entirely. s->cpu_partial is the mininum number of objects to
+> "cache" per processor. This includes the objects available in the per cpu
+> slab and the other slabs on the per cpu partial list.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+Hmm..
+When we do test for unfreezing in put_cpu_partial(), we only compare
+how many objects is in "cpu partial slab" with s->cpu_partial,
+although it is just approximation of number of objects kept in cpu partial slab.
+We do not consider number of objects kept in cpu slab in that time.
+This makes me "s->cpu_partial is only for cpu partial slab, not cpu slab".
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 82ad284..5839796 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5304,9 +5304,9 @@ void idle_task_exit(void)
-  * their home CPUs. So we just add the counter to another CPU's counter,
-  * to keep the global sum constant after CPU-down:
-  */
--static void migrate_nr_uninterruptible(struct rq *rq_src)
-+static void migrate_nr_uninterruptible(struct rq *rq_src, unsigned int dest_cpu)
- {
--	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-+	struct rq *rq_dest = cpu_rq(dest_cpu);
- 
- 	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
- 	rq_src->nr_uninterruptible = 0;
-@@ -5371,6 +5371,7 @@ static void migrate_tasks(unsigned int dead_cpu)
- 	}
- 
- 	rq->stop = stop;
-+	migrate_nr_uninterruptible(rq, dest_cpu);
- }
- 
- #endif /* CONFIG_HOTPLUG_CPU */
-@@ -5612,7 +5613,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		BUG_ON(rq->nr_running != 1); /* the migration thread */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
- 
--		migrate_nr_uninterruptible(rq);
- 		calc_global_load_remove(rq);
- 		break;
- #endif
+We can't count number of objects kept in in cpu slab easily.
+Therefore, it it more consistent that s->cpu_partial is always for cpu
+partial slab.
+
+But, if you prefer that s->cpu_partial is for both cpu slab and cpu
+partial slab,
+get_partial_node() needs an another minor fix.
+We should add number of objects in cpu slab when we refill cpu partial slab.
+Following is my suggestion.
+
+@@ -1546,7 +1546,7 @@ static void *get_partial_node(struct kmem_cache *s,
+        spin_lock(&n->list_lock);
+        list_for_each_entry_safe(page, page2, &n->partial, lru) {
+                void *t = acquire_slab(s, n, page, object == NULL);
+-               int available;
++               int available, nr = 0;
+
+                if (!t)
+                        break;
+@@ -1557,10 +1557,10 @@ static void *get_partial_node(struct kmem_cache *s,
+                        object = t;
+                        available =  page->objects - page->inuse;
+                } else {
+-                       available = put_cpu_partial(s, page, 0);
++                       nr = put_cpu_partial(s, page, 0);
+                        stat(s, CPU_PARTIAL_NODE);
+                }
+-               if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
++               if (kmem_cache_debug(s) || (available + nr) >
+s->cpu_partial / 2)
+                        break;
+
+        }
+
+If you agree with this suggestion, I send a patch for this.
 
 
+> If object == NULL then we have so far nothing allocated an c->page ==
+> NULL. The first allocation refills the cpu_slab (by freezing a slab) so
+> that we can allocate again. If we go through the loop again then we refill
+> the per cpu partial lists with more frozen slabs until we have a
+> sufficient number of objects that we can allocate without obtaining any
+> locks.
+>
+>> This patch is for correcting this.
+>
+> There is nothing wrong with this. The name c->cpu_partial is a bit
+> awkward. Maybe rename that to c->min_per_cpu_objects or so?
+
+Okay.
+It look better.
+
+Thanks!
