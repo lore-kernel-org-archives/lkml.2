@@ -1,80 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2HPNgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:36:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19270 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab2HPNf5 (ORCPT
+	id S1755185Ab2HPNnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:43:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46741 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2HPNnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:35:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 173.50.127.139
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/GepkhbwSC3S8ENsb3YxCpSr0xAmpJlTE=
-Date: Thu, 16 Aug 2012 09:35:21 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/2] ARM: kirkwood: DT board setup for Seagate
- FreeAgent Dockstar
-Message-ID: <20120816133521.GP22226@titan.lakedaemon.net>
-References: <20120814193613.GS22226@titan.lakedaemon.net>
- <1344977022-29037-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20120814232256.GX22226@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814232256.GX22226@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 16 Aug 2012 09:43:20 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: nab@linux-iscsi.org, trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] target: Fix typo in drivers/target
+Date: Thu, 16 Aug 2012 22:43:13 +0900
+Message-Id: <1345124593-24346-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 07:22:56PM -0400, Jason Cooper wrote:
-> On Tue, Aug 14, 2012 at 10:43:41PM +0200, Sebastian Hesselbarth wrote:
-> > This add a DT compatible board specific setup for the Seagate
-> > FreeAgent Dockstar.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > 
-> > v2: rebased on git://git.infradead.org/users/jcooper/linux.git fixes-for-v3.6
-> 
-> patches [1/2] and [2/2] of this series applied to:
-> 
->   git://git.infradead.org/users/jcooper/linux.git boards-for-v3.7
-> 
-> patch [2/2] depends upon:
-> 
->   bda63c1 ARM: Kirkwood: fix Makefile.boot
-> 
-> which should be in an upcoming v3.6-rc
+Correct spelling typo in printk and comment within
+drivers/target.
 
-Oops, building with both legacy and DT support for the Dockstar yields
-the following error:
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/target/target_core_alua.c       | 2 +-
+ drivers/target/target_core_configfs.c   | 2 +-
+ drivers/target/target_core_device.c     | 6 +++---
+ drivers/target/target_core_fabric_lib.c | 8 ++++----
+ drivers/target/target_core_pr.c         | 4 ++--
+ drivers/target/target_core_pscsi.c      | 2 +-
+ drivers/target/target_core_tpg.c        | 2 +-
+ drivers/target/target_core_transport.c  | 4 ++--
+ 8 files changed, 15 insertions(+), 15 deletions(-)
 
-arch/arm/mach-kirkwood/dockstar-setup.c:81:20: error: static declaration
-of 'dockstar_init' follows non-static declaration
-arch/arm/mach-kirkwood/common.h:86:6: note: previous declaration of
-'dockstar_init' was here
-make[1]: *** [arch/arm/mach-kirkwood/dockstar-setup.o] Error 1
-make: *** [arch/arm/mach-kirkwood] Error 2
+diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
+index 9179997..91b84d3 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -337,7 +337,7 @@ int target_emulate_set_target_port_groups(struct se_cmd *cmd)
+ 			 */
+ 			rtpi = get_unaligned_be16(ptr + 2);
+ 			/*
+-			 * Locate the matching relative target port identifer
++			 * Locate the matching relative target port identifier
+ 			 * for the struct se_device storage object.
+ 			 */
+ 			spin_lock(&dev->se_port_lock);
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 801efa8..1ee2c99 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -1208,7 +1208,7 @@ static ssize_t target_core_dev_pr_show_attr_res_pr_holder_tg_port(
+ 		" Target Node Endpoint: %s\n", tfo->get_fabric_name(),
+ 		tfo->tpg_get_wwn(se_tpg));
+ 	len += sprintf(page+len, "SPC-3 Reservation: Relative Port"
+-		" Identifer Tag: %hu %s Portal Group Tag: %hu"
++		" Identifier Tag: %hu %s Portal Group Tag: %hu"
+ 		" %s Logical Unit: %u\n", lun->lun_sep->sep_rtpi,
+ 		tfo->get_fabric_name(), tfo->tpg_get_tag(se_tpg),
+ 		tfo->get_fabric_name(), lun->unpacked_lun);
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index cf2c66f..97b47ab 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -531,7 +531,7 @@ static struct se_port *core_alloc_port(struct se_device *dev)
+ 	}
+ again:
+ 	/*
+-	 * Allocate the next RELATIVE TARGET PORT IDENTIFER for this struct se_device
++	 * Allocate the next RELATIVE TARGET PORT IDENTIFIER for this struct se_device
+ 	 * Here is the table from spc4r17 section 7.7.3.8.
+ 	 *
+ 	 *    Table 473 -- RELATIVE TARGET PORT IDENTIFIER field
+@@ -548,7 +548,7 @@ again:
+ 
+ 	list_for_each_entry(port_tmp, &dev->dev_sep_list, sep_list) {
+ 		/*
+-		 * Make sure RELATIVE TARGET PORT IDENTIFER is unique
++		 * Make sure RELATIVE TARGET PORT IDENTIFIER is unique
+ 		 * for 16-bit wrap..
+ 		 */
+ 		if (port->sep_rtpi == port_tmp->sep_rtpi)
+@@ -595,7 +595,7 @@ static void core_export_port(
+ 	}
+ 
+ 	dev->dev_port_count++;
+-	port->sep_index = port->sep_rtpi; /* RELATIVE TARGET PORT IDENTIFER */
++	port->sep_index = port->sep_rtpi; /* RELATIVE TARGET PORT IDENTIFIER */
+ }
+ 
+ /*
+diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
+index 283a36e..e460d62 100644
+--- a/drivers/target/target_core_fabric_lib.c
++++ b/drivers/target/target_core_fabric_lib.c
+@@ -338,7 +338,7 @@ u32 iscsi_get_pr_transport_id_len(
+ 	 * 00b: iSCSI Initiator device TransportID format
+ 	 */
+ 	if (pr_reg->isid_present_at_reg) {
+-		len += 5; /* For ",i,0x" ASCII seperator */
++		len += 5; /* For ",i,0x" ASCII separator */
+ 		len += 7; /* For iSCSI Initiator Session ID + Null terminator */
+ 		*format_code = 1;
+ 	} else
+@@ -415,20 +415,20 @@ char *iscsi_parse_pr_out_transport_id(
+ 			*out_tid_len = (add_len + 4);
+ 	}
+ 	/*
+-	 * Check for ',i,0x' seperator between iSCSI Name and iSCSI Initiator
++	 * Check for ',i,0x' separator between iSCSI Name and iSCSI Initiator
+ 	 * Session ID as defined in Table 390 - iSCSI initiator port TransportID
+ 	 * format.
+ 	 */
+ 	if (format_code == 0x40) {
+ 		p = strstr(&buf[4], ",i,0x");
+ 		if (!p) {
+-			pr_err("Unable to locate \",i,0x\" seperator"
++			pr_err("Unable to locate \",i,0x\" separator"
+ 				" for Initiator port identifier: %s\n",
+ 				&buf[4]);
+ 			return NULL;
+ 		}
+ 		*p = '\0'; /* Terminate iSCSI Name */
+-		p += 5; /* Skip over ",i,0x" seperator */
++		p += 5; /* Skip over ",i,0x" separator */
+ 
+ 		*port_nexus_ptr = p;
+ 		/*
+diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
+index 1e94650..702dfe0 100644
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -1612,7 +1612,7 @@ static int core_scsi3_decode_spec_i_port(
+ 				goto out;
+ 			}
+ 			/*
+-			 * Locate the desination initiator ACL to be registered
++			 * Locate the destination initiator ACL to be registered
+ 			 * from the decoded fabric module specific TransportID
+ 			 * at *i_str.
+ 			 */
+@@ -4249,7 +4249,7 @@ static int core_scsi3_pri_read_full_status(struct se_cmd *cmd)
+ 			buf[off++] = ((port->sep_rtpi >> 8) & 0xff);
+ 			buf[off++] = (port->sep_rtpi & 0xff);
+ 		} else
+-			off += 2; /* Skip over RELATIVE TARGET PORT IDENTIFER */
++			off += 2; /* Skip over RELATIVE TARGET PORT IDENTIFIER */
+ 
+ 		/*
+ 		 * Now, have the $FABRIC_MOD fill in the protocol identifier
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index 6e32ff6..5ff2d92 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -264,7 +264,7 @@ pscsi_get_inquiry_vpd_device_ident(struct scsi_device *sdev,
+ 					" length zero!\n");
+ 			break;
+ 		}
+-		pr_debug("T10 VPD Identifer Length: %d\n", ident_len);
++		pr_debug("T10 VPD Identifier Length: %d\n", ident_len);
+ 
+ 		vpd = kzalloc(sizeof(struct t10_vpd), GFP_KERNEL);
+ 		if (!vpd) {
+diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
+index b8628a5..a531fe2 100644
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -303,7 +303,7 @@ struct se_node_acl *core_tpg_check_initiator_node_acl(
+ 	}
+ 	/*
+ 	 * Here we only create demo-mode MappedLUNs from the active
+-	 * TPG LUNs if the fabric is not explictly asking for
++	 * TPG LUNs if the fabric is not explicitly asking for
+ 	 * tpg_check_demo_mode_login_only() == 1.
+ 	 */
+ 	if ((tpg->se_tpg_tfo->tpg_check_demo_mode_login_only == NULL) ||
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 0eaae23..434c697 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -941,7 +941,7 @@ int
+ transport_set_vpd_ident(struct t10_vpd *vpd, unsigned char *page_83)
+ {
+ 	static const char hex_str[] = "0123456789abcdef";
+-	int j = 0, i = 4; /* offset to start of the identifer */
++	int j = 0, i = 4; /* offset to start of the identifier */
+ 
+ 	/*
+ 	 * The VPD Code Set (encoding)
+@@ -2796,7 +2796,7 @@ bool transport_wait_for_tasks(struct se_cmd *cmd)
+ 	spin_lock_irqsave(&cmd->t_state_lock, flags);
+ 	cmd->transport_state &= ~(CMD_T_ACTIVE | CMD_T_STOP);
+ 
+-	pr_debug("wait_for_tasks: Stopped wait_for_compltion("
++	pr_debug("wait_for_tasks: Stopped wait_for_completion("
+ 		"&cmd->t_transport_stop_comp) for ITT: 0x%08x\n",
+ 		cmd->se_tfo->get_task_tag(cmd));
+ 
+-- 
+1.7.12.rc3
 
-As a quick fix I renamed your dockstar_init() to dockstar_dt_init()
-across your patch.  This compiles clean.  Unfortunately, I can't send
-this fix up as a separate patch (a bisect may land in between it and
-yours).
-
-Unless I hear otherwise from you in the next day or so, I'm going to
-collapse the fix into your patch and push it that way.
-
-thx,
-
-Jason.
