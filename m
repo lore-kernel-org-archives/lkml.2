@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab2HPHxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 03:53:47 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:46176 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab2HPHxq (ORCPT
+	id S1755960Ab2HPHxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 03:53:55 -0400
+Received: from mga06.intel.com ([134.134.136.21]:46261 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755776Ab2HPHxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 03:53:46 -0400
-Date: Thu, 16 Aug 2012 09:53:36 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
-Message-ID: <20120816095336.4eeb3ce1@de.ibm.com>
-In-Reply-To: <20120815190901.GD19716@somewhere>
-References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
-	<1344953810-20564-2-git-send-email-fweisbec@gmail.com>
-	<20120815170347.323507b1@de.ibm.com>
-	<20120815190901.GD19716@somewhere>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 16 Aug 2012 03:53:49 -0400
+Subject: Re: [RESEND][PATCH]efi: initialize efi.runtime_version to make
+ query_variable_info/update_capsule workable
+From: Matt Fleming <matt.fleming@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "H. Peter Anvin (hpa@linux.intel.com)" <hpa@linux.intel.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "Paul Gortmaker (paul.gortmaker@windriver.com)" 
+	<paul.gortmaker@windriver.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB5C7C3@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB5C7C3@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 16 Aug 2012 08:53:18 +0100
+Message-ID: <1345103598.3088.14.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081607-2966-0000-0000-00000502AAD7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012 21:09:04 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Wed, Aug 15, 2012 at 05:03:47PM +0200, Martin Schwidefsky wrote:
-> > On Tue, 14 Aug 2012 16:16:47 +0200
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > 
-> > > S390, ia64 and powerpc all define their own version
-> > > of CONFIG_VIRT_CPU_ACCOUNTING. Generalize the config
-> > > and its description to a single place to avoid
-> > > duplication.
-> > 
-> > For S390 CONFIG_VIRT_CPU_ACCOUNTING is not configurable, it is always
-> > enabled. With this patch we'd get a config option in the menu, no?
+On Mon, 2012-08-06 at 18:37 +0000, Seiji Aguchi wrote:
+> A value of efi.runtime_version is checked before calling
+> update_capsule()/query_variable_info() as follows.
+> But it isn't initialized anywhere.
+> <snip>
+> static efi_status_t virt_efi_query_variable_info(u32 attr,
+>                                                  u64 *storage_space,
+>                                                   u64 *remaining_space,
+>                                                  u64 *max_variable_size) {
+>         if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+>                 return EFI_UNSUPPORTED; 
+> <snip>
 > 
-> Indeed it now appears in the menu but in the case of s390, it's impossible
-> to turn it off due to:
+> This patch initializes a value of efi.runtime_version at boot time.
 > 
-> 	config S390
-> 		select VIRT_CPU_ACCOUNTING
-> 
-> This creates a strict dependency that the user can't override. The option
-> is untoggable.
+> Acked-by: Matthew Garrett <mjg@redhat.com>
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> ---
+>  arch/x86/platform/efi/efi.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 
-Hmm, ok. But then the description should be reworded not to be specific to
-the power architecture (the part of the message about "This also enables
-accounting of stolen time on logically-partitioned systems running on IBM
-POWER5-based machines.").
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Thanks, I picked this up just so it doesn't get lost. It will probably
+go to Linus via Peter Anvin.
 
