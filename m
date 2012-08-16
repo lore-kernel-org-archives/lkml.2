@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab2HPVsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:48:13 -0400
-Received: from incomingmail.riverbed.com ([208.70.196.45]:12395 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab2HPVsM convert rfc822-to-8bit (ORCPT
+	id S1756356Ab2HPVvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:51:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47174 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab2HPVvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:48:12 -0400
-From: Jiang Wang <Jiang.Wang@riverbed.com>
-To: Michael Chan <mchan@broadcom.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgCAAHtYAP//kWDwgACL2ID//48v0A==
-Date: Thu, 16 Aug 2012 21:48:01 +0000
-Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2C2B@SFO1EXC-MBXP06.nbttech.com>
-References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
- <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
- <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
- <1345151593.6916.62.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-In-Reply-To: <1345151593.6916.62.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.205.254]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Aug 2012 17:51:51 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, Tomas Racek <tracek@redhat.com>
+Cc: qemu-devel@nongnu.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, kvm-devel <kvm@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [Qemu-devel] x86, nops settings result in kernel crash
+In-Reply-To: <20120816195324.5356cba0@pyramind.ukuu.org.uk>
+References: <20120816134834.GA11974@x1.osrc.amd.com> <1898701172.1847948.1345142715802.JavaMail.root@redhat.com> <20120816195324.5356cba0@pyramind.ukuu.org.uk>
+User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 16 Aug 2012 16:51:46 -0500
+Message-ID: <87393msdxp.fsf@codemonkey.ws>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
 
-On Thu, 2012-08-16 at 20:28 +0000, Jiang Wang wrote:
-> Also, I have another comment related to link state.
-> 
-> Right now, the bnx2 driver powers up the device in bnx2_init_board(), 
-> regardless the netif_carrier is on or off.
+> On Thu, 16 Aug 2012 14:45:15 -0400 (EDT)
+> Tomas Racek <tracek@redhat.com> wrote:
+>
+>> ----- Original Message -----
+>> > On Thu, Aug 16, 2012 at 09:35:12AM -0400, Tomas Racek wrote:
+>> > > Hi,
+>> > > 
+>> > > I am writing a file system test which I execute in qemu with kernel
+>> > > compiled from latest git sources and running it causes this error:
+>> > > 
+>> > > https://bugzilla.kernel.org/show_bug.cgi?id=45971
+>> > > 
+>> > > It works with v3.5, so I ran git bisect which pointed me to:
+>> > > 
+>> > > d6250a3f12edb3a86db9598ffeca3de8b4a219e9 x86, nops: Missing break
+>> > > resulting in incorrect selection on Intel
+>> > > 
+>> > > To be quite honest, I don't understand this stuff much but I tried
+>> > > to do some debugging and I figured out (I hope) that the crash is
+>> > > caused by setting ideal_nops to p6_nops (k8_nops was used before
+>> > > the break statement was added).
+>> > 
+>> > Maybe I overlooked it or maybe it was implied but did you try
+>> > reverting
+>> > the patch and rerunning your test? Does it work ok then?
+>> > 
+>> 
+>> Yes, if I remove the break statement (introduced by this commit), it works fine.
+>
+> What version of qemu is this - do we have qemu bug here I wonder.
 
-We actually don't power up the device.  bnx2_init_board() just probes the device.  If link is already up, it will stay up.  If it is down, it will stay down.
+>From the cpuinfo, it's 0.15.1.  That's old but not ancient.
 
----- I see. I was confused by the name of bnx2_set_power_state()  and I think the PHY is actually powered up by bnx2_reset_nic, right?
+I took a brief look at the kernel code here.  The default invocation of
+qemu presents an idealistic CPU with a very minimum feature bit set
+exposed.  No processor has ever existed with this feature set.
 
-> This may introduce following inconsistent behaviors:
-> 1) suppose the cable is plugged in to the NIC and the other end is 
-> connected to a switch
-> 2) user powers up the box
+We do this in order to maintain compatibility when migration from Intel
+to AMD but also for legacy reasons.
 
-The link may already be up before or when you power up the box because of management firmware (iLO, etc) or WoL.
+>From the report, using '-cpu host' solves the problem.  '-cpu host'
+exposes most of the host CPUID to the guest.
 
----- OK.
+That said, QEMU really doesn't do anything differently depending on what
+feature bits are exposed to the guest.  So my guess is that the odd
+combination of CPUID bits that are exposed to the guest is confusing the
+kernel.
 
-> 3) the Linux does not bring up the interface; i.e, ifconfig ethx shows 
-> it is down
-> 4) ethtool ethx will show no link
-> 5) if the user goes to check the light on the physical NIC, he will 
-> see the green link light is ON. That means the link is up, right?
-> 
-> I think it is better to power down the device until bnx2_open is 
-> called. In this way, ethtool report and the physical link light will 
-> be consistent.
+Can you post dmesg from the host kernel?  Perhaps there's instruction
+emulation failing in the host KVM?  That would manifest in strange
+behavior in the guest.
 
-We cannot power it down.  If link is up, it is up for a reason (e.g. it is an iLO port, etc).
+Regards,
 
----- OK. 
+Anthony Liguori
 
-
-Thanks.
-
-
+>
+> Alan
