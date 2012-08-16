@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab2HPTAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2760 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab2HPTAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:00:41 -0400
-Message-ID: <502D42E5.7090403@redhat.com>
-Date: Thu, 16 Aug 2012 14:58:45 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-CC: linux-mm <linux-mm@kvack.org>
-Subject: Re: Repeated fork() causes SLAB to grow without bound
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
-In-Reply-To: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757236Ab2HPTDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:03:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48771 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754031Ab2HPTDc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:03:32 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] extcon: Ensure dynamically allocated sysfs attributes are initialised
+Date: Thu, 16 Aug 2012 20:03:21 +0100
+Message-Id: <1345143801-24357-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 10:46 PM, Daniel Forrest wrote:
-> I'm hoping someone has seen this before...
->
-> I've been trying to track down a performance problem with Linux 3.0.4.
-> The symptom is system-mode load increasing over time while user-mode
-> load remains constant while running a data ingest/processing program.
->
-> Looking at /proc/meminfo I noticed SUnreclaim increasing steadily.
->
-> Looking at /proc/slabinfo I noticed anon_vma and anon_vma_chain also
-> increasing steadily.
+The operation of lockdep requires that all dynamically allocated sysfs
+nodes are initialised using sysfs_attr_init() otherwise lots of warnings
+are generated. Ensure that all the dynamically allocated attributes that
+extcon generates have this done.
 
-Oh dear.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon_class.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Basically, what happens is that at fork time, a new
-"level" is created for the anon_vma hierarchy. This
-works great for normal forking daemons, since the
-parent process just keeps running, and forking off
-children.
-
-Look at anon_vma_fork() in mm/rmap.c for the details.
-
-Having each child become the new parent, and the
-previous parent exit, can result in an "infinite"
-stack of anon_vmas.
-
-Now, the parent anon_vma we cannot get rid of,
-because that is where the anon_vma lock lives.
-
-However, in your case you have many more anon_vma
-levels than you have processes!
-
-I wonder if it may be possible to fix your bug
-by adding a refcount to the struct anon_vma,
-one count for each VMA that is directly attached
-to the anon_vma (ie. vma->anon_vma == anon_vma),
-and one for each page that points to the anon_vma.
-
-If the reference count on an anon_vma reaches 0,
-we can skip that anon_vma in anon_vma_clone, and
-the child process should not get that anon_vma.
-
-A scheme like that may be enough to avoid the trouble
-you are running into.
-
-Does this sound realistic?
-
-> I was able to generate a simple test program that will cause this:
->
-> ---
->
-> #include <unistd.h>
->
-> int main(int argc, char *argv[])
-> {
->     pid_t pid;
->
->     while (1) {
->        pid = fork();
->        if (pid == -1) {
-> 	 /* error */
-> 	 return 1;
->        }
->        if (pid) {
-> 	 /* parent */
-> 	 sleep(2);
-> 	 break;
->        }
->        else {
-> 	 /* child */
-> 	 sleep(1);
->        }
->     }
->     return 0;
-> }
->
-> ---
->
-> In the actual program (running as a daemon), a child is reading data
-> while its parent is processing the previously read data.  At any time
-> there are only a few processes in existence, with older processes
-> exiting and new processes being fork()ed.  Killing the program frees
-> the slab usage.
->
-> I patched the kernel to 3.0.40, but the problem remains.  I also
-> compiled with slab debugging and can see that the growth of anon_vma
-> and anon_vma_chain is due to anon_vma_clone/anon_vma_fork.
->
-> Is this a known issue?  Is it fixed in a later release?
->
-> Thanks,
->
-
+diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
+index f6419f9..481cfa0 100644
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -30,6 +30,7 @@
+ #include <linux/err.h>
+ #include <linux/extcon.h>
+ #include <linux/slab.h>
++#include <linux/sysfs.h>
+ 
+ /*
+  * extcon_cable_name suggests the standard cable names for commonly used
+@@ -673,10 +674,12 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 			cable->attr_g.name = str;
+ 			cable->attr_g.attrs = cable->attrs;
+ 
++			sysfs_attr_init(&cable->attr_name.attr);
+ 			cable->attr_name.attr.name = "name";
+ 			cable->attr_name.attr.mode = 0444;
+ 			cable->attr_name.show = cable_name_show;
+ 
++			sysfs_attr_init(&cable->attr_state.attr);
+ 			cable->attr_state.attr.name = "state";
+ 			cable->attr_state.attr.mode = 0644;
+ 			cable->attr_state.show = cable_state_show;
+@@ -722,6 +725,7 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 				goto err_muex;
+ 			}
+ 			strcpy(name, buf);
++			sysfs_attr_init(&edev->d_attrs_muex[index].attr);
+ 			edev->d_attrs_muex[index].attr.name = name;
+ 			edev->d_attrs_muex[index].attr.mode = 0000;
+ 			edev->attrs_muex[index] = &edev->d_attrs_muex[index]
+-- 
+1.7.10.4
 
