@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab2HPN7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:59:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60331 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067Ab2HPN7b (ORCPT
+	id S1757270Ab2HPN7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:59:33 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:57774 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756595Ab2HPN7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 09:59:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH] ARM: LPC32xx: Provide DMA filter callbacks via platform data
-Date: Thu, 16 Aug 2012 13:59:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org
-References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1345122935-22115-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Date: Thu, 16 Aug 2012 15:59:22 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/4] cputime: Consolidate vtime handling on context
+ switch
+Message-ID: <20120816155922.5de4f1e3@de.ibm.com>
+In-Reply-To: <20120816125030.GF19716@somewhere>
+References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
+	<1344953810-20564-4-git-send-email-fweisbec@gmail.com>
+	<20120815172219.4e4d5ef5@de.ibm.com>
+	<20120815192813.GE19716@somewhere>
+	<20120816095032.16611651@de.ibm.com>
+	<20120816125030.GF19716@somewhere>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208161359.21276.arnd@arndb.de>
-X-Provags-ID: V02:K0:S9z+5bQ+PTibr+fO5C+D+DJnFfLtWw4blxkvsG9rbc0
- pL122XTzXszklIYlxD/DAitfpPxXD5KQIxHaTFvw/9jX/nDWwp
- fNI2Xl92UsevB9OR2mpZkf2Rf8VqMItMS6rSIYo4fGKzi0jFTx
- cXVwoWHzW/WBxCONC+oRb1MlbhcjIB+TWgljeX2D0i8uVZcX9g
- SrTsJKwwvurSSndmCxrLp8tu1e4GTbeIy1Q+zjpfFAaKl9lhvc
- 16J9DzXAxeNFHzgtZLMrsiQFdrRAOBHMKDXrK2KZuYlFDz2vUE
- otOH32wUTKvv75BvKqlI1CKPkW1obA9E0rs2G5nzKA30DC5g+9
- kQOWAYjX5PGUZ3UH0WhY=
+x-cbid: 12081613-8372-0000-0000-0000037B839F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Roland Stigge wrote:
-> The SLC and MLC NAND drivers now need their dma_filter callbacks via platform
-> data to make them independent of single DMA engine drivers.
+On Thu, 16 Aug 2012 14:50:33 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Thu, Aug 16, 2012 at 09:50:32AM +0200, Martin Schwidefsky wrote:
+> > On Wed, 15 Aug 2012 21:28:17 +0200
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > On Wed, Aug 15, 2012 at 05:22:19PM +0200, Martin Schwidefsky wrote:
+> > > > On Tue, 14 Aug 2012 16:16:49 +0200
+> > > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > 
+> > > > > The archs that implement virtual cputime accounting all
+> > > > > flush the cputime of a task when it gets descheduled
+> > > > > and sometimes set up some ground initialization for the
+> > > > > next task to account its cputime.
+> > > > > 
+> > > > > These archs all put their own hooks in their context
+> > > > > switch callbacks and handle the off-case themselves.
+> > > > > 
+> > > > > Consolidate this by creating a new account_switch_vtime()
+> > > > > callback called in generic code right after a context switch
+> > > > > and that these archs must implement to flush the prev task
+> > > > > cputime and initialize the next task cputime related state.
+> > > > 
+> > > > That change requires that the accounting for the previous process
+> > > > can be done before finish_arch_switch() completed. With the old
+> > > > code the architecture could to the accounting call in the middle
+> > > > of finish_arch_switch, that is not possible anymore. Dunno if this
+> > > > is relevant or not. For s390 the new code should work fine.
+> > > 
+> > > I'm not sure how this could potentially cause a problem. Interrupts are disabled
+> > > between while we switch_to() until finish_lock_switch(). So nothing
+> > > should be able to mess up with the accounting of the prev task.
+> > > 
+> > > I don't really understand what you mean actually.
+> > 
+> > It is more a theoretical consideration. If the finish_arch_switch code
+> > updates fields that are required to do the cputime accounting then the
+> > order could be important. But then you could move that necessary code
+> > from finish_arch_switch to account_switch_vtime.
+> > As said that change is fine for s390, so I'm good with it.
 > 
-> (This also helps fixing build errors of the SLC and MLC drivers when building
-> as modules because direct access to AMBA dma filter functions isn't available
-> via export.)
+> Ah ok. Well like you said this is fine for s390. And it looks also fine
+> to me on ia64 and powerpc as it doesn't look like we depend on something
+> done in finish_arch_switch() there. They were flush the previous task
+> cputime from switch_to() anyway.
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Thanks.
+> 
+> PS: can I add your ack?
 
-Yes, this looks right.
+Sure, feel free to add my Acked-by.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+-- 
+blue skies,
+   Martin.
 
-Once we have proper DT bindings for the DMA channels, we can hopefully
-get rid of the auxdata again.
+"Reality continues to ruin my life." - Calvin.
 
-	Arnd
