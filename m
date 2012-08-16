@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab2HPFUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:20:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32324 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab2HPFUp (ORCPT
+	id S1753640Ab2HPFZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:25:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54513 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2HPFZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:20:45 -0400
-X-AuditID: cbfee61a-b7fc66d0000043b7-47-502c8328ea47
-Message-id: <502C8247.7070209@samsung.com>
-Date: Thu, 16 Aug 2012 14:16:55 +0900
-From: IAN CHEN <ian.cy.chen@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com, ian.cy.chen@samsung.com
-Subject: [PATCH v4] mmc: card: Skip secure option for MoviNAND.
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV2NZp0AgzMPuSwu75rDZnHkfz+j
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBlXrvSyFGySrJjZcoq5gfGqaBcjJ4eEgIlE14pVzBC2
-	mMSFe+vZuhi5OIQEpjNKbNg+nwnCec0ocf7zHUaQKl4BLYkNn3+ygdgsAqoSPx5+AetmE9CQ
-	+H7wCViNqECYxKL3B1gh6gUlfky+xwIySERgI6PE6Y69YA6zQCOjxLx308GqhAXsJd7PuMwE
-	YjML6Ejsb53GBmHLS2xe85Z5AiPfLCTDZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0
-	veT83E2M4AB7JrWDcWWDxSFGAQ5GJR5eCSadACHWxLLiytxDjBIczEoivLdrgUK8KYmVValF
-	+fFFpTmpxYcYpTlYlMR5jb2/+gsJpCeWpGanphakFsFkmTg4pRoYg+/NmHT+v3tVxQ9zrpUc
-	Juf+JTFf5/JsPSFmPFFR/qeBDuPETtv0wk3lOy962Rr0rXr+ijd80hePpTdDWfSWPdy2wUZv
-	2Z1VOxU90+8lMi6eO/lx7m3RQg6/CVNPlP67r3vHTtnoW6Nj4nFu84q8CY5Sc3Uqt2x5e9rt
-	l8lsteK1l+UL7wptV2Ipzkg01GIuKk4EALInVeQsAgAA
-X-TM-AS-MML: No
+	Thu, 16 Aug 2012 01:25:43 -0400
+Date: Thu, 16 Aug 2012 15:25:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IkJydW5vIFByw6ltb250IDxib25ib25zQGxpbnV4LXZzZXJ2ZXIub3JnPiI=?=@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (hid tree
+ related)
+Message-Id: <20120816152538.7f850ee1a3b8ce90d9f749a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Aug_2012_15_25_38_+1000_EBPolrnJ3nOqGEmf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several MoviNAND, there are some known issue with secure option.
-For these specific MoviNAND device, we skip secure option.
+--Signature=_Thu__16_Aug_2012_15_25_38_+1000_EBPolrnJ3nOqGEmf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You could refer this discussion in XDA developers.
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+Hi all,
 
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/hid/hid-picolcd_fb.c: In function 'picolcd_fb_destroy':
+drivers/hid/hid-picolcd_fb.c:350:2: error: implicit declaration of function=
+ 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/hid/hid-picolcd_fb.c: In function 'picolcd_init_framebuffer':
+drivers/hid/hid-picolcd_fb.c:508:2: error: implicit declaration of function=
+ 'vmalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/hid/hid-picolcd_fb.c:508:12: warning: assignment makes pointer from=
+ integer without a cast [enabled by default]
+
+Caused by commit fabdbf2fd22f ("HID: picoLCD: split driver code") from
+the hid tree.
+
+I added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 16 Aug 2012 15:20:10 +1000
+Subject: [PATCH] HID: using vmalloc() requires the include of vmalloc.h
+
+Fixes thes build errors:
+
+drivers/hid/hid-picolcd_fb.c: In function 'picolcd_fb_destroy':
+drivers/hid/hid-picolcd_fb.c:350:2: error: implicit declaration of function=
+ 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/hid/hid-picolcd_fb.c: In function 'picolcd_init_framebuffer':
+drivers/hid/hid-picolcd_fb.c:508:2: error: implicit declaration of function=
+ 'vmalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/hid/hid-picolcd_fb.c:508:12: warning: assignment makes pointer from=
+ integer without a cast [enabled by default]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 24 insertions(+), 1 deletions(-)
+ drivers/hid/hid-picolcd_fb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index f1c84de..0377885 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
-struct request *req)
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1716,6 +1717,7 @@ force_ro_fail:
- #define CID_MANFID_SANDISK	0x2
- #define CID_MANFID_TOSHIBA	0x11
- #define CID_MANFID_MICRON	0x13
-+#define CID_MANFID_SAMSUNG	0x15
+diff --git a/drivers/hid/hid-picolcd_fb.c b/drivers/hid/hid-picolcd_fb.c
+index 4d8e22c..cf295c5 100644
+--- a/drivers/hid/hid-picolcd_fb.c
++++ b/drivers/hid/hid-picolcd_fb.c
+@@ -18,6 +18,7 @@
+  *************************************************************************=
+**/
+=20
+ #include <linux/hid.h>
++#include <linux/vmalloc.h>
+ #include "usbhid/usbhid.h"
+ #include <linux/usb.h>
+=20
+--=20
+1.7.10.280.gaa39
 
- static const struct mmc_fixup blk_fixups[] =
- {
-@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
- 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-+	/*
-+	 * Some issue about secure erase/secure trim for Samsung MoviNAND
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+
- 	END_FIXUP
- };
+--Signature=_Thu__16_Aug_2012_15_25_38_+1000_EBPolrnJ3nOqGEmf
+Content-Type: application/pgp-signature
 
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 111aca5..4b27f9f 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -239,6 +239,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
-multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
-bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for
-erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
--- 
-1.7.0.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQLIRSAAoJEECxmPOUX5FE3OMP/3DHl0erVQJsgJ4QyGxAxLkL
+W/9P6q/u3mJSTkjQkEDfcc4Vask9N0/xUXN7/EC3Pi/rY7dvKX8w69CDnhdBKjXX
+V8/JZaFse8rVJWF/Ox8OS/UCfgq86S7lhO8RaY8ZHty8vJwA9hzsH3SVZvy0wVkV
+WBl980lcAQVYJZN7TdhA6a5sOC323/LK6FD/mtv7bbr+2xvsA+/lkTzu46g9N+a2
+ySQOyTveu+qmbRkyXmrF0gPVV+2/eHAlvXFlCa1oQ7+1gdzpb3BB7tkLzttCYnC9
+fNVtl5fGS89pPn4D+2P1AuiloNByZCKAYB+HMiOVODHcToSsn4D5uxwA62jrQ1vy
+jzKGHfSTeT1PXbBKA9lckvwXOcZS2sXJlbUoMrVyoz70LBRGmqgap+FeYC2XGY1t
+McsceF3VMbLV+pWBQSbWW1HIvJ3f1TpvPv4Z4dFNVercdV+SGKFxeIsdC9oOgJoT
+pkQ1a7/nujHPzxQATHbayw5lxTmmtewchMIfFNZ+4hlIdItUYwMwZ3O8ad5VQOnB
+r4rRxEJiKyDKsqFq+nSVY0+H0NOxs5AIDwipShzvaYYRFh63ruvc5oGQZ6HgRKaW
+ktEM8QQRLLlNpQLc4O+C9uH1GjMU5jxQrEhoCewM43SYb876ofpxGjHd3U0aOyrZ
+gnyC2EKHMLeZwrtPOBnf
+=ZeeH
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Aug_2012_15_25_38_+1000_EBPolrnJ3nOqGEmf--
