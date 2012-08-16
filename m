@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2HPN6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:58:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53300 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab2HPN6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:58:24 -0400
-Date: Thu, 16 Aug 2012 14:58:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rik van Riel <riel@redhat.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC 1/2] cma: remove __reclaim_pages
-Message-ID: <20120816135817.GS4177@suse.de>
-References: <1344934627-8473-1-git-send-email-minchan@kernel.org>
- <1344934627-8473-2-git-send-email-minchan@kernel.org>
+	id S932598Ab2HPN7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:59:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60331 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab2HPN7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:59:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH] ARM: LPC32xx: Provide DMA filter callbacks via platform data
+Date: Thu, 16 Aug 2012 13:59:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org
+References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1345122935-22115-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1344934627-8473-2-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208161359.21276.arnd@arndb.de>
+X-Provags-ID: V02:K0:S9z+5bQ+PTibr+fO5C+D+DJnFfLtWw4blxkvsG9rbc0
+ pL122XTzXszklIYlxD/DAitfpPxXD5KQIxHaTFvw/9jX/nDWwp
+ fNI2Xl92UsevB9OR2mpZkf2Rf8VqMItMS6rSIYo4fGKzi0jFTx
+ cXVwoWHzW/WBxCONC+oRb1MlbhcjIB+TWgljeX2D0i8uVZcX9g
+ SrTsJKwwvurSSndmCxrLp8tu1e4GTbeIy1Q+zjpfFAaKl9lhvc
+ 16J9DzXAxeNFHzgtZLMrsiQFdrRAOBHMKDXrK2KZuYlFDz2vUE
+ otOH32wUTKvv75BvKqlI1CKPkW1obA9E0rs2G5nzKA30DC5g+9
+ kQOWAYjX5PGUZ3UH0WhY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 05:57:06PM +0900, Minchan Kim wrote:
-> Now cma reclaims too many pages by __reclaim_pages which says
-> following as
+On Thursday 16 August 2012, Roland Stigge wrote:
+> The SLC and MLC NAND drivers now need their dma_filter callbacks via platform
+> data to make them independent of single DMA engine drivers.
 > 
->         * Reclaim enough pages to make sure that contiguous allocation
->         * will not starve the system.
+> (This also helps fixing build errors of the SLC and MLC drivers when building
+> as modules because direct access to AMBA dma filter functions isn't available
+> via export.)
 > 
-> Starve? What does it starve the system? The function which allocate
-> free page for migration target would wake up kswapd and do direct reclaim
-> if needed during migration so system doesn't starve.
-> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-I thought this patch was overkill at the time it was introduced but
-didn't have a concrete reason to reject it when I commented on it
-https://lkml.org/lkml/2012/1/30/136 . Marek did want this and followed
-up with "contiguous allocations should have higher priority than others"
-which I took to mean that he was also ok with excessive reclaim.
+Yes, this looks right.
 
-> Let remove __reclaim_pages and related function and fields.
-> 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-That should be one patch and I don't object to it being removed as such
-but it's Marek's call.
+Once we have proper DT bindings for the DMA channels, we can hopefully
+get rid of the auxdata again.
 
-> I modified split_free_page slightly because I removed __reclaim_pages,
-> isolate_freepages_range can fail by split_free_page's watermark check.
-> It's very critical in CMA because it ends up failing alloc_contig_range.
-> 
-
-This is a big change and should have been in a patch on its
-own. split_free_page checks watermarks because if the watermarks are
-not obeyed a zone can become fully allocated. This can cause a system to
-livelock under certain circumstances if a page cannot be allocated and a
-free page is required before other pages can be freed.
-
-> I think we don't need the check in case of CMA because CMA allocates
-> free pages by alloc_pages, not isolate_freepages_block in migrate_pages
-> so watermark is already checked in alloc_pages.
-
-It uses alloc_pages when migrating pages out of the CMA area but note
-that it uses isolate_freepages_block when allocating the CMA buffer when
-alloc_contig_range calls isolate_freepages_range
-
-isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-{
-	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-               isolated = isolate_freepages_block(pfn, block_end_pfn,
-                                                   &freelist, true);
-	}
-	map_pages(&freelist);
-}
-
-so the actual CMA allocation itself is not using alloc_pages. By removing
-the watermark check you allow the CMA to breach watermarks and puts the
-system at risk of livelock.
-
-I'm not keen on the split_free_page() change at all.
-
--- 
-Mel Gorman
-SUSE Labs
+	Arnd
