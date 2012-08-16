@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab2HPNNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:13:53 -0400
-Received: from antcom.de ([188.40.178.216]:39721 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab2HPNNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:13:51 -0400
-Message-ID: <502CF20C.20801@antcom.de>
-Date: Thu, 16 Aug 2012 15:13:48 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S932254Ab2HPNPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:15:52 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:36437 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab2HPNPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:15:50 -0400
+Message-ID: <502CF259.9040300@panasas.com>
+Date: Thu, 16 Aug 2012 16:15:05 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: artem.bityutskiy@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH] dma: amba-pl08x: Export pl08x_filter_id
-References: <1345107396-27079-1-git-send-email-stigge@antcom.de> <20120816090041.GK18957@n2100.arm.linux.org.uk>
-In-Reply-To: <20120816090041.GK18957@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+To: <dedekind1@gmail.com>
+CC: Marco Stornelli <marco.stornelli@gmail.com>, <bhalevy@tonian.com>,
+        <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        <adilger.kernel@dilger.ca>, <tytso@mit.edu>,
+        <hirofumi@mail.parknet.co.jp>, <mikulas@artax.karlin.mff.cuni.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>, <hch@infradead.org>,
+        <dushistov@mail.ru>, <osd-dev@open-osd.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
+References: <502CC4AA.6040702@gmail.com>  <1345119652.3393.220.camel@sauron.fi.intel.com>  <502CE840.4060802@panasas.com> <1345122611.3393.225.camel@sauron.fi.intel.com>
+In-Reply-To: <1345122611.3393.225.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 11:00 AM, Russell King - ARM Linux wrote:
-> On Thu, Aug 16, 2012 at 10:56:36AM +0200, Roland Stigge wrote:
->> This patch fixes the following when compiling a driver module that uses
->> amba-pl08x:
->>
->> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko] undefined!
->> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_mlc.ko] undefined!
->>
->> (drivers/mtd/nand/lpc32xx_* are still in l2-mtd.git)
-> 
-> It is currently intended that this be passed from platform code into
-> drivers via platform data, so that drivers can decide which DMA engine
-> they wish to make use of.
-> 
-> See how all the AMBA drivers work in this regard (because they need to
-> support more than just a single DMA engine implementation.)
+On 08/16/2012 04:10 PM, Artem Bityutskiy wrote:
 
-Thanks for the note!
+> On Thu, 2012-08-16 at 15:32 +0300, Boaz Harrosh wrote:
+>> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
+>>
+>>> On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
+>>>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>>>>
+>>>> Remove lock and unlock super operation.
+>>>>
+>>>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>>>
+>>> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>>>
+>>
+>>
+>> Are you sure? It used to be that exofs_sync_fs() could be called
+>> concurrently.
+>>
+>> What about two "bash -c sync" calls or a sync and an unmount
+>> in parallel. anything protecting that?
+>>
+>> If so then sure, but please let me test first.
+> 
+> Umm, actually we will probably end up writing the same twice without the
+> lock. 
+> 
 
-I'll post respective changes to the MTD SLC and MLC drivers of LPC32xx
-(for the MTD subsystem) and the adjustment I'll do in mach-lpc32xx (my
-lpc32xx tree for arm-soc).
+
+No we are not allowed to run exofs_sync_fs() concurrently because it uses
+a per-alllocated scratch buffer to do it's stuff so you can end up with data
+corruption on disk.
+
+And we cannot use a spin-lock because we might sleep in ore_write()
+
+There are some optimizations I can do here, but lets for now just do
+the sb->s_lock thing, and I might decide to completely revamp the
+all thing later.
+
+Thanks
+Boaz
