@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab2HPPQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:16:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21799 "EHLO mga03.intel.com"
+	id S1757427Ab2HPPQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:16:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17204 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964790Ab2HPPQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:16:18 -0400
+	id S932732Ab2HPPQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:16:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="scan'208";a="135014822"
+   d="scan'208";a="209391449"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -26,9 +26,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v3 4/7] mm: pass fault address to clear_huge_page()
-Date: Thu, 16 Aug 2012 18:15:51 +0300
-Message-Id: <1345130154-9602-5-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v3 5/7] x86: Add clear_page_nocache
+Date: Thu, 16 Aug 2012 18:15:52 +0300
+Message-Id: <1345130154-9602-6-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -36,84 +36,249 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Andi Kleen <ak@linux.intel.com>
 
+Add a cache avoiding version of clear_page. Straight forward integer variant
+of the existing 64bit clear_page, for both 32bit and 64bit.
+
+Also add the necessary glue for highmem including a layer that non cache
+coherent architectures that use the virtual address for flushing can
+hook in. This is not needed on x86 of course.
+
+If an architecture wants to provide cache avoiding version of clear_page
+it should to define ARCH_HAS_USER_NOCACHE to 1 and implement
+clear_page_nocache() and clear_user_highpage_nocache().
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |    2 +-
- mm/huge_memory.c   |    2 +-
- mm/hugetlb.c       |    3 ++-
- mm/memory.c        |    7 ++++---
- 4 files changed, 8 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/page.h      |    2 +
+ arch/x86/include/asm/string_32.h |    5 +++
+ arch/x86/include/asm/string_64.h |    5 +++
+ arch/x86/lib/Makefile            |    3 +-
+ arch/x86/lib/clear_page_32.S     |   72 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/lib/clear_page_64.S     |   29 +++++++++++++++
+ arch/x86/mm/fault.c              |    7 ++++
+ 7 files changed, 122 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/lib/clear_page_32.S
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 311be90..2858723 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1638,7 +1638,7 @@ extern void dump_page(struct page *page);
- 
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
- extern void clear_huge_page(struct page *page,
--			    unsigned long addr,
-+			    unsigned long haddr, unsigned long fault_address,
- 			    unsigned int pages_per_huge_page);
- extern void copy_user_huge_page(struct page *dst, struct page *src,
- 				unsigned long addr, struct vm_area_struct *vma,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 6f0825b611..070bf89 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -644,7 +644,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
- 	if (unlikely(!pgtable))
- 		return VM_FAULT_OOM;
- 
--	clear_huge_page(page, haddr, HPAGE_PMD_NR);
-+	clear_huge_page(page, haddr, address, HPAGE_PMD_NR);
- 	__SetPageUptodate(page);
- 
- 	spin_lock(&mm->page_table_lock);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 3c86d3d..5182192 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2718,7 +2718,8 @@ retry:
- 				ret = VM_FAULT_SIGBUS;
- 			goto out;
- 		}
--		clear_huge_page(page, haddr, pages_per_huge_page(h));
-+		clear_huge_page(page, haddr, fault_address,
-+				pages_per_huge_page(h));
- 		__SetPageUptodate(page);
- 
- 		if (vma->vm_flags & VM_MAYSHARE) {
-diff --git a/mm/memory.c b/mm/memory.c
-index 5736170..dfc179b 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3984,19 +3984,20 @@ static void clear_gigantic_page(struct page *page,
- 	}
- }
- void clear_huge_page(struct page *page,
--		     unsigned long addr, unsigned int pages_per_huge_page)
-+		     unsigned long haddr, unsigned long fault_address,
-+		     unsigned int pages_per_huge_page)
- {
- 	int i;
- 
- 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
--		clear_gigantic_page(page, addr, pages_per_huge_page);
-+		clear_gigantic_page(page, haddr, pages_per_huge_page);
- 		return;
- 	}
- 
- 	might_sleep();
- 	for (i = 0; i < pages_per_huge_page; i++) {
- 		cond_resched();
--		clear_user_highpage(page + i, addr + i * PAGE_SIZE);
-+		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
- 	}
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 8ca8283..aa83a1b 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -29,6 +29,8 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
+ 	copy_page(to, from);
  }
  
++void clear_user_highpage_nocache(struct page *page, unsigned long vaddr);
++
+ #define __alloc_zeroed_user_highpage(movableflags, vma, vaddr) \
+ 	alloc_page_vma(GFP_HIGHUSER | __GFP_ZERO | movableflags, vma, vaddr)
+ #define __HAVE_ARCH_ALLOC_ZEROED_USER_HIGHPAGE
+diff --git a/arch/x86/include/asm/string_32.h b/arch/x86/include/asm/string_32.h
+index 3d3e835..3f2fbcf 100644
+--- a/arch/x86/include/asm/string_32.h
++++ b/arch/x86/include/asm/string_32.h
+@@ -3,6 +3,8 @@
+ 
+ #ifdef __KERNEL__
+ 
++#include <linux/linkage.h>
++
+ /* Let gcc decide whether to inline or use the out of line functions */
+ 
+ #define __HAVE_ARCH_STRCPY
+@@ -337,6 +339,9 @@ void *__constant_c_and_count_memset(void *s, unsigned long pattern,
+ #define __HAVE_ARCH_MEMSCAN
+ extern void *memscan(void *addr, int c, size_t size);
+ 
++#define ARCH_HAS_USER_NOCACHE 1
++asmlinkage void clear_page_nocache(void *page);
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_STRING_32_H */
+diff --git a/arch/x86/include/asm/string_64.h b/arch/x86/include/asm/string_64.h
+index 19e2c46..ca23d1d 100644
+--- a/arch/x86/include/asm/string_64.h
++++ b/arch/x86/include/asm/string_64.h
+@@ -3,6 +3,8 @@
+ 
+ #ifdef __KERNEL__
+ 
++#include <linux/linkage.h>
++
+ /* Written 2002 by Andi Kleen */
+ 
+ /* Only used for special circumstances. Stolen from i386/string.h */
+@@ -63,6 +65,9 @@ char *strcpy(char *dest, const char *src);
+ char *strcat(char *dest, const char *src);
+ int strcmp(const char *cs, const char *ct);
+ 
++#define ARCH_HAS_USER_NOCACHE 1
++asmlinkage void clear_page_nocache(void *page);
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_STRING_64_H */
+diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
+index b00f678..14e47a2 100644
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -23,6 +23,7 @@ lib-y += memcpy_$(BITS).o
+ lib-$(CONFIG_SMP) += rwlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ lib-$(CONFIG_INSTRUCTION_DECODER) += insn.o inat.o
++lib-y += clear_page_$(BITS).o
+ 
+ obj-y += msr.o msr-reg.o msr-reg-export.o
+ 
+@@ -40,7 +41,7 @@ endif
+ else
+         obj-y += iomap_copy_64.o
+         lib-y += csum-partial_64.o csum-copy_64.o csum-wrappers_64.o
+-        lib-y += thunk_64.o clear_page_64.o copy_page_64.o
++        lib-y += thunk_64.o copy_page_64.o
+         lib-y += memmove_64.o memset_64.o
+         lib-y += copy_user_64.o copy_user_nocache_64.o
+ 	lib-y += cmpxchg16b_emu.o
+diff --git a/arch/x86/lib/clear_page_32.S b/arch/x86/lib/clear_page_32.S
+new file mode 100644
+index 0000000..9592161
+--- /dev/null
++++ b/arch/x86/lib/clear_page_32.S
+@@ -0,0 +1,72 @@
++#include <linux/linkage.h>
++#include <asm/alternative-asm.h>
++#include <asm/cpufeature.h>
++#include <asm/dwarf2.h>
++
++/*
++ * Fallback version if SSE2 is not avaible.
++ */
++ENTRY(clear_page_nocache)
++	CFI_STARTPROC
++	mov    %eax,%edx
++	xorl   %eax,%eax
++	movl   $4096/32,%ecx
++	.p2align 4
++.Lloop:
++	decl	%ecx
++#define PUT(x) mov %eax,x*4(%edx)
++	PUT(0)
++	PUT(1)
++	PUT(2)
++	PUT(3)
++	PUT(4)
++	PUT(5)
++	PUT(6)
++	PUT(7)
++#undef PUT
++	lea	32(%edx),%edx
++	jnz	.Lloop
++	nop
++	ret
++	CFI_ENDPROC
++ENDPROC(clear_page_nocache)
++
++	.section .altinstr_replacement,"ax"
++1:      .byte 0xeb /* jmp <disp8> */
++	.byte (clear_page_nocache_sse2 - clear_page_nocache) - (2f - 1b)
++	/* offset */
++2:
++	.previous
++	.section .altinstructions,"a"
++	altinstruction_entry clear_page_nocache,1b,X86_FEATURE_XMM2,\
++				16, 2b-1b
++	.previous
++
++/*
++ * Zero a page avoiding the caches
++ * eax	page
++ */
++ENTRY(clear_page_nocache_sse2)
++	CFI_STARTPROC
++	mov    %eax,%edx
++	xorl   %eax,%eax
++	movl   $4096/32,%ecx
++	.p2align 4
++.Lloop_sse2:
++	decl	%ecx
++#define PUT(x) movnti %eax,x*4(%edx)
++	PUT(0)
++	PUT(1)
++	PUT(2)
++	PUT(3)
++	PUT(4)
++	PUT(5)
++	PUT(6)
++	PUT(7)
++#undef PUT
++	lea	32(%edx),%edx
++	jnz	.Lloop_sse2
++	nop
++	ret
++	CFI_ENDPROC
++ENDPROC(clear_page_nocache_sse2)
+diff --git a/arch/x86/lib/clear_page_64.S b/arch/x86/lib/clear_page_64.S
+index f2145cf..9d2f3c2 100644
+--- a/arch/x86/lib/clear_page_64.S
++++ b/arch/x86/lib/clear_page_64.S
+@@ -40,6 +40,7 @@ ENTRY(clear_page)
+ 	PUT(5)
+ 	PUT(6)
+ 	PUT(7)
++#undef PUT
+ 	leaq	64(%rdi),%rdi
+ 	jnz	.Lloop
+ 	nop
+@@ -71,3 +72,31 @@ ENDPROC(clear_page)
+ 	altinstruction_entry clear_page,2b,X86_FEATURE_ERMS,   \
+ 			     .Lclear_page_end-clear_page,3b-2b
+ 	.previous
++
++/*
++ * Zero a page avoiding the caches
++ * rdi	page
++ */
++ENTRY(clear_page_nocache)
++	CFI_STARTPROC
++	xorl   %eax,%eax
++	movl   $4096/64,%ecx
++	.p2align 4
++.Lloop_nocache:
++	decl	%ecx
++#define PUT(x) movnti %rax,x*8(%rdi)
++	movnti %rax,(%rdi)
++	PUT(1)
++	PUT(2)
++	PUT(3)
++	PUT(4)
++	PUT(5)
++	PUT(6)
++	PUT(7)
++#undef PUT
++	leaq	64(%rdi),%rdi
++	jnz	.Lloop_nocache
++	nop
++	ret
++	CFI_ENDPROC
++ENDPROC(clear_page_nocache)
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 76dcd9d..d8cf231 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -1209,3 +1209,10 @@ good_area:
+ 
+ 	up_read(&mm->mmap_sem);
+ }
++
++void clear_user_highpage_nocache(struct page *page, unsigned long vaddr)
++{
++	void *p = kmap_atomic(page);
++	clear_page_nocache(p);
++	kunmap_atomic(p);
++}
 -- 
 1.7.7.6
 
