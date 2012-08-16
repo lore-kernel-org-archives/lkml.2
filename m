@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab2HPPND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:13:03 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57482 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab2HPPNA (ORCPT
+	id S1757388Ab2HPPNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:13:36 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:36291 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754602Ab2HPPNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:13:00 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: Prabhakar Lad <prabhakar.lad@ti.com>, LMML <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
-Date: Thu, 16 Aug 2012 17:13:16 +0200
-Message-ID: <1435592.88fOxbvhY7@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
-References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
+	Thu, 16 Aug 2012 11:13:34 -0400
+Date: Thu, 16 Aug 2012 11:13:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Miklos Szeredi <miklos@szeredi.hu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
+In-Reply-To: <502CDADA.2070507@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1208161106350.24305-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Thu, 16 Aug 2012, Hans de Goede wrote:
 
-Thanks for the patch.
+> Ah right, these are bus_driver operations. That explains some things, so I've
+> done some more research asking myself: "Why does generic_ide_suspend(), which
+> is a *bus* op, call dev_get_drvdata?", the answer to that seems to be that
+> the ide subsystem is abusing (IMHO) drvdata to store per device bus_driver
+> data. Which I believe is not how drvdata is intended to be used.
+> 
+> With that said, the above knowledge has allowed me to write an (ugly) fix for
+> the regression Miklos is seeing. Miklos can you give the attached patch a
+> try please?
+> 
+> > It clearly should check if drive is not NULL before using that pointer.
+> 
+> I assume you mean drive*r*, yes I agree that generic_ide_remove should
+> check for that. So who is going to write a patch for that?
 
-On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> ---
->  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
->  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
->  2 files changed, 15 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/media/video/davinci/vpif_capture.c
-> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5 100644
-> --- a/drivers/media/video/davinci/vpif_capture.c
-> +++ b/drivers/media/video/davinci/vpif_capture.c
-> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
-> unsigned int count) }
-> 
->  	/* configure 1 or 2 channel mode */
-> -	ret = vpif_config_data->setup_input_channel_mode
-> -					(vpif->std_info.ycmux_mode);
-> +	if (vpif_config_data->setup_input_channel_mode) {
-> +		ret = vpif_config_data->setup_input_channel_mode
-> +						(vpif->std_info.ycmux_mode);
-> 
-> -	if (ret < 0) {
-> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
-> -		return ret;
-> +		if (ret < 0) {
-> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
-> +			return ret;
-> +		}
+The existing code could certainly be improved.  Your patch does:
 
-This change looks good to me. However, note that you will need to get rid of 
-board code callbacks at some point to implement device tree support. It would 
-be worth thinking about how to do so now.
+> +               /*
+> +                * device_register() will have cleared drvdata on
+> +                * device_attach failure, but we use drvdata to store per
+> +                * device bus info, rather then for driver info, so restore it.
+> +                */
+> +               dev_set_drvdata(dev, drive);
 
->  	}
-> 
->  	/* Call vpif_set_params function to set the parameters and addresses */
-> diff --git a/drivers/media/video/davinci/vpif_display.c
-> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92 100644
-> --- a/drivers/media/video/davinci/vpif_display.c
-> +++ b/drivers/media/video/davinci/vpif_display.c
-> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
-> unsigned int count) }
-> 
->  	/* clock settings */
-> -	ret =
-> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
-> -					ch->vpifparams.std_info.hd_sd);
-> -	if (ret < 0) {
-> -		vpif_err("can't set clock\n");
-> -		return ret;
-> +	if (vpif_config_data->set_clock) {
+But at this point, dev is defined by:
 
-Does the DaVinci platform use the common clock framework ? If so, a better fix 
-for this would be to pass a clock name through platform data instead of using 
-a callback function.
+		struct device *dev = &drive->gendev;
 
-> +		ret =
-> +		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
-> +						ch->vpifparams.std_info.hd_sd);
-> +		if (ret < 0) {
-> +			vpif_err("can't set clock\n");
-> +			return ret;
-> +		}
->  	}
-> 
->  	/* set the parameters and addresses */
--- 
-Regards,
+So why bother setting anything?  It seems to me that 
+generic_ide_suspend() and generic_ide_resume() could easily replace
 
-Laurent Pinchart
+	ide_drive_t *drive = dev_get_drvdata(dev);
+
+with
+
+	ide_drive_t *drive = dev_to_ide_drive(dev);
+
+where dev_to_ide_drive is defined as "container_of(dev, ide_drive_t,
+gendev)" (if this isn't defined already).
+
+Alan Stern
 
