@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876Ab2HPQR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:17:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964836Ab2HPQRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:17:53 -0400
-Date: Thu, 16 Aug 2012 18:16:47 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3 6/7] mm: make clear_huge_page cache clear only around
- the fault address
-Message-ID: <20120816161647.GM11188@redhat.com>
-References: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1345130154-9602-7-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1030252Ab2HPQTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:19:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43384 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964836Ab2HPQTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:19:48 -0400
+Message-ID: <502D1D9F.9020203@pobox.com>
+Date: Thu, 16 Aug 2012 12:19:43 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345130154-9602-7-git-send-email-kirill.shutemov@linux.intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 0/5] x86, MSI, AHCI: Support multiple MSIs
+References: <cover.1345124063.git.agordeev@redhat.com>
+In-Reply-To: <cover.1345124063.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On 08/16/2012 10:45 AM, Alexander Gordeev wrote:
+> Currently multiple MSI mode is limited to a single vector per device (at
+> least on x86 and PPC). This series breathes life into pci_enable_msi_block()
+> and makes it possible to set interrupt affinity for multiple IRQs, similarly
+> to MSI-X. Yet, only for x86 and only when IOMMUs are present.
+>
+> Although IRQ and PCI subsystems are modified, the current behaviour left
+> intact. The drivers could just start using multiple MSIs just by following
+> the existing documentation.
+>
+> The AHCI device driver makes use of the new mode and a new function -
+> pci_enable_msi_block_auto() - patches 4,5.
+>
+> The series is adapted to Ingo's -tip repository, x86/apic branch.
+> Patches 4,5 could be applied independently of patches 1-3.
+>
+> Attached patches:
+>    1/5 x86, MSI: Support multiple MSIs in presense of IRQ remapping
+>    2/5 x86, MSI: Allocate as many multiple IRQs as requested
+>    3/5 x86, MSI: Minor readability fixes
+>    4/5 PCI, MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+>    5/5 AHCI: Support multiple MSIs
 
-On Thu, Aug 16, 2012 at 06:15:53PM +0300, Kirill A. Shutemov wrote:
->  	for (i = 0; i < pages_per_huge_page;
->  	     i++, p = mem_map_next(p, page, i)) {
+Numbers?  I would like to see measurements that show this is a benefit. 
+  I'm especially wondering about lock contention for the case of 
+multiple, fast devices (e.g. RAM over SATA, or PCIe flash).
 
-It may be more optimal to avoid a multiplication/shiftleft before the
-add, and to do:
+Because I see the following obvious problems immediately:
 
-  	for (i = 0, vaddr = haddr; i < pages_per_huge_page;
-  	     i++, p = mem_map_next(p, page, i), vaddr += PAGE_SIZE) {
+1) AHCI takes a host-wide lock during interrupt processing, which quite 
+reduces the value of "interrupts generated by different
+ports could be serviced on different CPUs"
 
->  		cond_resched();
-> -		clear_user_highpage(p, addr + i * PAGE_SIZE);
-> +		vaddr = haddr + i*PAGE_SIZE;
+2) We do not put AHCI-specific code in libata-core.  Try libahci.c or 
+ahci.c.
 
-Not sure if gcc can optimize it away because of the external calls.
+Regards,
 
-> +		if (!ARCH_HAS_USER_NOCACHE || i == target)
-> +			clear_user_highpage(page + i, vaddr);
-> +		else
-> +			clear_user_highpage_nocache(page + i, vaddr);
->  	}
+	Jeff
 
 
-My only worry overall is if there can be some workload where this may
-actually slow down userland if the CPU cache is very large and
-userland would access most of the faulted in memory after the first
-fault.
 
-So I wouldn't mind to add one more check in addition of
-!ARCH_HAS_USER_NOCACHE above to check a runtime sysctl variable. It'll
-waste a cacheline yes but I doubt it's measurable compared to the time
-it takes to do a >=2M hugepage copy.
 
-Furthermore it would allow people to benchmark its effect without
-having to rebuild the kernel themself.
-
-All other patches looks fine to me.
-
-Thanks!
-Andrea
