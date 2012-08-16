@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2HPJgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 05:36:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
+	id S1755813Ab2HPJiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 05:38:55 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40366 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383Ab2HPJgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 05:36:51 -0400
-Message-ID: <502CBF29.9050705@redhat.com>
-Date: Thu, 16 Aug 2012 06:36:41 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
-References: <1345063345-31131-1-git-send-email-khoroshilov@ispras.ru> <502CBCC4.6010603@redhat.com>
-In-Reply-To: <502CBCC4.6010603@redhat.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751850Ab2HPJiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 05:38:54 -0400
+Message-ID: <1345109897.11751.31.camel@pasglop>
+Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 16 Aug 2012 19:38:17 +1000
+In-Reply-To: <20120816095336.4eeb3ce1@de.ibm.com>
+References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
+	 <1344953810-20564-2-git-send-email-fweisbec@gmail.com>
+	 <20120815170347.323507b1@de.ibm.com> <20120815190901.GD19716@somewhere>
+	 <20120816095336.4eeb3ce1@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-08-2012 06:26, Mauro Carvalho Chehab escreveu:
-> Em 15-08-2012 17:42, Alexey Khoroshilov escreveu:
->> If pci_register_driver() failed, resources allocated in
->> ddb_class_create() are leaked. The patch fixes it.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
->> ---
->>  drivers/media/dvb/ddbridge/ddbridge-core.c |    6 +++++-
->>  1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
->> index ebf3f05..36aa4e4 100644
->> --- a/drivers/media/dvb/ddbridge/ddbridge-core.c
->> +++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
->> @@ -1705,7 +1705,11 @@ static __init int module_init_ddbridge(void)
->>  	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
->>  	if (ddb_class_create())
->>  		return -1;
-> 
-> This is not right. It should be returning a proper error code.
+On Thu, 2012-08-16 at 09:53 +0200, Martin Schwidefsky wrote:
+> Hmm, ok. But then the description should be reworded not to be specific to
+> the power architecture (the part of the message about "This also enables
+> accounting of stolen time on logically-partitioned systems running on IBM
+> POWER5-based machines."). 
 
-Please discard this email. I already commented this on a previous email.
-This one was a previous draft.
+Which is not very helpful to somebody running on a POWER6 or 7 (which
+also support that option just fine :-)
 
-Thanks,
-Mauro
+So yes, the description should definitely be improved.
 
-> 
-> Could you please patch ddb_class_create() in order to make it to
-> return the retuned value from IS_ERR() as the error code, and return
-> it back to the init code?
-> 
-> Ok, I noticed that other parts of the driver are also returning wrong
-> error codes, but let's fix at least module_init_ddbridge() while you're
-> looking into this.
-> 
->> -	return pci_register_driver(&ddb_pci_driver);
->> +	if (pci_register_driver(&ddb_pci_driver) < 0) {
->> +		ddb_class_destroy();
->> +		return -1;
-> 
-> The correct here would be to store the error on a temp register
-> and return it, instead of returning -1.
-> 
->> +	}
->> +	return 0;
->>  }
->>  
->>  static __exit void module_exit_ddbridge(void)
->>
-> 
-> Thank you!
-> Mauro
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Cheers,
+Ben.
+
 
