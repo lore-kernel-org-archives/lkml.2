@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab2HPRwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:52:40 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56330 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab2HPRwi (ORCPT
+	id S933098Ab2HPRyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:54:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53874 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141Ab2HPRyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:52:38 -0400
-Date: Thu, 16 Aug 2012 19:52:34 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Roman Mamedov <rm@romanrm.ru>
-Cc: Johannes Stezenbach <js@sig21.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] Update LZO compression
-Message-ID: <20120816175234.GL11413@one.firstfloor.org>
-References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com> <20120816150647.GA22010@sig21.net> <20120816232549.4d14a6aa@natsu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816232549.4d14a6aa@natsu>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 16 Aug 2012 13:54:02 -0400
+Message-ID: <502D33B6.7070103@wwwdotorg.org>
+Date: Thu, 16 Aug 2012 11:53:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: olof@lixom.net, grant.likely@secretlab.ca, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, vinod.koul@linux.intel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
+ driver
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1345126397-28864-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have locked the Allwinner A10 CPU in my Mele A2000 to 60 MHz using cpufreq-set,
-> and ran your test. rnd.lzo is a 9 MB file from /dev/urandom compressed with lzo.
-> There doesn't seem to be a significant difference between all three variants.
+On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+> Enable config for dmaengine based Tegra APB DMA driver and
+> disable the legacy APB DMA driver (SYSTEM_DMA).
 
-I found that in compression benchmarks it depends a lot on the data
-compressed.
-
-urandom (which should be essentially incompressible) will be handled
-by different code paths in the compressor than other more compressible data.
-It becomes a complicated memcpy then.
-
-But then there are IO benchmarks which also only do zeroes, which
-also gives an unrealistic picture.
-
-Usually it's best to use some corpus with different data types, from very
-compressible to less so; and look at the aggregate.
-
-For my snappy work I usually had at least large executables (medium) and some
-pdfs (already compressed; low) and then uncompressed source code tars (high
-compression)
-
--Andi
+Laxman, if I apply this series to next-20120816 (plus a few patches in
+my local work branch plus the CPU hotplug patches from Joseph, although
+I suspect none of that matters), then audio playback on Tegra20 is
+broken; the pitch is far too high. Audio playback on Tegra30 works as
+expected.
