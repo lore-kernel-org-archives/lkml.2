@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2HPWAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 18:00:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2451 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab2HPWAW (ORCPT
+	id S932462Ab2HPWDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 18:03:06 -0400
+Received: from smtp-vbr8.xs4all.nl ([194.109.24.28]:3234 "EHLO
+	smtp-vbr8.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab2HPWDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 18:00:22 -0400
-X-Authority-Analysis: v=2.0 cv=Hun06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=07ZCQtT27sEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZRzJ3tYFNvQA:10 a=meVymXHHAAAA:8 a=9Ga2Su1Zm6dkM_46A5sA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345154418.3708.13.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH -v2 0/4] Persistent events
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Jonathan Corbet <corbet@lwn.net>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Aug 2012 18:00:18 -0400
-In-Reply-To: <20120816214103.GE16308@aftab.osrc.amd.com>
-References: <1345139123-15212-1-git-send-email-bp@amd64.org>
-	 <20120816141253.0142ddd0@lwn.net>
-	 <20120816205539.GA16308@aftab.osrc.amd.com>
-	 <1345151613.3708.4.camel@gandalf.local.home>
-	 <20120816214103.GE16308@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Thu, 16 Aug 2012 18:03:04 -0400
+X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Aug 2012 18:03:03 EDT
+Message-ID: <502D6B0A.6090508@xs4all.net>
+Date: Thu, 16 Aug 2012 23:50:02 +0200
+From: Miquel van Smoorenburg <mikevs@xs4all.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: stan@hardwarefreak.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com>
+In-Reply-To: <502CD3F8.70001@hardwarefreak.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 23:41 +0200, Borislav Petkov wrote:
-> On Thu, Aug 16, 2012 at 05:13:33PM -0400, Steven Rostedt wrote:
-> > BTW, we already have a persistent buffering in the kernel. It's used
-> > by ftrace. What about having perf use that buffering for persistent
-> > events? Or is there some other issues about using it.
-> 
-> Not that I know of.
-> 
-> I coded this with the perf ring buffer now. If only there was one ring
-> buffer in the kernel.. /me ducks and hides.
+On 16-08-12 1:05 PM, Stan Hoeppner wrote:
+> On 8/15/2012 6:07 PM, Miquel van Smoorenburg wrote:
+>> Ehrm no. If you modify, say, a 4K block on a RAID5 array, you just have
+>> to read that 4K block, and the corresponding 4K block on the
+>> parity drive, recalculate parity, and write back 4K of data and 4K
+>> of parity. (read|read) modify (write|write). You do not have to
+>> do I/O in chunksize, ehm, chunks, and you do not have to rmw all disks.
+>
+> See:  http://www.spinics.net/lists/xfs/msg12627.html
+>
+> Dave usually knows what he's talking about, and I didn't see Neil nor
+> anyone else correcting him on his description of md RMW behavior.
 
-:)
+Well he's wrong, or you're interpreting it incorrectly.
 
-> 
-> Ok, with perf I can read out the events programmatically by mmaping the
-> per-CPU buffer with perf_mmap. How do you do that in ftrace? Any code
-> pointers I can stare at?
+I did a simple test:
 
-Do these need to be mmapped, or are they copied into another location
-(disk or network)? I had code to allow the ftrace ring buffers to be
-mmapped, but stopped that work a while ago.
+* created a 1G partition on 3 seperate disks
+* created a md raid5 array with 512K chunksize:
+   mdadm -C /dev/md0 -l 5 -c $((1024*512)) -n 3 /dev/sdb1 /dev/sdc1 
+/dev/sdd1
+* ran disk monitoring using 'iostat -k 5 /dev/sdb1 /dev/sdc1 /dev/sdd1'
+* wrote a single 4K block:
+   dd if=/dev/zero bs=4K count=1 oflag=direct seek=30 of=/dev/md0
 
+Output from iostat over the period in which the 4K write was done. Look 
+at kB read and kB written:
 
-> 
-> > I'm currently working on having perf read ftrace data, so in the near
-> > future, I plan on having some RFC patches to have perf reading from
-> > this buffer anyway.
-> 
-> Are you saying the ftrace buffer would be mmappable too now?
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sdb1              0.60         0.00         1.60          0          8
+sdc1              0.60         0.80         0.80          4          4
+sdd1              0.60         0.00         1.60          0          8
 
-No, the ftrace buffer was optimized for the splice command. I would have
-perf do what trace-cmd does. That is, write directly into a file as it
-reads it, without ever needing the info to come into userspace. I wasn't
-planning on replacing perf buffers, I was just planning on giving perf a
-tracing boost.
+As you can see, a single 4K read, and a few writes. You see a few blocks 
+more written that you'd expect because the superblock is updated too.
 
-Another alternative, which would be a bit slower, would be to copy the
-pages, either into userspace (as a read) or into a location to mmap the
-buffers.
-
-I could also continue the work on allowing ftrace buffers to be mmapped.
-But if the best thing to do is just use the perf buffers, then we could
-just stick with that.
-
-> 
-> Btw, I wanted to hear your opinion on patch 1/4 since it touches
-> ftrace/trace_events code. Can you please look at it and tell me if its
-> ok?
-> 
-
-I'll take a look.
-
--- Steve
-
-
+Mike.
