@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401Ab2HPVci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:32:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48565 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933362Ab2HPVcg (ORCPT
+	id S933407Ab2HPVe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:34:27 -0400
+Received: from audible.transient.net ([216.254.12.79]:52631 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933379Ab2HPVeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:32:36 -0400
-Date: Thu, 16 Aug 2012 14:25:48 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: wei_wang@realsil.com.cn, gregkh@linuxfoundation.org,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, cjb@laptop.org, sameo@linux.intel.com,
-        bp@alien8.de
-Subject: Re: [PATCH v2 1/2] drivers/mfd: Add realtek pcie card reader driver
-Message-ID: <20120816212548.GI24861@google.com>
-References: <cover.1344939464.git.wei_wang@realsil.com.cn>
- <81fef7d4f337f6d8e3365752bbb3ef87302b82a0.1344939464.git.wei_wang@realsil.com.cn>
- <201208150640.54561.arnd@arndb.de>
+	Thu, 16 Aug 2012 17:34:25 -0400
+Date: Thu, 16 Aug 2012 21:34:24 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
+ return
+Message-ID: <20120816213423.GB4282@cucamonga.audible.transient.net>
+Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
+	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120815061115.GC32347@cucamonga.audible.transient.net>
+ <20120815135854.GI32347@cucamonga.audible.transient.net>
+ <20120815150251.GB16057@fieldses.org>
+ <20120816201838.GA4282@cucamonga.audible.transient.net>
+ <20120816204208.GE4385@fieldses.org>
+ <20120816210916.GA6108@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208150640.54561.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120816210916.GA6108@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 06:40:54AM +0000, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, wei_wang@realsil.com.cn wrote:
-> > +
-> > +void rtsx_pci_start_run(struct rtsx_pcr *pcr)
-> > +{
-> > +       /* If pci device removed, don't queue idle work any more */
-> > +       if (pcr->remove_pci)
-> > +               return;
-> > +
-> > +       if (pcr->state != PDEV_STAT_RUN) {
-> > +               pcr->state = PDEV_STAT_RUN;
-> > +               pcr->ops->enable_auto_blink(pcr);
-> > +       }
-> > +
-> > +       mod_timer(&pcr->idle_timer, jiffies + msecs_to_jiffies(200));
-> > +}
-> > +EXPORT_SYMBOL_GPL(rtsx_pci_start_run);
+J. Bruce Fields wrote:
+> On Thu, Aug 16, 2012 at 04:42:08PM -0400, J. Bruce Fields wrote:
+> > Hm, weird.  In the good case the cb_recall's done with auth_unix, in the
+> > bad case with auth_null.  OK, that should be enough to go on....
+> > 
+> > Thanks for digging into this!
 > 
-> One more comment on the mod_timer/queue_work combination: I just saw that
-> Tejun Heo posted a series to introduce a new mod_delayed_work() helper.
+> This should fix it--could you confirm?
+
+Yep, looks like that fixes it.
+
+> commit e950bebdac1f17121f972728489cdba43734d56d
+> Author: J. Bruce Fields <bfields@redhat.com>
+> Date:   Thu Aug 16 17:01:21 2012 -0400
 > 
-> Once that goes in, it would be best to start using it here.
-
-mod_delayed_work() is now in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git wq-mod_delayed
-
-The branch is stable and will be pushed during for-3.7 merge window.
-Please feel free to pull as necessary.
-
-Thanks.
+>     nfsd4: fix security flavor of NFSv4.0 callback
+>     
+>     Commit d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move rq_flavor
+>     into svc_cred" forgot to remove cl_flavor from the client, leaving two
+>     places (cl_flavor and cl_cred.cr_flavor) for the flavor to be stored.
+>     After that patch, the latter was the one that was updated, but the
+>     former was the one that the callback used.
+>     
+>     Symptoms were a long delay on utime().  This is because the utime()
+>     generated a setattr which recalled a delegation, but the cb_recall was
+>     ignored by the client because it had the wrong security flavor.
+>     
+>     Cc: stable@vger.kernel.org
+>     Reported-by: Jamie Heilman <jamie@audible.transient.net>
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+> index cbaf4f8..4c7bd35 100644
+> --- a/fs/nfsd/nfs4callback.c
+> +++ b/fs/nfsd/nfs4callback.c
+> @@ -651,12 +651,12 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
+>  
+>  	if (clp->cl_minorversion == 0) {
+>  		if (!clp->cl_cred.cr_principal &&
+> -				(clp->cl_flavor >= RPC_AUTH_GSS_KRB5))
+> +				(clp->cl_cred.cr_flavor >= RPC_AUTH_GSS_KRB5))
+>  			return -EINVAL;
+>  		args.client_name = clp->cl_cred.cr_principal;
+>  		args.prognumber	= conn->cb_prog,
+>  		args.protocol = XPRT_TRANSPORT_TCP;
+> -		args.authflavor = clp->cl_flavor;
+> +		args.authflavor = clp->cl_cred.cr_flavor;
+>  		clp->cl_cb_ident = conn->cb_ident;
+>  	} else {
+>  		if (!conn->cb_xprt)
+> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+> index 167d7d8..9db0bb5 100644
+> --- a/fs/nfsd/state.h
+> +++ b/fs/nfsd/state.h
+> @@ -231,7 +231,6 @@ struct nfs4_client {
+>  	nfs4_verifier		cl_verifier; 	/* generated by client */
+>  	time_t                  cl_time;        /* time of last lease renewal */
+>  	struct sockaddr_storage	cl_addr; 	/* client ipaddress */
+> -	u32			cl_flavor;	/* setclientid pseudoflavor */
+>  	struct svc_cred		cl_cred; 	/* setclientid principal */
+>  	clientid_t		cl_clientid;	/* generated by server */
+>  	nfs4_verifier		cl_confirm;	/* generated by server */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-tejun
+Jamie Heilman                     http://audible.transient.net/~jamie/
