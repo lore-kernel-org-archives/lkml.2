@@ -1,150 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab2HPJyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 05:54:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51707 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab2HPJyJ convert rfc822-to-8bit (ORCPT
+	id S1755554Ab2HPJyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 05:54:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55052 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab2HPJyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 05:54:09 -0400
-Message-ID: <1345110832.29668.12.camel@twins>
-Subject: Re: [PATCH RFC] sched: Make migration_call() safe for
- stop_machine()-free hotplug
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com
-Date: Thu, 16 Aug 2012 11:53:52 +0200
-In-Reply-To: <20120725215126.GA7350@linux.vnet.ibm.com>
-References: <20120725215126.GA7350@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 16 Aug 2012 05:54:51 -0400
+Date: Thu, 16 Aug 2012 11:54:39 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Borislav Petkov <bp@alien8.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CdrF4e02JqNVZeln"
+Content-Disposition: inline
+In-Reply-To: <20120731170741.GA4735@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:zZcz2DnZfysorPMQcfYYs17ATfZH9YlbCu1XOnOoqFS
+ RnsHdlZhQbo5MspoD88FlGP8Hdh9RBGJc0ftnO+unZfwwRZcTi
+ /BTxWEu6rzIc0UnX6CziTCJgAdHQ4zfkPnc3BagaulJEB5UiX9
+ Qcp6gwCT3gAg3LtcEyCqZvnHycJCnUec3I0o8KyMsoXpuhE8Wf
+ mgNb0VLwAFudMGq3sNeXj93SkpVn5OC82T2umaeOyQKrLa7j4N
+ Sp6UGwRWE6/gFifhFgg5FCLxnskWr0UfaCYTb2IkPNSO1LXfWV
+ eL6EW/H66zYWr3+NhnMmRMRWr3u93LdIeSFn8HO46g+pKHZSp3
+ 0Qjwvnla9PXIHjlYtYQ312QJbMOh6pS1gibfmwg3M2TLic5lXY
+ QqDKEljRUWJpqNB6l4d3CAf/72n6OTY3RY7iLOjPMrPYE2uiUr
+ o8aD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-25 at 14:51 -0700, Paul E. McKenney wrote:
-> The CPU_DYING branch of migration_call() relies on the fact that
-> CPU-hotplug offline operations use stop_machine().  This commit therefore
-> attempts to remedy this situation by acquiring the relevant runqueue
-> locks.  Note that sched_ttwu_pending() remains outside of the scope of
-> these new runqueue-lock critical sections because (1) sched_ttwu_pending()
-> does its own runqueue-lock acquisition and (2) sched_ttwu_pending() handles
-> pending wakeups, and no further wakeups can select this CPU because it
-> is already marked as offline.
-> 
-> It is quite possible that migrate_nr_uninterruptible() 
 
-The rules for nr_uninterruptible are that only the local cpu modifies
-its own count -- with the exception for the offline case where someone
-else picks up the remnant, which we assume is stable for the recently
-dead cpu.
+--CdrF4e02JqNVZeln
+Content-Type: multipart/mixed; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
 
-Only the direct sum over all cpus of nr_uninterruptible is meaningful,
-see nr_uninterruptible() and the somewhat big comment titled "Global
-load-average calculations".
 
-> and
-> calc_global_load_remove() somehow don't need runqueue-lock protection,
-> but I was not able to prove this to myself.
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It shouldn't need it, the offlined cpu's value should be stable and the
-modification is to a global atomic with the proper atomic operation.
+On Tue, Jul 31, 2012 at 07:07:41PM +0200, Borislav Petkov wrote:
+> On Tue, Jul 31, 2012 at 11:16:00AM -0400, Dave Jones wrote:
+> >=20
+> > PWM Support (PWM) [N/y/?] (NEW) ?
+> >=20
+> > CONFIG_PWM:
+> >=20
+> > This enables PWM support through the generic PWM framework.
+> >=20
+> >=20
+> > Well that's.. enlightening.
+>=20
+> Oh, there's one more enlightening sentence in the help:
+>=20
+> "You only need to enable this, if you also want to enable one or more of
+> the PWM drivers below."
+>=20
+> Got it? :-)
+>=20
+> > I'm picking on PWM here, but this isn't an
+> > isolated case.  Every merge window we see a slew of new options with us=
+eless
+> > help texts. They may as well be non-existent. (Actually in some cases, =
+they are).
+> >=20
+> > If someone has to read the code to find out what the driver is, your he=
+lp text probably sucks.
+> >=20
+> >=20
+> > (I'll leave "why does this option even show up on x86" as a separate ra=
+nt)
+>=20
+> Thierry, can you guys please fix this?
 
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+How does the attached patch look?
 
-Gotta love this new schizophrenic you.. :-) I'm quite content with one
-functional email addr from you there.
+Thierry
 
-> ---
-> 
->  core.c |   21 +++++++++++----------
->  1 file changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index eaead2d..2e7797a 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5175,10 +5175,8 @@ void idle_task_exit(void)
->   * their home CPUs. So we just add the counter to another CPU's counter,
->   * to keep the global sum constant after CPU-down:
->   */
-> -static void migrate_nr_uninterruptible(struct rq *rq_src)
-> +static void migrate_nr_uninterruptible(struct rq *rq_src, struct rq *rq_dest)
->  {
-> -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-> -
->  	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
->  	rq_src->nr_uninterruptible = 0;
->  }
-> @@ -5200,7 +5198,7 @@ static void calc_global_load_remove(struct rq *rq)
->   * there's no concurrency possible, we hold the required locks anyway
->   * because of lock validation efforts.
->   */
-> -static void migrate_tasks(unsigned int dead_cpu)
-> +static void migrate_tasks(unsigned int dead_cpu, struct rq *rq_dest)
->  {
->  	struct rq *rq = cpu_rq(dead_cpu);
->  	struct task_struct *next, *stop = rq->stop;
-> @@ -5234,11 +5232,11 @@ static void migrate_tasks(unsigned int dead_cpu)
->  
->  		/* Find suitable destination for @next, with force if needed. */
->  		dest_cpu = select_fallback_rq(dead_cpu, next);
-> -		raw_spin_unlock(&rq->lock);
-> +		double_rq_unlock(rq, rq_dest);
->  
->  		__migrate_task(next, dead_cpu, dest_cpu);
->  
-> -		raw_spin_lock(&rq->lock);
-> +		double_rq_lock(rq, rq_dest);
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline; filename="0001-pwm-Improve-Kconfig-help-text.patch"
+Content-Transfer-Encoding: quoted-printable
 
-I would almost propose adding ___migrate_task() to avoid the
-unlock-lock-unlock-lock dance there, possibly there's a better name
-though :-)
+=46rom cd3199b94e697cccd38766b4a60d2e91474d0539 Mon Sep 17 00:00:00 2001
+=46rom: Thierry Reding <thierry.reding@avionic-design.de>
+Date: Thu, 16 Aug 2012 08:01:21 +0200
+Subject: [PATCH] pwm: Improve Kconfig help text
 
->  	}
->  
->  	rq->stop = stop;
-> @@ -5452,6 +5450,7 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  	int cpu = (long)hcpu;
->  	unsigned long flags;
->  	struct rq *rq = cpu_rq(cpu);
-> +	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
+The Kconfig help text should help the user understand what functionality
+is provided by an option. This is especially true for new subsystems. An
+improved help text is provided by this commit in the hopes of clarifying
+the usefulness of the PWM framework.
 
-I realize you took this from migrate_nr_uninterruptible(), but I think
-its actually wrong now, given the rules for nr_uninterruptible. But in
-general it seems to make more sense to pull stuff towards the operating
-cpu than to a random other cpu, no?
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/pwm/Kconfig | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
->  	switch (action & ~CPU_TASKS_FROZEN) {
->  
-> @@ -5474,17 +5473,19 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
->  	case CPU_DYING:
->  		sched_ttwu_pending();
->  		/* Update our root-domain */
-> -		raw_spin_lock_irqsave(&rq->lock, flags);
-> +		local_irq_save(flags);
-> +		double_rq_lock(rq, rq_dest);
->  		if (rq->rd) {
->  			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
->  			set_rq_offline(rq);
->  		}
-> -		migrate_tasks(cpu);
-> +		migrate_tasks(cpu, rq_dest);
->  		BUG_ON(rq->nr_running != 1); /* the migration thread */
-> -		raw_spin_unlock_irqrestore(&rq->lock, flags);
->  
-> -		migrate_nr_uninterruptible(rq);
-> +		migrate_nr_uninterruptible(rq, rq_dest);
->  		calc_global_load_remove(rq);
-> +		double_rq_unlock(rq, rq_dest);
-> +		local_irq_restore(flags);
->  		break;
->  #endif
->  	}
-> 
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 8fc3808..88ddb9e 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -1,12 +1,24 @@
+ menuconfig PWM
+-	bool "PWM Support"
++	bool "Pulse-Width Modulation (PWM) Support"
+ 	depends on !MACH_JZ4740 && !PUV3_PWM
+ 	help
+-	  This enables PWM support through the generic PWM framework.
+-	  You only need to enable this, if you also want to enable
+-	  one or more of the PWM drivers below.
+-
+-	  If unsure, say N.
++	  Generic Pulse-Width Modulation (PWM) support.
++
++	  This framework provides a generic interface to PWM devices
++	  within the Linux kernel. On the driver side it provides an API
++	  to register and unregister a PWM chip, an abstraction of a PWM
++	  controller, that supports one or more PWM devices. Client
++	  drivers can request PWM devices and use the generic framework
++	  to configure as well as enable and disable them.
++
++	  The new generic framework replaces the legacy PWM framework
++	  which allows only a single driver implementing the required
++	  API. Not all legacy implementations have been ported to the
++	  new framework yet. The new framework provides an API that is
++	  backward compatible with the legacy framework so that existing
++	  client drivers continue to work as expected.
++
++	  If unsure, say no.
+=20
+ if PWM
+=20
+--=20
+1.7.11.5
 
+
+--M9NhX3UHpAaciwkO--
+
+--CdrF4e02JqNVZeln
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQLMNfAAoJEN0jrNd/PrOhs8IQAL8VslY8+lD6lJ0AEqHvJzPN
+tTX5Ro7PbYJuyI4bvniQH/7+HoB0hdOGjjX/iJJBWSs80uRVdCiEyOZPfaPQDew0
+NTf6dP+d9IWBpHm0amN0SzzuhrIVWOKH1PxstGlSvEoAOGJh/r5WQkbvbeElQovx
+H0iat+vHcP+f4i3+f3sEU/25SBuGNdCbq+EZxavRMuYFFTeuBkf1kUQf7hDk2SwK
+vaglIbqAuDrKbSKYO33S9v799nfVFultjV1/F1T7wdvl9lHg3KUhyOaIhs8l9wpY
+hniAMyHnFOFuewzrjKhRBrwJzrVujfBBUCevGgzoP2Hamau2BBKMX1wT/gcj+kfR
+jKXmJ0fw0rHZ0HlBni+a/aVACNFjHzw9fm+JcX1i91ZpnFPj7piNXenNs5kQBeXj
+met1Vy8pWNtN/KiVqbmNRbD3ve1QI/8Js6sqhwtNMqxA+5edi7swVNFOZiJUKY+p
+Ca+Pes9P/BPdQQIBpIDpr3Y4B4Ffru/88L1brpASzM5JrsAgCq7eYNnSJEWijPsO
+HLw2vJ5aEmL+QsCiNbA2Mjm8LuRXVosgcFAyhphrmJAHWWj7mgv3gifneTDnYI4T
+SAfFvW9pGnNCBtRlDL37byr54QS3wgzhD5s+lQpsUfZdpqzUVslKfzReLITN4Den
+gMNoqezig47nYPkxBbYE
+=utF5
+-----END PGP SIGNATURE-----
+
+--CdrF4e02JqNVZeln--
