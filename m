@@ -1,357 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab2HPSLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:11:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42124 "EHLO mx1.redhat.com"
+	id S1756730Ab2HPSLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:11:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2HPSLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:11:02 -0400
-Message-Id: <20120816174454.366122945@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 16 Aug 2012 13:44:57 -0400
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: [PATCH v6 4/4] cgroup: rename subsys_bits to subsys_mask
-References: <20120816174453.154143248@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=cgroup-renaming.patch
+	id S1752840Ab2HPSLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:11:53 -0400
+Message-ID: <502D2099.7050800@redhat.com>
+Date: Thu, 16 Aug 2012 19:32:25 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+References: <20120810223633.809.44188.stgit@bling.home>
+In-Reply-To: <20120810223633.809.44188.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a previous discussion, Tejun Heo suggested to rename references to
-subsys_bits (added_bits, removed_bits, etc) by something more meaningful.
+On 08/11/2012 01:37 AM, Alex Williamson wrote:
+> v8:
+> 
+> Trying a new approach.  Nobody seems to like the internal IRQ
+> source ID object and the interactions it implies between irqfd
+> and eoifd, so let's get rid of it.  Instead, simply expose
+> IRQ source IDs to userspace.  This lets the user be in charge
+> of freeing them or hanging onto a source ID for later use.  They
+> can also detach and re-attach components at will.  It also opens
+> up the possibility that userspace might want to use each IRQ
+> source ID for more than one GSI (and avoids the kernel needing
+> to manage that).  Per suggestions, EOIFD is now IRQ_ACKFD.
+> 
+> I really wanted to add a de-assert-only option to irqfd so the
+> irq_ackfd could be fed directly into an irqfd, but I'm dependent
+> on the ordering of de-assert _then_ signal an eventfd.  Keeping
+> that ordering doesn't seem to be possible, especially since irqfd
+> uses a workqueue, if I attempt to make that connection.  Thanks,
 
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com
+I can't say I'm happy with exposing irq source IDs.  It's true that they
+correspond to a physical entity so they can't be said to be an
+implementation detail, but adding more ABIs has a cost and I can't say
+that I see another user for this.
 
----
- kernel/cgroup.c |   84 ++++++++++++++++++++++++++++----------------------------
- 1 file changed, 42 insertions(+), 42 deletions(-)
+Can you provide a link to the combined irqfd+ackfd implementation?  I'm
+inclined now to go for the simplest solution possible.
 
-Index: github/kernel/cgroup.c
-===================================================================
---- github.orig/kernel/cgroup.c	2012-08-16 11:33:43.276337899 -0400
-+++ github/kernel/cgroup.c	2012-08-16 11:33:43.292338339 -0400
-@@ -111,13 +111,13 @@
- 	 * The bitmask of subsystems intended to be attached to this
- 	 * hierarchy
- 	 */
--	unsigned long subsys_bits;
-+	unsigned long subsys_mask;
- 
- 	/* Unique id for this hierarchy. */
- 	int hierarchy_id;
- 
- 	/* The bitmask of subsystems currently attached to this hierarchy */
--	unsigned long actual_subsys_bits;
-+	unsigned long actual_subsys_mask;
- 
- 	/* A list running through the attached subsystems */
- 	struct list_head subsys_list;
-@@ -557,7 +557,7 @@
- 	 * won't change, so no need for locking.
- 	 */
- 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--		if (root->subsys_bits & (1UL << i)) {
-+		if (root->subsys_mask & (1UL << i)) {
- 			/* Subsystem is in this hierarchy. So we want
- 			 * the subsystem state from the new
- 			 * cgroup */
-@@ -1002,7 +1002,7 @@
- 	struct dentry *parent;
- 	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
- 
--	cgroup_clear_directory(dentry, true, root->subsys_bits);
-+	cgroup_clear_directory(dentry, true, root->subsys_mask);
- 
- 	parent = dentry->d_parent;
- 	spin_lock(&parent->d_lock);
-@@ -1046,22 +1046,22 @@
-  * returns an error, no reference counts are touched.
-  */
- static int rebind_subsystems(struct cgroupfs_root *root,
--			      unsigned long final_bits)
-+			      unsigned long final_subsys_mask)
- {
--	unsigned long added_bits, removed_bits;
-+	unsigned long added_mask, removed_mask;
- 	struct cgroup *cgrp = &root->top_cgroup;
- 	int i;
- 
- 	BUG_ON(!mutex_is_locked(&cgroup_mutex));
- 	BUG_ON(!mutex_is_locked(&cgroup_root_mutex));
- 
--	removed_bits = root->actual_subsys_bits & ~final_bits;
--	added_bits = final_bits & ~root->actual_subsys_bits;
-+	removed_mask = root->actual_subsys_mask & ~final_subsys_mask;
-+	added_mask = final_subsys_mask & ~root->actual_subsys_mask;
- 	/* Check that any added subsystems are currently free */
- 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 		unsigned long bit = 1UL << i;
- 		struct cgroup_subsys *ss = subsys[i];
--		if (!(bit & added_bits))
-+		if (!(bit & added_mask))
- 			continue;
- 		/*
- 		 * Nobody should tell us to do a subsys that doesn't exist:
-@@ -1086,7 +1086,7 @@
- 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 		struct cgroup_subsys *ss = subsys[i];
- 		unsigned long bit = 1UL << i;
--		if (bit & added_bits) {
-+		if (bit & added_mask) {
- 			/* We're binding this subsystem to this hierarchy */
- 			BUG_ON(ss == NULL);
- 			BUG_ON(cgrp->subsys[i]);
-@@ -1099,7 +1099,7 @@
- 			if (ss->bind)
- 				ss->bind(cgrp);
- 			/* refcount was already taken, and we're keeping it */
--		} else if (bit & removed_bits) {
-+		} else if (bit & removed_mask) {
- 			/* We're removing this subsystem */
- 			BUG_ON(ss == NULL);
- 			BUG_ON(cgrp->subsys[i] != dummytop->subsys[i]);
-@@ -1112,7 +1112,7 @@
- 			list_move(&ss->sibling, &rootnode.subsys_list);
- 			/* subsystem is now free - drop reference on module */
- 			module_put(ss->module);
--		} else if (bit & final_bits) {
-+		} else if (bit & final_subsys_mask) {
- 			/* Subsystem state should already exist */
- 			BUG_ON(ss == NULL);
- 			BUG_ON(!cgrp->subsys[i]);
-@@ -1129,7 +1129,7 @@
- 			BUG_ON(cgrp->subsys[i]);
- 		}
- 	}
--	root->subsys_bits = root->actual_subsys_bits = final_bits;
-+	root->subsys_mask = root->actual_subsys_mask = final_subsys_mask;
- 	synchronize_rcu();
- 
- 	return 0;
-@@ -1158,7 +1158,7 @@
- }
- 
- struct cgroup_sb_opts {
--	unsigned long subsys_bits;
-+	unsigned long subsys_mask;
- 	unsigned long flags;
- 	char *release_agent;
- 	bool clone_children;
-@@ -1267,7 +1267,7 @@
- 			/* Mutually exclusive option 'all' + subsystem name */
- 			if (all_ss)
- 				return -EINVAL;
--			set_bit(i, &opts->subsys_bits);
-+			set_bit(i, &opts->subsys_mask);
- 			one_ss = true;
- 
- 			break;
-@@ -1288,7 +1288,7 @@
- 				continue;
- 			if (ss->disabled)
- 				continue;
--			set_bit(i, &opts->subsys_bits);
-+			set_bit(i, &opts->subsys_mask);
- 		}
- 	}
- 
-@@ -1300,19 +1300,19 @@
- 	 * the cpuset subsystem.
- 	 */
- 	if (test_bit(ROOT_NOPREFIX, &opts->flags) &&
--	    (opts->subsys_bits & mask))
-+	    (opts->subsys_mask & mask))
- 		return -EINVAL;
- 
- 
- 	/* Can't specify "none" and some subsystems */
--	if (opts->subsys_bits && opts->none)
-+	if (opts->subsys_mask && opts->none)
- 		return -EINVAL;
- 
- 	/*
- 	 * We either have to specify by name or by subsystems. (So all
- 	 * empty hierarchies must have a name).
- 	 */
--	if (!opts->subsys_bits && !opts->name)
-+	if (!opts->subsys_mask && !opts->name)
- 		return -EINVAL;
- 
- 	/*
-@@ -1324,7 +1324,7 @@
- 	for (i = CGROUP_BUILTIN_SUBSYS_COUNT; i < CGROUP_SUBSYS_COUNT; i++) {
- 		unsigned long bit = 1UL << i;
- 
--		if (!(bit & opts->subsys_bits))
-+		if (!(bit & opts->subsys_mask))
- 			continue;
- 		if (!try_module_get(subsys[i]->module)) {
- 			module_pin_failed = true;
-@@ -1341,7 +1341,7 @@
- 			/* drop refcounts only on the ones we took */
- 			unsigned long bit = 1UL << i;
- 
--			if (!(bit & opts->subsys_bits))
-+			if (!(bit & opts->subsys_mask))
- 				continue;
- 			module_put(subsys[i]->module);
- 		}
-@@ -1351,13 +1351,13 @@
- 	return 0;
- }
- 
--static void drop_parsed_module_refcounts(unsigned long subsys_bits)
-+static void drop_parsed_module_refcounts(unsigned long subsys_mask)
- {
- 	int i;
- 	for (i = CGROUP_BUILTIN_SUBSYS_COUNT; i < CGROUP_SUBSYS_COUNT; i++) {
- 		unsigned long bit = 1UL << i;
- 
--		if (!(bit & subsys_bits))
-+		if (!(bit & subsys_mask))
- 			continue;
- 		module_put(subsys[i]->module);
- 	}
-@@ -1369,7 +1369,7 @@
- 	struct cgroupfs_root *root = sb->s_fs_info;
- 	struct cgroup *cgrp = &root->top_cgroup;
- 	struct cgroup_sb_opts opts;
--	unsigned long added_bits, removed_bits;
-+	unsigned long added_mask, removed_mask;
- 
- 	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
- 	mutex_lock(&cgroup_mutex);
-@@ -1381,31 +1381,31 @@
- 		goto out_unlock;
- 
- 	/* See feature-removal-schedule.txt */
--	if (opts.subsys_bits != root->actual_subsys_bits || opts.release_agent)
-+	if (opts.subsys_mask != root->actual_subsys_mask || opts.release_agent)
- 		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
- 			   task_tgid_nr(current), current->comm);
- 
--	added_bits = opts.subsys_bits & ~root->subsys_bits;
--	removed_bits = root->subsys_bits & ~opts.subsys_bits;
-+	added_mask = opts.subsys_mask & ~root->subsys_mask;
-+	removed_mask = root->subsys_mask & ~opts.subsys_mask;
- 
- 	/* Don't allow flags or name to change at remount */
- 	if (opts.flags != root->flags ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
- 		ret = -EINVAL;
--		drop_parsed_module_refcounts(opts.subsys_bits);
-+		drop_parsed_module_refcounts(opts.subsys_mask);
- 		goto out_unlock;
- 	}
- 
--	ret = rebind_subsystems(root, opts.subsys_bits);
-+	ret = rebind_subsystems(root, opts.subsys_mask);
- 	if (ret) {
--		drop_parsed_module_refcounts(opts.subsys_bits);
-+		drop_parsed_module_refcounts(opts.subsys_mask);
- 		goto out_unlock;
- 	}
- 
- 	/* clear out any existing files and repopulate subsystem files */
--	cgroup_clear_directory(cgrp->dentry, false, removed_bits);
-+	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
- 	/* re-populate subsystem files */
--	cgroup_populate_dir(cgrp, false, added_bits);
-+	cgroup_populate_dir(cgrp, false, added_mask);
- 
- 	if (opts.release_agent)
- 		strcpy(root->release_agent_path, opts.release_agent);
-@@ -1491,8 +1491,8 @@
- 	 * If we asked for subsystems (or explicitly for no
- 	 * subsystems) then they must match
- 	 */
--	if ((opts->subsys_bits || opts->none)
--	    && (opts->subsys_bits != root->subsys_bits))
-+	if ((opts->subsys_mask || opts->none)
-+	    && (opts->subsys_mask != root->subsys_mask))
- 		return 0;
- 
- 	return 1;
-@@ -1502,7 +1502,7 @@
- {
- 	struct cgroupfs_root *root;
- 
--	if (!opts->subsys_bits && !opts->none)
-+	if (!opts->subsys_mask && !opts->none)
- 		return NULL;
- 
- 	root = kzalloc(sizeof(*root), GFP_KERNEL);
-@@ -1515,7 +1515,7 @@
- 	}
- 	init_cgroup_root(root);
- 
--	root->subsys_bits = opts->subsys_bits;
-+	root->subsys_mask = opts->subsys_mask;
- 	root->flags = opts->flags;
- 	if (opts->release_agent)
- 		strcpy(root->release_agent_path, opts->release_agent);
-@@ -1547,7 +1547,7 @@
- 	if (!opts->new_root)
- 		return -EINVAL;
- 
--	BUG_ON(!opts->subsys_bits && !opts->none);
-+	BUG_ON(!opts->subsys_mask && !opts->none);
- 
- 	ret = set_anon_super(sb, NULL);
- 	if (ret)
-@@ -1665,7 +1665,7 @@
- 		if (ret)
- 			goto unlock_drop;
- 
--		ret = rebind_subsystems(root, root->subsys_bits);
-+		ret = rebind_subsystems(root, root->subsys_mask);
- 		if (ret == -EBUSY) {
- 			free_cg_links(&tmp_cg_links);
- 			goto unlock_drop;
-@@ -1705,7 +1705,7 @@
- 		BUG_ON(root->number_of_cgroups != 1);
- 
- 		cred = override_creds(&init_cred);
--		cgroup_populate_dir(root_cgrp, true, root->subsys_bits);
-+		cgroup_populate_dir(root_cgrp, true, root->subsys_mask);
- 		revert_creds(cred);
- 		mutex_unlock(&cgroup_root_mutex);
- 		mutex_unlock(&cgroup_mutex);
-@@ -1717,7 +1717,7 @@
- 		 */
- 		cgroup_drop_root(opts.new_root);
- 		/* no subsys rebinding, so refcounts don't change */
--		drop_parsed_module_refcounts(opts.subsys_bits);
-+		drop_parsed_module_refcounts(opts.subsys_mask);
- 	}
- 
- 	kfree(opts.release_agent);
-@@ -1731,7 +1731,7 @@
-  drop_new_super:
- 	deactivate_locked_super(sb);
-  drop_modules:
--	drop_parsed_module_refcounts(opts.subsys_bits);
-+	drop_parsed_module_refcounts(opts.subsys_mask);
-  out_err:
- 	kfree(opts.release_agent);
- 	kfree(opts.name);
-@@ -4109,7 +4109,7 @@
- 
- 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
- 
--	err = cgroup_populate_dir(cgrp, true, root->subsys_bits);
-+	err = cgroup_populate_dir(cgrp, true, root->subsys_mask);
- 	/* If err < 0, we have a half-filled directory - oh well ;) */
- 
- 	mutex_unlock(&cgroup_mutex);
-
+-- 
+error compiling committee.c: too many arguments to function
