@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab2HPIpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:45:53 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:35382 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756512Ab2HPIpv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:45:51 -0400
+	id S1756632Ab2HPIqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:46:55 -0400
+Received: from antcom.de ([188.40.178.216]:44941 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756559Ab2HPIqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 04:46:53 -0400
+Message-ID: <502CB378.1020708@antcom.de>
+Date: Thu, 16 Aug 2012 10:46:48 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Date: Thu, 16 Aug 2012 16:45:49 +0800
-Message-ID: <CAEk7JKZMuOEX_cAaHcbExzjLWPtO==B4mmwcjTsh-ppGQpJDcw@mail.gmail.com>
-Subject: [PATCH 1/1] fix a compiling error caused by dmar_disabled
-From: "Li, Zhen-Hua" <lizhenhua.dev@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: artem.bityutskiy@linux.intel.com
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 1/2] mtd: lpc32xx_slc: Adjust to pl08x DMA interface changes
+References: <1342095778-13403-1-git-send-email-stigge@antcom.de>  <1342095778-13403-2-git-send-email-stigge@antcom.de> <1345027069.3393.124.camel@sauron.fi.intel.com>
+In-Reply-To: <1345027069.3393.124.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a compiling error caused by dmar_disabled.
+Hi,
 
-When CONFIG_INTEL_IOMMU is not defined, dmar_disabled is define as 1,
-and the codes like "dmar_disabled = 1;" may cause compiling error.
+On 08/15/2012 12:37 PM, Artem Bityutskiy wrote:
+> On Thu, 2012-07-12 at 14:22 +0200, Roland Stigge wrote:
+>> This patch adjusts the LPC32xx SLC NAND driver to the new pl08x
+>> DMA interface, fixing the compile error resulting from changed
+>> pl08x structures.
+>> 
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> This patch breaks compilation:
+> 
+> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko]
+> undefined!
+> 
+> Please, send a fix. The defconfig I used is attached.
 
--------
+Thanks for the note. The issue happens on compiling lpc32xx_slc and
+lpc32xx_mlc as a module. Caused by pl08x_filter_id not being exported.
+Looking at other dma drivers, they have an EXPORT_SYMBOL() for this,
+see also
 
-Signed-off-by: Li, Zhen-Hua <lizhenhua.dev@gmail.com>
+drivers/dma/coh901318.c
+drivers/dma/sirf-dma.c
 
-diff -urp a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
---- a/drivers/iommu/intel-iommu.c	2012-07-22 04:58:29.000000000 +0800
-+++ b/drivers/iommu/intel-iommu.c	2012-08-15 16:05:56.000000000 +0800
-@@ -425,7 +425,7 @@ static long list_size;
+Will post a respective adjustment for drivers/dma/amba-pl08x.c separately.
 
- static void domain_remove_dev_info(struct dmar_domain *domain);
-
--#ifdef CONFIG_INTEL_IOMMU_DEFAULT_ON
-+#if defined(CONFIG_INTEL_IOMMU_DEFAULT_ON) && defined(CONFIG_INTEL_IOMMU)
- int dmar_disabled = 0;
- #else
- int dmar_disabled = 1;
-diff -urp a/include/linux/dma_remapping.h b/include/linux/dma_remapping.h
---- a/include/linux/dma_remapping.h	2012-07-22 04:58:29.000000000 +0800
-+++ b/include/linux/dma_remapping.h	2012-08-15 16:05:59.000000000 +0800
-@@ -44,7 +44,6 @@ static inline int iommu_calculate_max_sa
- static inline void free_dmar_iommu(struct intel_iommu *iommu)
- {
- }
--#define dmar_disabled	(1)
- #define intel_iommu_enabled (0)
- #endif
+Roland
