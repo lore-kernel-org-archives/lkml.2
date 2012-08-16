@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab2HPMtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:49:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56431 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab2HPMtn (ORCPT
+	id S1756028Ab2HPMul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:50:41 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:35937 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754972Ab2HPMuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:49:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 23/31] arm64: Debugging support
-Date: Thu, 16 Aug 2012 12:49:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ulrich.weigand@linaro.rg
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151507.36174.arnd@arndb.de> <20120816104748.GI31784@mudshark.cambridge.arm.com>
-In-Reply-To: <20120816104748.GI31784@mudshark.cambridge.arm.com>
+	Thu, 16 Aug 2012 08:50:39 -0400
+Date: Thu, 16 Aug 2012 14:50:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/4] cputime: Consolidate vtime handling on context switch
+Message-ID: <20120816125030.GF19716@somewhere>
+References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
+ <1344953810-20564-4-git-send-email-fweisbec@gmail.com>
+ <20120815172219.4e4d5ef5@de.ibm.com>
+ <20120815192813.GE19716@somewhere>
+ <20120816095032.16611651@de.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208161249.35008.arnd@arndb.de>
-X-Provags-ID: V02:K0:kDvn9I2jRylowamjJz1P9uWhTjOaguP4D5TP34tMH7U
- LCp4dkeYlow5oYfrv4iBWfkIUwg0hiniToK9Og+YCRmUdwP0Ss
- +nLPmeQYp59Dgq4yeHTZzM9fIqFQBAm9h7EafmzwtVH7dKaSsO
- iP5PWG1eGqWJ5j7jheI7IhOjHxNqrOUgGJifa5bv/VbTbxoK6T
- QrW2qp346knwbGwDrIKqgptqs9GZSf3r9QAtyCS7yQHeudKsS3
- SG185waVeusn2CstPCkFGYdrr5H16vxLMiz/zf6+1nGLfKwW9b
- VtOd47KjXjU2b1Iw9tVxHV4HTbslV+Jg4+3CKvwTfJYS1okmJ3
- lt+yF2A2C2gvpH72j65o=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816095032.16611651@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Will Deacon wrote:
-> On Wed, Aug 15, 2012 at 04:07:36PM +0100, Arnd Bergmann wrote:
-> > On Tuesday 14 August 2012, Catalin Marinas wrote:
-
-> > From what I can tell, there is no support for 32 bit processes debugging
-> > 64 bit ones. Is that something you plan to add in the future, or do you
-> > consider that out of scope? In either case, a comment would be helpful.
+On Thu, Aug 16, 2012 at 09:50:32AM +0200, Martin Schwidefsky wrote:
+> On Wed, 15 Aug 2012 21:28:17 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> That can't really work because the debugger won't be able to manipulate
-> child pointers properly without us adding a new ptrace interface (and then,
-> I still wonder about how feasible it really is). I can add a comment.
-
-You can already have a 32 bit gdb that is able to do remote debugging of
-64 bit processes using a gdb server process. I guess it wouldn't be
-too strange to have a ptrace extension to allow the native case as well.
-I agree it's not a high priority.
-
-> > > +long arch_ptrace(struct task_struct *child, long request,
-> > > +		 unsigned long addr, unsigned long data)
-> > > +{
-> > > +	int ret;
-> > > +	unsigned long *datap = (unsigned long __user *)data;
-> > > +
-> > > +	switch (request) {
-> > > +		case PTRACE_GET_THREAD_AREA:
-> > > +			ret = put_user(child->thread.tp_value, datap);
-> > > +			break;
-> > > +
-> > > +#ifdef CONFIG_HAVE_HW_BREAKPOINT
-> > > +		case PTRACE_GETHBPREGS:
-> > > +			ret = ptrace_gethbpregs(child, addr, datap);
-> > > +			break;
-> > > +
-> > > +		case PTRACE_SETHBPREGS:
-> > > +			ret = ptrace_sethbpregs(child, addr, datap);
-> > > +			break;
-> > > +#endif
-> > > +
-> > > +		default:
-> > > +			ret = ptrace_request(child, request, addr, data);
-> > > +			break;
-> > > +	}
-> > > +
-> > > +	return ret;
-> > > +}
+> > On Wed, Aug 15, 2012 at 05:22:19PM +0200, Martin Schwidefsky wrote:
+> > > On Tue, 14 Aug 2012 16:16:49 +0200
+> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > 
+> > > > The archs that implement virtual cputime accounting all
+> > > > flush the cputime of a task when it gets descheduled
+> > > > and sometimes set up some ground initialization for the
+> > > > next task to account its cputime.
+> > > > 
+> > > > These archs all put their own hooks in their context
+> > > > switch callbacks and handle the off-case themselves.
+> > > > 
+> > > > Consolidate this by creating a new account_switch_vtime()
+> > > > callback called in generic code right after a context switch
+> > > > and that these archs must implement to flush the prev task
+> > > > cputime and initialize the next task cputime related state.
+> > > 
+> > > That change requires that the accounting for the previous process
+> > > can be done before finish_arch_switch() completed. With the old
+> > > code the architecture could to the accounting call in the middle
+> > > of finish_arch_switch, that is not possible anymore. Dunno if this
+> > > is relevant or not. For s390 the new code should work fine.
 > > 
-> > Is there a reaons why these are not regsets but have their own ptrace
-> > commands? I believe new architectures should generally not add ptrace
-> > commands any more.
+> > I'm not sure how this could potentially cause a problem. Interrupts are disabled
+> > between while we switch_to() until finish_lock_switch(). So nothing
+> > should be able to mess up with the accounting of the prev task.
+> > 
+> > I don't really understand what you mean actually.
 > 
-> I could probably add some regset wrappers about the hbp accessors (which we
-> have to keep for the compat ptrace interface). I'll have a think as it might
-> even make sense to have different regsets for breakpoints and watchpoints.
+> It is more a theoretical consideration. If the finish_arch_switch code
+> updates fields that are required to do the cputime accounting then the
+> order could be important. But then you could move that necessary code
+> from finish_arch_switch to account_switch_vtime.
+> As said that change is fine for s390, so I'm good with it.
+
+Ah ok. Well like you said this is fine for s390. And it looks also fine
+to me on ia64 and powerpc as it doesn't look like we depend on something
+done in finish_arch_switch() there. They were flush the previous task
+cputime from switch_to() anyway.
+
+Thanks.
+
+PS: can I add your ack?
+
 > 
-> As for the the tls, is it worth having a regset with only one register?
-
-Better ask the gdb folks. I'm adding Uli to Cc, maybe he has some insight.
-
-	Arnd
+> -- 
+> blue skies,
+>    Martin.
+> 
+> "Reality continues to ruin my life." - Calvin.
+> 
