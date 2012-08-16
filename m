@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab2HPS0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:26:40 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50195 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab2HPS0i (ORCPT
+	id S1757116Ab2HPSbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:31:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41484 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab2HPSbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:26:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <ec8635c36005ba5ea3784276214fb905720ee3ec.1345055639.git.dmitry.kasatkin@intel.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<ec8635c36005ba5ea3784276214fb905720ee3ec.1345055639.git.dmitry.kasatkin@intel.com>
-Date: Thu, 16 Aug 2012 14:26:37 -0400
-Message-ID: <CA+5PVA71WegBSBbgZDBZopORkAMN9G8i2MXHmAGdpiSjWzo9RQ@mail.gmail.com>
-Subject: Re: [RFC v2 2/7] keys: initialize root uid and session keyrings early
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 Aug 2012 14:31:20 -0400
+Date: Thu, 16 Aug 2012 11:31:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Milo(Woogyom) Kim'" <milo.kim@ti.com>
+Subject: Re: [PATCH v2 3/3] backlight: lp855x: remove goto err_sysfs and
+ goto err_dev
+Message-Id: <20120816113119.85222ba7.akpm@linux-foundation.org>
+In-Reply-To: <000701cd747e$9ec822f0$dc5868d0$%han@samsung.com>
+References: <000701cd747e$9ec822f0$dc5868d0$%han@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
-<dmitry.kasatkin@intel.com> wrote:
-> From: Mimi Zohar <zohar@linux.vnet.ibm.com>
->
-> In order to create the integrity keyrings (eg. _evm, _ima, _modules),
-> root's uid and session keyrings need to be initialized early.
->
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> ---
->  security/keys/Makefile       |    1 +
->  security/keys/root_keyring.c |   18 ++++++++++++++++++
->  2 files changed, 19 insertions(+)
->  create mode 100644 security/keys/root_keyring.c
->
-> diff --git a/security/keys/Makefile b/security/keys/Makefile
-> index 504aaa0..c93ce8d 100644
-> --- a/security/keys/Makefile
-> +++ b/security/keys/Makefile
-> @@ -18,6 +18,7 @@ obj-y := \
->  obj-$(CONFIG_KEYS_COMPAT) += compat.o
->  obj-$(CONFIG_PROC_FS) += proc.o
->  obj-$(CONFIG_SYSCTL) += sysctl.o
-> +obj-$(CONFIG_INTEGRITY_SIGNATURE) += root_keyring.o
->
->  #
->  # Key types
-> diff --git a/security/keys/root_keyring.c b/security/keys/root_keyring.c
-> new file mode 100644
-> index 0000000..f6662eb
-> --- /dev/null
-> +++ b/security/keys/root_keyring.c
-> @@ -0,0 +1,18 @@
-> +/*
-> + * Copyright (C) 2012 IBM Corporation
-> + *
-> + * Author:
-> + * Mimi Zohar <zohar@us.ibm.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation, version 2 of the License.
-> + */
-> +
-> +#include "internal.h"
-> +static int __init init_root_keyring(void)
-> +{
-> +       return install_user_keyrings();
-> +}
-> +
-> +late_initcall(init_root_keyring);
-> --
+On Tue, 07 Aug 2012 18:25:44 +0900
+Jingoo Han <jg1.han@samsung.com> wrote:
 
-Why is this in an entirely new file instead of just being added to
-process_keys.c ?
+> This patch removes goto err_sysfs and goto err_dev, which makes code
+> a bit smaller.
+> 
+> ...
+>
+> --- a/drivers/video/backlight/lp855x_bl.c
+> +++ b/drivers/video/backlight/lp855x_bl.c
+> @@ -272,29 +272,25 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+>  	if (ret) {
+>  		dev_err(lp->dev, "i2c communication err: %d", ret);
+>  		if (mode == REGISTER_BASED)
+> -			goto err_dev;
+> +			return ret;
+>  	}
+>  
+>  	ret = lp855x_backlight_register(lp);
+>  	if (ret) {
+>  		dev_err(lp->dev,
+>  			"failed to register backlight. err: %d\n", ret);
+> -		goto err_dev;
+> +		return ret;
+>  	}
+>  
+>  	ret = sysfs_create_group(&lp->dev->kobj, &lp855x_attr_group);
+>  	if (ret) {
+>  		dev_err(lp->dev, "failed to register sysfs. err: %d\n", ret);
+> -		goto err_sysfs;
+> +		lp855x_backlight_unregister(lp);
+> +		return ret;
+>  	}
+>  
+>  	backlight_update_status(lp->bl);
+>  	return 0;
+> -
+> -err_sysfs:
+> -	lp855x_backlight_unregister(lp);
+> -err_dev:
+> -	return ret;
+>  }
+>  
+>  static int __devexit lp855x_remove(struct i2c_client *cl)
 
-josh
+err, no.  We've learned from hard experience that having multiple return
+points from a non-trivial function easily leads to resource leaks and
+missed unlocks.  For this reason, kernel code frequently uses the "goto
+out" technique, providing a single site where deallocation and
+unlocking occurs.
+
+
