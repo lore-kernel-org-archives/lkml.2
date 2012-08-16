@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030443Ab2HPT5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:57:07 -0400
-Received: from [213.199.154.208] ([213.199.154.208]:56672 "EHLO
+	id S1030428Ab2HPT5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:57:05 -0400
+Received: from [213.199.154.206] ([213.199.154.206]:21501 "EHLO
 	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932536Ab2HPTyK (ORCPT
+	by vger.kernel.org with ESMTP id S933184Ab2HPTyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:54:10 -0400
+	Thu, 16 Aug 2012 15:54:11 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah1155h)
-X-WSS-ID: 0M8V5WZ-01-68M-02
+X-WSS-ID: 0M8V5X1-01-68W-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 1/8] perf tools: Fix type for evsel->ids and add size check for ids
-Date: Thu, 16 Aug 2012 21:10:17 +0200
-Message-ID: <1345144224-27280-2-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 3/8] perf tools: Rename some variables for better understanding
+Date: Thu, 16 Aug 2012 21:10:19 +0200
+Message-ID: <1345144224-27280-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
 References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
@@ -30,85 +30,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use same type for ids everywhere.
+Trivial patch to improve understanding of code.
 
-In case of writing to perf.data the size is u32. In pipe mode it is
-limited to header.size (less than u16). Adding a size check here.
-
-Size overflow due to casting shouldn't actually happen in practice,
-but during development this may cause type missmatch warninngs/errors,
-unifying types avoids this.
+Varible attr is usually used for struct perf_event_attr. Using it in a
+different context is irritating. Thus, renaming it.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- tools/perf/util/evsel.h  |    2 +-
- tools/perf/util/header.c |   11 +++++++----
- tools/perf/util/header.h |    2 +-
- 3 files changed, 9 insertions(+), 6 deletions(-)
+ tools/perf/util/header.c |   42 +++++++++++++++++++++---------------------
+ 1 files changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 65f39fd..94f6ba1 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -53,7 +53,7 @@ struct perf_evsel {
- 	u64			*id;
- 	struct perf_counts	*counts;
- 	int			idx;
--	int			ids;
-+	u32			ids;
- 	struct hists		hists;
- 	char			*name;
- 	struct event_format	*tp_format;
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 77832b8..471b0c4 100644
+index 471b0c4..e2e5129 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -2240,7 +2240,7 @@ out_delete_evlist:
- }
- 
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u16 ids, u64 *id,
-+				struct perf_event_attr *attr, u32 ids, u64 *id,
- 				perf_event__handler_t process)
+@@ -608,11 +608,11 @@ static int write_nrcpus(int fd, struct perf_header *h __used,
+ static int write_event_desc(int fd, struct perf_header *h __used,
+ 			    struct perf_evlist *evlist)
  {
- 	union perf_event *ev;
-@@ -2261,9 +2261,12 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- 	memcpy(ev->attr.id, id, ids * sizeof(u64));
+-	struct perf_evsel *attr;
++	struct perf_evsel *evsel;
+ 	u32 nre = 0, nri, sz;
+ 	int ret;
  
- 	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
--	ev->attr.header.size = size;
-+	ev->attr.header.size = (u16)size;
+-	list_for_each_entry(attr, &evlist->entries, node)
++	list_for_each_entry(evsel, &evlist->entries, node)
+ 		nre++;
  
--	err = process(tool, ev, NULL, NULL);
-+	if (ev->attr.header.size == size)
-+		err = process(tool, ev, NULL, NULL);
-+	else
-+		err = -E2BIG;
+ 	/*
+@@ -625,14 +625,14 @@ static int write_event_desc(int fd, struct perf_header *h __used,
+ 	/*
+ 	 * size of perf_event_attr struct
+ 	 */
+-	sz = (u32)sizeof(attr->attr);
++	sz = (u32)sizeof(evsel->attr);
+ 	ret = do_write(fd, &sz, sizeof(sz));
+ 	if (ret < 0)
+ 		return ret;
  
- 	free(ev);
+-	list_for_each_entry(attr, &evlist->entries, node) {
++	list_for_each_entry(evsel, &evlist->entries, node) {
  
-@@ -2292,7 +2295,7 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- int perf_event__process_attr(union perf_event *event,
- 			     struct perf_evlist **pevlist)
+-		ret = do_write(fd, &attr->attr, sz);
++		ret = do_write(fd, &evsel->attr, sz);
+ 		if (ret < 0)
+ 			return ret;
+ 		/*
+@@ -642,7 +642,7 @@ static int write_event_desc(int fd, struct perf_header *h __used,
+ 		 * copy into an nri to be independent of the
+ 		 * type of ids,
+ 		 */
+-		nri = attr->ids;
++		nri = evsel->ids;
+ 		ret = do_write(fd, &nri, sizeof(nri));
+ 		if (ret < 0)
+ 			return ret;
+@@ -650,13 +650,13 @@ static int write_event_desc(int fd, struct perf_header *h __used,
+ 		/*
+ 		 * write event string as passed on cmdline
+ 		 */
+-		ret = do_write_string(fd, perf_evsel__name(attr));
++		ret = do_write_string(fd, perf_evsel__name(evsel));
+ 		if (ret < 0)
+ 			return ret;
+ 		/*
+ 		 * write unique ids for this event
+ 		 */
+-		ret = do_write(fd, attr->id, attr->ids * sizeof(u64));
++		ret = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -1683,7 +1683,7 @@ int perf_session__write_header(struct perf_session *session,
+ 	struct perf_file_header f_header;
+ 	struct perf_file_attr   f_attr;
+ 	struct perf_header *header = &session->header;
+-	struct perf_evsel *attr, *pair = NULL;
++	struct perf_evsel *evsel, *pair = NULL;
+ 	int err;
+ 
+ 	lseek(fd, sizeof(f_header), SEEK_SET);
+@@ -1691,9 +1691,9 @@ int perf_session__write_header(struct perf_session *session,
+ 	if (session->evlist != evlist)
+ 		pair = perf_evlist__first(session->evlist);
+ 
+-	list_for_each_entry(attr, &evlist->entries, node) {
+-		attr->id_offset = lseek(fd, 0, SEEK_CUR);
+-		err = do_write(fd, attr->id, attr->ids * sizeof(u64));
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		evsel->id_offset = lseek(fd, 0, SEEK_CUR);
++		err = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
+ 		if (err < 0) {
+ out_err_write:
+ 			pr_debug("failed to write perf header\n");
+@@ -1703,19 +1703,19 @@ out_err_write:
+ 			err = do_write(fd, pair->id, pair->ids * sizeof(u64));
+ 			if (err < 0)
+ 				goto out_err_write;
+-			attr->ids += pair->ids;
++			evsel->ids += pair->ids;
+ 			pair = perf_evsel__next(pair);
+ 		}
+ 	}
+ 
+ 	header->attr_offset = lseek(fd, 0, SEEK_CUR);
+ 
+-	list_for_each_entry(attr, &evlist->entries, node) {
++	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		f_attr = (struct perf_file_attr){
+-			.attr = attr->attr,
++			.attr = evsel->attr,
+ 			.ids  = {
+-				.offset = attr->id_offset,
+-				.size   = attr->ids * sizeof(u64),
++				.offset = evsel->id_offset,
++				.size   = evsel->ids * sizeof(u64),
+ 			}
+ 		};
+ 		err = do_write(fd, &f_attr, sizeof(f_attr));
+@@ -2277,12 +2277,12 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ 				   struct perf_session *session,
+ 				   perf_event__handler_t process)
  {
--	unsigned int i, ids, n_ids;
-+	u32 i, ids, n_ids;
- 	struct perf_evsel *evsel;
- 	struct perf_evlist *evlist = *pevlist;
+-	struct perf_evsel *attr;
++	struct perf_evsel *evsel;
+ 	int err = 0;
  
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 2d42b3e..24962e7 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -99,7 +99,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
- 
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u16 ids, u64 *id,
-+				struct perf_event_attr *attr, u32 ids, u64 *id,
- 				perf_event__handler_t process);
- int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				 struct perf_session *session,
+-	list_for_each_entry(attr, &session->evlist->entries, node) {
+-		err = perf_event__synthesize_attr(tool, &attr->attr, attr->ids,
+-						  attr->id, process);
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
++						  evsel->id, process);
+ 		if (err) {
+ 			pr_debug("failed to create perf header attribute\n");
+ 			return err;
 -- 
 1.7.8.6
 
