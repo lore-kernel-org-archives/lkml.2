@@ -1,73 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030218Ab2HPQNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:13:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32102 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288Ab2HPQNV (ORCPT
+	id S1030246Ab2HPQNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:13:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21493 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964786Ab2HPQNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:13:21 -0400
+	Thu, 16 Aug 2012 12:13:23 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 01/11] xen/p2m: Fix the comment describing the P2M tree.
-Date: Thu, 16 Aug 2012 12:03:19 -0400
-Message-Id: <1345133009-21941-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 09/11] xen/mmu: Copy and revector the P2M tree.
+Date: Thu, 16 Aug 2012 12:03:27 -0400
+Message-Id: <1345133009-21941-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
 References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It mixed up the p2m_mid_missing with p2m_missing. Also
-remove some extra spaces.
+Please first read the description in "xen/p2m: Add logic to revector a
+P2M tree to use __va leafs" patch.
 
+The 'xen_revector_p2m_tree()' function allocates a new P2M tree
+copies the contents of the old one in it, and returns the new one.
+
+At this stage, the __ka address space (which is what the old
+P2M tree was using) is partially disassembled. The cleanup_highmap
+has removed the PMD entries from 0-16MB and anything past _brk_end
+up to the max_pfn_mapped (which is the end of the ramdisk).
+
+We have revectored the P2M tree (and the one for save/restore as well)
+to use new shiny __va address to new MFNs. The xen_start_info
+has been taken care of already in 'xen_setup_kernel_pagetable()' and
+xen_start_info->shared_info in 'xen_setup_shared_info()', so
+we are free to roam and delete PMD entries - which is exactly what
+we are going to do. We rip out the __ka for the old P2M array.
+
+[v1: Fix smatch warnings]
+[v2: memset was doing 0 instead of 0xff]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/p2m.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/xen/mmu.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 57 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 64effdc..e4adbfb 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -22,7 +22,7 @@
-  *
-  * P2M_PER_PAGE depends on the architecture, as a mfn is always
-  * unsigned long (8 bytes on 64-bit, 4 bytes on 32), leading to
-- * 512 and 1024 entries respectively. 
-+ * 512 and 1024 entries respectively.
-  *
-  * In short, these structures contain the Machine Frame Number (MFN) of the PFN.
-  *
-@@ -139,11 +139,11 @@
-  *      /    | ~0, ~0, ....  |
-  *     |     \---------------/
-  *     |
-- *     p2m_missing             p2m_missing
-- * /------------------\     /------------\
-- * | [p2m_mid_missing]+---->| ~0, ~0, ~0 |
-- * | [p2m_mid_missing]+---->| ..., ~0    |
-- * \------------------/     \------------/
-+ *   p2m_mid_missing           p2m_missing
-+ * /-----------------\     /------------\
-+ * | [p2m_missing]   +---->| ~0, ~0, ~0 |
-+ * | [p2m_missing]   +---->| ..., ~0    |
-+ * \-----------------/     \------------/
-  *
-  * where ~0 is INVALID_P2M_ENTRY. IDENTITY is (PFN | IDENTITY_BIT)
-  */
-@@ -423,7 +423,7 @@ static void free_p2m_page(void *p)
- 	free_page((unsigned long)p);
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index bd92c82..e0919c5 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1183,9 +1183,64 @@ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+ 
+ static void xen_post_allocator_init(void);
+ 
++#ifdef CONFIG_X86_64
++static void __init xen_cleanhighmap(unsigned long vaddr,
++				    unsigned long vaddr_end)
++{
++	unsigned long kernel_end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
++	pmd_t *pmd = level2_kernel_pgt + pmd_index(vaddr);
++
++	/* NOTE: The loop is more greedy than the cleanup_highmap variant.
++	 * We include the PMD passed in on _both_ boundaries. */
++	for (; vaddr <= vaddr_end && (pmd < (level2_kernel_pgt + PAGE_SIZE));
++			pmd++, vaddr += PMD_SIZE) {
++		if (pmd_none(*pmd))
++			continue;
++		if (vaddr < (unsigned long) _text || vaddr > kernel_end)
++			set_pmd(pmd, __pmd(0));
++	}
++	/* In case we did something silly, we should crash in this function
++	 * instead of somewhere later and be confusing. */
++	xen_mc_flush();
++}
++#endif
+ static void __init xen_pagetable_setup_done(pgd_t *base)
+ {
++#ifdef CONFIG_X86_64
++	unsigned long size;
++	unsigned long addr;
++#endif
++
+ 	xen_setup_shared_info();
++#ifdef CONFIG_X86_64
++	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
++		unsigned long new_mfn_list;
++
++		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
++
++		/* On 32-bit, we get zero so this never gets executed. */
++		new_mfn_list = xen_revector_p2m_tree();
++		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
++			/* using __ka address and sticking INVALID_P2M_ENTRY! */
++			memset((void *)xen_start_info->mfn_list, 0xff, size);
++
++			/* We should be in __ka space. */
++			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
++			addr = xen_start_info->mfn_list;
++			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
++			/* We roundup to the PMD, which means that if anybody at this stage is
++			 * using the __ka address of xen_start_info or xen_start_info->shared_info
++			 * they are in going to crash. Fortunatly we have already revectored
++			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
++			size = roundup(size, PMD_SIZE);
++			xen_cleanhighmap(addr, addr + size);
++
++			memblock_free(__pa(xen_start_info->mfn_list), size);
++			/* And revector! Bye bye old array */
++			xen_start_info->mfn_list = new_mfn_list;
++		}
++	}
++#endif
+ 	xen_post_allocator_init();
  }
  
--/* 
-+/*
-  * Fully allocate the p2m structure for a given pfn.  We need to check
-  * that both the top and mid levels are allocated, and make sure the
-  * parallel mfn tree is kept in sync.  We may race with other cpus, so
+@@ -1822,6 +1877,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 
+ 	/* Our (by three pages) smaller Xen pagetable that we are using */
+ 	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
++	/* Revector the xen_start_info */
++	xen_start_info = (struct start_info *)__va(__pa(xen_start_info));
+ }
+ #else	/* !CONFIG_X86_64 */
+ static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
 -- 
 1.7.7.6
 
