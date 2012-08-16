@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933365Ab2HPVZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:25:27 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:42590 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932650Ab2HPVZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:25:25 -0400
-Message-ID: <1345152321.2832.17.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jiang Wang <Jiang.Wang@riverbed.com>
-CC: Michael Chan <mchan@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-Date: Thu, 16 Aug 2012 22:25:21 +0100
-In-Reply-To: <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
-References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
-	 <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
-	 <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S933394Ab2HPVaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:30:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51491 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933299Ab2HPVa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 17:30:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,781,1336374000"; 
+   d="scan'208";a="135135930"
+Message-ID: <502D666A.9080906@linux.intel.com>
+Date: Thu, 16 Aug 2012 14:30:18 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Tomas Racek <tracek@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org
+Subject: Re: x86, nops settings result in kernel crash
+References: <20120816134834.GA11974@x1.osrc.amd.com> <1898701172.1847948.1345142715802.JavaMail.root@redhat.com> <20120816195324.5356cba0@pyramind.ukuu.org.uk>
+In-Reply-To: <20120816195324.5356cba0@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 20:28 +0000, Jiang Wang wrote:
-[...]
-> Also, I have another comment related to link state.
+On 08/16/2012 11:53 AM, Alan Cox wrote:
+>>
+>> Yes, if I remove the break statement (introduced by this commit), it works fine.
 > 
-> Right now, the bnx2 driver powers up the device in bnx2_init_board(),
-> regardless the netif_carrier is on or off. This may introduce
-> following inconsistent behaviors:
-> 1) suppose the cable is plugged in to the NIC and the other end is
-> connected to a switch
-> 2) user powers up the box
-> 3) the Linux does not bring up the interface; i.e, ifconfig ethx shows
-> it is down
-
-Most distributions will bring up all interfaces at boot, by default.
-
-> 4) ethtool ethx will show no link
-> 5) if the user goes to check the light on the physical NIC, he will
-> see the green link light is ON. That means the link is up, right? 
+> What version of qemu is this - do we have qemu bug here I wonder.
 > 
-> I think it is better to power down the device until bnx2_open is
-> called. In this way, ethtool report and the physical link light will
-> be consistent. 
-[...]
 
-In general, a physical network interface may need to be enabled to allow
-management traffic to a BMC, even when the interface is in the 'down'
-state on the host.
+Also, is it 32 or 64 bits?
 
-The link state should be considered unknown whenever the interface is
-down, and /sys/class/net/$IFACE/carrier is not readable then.  However
-ETHTOOL_GLINK is not expected to fail in this way, and must always
-return 0 (down) or 1 (up).  The convention (which is now enforced in
-ethtool_get_link()) is that when the interface is down it should always
-return 0.
+	-hpa
 
-Ben.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
