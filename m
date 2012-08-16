@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab2HPQGE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:06:04 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20865 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932810Ab2HPQEl (ORCPT
+	id S932968Ab2HPQH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:07:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9992 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932739Ab2HPQH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:04:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when initting if required.
-Date: Thu, 16 Aug 2012 11:54:48 -0400
-Message-Id: <1345132488-27323-6-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1345132488-27323-1-git-send-email-konrad.wilk@oracle.com>
-References: <1345132488-27323-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 16 Aug 2012 12:07:57 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nJMv3_NQHZAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=OgzBD95Qp9sA:10 a=AB1JvJ2Xp7bCHqSPeiMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345133274.3708.0.camel@gandalf.local.home>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Thu, 16 Aug 2012 12:07:54 -0400
+In-Reply-To: <20120815163923.GD15989@aftab.osrc.amd.com>
+References: <20120813132438.GA18990@aftab.osrc.amd.com>
+	 <1344867782.6935.119.camel@gandalf.stny.rr.com>
+	 <20120813142909.GC18990@aftab.osrc.amd.com>
+	 <20120813180249.GB6840@infradead.org>
+	 <20120815102722.GB4640@aftab.osrc.amd.com>
+	 <20120815130634.GE2370@infradead.org>
+	 <20120815131806.GC4640@aftab.osrc.amd.com>
+	 <1345041485.31459.89.camel@twins>
+	 <20120815144255.GB15989@aftab.osrc.amd.com>
+	 <20120815145935.GI2370@infradead.org>
+	 <20120815163923.GD15989@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We piggyback on "xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
-Xen-SWIOTLB late when PV PCI is used." functionality to start up
-the Xen-SWIOTLB if we are hot-plugged. This allows us to bypass
-the need to supply 'iommu=soft' on the Linux command line (mostly).
-With this patch, if a user forgot 'iommu=soft' on the command line,
-and hotplug a PCI device they will get:
+On Wed, 2012-08-15 at 18:39 +0200, Borislav Petkov wrote:
 
-pcifront pci-0: Installing PCI frontend
-Warning: only able to allocate 4 MB for software IO TLB
-software IO TLB [mem 0x2a000000-0x2a3fffff] (4MB) mapped at [ffff88002a000000-ffff88002a3fffff]
-pcifront pci-0: Creating PCI Frontend Bus 0000:00
-pcifront pci-0: PCI host bridge to bus 0000:00
-pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
-pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
-pci 0000:00:00.0: [8086:10d3] type 00 class 0x020000
-pci 0000:00:00.0: reg 10: [mem 0xfe5c0000-0xfe5dffff]
-pci 0000:00:00.0: reg 14: [mem 0xfe500000-0xfe57ffff]
-pci 0000:00:00.0: reg 18: [io  0xe000-0xe01f]
-pci 0000:00:00.0: reg 1c: [mem 0xfe5e0000-0xfe5e3fff]
-pcifront pci-0: claiming resource 0000:00:00.0/0
-pcifront pci-0: claiming resource 0000:00:00.0/1
-pcifront pci-0: claiming resource 0000:00:00.0/2
-pcifront pci-0: claiming resource 0000:00:00.0/3
-e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
-e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-e1000e 0000:00:00.0: Disabling ASPM L0s L1
-e1000e 0000:00:00.0: enabling device (0000 -> 0002)
-e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ34
-e1000e 0000:00:00.0: (unregistered net_device): Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
-e1000e 0000:00:00.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1b:21:ab:c6:13
-e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
-e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-005
+> diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+> index bde8521d56bb..96ce80a3743b 100644
+> --- a/tools/scripts/Makefile.include
+> +++ b/tools/scripts/Makefile.include
+> @@ -1,6 +1,8 @@
+>  ifeq ("$(origin O)", "command line")
+> -	OUTPUT := $(O)/
+> -	COMMAND_O := O=$(O)
+> +	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
+> +	ABSOLUTE_O := $(shell cd $(O) ; pwd)
+> +	OUTPUT := $(ABSOLUTE_O)/
+> +	COMMAND_O := O=$(ABSOLUTE_O)
+>  endif
+>  
 
-The "Warning only" will go away if one supplies 'iommu=soft' instead
-as we have a higher chance of being able to allocate large swaths of
-memory.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/pci/xen-pcifront.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Arnaldo, can you pick this patch? Keep both the Signed-off-bys that
+Boris placed.
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index d6cc62c..ca92801 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -21,6 +21,7 @@
- #include <linux/bitops.h>
- #include <linux/time.h>
- 
-+#include <asm/xen/swiotlb-xen.h>
- #define INVALID_GRANT_REF (0)
- #define INVALID_EVTCHN    (-1)
- 
-@@ -668,7 +669,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
- 	schedule_pcifront_aer_op(pdev);
- 	return IRQ_HANDLED;
- }
--static int pcifront_connect(struct pcifront_device *pdev)
-+static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
- {
- 	int err = 0;
- 
-@@ -681,9 +682,13 @@ static int pcifront_connect(struct pcifront_device *pdev)
- 		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
- 		err = -EEXIST;
- 	}
--
- 	spin_unlock(&pcifront_dev_lock);
- 
-+	if (!err && !swiotlb_nr_tbl()) {
-+		err = pci_xen_swiotlb_init_late();
-+		if (err)
-+			dev_err(&pdev->xdev->dev, "Could not setup SWIOTLB!\n");
-+	}
- 	return err;
- }
- 
-@@ -699,6 +704,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
- 
- 	spin_unlock(&pcifront_dev_lock);
- }
-+
- static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
- {
- 	struct pcifront_device *pdev;
-@@ -842,10 +848,10 @@ static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
- 	    XenbusStateInitialised)
- 		goto out;
- 
--	err = pcifront_connect(pdev);
-+	err = pcifront_connect_and_init_dma(pdev);
- 	if (err) {
- 		xenbus_dev_fatal(pdev->xdev, err,
--				 "Error connecting PCI Frontend");
-+				 "Error setting up PCI Frontend");
- 		goto out;
- 	}
- 
--- 
-1.7.7.6
+Thanks!
+
+-- Steve
+
 
