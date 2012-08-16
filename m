@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab2HPGYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 02:24:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34319 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab2HPGYw (ORCPT
+	id S1755049Ab2HPGZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 02:25:11 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:46182 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab2HPGZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 02:24:52 -0400
-Date: Thu, 16 Aug 2012 10:24:48 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816062448.GA32081@moon>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.591460800@openvz.org>
- <20120815204546.GC25062@fieldses.org>
- <20120815210237.GF25421@moon>
- <20120815220622.GA28054@fieldses.org>
+	Thu, 16 Aug 2012 02:25:04 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
+        mszeredi@suse.cz
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+	<1345045700-9062-5-git-send-email-miklos@szeredi.hu>
+Date: Wed, 15 Aug 2012 23:24:48 -0700
+In-Reply-To: <1345045700-9062-5-git-send-email-miklos@szeredi.hu> (Miklos
+	Szeredi's message of "Wed, 15 Aug 2012 17:48:11 +0200")
+Message-ID: <87zk5v5p73.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815220622.GA28054@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19PxrGNwkC7Q0a1rxvDf4n28hcK9VWu9WE=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 04/13] overlay filesystem
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 06:06:23PM -0400, J. Bruce Fields wrote:
-> On Thu, Aug 16, 2012 at 01:02:37AM +0400, Cyrill Gorcunov wrote:
-> > On Wed, Aug 15, 2012 at 04:45:46PM -0400, J. Bruce Fields wrote:
-> > > On Wed, Aug 15, 2012 at 01:21:20PM +0400, Cyrill Gorcunov wrote:
-> > > > To provide fsnotify object inodes being watched without
-> > > > binding to alphabetical path we need to encode them with
-> > > > exportfs help. This patch adds a helper which operates
-> > > > with plain inodes directly.
-> > > 
-> > > I don't get it--this seems like a really roundabout way to get inode and
-> > > generation number, if that's all you want.
-> > 
-> > We can re-open the targets via filehandle on restore, this was the idea.
-> > All this series aimed to achieve the way to restore objects after checkpoit,
-> > thus we need to provide additional information which would be enough.
-> 
-> For this to work it'll need to be something you can pass to
-> open_by_handle_at, won't it?
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
-Yes, and for inotify we print out this handled via fdinfo, later on restore
-we use it together with open_by_handle_at.
+Minor nits below.
 
-> 
-> > > On the other hand, if you want a real filehandle then wouldn't you want
-> > > to e.g. call the filesystem's ->encode_fh() if necessary, as
-> > > exportfs_encode_fh() does?
-> > 
-> > Well, one of the problem I hit when I've been trying to use encode_fh
-> > is that every new implementation of encode_fh will require some size
-> > (even unknown) in buffer where encoded data pushed. Correct me please
-> > if I'm wrong. But with export_encode_inode_fh there is a small buffer
-> > with pretty known size needed on stack needed for printing data in
-> > fdinfo.
-> 
-> You can just give encode_fh a too-small data and let it fail if it's not
-> big enough.
-> 
-> (In practice I think everyone supports NFSv3 filehandles which have a
-> maximum size of 64 bytes.)
+> diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
+> new file mode 100644
+> index 0000000..6b50823
+> --- /dev/null
+> +++ b/fs/overlayfs/dir.c
+> @@ -0,0 +1,598 @@
+> +/*
+> + *
+> + * Copyright (C) 2011 Novell Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#include <linux/fs.h>
+> +#include <linux/namei.h>
+> +#include <linux/xattr.h>
+> +#include <linux/security.h>
+> +#include <linux/cred.h>
+> +#include "overlayfs.h"
+> +
+> +static const char *ovl_whiteout_symlink = "(overlay-whiteout)";
+> +
+> +static int ovl_whiteout(struct dentry *upperdir, struct dentry *dentry)
+> +{
+> +	int err;
+> +	struct dentry *newdentry;
+> +	const struct cred *old_cred;
+> +	struct cred *override_cred;
+> +
+> +	/* FIXME: recheck lower dentry to see if whiteout is really
+>  	needed */
 
-I'll think about it, thanks!
+Is that FIXME still valid?
 
-	Cyrill
+> +	err = -ENOMEM;
+> +	override_cred = prepare_creds();
+> +	if (!override_cred)
+> +		goto out;
+> +
+> +	/*
+> +	 * CAP_SYS_ADMIN for setxattr
+> +	 * CAP_DAC_OVERRIDE for symlink creation
+> +	 * CAP_FOWNER for unlink in sticky directory
+> +	 */
+> +	cap_raise(override_cred->cap_effective, CAP_SYS_ADMIN);
+> +	cap_raise(override_cred->cap_effective, CAP_DAC_OVERRIDE);
+> +	cap_raise(override_cred->cap_effective, CAP_FOWNER);
+> +	override_cred->fsuid = 0;
+> +	override_cred->fsgid = 0;
+
+Could you please make these GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
+instead of 0?  Otherwise this code won't compile with the usernamespace
+bits enabled.
+
+> +	old_cred = override_creds(override_cred);
+
+Eric
