@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab2HPOgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:36:03 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:34457 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab2HPOgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:36:00 -0400
-Message-ID: <502D054B.3010606@c-s.fr>
-Date: Thu, 16 Aug 2012 16:35:55 +0200
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755729Ab2HPOjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:39:01 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:41646 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2HPOjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:39:00 -0400
+Date: Thu, 16 Aug 2012 16:38:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/4] cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+Message-ID: <20120816143851.GI19716@somewhere>
+References: <1344953810-20564-1-git-send-email-fweisbec@gmail.com>
+ <1344953810-20564-2-git-send-email-fweisbec@gmail.com>
+ <20120815170347.323507b1@de.ibm.com>
+ <20120815190901.GD19716@somewhere>
+ <20120816095336.4eeb3ce1@de.ibm.com>
+ <1345109897.11751.31.camel@pasglop>
+ <20120816125556.GG19716@somewhere>
+ <20120816160044.1941f6f4@de.ibm.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Alan Cox <alan@linux.intel.com>, Vitaly Bordug <vitb@kernel.crashing.org>,
-        Marcelo Tosatti <marcelo@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] Powerpc 8xx CPM_UART delay in receive
-References: <201208141426.q7EEQSPc003956@localhost.localdomain> <20120814155227.018988da@pyramind.ukuu.org.uk> <502CF2A0.8080109@c-s.fr> <20120816152918.5ed2649f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120816152918.5ed2649f@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816160044.1941f6f4@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 16/08/2012 16:29, Alan Cox a écrit :
->> The PowerPC CPM is working differently. It doesn't use a fifo but
->> buffers. Buffers are handed to the microprocessor only when they are
->> full or after a timeout period which is adjustable. In the driver, the
-> Which is different how - remembering we empty the FIFO on an IRQ
->
->> buffers are configured with a size of 32 bytes. And the timeout is set
->> to the size of the buffer. That is this timeout that I'm reducing to 1
->> byte in my proposed patch. I can't see what it would break for high
->> speed I/O.
-> How can a timeout be measured in "bytes". Can we have a bit more clarity
-> on how the hardware works and take it from there ?
->
-> Alan
->
-The reference manual of MPC885 says the following about the MAX_IDL 
-parameter:
+On Thu, Aug 16, 2012 at 04:00:44PM +0200, Martin Schwidefsky wrote:
+> On Thu, 16 Aug 2012 14:55:59 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Thu, Aug 16, 2012 at 07:38:17PM +1000, Benjamin Herrenschmidt wrote:
+> > > On Thu, 2012-08-16 at 09:53 +0200, Martin Schwidefsky wrote:
+> > > > Hmm, ok. But then the description should be reworded not to be specific to
+> > > > the power architecture (the part of the message about "This also enables
+> > > > accounting of stolen time on logically-partitioned systems running on IBM
+> > > > POWER5-based machines."). 
+> > > 
+> > > Which is not very helpful to somebody running on a POWER6 or 7 (which
+> > > also support that option just fine :-)
+> > > 
+> > > So yes, the description should definitely be improved.
+> > 
+> > All right. How about something like the below?
+> > 
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 894b073..5f5f8c2 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -276,9 +276,9 @@ config VIRT_CPU_ACCOUNTING
+> >  	  accounting.  This is done by reading a CPU counter on each
+> >  	  kernel entry and exit and on transitions within the kernel
+> >  	  between system, softirq and hardirq state, so there is a
+> > -	  small performance impact.  This also enables accounting of
+> > -	  stolen time on logically-partitioned systems running on
+> > -	  IBM POWER5-based machines.
+> > +	  small performance impact.  In the case of IBM POWER > 5, this
+> > +	  also enables accounting of stolen time on logically-partitioned
+> > +	  systems.
+> > 
+> >  config BSD_PROCESS_ACCT
+> >  	bool "BSD Process Accounting"
+> > 
+> 
+> VIRT_CPU_ACCOUNTING will enable steal time for s390 as well.
 
-MAX_IDL: Maximum idle characters. When a character is received, the 
-receiver begins counting idle characters. If MAX_IDL idle characters are 
-received before the next data character, an idle timeout occurs and the 
-buffer is closed,
-generating a maskable interrupt request to the core to receive the data 
-from the buffer. Thus, MAX_IDL offers a way to demarcate frames. To 
-disable the feature, clear MAX_IDL. The bit length of an idle character 
-is calculated as follows: 1 + data length (5–9) + 1 (if parity is used) 
-+ number of stop bits (1–2). For 8 data bits, no parity, and 1 stop bit, 
-the character length is 10 bits
+Ah right. Fixed below:
 
-If the UART is receiving data and gets an idle character (all ones), the 
-channel begins counting consecutive idle characters received. If MAX_IDL 
-is reached, the buffer is closed and an RX interrupt is generated if not 
-masked. If no buffer is open, this event does not generate an interrupt 
-or any status information. The internal idle counter (IDLC) is reset 
-every time a character is received. To disable the idle sequence 
-function, clear MAX_IDL
-
-
-The datasheet of the 16550 UART says:
-
-Besides, for FIFO mode operation a time out mechanism is implemented. 
-Independently of the trigger level of the FIFO, an interrupt will be 
-generated if there is at least one word in the FIFO and for a time 
-equivalent to the transmission of four characters
-- no new character has been received and
-- the microprocessor has not read the RHR
-To compute the time out, the current total number of bits (start, data, 
-parity and stop(s)) is used, together with the current baud rate (i.e., 
-it depends on the contents of the LCR, DLL, DLM and PSD registers).
-
-
-Christophe
+diff --git a/init/Kconfig b/init/Kconfig
+index 894b073..c40d0fb 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -276,9 +276,9 @@ config VIRT_CPU_ACCOUNTING
+ 	  accounting.  This is done by reading a CPU counter on each
+ 	  kernel entry and exit and on transitions within the kernel
+ 	  between system, softirq and hardirq state, so there is a
+-	  small performance impact.  This also enables accounting of
+-	  stolen time on logically-partitioned systems running on
+-	  IBM POWER5-based machines.
++	  small performance impact.  In the case of s390 or IBM POWER > 5,
++	  this also enables accounting of stolen time on logically-partitioned
++	  systems.
+ 
+ config BSD_PROCESS_ACCT
+ 	bool "BSD Process Accounting"
