@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab2HPSIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:08:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35721 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab2HPSIJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:08:09 -0400
-Message-ID: <1345140478.29668.54.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 16 Aug 2012 20:07:58 +0200
-In-Reply-To: <20120724203613.GA9637@redhat.com>
-References: <20120724203613.GA9637@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1755288Ab2HPSLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:11:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752840Ab2HPSK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:10:59 -0400
+Message-ID: <1345135074.4683.476.camel@ul30vt.home>
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 16 Aug 2012 10:37:54 -0600
+In-Reply-To: <502D1FF4.20506@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+	 <20120815142803.GF3068@redhat.com> <1345052191.4683.435.camel@ul30vt.home>
+	 <20120815192224.GB5670@redhat.com> <502D1FF4.20506@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-24 at 16:36 -0400, Dave Jones wrote:
-
-> ======================================================
-> [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-> 3.5.0+ #122 Not tainted
-> ------------------------------------------------------
-> trinity-child2/5327 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> blocked:  (tasklist_lock){.+.+..}, instance: ffffffff81c05098, at: [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
+On Thu, 2012-08-16 at 19:29 +0300, Avi Kivity wrote:
+> On 08/15/2012 10:22 PM, Michael S. Tsirkin wrote:
+> > On Wed, Aug 15, 2012 at 11:36:31AM -0600, Alex Williamson wrote:
+> >> On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
+> >> > On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
+> >> > > v8:
+> >> > > 
+> >> > > Trying a new approach.  Nobody seems to like the internal IRQ
+> >> > > source ID object and the interactions it implies between irqfd
+> >> > > and eoifd, so let's get rid of it.  Instead, simply expose
+> >> > > IRQ source IDs to userspace.  This lets the user be in charge
+> >> > > of freeing them or hanging onto a source ID for later use.
+> >> > 
+> >> > In the end it turns out source ID is an optimization for shared
+> >> > interrupts, isn't it?  Can't we apply the optimization transparently to
+> >> > the user?  E.g. if we have some spare source IDs, allocate them, if we
+> >> > run out, use a shared source ID?
+> >> 
+> >> Let's think about shared source IDs a bit more.  I think it's wrong that
+> >> irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
+> >> irqfd users can share a source ID.  We do not get the logical OR of all
+> >> users by putting them on the same source ID, we get "last set wins".
+> >> KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
+> >> logical OR happens in userspace.  How would we not starve a user if we
+> >> define KVM_IRQFD_SOURCE_ID?  What am I missing?
+> > 
+> > That all irqfds are deasserted on EOI anyway.  So there's no point
+> > to do a logical OR.
+> > 
+> > 
 > 
-> and this task is already holding:
-> blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
-> which would create a new lock dependency:
->  (&(&new_timer->it_lock)->rlock){-.-...} -> (tasklist_lock){.+.+..}
-> 
-> but this new dependency connects a HARDIRQ-irq-safe lock:
+> What if a level irqfd shares a line with a KVM_IRQ_LINE ioctl?  Then an
+> EOI can de-assert the irqfd source, but the line is kept high by the
+> last KVM_IRQ_LINE invocation.
 
-> to a HARDIRQ-irq-unsafe lock:
->  (&(&p->alloc_lock)->rlock){+.+...}
+As I understand Michael's proposal, the shared irq source id used by
+level-deassert-irqfds can only be asserted via an irqfd injection and
+can only be de-asserted by the ack notifier.  If we let any other
+interface have access to the irq source id it breaks.  If KVM_IRQ_LINE
+picks up and extension to specify the irq source id, it would have to be
+prevented from accessing this one.  Thanks,
 
-> other info that might help us debug this:
-> 
-> Chain exists of:
->   &(&new_timer->it_lock)->rlock --> tasklist_lock --> &(&p->alloc_lock)->rlock
-> 
->  Possible interrupt unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&(&p->alloc_lock)->rlock);
->                                local_irq_disable();
->                                lock(&(&new_timer->it_lock)->rlock);
->                                lock(tasklist_lock);
->   <Interrupt>
->     lock(&(&new_timer->it_lock)->rlock);
-> 
->  *** DEADLOCK ***
-> 
-> 1 lock on stack by trinity-child2/5327:
->  #0: blocked:  (&(&new_timer->it_lock)->rlock){-.-...}, instance: ffff880143bce170, at: [<ffffffff81093d49>] __lock_timer+0x89/0x1f0
+Alex
 
 
-> the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
 
->    [<ffffffff810da83d>] lock_acquire+0xad/0x220
->    [<ffffffff816895f6>] _raw_spin_lock+0x46/0x80
->    [<ffffffff812d5f2e>] keyctl_session_to_parent+0xde/0x490
->    [<ffffffff812d634d>] sys_keyctl+0x6d/0x1a0
->    [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
-
-> stack backtrace:
-> Pid: 5327, comm: trinity-child2 Not tainted 3.5.0+ #122
-> Call Trace:
->  [<ffffffff810d8194>] check_usage+0x4e4/0x500
->  [<ffffffff81023729>] ? native_sched_clock+0x19/0x80
->  [<ffffffff810d59a8>] ? trace_hardirqs_off_caller+0x28/0xd0
->  [<ffffffff81023729>] ? native_sched_clock+0x19/0x80
->  [<ffffffff810d820b>] check_irq_usage+0x5b/0xe0
->  [<ffffffff810d93da>] __lock_acquire+0xd8a/0x1ae0
->  [<ffffffff810d8956>] ? __lock_acquire+0x306/0x1ae0
->  [<ffffffff810d59a8>] ? trace_hardirqs_off_caller+0x28/0xd0
->  [<ffffffff810da2a5>] ? lock_release_non_nested+0x175/0x320
->  [<ffffffff810da83d>] lock_acquire+0xad/0x220
->  [<ffffffff8109762b>] ? posix_cpu_timer_del+0x2b/0xe0
->  [<ffffffff81689b59>] _raw_read_lock+0x49/0x80
->  [<ffffffff8109762b>] ? posix_cpu_timer_del+0x2b/0xe0
->  [<ffffffff81093d95>] ? __lock_timer+0xd5/0x1f0
->  [<ffffffff8109762b>] posix_cpu_timer_del+0x2b/0xe0
->  [<ffffffff81094786>] sys_timer_delete+0x26/0x100
->  [<ffffffff8169336d>] system_call_fastpath+0x1a/0x1f
-
-
-So we have:
-
-
- sys_keyctl()
-   keyctl_session_to_parent()
-     write_lock_irq(&tasklist_lock)
-     task_lock(parent)		parent->alloc_lock
-
-VS
-
-  sys_timer_delete()
-    lock_timer()		timer->it_lock
-    posix_cpu_timer_del()
-      read_lock(&tasklist_lock)
-
-
-Creating:
-
-  timer->it_lock -> tasklist_lock -> task->alloc_lock
-
-And since it_lock is IRQ-safe and alloc_lock isn't, you've got the IRQ
-inversion deadlock reported.
-
-The task_lock() in keyctl_session_to_parent() comes from Al who didn't
-think it necessary to write a changelog in d35abdb2.
-
-David, Al, anybody want to have a go at fixing this?
