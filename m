@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab2HPGkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 02:40:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37585 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2HPGkM (ORCPT
+	id S1755199Ab2HPGmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 02:42:46 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:35159 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab2HPGmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 02:40:12 -0400
+	Thu, 16 Aug 2012 02:42:45 -0400
+Message-ID: <502C98E8.20800@linux.vnet.ibm.com>
+Date: Thu, 16 Aug 2012 12:23:28 +0530
+From: preeti <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120815165324.f6e16eee.akpm@linux-foundation.org>
-References: <1342221125.17464.8.camel@lorien2>
-	<CAOJsxLGjnMxs9qERG5nCfGfcS3jy6Rr54Ac36WgVnOtP_pDYgQ@mail.gmail.com>
-	<1344224494.3053.5.camel@lorien2>
-	<1344266096.2486.17.camel@lorien2>
-	<CAAmzW4Ne5pD90r+6zrrD-BXsjtf5OqaKdWY+2NSGOh1M_sWq4g@mail.gmail.com>
-	<1344272614.2486.40.camel@lorien2>
-	<1344287631.2486.57.camel@lorien2>
-	<alpine.DEB.2.02.1208090911100.15909@greybox.home>
-	<1344531695.2393.27.camel@lorien2>
-	<alpine.DEB.2.02.1208091406590.20908@greybox.home>
-	<1344540801.2393.42.camel@lorien2>
-	<1344789618.5128.5.camel@lorien2>
-	<20120815165324.f6e16eee.akpm@linux-foundation.org>
-Date: Thu, 16 Aug 2012 09:40:10 +0300
-X-Google-Sender-Auth: IIjNcnBqhw1Y8saVU7bMPHacHdg
-Message-ID: <CAOJsxLFkrNVLhojV=id67xuhXDHyEzZiDo=_peRJtgcfAjC9bg@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: Restructure kmem_cache_create() to move debug
- cache integrity checks into a new function
-From: Pekka Enberg <penberg@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shuah.khan@hp.com, "Christoph Lameter (Open Source)" <cl@linux.com>,
-        glommer@parallels.com, js1304@gmail.com,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, shuahkhan@gmail.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Alex Shi <alex.shi@intel.com>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
+In-Reply-To: <1345028738.31459.82.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12081606-7014-0000-0000-000001BBF516
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 2:53 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 12 Aug 2012 10:40:18 -0600
-> Shuah Khan <shuah.khan@hp.com> wrote:
->
->> kmem_cache_create() does cache integrity checks when CONFIG_DEBUG_VM
->> is defined. These checks interspersed with the regular code path has
->> lead to compile time warnings when compiled without CONFIG_DEBUG_VM
->> defined. Restructuring the code to move the integrity checks in to a new
->> function would eliminate the current compile warning problem and also
->> will allow for future changes to the debug only code to evolve without
->> introducing new warnings in the regular path. This restructuring work
->> is based on the discussion in the following thread:
->
-> Your patch appears to be against some ancient old kernel, such as 3.5.
-> I did this:
->
-> --- a/mm/slab_common.c~mm-slab_commonc-restructure-kmem_cache_create-to-move-debug-cache-integrity-checks-into-a-new-function-fix
-> +++ a/mm/slab_common.c
-> @@ -101,15 +101,8 @@ struct kmem_cache *kmem_cache_create(con
->
->         get_online_cpus();
->         mutex_lock(&slab_mutex);
-> -
-> -       if (kmem_cache_sanity_check(name, size))
-> -               goto oops;
-> -
-> -       s = __kmem_cache_create(name, size, align, flags, ctor);
-> -
-> -#ifdef CONFIG_DEBUG_VM
-> -oops:
-> -#endif
-> +       if (kmem_cache_sanity_check(name, size) == 0)
-> +               s = __kmem_cache_create(name, size, align, flags, ctor);
->         mutex_unlock(&slab_mutex);
->         put_online_cpus();
 
-Yup. Shuah, care to spin another version against slab/next?
+Hi everyone,
+
+>From what I have understood so far,I try to summarise pin pointed
+differences between the performance and power policies as found
+relevant to the scheduler-load balancing mechanism.Any thoughts?
+
+*Performance policy*:
+
+Q1.Who triggers load_balance?
+Load balance is triggered when a cpu is found to be idle.(Pull mechanism)
+
+Q2.How is load_balance handled?
+When triggered,the load is looked to be pulled from its sched domain.
+First the sched groups in the domain the cpu belongs to is queried
+followed by the runqueues in the busiest group.then the tasks are moved.
+
+This course of action is found analogous to the performance policy because:
+
+1.First the idle cpu initiates the pull action
+2.The busiest cpu hands over the load to this cpu.A person who can
+handle any work is querying as to who cannot handle more work.
+
+*Power policy*:
+
+So how is power policy different? As Peter says,'pack more than spread
+more'.
+
+Q1.Who triggers load balance?
+It is the cpu which cannot handle more work.Idle cpu is left to remain
+idle.(Push mechanism)
+
+Q2.How is load_balance handled?
+First the least busy runqueue,from within the sched_group that the busy
+cpu belongs to is queried.if none exist,ie all the runqueues are equally
+busy then move on to the other sched groups.
+
+Here again the 'least busy' policy should be applied,first at
+group level then at the runqueue level.
+
+This course of action is found analogous to the power policy because as
+much as possible busy and capable cpus within a small range try to
+handle the existing load.
+
+Regards
+Preeti
+
+
