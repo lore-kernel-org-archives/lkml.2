@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab2HPLXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:23:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:47569 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab2HPLXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:23:50 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: K Prasad <prasad@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
-In-reply-to: <1345102812.31459.114.camel@twins>
-References: <28857.1345091034@neuling.org> <1345102812.31459.114.camel@twins>
-Comments: In-reply-to Peter Zijlstra <a.p.zijlstra@chello.nl>
-   message dated "Thu, 16 Aug 2012 09:40:12 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Thu, 16 Aug 2012 21:17:29 +1000
-Message-ID: <20344.1345115849@neuling.org>
+	id S1751945Ab2HPLZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:25:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35039 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2HPLZc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 07:25:32 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Update VIP to videobuf2 and control framework
+Date: Thu, 16 Aug 2012 13:29:11 +0200
+Message-ID: <1501953.eRLcjlTouV@harkonnen>
+User-Agent: KMail/4.8.5 (Linux/3.5.1-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120801070418.51885637@lwn.net>
+References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <201208010841.56941.hverkuil@xs4all.nl> <20120801070418.51885637@lwn.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-> > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
-> > despite there being no breakpoint on this CPU.  This is because the call
-> > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
-> > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
-> > return ENOSPC.
+In data mercoledì 1 agosto 2012 07:04:18, Jonathan Corbet ha scritto:
+> On Wed, 1 Aug 2012 08:41:56 +0200
 > 
-> I think this comes from the ptrace legacy, we register a breakpoint on
-> all cpus because when we migrate a task it cannot fail to migrate the
-> breakpoint.
+> Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> > > The second patch adds a new memory allocator for the videobuf2. I
+> > > name it videobuf2-dma-streaming but I think "streaming" is not
+> > > the best choice, so suggestions are welcome. My inspiration for
+> > > this buffer come from videobuf-dma-contig (cached) version. After
+> > > I made this buffer I found the videobuf2-dma-nc made by Jonathan
+> > > Corbet and I improve the allocator with some suggestions
+> > > (http://patchwork.linuxtv.org/patch/7441/). The VIP doesn't work
+> > > with videobu2-dma-contig and I think this solution is easier the
+> > > sg.> 
+> > I leave this to the vb2 experts. It's not obvious to me why we would
+> > need a fourth memory allocator.
 > 
-> Its one of the things I hate most about the hwbp stuff as it relates to
-> perf.
+> I first wrote my version after observing that performance dropped by a
+> factor of three on the OLPC XO 1.75 when using contiguous, coherent
+> memory.  If the architecture needs to turn off caching, things really
+> slow down, to the point that it's unusable.  There's no real reason
+> why a V4L2 device shouldn't be able to use streaming mappings in this
+> situation; it performs better and doesn't eat into the limited
+> amounts of coherent DMA space available on some systems.
 > 
-> Frederic knows more...
+> I never got my version into a mergeable state only because I finally
+> figured out how to bludgeon the hardware into doing s/g DMA and didn't
+> need it anymore.  But I think it's a worthwhile functionality to
+> have, and, with CMA, it could be the preferred mode for a number of
+> devices.
+> 
+> jon
 
-Maybe I should wait for Frederic to respond but I'm not sure I
-understand what you're saying.
+I think that the memory allocator is the most questionable patch, but if 
+there are not any other comments I will send my three patches for the 
+inclusion. It is summer, time for vacation, so I'll wait for another 
+week or two for critical comments and then I will send patches.
 
-I can see how using ptrace hw breakpoints and perf hw breakpoints at the
-same time could be a problem, but I'm not sure how this would stop it.
 
-Are you saying that we need to keep at least 1 slot free at all times,
-so that we can use it for ptrace?
-
-Is "perf record -e mem:0x10000000 true" ever going to be able to work on
-POWER7 with only one hw breakpoint resource per CPU?  
-
-Thanks,
-Mikey
+-- 
+Federico Vaga
