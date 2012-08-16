@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab2HPSUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:20:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40579 "EHLO mx2.suse.de"
+	id S1030302Ab2HPSVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:21:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153Ab2HPSUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:20:17 -0400
-Date: Thu, 16 Aug 2012 20:20:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120816182015.GC12578@dhcp22.suse.cz>
-References: <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
- <20120710094513.GB9108@mudshark.cambridge.arm.com>
- <20120710104234.GI9108@mudshark.cambridge.arm.com>
- <20120711174802.GG13498@mudshark.cambridge.arm.com>
- <20120712111659.GF21013@tiehlicka.suse.cz>
- <20120712112645.GG2816@mudshark.cambridge.arm.com>
- <20120712115708.GG21013@tiehlicka.suse.cz>
- <20120807160337.GC16877@mudshark.cambridge.arm.com>
- <20120808162607.GA7885@dhcp22.suse.cz>
- <20120816160954.GA4330@mudshark.cambridge.arm.com>
+	id S932285Ab2HPSVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:21:50 -0400
+Date: Thu, 16 Aug 2012 20:01:00 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+Message-ID: <20120816170100.GC22518@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+ <20120815142803.GF3068@redhat.com>
+ <1345052191.4683.435.camel@ul30vt.home>
+ <20120815192224.GB5670@redhat.com>
+ <502D1FF4.20506@redhat.com>
+ <20120816163658.GA22518@redhat.com>
+ <502D2247.7060107@redhat.com>
+ <20120816165426.GB22518@redhat.com>
+ <502D25AC.9000307@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816160954.GA4330@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <502D25AC.9000307@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-08-12 17:09:54, Will Deacon wrote:
-> On Wed, Aug 08, 2012 at 05:26:07PM +0100, Michal Hocko wrote:
-[...]
-> diff --git a/arch/ia64/include/asm/hugetlb.h b/arch/ia64/include/asm/hugetlb.h
-> index da55c63..2adaa60 100644
-> --- a/arch/ia64/include/asm/hugetlb.h
-> +++ b/arch/ia64/include/asm/hugetlb.h
-> @@ -1,6 +1,7 @@
->  #ifndef _ASM_IA64_HUGETLB_H
->  #define _ASM_IA64_HUGETLB_H
->  
-> +#include <asm/cacheflush.h>
->  #include <asm/page.h>
->  
->  
-> @@ -77,4 +78,9 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +	flush_dcache_page(page);
-> +}
-> +
+On Thu, Aug 16, 2012 at 07:54:04PM +0300, Avi Kivity wrote:
+> On 08/16/2012 07:54 PM, Michael S. Tsirkin wrote:
+> > On Thu, Aug 16, 2012 at 07:39:35PM +0300, Avi Kivity wrote:
+> >> On 08/16/2012 07:36 PM, Michael S. Tsirkin wrote:
+> >> 
+> >> >> What if a level irqfd shares a line with a KVM_IRQ_LINE ioctl?  Then an
+> >> >> EOI can de-assert the irqfd source, but the line is kept high by the
+> >> >> last KVM_IRQ_LINE invocation.
+> >> > 
+> >> > Exactly. So 1 ID for userspace and 1 for irqfd.
+> >> 
+> >> Gaa, this mess belongs in userspace.
+> > 
+> > Not sure I understand what you refer to.
+> > 
+> > I meant simply
+> > #define KVM_IRQFD_IRQ_SOURCE_ID    1
+> > request it at kvm init.
+> > 
+> > As opposed to using KVM_USERSPACE_IRQ_SOURCE_ID like we do now
+> > for edge.
+> > Does this seem acceptable to you?
+> 
+> I meant the pic/ioapic, not this particular bit.
 
-Why do we need the hook for ia64? hugetlb_no_page calls clear_huge_page
-and that one calls flush_dcache_page (via clear_user_page), right?
-The same applies to copy_huge_page for COW.
+:)
 
-> diff --git a/arch/powerpc/include/asm/hugetlb.h b/arch/powerpc/include/asm/hugetlb.h
-> index dfdb95b..52696e6 100644
-> --- a/arch/powerpc/include/asm/hugetlb.h
-> +++ b/arch/powerpc/include/asm/hugetlb.h
-> @@ -2,6 +2,7 @@
->  #define _ASM_POWERPC_HUGETLB_H
->  
->  #ifdef CONFIG_HUGETLB_PAGE
-> +#include <asm/cacheflush.h>
->  #include <asm/page.h>
->  
->  extern struct kmem_cache *hugepte_cache;
-> @@ -151,6 +152,11 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +	flush_dcache_page(page);
-> +}
-> +
-
-Same here
-
--- 
-Michal Hocko
-SUSE Labs
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
