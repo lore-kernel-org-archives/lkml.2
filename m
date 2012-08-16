@@ -1,447 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab2HPPeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:34:13 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:53605 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757399Ab2HPPeG (ORCPT
+	id S1757611Ab2HPPfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:35:07 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:39514 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757399Ab2HPPfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:34:06 -0400
-X-IronPort-AV: E=Sophos;i="4.77,778,1336348800"; 
-   d="dts'?dtsi'?scan'208";a="14044587"
-Date: Thu, 16 Aug 2012 16:33:47 +0100
-From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: [PATCH v3 00/23] Introduce Xen support on ARM
-Message-ID: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="_004_alpineDEB20212080614280604645kaballukxensourcecom_"
-Content-ID: <alpine.DEB.2.02.1208161618551.4850@kaball.uk.xensource.com>
+	Thu, 16 Aug 2012 11:35:01 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        gregkh@linuxfoundation.org, bigeasy@linutronix.de, arnd@arndb.de,
+        aletes.xgr@gmail.com, kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] usb: gadget: lpc32xx_udc: Port to new start/stop interface
+Date: Thu, 16 Aug 2012 17:34:36 +0200
+Message-Id: <1345131276-28982-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_004_alpineDEB20212080614280604645kaballukxensourcecom_
-Content-Type: text/plain; charset="US-ASCII"
-Content-ID: <alpine.DEB.2.02.1208161618552.4850@kaball.uk.xensource.com>
+This patch adjusts the LPC32xx USB gadget driver to the new udc_start /
+udc_stop interface.
 
-Hi all,
-this patch series implements Xen support for ARMv7 with virtualization
-extensions.  It allows a Linux guest to boot as dom0 and
-as domU on Xen on ARM. PV console, disk and network frontends and
-backends are all working correctly.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-It has been tested on a Versatile Express Cortex A15 emulator, using the
-latest Xen ARM developement branch
-(git://xenbits.xen.org/people/ianc/xen-unstable.git arm-for-4.3) plus
-the "ARM hypercall ABI: 64 bit ready" patch series
-(http://marc.info/?l=xen-devel&m=134426267205408), and a simple ad-hoc
-tool to build guest domains (marc.info/?l=xen-devel&m=134089788016546).
+---
 
-The patch marked with [HACK] shouldn't be applied and is part of the
-series only because it is needed to create domUs.
+Applies to v3.6-rc1
 
-I am also attaching to this email the dts'es that I am currently using
-for dom0 and domU: vexpress-v2p-ca15-tc1.dts (that includes
-vexpress-v2m-rs1-rtsm.dtsi) is the dts used for dom0 and it is passed to
-Linux by Xen, while vexpress-virt.dts is the dts used for other domUs
-and it is appended in binary form to the guest kernel image. I am not
-sure where they are supposed to live yet, so I am just attaching them
-here so that people can actually try out this series if they want to.
+ drivers/usb/gadget/lpc32xx_udc.c |   44 +++++++++++++--------------------------
+ 1 file changed, 15 insertions(+), 29 deletions(-)
 
-Comments are very welcome!
-
-
-Changes in v3:
-- move patches that have been picked up by Konrad at the end of the
-  series;
-- improve comments;
-- add a doc to describe the Xen Device Tree format;
-- do not use xen_ulong_t for multicalls and apic_physbase;
-- add a patch at the end of the series to use the new __HVC macro;
-- add missing pvclock-abi.h include to ia64 header files;
-- do not use an anonymous union in struct xen_add_to_physmap.
-
-
-Changes in v2:
-- fix up many comments and commit messages;
-- remove the early_printk patches: rely on the emulated serial for now;
-- remove the xen_guest_init patch: without any PV early_printk, we don't
-  need any early call to xen_guest_init, we can rely on core_initcall
-  alone;
-- define an HYPERCALL macro for 5 arguments hypercall wrappers, even if
-  at the moment is unused;
-- use ldm instead of pop in the hypercall wrappers;
-- return -ENOSYS rather than -1 from the unimplemented grant_table
-  functions;
-- remove the pvclock ifdef in the Xen headers;
-- remove include linux/types.h from xen/interface/xen.h;
-- replace pr_info with pr_debug in xen_guest_init;
-- add a new patch to introduce xen_ulong_t and use it top replace all
-  the occurences of unsigned long in the public Xen interface;
-- explicitely size all the pointers to 64 bit on ARM, so that the
-  hypercall ABI is "64 bit ready";
-- clean up xenbus_init;
-- make pci.o depend on CONFIG_PCI and acpi.o depend on CONFIG_ACPI;
-- mark Xen guest support on ARM as EXPERIMENTAL;
-- introduce GRANT_TABLE_PHYSADDR;
-- remove unneeded initialization of boot_max_nr_grant_frames;
-- add a new patch to clear IRQ_NOAUTOEN and IRQ_NOREQUEST in events.c;
-- return -EINVAL from xen_remap_domain_mfn_range if
-  auto_translated_physmap;
-- retain binary compatibility in xen_add_to_physmap: use a union to
-  introduce foreign_domid.
-
-
-Ian Campbell (1):
-      [HACK] xen/arm: implement xen_remap_domain_mfn_range
-
-Stefano Stabellini (24):
-      arm: initial Xen support
-      xen/arm: hypercalls
-      xen/arm: page.h definitions
-      xen/arm: sync_bitops
-      xen/arm: empty implementation of grant_table arch specific functions
-      docs: Xen ARM DT bindings
-      xen/arm: Xen detection and shared_info page mapping
-      xen/arm: Introduce xen_pfn_t for pfn and mfn types
-      xen/arm: Introduce xen_ulong_t for unsigned long
-      xen/arm: compile and run xenbus
-      xen: do not compile manage, balloon, pci, acpi and cpu_hotplug on ARM
-      xen/arm: introduce CONFIG_XEN on ARM
-      xen/arm: get privilege status
-      xen/arm: initialize grant_table on ARM
-      xen/arm: receive Xen events on ARM
-      xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-      xen/arm: implement alloc/free_xenballooned_pages with alloc_pages/kfree
-      xen: allow privcmd for HVM guests
-      xen/arm: compile blkfront and blkback
-      xen/arm: compile netback
-      arm/v2m: initialize arch_timers even if v2m_timer is not present
-      xen/arm: use the __HVC macro
-      xen: missing includes
-      xen: update xen_add_to_physmap interface
-
- Documentation/devicetree/bindings/arm/xen.txt |   22 +++
- arch/arm/Kconfig                              |   10 +
- arch/arm/Makefile                             |    1 +
- arch/arm/include/asm/hypervisor.h             |    6 +
- arch/arm/include/asm/sync_bitops.h            |   27 +++
- arch/arm/include/asm/xen/events.h             |   18 ++
- arch/arm/include/asm/xen/hypercall.h          |   69 +++++++
- arch/arm/include/asm/xen/hypervisor.h         |   19 ++
- arch/arm/include/asm/xen/interface.h          |   73 ++++++++
- arch/arm/include/asm/xen/page.h               |   82 ++++++++
- arch/arm/mach-vexpress/v2m.c                  |   11 +-
- arch/arm/xen/Makefile                         |    1 +
- arch/arm/xen/enlighten.c                      |  245 +++++++++++++++++++++++++
- arch/arm/xen/grant-table.c                    |   53 ++++++
- arch/arm/xen/hypercall.S                      |  102 ++++++++++
- arch/ia64/include/asm/xen/interface.h         |    8 +-
- arch/x86/include/asm/xen/interface.h          |    8 +
- arch/x86/xen/enlighten.c                      |    1 +
- arch/x86/xen/irq.c                            |    1 +
- arch/x86/xen/mmu.c                            |    3 +
- arch/x86/xen/xen-ops.h                        |    1 -
- drivers/block/xen-blkback/blkback.c           |    1 +
- drivers/net/xen-netback/netback.c             |    1 +
- drivers/net/xen-netfront.c                    |    1 +
- drivers/tty/hvc/hvc_xen.c                     |    2 +
- drivers/xen/Makefile                          |   11 +-
- drivers/xen/events.c                          |   18 ++-
- drivers/xen/grant-table.c                     |    1 +
- drivers/xen/privcmd.c                         |   20 +-
- drivers/xen/xenbus/xenbus_comms.c             |    2 +-
- drivers/xen/xenbus/xenbus_probe.c             |   62 +++++--
- drivers/xen/xenbus/xenbus_probe_frontend.c    |    1 +
- drivers/xen/xenbus/xenbus_xs.c                |    1 +
- drivers/xen/xenfs/super.c                     |    7 +
- include/xen/events.h                          |    2 +
- include/xen/interface/features.h              |    3 +
- include/xen/interface/grant_table.h           |    4 +-
- include/xen/interface/io/protocols.h          |    3 +
- include/xen/interface/memory.h                |   32 ++-
- include/xen/interface/physdev.h               |    2 +-
- include/xen/interface/platform.h              |    4 +-
- include/xen/interface/version.h               |    2 +-
- include/xen/interface/xen.h                   |    7 +-
- include/xen/privcmd.h                         |    3 +-
- include/xen/xen.h                             |    2 +-
- 45 files changed, 885 insertions(+), 68 deletions(-)
-
-
-A branch based on 3.5-rc7 is available here (the __HVC patch is missing
-from this branch because it depends on "ARM: opcodes: Facilitate custom
-opcode injection" http://marc.info/?l=linux-arm-kernel&m=134442896128124):
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.5-rc7-arm-3
-
-Cheers,
-
-Stefano
---_004_alpineDEB20212080614280604645kaballukxensourcecom_
-Content-Type: text/plain; charset="US-ASCII"; name="vexpress-virt.dts"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.02.1208161633020.4850@kaball.uk.xensource.com>
-Content-Description: 
-Content-Disposition: attachment; filename="vexpress-virt.dts"
-
-LyoNCiAqIEFSTSBMdGQuIFZlcnNhdGlsZSBFeHByZXNzDQogKg0KICogQVJN
-IEVudmVsb3BlIE1vZGVsIHY3QSAoc2luZ2xlIENQVSkuDQogKi8NCg0KL2R0
-cy12MS87DQoNCi9pbmNsdWRlLyAic2tlbGV0b24uZHRzaSINCg0KLyB7DQoJ
-bW9kZWwgPSAiVjJQLUFFTXY3QSI7DQoJY29tcGF0aWJsZSA9ICJhcm0sdmV4
-cHJlc3MsdjJwLWFlbSx2N2EiLCAiYXJtLHZleHByZXNzLHYycC1hZW0iLCAi
-YXJtLHZleHByZXNzIjsNCglpbnRlcnJ1cHQtcGFyZW50ID0gPCZnaWM+Ow0K
-DQogICAgICAgIGNob3NlbiB7DQogICAgICAgICAgICAgICAgYm9vdGFyZ3Mg
-PSAiZWFybHlwcmludGsgZGVidWcgbG9nbGV2ZWw9OSBjb25zb2xlPWh2YzAg
-cm9vdD0vZGV2L3h2ZGEgaW5pdD0vc2Jpbi9pbml0IjsNCiAgICAgICAgfTsN
-Cg0KCWNwdXMgew0KCQkjYWRkcmVzcy1jZWxscyA9IDwxPjsNCgkJI3NpemUt
-Y2VsbHMgPSA8MD47DQoNCgkJY3B1QDAgew0KCQkJZGV2aWNlX3R5cGUgPSAi
-Y3B1IjsNCgkJCWNvbXBhdGlibGUgPSAiYXJtLGNvcnRleC1hMTUiOw0KCQkJ
-cmVnID0gPDA+Ow0KCQl9Ow0KCX07DQoNCgltZW1vcnkgew0KCQlkZXZpY2Vf
-dHlwZSA9ICJtZW1vcnkiOw0KCQlyZWcgPSA8MHg4MDAwMDAwMCAweDA4MDAw
-MDAwPjsNCgl9Ow0KDQoJZ2ljOiBpbnRlcnJ1cHQtY29udHJvbGxlckAyYzAw
-MTAwMCB7DQoJCWNvbXBhdGlibGUgPSAiYXJtLGNvcnRleC1hOS1naWMiOw0K
-CQkjaW50ZXJydXB0LWNlbGxzID0gPDM+Ow0KCQkjYWRkcmVzcy1jZWxscyA9
-IDwwPjsNCgkJaW50ZXJydXB0LWNvbnRyb2xsZXI7DQoJCXJlZyA9IDwweDJj
-MDAxMDAwIDB4MTAwMD4sDQoJCSAgICAgIDwweDJjMDAyMDAwIDB4MTAwPjsN
-Cgl9Ow0KDQoJdGltZXIgew0KCQljb21wYXRpYmxlID0gImFybSxhcm12Ny10
-aW1lciI7DQoJCWludGVycnVwdHMgPSA8MSAxMyAweGYwOD4sDQoJCQkgICAg
-IDwxIDE0IDB4ZjA4PiwNCgkJCSAgICAgPDEgMTEgMHhmMDg+LA0KCQkJICAg
-ICA8MSAxMCAweGYwOD47DQoJfTsNCg0KCWh5cGVydmlzb3Igew0KCQljb21w
-YXRpYmxlID0gInhlbix4ZW4iLCAieGVuLHhlbi00LjIiOw0KCQlyZWcgPSA8
-MHhiMDAwMDAwMCAweDIwMDAwPjsNCgkJaW50ZXJydXB0cyA9IDwxIDE1IDB4
-ZjA4PjsNCgl9Ow0KDQoJbW90aGVyYm9hcmQgew0KCQlhcm0sdjJtLW1lbW9y
-eS1tYXAgPSAicnMxIjsNCgkJcmFuZ2VzID0gPDAgMCAweDA4MDAwMDAwIDB4
-MDQwMDAwMDA+LA0KCQkJIDwxIDAgMHgxNDAwMDAwMCAweDA0MDAwMDAwPiwN
-CgkJCSA8MiAwIDB4MTgwMDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkgPDMgMCAw
-eDFjMDAwMDAwIDB4MDQwMDAwMDA+LA0KCQkJIDw0IDAgMHgwYzAwMDAwMCAw
-eDA0MDAwMDAwPiwNCgkJCSA8NSAwIDB4MTAwMDAwMDAgMHgwNDAwMDAwMD47
-DQoNCgkJaW50ZXJydXB0LW1hcC1tYXNrID0gPDAgMCA2Mz47DQoJCWludGVy
-cnVwdC1tYXAgPSA8MCAwICAwICZnaWMgMCAgMCA0PiwNCgkJCQk8MCAwICAx
-ICZnaWMgMCAgMSA0PiwNCgkJCQk8MCAwICAyICZnaWMgMCAgMiA0PiwNCgkJ
-CQk8MCAwICAzICZnaWMgMCAgMyA0PiwNCgkJCQk8MCAwICA0ICZnaWMgMCAg
-NCA0PiwNCgkJCQk8MCAwICA1ICZnaWMgMCAgNSA0PiwNCgkJCQk8MCAwICA2
-ICZnaWMgMCAgNiA0PiwNCgkJCQk8MCAwICA3ICZnaWMgMCAgNyA0PiwNCgkJ
-CQk8MCAwICA4ICZnaWMgMCAgOCA0PiwNCgkJCQk8MCAwICA5ICZnaWMgMCAg
-OSA0PiwNCgkJCQk8MCAwIDEwICZnaWMgMCAxMCA0PiwNCgkJCQk8MCAwIDEx
-ICZnaWMgMCAxMSA0PiwNCgkJCQk8MCAwIDEyICZnaWMgMCAxMiA0PiwNCgkJ
-CQk8MCAwIDEzICZnaWMgMCAxMyA0PiwNCgkJCQk8MCAwIDE0ICZnaWMgMCAx
-NCA0PiwNCgkJCQk8MCAwIDE1ICZnaWMgMCAxNSA0PiwNCgkJCQk8MCAwIDE2
-ICZnaWMgMCAxNiA0PiwNCgkJCQk8MCAwIDE3ICZnaWMgMCAxNyA0PiwNCgkJ
-CQk8MCAwIDE4ICZnaWMgMCAxOCA0PiwNCgkJCQk8MCAwIDE5ICZnaWMgMCAx
-OSA0PiwNCgkJCQk8MCAwIDIwICZnaWMgMCAyMCA0PiwNCgkJCQk8MCAwIDIx
-ICZnaWMgMCAyMSA0PiwNCgkJCQk8MCAwIDIyICZnaWMgMCAyMiA0PiwNCgkJ
-CQk8MCAwIDIzICZnaWMgMCAyMyA0PiwNCgkJCQk8MCAwIDI0ICZnaWMgMCAy
-NCA0PiwNCgkJCQk8MCAwIDI1ICZnaWMgMCAyNSA0PiwNCgkJCQk8MCAwIDI2
-ICZnaWMgMCAyNiA0PiwNCgkJCQk8MCAwIDI3ICZnaWMgMCAyNyA0PiwNCgkJ
-CQk8MCAwIDI4ICZnaWMgMCAyOCA0PiwNCgkJCQk8MCAwIDI5ICZnaWMgMCAy
-OSA0PiwNCgkJCQk8MCAwIDMwICZnaWMgMCAzMCA0PiwNCgkJCQk8MCAwIDMx
-ICZnaWMgMCAzMSA0PiwNCgkJCQk8MCAwIDMyICZnaWMgMCAzMiA0PiwNCgkJ
-CQk8MCAwIDMzICZnaWMgMCAzMyA0PiwNCgkJCQk8MCAwIDM0ICZnaWMgMCAz
-NCA0PiwNCgkJCQk8MCAwIDM1ICZnaWMgMCAzNSA0PiwNCgkJCQk8MCAwIDM2
-ICZnaWMgMCAzNiA0PiwNCgkJCQk8MCAwIDM3ICZnaWMgMCAzNyA0PiwNCgkJ
-CQk8MCAwIDM4ICZnaWMgMCAzOCA0PiwNCgkJCQk8MCAwIDM5ICZnaWMgMCAz
-OSA0PiwNCgkJCQk8MCAwIDQwICZnaWMgMCA0MCA0PiwNCgkJCQk8MCAwIDQx
-ICZnaWMgMCA0MSA0PiwNCgkJCQk8MCAwIDQyICZnaWMgMCA0MiA0PjsNCgl9
-Ow0KfTsNCg0KLyogL2luY2x1ZGUvICJ2ZXhwcmVzcy12Mm0tcnMxLXJ0c20u
-ZHRzaSIgKi8NCg==
-
---_004_alpineDEB20212080614280604645kaballukxensourcecom_
-Content-Type: text/plain; charset="US-ASCII"; name="vexpress-v2m-rs1.dtsi"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.02.1208161633021.4850@kaball.uk.xensource.com>
-Content-Description: 
-Content-Disposition: attachment; filename="vexpress-v2m-rs1.dtsi"
-
-LyoNCiAqIEFSTSBMdGQuIFZlcnNhdGlsZSBFeHByZXNzDQogKg0KICogTW90
-aGVyYm9hcmQgRXhwcmVzcyB1QVRYDQogKiBWMk0tUDENCiAqDQogKiBIQkkt
-MDE5MEQNCiAqDQogKiBSUzEgbWVtb3J5IG1hcCAoIkFSTSBDb3J0ZXgtQSBT
-ZXJpZXMgbWVtb3J5IG1hcCIgaW4gdGhlIGJvYXJkJ3MNCiAqIFRlY2huaWNh
-bCBSZWZlcmVuY2UgTWFudWFsKQ0KICoNCiAqIFdBUk5JTkchIFRoZSBoYXJk
-d2FyZSBkZXNjcmliZWQgaW4gdGhpcyBmaWxlIGlzIGluZGVwZW5kZW50IGZy
-b20gdGhlDQogKiBvcmlnaW5hbCB2YXJpYW50ICh2ZXhwcmVzcy12Mm0uZHRz
-aSksIGJ1dCB0aGVyZSBpcyBhIHN0cm9uZw0KICogY29ycmVzcG9uZGVuY2Ug
-YmV0d2VlbiB0aGUgdHdvIGNvbmZpZ3VyYXRpb25zLg0KICoNCiAqIFRBS0Ug
-Q0FSRSBXSEVOIE1BSU5UQUlOSU5HIFRISVMgRklMRSBUTyBQUk9QQUdBVEUg
-QU5ZIFJFTEVWQU5UDQogKiBDSEFOR0VTIFRPIHZleHByZXNzLXYybS5kdHNp
-IQ0KICovDQoNCi8gew0KCWFsaWFzZXMgew0KCQlhcm0sdjJtX3RpbWVyID0g
-JnYybV90aW1lcjAxOw0KCX07DQoNCgltb3RoZXJib2FyZCB7DQoJCWNvbXBh
-dGlibGUgPSAic2ltcGxlLWJ1cyI7DQoJCWFybSx2Mm0tbWVtb3J5LW1hcCA9
-ICJyczEiOw0KCQkjYWRkcmVzcy1jZWxscyA9IDwyPjsgLyogU01CIGNoaXBz
-ZWxlY3QgbnVtYmVyIGFuZCBvZmZzZXQgKi8NCgkJI3NpemUtY2VsbHMgPSA8
-MT47DQoJCSNpbnRlcnJ1cHQtY2VsbHMgPSA8MT47DQoNCgkJZmxhc2hAMCww
-MDAwMDAwMCB7DQoJCQljb21wYXRpYmxlID0gImFybSx2ZXhwcmVzcy1mbGFz
-aCIsICJjZmktZmxhc2giOw0KCQkJcmVnID0gPDAgMHgwMDAwMDAwMCAweDA0
-MDAwMDAwPiwNCgkJCSAgICAgIDw0IDB4MDAwMDAwMDAgMHgwNDAwMDAwMD47
-DQoJCQliYW5rLXdpZHRoID0gPDQ+Ow0KCQl9Ow0KDQoJCXBzcmFtQDEsMDAw
-MDAwMDAgew0KCQkJY29tcGF0aWJsZSA9ICJhcm0sdmV4cHJlc3MtcHNyYW0i
-LCAibXRkLXJhbSI7DQoJCQlyZWcgPSA8MSAweDAwMDAwMDAwIDB4MDIwMDAw
-MDA+Ow0KCQkJYmFuay13aWR0aCA9IDw0PjsNCgkJfTsNCg0KCQl2cmFtQDIs
-MDAwMDAwMDAgew0KCQkJY29tcGF0aWJsZSA9ICJhcm0sdmV4cHJlc3MtdnJh
-bSI7DQoJCQlyZWcgPSA8MiAweDAwMDAwMDAwIDB4MDA4MDAwMDA+Ow0KCQl9
-Ow0KDQoJCWV0aGVybmV0QDIsMDIwMDAwMDAgew0KCQkJY29tcGF0aWJsZSA9
-ICJzbXNjLGxhbjkxYzExMSI7DQogCQkJcmVnID0gPDIgMHgwMjAwMDAwMCAw
-eDEwMDAwPjsNCiAJCQlpbnRlcnJ1cHRzID0gPDE1PjsNCgkJfTsNCg0KCQl1
-c2JAMiwwMzAwMDAwMCB7DQoJCQljb21wYXRpYmxlID0gIm54cCx1c2ItaXNw
-MTc2MSI7DQoJCQlyZWcgPSA8MiAweDAzMDAwMDAwIDB4MjAwMDA+Ow0KCQkJ
-aW50ZXJydXB0cyA9IDwxNj47DQoJCQlwb3J0MS1vdGc7DQoJCX07DQoNCgkJ
-aW9mcGdhQDMsMDAwMDAwMDAgew0KCQkJY29tcGF0aWJsZSA9ICJhcm0sYW1i
-YS1idXMiLCAic2ltcGxlLWJ1cyI7DQoJCQkjYWRkcmVzcy1jZWxscyA9IDwx
-PjsNCgkJCSNzaXplLWNlbGxzID0gPDE+Ow0KCQkJcmFuZ2VzID0gPDAgMyAw
-IDB4MjAwMDAwPjsNCg0KCQkJc3lzcmVnQDAxMDAwMCB7DQoJCQkJY29tcGF0
-aWJsZSA9ICJhcm0sdmV4cHJlc3Mtc3lzcmVnIjsNCgkJCQlyZWcgPSA8MHgw
-MTAwMDAgMHgxMDAwPjsNCgkJCX07DQoNCgkJCXN5c2N0bEAwMjAwMDAgew0K
-CQkJCWNvbXBhdGlibGUgPSAiYXJtLHNwODEwIiwgImFybSxwcmltZWNlbGwi
-Ow0KCQkJCXJlZyA9IDwweDAyMDAwMCAweDEwMDA+Ow0KCQkJfTsNCg0KCQkJ
-LyogUENJLUUgSTJDIGJ1cyAqLw0KCQkJdjJtX2kyY19wY2llOiBpMmNAMDMw
-MDAwIHsNCgkJCQljb21wYXRpYmxlID0gImFybSx2ZXJzYXRpbGUtaTJjIjsN
-CgkJCQlyZWcgPSA8MHgwMzAwMDAgMHgxMDAwPjsNCg0KCQkJCSNhZGRyZXNz
-LWNlbGxzID0gPDE+Ow0KCQkJCSNzaXplLWNlbGxzID0gPDA+Ow0KDQoJCQkJ
-cGNpZS1zd2l0Y2hANjAgew0KCQkJCQljb21wYXRpYmxlID0gImlkdCw4OWhw
-ZXMzMmg4IjsNCgkJCQkJcmVnID0gPDB4NjA+Ow0KCQkJCX07DQoJCQl9Ow0K
-DQoJCQlhYWNpQDA0MDAwMCB7DQoJCQkJY29tcGF0aWJsZSA9ICJhcm0scGww
-NDEiLCAiYXJtLHByaW1lY2VsbCI7DQoJCQkJcmVnID0gPDB4MDQwMDAwIDB4
-MTAwMD47DQoJCQkJaW50ZXJydXB0cyA9IDwxMT47DQoJCQl9Ow0KDQoJCQlt
-bWNpQDA1MDAwMCB7DQoJCQkJY29tcGF0aWJsZSA9ICJhcm0scGwxODAiLCAi
-YXJtLHByaW1lY2VsbCI7DQoJCQkJcmVnID0gPDB4MDUwMDAwIDB4MTAwMD47
-DQoJCQkJaW50ZXJydXB0cyA9IDw5IDEwPjsNCgkJCX07DQoNCgkJCWttaUAw
-NjAwMDAgew0KCQkJCWNvbXBhdGlibGUgPSAiYXJtLHBsMDUwIiwgImFybSxw
-cmltZWNlbGwiOw0KCQkJCXJlZyA9IDwweDA2MDAwMCAweDEwMDA+Ow0KCQkJ
-CWludGVycnVwdHMgPSA8MTI+Ow0KCQkJfTsNCg0KCQkJa21pQDA3MDAwMCB7
-DQoJCQkJY29tcGF0aWJsZSA9ICJhcm0scGwwNTAiLCAiYXJtLHByaW1lY2Vs
-bCI7DQoJCQkJcmVnID0gPDB4MDcwMDAwIDB4MTAwMD47DQoJCQkJaW50ZXJy
-dXB0cyA9IDwxMz47DQoJCQl9Ow0KDQoJCQl2Mm1fc2VyaWFsMDogdWFydEAw
-OTAwMDAgew0KCQkJCWNvbXBhdGlibGUgPSAiYXJtLHBsMDExIiwgImFybSxw
-cmltZWNlbGwiOw0KCQkJCXJlZyA9IDwweDA5MDAwMCAweDEwMDA+Ow0KCQkJ
-CWludGVycnVwdHMgPSA8NT47DQoJCQl9Ow0KDQoJCQl2Mm1fc2VyaWFsMTog
-dWFydEAwYTAwMDAgew0KCQkJCWNvbXBhdGlibGUgPSAiYXJtLHBsMDExIiwg
-ImFybSxwcmltZWNlbGwiOw0KCQkJCXJlZyA9IDwweDBhMDAwMCAweDEwMDA+
-Ow0KCQkJCWludGVycnVwdHMgPSA8Nj47DQoJCQl9Ow0KDQoJCQl2Mm1fc2Vy
-aWFsMjogdWFydEAwYjAwMDAgew0KCQkJCWNvbXBhdGlibGUgPSAiYXJtLHBs
-MDExIiwgImFybSxwcmltZWNlbGwiOw0KCQkJCXJlZyA9IDwweDBiMDAwMCAw
-eDEwMDA+Ow0KCQkJCWludGVycnVwdHMgPSA8Nz47DQoJCQl9Ow0KDQoJCQl2
-Mm1fc2VyaWFsMzogdWFydEAwYzAwMDAgew0KCQkJCWNvbXBhdGlibGUgPSAi
-YXJtLHBsMDExIiwgImFybSxwcmltZWNlbGwiOw0KCQkJCXJlZyA9IDwweDBj
-MDAwMCAweDEwMDA+Ow0KCQkJCWludGVycnVwdHMgPSA8OD47DQoJCQl9Ow0K
-DQoJCQl3ZHRAMGYwMDAwIHsNCgkJCQljb21wYXRpYmxlID0gImFybSxzcDgw
-NSIsICJhcm0scHJpbWVjZWxsIjsNCgkJCQlyZWcgPSA8MHgwZjAwMDAgMHgx
-MDAwPjsNCgkJCQlpbnRlcnJ1cHRzID0gPDA+Ow0KCQkJfTsNCg0KCQkJdjJt
-X3RpbWVyMDE6IHRpbWVyQDExMDAwMCB7DQoJCQkJY29tcGF0aWJsZSA9ICJh
-cm0sc3A4MDQiLCAiYXJtLHByaW1lY2VsbCI7DQoJCQkJcmVnID0gPDB4MTEw
-MDAwIDB4MTAwMD47DQoJCQkJaW50ZXJydXB0cyA9IDwyPjsNCgkJCX07DQoN
-CgkJCXYybV90aW1lcjIzOiB0aW1lckAxMjAwMDAgew0KCQkJCWNvbXBhdGli
-bGUgPSAiYXJtLHNwODA0IiwgImFybSxwcmltZWNlbGwiOw0KCQkJCXJlZyA9
-IDwweDEyMDAwMCAweDEwMDA+Ow0KCQkJfTsNCg0KCQkJLyogRFZJIEkyQyBi
-dXMgKi8NCgkJCXYybV9pMmNfZHZpOiBpMmNAMTYwMDAwIHsNCgkJCQljb21w
-YXRpYmxlID0gImFybSx2ZXJzYXRpbGUtaTJjIjsNCgkJCQlyZWcgPSA8MHgx
-NjAwMDAgMHgxMDAwPjsNCg0KCQkJCSNhZGRyZXNzLWNlbGxzID0gPDE+Ow0K
-CQkJCSNzaXplLWNlbGxzID0gPDA+Ow0KDQoJCQkJZHZpLXRyYW5zbWl0dGVy
-QDM5IHsNCgkJCQkJY29tcGF0aWJsZSA9ICJzaWwsc2lpOTAyMi10cGkiLCAi
-c2lsLHNpaTkwMjIiOw0KCQkJCQlyZWcgPSA8MHgzOT47DQoJCQkJfTsNCg0K
-CQkJCWR2aS10cmFuc21pdHRlckA2MCB7DQoJCQkJCWNvbXBhdGlibGUgPSAi
-c2lsLHNpaTkwMjItY3BpIiwgInNpbCxzaWk5MDIyIjsNCgkJCQkJcmVnID0g
-PDB4NjA+Ow0KCQkJCX07DQoJCQl9Ow0KDQoJCQlydGNAMTcwMDAwIHsNCgkJ
-CQljb21wYXRpYmxlID0gImFybSxwbDAzMSIsICJhcm0scHJpbWVjZWxsIjsN
-CgkJCQlyZWcgPSA8MHgxNzAwMDAgMHgxMDAwPjsNCgkJCQlpbnRlcnJ1cHRz
-ID0gPDQ+Ow0KCQkJfTsNCg0KCQkJY29tcGFjdC1mbGFzaEAxYTAwMDAgew0K
-CQkJCWNvbXBhdGlibGUgPSAiYXJtLHZleHByZXNzLWNmIiwgImF0YS1nZW5l
-cmljIjsNCgkJCQlyZWcgPSA8MHgxYTAwMDAgMHgxMDANCgkJCQkgICAgICAg
-MHgxYTAxMDAgMHhmMDA+Ow0KCQkJCXJlZy1zaGlmdCA9IDwyPjsNCgkJCX07
-DQoNCgkJCWNsY2RAMWYwMDAwIHsNCgkJCQljb21wYXRpYmxlID0gImFybSxw
-bDExMSIsICJhcm0scHJpbWVjZWxsIjsNCgkJCQlyZWcgPSA8MHgxZjAwMDAg
-MHgxMDAwPjsNCgkJCQlpbnRlcnJ1cHRzID0gPDE0PjsNCgkJCX07DQoJCX07
-DQoJfTsNCn07DQo=
-
---_004_alpineDEB20212080614280604645kaballukxensourcecom_
-Content-Type: text/plain; charset="US-ASCII"; name="vexpress-v2p-ca15-tc1.dts"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.02.1208161633022.4850@kaball.uk.xensource.com>
-Content-Description: 
-Content-Disposition: attachment; filename="vexpress-v2p-ca15-tc1.dts"
-
-LyoNCiAqIEFSTSBMdGQuIFZlcnNhdGlsZSBFeHByZXNzDQogKg0KICogQ29y
-ZVRpbGUgRXhwcmVzcyBBMTV4MiAodmVyc2lvbiB3aXRoIFRlc3QgQ2hpcCAx
-KQ0KICogQ29ydGV4LUExNSBNUENvcmUgKFYyUC1DQTE1KQ0KICoNCiAqIEhC
-SS0wMjM3QQ0KICovDQoNCi9kdHMtdjEvOw0KDQovIHsNCgltb2RlbCA9ICJW
-MlAtQ0ExNSI7DQoJYXJtLGhiaSA9IDwweDIzNz47DQoJY29tcGF0aWJsZSA9
-ICJhcm0sdmV4cHJlc3MsdjJwLWNhMTUsdGMxIiwgImFybSx2ZXhwcmVzcyx2
-MnAtY2ExNSIsICJhcm0sdmV4cHJlc3MiOw0KCWludGVycnVwdC1wYXJlbnQg
-PSA8JmdpYz47DQoJI2FkZHJlc3MtY2VsbHMgPSA8MT47DQoJI3NpemUtY2Vs
-bHMgPSA8MT47DQoNCgljaG9zZW4gew0KICAgICAgICAgICAgICAgICBib290
-YXJncyA9ICJkb20wX21lbT0xMjhNIjsNCiAgICAgICAgICAgICAgICAgeGVu
-LGRvbTAtYm9vdGFyZ3MgPSAiZWFybHlwcmludGsgY29uc29sZT10dHlBTUEx
-IHJvb3Q9L2Rldi9tbWNibGswIGRlYnVnIHJ3IjsNCgl9Ow0KDQoJYWxpYXNl
-cyB7DQoJCXNlcmlhbDAgPSAmdjJtX3NlcmlhbDA7DQoJCXNlcmlhbDEgPSAm
-djJtX3NlcmlhbDE7DQoJCXNlcmlhbDIgPSAmdjJtX3NlcmlhbDI7DQoJCXNl
-cmlhbDMgPSAmdjJtX3NlcmlhbDM7DQoJCWkyYzAgPSAmdjJtX2kyY19kdmk7
-DQoJCWkyYzEgPSAmdjJtX2kyY19wY2llOw0KCX07DQoNCgljcHVzIHsNCgkJ
-I2FkZHJlc3MtY2VsbHMgPSA8MT47DQoJCSNzaXplLWNlbGxzID0gPDA+Ow0K
-DQoJCWNwdUAwIHsNCgkJCWRldmljZV90eXBlID0gImNwdSI7DQoJCQljb21w
-YXRpYmxlID0gImFybSxjb3J0ZXgtYTE1IjsNCgkJCXJlZyA9IDwwPjsNCgkJ
-fTsNCgl9Ow0KDQoJbWVtb3J5IHsNCgkJZGV2aWNlX3R5cGUgPSAibWVtb3J5
-IjsNCgkJcmVnID0gPDB4ODAwMDAwMDAgMHg4MDAwMDAwMD47DQoJfTsNCg0K
-CWdpYzogaW50ZXJydXB0LWNvbnRyb2xsZXJAMmMwMDEwMDAgew0KCQljb21w
-YXRpYmxlID0gImFybSxjb3J0ZXgtYTE1LWdpYyIsICJhcm0sY29ydGV4LWE5
-LWdpYyI7DQoJCSNpbnRlcnJ1cHQtY2VsbHMgPSA8Mz47DQoJCSNhZGRyZXNz
-LWNlbGxzID0gPDA+Ow0KCQlpbnRlcnJ1cHQtY29udHJvbGxlcjsNCgkJcmVn
-ID0gPDB4MmMwMDEwMDAgMHgxMDAwPiwNCgkJICAgICAgPDB4MmMwMDIwMDAg
-MHgxMDAwPiwNCgkJICAgICAgPDB4MmMwMDQwMDAgMHgyMDAwPiwNCgkJICAg
-ICAgPDB4MmMwMDYwMDAgMHgyMDAwPjsNCgkJaW50ZXJydXB0cyA9IDwxIDkg
-MHhmMDQ+Ow0KCX07DQoNCgl0aW1lciB7DQoJCWNvbXBhdGlibGUgPSAiYXJt
-LGFybXY3LXRpbWVyIjsNCgkJaW50ZXJydXB0cyA9IDwxIDEzIDB4ZjA4PiwN
-CgkJCSAgICAgPDEgMTQgMHhmMDg+LA0KCQkJICAgICA8MSAxMSAweGYwOD4s
-DQoJCQkgICAgIDwxIDEwIDB4ZjA4PjsNCgl9Ow0KDQoJcG11IHsNCgkJY29t
-cGF0aWJsZSA9ICJhcm0sY29ydGV4LWExNS1wbXUiLCAiYXJtLGNvcnRleC1h
-OS1wbXUiOw0KCQlpbnRlcnJ1cHRzID0gPDAgNjggND4sDQoJCQkgICAgIDww
-IDY5IDQ+Ow0KCX07DQoJDQoJaHlwZXJ2aXNvciB7DQoJCWNvbXBhdGlibGUg
-PSAieGVuLHhlbiIsICJ4ZW4seGVuLTQuMiI7DQoJCXJlZyA9IDwweGIwMDAw
-MDAwIDB4MjAwMDA+Ow0KCQlpbnRlcnJ1cHRzID0gPDEgMTUgMHhmMDg+Ow0K
-CX07DQoNCgltb3RoZXJib2FyZCB7DQoJCXJhbmdlcyA9IDwwIDAgMHgwODAw
-MDAwMCAweDA0MDAwMDAwPiwNCgkJCSA8MSAwIDB4MTQwMDAwMDAgMHgwNDAw
-MDAwMD4sDQoJCQkgPDIgMCAweDE4MDAwMDAwIDB4MDQwMDAwMDA+LA0KCQkJ
-IDwzIDAgMHgxYzAwMDAwMCAweDA0MDAwMDAwPiwNCgkJCSA8NCAwIDB4MGMw
-MDAwMDAgMHgwNDAwMDAwMD4sDQoJCQkgPDUgMCAweDEwMDAwMDAwIDB4MDQw
-MDAwMDA+Ow0KDQoJCWludGVycnVwdC1tYXAtbWFzayA9IDwwIDAgNjM+Ow0K
-CQlpbnRlcnJ1cHQtbWFwID0gPDAgMCAgMCAmZ2ljIDAgIDAgND4sDQoJCQkJ
-PDAgMCAgMSAmZ2ljIDAgIDEgND4sDQoJCQkJPDAgMCAgMiAmZ2ljIDAgIDIg
-ND4sDQoJCQkJPDAgMCAgMyAmZ2ljIDAgIDMgND4sDQoJCQkJPDAgMCAgNCAm
-Z2ljIDAgIDQgND4sDQoJCQkJPDAgMCAgNSAmZ2ljIDAgIDUgND4sDQoJCQkJ
-PDAgMCAgNiAmZ2ljIDAgIDYgND4sDQoJCQkJPDAgMCAgNyAmZ2ljIDAgIDcg
-ND4sDQoJCQkJPDAgMCAgOCAmZ2ljIDAgIDggND4sDQoJCQkJPDAgMCAgOSAm
-Z2ljIDAgIDkgND4sDQoJCQkJPDAgMCAxMCAmZ2ljIDAgMTAgND4sDQoJCQkJ
-PDAgMCAxMSAmZ2ljIDAgMTEgND4sDQoJCQkJPDAgMCAxMiAmZ2ljIDAgMTIg
-ND4sDQoJCQkJPDAgMCAxMyAmZ2ljIDAgMTMgND4sDQoJCQkJPDAgMCAxNCAm
-Z2ljIDAgMTQgND4sDQoJCQkJPDAgMCAxNSAmZ2ljIDAgMTUgND4sDQoJCQkJ
-PDAgMCAxNiAmZ2ljIDAgMTYgND4sDQoJCQkJPDAgMCAxNyAmZ2ljIDAgMTcg
-ND4sDQoJCQkJPDAgMCAxOCAmZ2ljIDAgMTggND4sDQoJCQkJPDAgMCAxOSAm
-Z2ljIDAgMTkgND4sDQoJCQkJPDAgMCAyMCAmZ2ljIDAgMjAgND4sDQoJCQkJ
-PDAgMCAyMSAmZ2ljIDAgMjEgND4sDQoJCQkJPDAgMCAyMiAmZ2ljIDAgMjIg
-ND4sDQoJCQkJPDAgMCAyMyAmZ2ljIDAgMjMgND4sDQoJCQkJPDAgMCAyNCAm
-Z2ljIDAgMjQgND4sDQoJCQkJPDAgMCAyNSAmZ2ljIDAgMjUgND4sDQoJCQkJ
-PDAgMCAyNiAmZ2ljIDAgMjYgND4sDQoJCQkJPDAgMCAyNyAmZ2ljIDAgMjcg
-ND4sDQoJCQkJPDAgMCAyOCAmZ2ljIDAgMjggND4sDQoJCQkJPDAgMCAyOSAm
-Z2ljIDAgMjkgND4sDQoJCQkJPDAgMCAzMCAmZ2ljIDAgMzAgND4sDQoJCQkJ
-PDAgMCAzMSAmZ2ljIDAgMzEgND4sDQoJCQkJPDAgMCAzMiAmZ2ljIDAgMzIg
-ND4sDQoJCQkJPDAgMCAzMyAmZ2ljIDAgMzMgND4sDQoJCQkJPDAgMCAzNCAm
-Z2ljIDAgMzQgND4sDQoJCQkJPDAgMCAzNSAmZ2ljIDAgMzUgND4sDQoJCQkJ
-PDAgMCAzNiAmZ2ljIDAgMzYgND4sDQoJCQkJPDAgMCAzNyAmZ2ljIDAgMzcg
-ND4sDQoJCQkJPDAgMCAzOCAmZ2ljIDAgMzggND4sDQoJCQkJPDAgMCAzOSAm
-Z2ljIDAgMzkgND4sDQoJCQkJPDAgMCA0MCAmZ2ljIDAgNDAgND4sDQoJCQkJ
-PDAgMCA0MSAmZ2ljIDAgNDEgND4sDQoJCQkJPDAgMCA0MiAmZ2ljIDAgNDIg
-ND47DQoJfTsNCn07DQoNCi9pbmNsdWRlLyAidmV4cHJlc3MtdjJtLXJzMS5k
-dHNpIg0K
-
---_004_alpineDEB20212080614280604645kaballukxensourcecom_--
+--- linux-2.6.orig/drivers/usb/gadget/lpc32xx_udc.c
++++ linux-2.6/drivers/usb/gadget/lpc32xx_udc.c
+@@ -2599,9 +2599,8 @@ static int lpc32xx_pullup(struct usb_gad
+ 	return 0;
+ }
+ 
+-static int lpc32xx_start(struct usb_gadget_driver *driver,
+-			 int (*bind)(struct usb_gadget *));
+-static int lpc32xx_stop(struct usb_gadget_driver *driver);
++static int lpc32xx_start(struct usb_gadget *, struct usb_gadget_driver *);
++static int lpc32xx_stop(struct usb_gadget *, struct usb_gadget_driver *);
+ 
+ static const struct usb_gadget_ops lpc32xx_udc_ops = {
+ 	.get_frame		= lpc32xx_get_frame,
+@@ -2609,8 +2608,8 @@ static const struct usb_gadget_ops lpc32
+ 	.set_selfpowered	= lpc32xx_set_selfpowered,
+ 	.vbus_session		= lpc32xx_vbus_session,
+ 	.pullup			= lpc32xx_pullup,
+-	.start			= lpc32xx_start,
+-	.stop			= lpc32xx_stop,
++	.udc_start		= lpc32xx_start,
++	.udc_stop		= lpc32xx_stop,
+ };
+ 
+ static void nop_release(struct device *dev)
+@@ -2987,14 +2986,14 @@ static irqreturn_t lpc32xx_usb_vbus_irq(
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int lpc32xx_start(struct usb_gadget_driver *driver,
+-			 int (*bind)(struct usb_gadget *))
++static int lpc32xx_start(struct usb_gadget *gadget,
++			 struct usb_gadget_driver *driver)
+ {
+-	struct lpc32xx_udc *udc = &controller;
+-	int retval, i;
++	struct lpc32xx_udc *udc =
++		container_of(gadget, struct lpc32xx_udc, gadget);
++	int i;
+ 
+-	if (!driver || driver->max_speed < USB_SPEED_FULL ||
+-	    !bind || !driver->setup) {
++	if (!driver || driver->max_speed < USB_SPEED_FULL || !driver->setup) {
+ 		dev_err(udc->dev, "bad parameter.\n");
+ 		return -EINVAL;
+ 	}
+@@ -3011,18 +3010,6 @@ static int lpc32xx_start(struct usb_gadg
+ 	udc->selfpowered = 1;
+ 	udc->vbus = 0;
+ 
+-	retval = bind(&udc->gadget);
+-	if (retval) {
+-		dev_err(udc->dev, "bind() returned %d\n", retval);
+-		udc->enabled = 0;
+-		udc->selfpowered = 0;
+-		udc->driver = NULL;
+-		udc->gadget.dev.driver = NULL;
+-		return retval;
+-	}
+-
+-	dev_dbg(udc->dev, "bound to %s\n", driver->driver.name);
+-
+ 	/* Force VBUS process once to check for cable insertion */
+ 	udc->last_vbus = udc->vbus = 0;
+ 	schedule_work(&udc->vbus_job);
+@@ -3034,12 +3021,14 @@ static int lpc32xx_start(struct usb_gadg
+ 	return 0;
+ }
+ 
+-static int lpc32xx_stop(struct usb_gadget_driver *driver)
++static int lpc32xx_stop(struct usb_gadget *gadget,
++			struct usb_gadget_driver *driver)
+ {
+ 	int i;
+-	struct lpc32xx_udc *udc = &controller;
++	struct lpc32xx_udc *udc =
++		container_of(gadget, struct lpc32xx_udc, gadget);
+ 
+-	if (!driver || driver != udc->driver || !driver->unbind)
++	if (!driver || driver != udc->driver)
+ 		return -EINVAL;
+ 
+ 	/* Disable USB pullup */
+@@ -3049,7 +3038,6 @@ static int lpc32xx_stop(struct usb_gadge
+ 		disable_irq(udc->udp_irq[i]);
+ 
+ 	if (udc->clocked) {
+-
+ 		spin_lock(&udc->lock);
+ 		stop_activity(udc);
+ 		spin_unlock(&udc->lock);
+@@ -3071,11 +3059,9 @@ static int lpc32xx_stop(struct usb_gadge
+ 	udc->enabled = 0;
+ 	pullup(udc, 0);
+ 
+-	driver->unbind(&udc->gadget);
+ 	udc->gadget.dev.driver = NULL;
+ 	udc->driver = NULL;
+ 
+-	dev_dbg(udc->dev, "unbound from %s\n", driver->driver.name);
+ 	return 0;
+ }
+ 
