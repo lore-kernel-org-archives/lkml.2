@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413Ab2HPVkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:40:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41683 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932650Ab2HPVkH (ORCPT
+	id S933427Ab2HPVlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:41:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58546 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030459Ab2HPVky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:40:07 -0400
-Date: Thu, 16 Aug 2012 16:39:51 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 1/7] integrity: added digest calculation function
-Message-ID: <20120816213951.GC18485@sergelap>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
- <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
- <20120815201135.GA10088@amd1>
- <CALLzPKaczBwsj0s5wxTLaZ2_=J_fCdbP2SB0R2oUxMyHLDRYMg@mail.gmail.com>
- <CALLzPKZs79M_s9-ESyMfQudUikEW8GZbggEedfBsp-6L6gxyZg@mail.gmail.com>
+	Thu, 16 Aug 2012 17:40:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKZs79M_s9-ESyMfQudUikEW8GZbggEedfBsp-6L6gxyZg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120816211948.GF31346@thunk.org>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+	<20120816024654.GB3781@thunk.org>
+	<20120816111051.GA16036@localhost>
+	<20120816152513.GA31346@thunk.org>
+	<CANP3RGdMfM0tZbaJS9dFetRhXoGtyS0Nx4hZER_Qv0a061X_dQ@mail.gmail.com>
+	<20120816211948.GF31346@thunk.org>
+Date: Thu, 16 Aug 2012 14:40:53 -0700
+Message-ID: <CANP3RGd62=voh5T6NACyFE-NqX=Huk1hkewSakPs67vC+uuTuw@mail.gmail.com>
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kasatkin, Dmitry (dmitry.kasatkin@intel.com):
-> On Thu, Aug 16, 2012 at 12:11 AM, Kasatkin, Dmitry
-> <dmitry.kasatkin@intel.com> wrote:
-> > On Wed, Aug 15, 2012 at 11:11 PM, Serge Hallyn
-> > <serge.hallyn@canonical.com> wrote:
-> >> Quoting Dmitry Kasatkin (dmitry.kasatkin@intel.com):
-> >>> There are several functions, that need to calculate digest.
-> >>> This patch adds common function for use by integrity subsystem.
-> >>>
-> >>> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> >>> ---
-> >>>  security/integrity/digsig.c    |   31 +++++++++++++++++++++++++++++--
-> >>>  security/integrity/integrity.h |    3 +++
-> >>>  2 files changed, 32 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-> >>> index 2dc167d..61a0c92 100644
-> >>> --- a/security/integrity/digsig.c
-> >>> +++ b/security/integrity/digsig.c
-> >>> @@ -13,9 +13,9 @@
-> >>>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> >>>
-> >>>  #include <linux/err.h>
-> >>> -#include <linux/rbtree.h>
-> >>>  #include <linux/key-type.h>
-> >>>  #include <linux/digsig.h>
-> >>> +#include <crypto/hash.h>
-> >>>
-> >>>  #include "integrity.h"
-> >>>
-> >>> @@ -28,7 +28,7 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
-> >>>  };
-> >>>
-> >>>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> >>> -                                     const char *digest, int digestlen)
-> >>> +                         const char *digest, int digestlen)
-> >>>  {
-> >>>       if (id >= INTEGRITY_KEYRING_MAX)
-> >>>               return -EINVAL;
-> >>> @@ -46,3 +46,30 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-> >>>
-> >>>       return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
-> >>>  }
-> >>> +
-> >>> +int integrity_calc_digest(const char *algo, const void *data, const int len,
-> >>> +                       char *digest)
-> >>> +{
-> >>> +     int rc = -ENOMEM;
-> >>> +     struct crypto_shash *tfm;
-> >>> +
-> >>> +     tfm = crypto_alloc_shash(algo, 0, 0);
-> >>> +     if (IS_ERR(tfm)) {
-> >>> +             rc = PTR_ERR(tfm);
-> >>> +             pr_err("Can not allocate %s (reason: %d)\n", algo, rc);
-> >>> +             return rc;
-> >>> +     } else {
-> >>> +             struct {
-> >>> +                     struct shash_desc shash;
-> >>> +                     char ctx[crypto_shash_descsize(tfm)];
-> >>> +             } desc;
-> >>
-> >> Needless confusing indentation here.  Just move the struct {} desc; to the
-> >> top and drop the else.  That will make it much more readable.
-> >>
-> >
-> > Intention was to allocate it only if tfm allocation succeeded..
-> > But indeed failure very unlikely..
-> >
-> 
-> BTW.. The reason for such code is that ctx member uses function in the
-> parameter:
-> 
-> char ctx[crypto_shash_descsize(tfm)];
-> 
-> It is not possible to do it before tfm allocation...
-> So I cannot move it up..
+> Maciej, you weren't able to reliably repro the crash were you?  I'm
+> pretty sure this should fix the crash, but it would be really great to
+> confirm things.
+>
+> I suspect creating a file system with a really small journal may make
+> it easier to reproduce, but I haven't had time to try create a
+> reliable repro for this bug yet.
 
-Ah, I see.  Cool :)
+This happened twice to me while moving data off of a ~1TB ext4 partition.
+The data portion was on a stripe raid across 2 ~500GB drives, the
+journal was on a relatively large partition (500MB?) on an SSD.
+(crypto and lvm were also involved).
+I've since emptied the partition and deleted even the raid array.
 
-> I can only kmalloc it then.
+Both times it happened during rm, first time rm -rf of a directory
+tree, second time during rm of a 250GB disk image generated by dd
+(from a notebook drive).
+Both rm's were manually run by me from a shell command line, and there
+was pretty much nothing else happening on the machine at the time.
 
-Well no, you could use another function I suppose.
+I'm not aware of there having been anything interesting (like:
+holes/punch/sparseness, much r/w activity in the middle of files, etc)
+on this filesystem, it was pretty much just a write-once data backup
+that I had copied elsewhere and was deleting.  The 250GB disk image
+was definitely just a sequentially written disk dump, and I think the
+same thing holds true for the contents of the wiped directory tree
+(although in many much smaller files).
 
-But if you're going to leave it as is, please at least move the whole
-rest of the function into the else{} :)  Yes, no functional change,
-but a change in how it looks to the eye of someone trying to review
-and look for actual free-unallocated-memory errors or leaks.
+I know i=1 in both cases (and dissasembly pointed out the location
+where the above debug patch is BUGing), but I don't think it's
+possible to figure out what inode # it crashed on.
 
--serge
+Perhaps just untarring a bunch of kernels onto an empty partition,
+filling it up, then deleting those kernels should be sufficient to
+repro this (untried).
+
+Perhaps something like:
+  create 1TB filesystem
+  untar a thousand kernel source trees on to it
+  create 20GB files of junk until it is full
+  rm -rf /
+
+
+- Maciej
