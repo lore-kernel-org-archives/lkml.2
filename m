@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab2HPBg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:36:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55204 "EHLO mx1.redhat.com"
+	id S1757509Ab2HPBhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757447Ab2HPBg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:36:56 -0400
+	id S1756843Ab2HPBhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:37:06 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 14/25] KEYS: PGP format signature parser
+Subject: [PATCH 15/25] KEYS: Provide PGP key description autogeneration
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         jmorris@namei.org, keyrings@linux-nfs.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:36:46 +0100
-Message-ID: <20120816013646.872.87756.stgit@warthog.procyon.org.uk>
+Date: Thu, 16 Aug 2012 02:36:57 +0100
+Message-ID: <20120816013657.872.48479.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,169 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement a signature parser that will attempt to parse a signature blob as a
-PGP packet format message.  If it can, it will find an appropriate crypto key
-and set the public-key algorithm according to the data in the signature.
+Provide a facility to autogenerate the name of PGP keys from the contents of
+the payload.  If add_key() is given a blank description, a description is
+constructed from the last user ID packet in the payload data plus the last 8
+hex digits of the key ID.  For instance:
+
+	keyctl padd crypto "" @s </tmp/key.pub
+
+might create a key with a constructed description that can be seen in
+/proc/keys:
+
+2f674b96 I--Q---     1 perm 39390000     0     0 crypto    Sample kernel key 31f0ae93: PGP.RSA 31f0ae93 []
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/crypto/Makefile         |    1 
- security/keys/crypto/pgp_sig_parser.c |  136 +++++++++++++++++++++++++++++++++
- 2 files changed, 137 insertions(+)
- create mode 100644 security/keys/crypto/pgp_sig_parser.c
+ security/keys/crypto/pgp_public_key.c |   64 +++++++++++++++++++++++++++------
+ 1 file changed, 53 insertions(+), 11 deletions(-)
 
 
-diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
-index 0c8b8a1..a9a34c6 100644
---- a/security/keys/crypto/Makefile
-+++ b/security/keys/crypto/Makefile
-@@ -12,4 +12,5 @@ obj-$(CONFIG_PGP_LIBRARY) += pgp_library.o
- obj-$(CONFIG_CRYPTO_KEY_PGP_PARSER) += pgp_key_parser.o
- pgp_key_parser-y := \
- 	pgp_public_key.o \
-+	pgp_sig_parser.o \
- 	pgp_sig_verify.o
-diff --git a/security/keys/crypto/pgp_sig_parser.c b/security/keys/crypto/pgp_sig_parser.c
-new file mode 100644
-index 0000000..683eb53
---- /dev/null
-+++ b/security/keys/crypto/pgp_sig_parser.c
-@@ -0,0 +1,136 @@
-+/* Handling for PGP public key signature data [RFC 4880]
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#define pr_fmt(fmt) "PGPSIG: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/pgplib.h>
-+#include <linux/err.h>
-+#include "public_key.h"
-+#include "pgp_parser.h"
-+
-+struct PGP_sig_parse_context {
-+	struct pgp_parse_context pgp;
-+	struct pgp_sig_parameters params;
-+	bool found_sig;
-+};
-+
-+/*
-+ * Look inside signature sections for a key ID
-+ */
-+static int pgp_process_signature(struct pgp_parse_context *context,
-+				 enum pgp_packet_tag type,
-+				 u8 headerlen,
-+				 const u8 *data,
-+				 size_t datalen)
-+{
-+	struct PGP_sig_parse_context *ctx =
-+		container_of(context, struct PGP_sig_parse_context, pgp);
-+
-+	ctx->found_sig = true;
-+	return pgp_parse_sig_params(&data, &datalen, &ctx->params);
-+}
-+
-+/*
-+ * Attempt to find a key to use for PGP signature verification, starting off by
-+ * looking in the supplied keyring.
-+ *
-+ * The function may also look for other key sources such as a TPM.  If an
-+ * alternative key is found it can be added to the keyring for future
-+ * reference.
-+ */
-+static struct key *find_key_for_pgp_sig(struct key *keyring,
-+					const u8 *sig, size_t siglen)
-+{
-+	struct PGP_sig_parse_context p;
-+	key_ref_t key;
-+	char criterion[3 + 8 * 2 + 1];
-+	int ret;
-+
-+	if (!keyring)
-+		return ERR_PTR(-ENOKEY);
-+
-+	/* Need to find the key ID */
-+	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
-+	p.pgp.process_packet = pgp_process_signature;
-+	p.found_sig = false;
-+	ret = pgp_parse_packets(sig, siglen, &p.pgp);
-+	if (ret < 0)
-+		return ERR_PTR(ret);
-+
-+	if (!p.found_sig)
-+		return ERR_PTR(-ENOMSG);
-+
-+	sprintf(criterion, "id:%08x%08x",
-+		be32_to_cpu(p.params.issuer32[0]),
-+		be32_to_cpu(p.params.issuer32[1]));
-+
-+	pr_debug("Look up: %s\n", criterion);
-+
-+	key = keyring_search(make_key_ref(keyring, 1),
-+			     &key_type_crypto, criterion);
-+	if (IS_ERR(key)) {
-+		switch (PTR_ERR(key)) {
-+			/* Hide some search errors */
-+		case -EACCES:
-+		case -ENOTDIR:
-+		case -EAGAIN:
-+			return ERR_PTR(-ENOKEY);
-+		default:
-+			return ERR_CAST(key);
-+		}
+diff --git a/security/keys/crypto/pgp_public_key.c b/security/keys/crypto/pgp_public_key.c
+index c260e02..2347ecd 100644
+--- a/security/keys/crypto/pgp_public_key.c
++++ b/security/keys/crypto/pgp_public_key.c
+@@ -52,6 +52,9 @@ struct pgp_key_data_parse_context {
+ 	struct crypto_key_subtype *subtype;
+ 	char *fingerprint;
+ 	void *payload;
++	const char *user_id;
++	size_t user_id_len;
++	size_t fingerprint_len;
+ };
+ 
+ /*
+@@ -166,6 +169,7 @@ static int pgp_generate_fingerprint(struct pgp_key_data_parse_context *ctx,
+ 	if (ret < 0)
+ 		goto cleanup_raw_fingerprint;
+ 
++	ctx->fingerprint_len = digest_size * 2;
+ 	fingerprint = kmalloc(digest_size * 2 + 1, GFP_KERNEL);
+ 	if (!fingerprint)
+ 		goto cleanup_raw_fingerprint;
+@@ -212,6 +216,13 @@ static int pgp_process_public_key(struct pgp_parse_context *context,
+ 
+ 	kenter(",%u,%u,,%zu", type, headerlen, datalen);
+ 
++	if (type == PGP_PKT_USER_ID) {
++		ctx->user_id = data;
++		ctx->user_id_len = datalen;
++		kleave(" = 0 [user ID]");
++		return 0;
 +	}
 +
-+	pr_debug("Found key %x\n", key_serial(key_ref_to_ptr(key)));
-+	return key_ref_to_ptr(key);
-+}
+ 	if (ctx->subtype) {
+ 		kleave(" = -ENOKEY [already]");
+ 		return -EBADMSG;
+@@ -297,21 +308,44 @@ static int pgp_key_preparse(struct key_preparsed_payload *prep)
+ 
+ 	kenter("");
+ 
++	memset(&ctx, 0, sizeof(ctx));
+ 	ctx.pgp.types_of_interest =
+-		(1 << PGP_PKT_PUBLIC_KEY) | (1 << PGP_PKT_PUBLIC_SUBKEY);
++		(1 << PGP_PKT_PUBLIC_KEY) | (1 << PGP_PKT_PUBLIC_SUBKEY) |
++		(1 << PGP_PKT_USER_ID);
+ 	ctx.pgp.process_packet = pgp_process_public_key;
+-	ctx.subtype = NULL;
+-	ctx.fingerprint = NULL;
+-	ctx.payload = NULL;
+ 
+ 	ret = pgp_parse_packets(prep->data, prep->datalen, &ctx.pgp);
+-	if (ret < 0) {
+-		if (ctx.payload)
+-			ctx.subtype->destroy(ctx.payload);
+-		if (ctx.subtype)
+-			module_put(ctx.subtype->owner);
+-		kfree(ctx.fingerprint);
+-		return ret;
++	if (ret < 0)
++		goto error;
 +
-+/*
-+ * Attempt to parse a signature as a PGP packet format blob and find a
-+ * matching key.
-+ */
-+static struct crypto_sig_verify_context *pgp_verify_sig_begin(
-+	struct key *keyring, const u8 *sig, size_t siglen)
-+{
-+	struct crypto_sig_verify_context *ctx;
-+	struct key *key;
++	if (ctx.user_id && ctx.user_id_len > 0) {
++		/* Propose a description for the key (user ID without the comment) */
++		size_t ulen = ctx.user_id_len, flen = ctx.fingerprint_len;
++		const char *p;
 +
-+	key = find_key_for_pgp_sig(keyring, sig, siglen);
-+	if (IS_ERR(key))
-+		return ERR_CAST(key);
++		p = memchr(ctx.user_id, '(', ulen);
++		if (p) {
++			/* Remove the comment */
++			do {
++				p--;
++			} while (*p == ' ' && p > ctx.user_id);
++			if (*p != ' ')
++				p++;
++			ulen = p - ctx.user_id;
++		}
 +
-+	/* We only handle in-kernel public key signatures for the moment */
-+	ctx = pgp_pkey_verify_sig_begin(key, sig, siglen);
-+	key_put(key);
-+	return ctx;
-+}
++		if (ulen > 255 - 9)
++			ulen = 255 - 9;
++		prep->description = kmalloc(ulen + 1 + 8 + 1, GFP_KERNEL);
++		ret = -ENOMEM;
++		if (!prep->description)
++			goto error;
++		memcpy(prep->description, ctx.user_id, ulen);
++		prep->description[ulen] = ' ';
++		memcpy(prep->description + ulen + 1,
++		       ctx.fingerprint + flen - 8, 8);
++		prep->description[ulen + 9] = 0;
++		pr_debug("desc '%s'\n", prep->description);
+ 	}
+ 
+ 	prep->type_data[0] = ctx.subtype;
+@@ -319,6 +353,14 @@ static int pgp_key_preparse(struct key_preparsed_payload *prep)
+ 	prep->payload = ctx.payload;
+ 	prep->quotalen = prep->datalen;
+ 	return 0;
 +
-+static struct crypto_sig_parser pgp_sig_parser = {
-+	.owner		= THIS_MODULE,
-+	.name		= "pgp",
-+	.verify_sig_begin = pgp_verify_sig_begin,
-+};
-+
-+/*
-+ * Module stuff
-+ */
-+static int __init pgp_sig_init(void)
-+{
-+	return register_crypto_sig_parser(&pgp_sig_parser);
-+}
-+
-+static void __exit pgp_sig_exit(void)
-+{
-+	unregister_crypto_sig_parser(&pgp_sig_parser);
-+}
-+
-+module_init(pgp_sig_init);
-+module_exit(pgp_sig_exit);
++error:
++	if (ctx.payload)
++		ctx.subtype->destroy(ctx.payload);
++	if (ctx.subtype)
++		module_put(ctx.subtype->owner);
++	kfree(ctx.fingerprint);
++	return ret;
+ }
+ 
+ static struct crypto_key_parser pgp_key_parser = {
 
