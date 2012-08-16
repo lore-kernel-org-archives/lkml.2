@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab2HPRKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:10:19 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3610 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab2HPRKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:10:17 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH v2 linux-next] usbduxfast: Declare MODULE_FIRMWARE usage
-Date: Thu, 16 Aug 2012 11:09:28 -0600
-Message-Id: <1345136968-11947-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120814011638.GA18000@kroah.com>
-References: <20120814011638.GA18000@kroah.com>
+	id S1753825Ab2HPRNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:13:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50974 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab2HPRND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:13:03 -0400
+Date: Thu, 16 Aug 2012 14:12:43 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Let O= makes handle relative paths
+Message-ID: <20120816171243.GA9277@infradead.org>
+References: <20120813142909.GC18990@aftab.osrc.amd.com>
+ <20120813180249.GB6840@infradead.org>
+ <20120815102722.GB4640@aftab.osrc.amd.com>
+ <20120815130634.GE2370@infradead.org>
+ <20120815131806.GC4640@aftab.osrc.amd.com>
+ <1345041485.31459.89.camel@twins>
+ <20120815144255.GB15989@aftab.osrc.amd.com>
+ <20120815145935.GI2370@infradead.org>
+ <20120815163923.GD15989@aftab.osrc.amd.com>
+ <1345133274.3708.0.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345133274.3708.0.camel@gandalf.local.home>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
-Cc: devel@driverdev.osuosl.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/staging/comedi/drivers/usbduxfast.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Em Thu, Aug 16, 2012 at 12:07:54PM -0400, Steven Rostedt escreveu:
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Arnaldo, can you pick this patch? Keep both the Signed-off-bys that
+> Boris placed.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index d991158..8eb41257 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -57,6 +57,7 @@
- /*
-  * constants for "firmware" upload and download
-  */
-+#define FIRMWARE		"usbduxfast_firmware.bin"
- #define USBDUXFASTSUB_FIRMWARE	0xA0
- #define VENDOR_DIR_IN		0xC0
- #define VENDOR_DIR_OUT		0x40
-@@ -1706,7 +1707,7 @@ static int usbduxfast_usb_probe(struct usb_interface *uinterf,
- 
- 	ret = request_firmware_nowait(THIS_MODULE,
- 				      FW_ACTION_HOTPLUG,
--				      "usbduxfast_firmware.bin",
-+				      FIRMWARE,
- 				      &udev->dev,
- 				      GFP_KERNEL,
- 				      usbduxfastsub + index,
-@@ -1774,3 +1775,4 @@ module_comedi_usb_driver(usbduxfast_driver, usbduxfast_usb_driver);
- MODULE_AUTHOR("Bernd Porr, BerndPorr@f2s.com");
- MODULE_DESCRIPTION("USB-DUXfast, BerndPorr@f2s.com");
- MODULE_LICENSE("GPL");
-+MODULE_FIRMWARE(FIRMWARE);
--- 
-1.7.9.5
+ack, done,
 
+- Arnaldo
