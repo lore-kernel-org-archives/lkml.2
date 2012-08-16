@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab2HPHRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 03:17:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56092 "EHLO
+	id S1755525Ab2HPHSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 03:18:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60628 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab2HPHRK (ORCPT
+	with ESMTP id S1751674Ab2HPHSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 03:17:10 -0400
+	Thu, 16 Aug 2012 03:18:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Chao Xie <xiechao.mail@gmail.com>
-Subject: Re: [PATCH V3 3/5] clk: mmp: add clock definition for pxa910
-Date: Thu, 16 Aug 2012 07:17:03 +0000
+Subject: Re: [PATCH V3 1/5] clk: mmp: add mmp specific clocks
+Date: Thu, 16 Aug 2012 07:18:01 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
 Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
         s.hauer@pengutronix.de, chao.xie@marvell.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com> <1345086525-12328-4-git-send-email-xiechao.mail@gmail.com>
-In-Reply-To: <1345086525-12328-4-git-send-email-xiechao.mail@gmail.com>
+References: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com> <1345086525-12328-2-git-send-email-xiechao.mail@gmail.com>
+In-Reply-To: <1345086525-12328-2-git-send-email-xiechao.mail@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208160717.03707.arnd@arndb.de>
-X-Provags-ID: V02:K0:/kWJHo7DtqpnvnNJH+RLKd3SjM5lLq8C4utlB98li2e
- TcwsnDViXqdwE2DUu9WNCtwPBOJdH2Gufxe/IvBDDUyF12XRMT
- 6y9GyPn5rlwF7iT30JvuXKf5mVoa6LlJvpz0cXHh65NpkbX9ml
- ZPy2Hm+v56BWgezkUzSIBPb3AgR5uhFWBTlkxlqPZZyKdz2Igb
- UM68eL6RRyHDUGXjQlyIp2VVm5MK51/7BimzCJURV8LoRVQQ0k
- uib4g2xFA6W/dVhrIGtksgvQI+u6U0DR9s0COgZ+Hnr8uYWy+D
- 7z6DPGtCJj7vZJKvoyf7ag9NqF9edaVGyNIRsjZWU7JZjwtSyv
- bfGczJ08nBDaKyDQiDCo=
+Message-Id: <201208160718.01769.arnd@arndb.de>
+X-Provags-ID: V02:K0:3+l4JXWa9qETPJyZe7+H6vUAmwTvWRDs8251WHYPunl
+ dtTWYKfQ1syMWLKlBhB+Ce3YHsd8IadzJ1Tnq8ZI8Y/ZLuSYy7
+ 47If2zTAI4WpOFynSpqqXX1DyXxcSBMGkFVmSm9CBKc7/OG/Nx
+ PXat/FCWqV4g6+1J+HlKlApRFwwDJyePpHsZ3VE6E3h52xN14f
+ IYN0A9oDbWq/aiott68BkQd8npNy+2NBCCMgEKkha2nL0kGecH
+ kkKNWtOE1VzrDCl9WNhjxCv8ddi3xOgGYKe8J9XyRLbAbrEuiV
+ B89BipAYLflJysA+BcTw2jIHlot5pNlaf4KoSSx5teKrOHD6da
+ /zfnXQg3R8TIrJyEAdLk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday 16 August 2012, Chao Xie wrote:
-
-> +enum {
-> +	clk32, vctcxo, pll1, pll1_2, pll1_4, pll1_8, pll1_16, pll1_6, pll1_12,
-> +	pll1_24, pll1_48, pll1_96, pll1_13, pll1_13_1_5, pll1_2_1_5,
-> +	pll1_3_16, uart_pll, twsi0, twsi1, gpio, kpc, rtc, pwm0, pwm1, pwm2,
-> +	pwm3, uart0_mux, uart0, uart1_mux, uart1, uart2_mux, uart2,
-> +	ssp0_mux, ssp0, ssp1_mux, ssp1, dfc, sdh0_mux, sdh0, sdh1_mux, sdh1,
-> +	usb, sph, disp0_mux, disp0, ccic0_mux, ccic0, ccic0_phy_mux,
-> +	ccic0_phy, ccic0_sphy_div, ccic0_sphy, clk_max
-> +};
-
-I wonder whether you should just get rid of this enum
-
-> +void __init pxa910_clk_init(void)
+> +static int clk_apbc_prepare(struct clk_hw *hw)
 > +{
-> +	struct clk *clocks[clk_max];
-
-and this array,
-
-> +	clocks[clk32] =
-> +	    clk_register_fixed_rate(NULL, "clk32", NULL, CLK_IS_ROOT, 3200);
-> +	clk_register_clkdev(clocks[clk32], "clk32", NULL);
+> +       struct clk_apbc *apbc = to_clk_apbc(hw);
+> +       unsigned int data;
+> +       unsigned long flags = 0;
 > +
-> +	clocks[vctcxo] =
-> +	    clk_register_fixed_rate(NULL, "vctcxo", NULL, CLK_IS_ROOT,
-> +				    26000000);
-> +	clk_register_clkdev(clocks[vctcxo], "vctcxo", NULL);
-
-because now that the "obfuscation" macro is gone, it's clear that each index
-is used only once here and then passed right into the next function. If you
-write it like:
-
-	struct clk *clk;
-
-	clk = clk_register_fixed_rate(NULL, "clk32", NULL, CLK_IS_ROOT, 3200);
-	clk_register_clkdev(clk, "clk32", NULL);
-
-it becomes much shorter, partly because things start fitting into one
-line again. The only exception in this file is 
-
-> +	clocks[uart_pll] =
-> +	    mmp_clk_register_factor("uart_pll", "pll1_4", 0,
-> +				    mpmu_base + MPMU_UART_PLL,
-> +				    &uart_factor_masks, uart_factor_tbl,
-> +				    ARRAY_SIZE(uart_factor_tbl));
-> +	clk_set_rate(clocks[uart_pll], 14745600);
-> +	clk_register_clkdev(clocks[uart_pll], "uart_pll", NULL);
-
-with
-
-> +	clocks[uart0_mux] =
-> +	    clk_register_mux(NULL, "uart0_mux", uart_parent,
-> +			     ARRAY_SIZE(uart_parent), CLK_SET_RATE_PARENT,
-> +			     apbc_base + APBC_UART0, 4, 3, 0, &clk_lock);
-> +	clk_set_parent(clocks[uart0_mux], clocks[uart_pll]);
-> +	clk_register_clkdev(clocks[uart0_mux], "uart_mux.0", NULL);
+> +       /*
+> +        * It may share same register as MUX clock,
+> +        * and it will impact FNCLK enable. Spinlock is needed
+> +        */
+> +       if (apbc->lock)
+> +               spin_lock_irqsave(apbc->lock, flags);
 > +
-> +	clocks[uart0] =
-> +	    mmp_clk_register_apbc("uart0", "uart0_mux", apbc_base + APBC_UART0,
-> +				  10, 0, &clk_lock);
-> +	clk_register_clkdev(clocks[uart0], NULL, "pxa2xx-uart.0");
+> +       data = __raw_readl(apbc->base);
+> +       if (apbc->flags & APBC_POWER_CTRL)
+> +               data |= APBC_POWER;
+> +       data |= APBC_FNCLK;
+> +       __raw_writel(data, apbc->base);
 
-so just add another
-
-	struct clk *clk_uart;
-
-	clk_uart = mmp_clk_register_factor("uart_pll", "pll1_4", 0,
-			mpmu_base + MPMU_UART_PLL, &uart_factor_masks, uart_factor_tbl,
-			ARRAY_SIZE(uart_factor_tbl));
-
-
+It seems you have missed a few __raw_readl/__raw_writel that still
+want to get changed to readl_relaxed/writel_relaxed.
 
 	Arnd
