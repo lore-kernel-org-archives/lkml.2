@@ -1,171 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030428Ab2HPT5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:57:05 -0400
-Received: from [213.199.154.206] ([213.199.154.206]:21501 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S933184Ab2HPTyL (ORCPT
+	id S933248Ab2HPT6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:58:32 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42673 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932536Ab2HPT6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:54:11 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah1155h)
-X-WSS-ID: 0M8V5X1-01-68W-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 3/8] perf tools: Rename some variables for better understanding
-Date: Thu, 16 Aug 2012 21:10:19 +0200
-Message-ID: <1345144224-27280-4-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
-References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
+	Thu, 16 Aug 2012 15:58:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120816180732.GA451@polaris.bitmath.org>
+References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
+	<1344807757-2217-10-git-send-email-rydberg@euromail.se>
+	<CAF8JNhLBO72-Rpm7dFWfYLPvbhDZZsm2yOy_7sREnNhTWqZ04w@mail.gmail.com>
+	<20120816180732.GA451@polaris.bitmath.org>
+Date: Thu, 16 Aug 2012 12:58:28 -0700
+Message-ID: <CAF8JNhLurhkKUY1NwaVcyJfK9e2QiakAYg_Cyd1oDqtd-ZrS6Q@mail.gmail.com>
+Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial patch to improve understanding of code.
+On Thu, Aug 16, 2012 at 11:07 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Wed, Aug 15, 2012 at 04:28:17PM -0700, Ping Cheng wrote:
+>> On Sun, Aug 12, 2012 at 2:42 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> > Collect common frame synchronization tasks in a new function,
+>> > input_mt_sync_frame(). Depending on the flags set, it drops
+>> > unseen contacts and performs pointer emulation.
+>> >
+>> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>
+>> I went through the patchset except those for bcm5974. Since there are
+>> changes that affect other drivers, do you plan to update the affected
+>> drivers as well?
+>
+> I am not sure what you mean here? There is a patch with in-kernel api
+> changes, which also changes all drivers using the api. Some of those
+> drivers will benefit from further changes, but that is a different
+> story.
 
-Varible attr is usually used for struct perf_event_attr. Using it in a
-different context is irritating. Thus, renaming it.
+Just to clarify a little bit more. Patch 08/19 was only a generic
+update. A complete update should introduce INPUT_MT_POINTER and
+INPUT_MT_DIRECT so the drivers can fully utilize the new feature.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/header.c |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
+Now I understand you expect us to update the "different story".
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 471b0c4..e2e5129 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -608,11 +608,11 @@ static int write_nrcpus(int fd, struct perf_header *h __used,
- static int write_event_desc(int fd, struct perf_header *h __used,
- 			    struct perf_evlist *evlist)
- {
--	struct perf_evsel *attr;
-+	struct perf_evsel *evsel;
- 	u32 nre = 0, nri, sz;
- 	int ret;
- 
--	list_for_each_entry(attr, &evlist->entries, node)
-+	list_for_each_entry(evsel, &evlist->entries, node)
- 		nre++;
- 
- 	/*
-@@ -625,14 +625,14 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 	/*
- 	 * size of perf_event_attr struct
- 	 */
--	sz = (u32)sizeof(attr->attr);
-+	sz = (u32)sizeof(evsel->attr);
- 	ret = do_write(fd, &sz, sizeof(sz));
- 	if (ret < 0)
- 		return ret;
- 
--	list_for_each_entry(attr, &evlist->entries, node) {
-+	list_for_each_entry(evsel, &evlist->entries, node) {
- 
--		ret = do_write(fd, &attr->attr, sz);
-+		ret = do_write(fd, &evsel->attr, sz);
- 		if (ret < 0)
- 			return ret;
- 		/*
-@@ -642,7 +642,7 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 		 * copy into an nri to be independent of the
- 		 * type of ids,
- 		 */
--		nri = attr->ids;
-+		nri = evsel->ids;
- 		ret = do_write(fd, &nri, sizeof(nri));
- 		if (ret < 0)
- 			return ret;
-@@ -650,13 +650,13 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 		/*
- 		 * write event string as passed on cmdline
- 		 */
--		ret = do_write_string(fd, perf_evsel__name(attr));
-+		ret = do_write_string(fd, perf_evsel__name(evsel));
- 		if (ret < 0)
- 			return ret;
- 		/*
- 		 * write unique ids for this event
- 		 */
--		ret = do_write(fd, attr->id, attr->ids * sizeof(u64));
-+		ret = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
- 		if (ret < 0)
- 			return ret;
- 	}
-@@ -1683,7 +1683,7 @@ int perf_session__write_header(struct perf_session *session,
- 	struct perf_file_header f_header;
- 	struct perf_file_attr   f_attr;
- 	struct perf_header *header = &session->header;
--	struct perf_evsel *attr, *pair = NULL;
-+	struct perf_evsel *evsel, *pair = NULL;
- 	int err;
- 
- 	lseek(fd, sizeof(f_header), SEEK_SET);
-@@ -1691,9 +1691,9 @@ int perf_session__write_header(struct perf_session *session,
- 	if (session->evlist != evlist)
- 		pair = perf_evlist__first(session->evlist);
- 
--	list_for_each_entry(attr, &evlist->entries, node) {
--		attr->id_offset = lseek(fd, 0, SEEK_CUR);
--		err = do_write(fd, attr->id, attr->ids * sizeof(u64));
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		evsel->id_offset = lseek(fd, 0, SEEK_CUR);
-+		err = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
- 		if (err < 0) {
- out_err_write:
- 			pr_debug("failed to write perf header\n");
-@@ -1703,19 +1703,19 @@ out_err_write:
- 			err = do_write(fd, pair->id, pair->ids * sizeof(u64));
- 			if (err < 0)
- 				goto out_err_write;
--			attr->ids += pair->ids;
-+			evsel->ids += pair->ids;
- 			pair = perf_evsel__next(pair);
- 		}
- 	}
- 
- 	header->attr_offset = lseek(fd, 0, SEEK_CUR);
- 
--	list_for_each_entry(attr, &evlist->entries, node) {
-+	list_for_each_entry(evsel, &evlist->entries, node) {
- 		f_attr = (struct perf_file_attr){
--			.attr = attr->attr,
-+			.attr = evsel->attr,
- 			.ids  = {
--				.offset = attr->id_offset,
--				.size   = attr->ids * sizeof(u64),
-+				.offset = evsel->id_offset,
-+				.size   = evsel->ids * sizeof(u64),
- 			}
- 		};
- 		err = do_write(fd, &f_attr, sizeof(f_attr));
-@@ -2277,12 +2277,12 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				   struct perf_session *session,
- 				   perf_event__handler_t process)
- {
--	struct perf_evsel *attr;
-+	struct perf_evsel *evsel;
- 	int err = 0;
- 
--	list_for_each_entry(attr, &session->evlist->entries, node) {
--		err = perf_event__synthesize_attr(tool, &attr->attr, attr->ids,
--						  attr->id, process);
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
-+						  evsel->id, process);
- 		if (err) {
- 			pr_debug("failed to create perf header attribute\n");
- 			return err;
--- 
-1.7.8.6
+Thanks.
 
+Ping
 
+Ping
