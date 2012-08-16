@@ -1,150 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab2HPLd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:33:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671Ab2HPLdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:33:54 -0400
-Message-ID: <502CDADA.2070507@redhat.com>
-Date: Thu, 16 Aug 2012 13:34:50 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752301Ab2HPLfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:35:04 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:8742 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2HPLfA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 07:35:00 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Mauro Carvalho Chehab" <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V3 1/8] DA9058 MFD core driver
+Thread-Topic: [NEW DRIVER V3 1/8] DA9058 MFD core driver
+Thread-Index: AQHNevk5l/k5+isK8EGF7ihfS7RRkpdbJ8CAgAEXAGA=
+Date: Thu, 16 Aug 2012 11:34:56 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C6702@NB-EX-MBX02.diasemi.com>
+References: <201208151518.q7FFIN9v011639@latitude.olech.com>
+ <20120815185316.GG15365@opensource.wolfsonmicro.com>
+In-Reply-To: <20120815185316.GG15365@opensource.wolfsonmicro.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Miklos Szeredi <miklos@szeredi.hu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
-References: <87a9xwivqb.fsf@tucsk.pomaz.szeredi.hu> <502B448D.7050602@redhat.com> <201208152159.51385.rjw@sisk.pl>
-In-Reply-To: <201208152159.51385.rjw@sisk.pl>
-Content-Type: multipart/mixed;
- boundary="------------060800000801090903000904"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060800000801090903000904
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: 15 August 2012 19:53
+> To: Opensource [Anthony Olech]
+> Cc: Samuel Ortiz; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth;
+> Michael Krufky; LKML; David Dajun Chen
+> Subject: Re: [NEW DRIVER V3 1/8] DA9058 MFD core driver
+> On Wed, Aug 15, 2012 at 04:05:21PM +0100, Anthony Olech wrote:
+> >
+> >  if HAS_IOMEM
+> > +
+> >  menu "Multifunction device drivers"
+> This random change is still present from the first version....
+> > +	/*
+> > +	 * the init_board_irq() call-back function should be defined in
+> > +	 * the machine driver initialization code and is used to set up
+> > +	 * the actual (probably GPIO) line as an interrupt line.
+> > +	 */
+> > +	if (pdata->init_board_irq) {
+> > +		ret = pdata->init_board_irq();
+> > +		if (ret)
+> > +			goto failed_to_setup_the_actual_i2c_hw_irq;
+> > +	}
+> You appear to have ignored my previous review comments about this...  it still
+> shouldn't be needed with modern kernels.
 
-Hi,
 
-On 08/15/2012 09:59 PM, Rafael J. Wysocki wrote:
-> On Wednesday, August 15, 2012, Hans de Goede wrote:
->> Hi,
->>
->> On 08/15/2012 07:13 AM, Miklos Szeredi wrote:
->>> Suspend oopses in generic_ide_suspend() because dev_get_drvdata()
->>> returns NULL (dev->p->driver_data == NULL) and this function is not
->>> prepared for this.
->>>
->>> I bisected it to 0998d063 (device-core: Ensure drvdata = NULL when no
->>> driver is bound).  Reverting it fixes suspend.
->>>
->>
->> First of all, thanks for reporting and bisecting this. With that said,
->> I must say that this is very weird. The patch in question:
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=0998d063
->>
->> Only makes dev-drvdata NULL in 2 cases:
->> 1) The probe method of the driver fails
->> 2) The driver has been detached from the device by calling one of:
->>      device_release_driver() or driver_detach()
->>
->> Note that in both code paths dev->driver also gets set to NULL, and
->> other generic ide driver callbacks very much depend on that not being
->> NULL, ie:
->>
->> static int generic_ide_remove(struct device *dev)
->> {
->>           ide_drive_t *drive = to_ide_device(dev);
->>           struct ide_driver *drv = to_ide_driver(dev->driver);
->>
->>           if (drv->remove)
->>                   drv->remove(drive);
->>
->>           return 0;
->> }
->>
->> Also how can a drivers suspend callback get called if dev->driver is NULL,
->> since that callback would normally be "reached" through dev->driver, so
->> something weird is going on here ...
->
-> No, it wouldn't, because it is a bus type callback and it is invoked for
-> all devices whose bus type is ide_bus_type, regardless of whether or not
-> their driver field is NULL.
+The comment you made was "Why is this conditional?  With irqdomains there's no real reason
+to not allocate the IRQs even if you can't usefully use them and it helps make the code simpler."
 
-Ah right, these are bus_driver operations. That explains some things, so I've
-done some more research asking myself: "Why does generic_ide_suspend(), which
-is a *bus* op, call dev_get_drvdata?", the answer to that seems to be that
-the ide subsystem is abusing (IMHO) drvdata to store per device bus_driver
-data. Which I believe is not how drvdata is intended to be used.
-
-With that said, the above knowledge has allowed me to write an (ugly) fix for
-the regression Miklos is seeing. Miklos can you give the attached patch a
-try please?
-
-> It clearly should check if drive is not NULL before using that pointer.
-
-I assume you mean drive*r*, yes I agree that generic_ide_remove should
-check for that. So who is going to write a patch for that?
-
-Regards,
-
-Hans
-
---------------060800000801090903000904
-Content-Type: text/x-patch;
- name="0001-ide-Restore-drvdata-after-device_attach-failure.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ide-Restore-drvdata-after-device_attach-failure.patch"
-
->From 00f700ef4dd5fa335f725361aa683388c9b8ec4f Mon Sep 17 00:00:00 2001
-From: Hans de Goede <hdegoede@redhat.com>
-Date: Thu, 16 Aug 2012 13:23:30 +0200
-Subject: [PATCH] ide: Restore drvdata after device_attach failure
-
-Since commit 0998d063: "device-core: Ensure drvdata = NULL when no
-driver is bound", device_attach will clear a device's drvdata if the
-driver failed to bind to it.
-
-In the ide subsystem however drvdata is not used to store driver data,
-but rather to store per device bus_driver data. So for now restore
-drvdata after calling device_register(), so that drvdata will still point
-to the per device bus_driver data after a driver probe failure.
-
-In the long run the ide subsystem should probably be fixed to not abuse
-drvdata in this way, as this clearly is not how drvdata is intended to be
-used.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/ide/ide-probe.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/drivers/ide/ide-probe.c b/drivers/ide/ide-probe.c
-index 068cef0..be1981b 100644
---- a/drivers/ide/ide-probe.c
-+++ b/drivers/ide/ide-probe.c
-@@ -1015,6 +1015,12 @@ static void hwif_register_devices(ide_hwif_t *hwif)
- 		if (ret < 0)
- 			printk(KERN_WARNING "IDE: %s: device_register error: "
- 					    "%d\n", __func__, ret);
-+		/*
-+		 * device_register() will have cleared drvdata on
-+		 * device_attach failure, but we use drvdata to store per
-+		 * device bus info, rather then for driver info, so restore it.
-+		 */
-+		dev_set_drvdata(dev, drive);
- 	}
- }
+I obviously did not understand, because you also wrote that the driver must not rely of platform
+data. That therefore means that the call-back function pdata->init_board_irq might be NULL,
+which in turn means that a check must be done.
  
--- 
-1.7.11.4
+The only other interpretation of your comment is that the h/w IRQ line setup code must be done
+in the machine driver, in my case for testing is arch/arm/mach-s3c64xx/mach-smdk6410.c
+But that view is contricted by the init call-backs from the wm8350 and wm1192 drivers.
+
+I am confused, but it does make sense to do the GPIO --> IRQ initialization in the machine driver,
+so I will try to do that. But who would be responsible for changing the wm8350 and wm1192 drivers
+to also follow that philosophy?
 
 
---------------060800000801090903000904--
+> > +static bool da9058_register_volatile(struct device *dev, unsigned int
+> > +reg) {
+> > +	switch (reg) {
+> > +	case DA9058_ADCMAN_REG:
+> > +	case DA9058_ADCRESH_REG:
+> > +	case DA9058_ADCRESL_REG:
+> > +	case DA9058_ALARMD_REG:
+> > +	case DA9058_ALARMH_REG:
+> > +	case DA9058_ALARMMI_REG:
+> > +	case DA9058_ALARMMO_REG:
+> > +	case DA9058_ALARMS_REG:
+> > +	case DA9058_ALARMY_REG:
+> Are all the alarm registers really volatile?
+
+
+register DA9058_ADCMAN_REG has one bit that is set by the PMIC
+register DA9058_ADCRESH_REG has all bits set by the PMIC
+register DA9058_ADCRESL_REG has some bits set by the PMIC
+
+so those are volatile
+
+the registers DA9058_ALARMD... are, on detailed inspection of the chip
+documentation, not volatile. I misread the docs previous. I will make the
+change. Well done for spotting my mistake - thanks!
+
+
+> > +	case DA9058_LDO9_REG:
+> > +	case DA9058_TOFFSET_REG:
+> > +	default:
+> > +		return false;
+> Just use the default.
+
+
+The compiler will (I hope) produce the same code even if some of the
+default values are enumerated. I produced those call-backs by starting
+with all the registers and moving the cases around. I seemed a good
+idea at the time. Your objection, I presume, is based on source file size
+or aesthetics, but I will eliminate the functionally redundant cases.
+
+
+> > +static struct regulator_consumer_supply platform_vddarm_consumers[] = {
+> > +	{.supply = "vcc",}
+> > +};
+> No, this and all your other regulator configuration is board specific.
+
+
+I will remove that.
+
+
+Thank you Mark for the review.
+
+Tony Olech
