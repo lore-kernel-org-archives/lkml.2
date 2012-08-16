@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab2HPIqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:46:55 -0400
-Received: from antcom.de ([188.40.178.216]:44941 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756559Ab2HPIqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:46:53 -0400
-Message-ID: <502CB378.1020708@antcom.de>
-Date: Thu, 16 Aug 2012 10:46:48 +0200
+	id S1756665Ab2HPI5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:57:11 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:61322 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753222Ab2HPI5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 04:57:07 -0400
 From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: artem.bityutskiy@linux.intel.com
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+To: artem.bityutskiy@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
         kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 1/2] mtd: lpc32xx_slc: Adjust to pl08x DMA interface changes
-References: <1342095778-13403-1-git-send-email-stigge@antcom.de>  <1342095778-13403-2-git-send-email-stigge@antcom.de> <1345027069.3393.124.camel@sauron.fi.intel.com>
-In-Reply-To: <1345027069.3393.124.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] dma: amba-pl08x: Export pl08x_filter_id
+Date: Thu, 16 Aug 2012 10:56:36 +0200
+Message-Id: <1345107396-27079-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch fixes the following when compiling a driver module that uses
+amba-pl08x:
 
-On 08/15/2012 12:37 PM, Artem Bityutskiy wrote:
-> On Thu, 2012-07-12 at 14:22 +0200, Roland Stigge wrote:
->> This patch adjusts the LPC32xx SLC NAND driver to the new pl08x
->> DMA interface, fixing the compile error resulting from changed
->> pl08x structures.
->> 
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
-> This patch breaks compilation:
-> 
-> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko]
-> undefined!
-> 
-> Please, send a fix. The defconfig I used is attached.
+ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko] undefined!
+ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_mlc.ko] undefined!
 
-Thanks for the note. The issue happens on compiling lpc32xx_slc and
-lpc32xx_mlc as a module. Caused by pl08x_filter_id not being exported.
-Looking at other dma drivers, they have an EXPORT_SYMBOL() for this,
-see also
+(drivers/mtd/nand/lpc32xx_* are still in l2-mtd.git)
+
+Done as in:
 
 drivers/dma/coh901318.c
 drivers/dma/sirf-dma.c
 
-Will post a respective adjustment for drivers/dma/amba-pl08x.c separately.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Roland
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 6fbeebb..8c2e9b6 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1608,6 +1608,7 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
+ 
+ 	return false;
+ }
++EXPORT_SYMBOL(pl08x_filter_id);
+ 
+ /*
+  * Just check that the device is there and active
