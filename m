@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2HPKmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:42:40 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43768 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab2HPKmj (ORCPT
+	id S1755242Ab2HPKsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:48:01 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44845 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753524Ab2HPKr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:42:39 -0400
-Date: Thu, 16 Aug 2012 13:42:34 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Richard Genoud <richard.genoud@gmail.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
- parameter
-Message-ID: <20120816134234.32b468f6@pixies.home.jungo.com>
-In-Reply-To: <CACQ1gAhFJ6AKYJpc1ZiHm+3Y=APnwUmVL3f0KW=OFMDMWzCVJg@mail.gmail.com>
-References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
-	<1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
-	<20120816115713.726da8f2@pixies.home.jungo.com>
-	<CACQ1gAhFJ6AKYJpc1ZiHm+3Y=APnwUmVL3f0KW=OFMDMWzCVJg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 06:47:59 -0400
+Date: Thu, 16 Aug 2012 11:47:48 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 23/31] arm64: Debugging support
+Message-ID: <20120816104748.GI31784@mudshark.cambridge.arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-24-git-send-email-catalin.marinas@arm.com>
+ <201208151507.36174.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151507.36174.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard, Artem,
+On Wed, Aug 15, 2012 at 04:07:36PM +0100, Arnd Bergmann wrote:
+> On Tuesday 14 August 2012, Catalin Marinas wrote:
+> 
+> > +const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+> > +{
+> > +#ifdef CONFIG_AARCH32_EMULATION
+> > +	if (test_tsk_thread_flag(task, TIF_32BIT))
+> > +		return &user_aarch32_view;
+> > +#endif
+> > +	return &user_aarch64_view;
+> > +}
+> 
+> Ah, nice. So you support 64 bit debuggers debugging 32 bit processes, right?
 
-On Thu, 16 Aug 2012 12:07:01 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
-> > With you approach, these system MUST pass the limit parameter via the
-> > ioctl / module-parameter.
-> That's right.
-> We can add a kernel config option to change the max_beb_per1024
-> default value (actually, this is almost the patch I send first).
-> But I see something disturbing with that:
-> It means that an ubi_attach call from userspace, without specifying
-> max_beb_per1024, won't have the same result, depending of the default
-> config value the kernel has been compiled with.
-> (Or maybe this behavior is acceptable).
+That should work if the debugger can deal with it, yes.
 
-Well, that was the previous behavior of MTD_UBI_BEB_RESERVE, long before
-our patchsets.
-I think it is acceptable, given the fact it simplifies the configuration
-for most simple systems.
+> From what I can tell, there is no support for 32 bit processes debugging
+> 64 bit ones. Is that something you plan to add in the future, or do you
+> consider that out of scope? In either case, a comment would be helpful.
 
-Anyway I'm just pointing out the consequences of your change and try to
-suggest other alternatives.
-Artem should decide as he's the maintainer.
+That can't really work because the debugger won't be able to manipulate
+child pointers properly without us adding a new ptrace interface (and then,
+I still wonder about how feasible it really is). I can add a comment.
 
-> > Also, since max_beb_per1024 is always set, how one may specify a zero
-> > limit?
-> You can't.
-> Do you think we need that ?
+> > +long arch_ptrace(struct task_struct *child, long request,
+> > +		 unsigned long addr, unsigned long data)
+> > +{
+> > +	int ret;
+> > +	unsigned long *datap = (unsigned long __user *)data;
+> > +
+> > +	switch (request) {
+> > +		case PTRACE_GET_THREAD_AREA:
+> > +			ret = put_user(child->thread.tp_value, datap);
+> > +			break;
+> > +
+> > +#ifdef CONFIG_HAVE_HW_BREAKPOINT
+> > +		case PTRACE_GETHBPREGS:
+> > +			ret = ptrace_gethbpregs(child, addr, datap);
+> > +			break;
+> > +
+> > +		case PTRACE_SETHBPREGS:
+> > +			ret = ptrace_sethbpregs(child, addr, datap);
+> > +			break;
+> > +#endif
+> > +
+> > +		default:
+> > +			ret = ptrace_request(child, request, addr, data);
+> > +			break;
+> > +	}
+> > +
+> > +	return ret;
+> > +}
+> 
+> Is there a reaons why these are not regsets but have their own ptrace
+> commands? I believe new architectures should generally not add ptrace
+> commands any more.
 
-Well again, originally, prior our patchsets, one *could* set a zero
-MTD_UBI_BEB_RESERVE for his system. So we're introducing a change that
-affects the possible ways an ubi system can be configured, banning
-a configuration that was valid in the past.
+I could probably add some regset wrappers about the hbp accessors (which we
+have to keep for the compat ptrace interface). I'll have a think as it might
+even make sense to have different regsets for breakpoints and watchpoints.
 
-Does it make sense to set a zero limit? dunno.
-For testing purposes, maybe.
+As for the the tls, is it worth having a regset with only one register?
 
-Artem, what do you think? prohibit a zero beb limit?
-
-Regards,
-Shmulik
+Will
