@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030438Ab2HPUM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:12:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8412 "EHLO mga09.intel.com"
+	id S1030457Ab2HPUMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:12:38 -0400
+Received: from tex.lwn.net ([70.33.254.29]:44369 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030365Ab2HPUM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:12:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-Date: Thu, 16 Aug 2012 23:12:25 +0300
-Message-ID: <CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
- sign modules
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1030365Ab2HPUMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 16:12:35 -0400
+Date: Thu, 16 Aug 2012 14:12:53 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [RFC PATCH -v2 0/4] Persistent events
+Message-ID: <20120816141253.0142ddd0@lwn.net>
+In-Reply-To: <1345139123-15212-1-git-send-email-bp@amd64.org>
+References: <1345139123-15212-1-git-send-email-bp@amd64.org>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 10:10 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
-> <dmitry.kasatkin@intel.com> wrote:
->> This patch adds build rules and scripts to generate keys and sign modules.
->>
->> Two scripts has been added. genkey.sh is used to generate private and
->> public keys. ksign.sh is used to sign kernel modules. Both scripts
->> use only standard utilites from coreutils and additionally requires
->> openssl tool for RSA keys creation and signing.
->>
->> The patch modifies 'modules_install' target and adds two new targets to
->> the main kernel Makefile.
->>
->> 1. signed_modules_install
->> This target creates an ephemeral key pair, signs the kernel modules with
->> the private key, destroys the private key, and embeds the public key in
->> the kernel. (Thanks to Dave Hansen for the target name.)
->
-> This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
-> anything useful with the signed modules, correct?
->
+On Thu, 16 Aug 2012 19:45:19 +0200
+Borislav Petkov <bp@amd64.org> wrote:
 
-Correct. It does not make sense to sign module if module support is disabled.
-But there scripts/genkey.sh and ksign.sh which works without Makefiles.
-So possible to generate keys and sign a module...
+> off and on I get some free time to work on that, here's the latest
+> incarnation. It contains review feedback from the earlier round.
 
->>
->> 2. modules_install
->> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
->> private key to sign kernel modules.
->
-> If the answer to the above question is yes, then why can't we stick
-> with a single modules_install command for signing?  It would seem to me
-> that calling signed_modules_install could use an existing key or
-> generate an ephemeral key in the absence of one and install the signed
-> modules, and modules_install would simply install unsigned modules.
->
-> Or, alternatively, just make modules_install sign or not sign depending
-> on whether CONFIG_INTEGRITY_MODULES is enabled.
+Can I add one small request for the next round?  I've looked through the
+patches and the code a bit, and I still have absolutely no clue of what a
+"persistent event" is or why I might want one.  Now, admittedly, I'm
+slower than most, but it still might not hurt to add some overall
+description of what this is for...?
 
-This is what "make modules_install" does. It uses existing private key
-and does not remove it after install.
+Thanks,
 
->  I don't see why you
-> would overload a target or create two different ones when both depend
-> on that option.
->
-> Could you explain the reasoning behind that a bit more?
-
-The reason for "signed_modules_install" is to limit existence of private key.
-Private key is generate just before install, modules installed and
-signed, then key is destroyed.
-So existence of private key is limited to "time make
-signed_modules_install" execution time.
-
-We had a debate about it, and strong message was that we might want to
-do it like that...
-
-With the "modules_install", it will not generate new private key
-before install, but uses which is already in the directory..
-And it will not remove the private key after install.
-
-- Dmitry
-
->
-> josh
+jon
