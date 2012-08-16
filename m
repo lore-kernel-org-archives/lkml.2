@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab2HPNy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:54:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42289 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab2HPNyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:54:51 -0400
-Date: Thu, 16 Aug 2012 17:54:48 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816135448.GP32081@moon>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.591460800@openvz.org>
- <20120815204546.GC25062@fieldses.org>
- <20120815210237.GF25421@moon>
- <20120815220622.GA28054@fieldses.org>
- <20120816062448.GA32081@moon>
- <20120816123814.GD1209@moon>
- <20120816134339.GQ23464@ZenIV.linux.org.uk>
- <502CF9DA.8030701@parallels.com>
- <20120816135019.GS23464@ZenIV.linux.org.uk>
+	id S932579Ab2HPNzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:55:08 -0400
+Received: from fieldses.org ([174.143.236.118]:38140 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932537Ab2HPNyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:54:55 -0400
+Date: Thu, 16 Aug 2012 09:54:29 -0400
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, tglx@linutronix.de,
+        mingo@redhat.com, davem@davemloft.net, hpa@zytor.com,
+        thierry.reding@avionic-design.de, bfields@redhat.com,
+        eric.dumazet@gmail.com, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, viro@zeniv.linux.org.uk,
+        gorcunov@openvz.org, akpm@linux-foundation.org,
+        tim.c.chen@linux.intel.com, devel@openvz.org
+Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
+Message-ID: <20120816135429.GF28054@fieldses.org>
+References: <20120815161141.7598.16682.stgit@localhost.localdomain>
+ <87y5lf7d37.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816135019.GS23464@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87y5lf7d37.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 02:50:19PM +0100, Al Viro wrote:
-> On Thu, Aug 16, 2012 at 05:47:06PM +0400, Pavel Emelyanov wrote:
-> > On 08/16/2012 05:43 PM, Al Viro wrote:
-> > > On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
-> > > 
-> > >> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
-> > >> convenient since it operates with dentries while our fdinfo output deals
-> > >> with inodes. Thus I should either provide some new encode_fh variant
-> > >> which would deal with inodes directly without "parents". Which doesn't
-> > >> look for me anyhow better than the new export_encode_inode_fh helper.
-> > > 
-> > > Huh?  You do have dentries, for crying out loud...
-> > 
-> > Sometimes we don't -- the inotify thing gets an inode only.
-> > Unlike other notifies that have dentries at hands...
+On Wed, Aug 15, 2012 at 08:03:24PM -0700, Eric W. Biederman wrote:
+> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
 > 
-> What's wrong with saying "we don't support idiotify"?
+> > This patch set introduces new socket operation and new system call:
+> > sys_fbind(), which allows to bind socket to opened file.
+> > File to bind to can be created by sys_mknod(S_IFSOCK) and opened by
+> > open(O_PATH).
+> >
+> > This system call is especially required for UNIX sockets, which has name
+> > lenght limitation.
+> >
+> > The following series implements...
+> 
+> Hmm.  I just realized this patchset is even sillier than I thought.
+> 
+> Stanislav is the problem you are ultimately trying to solve nfs clients
+> in a container connecting to the wrong user space rpciod?
+> 
+> Aka net/sunrpc/xprtsock.c:xs_setup_local only taking an absolute path
+> and then creating a delayed work item to actually open the unix domain
+> socket?
+> 
+> The straight correct and straight forward thing to do appears to be:
+> - Capture the root from current->fs in xs_setup_local.
+> - In xs_local_finish_connect change current->fs.root to the captured
+>   version of root before kernel_connect, and restore current->fs.root
+>   after kernel_connect.
 
-Al, we need some way to restore inotifies after checkpoint.
-At the very early versions of these patches I simply added
-dentry to the inotify mark thus once inotify created we always
-have a dentry to refer on in encode_fh, but I'm not sure if
-this will be good design.
+Ah, yep, that should do it.
 
-	Cyrill
+--b.
+
+> 
+> It might not be a bad idea to implement open on unix domain sockets in
+> a filesystem as create(AF_LOCAL)+connect() which would allow you to
+> replace __sock_create + kernel_connect with a simple file_open_root.
+> 
+> But I think the simple scheme of:
+> struct path old_root;
+> old_root = current->fs.root;
+> kernel_connect(...);
+> current->fs.root = old_root;
+> 
+> Is more than sufficient and will remove the need for anything
+> except a purely local change to get nfs clients to connect from
+> containers.
+> 
+> Eric
