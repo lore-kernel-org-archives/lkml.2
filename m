@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab2HPKGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:06:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62508 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab2HPKGi (ORCPT
+	id S1757183Ab2HPKH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:07:27 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43745 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756131Ab2HPKHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:06:38 -0400
-Message-ID: <502CC4AA.6040702@gmail.com>
-Date: Thu, 16 Aug 2012 12:00:10 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	Thu, 16 Aug 2012 06:07:22 -0400
 MIME-Version: 1.0
-To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
-        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 2/8] exofs: remove lock/unlock super
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120816115713.726da8f2@pixies.home.jungo.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+ <1341937423-16516-5-git-send-email-richard.genoud@gmail.com> <20120816115713.726da8f2@pixies.home.jungo.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 16 Aug 2012 12:07:01 +0200
+Message-ID: <CACQ1gAhFJ6AKYJpc1ZiHm+3Y=APnwUmVL3f0KW=OFMDMWzCVJg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space parameter
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+2012/8/16 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
+> Hi Richard,
+>
+> Sorry for reviewing this late...
+>
+> On Tue, 10 Jul 2012 18:23:42 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
+>> -config MTD_UBI_BEB_LIMIT
+>> -     int "Maximum expected bad eraseblocks per 1024 eraseblocks"
+>> -     default 20
+>> -     range 2 256
+>
+> I see some benefit keeping the config.
+>
+> For the simplest systems (those having one ubi device) that need a limit
+> *other* than the default (20 per 1024), they can simply set the config
+> to their chosen value, as they were used to.
+>
+> With you approach, these system MUST pass the limit parameter via the
+> ioctl / module-parameter.
+That's right.
+We can add a kernel config option to change the max_beb_per1024
+default value (actually, this is almost the patch I send first).
+But I see something disturbing with that:
+It means that an ubi_attach call from userspace, without specifying
+max_beb_per1024, won't have the same result, depending of the default
+config value the kernel has been compiled with.
+(Or maybe this behavior is acceptable).
 
-Remove lock and unlock super operation.
+>> +static int get_bad_peb_limit(const struct ubi_device *ubi, int max_beb_per1024)
+>> +{
+>> +     int device_peb_count;
+>> +     uint64_t device_size;
+>> +     int beb_limit = 0;
+>> +
+>> +     /* this has already been checked in ioctl */
+>> +     if (max_beb_per1024 <= 0)
+>> +             goto out;
+>
+> Can you explain how 'max_beb_per1024 <= 0' may happen?
+>
+> It seems that all of your calls to 'ubi_attach_mtd_dev' pass a positive
+> max_beb_per1024 value (the default is always set). See your
+> 'ubi_mtd_param_parse' and 'ctrl_cdev_ioctl'. Am I missing something?
+Actually it can. But it's because I made a mistake:
+p->max_beb_per1024 = bytes_str_to_int(tokens[2]);
+=> I didn't check the return value of this. It can fail, and if it
+does the return value is >0.
+I'm going to change that.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-diff -Nurp linux-3.6-rc1-orig/fs/exofs/super.c linux-3.6-rc1/fs/exofs/super.c
---- linux-3.6-rc1-orig/fs/exofs/super.c	2012-08-16 09:37:31.000000000 +0200
-+++ linux-3.6-rc1/fs/exofs/super.c	2012-08-16 09:45:31.000000000 +0200
-@@ -384,8 +384,6 @@ static int exofs_sync_fs(struct super_bl
- 	if (unlikely(ret))
- 		goto out;
- -	lock_super(sb);
--
- 	ios->length = offsetof(struct exofs_fscb, s_dev_table_oid);
- 	memset(fscb, 0, ios->length);
- 	fscb->s_nextid = cpu_to_le64(sbi->s_nextid);
-@@ -403,8 +401,6 @@ static int exofs_sync_fs(struct super_bl
- 	else
- 		sb->s_dirt = 0;
- -
--	unlock_super(sb);
- out:
- 	EXOFS_DBGMSG("s_nextid=0x%llx ret=%d\n", _LLU(sbi->s_nextid), ret);
- 	ore_put_io_state(ios);
+>
+> Also, since max_beb_per1024 is always set, how one may specify a zero
+> limit?
+You can't.
+Do you think we need that ?
+0 should be kept for "default value", not to break user-space.
+But we can use another value for 0, like 1024 or 2048.
+(but honestly, I think this will add complexity for an unlikely configuration.)
+
+>
+> Regards,
+> Shmulik
+
+Regards,
+Richard.
+
+
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
