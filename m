@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2HPRqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:46:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60109 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab2HPRqt convert rfc822-to-8bit (ORCPT
+	id S933057Ab2HPRwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:52:40 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56330 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713Ab2HPRwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:46:49 -0400
-Message-ID: <1345139199.29668.46.camel@twins>
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU
- goes down.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Date: Thu, 16 Aug 2012 19:46:39 +0200
-In-Reply-To: <CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
-References: <1345124749.31092.2.camel@localhost.localdomain>
-	 <1345125384.29668.30.camel@twins>
-	 <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
-	 <1345128138.29668.42.camel@twins>
-	 <CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 16 Aug 2012 13:52:38 -0400
+Date: Thu, 16 Aug 2012 19:52:34 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Roman Mamedov <rm@romanrm.ru>
+Cc: Johannes Stezenbach <js@sig21.net>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+Message-ID: <20120816175234.GL11413@one.firstfloor.org>
+References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com> <20120816150647.GA22010@sig21.net> <20120816232549.4d14a6aa@natsu>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816232549.4d14a6aa@natsu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 21:32 +0600, Rakib Mullick wrote:
-> And also I think migrate_nr_uninterruptible() is meaning less too.
+> I have locked the Allwinner A10 CPU in my Mele A2000 to 60 MHz using cpufreq-set,
+> and ran your test. rnd.lzo is a 9 MB file from /dev/urandom compressed with lzo.
+> There doesn't seem to be a significant difference between all three variants.
 
-Hmm, I think I see a problem.. we forget to migrate the effective delta
-created by rq->calc_load_active.
+I found that in compression benchmarks it depends a lot on the data
+compressed.
+
+urandom (which should be essentially incompressible) will be handled
+by different code paths in the compressor than other more compressible data.
+It becomes a complicated memcpy then.
+
+But then there are IO benchmarks which also only do zeroes, which
+also gives an unrealistic picture.
+
+Usually it's best to use some corpus with different data types, from very
+compressible to less so; and look at the aggregate.
+
+For my snappy work I usually had at least large executables (medium) and some
+pdfs (already compressed; low) and then uncompressed source code tars (high
+compression)
+
+-Andi
