@@ -1,113 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab2HPGZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 02:25:11 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:46182 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab2HPGZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 02:25:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
-        mszeredi@suse.cz
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	<1345045700-9062-5-git-send-email-miklos@szeredi.hu>
-Date: Wed, 15 Aug 2012 23:24:48 -0700
-In-Reply-To: <1345045700-9062-5-git-send-email-miklos@szeredi.hu> (Miklos
-	Szeredi's message of "Wed, 15 Aug 2012 17:48:11 +0200")
-Message-ID: <87zk5v5p73.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754921Ab2HPG14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 02:27:56 -0400
+Received: from [193.170.194.20] ([193.170.194.20]:41925 "EHLO mail.servus.at"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753347Ab2HPG1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 02:27:54 -0400
+Message-ID: <502C92C3.7090701@oberhumer.com>
+Date: Thu, 16 Aug 2012 08:27:15 +0200
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.6esrpre) Gecko/20120713 Thunderbird/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19PxrGNwkC7Q0a1rxvDf4n28hcK9VWu9WE=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 04/13] overlay filesystem
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Johannes Stezenbach <js@sig21.net>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] Update LZO compression
+References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net>
+In-Reply-To: <20120815144539.GA8300@sig21.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+On 2012-08-15 16:45, Johannes Stezenbach wrote:
+> On Wed, Aug 15, 2012 at 02:02:43PM +0200, Markus F.X.J. Oberhumer wrote:
+>> On 2012-08-14 14:39, Johannes Stezenbach wrote:
+>>> On Tue, Aug 14, 2012 at 01:44:02AM +0200, Markus F.X.J. Oberhumer wrote:
+>>>> On 2012-07-16 20:30, Markus F.X.J. Oberhumer wrote:
+>>>>>
+>>>>> As stated in the README this version is significantly faster (typically more
+>>>>> than 2 times faster!) than the current version, has been thoroughly tested on
+>>>>> x86_64/i386/powerpc platforms and is intended to get included into the
+>>>>> official Linux 3.6 or 3.7 release.
+>>>>>
+>>>>> I encourage all compression users to test and benchmark this new version,
+>>>>> and I also would ask some official LZO maintainer to convert the updated
+>>>>> source files into a GIT commit and possibly push it to Linus or linux-next.
+>>>
+>>> Sorry for not reporting earlier, but I didn't have time to do real
+>>> benchmarks, just a quick test on ARM926EJ-S using barebox,
+>>> and found in the new version decompression is slower:
+>>> http://lists.infradead.org/pipermail/barebox/2012-July/008268.html
+>>
+>> I can only guess, but maybe your ARM cpu does not have an efficient
+>> implementation of {get,put}_unaligned().
+> 
+> Yes, ARMv5 cannot do unaligned access.  ARMv6+ could, but
+> I think the Linux kernel normally traps it for debug,
+> all ARM seem to use generic {get,put}_unaligned() implementation
+> which use byte access and shift.
 
-Minor nits below.
+Hmm - I could imagine that we're wasting a lot of possible speed gain
+by not exploiting that feature on ARMv6+.
 
-> diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
-> new file mode 100644
-> index 0000000..6b50823
-> --- /dev/null
-> +++ b/fs/overlayfs/dir.c
-> @@ -0,0 +1,598 @@
-> +/*
-> + *
-> + * Copyright (C) 2011 Novell Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +
-> +#include <linux/fs.h>
-> +#include <linux/namei.h>
-> +#include <linux/xattr.h>
-> +#include <linux/security.h>
-> +#include <linux/cred.h>
-> +#include "overlayfs.h"
-> +
-> +static const char *ovl_whiteout_symlink = "(overlay-whiteout)";
-> +
-> +static int ovl_whiteout(struct dentry *upperdir, struct dentry *dentry)
-> +{
-> +	int err;
-> +	struct dentry *newdentry;
-> +	const struct cred *old_cred;
-> +	struct cred *override_cred;
-> +
-> +	/* FIXME: recheck lower dentry to see if whiteout is really
->  	needed */
+>> Could you please try the following patch and test if you can see
+>> any significant speed difference?
+> 
+> It isn't.  I made the attached quick hack userspace code
+> using ARM kernel headers and barebox unlzop code.
+> (new == your new code, old == linux-3.5 git, test == new + your suggested change)
+> (sorry I had no time to clean it up)
 
-Is that FIXME still valid?
+My suggested COPY4 replacement probably has a lot of load stalls - maybe some
+ARM expert could have a look and suggest a more efficient implementation.
 
-> +	err = -ENOMEM;
-> +	override_cred = prepare_creds();
-> +	if (!override_cred)
-> +		goto out;
-> +
-> +	/*
-> +	 * CAP_SYS_ADMIN for setxattr
-> +	 * CAP_DAC_OVERRIDE for symlink creation
-> +	 * CAP_FOWNER for unlink in sticky directory
-> +	 */
-> +	cap_raise(override_cred->cap_effective, CAP_SYS_ADMIN);
-> +	cap_raise(override_cred->cap_effective, CAP_DAC_OVERRIDE);
-> +	cap_raise(override_cred->cap_effective, CAP_FOWNER);
-> +	override_cred->fsuid = 0;
-> +	override_cred->fsgid = 0;
+In any case, I still would like to see the new code in linux-next because
+of the huge improvements on other modern CPUs.
 
-Could you please make these GLOBAL_ROOT_UID and GLOBAL_ROOT_GID
-instead of 0?  Otherwise this code won't compile with the usernamespace
-bits enabled.
+Cheers,
+Markus
 
-> +	old_cred = override_creds(override_cred);
+> 
+> I compressed a Linux Image with lzop (lzop <arch/arm/boot/Image >lzoimage)
+> and timed uncompression:
+> 
+> # time ./unlzopold <lzoimage >/dev/null
+> real    0m 0.29s
+> user    0m 0.19s
+> sys     0m 0.10s
+> # time ./unlzopold <lzoimage >/dev/null
+> real    0m 0.29s
+> user    0m 0.20s
+> sys     0m 0.09s
+> # time ./unlzopnew <lzoimage >/dev/null
+> real    0m 0.41s
+> user    0m 0.30s
+> sys     0m 0.10s
+> # time ./unlzopnew <lzoimage >/dev/null
+> real    0m 0.40s
+> user    0m 0.30s
+> sys     0m 0.10s
+> # time ./unlzopnew <lzoimage >/dev/null
+> real    0m 0.40s
+> user    0m 0.29s
+> sys     0m 0.11s
+> # time ./unlzoptest <lzoimage >/dev/null
+> real    0m 0.39s
+> user    0m 0.28s
+> sys     0m 0.11s
+> # time ./unlzoptest <lzoimage >/dev/null
+> real    0m 0.39s
+> user    0m 0.27s
+> sys     0m 0.11s
+> # time ./unlzoptest <lzoimage >/dev/null
+> real    0m 0.39s
+> user    0m 0.27s
+> sys     0m 0.11s
+> 
+> FWIW I also checked the sha1sum to confirm the Image uncompressed OK.
+> 
+> 
+> Johannes
 
-Eric
+-- 
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
