@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab2HPWl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 18:41:29 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:4876 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750878Ab2HPWl1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 18:41:27 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzzz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>
-Subject: RE: [PATCH V2 00/18] drivers: hv: kvp
-Thread-Topic: [PATCH V2 00/18] drivers: hv: kvp
-Thread-Index: AQHNe/GAeBp+0Cpcqk+xr0vVhHe94ZddCDCQ
-Date: Thu, 16 Aug 2012 22:40:40 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C18C4@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1344877584-21738-1-git-send-email-kys@microsoft.com>
- <20120816205506.GA16940@kroah.com>
-In-Reply-To: <20120816205506.GA16940@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753858Ab2HPWog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 18:44:36 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:43255 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab2HPWoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 18:44:34 -0400
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120816222629.GG31346@thunk.org>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+	<20120816024654.GB3781@thunk.org>
+	<20120816111051.GA16036@localhost>
+	<20120816152513.GA31346@thunk.org>
+	<CANP3RGdMfM0tZbaJS9dFetRhXoGtyS0Nx4hZER_Qv0a061X_dQ@mail.gmail.com>
+	<20120816211948.GF31346@thunk.org>
+	<CANP3RGd62=voh5T6NACyFE-NqX=Huk1hkewSakPs67vC+uuTuw@mail.gmail.com>
+	<20120816222629.GG31346@thunk.org>
+Date: Thu, 16 Aug 2012 15:44:32 -0700
+Message-ID: <CANP3RGfwQCJu7TLF4KXAJ-qPrHQDbuPzRCd72O41CUi2G1azJg@mail.gmail.com>
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <maze@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Thanks, that's really helpful.   I can say that using a 4MB journal and
+> running fsstress is _not_ enough to trigger the problem.
+>
+> Looking more closely at what might be needed to trigger the bug, 'i'
+> gets left uninitialized when err is set to -EAGAIN, and that happens
+> when ext4_ext_truncate_extend_restart() is unable to extend the
+> journal transaction.  But that also means we need to be deleting a
+> sufficiently large enough file that the blocks span multiple block
+> groups (which is why we need to extend the transaction, so we can
+> modify more bitmap blocks) at the point when there is no more room in
+> the journal, so we have to close the current transaction, and then
+> retry it again with a new journal handle in a new transaction.
+>
+> So that implies that untaring a bunch of kernels probably won't be
+> sufficient, since the files will be too small.  What we probably will
+> need to do is to fill a large file system with lots of large files,
+> use a small journal, and then try to do an rm -rf.
+>
+>                                              - Ted
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, August 16, 2012 4:55 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com;
-> ben@decadent.org.uk
-> Subject: Re: [PATCH V2 00/18] drivers: hv: kvp
-> 
-> On Mon, Aug 13, 2012 at 10:06:24AM -0700, K. Y. Srinivasan wrote:
-> > This patchset expands the KVP (Key Value Pair) functionality to
-> > implement the mechanism to GET/SET IP addresses in the guest. This
-> > functionality is used in Windows Server 2012 to implement VM
-> > replication functionality. The way IP configuration information
-> > is managed is distro specific. Based on the feedback I have gotten
-> > from Olaf, Greg, Steve, Ben and Mairus, I have chosen to seperate
-> > distro specific code from this patch-set. Most of the GET operation
-> > can be implemented in a way that is completely distro independent and
-> > I have implemented that as such and is included in this patch-set.
-> > Some of the attributes that can only be fetched in a distro
-> > dependent way as well the mechanism for configuring an interface
-> > (the SET operation) that is clearly distro specific is to be
-> > implemented via external scripts that will be invoked via the KVP
-> > code. We define here the interface to these scripts.
-> >
-> > Adding support for IP injection resulted in some changes to the
-> > protocol between the user level daemon and the kernel driver.
-> > These changes have been implemented in way that would retain
-> > compatibility with older daemons. I would like to thank Olaf and
-> > Greg for pointing out the compatibility issue.
-> >
-> > This version of the patch set addresses all of the comments that I
-> > have received to date from Olaf, Ben and others. Specifically, I have
-> > cleanedup all of the string manipulation code. Furthermore, I have also
-> > simplified the format of the interface configuration file that is
-> > generated by the KVP daemon and gotten rid of some constant strings that
-> > may not be relevant on all distros. I would like to thank Olaf and Ben
-> > for their detailed review.
-> 
-> I've applied some of these, care to resend the rest, with the change I
-> pointed out, and get the reviewed-by: lines correct.
-
-Will do.
-
-Thanks,
-
-K. Y
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> 
-
-
-
+My suggestion of untarring kernels was to cause the big multi gigabyte
+files created later on to be massively fragmented, and thus have tons
+of extents and a relatively deep extent tree.
+But maybe that's not needed to trigger this bug, if as you say, it is
+caused by the absolute number of disks blocks being freed and not by
+the size/depth/complexity of the extent tree.
+My knowledge of the internals of ext4 is pretty much non-existent. ;-)
+ In this case I'm just an end user.
