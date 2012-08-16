@@ -1,131 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2HPNRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:17:55 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36621 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244Ab2HPNRs (ORCPT
+	id S932528Ab2HPNSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:18:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47206 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab2HPNRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:17:48 -0400
+	Thu, 16 Aug 2012 09:17:49 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC 2/2] cma: support MIGRATE_DISCARD
+In-Reply-To: <20120815232023.GA15225@bbox>
+Organization: http://mina86.com/
+References: <1344934627-8473-1-git-send-email-minchan@kernel.org> <1344934627-8473-3-git-send-email-minchan@kernel.org> <xa1t7gt1pnck.fsf@mina86.com> <20120815232023.GA15225@bbox>
+User-Agent: Notmuch/0.13.2+121~gb26df7c (http://notmuchmail.org) Emacs/24.1.50.2 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Thu, 16 Aug 2012 15:17:40 +0200
+Message-ID: <xa1twr0znfgr.fsf@mina86.com>
 MIME-Version: 1.0
-Date: Thu, 16 Aug 2012 15:17:47 +0200
-X-Google-Sender-Auth: LTkv_EjG7FFBVhyrSVHXkyyc8vQ
-Message-ID: <CAMuHMdVEKpVYn+Yr5rzdOvV5zUWrD12Fas197Mn2oVDC5YgVgw@mail.gmail.com>
-Subject: Regression: Spurious "^A" in UML output
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In v3.6-rc1 UML, I see spurious "^A" (ASCII 1, SOH) characters in some kernel
-messages:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Calibrating delay loop... 4640.76 BogoMIPS (lpj=23203840)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 256
-^AChecking that host ptys support output SIGIO...Yes
-^AChecking that host ptys support SIGIO on close...No, enabling workaround
-^AUsing 2.6 host AIO
-NET: Registered protocol family 16
-bio: create slab <bio-0> at 0
-Switching to clocksource itimer
+> On Tue, Aug 14, 2012 at 04:19:55PM +0200, Michal Nazarewicz wrote:
+>> Since CMA is the only user of MIGRATE_DISCARD it may be worth it to
+>> guard it inside an #ifdef, eg:
 
-This happens for all output using the "printk(UM_KERN_XXX ...)" idiom.
+Minchan Kim <minchan@kernel.org> writes:
+> In summary, I want to open it for potential usecases in future if anyone
+> doesn't oppose strongly.
 
-The "UM_KERN_XXX" defines are generated from the KERN_XXX defines in
-arch/um/include/shared/common-offsets.h using:
+Fair enough.
 
-DEFINE_STR(UM_KERN_EMERG, KERN_EMERG);
-DEFINE_STR(UM_KERN_ALERT, KERN_ALERT);
-DEFINE_STR(UM_KERN_CRIT, KERN_CRIT);
-DEFINE_STR(UM_KERN_ERR, KERN_ERR);
-DEFINE_STR(UM_KERN_WARNING, KERN_WARNING);
-DEFINE_STR(UM_KERN_NOTICE, KERN_NOTICE);
-DEFINE_STR(UM_KERN_INFO, KERN_INFO);
-DEFINE_STR(UM_KERN_DEBUG, KERN_DEBUG);
-DEFINE_STR(UM_KERN_CONT, KERN_CONT);
+>>>  	if (!trylock_page(page)) {
+>>> -		if (!force || mode =3D=3D MIGRATE_ASYNC)
+>>> +		if (!force || mode & MIGRATE_ASYNC)
 
-Before commit 04d2c8c83d0e3ac5f78aeede51babb3236200112 ("printk: convert
-the format for KERN_<LEVEL> to a 2 byte pattern"), these were expanded in
-include/generated/asm-offsets.h to:
+> It's not wrong technically but for readability, NP.
 
-#define UM_KERN_EMERG "<0>" /* KERN_EMERG */
-#define UM_KERN_ALERT "<1>" /* KERN_ALERT */
-#define UM_KERN_CRIT "<2>" /* KERN_CRIT */
-#define UM_KERN_ERR "<3>" /* KERN_ERR */
-#define UM_KERN_WARNING "<4>" /* KERN_WARNING */
-#define UM_KERN_NOTICE "<5>" /* KERN_NOTICE */
-#define UM_KERN_INFO "<6>" /* KERN_INFO */
-#define UM_KERN_DEBUG "<7>" /* KERN_DEBUG */
-#define UM_KERN_CONT "<c>" /* KERN_CONT */
+Yep, that was my point, thanks. :)
 
-In v3.6-rc1, they expand to:
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 
-#define UM_KERN_EMERG "\001" /* "0" KERN_EMERG */
-#define UM_KERN_ALERT "\001" /* "1" KERN_ALERT */
-#define UM_KERN_CRIT "\001" /* "2" KERN_CRIT */
-#define UM_KERN_ERR "\001" /* "3" KERN_ERR */
-#define UM_KERN_WARNING "\001" /* "4" KERN_WARNING */
-#define UM_KERN_NOTICE "\001" /* "5" KERN_NOTICE */
-#define UM_KERN_INFO "\001" /* "6" KERN_INFO */
-#define UM_KERN_DEBUG "\001" /* "7" KERN_DEBUG */
-#define UM_KERN_CONT "\001" /* "c" KERN_CONT */
+--==-=-=
+Content-Type: text/plain
 
-I.e. only the SOH character is retained in the actual define, the remainder ends
-up in the comment.
 
-Apparently the combo of DEFINE_STR() in
-arch/x86/um/shared/sysdep/kernel-offsets.h
-and sed-y in Kbuild doesn't support string constants consisting of
-multiple parts.
+--==-=-=
+Content-Type: application/pgp-signature
 
-A quick fix is the (whitespace-damaged) patch below, but this would reduce
-readability. And I'm afraid my sed-foo is not good enough to fix it better.
-Any takers?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/include/linux/kern_levels.h b/include/linux/kern_levels.h
-index 866caaa..1c43b52 100644
---- a/include/linux/kern_levels.h
-+++ b/include/linux/kern_levels.h
-@@ -4,16 +4,16 @@
- #define KERN_SOH       "\001"          /* ASCII Start Of Header */
- #define KERN_SOH_ASCII '\001'
+iQIcBAEBAgAGBQJQLPL0AAoJECBgQBJQdR/0GeEP/iRcc7bd6j8GvshNvmU8amgt
+Hh0+A/Gb6jygt0ieRQDZcb/qC/ODYLuHQ4NMmns1mXbpswItIvmgBg1pQoblzZo0
+3UOsST2EzJm5UtFaLzw4vqoXtUwvI5pQUx+qRtS3ROvZqQeCreRn5au2hWPMhTlY
+0bAgFED9KX1rihMp+gn8ega96Lon/0Sdnc+yfQgMFfRl9kXGRauVUrnREO2nMj9o
+kg8NM/syC/I/t3D7sL8ifq5mbe2bIOZMCV0o0vbMrpEs1bQaIsOsD5F8+4XG98kH
+6vy5oAwqRNnFWjcR5QdG5dp+gcr/OArewDsRX5I49iIB8IuhkJvnfWQtbVVZy98B
+ozNdmI5PANN6Kzs7mm0prtHsoiNvY/ODf3UatAK/w5ru+UJW7+SnC0e2pYmjlGhR
+Qsrhio5x5geFjSV6iszA54rl313D9mzVSmNONgtKDj06ATAwRpMRErlh6huK32Zu
+G5XVIoIXaljlPpOBtT59sEUpmt0FXiX5dCmInIPJkZdXuf4vnibyQlgO126zzoMU
+/c7Bjw7RwGgAK3euKJVd69Ro/GS1PIzmfF+Q9+Dk3B/ZyTCEkLeNWxfSf912si4o
+BOK4KrM5kjn7gZLYPWxBJ38sU43Oonix6gsaXG8GGCFRhtxQSjayszyH5lDdWl7f
+YhSR0kdZ7FICbt9E2kuI
+=mflS
+-----END PGP SIGNATURE-----
+--==-=-=--
 
--#define KERN_EMERG     KERN_SOH "0"    /* system is unusable */
--#define KERN_ALERT     KERN_SOH "1"    /* action must be taken immediately */
--#define KERN_CRIT      KERN_SOH "2"    /* critical conditions */
--#define KERN_ERR       KERN_SOH "3"    /* error conditions */
--#define KERN_WARNING   KERN_SOH "4"    /* warning conditions */
--#define KERN_NOTICE    KERN_SOH "5"    /* normal but significant condition */
--#define KERN_INFO      KERN_SOH "6"    /* informational */
--#define KERN_DEBUG     KERN_SOH "7"    /* debug-level messages */
-+#define KERN_EMERG     "\0010"         /* system is unusable */
-+#define KERN_ALERT     "\0011"         /* action must be taken immediately */
-+#define KERN_CRIT      "\0012"         /* critical conditions */
-+#define KERN_ERR       "\0013"         /* error conditions */
-+#define KERN_WARNING   "\0014"         /* warning conditions */
-+#define KERN_NOTICE    "\0015"         /* normal but significant condition */
-+#define KERN_INFO      "\0016"         /* informational */
-+#define KERN_DEBUG     "\0017"         /* debug-level messages */
-
--#define KERN_DEFAULT   KERN_SOH "d"    /* the default kernel loglevel */
-+#define KERN_DEFAULT   "\001d"         /* the default kernel loglevel */
-
- /*
-  * Annotation for a "continued" line of log printout (only done after a
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--=-=-=--
