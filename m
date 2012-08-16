@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030233Ab2HPQNj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:13:39 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21494 "EHLO
+	id S932326Ab2HPQO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:14:29 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21475 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964789Ab2HPQNX (ORCPT
+	with ESMTP id S1757650Ab2HPQNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:13:23 -0400
+	Thu, 16 Aug 2012 12:13:21 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 05/11] xen/mmu: use copy_page instead of memcpy.
-Date: Thu, 16 Aug 2012 12:03:23 -0400
-Message-Id: <1345133009-21941-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+Date: Thu, 16 Aug 2012 12:03:20 -0400
+Message-Id: <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
 References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
@@ -21,60 +21,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After all, this is what it is there for.
+instead of a big memblock_reserve. This way we can be more
+selective in freeing regions (and it also makes it easier
+to understand where is what).
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
+[v1: Move the auto_translate_physmap to proper line]
+[v2: Per Stefano suggestion add more comments]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ arch/x86/xen/enlighten.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/xen/p2m.c       |    5 ++++
+ arch/x86/xen/setup.c     |    9 --------
+ 3 files changed, 53 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 6ba6100..7247e5a 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1754,14 +1754,14 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 	 * it will be also modified in the __ka space! (But if you just
- 	 * modify the PMD table to point to other PTE's or none, then you
- 	 * are OK - which is what cleanup_highmap does) */
--	memcpy(level2_ident_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
-+	copy_page(level2_ident_pgt, l2);
- 	/* Graft it onto L4[511][511] */
--	memcpy(level2_kernel_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
-+	copy_page(level2_kernel_pgt, l2);
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ff962d4..e532eb5 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -998,7 +998,54 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
  
- 	/* Get [511][510] and graft that in level2_fixmap_pgt */
- 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
- 	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
--	memcpy(level2_fixmap_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
-+	copy_page(level2_fixmap_pgt, l2);
- 	/* Note that we don't do anything with level1_fixmap_pgt which
- 	 * we don't need. */
+ 	return ret;
+ }
++/*
++ * If the MFN is not in the m2p (provided to us by the hypervisor) this
++ * function won't do anything. In practice this means that the XenBus
++ * MFN won't be available for the initial domain. */
++static void __init xen_reserve_mfn(unsigned long mfn)
++{
++	unsigned long pfn;
++
++	if (!mfn)
++		return;
++	pfn = mfn_to_pfn(mfn);
++	if (phys_to_machine_mapping_valid(pfn))
++		memblock_reserve(PFN_PHYS(pfn), PAGE_SIZE);
++}
++static void __init xen_reserve_internals(void)
++{
++	unsigned long size;
++
++	if (!xen_pv_domain())
++		return;
++
++	/* xen_start_info does not exist in the M2P, hence can't use
++	 * xen_reserve_mfn. */
++	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
++
++	xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info));
++	xen_reserve_mfn(xen_start_info->store_mfn);
  
-@@ -1821,8 +1821,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
- 	 */
- 	swapper_kernel_pmd =
- 		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
--	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
--	       sizeof(pmd_t) * PTRS_PER_PMD);
-+	copy_page(swapper_kernel_pmd, initial_kernel_pmd);
- 	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
- 		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
- 	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
-@@ -1851,11 +1850,11 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 				  512*1024);
++	if (!xen_initial_domain())
++		xen_reserve_mfn(xen_start_info->console.domU.mfn);
++
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return;
++
++	/*
++	 * ALIGN up to compensate for the p2m_page pointing to an array that
++	 * can partially filled (look in xen_build_dynamic_phys_to_machine).
++	 */
++
++	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
++
++	/* We could use xen_reserve_mfn here, but would end up looping quite
++	 * a lot (and call memblock_reserve for each PAGE), so lets just use
++	 * the easy way and reserve it wholesale. */
++	memblock_reserve(__pa(xen_start_info->mfn_list), size);
++
++	/* The pagetables are reserved in mmu.c */
++}
+ void xen_setup_shared_info(void)
+ {
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+@@ -1362,6 +1409,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
  
- 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
--	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
-+	copy_page(initial_kernel_pmd, kernel_pmd);
++	xen_reserve_internals();
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
  
- 	xen_map_identity_early(initial_kernel_pmd, max_pfn);
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index e4adbfb..6a2bfa4 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -388,6 +388,11 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 	}
  
--	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
-+	copy_page(initial_page_table, pgd);
- 	initial_page_table[KERNEL_PGD_BOUNDARY] =
- 		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
+ 	m2p_override_init();
++
++	/* NOTE: We cannot call memblock_reserve here for the mfn_list as there
++	 * isn't enough pieces to make it work (for one - we are still using the
++	 * Xen provided pagetable). Do it later in xen_reserve_internals.
++	 */
+ }
  
+ unsigned long get_phys_to_machine(unsigned long pfn)
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index a4790bf..9efca75 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -424,15 +424,6 @@ char * __init xen_memory_setup(void)
+ 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+ 			E820_RESERVED);
+ 
+-	/*
+-	 * Reserve Xen bits:
+-	 *  - mfn_list
+-	 *  - xen_start_info
+-	 * See comment above "struct start_info" in <xen/interface/xen.h>
+-	 */
+-	memblock_reserve(__pa(xen_start_info->mfn_list),
+-			 xen_start_info->pt_base - xen_start_info->mfn_list);
+-
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ 
+ 	return "Xen";
 -- 
 1.7.7.6
 
