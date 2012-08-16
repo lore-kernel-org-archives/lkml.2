@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030211Ab2HPTad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:30:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41182 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932285Ab2HPTaa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933160Ab2HPTaa (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 16 Aug 2012 15:30:30 -0400
-Date: Thu, 16 Aug 2012 16:30:21 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Michael Ellerman <michael@ellerman.id.au>
-Subject: Re: [v2.6.34-stable 016/165] KVM: Ensure all vcpus are consistent
- with in-kernel irqchip settings
-Message-ID: <20120816193017.GA17364@herton-Z68MA-D2H-B3>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
- <1345060109-9187-17-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345060109-9187-17-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50643 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab2HPTa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:30:26 -0400
+Message-ID: <1345145332.3402.13.camel@falcor.watson.ibm.com>
+Subject: Re: [RFC v2 3/7] integrity: create and inititialize a keyring with
+ builtin public key
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        rusty@rustcorp.com.au, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>
+Date: Thu, 16 Aug 2012 15:28:52 -0400
+In-Reply-To: <CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	 <66e0f332c823b82701a48aba320f589cec27e904.1345055639.git.dmitry.kasatkin@intel.com>
+	 <CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081619-7182-0000-0000-0000024F6071
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 03:46:00PM -0400, Paul Gortmaker wrote:
-> From: Avi Kivity <avi@redhat.com>
+On Thu, 2012-08-16 at 14:37 -0400, Josh Boyer wrote:
+> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
+> <dmitry.kasatkin@intel.com> wrote:
+> > From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> >
+> > Create and initialize a keyring with the builtin public key. This could
+> > be an ephemeral key, created and destroyed during module install for
+> > custom built kernels, or a key used to label the entire filesystem for
+> > EVM/IMA-appraisal. Uses .incbin based on David Howell's post.
+> >
+> > Load the builtin public key on the specified keyring, creating the
+> > keyring if it doesn't already exist.
+> >
+> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> > ---
+> >  security/integrity/Kconfig         |   10 ++++
+> >  security/integrity/Makefile        |   17 +++++++
+> >  security/integrity/digsig_pubkey.c |   96 ++++++++++++++++++++++++++++++++++++
+> >  security/integrity/integrity.h     |   10 ++++
+> >  4 files changed, 133 insertions(+)
+> >  create mode 100644 security/integrity/digsig_pubkey.c
+> >
+> > diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+> > index 5bd1cc1..f789018 100644
+> > --- a/security/integrity/Kconfig
+> > +++ b/security/integrity/Kconfig
+> > @@ -17,5 +17,15 @@ config INTEGRITY_SIGNATURE
+> >           This is useful for evm and module keyrings, when keys are
+> >           usually only added from initramfs.
+> >
+> > +config INTEGRITY_PUBKEY
+> > +       boolean "Create a keyring and initialize with builtin public key"
+> > +       depends on INTEGRITY_SIGNATURE
+> > +       default n
+> > +       help
+> > +         Create and initialize a keyring with the builtin public key. This could
+> > +         be an ephemeral key, created and destroyed during module install for
+> > +         custom built kernels, or a key used to label the entire filesystem for
+> > +         EVM/IMA-appraisal.
+> > +
 > 
->                    -------------------
->     This is a commit scheduled for the next v2.6.34 longterm release.
->     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->     If you see a problem with using this for longterm, please comment.
->                    -------------------
+> It could also be a key that is reused explicitly for signing kernels
+> and kernel modules but has nothing to do with EVM/IMA filesystem
+> labels, right?  E.g. a distro key.  I think the commit log and help
+> text is a bit too restrictive here.
+
+Definitely!  The cover letter included the distro scenario, but I missed
+updating it here.
+
+> > +int integrity_init_keyring(const unsigned int id)
+> > +{
+> > +       const struct cred *cred = current_cred();
+> > +       struct user_struct *user = cred->user;
+> > +       struct key *new_keyring, *key;
+> > +       u8 digest[SHA1_DIGEST_SIZE];
+> > +       char keyid[20];
+> > +       int ret, pubkey_size = pubkey_end - pubkey;
+> > +
+> > +       if (pubkey_size == 0) {
+> > +               pr_info("pubkey is missing, skipping...\n");
+> > +               return 0;
+> > +       }
+> > +
+> > +       new_keyring = keyring_alloc(keyring_name[id], user->uid, (gid_t) -1,
+> > +                                   cred, KEY_ALLOC_NOT_IN_QUOTA,
+> > +                                   user->uid_keyring);
+> > +       if (IS_ERR(new_keyring)) {
+> > +               ret = PTR_ERR(new_keyring);
+> > +               goto out;
+> > +       }
+> > +
+> > +       ret = integrity_calc_digest("sha1", pubkey, pubkey_size, digest);
+> > +       if (ret < 0)
+> > +               goto out;
+> > +
+> > +       sprintf(keyid, "%llX", __be64_to_cpup((uint64_t *)(digest+12)));
 > 
-[...]
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index c82ae24..559af38 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1322,6 +1322,10 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
->  		return r;
->  
->  	mutex_lock(&kvm->lock);
-> +	if (!kvm_vcpu_compatible(vcpu)) {
-> +		r = -EINVAL;
-> +		goto unlock_vcpu_destroy;
-> +	}
->  	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
->  		r = -EINVAL;
->  		goto vcpu_destroy;
+> keyid is only 20 bytes.  Is there a guarantee somewhere that restricts
+> the digest+12 value to be 20 bytes or less and NUL termintated?  If
+> not, should you use snprintf?
 
-Fails to build:
+Correct, and SHA1 shouldn't be hardcoded either, but configurable.
 
-linux-stable/arch/x86/kvm/../../../virt/kvm/kvm_main.c: In function 'kvm_vm_ioctl_create_vcpu':
-linux-stable/arch/x86/kvm/../../../virt/kvm/kvm_main.c:1327: error: label 'unlock_vcpu_destroy' used but not defined
+> 
+> > +
+> > +       key = key_alloc(&key_type_user, keyid, 0, 0, current_cred(),
+> > +                       (KEY_POS_ALL & ~KEY_POS_SETATTR) |
+> > +                       KEY_USR_VIEW | KEY_USR_SEARCH | KEY_USR_READ,
+> > +                       KEY_ALLOC_NOT_IN_QUOTA);
+> > +       if (IS_ERR(key)) {
+> > +               ret = PTR_ERR(key);
+> > +               goto out;
+> 
+> You leak new_keyring if here, right?
 
-Looking at it, vcpu_destroy would be label name to be used instead.
+thanks
 
--- 
-[]'s
-Herton
+> > +       }
+> > +
+> > +       ret = key_instantiate_and_link(key, pubkey, pubkey_end - pubkey,
+> > +                                      new_keyring, NULL);
+> > +out:
+> > +       pr_info("integrity: loaded public key %s on %s %s\n", keyid,
+> > +               keyring_name[id], !ret ? "succeeded" : "failed");
+> > +       return ret;
+> > +}
+> 
+> josh
+
+Mimi
+
