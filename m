@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2HPOCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:02:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54251 "EHLO arroyo.ext.ti.com"
+	id S964776Ab2HPODJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:03:09 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:59052 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932621Ab2HPOCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:02:35 -0400
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-To: LMML <linux-media@vger.kernel.org>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH] media: davinci: vpif: add check for NULL handler
-Date: Thu, 16 Aug 2012 19:32:00 +0530
-Message-ID: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932193Ab2HPODE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:03:04 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Pavel Emelianov <xemul@parallels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Thread-Topic: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Thread-Index: AQHNese8v4CCEaSMdUyq8H0F5S5OkpdbzawAgAAEtoCAABHRgIAAi0EAgABoVgCAABJHgIAAAPcAgAAA5oCAAAFBAIAAAkmA
+Date: Thu, 16 Aug 2012 14:03:00 +0000
+Message-ID: <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
+References: <20120815092116.700948346@openvz.org>
+	 <20120815092409.591460800@openvz.org> <20120815204546.GC25062@fieldses.org>
+	 <20120815210237.GF25421@moon> <20120815220622.GA28054@fieldses.org>
+	 <20120816062448.GA32081@moon> <20120816123814.GD1209@moon>
+	 <20120816134339.GQ23464@ZenIV.linux.org.uk>
+	 <502CF9DA.8030701@parallels.com>
+	 <20120816135019.GS23464@ZenIV.linux.org.uk> <20120816135448.GP32081@moon>
+In-Reply-To: <20120816135448.GP32081@moon>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [87.194.65.0]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <FCC72CA5ACA0CC4A873A5A8D20152818@sw.swsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7GE3GYF028074
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Thu, 2012-08-16 at 17:54 +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 16, 2012 at 02:50:19PM +0100, Al Viro wrote:
+> > On Thu, Aug 16, 2012 at 05:47:06PM +0400, Pavel Emelyanov wrote:
+> > > On 08/16/2012 05:43 PM, Al Viro wrote:
+> > > > On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
+> > > > 
+> > > >> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
+> > > >> convenient since it operates with dentries while our fdinfo output deals
+> > > >> with inodes. Thus I should either provide some new encode_fh variant
+> > > >> which would deal with inodes directly without "parents". Which doesn't
+> > > >> look for me anyhow better than the new export_encode_inode_fh helper.
+> > > > 
+> > > > Huh?  You do have dentries, for crying out loud...
+> > > 
+> > > Sometimes we don't -- the inotify thing gets an inode only.
+> > > Unlike other notifies that have dentries at hands...
+> > 
+> > What's wrong with saying "we don't support idiotify"?
+> 
+> Al, we need some way to restore inotifies after checkpoint.
+> At the very early versions of these patches I simply added
+> dentry to the inotify mark thus once inotify created we always
+> have a dentry to refer on in encode_fh, but I'm not sure if
+> this will be good design.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
----
- drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
- drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
- 2 files changed, 15 insertions(+), 11 deletions(-)
+Actually, I was about to suggest this.  This can be done internally
+within fs/notify without actually modifying the syscall interface, can't
+it, since they take a path which is used to obtain the inode?  It looks
+like the whole of the inotify interface could be internally recast to
+use dentries instead of inodes.  Unless I've missed something obvious?
 
-diff --git a/drivers/media/video/davinci/vpif_capture.c b/drivers/media/video/davinci/vpif_capture.c
-index 266025e..a87b7a5 100644
---- a/drivers/media/video/davinci/vpif_capture.c
-+++ b/drivers/media/video/davinci/vpif_capture.c
-@@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	}
- 
- 	/* configure 1 or 2 channel mode */
--	ret = vpif_config_data->setup_input_channel_mode
--					(vpif->std_info.ycmux_mode);
-+	if (vpif_config_data->setup_input_channel_mode) {
-+		ret = vpif_config_data->setup_input_channel_mode
-+						(vpif->std_info.ycmux_mode);
- 
--	if (ret < 0) {
--		vpif_dbg(1, debug, "can't set vpif channel mode\n");
--		return ret;
-+		if (ret < 0) {
-+			vpif_dbg(1, debug, "can't set vpif channel mode\n");
-+			return ret;
-+		}
- 	}
- 
- 	/* Call vpif_set_params function to set the parameters and addresses */
-diff --git a/drivers/media/video/davinci/vpif_display.c b/drivers/media/video/davinci/vpif_display.c
-index e129c98..1e35f92 100644
---- a/drivers/media/video/davinci/vpif_display.c
-+++ b/drivers/media/video/davinci/vpif_display.c
-@@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
- 	}
- 
- 	/* clock settings */
--	ret =
--	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
--					ch->vpifparams.std_info.hd_sd);
--	if (ret < 0) {
--		vpif_err("can't set clock\n");
--		return ret;
-+	if (vpif_config_data->set_clock) {
-+		ret =
-+		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
-+						ch->vpifparams.std_info.hd_sd);
-+		if (ret < 0) {
-+			vpif_err("can't set clock\n");
-+			return ret;
-+		}
- 	}
- 
- 	/* set the parameters and addresses */
--- 
-1.7.0.4
+James
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
