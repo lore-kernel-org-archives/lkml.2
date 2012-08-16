@@ -1,60 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab2HPTWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:22:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11743 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2HPTWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:22:46 -0400
-X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OrIOwdGEWQsA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=--tucwDFoOwFR4NhrRYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345144963.3708.1.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.4.9-rt17
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 16 Aug 2012 15:22:43 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757606Ab2HPT1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:27:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753105Ab2HPT1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:27:45 -0400
+Date: Thu, 16 Aug 2012 21:27:38 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH, RFC 7/9] thp: implement splitting pmd for huge zero page
+Message-ID: <20120816192738.GO11188@redhat.com>
+References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 09, 2012 at 12:08:18PM +0300, Kirill A. Shutemov wrote:
+> +static void __split_huge_zero_page_pmd(struct mm_struct *mm, pmd_t *pmd,
+> +		unsigned long address)
+> +{
+> +	pgtable_t pgtable;
+> +	pmd_t _pmd;
+> +	unsigned long haddr = address & HPAGE_PMD_MASK;
+> +	struct vm_area_struct *vma;
+> +	int i;
+> +
+> +	vma = find_vma(mm, address);
+> +	VM_BUG_ON(vma == NULL);
 
-Dear RT Folks,
+I think you can use BUG_ON here just in case but see below how I would
+change it.
 
-I'm pleased to announce the 3.4.9-rt17 stable release.
+> +	pmdp_clear_flush_notify(vma, haddr, pmd);
+> +	/* leave pmd empty until pte is filled */
+> +
+> +	pgtable = get_pmd_huge_pte(mm);
+> +	pmd_populate(mm, &_pmd, pgtable);
+> +
+> +	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+> +		pte_t *pte, entry;
+> +		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
+> +		entry = pte_mkspecial(entry);
+> +		pte = pte_offset_map(&_pmd, haddr);
+> +		VM_BUG_ON(!pte_none(*pte));
+> +		set_pte_at(mm, haddr, pte, entry);
+> +		pte_unmap(pte);
+> +	}
+> +	smp_wmb(); /* make pte visible before pmd */
+> +	pmd_populate(mm, pmd, pgtable);
+> +}
+> +
+
+The last pmd_populate will corrupt memory.
+
+See the comment in __split_huge_page_splitting. If you set it to none
+at any given time, a new page fault will instantiate a hugepmd
+thinking it's the first fault and then you'll overwrite it leaking
+memory and corrupting userland.
+
+The caller may be holding the mmap_sem in read mode too (pagewalk is
+an example). The PSE bit must also remain on at all times.
+
+The non present bit must be clear and a tlb flush must happen before
+the final pmd_populate with the regular pmd to avoid tripping machine
+checks on some CPU (to avoid a 4k and 2m tlb to appear for the same
+vaddr).
+
+I think you should replace pmdp_clear_flush_notify with:
+
+  	    	pmdp_splitting_flush_notify(vma, haddr, pmd);
+
+then build the 4k zero pages in the loop using the temporary _pmd set with
+pmd_populate(&_pmd) and then:
 
 
-This release is just an update to the new stable 3.4.9 version
-and no RT specific changes have been made.
+		/*
+		 * Up to this point the pmd is present and huge and
+		 * userland has the whole access to the hugepage
+		 * during the split (which happens in place). If we
+		 * overwrite the pmd with the not-huge version
+		 * pointing to the pte here (which of course we could
+		 * if all CPUs were bug free), userland could trigger
+		 * a small page size TLB miss on the small sized TLB
+		 * while the hugepage TLB entry is still established
+		 * in the huge TLB. Some CPU doesn't like that. See
+		 * http://support.amd.com/us/Processor_TechDocs/41322.pdf,
+		 * Erratum 383 on page 93. Intel should be safe but is
+		 * also warns that it's only safe if the permission
+		 * and cache attributes of the two entries loaded in
+		 * the two TLB is identical (which should be the case
+		 * here). But it is generally safer to never allow
+		 * small and huge TLB entries for the same virtual
+		 * address to be loaded simultaneously. So instead of
+		 * doing "pmd_populate(); flush_tlb_range();" we first
+		 * mark the current pmd notpresent (atomically because
+		 * here the pmd_trans_huge and pmd_trans_splitting
+		 * must remain set at all times on the pmd until the
+		 * split is complete for this pmd), then we flush the
+		 * SMP TLB and finally we write the non-huge version
+		 * of the pmd entry with pmd_populate.
+		 */
+		set_pmd_at(mm, address, pmd, pmd_mknotpresent(*pmd));
+		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
+		pmd_populate(mm, pmd, pgtable);
 
+note address above is actually haddr aligned (generated by
+vma_address(page, vma) where page is a thp page)
 
-You can get this release via the git tree at:
+> +	if (is_huge_zero_pmd(*pmd)) {
+> +		__split_huge_zero_page_pmd(mm, pmd, address);
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+This will work fine but it's a bit sad having to add "address" at
+every call, just to run a find_vma(). The only place that doesn't have
+a vma already on the caller stack is actually pagewalk, all other
+places already have a vma on the stack without having to find it with
+the rbtree.
 
-  Head SHA1: 7050e0bb86b8500446cc7379cd9bcbeff57ecd87
+I think it may be better to change the param to
+split_huge_page_pmd(vma, pmd).
 
+Then have standard split_huge_page_pmd obtain the mm with vma->vm_mm
+(most callers already calles it with split_huge_page_pmd(vma->vm_mm)
+so it won't alter the cost to do vma->vm_mm in caller or callee).
 
-Or to build 3.4.9-rt17 directly, the following patches should be applied:
+split_huge_page_address also should take the vma (all callers are
+invoking it as split_huge_page_address(vma->vm_mm) so it'll be zero
+cost change).
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+Then we can add a split_huge_page_pmd_mm(mm, address, pmd) or
+split_huge_page_pmd_address(mm, address, pmd) (call it as you
+prefer...) only for the pagewalk caller that will do the find_vma and
+BUG_ON if it's not found.
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.9.xz
+In that new split_huge_page_pmd_mm you can also add a BUG_ON checking
+vma->vm_start to be <= haddr and vma->vm_end >= haddr+HPAGE_PMD_SIZE
+in addition to BUG_ON(!vma) above, for more robustness. I'm not aware
+of any place calling it without mmap_sem hold at least for reading
+and the vma must be stable, but more debug checks won't hurt.
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.9-rt17.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+Thanks!
+Andrea
