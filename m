@@ -1,62 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab2HPDGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 23:06:18 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:50148 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751741Ab2HPDGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 23:06:07 -0400
-From: Chao Xie <xiechao.mail@gmail.com>
-To: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, chao.xie@marvell.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Cc: Chao Xie <xiechao.mail@gmail.com>
-Subject: [PATCH V3 5/5] arm: mmp: make all SOCs use common clock by default
-Date: Thu, 16 Aug 2012 11:08:45 +0800
-Message-Id: <1345086525-12328-6-git-send-email-xiechao.mail@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com>
-References: <1345086525-12328-1-git-send-email-xiechao.mail@gmail.com>
-X-OriginalArrivalTime: 16 Aug 2012 03:04:59.0058 (UTC) FILETIME=[EBB85920:01CD7B5B]
+	id S1752711Ab2HPDIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 23:08:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10259 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab2HPDH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 23:07:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,776,1336374000"; 
+   d="scan'208";a="209108627"
+Message-ID: <502C6403.3060107@intel.com>
+Date: Thu, 16 Aug 2012 11:07:47 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
+In-Reply-To: <1345028738.31459.82.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chao Xie <chao.xie@marvell.com>
 
-Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
----
- arch/arm/mach-mmp/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Appreciate for your so detailed review and comments!
 
-diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-index 7fddd01..d697d07 100644
---- a/arch/arm/mach-mmp/Kconfig
-+++ b/arch/arm/mach-mmp/Kconfig
-@@ -108,18 +108,21 @@ endmenu
- config CPU_PXA168
- 	bool
- 	select CPU_MOHAWK
-+	select COMMON_CLK
- 	help
- 	  Select code specific to PXA168
- 
- config CPU_PXA910
- 	bool
- 	select CPU_MOHAWK
-+	select COMMON_CLK
- 	help
- 	  Select code specific to PXA910
- 
- config CPU_MMP2
- 	bool
- 	select CPU_PJ4
-+	select COMMON_CLK
- 	help
- 	  Select code specific to MMP2. MMP2 is ARMv7 compatible.
- 
--- 
-1.7.0.4
+On 08/15/2012 07:05 PM, Peter Zijlstra wrote:
+
+> On Mon, 2012-08-13 at 20:21 +0800, Alex Shi wrote:
+>> Since there is no power saving consideration in scheduler CFS, I has a
+>> very rough idea for enabling a new power saving schema in CFS.
+> 
+> Adding Thomas, he always delights poking holes in power schemes.
+> 
+>> It bases on the following assumption:
+>> 1, If there are many task crowd in system, just let few domain cpus
+>> running and let other cpus idle can not save power. Let all cpu take the
+>> load, finish tasks early, and then get into idle. will save more power
+>> and have better user experience.
+> 
+> I'm not sure this is a valid assumption. I've had it explained to me by
+> various people that race-to-idle isn't always the best thing. It has to
+> do with the cost of switching power states and the duration of execution
+> and other such things.
+
+
+Uh, the info will be kept in my mind. Thanks!
+
+> 
+>> 2, schedule domain, schedule group perfect match the hardware, and
+>> the power consumption unit. So, pull tasks out of a domain means
+>> potentially this power consumption unit idle.
+> 
+> I'm not sure I understand what you're saying, sorry.
+
+
+Sorry.
+this assumption is that power domain can be matched into current SDs.
+
+So the 'pack' power scheme can simply minimise the active power domain
+via minimise active scheduler domains.
+
+> 
+>> So, according Peter mentioned in commit 8e7fbcbc22c(sched: Remove stale
+>> power aware scheduling), this proposal will adopt the
+>> sched_balance_policy concept and use 2 kind of policy: performance, power.
+> 
+> Yay, ideally we'd also provide a 3rd option: auto, which simply switches
+> between the two based on AC/BAT, UPS status and simple things like that.
+> But this seems like a later concern, you have to have something to pick
+> between before you can pick :-)
+
+
+Sure. let's build up the performance/power first. :)
+
+> 
+>> And in scheduling, 2 place will care the policy, load_balance() and in
+>> task fork/exec: select_task_rq_fair().
+> 
+> ack
+
+
+Thanks!
+
+> 
+>> Here is some pseudo code try to explain the proposal behaviour in
+>> load_balance() and select_task_rq_fair();
+> 
+> Oh man.. A few words outlining the general idea would've been nice.
+> 
+>> load_balance() {
+>> 	update_sd_lb_stats(); //get busiest group, idlest group data.
+>>
+>> 	if (sd->nr_running > sd's capacity) {
+>> 		//power saving policy is not suitable for
+>> 		//this scenario, it runs like performance policy
+>> 		mv tasks from busiest cpu in busiest group to
+>> 		idlest 	cpu in idlest group;
+> 
+> Once upon a time we talked about adding a factor to the capacity for
+> this. So say you'd allow 2*capacity before overflowing and waking
+> another power group.
+
+
+Sorry, I missed this. and didn't find detailed in lkml and google. Could
+any one like to give the related URL if convenience?
+
+> 
+> But I think we should not go on nr_running here, PJTs per-entity load
+> tracking stuff gives us much better measures -- also, repost that series
+> already Paul! :-)
+
+
+Agree for the better solution, will study Paul's post. :)
+
+> 
+> Also, I'm not sure this is entirely correct, the thing you want to do
+> for power aware stuff is to minimize the number of active power domains,
+> this means you don't want idlest, you want least busy non-idle.
+
+
+Sure. the least busy non-idle is better target.
+
+> 
+>> 	} else {// the sd has enough capacity to hold all tasks.
+>> 		if (sg->nr_running > sg's capacity) {
+>> 			//imbalanced between groups
+>> 			if (schedule policy == performance) {
+>> 				//when 2 busiest group at same busy
+>> 				//degree, need to prefer the one has
+>> 				// softest group??
+>> 				move tasks from busiest group to
+>> 					idletest group;
+> 
+> So I'd leave the currently implemented scheme as performance, and I
+> don't think the above describes the current state.
+
+
+Sure. it's better to keep current state as performance. Here is a little
+difference is it try to find the more suitable balance cpu in idlest
+group the usual this_cpu.
+
+But maybe the current solution is better.
+
+> 
+>> 			} else if (schedule policy == power)
+>> 				move tasks from busiest group to
+>> 				idlest group until busiest is just full
+>> 				of capacity.
+>> 				//the busiest group can balance
+>> 				//internally after next time LB,
+> 
+> There's another thing we need to do, and that is collect tasks in a
+> minimal amount of power domains. The old code (that got deleted) did
+> something like that, you can revive some of the that code if needed -- I
+> just killed everything to be able to start with a clean slate.
+
+
+Thanks for reminder.
+And agree to clear all. Painting on white paper is more pleasure. :)
+
+> 
+> 
+>> 		} else {
+>> 			//all groups has enough capacity for its tasks.
+>> 			if (schedule policy == performance)
+>> 				//all tasks may has enough cpu
+>> 				//resources to run,
+>> 				//mv tasks from busiest to idlest group?
+>> 				//no, at this time, it's better to keep
+>> 				//the task on current cpu.
+>> 				//so, it is maybe better to do balance
+>> 				//in each of groups
+>> 				for_each_imbalance_groups()
+>> 					move tasks from busiest cpu to
+>> 					idlest cpu in each of groups;
+>> 			else if (schedule policy == power) {
+>> 				if (no hard pin in idlest group)
+>> 					mv tasks from idlest group to
+>> 					busiest until busiest full.
+>> 				else
+>> 					mv unpin tasks to the biggest
+>> 					hard pin group.
+>> 			}
+>> 		}
+>> 	}
+>> }
+> 
+> OK, so you only start to group later.. I think we can do better than
+> that.
+
+
+Would you like to share more detailed ideas here?
+
+> 
+>>
+>> sub proposal:
+>> 1, If it's possible to balance task on idlest cpu not appointed 'balance
+>> cpu'. If so, it may can reduce one more time balancing.
+>> The idlest cpu can prefer the new idle cpu;  and is the least load cpu;
+>> 2, se or task load is good for running time setting.
+>> but it should the second basis in load balancing. The first basis of LB
+>> is running tasks' number in group/cpu. Since whatever of the weight of
+>> groups is, if the tasks number is less than cpu number, the group is
+>> still has capacity to take more tasks. (will consider the SMT cpu power
+>> or other big/little cpu capacity on ARM.)
+> 
+> Ah, no we shouldn't balance on nr_running, but on the amount of time
+> consumed. Imagine two tasks being woken at the same time, both tasks
+> will only run a fraction of the available time, you don't want this to
+> exceed your capacity because ran back to back the one cpu will still be
+> mostly idle.
+
+
+Agree with you.
+
+> 
+> What you want it to keep track of a per-cpu utilization level (inverse
+> of idle-time) and using PJTs per-task runnable avg see if placing the
+> new task on will exceed the utilization limit.
+
+
+Thanks for reminder!
+
+> 
+> I think some of the Linaro people actually played around with this,
+> Vincent?
+> 
+>> unsolved issues:
+>> 1, like current scheduler, it didn't handled cpu affinity well in
+>> load_balance.
+> 
+> cpu affinity is always 'fun'.. while there's still a few fun sites in
+> the current load-balancer we do better than we did a while ago.
+> 
+>> 2, task group that isn't consider well in this rough proposal.
+> 
+> You mean the cgroup mess? 
+
+
+Yes.
+
+> 
+>> It isn't consider well and may has mistaken . So just share my ideas and
+>> hope it become better and workable in your comments and discussion.
+> 
+> Very simplistically the current scheme is a 'spread' the load scheme
+> (SD_PREFER_SIBLING if you will). We spread load to maximize per-task
+> cache and cpu power.
+> 
+> The power scheme should be a 'pack' scheme, where we minimize the active
+> power domains.
+> 
+> One way to implement this is to keep track of an active and
+> under-utilized power domain (the target) and fail the regular (pull)
+> load-balance for all cpus not in that domain. For the cpu that are in
+> that domain we'll have find_busiest select from all other under-utilized
+> domains pulling tasks to fill our target, once full, we pick a new
+> target, goto 1.
+
+
+Thanks for re-clarify! that is also this proposal want to do.
+
+And as to the select_task_rq_fair part. The rough idea correct here:
+
+select_task_rq_fair()
+{
+	int powersaving = 0;
+
+	for_each_domain(cpu, tmp) {
+
+		if (policy == power && tmp_has_capacity &&
+			 tmp->flags & sd_flag) {
+			sd = tmp;
+			//semi-idle domain is suitable for power scheme
+			powersaving = 1;
+			break;
+		}
+	}
+
+	...
+
+	while(sd) {
+		...
+		if (policy == power && powersaving == 1)
+			find_busiest_and_capable_group()
+		else
+			find_idlest_group();
+
+		if (!group) {
+			sd = sd->child;
+			continue;
+		}
+		...
+	}
+}
+
+> 
+> 
+
 
