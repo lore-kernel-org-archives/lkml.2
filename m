@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab2HPOmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:42:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56632 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab2HPOm3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:42:29 -0400
-Message-ID: <1345128138.29668.42.camel@twins>
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU
- goes down.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Date: Thu, 16 Aug 2012 16:42:18 +0200
-In-Reply-To: <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
-References: <1345124749.31092.2.camel@localhost.localdomain>
-	 <1345125384.29668.30.camel@twins>
-	 <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932543Ab2HPOqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:46:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab2HPOqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:46:18 -0400
+Date: Thu, 16 Aug 2012 16:45:56 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [PATCH 0/5] x86, MSI, AHCI: Support multiple MSIs
+Message-ID: <cover.1345124063.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 20:28 +0600, Rakib Mullick wrote:
+Currently multiple MSI mode is limited to a single vector per device (at
+least on x86 and PPC). This series breathes life into pci_enable_msi_block()
+and makes it possible to set interrupt affinity for multiple IRQs, similarly
+to MSI-X. Yet, only for x86 and only when IOMMUs are present.
 
-> I'm not sure which parts are missing from Changelog to patch. And this
-> patch assumes that, sleeping tasks won't be scattered. From
-> select_fallback_rq(), sleeping tasks might get scattered due to
-> various cases like. if CPU is down, task isn't allowed to move a
-> particular CPU. Other than that, dest cpu supposed to be the same.
+Although IRQ and PCI subsystems are modified, the current behaviour left
+intact. The drivers could just start using multiple MSIs just by following
+the existing documentation.
 
-Sure but affinities and cpusets can still scatter, and therefore your
-logic doesn't hold up, but see below.
+The AHCI device driver makes use of the new mode and a new function -
+pci_enable_msi_block_auto() - patches 4,5.
 
-> > Furthermore there should be absolutely no impact on load calculation
-> > what so ever. nr_uninterruptible is only ever useful as a sum over all
-> > cpus, this total sum doesn't change regardless of where you put the
-> > value.
-> >
-> > Worse, there's absolutely no relation to the tasks on the runqueue
-> > (sleeping or otherwise) and nr_uninterruptible, so coupling these
-> > actions makes no sense what so ever.
-> >
-> nr_uninterruptible is coupled with tasks on the runqueue to calculate
-> nr_active numbers.
+The series is adapted to Ingo's -tip repository, x86/apic branch.
+Patches 4,5 could be applied independently of patches 1-3.
 
-It is not.. nr_uninterruptible is incremented on the cpu the task goes
-to sleep and decremented on the cpu doing the wakeup.
+Attached patches:
+  1/5 x86, MSI: Support multiple MSIs in presense of IRQ remapping
+  2/5 x86, MSI: Allocate as many multiple IRQs as requested
+  3/5 x86, MSI: Minor readability fixes
+  4/5 PCI, MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+  5/5 AHCI: Support multiple MSIs
 
-This means that nr_uninterruptible is a complete mess and any per-cpu
-value isn't meaningful at all.
+ Documentation/PCI/MSI-HOWTO.txt |   41 ++++++++-
+ arch/x86/kernel/apic/io_apic.c  |  170 ++++++++++++++++++++++++++++++++++++---
+ drivers/ata/ahci.c              |   11 +--
+ drivers/ata/ahci.h              |    1 +
+ drivers/ata/libahci.c           |   24 ++++++
+ drivers/ata/libata-core.c       |   66 +++++++++++++++
+ drivers/pci/msi.c               |   39 +++++++++-
+ include/linux/irq.h             |    6 ++
+ include/linux/libata.h          |    3 +
+ include/linux/msi.h             |    1 +
+ include/linux/pci.h             |    7 ++
+ kernel/irq/chip.c               |   30 +++++--
+ kernel/irq/irqdesc.c            |   31 +++++++
+ 13 files changed, 397 insertions(+), 33 deletions(-)
 
-It is quite possible to always have the inc on cpu0 and the decrement on
-cpu1, yielding results like:
+-- 
+1.7.7.6
 
-{1000, -1000} for an effective nr_uninterruptible = 0. Taking either cpu
-down will then migrate whatever delta it has to another cpu, but there
-might only be a single task, yet the delta is +-1000.
 
-> In calc_load_fold_active(), this nr_active numbers are used to
-> calculate delta. This is how I understand this part and seeing some
-> impact.
-
-You understand wrong, please re-read the comment added in commit
-5167e8d5.
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
