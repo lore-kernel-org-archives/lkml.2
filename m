@@ -1,109 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2HPFsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:48:43 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18528 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab2HPFsl convert rfc822-to-8bit (ORCPT
+	id S1754394Ab2HPFtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:49:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64143 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab2HPFtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:48:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 15 Aug 2012 22:43:06 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Aug 2012 11:18:34 +0530
-Subject: RE: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Thread-Topic: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-Thread-Index: Ac16d9XuenBB1iUfRmOwI8PofhMlzQA+m6cQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDD2552AF@BGMAIL02.nvidia.com>
-References: <1343284519-30505-1-git-send-email-vbyravarasu@nvidia.com>
- <20120814165211.daf24c81.akpm@linux-foundation.org>
-In-Reply-To: <20120814165211.daf24c81.akpm@linux-foundation.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Thu, 16 Aug 2012 01:49:06 -0400
+Date: Thu, 16 Aug 2012 07:48:59 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: David Miller <davem@davemloft.net>
+Cc: bhutchings@solarflare.com, netdev@vger.kernel.org, edumazet@google.com,
+        faisal.latif@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, fubar@us.ibm.com, andy@greyhouse.net,
+        divy@chelsio.com, jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, therbert@google.com, xiyou.wangcong@gmail.com,
+        joe@perches.com, gregory.v.rose@intel.com, john.r.fastabend@intel.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, bridge@lists.linux-foundation.org,
+        fbl@redhat.com
+Subject: Re: [patch net-next v2 01/15] net: introduce upper device lists
+Message-ID: <20120816054859.GA1769@minipsycho.orion>
+References: <1344956748-2099-2-git-send-email-jiri@resnulli.us>
+ <1344983624.2690.77.camel@bwh-desktop.uk.solarflarecom.com>
+ <20120815074612.GB1726@minipsycho.orion>
+ <20120815.151549.1835466517645273818.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815.151549.1835466517645273818.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Thu, Aug 16, 2012 at 12:15:49AM CEST, davem@davemloft.net wrote:
+>From: Jiri Pirko <jiri@resnulli.us>
+>Date: Wed, 15 Aug 2012 09:46:12 +0200
+>
+>> You are probably right. I'm not sure how to handle this correctly
+>> though. Adding some hard limit number might not be correct.
+>
+>I would just use a hard limit of something like 8 for now, and if we
+>need to expand this limit we can consider how to do so with real known
+>usage in mind rather than pure speculation.
 
-Already an updated patch v3 (http://lkml.org/lkml/2012/8/8/221 ) was pushed to fix these issues.
-Plz review and merged that.
-
-Thanks,
-Venu
-
-
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Sent: Wednesday, August 15, 2012 5:22 AM
-> To: Venu Byravarasu
-> Cc: a.zummo@towertech.it; sameo@linux.intel.com;
-> broonie@opensource.wolfsonmicro.com; Laxman Dewangan;
-> kyle.manna@fuel7.com; rtc-linux@googlegroups.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] rtc: tps65910: Add RTC driver for TPS65910 PMIC RTC
-> 
-> On Thu, 26 Jul 2012 12:05:19 +0530
-> Venu Byravarasu <vbyravarasu@nvidia.com> wrote:
-> 
-> > TPS65910 PMIC is a MFD with RTC as one of the device.
-> > Adding RTC driver for supporting RTC device present
-> > inside TPS65910 PMIC.
-> >
-> > Only support for RTC alarm is implemented as part of this patch.
-> 
-> It needs a build fix:
-> 
-> drivers/rtc/rtc-tps65910.c: In function 'tps65910_rtc_suspend':
-> drivers/rtc/rtc-tps65910.c:313: error: request for member 'irqstat' in
-> something not a structure or union
-> drivers/rtc/rtc-tps65910.c: In function 'tps65910_rtc_resume':
-> drivers/rtc/rtc-tps65910.c:327: error: request for member 'irqstat' in
-> something not a structure or union
-> 
-> --- a/drivers/rtc/rtc-tps65910.c~rtc-tps65910-add-rtc-driver-for-tps65910-
-> pmic-rtc-fix
-> +++ a/drivers/rtc/rtc-tps65910.c
-> @@ -310,7 +310,7 @@ static int tps65910_rtc_suspend(struct p
-> 
->  	/* Store current list of enabled interrupts*/
->  	ret = regmap_read(tps->regmap, TPS65910_RTC_INTERRUPTS,
-> -		&tps->rtc.irqstat);
-> +		&tps->rtc->irqstat);
->  	if (ret < 0)
->  		return ret;
-> 
-> @@ -324,7 +324,7 @@ static int tps65910_rtc_resume(struct pl
-> 
->  	/* Restore list of enabled interrupts before suspend */
->  	return regmap_write(tps->regmap, TPS65910_RTC_INTERRUPTS,
-> -		tps->rtc.irqstat);
-> +		tps->rtc->irqstat);
->  }
-> 
->  static const struct dev_pm_ops tps65910_rtc_pm_ops = {
-> 
-> 
-> but it still has problems:
-> 
-> drivers/rtc/rtc-tps65910.c:331: warning: initialization from incompatible
-> pointer type
-> drivers/rtc/rtc-tps65910.c:332: warning: initialization from incompatible
-> pointer type
-> 
-> fix and resend, please?
+Okay. I will repost the set soon.
