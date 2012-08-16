@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab2HPPIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:08:04 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39731
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754354Ab2HPPIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:08:00 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        olaf@aepfle.de, apw@canonical.com, jagrelo@cisco.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol structures
-Date: Thu, 16 Aug 2012 08:23:20 -0700
-Message-Id: <1345130600-2862-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754755Ab2HPPJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:09:37 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36927 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab2HPPJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:09:36 -0400
+Date: Thu, 16 Aug 2012 19:09:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120816150932.GD13066@moon>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <20120815204546.GC25062@fieldses.org>
+ <20120815210237.GF25421@moon>
+ <20120815220622.GA28054@fieldses.org>
+ <20120816062448.GA32081@moon>
+ <20120816123814.GD1209@moon>
+ <20120816124703.GE28054@fieldses.org>
+ <20120816145700.GB13382@moon>
+ <20120816150542.GV23464@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816150542.GV23464@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use explicitly sized types in data structures defining the host/guest
-protocol. I would like to thank Juan Sanchez-Agrelo  <jagrelo@cisco.com> 
-for reporting this.
+On Thu, Aug 16, 2012 at 04:05:42PM +0100, Al Viro wrote:
+> On Thu, Aug 16, 2012 at 06:57:00PM +0400, Cyrill Gorcunov wrote:
+> 
+> > Guys, would the patch below be more-less acceptible?
+> > In inotify I think we could pass "parent" as NULL and use general
+> > encode engine then (ie it will look like someone called for
+> > name_to_handle_at on inotify target).
+> 
+> Wait.  What the hell are you going to do with those afterwards?
+> Again, there's a shitload of filesystems that cannot be exported
+> over NFS, exactly because there's no way to implement sanely
+> working fhandles.  And idiotify is allowed for all of them.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- include/linux/hyperv.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Yes, just recognized that, Al. There will be no way to restore them
+from fhandle provided via fdinfo. /me scratching the head...
 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 588d8f2..e73b852 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -489,7 +489,7 @@ struct vmtransfer_page_range {
- struct vmtransfer_page_packet_header {
- 	struct vmpacket_descriptor d;
- 	u16 xfer_pageset_id;
--	bool sender_owns_set;
-+	u8  sender_owns_set;
- 	u8 reserved;
- 	u32 range_cnt;
- 	struct vmtransfer_page_range ranges[1];
-@@ -643,7 +643,7 @@ struct vmbus_channel_query_vmbus_version {
- /* VMBus Version Supported parameters */
- struct vmbus_channel_version_supported {
- 	struct vmbus_channel_message_header header;
--	bool version_supported;
-+	u8 version_supported;
- } __packed;
- 
- /* Offer Channel parameters */
-@@ -652,7 +652,7 @@ struct vmbus_channel_offer_channel {
- 	struct vmbus_channel_offer offer;
- 	u32 child_relid;
- 	u8 monitorid;
--	bool monitor_allocated;
-+	u8 monitor_allocated;
- } __packed;
- 
- /* Rescind Offer parameters */
-@@ -788,7 +788,7 @@ struct vmbus_channel_initiate_contact {
- 
- struct vmbus_channel_version_response {
- 	struct vmbus_channel_message_header header;
--	bool version_supported;
-+	u8 version_supported;
- } __packed;
- 
- enum vmbus_channel_state {
--- 
-1.7.4.1
+> You *can't* decode anything fhandle-like on e.g. sysfs.  Or procfs.
+> Or configfs.  Or any network filesystem (I'd argue that we should simply
+> ban idiotify on those, but good luck doing that).  You *can* do that
+> for FAT derivatives, but only if you have parent directory when creating
+> that sucker.
 
+	Cyrill
