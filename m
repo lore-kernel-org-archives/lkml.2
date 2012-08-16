@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933336Ab2HPVEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:04:12 -0400
-Received: from mga12.intel.com ([143.182.124.36]:58014 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754506Ab2HPVEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:04:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-	<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-Date: Fri, 17 Aug 2012 00:04:05 +0300
-Message-ID: <CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
- sign modules
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1757737Ab2HPVFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:05:53 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:55510 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757287Ab2HPVFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 17:05:52 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
+Date: Fri, 17 Aug 2012 01:05:38 +0400
+Message-Id: <1345151138-12855-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 11:31 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Thu, Aug 16, 2012 at 4:12 PM, Kasatkin, Dmitry
-> <dmitry.kasatkin@intel.com> wrote:
->>>> 1. signed_modules_install
->>>> This target creates an ephemeral key pair, signs the kernel modules with
->>>> the private key, destroys the private key, and embeds the public key in
->>>> the kernel. (Thanks to Dave Hansen for the target name.)
->>>
->>> This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
->>> anything useful with the signed modules, correct?
->>>
->>
->> Correct. It does not make sense to sign module if module support is disabled.
->> But there scripts/genkey.sh and ksign.sh which works without Makefiles.
->> So possible to generate keys and sign a module...
->
-> Right, but it won't actually do anything if the config option isn't set.
-> Which means someone calling 'make signed_modules_install' won't actually
-> get signed modules.  That's confusing.
->
+If pci_register_driver() failed, resources allocated in
+ddb_class_create() are leaked. The patch fixes it
+as well as it replaces -1 with correct error code
+in ddb_class_create().
 
-Yes.. It had to be behind "ifeq CONFIG_INTEGRITY_MODULES"
+Found by Linux Driver Verification project (linuxtesting.org).
 
->>>> 2. modules_install
->>>> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
->>>> private key to sign kernel modules.
->>>
->>> If the answer to the above question is yes, then why can't we stick
->>> with a single modules_install command for signing?  It would seem to me
->>> that calling signed_modules_install could use an existing key or
->>> generate an ephemeral key in the absence of one and install the signed
->>> modules, and modules_install would simply install unsigned modules.
->>>
->>> Or, alternatively, just make modules_install sign or not sign depending
->>> on whether CONFIG_INTEGRITY_MODULES is enabled.
->>
->> This is what "make modules_install" does. It uses existing private key
->> and does not remove it after install.
->
-> Right.  I should have been more clear.  I was suggesting that "make
-> modules_install" generate a key as well if one does not already exist.
-> Essentially removing the necessity for sign_modules_install.
->
->>>  I don't see why you
->>> would overload a target or create two different ones when both depend
->>> on that option.
->>>
->>> Could you explain the reasoning behind that a bit more?
->>
->> The reason for "signed_modules_install" is to limit existence of private key.
->> Private key is generate just before install, modules installed and
->> signed, then key is destroyed.
->> So existence of private key is limited to "time make
->> signed_modules_install" execution time.
->>
->> We had a debate about it, and strong message was that we might want to
->> do it like that...
->
-> I guess I personally don't see the need to destroy they key so quickly.
-> Is the concern that an intruder might grab the key and use it to sign a
-> module that the developer would then later on somehow load?  Or
-> similarly someone would grab a temporary key from a distro build
-> machine?  That limits the attack surface, sure, but I'm not sure it's
-> really reasonable.
->
-> For a developer that isn't distributing kernels to others, it's just
-> adding more time to the compile (which I know can be disabled, but
-> still).  For a distribution, most of them are either using a private
-> key already or they have a buildsystem that destroys a buildroot after
-> a build completes.  The key is already going to be destroyed in that
-> scenario.
->
-> josh
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/media/dvb/ddbridge/ddbridge-core.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-Well... Will not argue here. I had similar opinion as well.
+diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
+index ebf3f05..feff57e 100644
+--- a/drivers/media/dvb/ddbridge/ddbridge-core.c
++++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
+@@ -1497,7 +1497,7 @@ static int ddb_class_create(void)
+ 	ddb_class = class_create(THIS_MODULE, DDB_NAME);
+ 	if (IS_ERR(ddb_class)) {
+ 		unregister_chrdev(ddb_major, DDB_NAME);
+-		return -1;
++		return PTR_ERR(ddb_class);
+ 	}
+ 	ddb_class->devnode = ddb_devnode;
+ 	return 0;
+@@ -1701,11 +1701,18 @@ static struct pci_driver ddb_pci_driver = {
+ 
+ static __init int module_init_ddbridge(void)
+ {
++	int ret;
++
+ 	printk(KERN_INFO "Digital Devices PCIE bridge driver, "
+ 	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
+-	if (ddb_class_create())
+-		return -1;
+-	return pci_register_driver(&ddb_pci_driver);
++
++	ret = ddb_class_create();
++	if (ret < 0)
++		return ret;
++	ret = pci_register_driver(&ddb_pci_driver);
++	if (ret < 0)
++		ddb_class_destroy();
++	return ret;
+ }
+ 
+ static __exit void module_exit_ddbridge(void)
+-- 
+1.7.9.5
 
-Mimi strongly wanted really to "reduce" the existence time of the key...
-
-- Dmitry
