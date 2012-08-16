@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab2HPRXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:23:17 -0400
-Received: from bar.sig21.net ([80.81.252.164]:42690 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137Ab2HPRXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:23:15 -0400
-Date: Thu, 16 Aug 2012 19:22:51 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] Update LZO compression
-Message-ID: <20120816172251.GA25640@sig21.net>
-References: <50299142.2030504@oberhumer.com>
- <20120814123937.GA14756@sig21.net>
- <502B8FE3.7080501@oberhumer.com>
- <20120815144539.GA8300@sig21.net>
- <502C92C3.7090701@oberhumer.com>
- <502D100D.2030609@pobox.com>
- <20120816162051.GK11413@one.firstfloor.org>
- <502D2471.407@pobox.com>
+	id S1755992Ab2HPRXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:23:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46692 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab2HPRXv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:23:51 -0400
+Date: Thu, 16 Aug 2012 10:23:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] driver-core: dev_to_node() should handle NULL pointers
+Message-ID: <20120816172347.GA27415@kroah.com>
+References: <20120720065622.GA11710@elgon.mountain>
+ <20120720150042.GA1996@kroah.com>
+ <20120720151846.GQ16348@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <502D2471.407@pobox.com>
+In-Reply-To: <20120720151846.GQ16348@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 12:48:49PM -0400, Jeff Garzik wrote:
-> On 08/16/2012 12:20 PM, Andi Kleen wrote:
-> >>If you think a little bit, I bet you could come up with a solution that
-> >>operates at cacheline-aligned granularity, something that would be _even
-> >>faster_ than simply fixing the code to do aligned accesses.
-> >
-> >Cache aligned compression is unlikely to compress anything at all.
-> >Compression algorithms are usually by definition unaligned.
+On Fri, Jul 20, 2012 at 06:18:46PM +0300, Dan Carpenter wrote:
+> On Fri, Jul 20, 2012 at 08:00:42AM -0700, Greg Kroah-Hartman wrote:
+> > On Fri, Jul 20, 2012 at 09:56:23AM +0300, Dan Carpenter wrote:
+> > > What prompted this patch is that in dma_pool_create() we call
+> > > dev_to_node() before checking whether "dev" is NULL.  It looks like
+> > > there are places which call dma_pool_create() with a NULL pointer.  An
+> > > example is in drivers/usb/gadget/amd5536udc.c.
+> > > 
+> > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > > ---
+> > > Static checker fix.
+> > > 
+> > > diff --git a/include/linux/device.h b/include/linux/device.h
+> > > index aa7b3b4..c80e7a8d 100644
+> > > --- a/include/linux/device.h
+> > > +++ b/include/linux/device.h
+> > > @@ -714,7 +714,9 @@ int dev_set_name(struct device *dev, const char *name, ...);
+> > >  #ifdef CONFIG_NUMA
+> > >  static inline int dev_to_node(struct device *dev)
+> > >  {
+> > > -	return dev->numa_node;
+> > > +	if (dev)
+> > > +		return dev->numa_node;
+> > > +	return -1;
+> > 
+> > What happens if this function returns -1?  Can the callers properly
+> > handle this?
+> > 
 > 
-> Sure it's a bitstream, but that does not imply the impossibility of
-> reading data in in an word-aligned manner.
+> Gar.  Now I'm not sure any more.
 > 
-> Maybe cache-aligned is ambitious, because of resultant code bloat,
-> but machine-int-aligned is doable and reasonable.
+> -1 means no affinity and it's what the dev_to_node() returns if NUMA
+> is disabled.  But now I think probably it's important to get the
+> NUMA node correct in dma_pool_create() so this isn't the right
+> answer.
+> 
+> dma_pool_create() is not correct.  It has code to handle a NULL
+> "dev" pointer, but the dev_to_node() dereference will cause an oops
+> before we reach it.  I'm think this is a real issue that affects a
+> couple drivers.  Maybe those people compile without NUMA?
+> 
+> I'm not sure the right fix now.
 
-Well, I for one would be content if the old and new lzo versions
-could be merged based on CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS.
+Ok, I'll drop this one then.
 
-(Assuming that the slowdown on ARM is due to unaligned access,
-since the old version also uses get/put_unaligned, is the new
-version actually using more unaligned accesses?)
-
-
-Johannes
+greg k-h
