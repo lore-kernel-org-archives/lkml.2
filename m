@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab2HPQp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:45:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12276 "EHLO mx1.redhat.com"
+	id S1757699Ab2HPQrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:47:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37080 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2HPQp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:45:57 -0400
-Message-ID: <1345135555.4683.480.camel@ul30vt.home>
-Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 10:45:55 -0600
-In-Reply-To: <502D2099.7050800@redhat.com>
-References: <20120810223633.809.44188.stgit@bling.home>
-	 <502D2099.7050800@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753014Ab2HPQrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:47:13 -0400
+Date: Thu, 16 Aug 2012 18:47:04 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/7] HID: picoLCD updates
+In-Reply-To: <20120816183021.68c37f37@neptune.home>
+Message-ID: <alpine.LNX.2.00.1208161846240.28475@pobox.suse.cz>
+References: <20120730213656.0a9f6d30@neptune.home> <alpine.LNX.2.00.1208151016221.7026@pobox.suse.cz> <20120815114236.0f7db40e@neptune.home> <alpine.LNX.2.00.1208151409500.7026@pobox.suse.cz> <20120815171635.2564a4a8@neptune.home> <alpine.LNX.2.00.1208152329580.7026@pobox.suse.cz>
+ <20120816183021.68c37f37@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 19:32 +0300, Avi Kivity wrote:
-> On 08/11/2012 01:37 AM, Alex Williamson wrote:
-> > v8:
-> > 
-> > Trying a new approach.  Nobody seems to like the internal IRQ
-> > source ID object and the interactions it implies between irqfd
-> > and eoifd, so let's get rid of it.  Instead, simply expose
-> > IRQ source IDs to userspace.  This lets the user be in charge
-> > of freeing them or hanging onto a source ID for later use.  They
-> > can also detach and re-attach components at will.  It also opens
-> > up the possibility that userspace might want to use each IRQ
-> > source ID for more than one GSI (and avoids the kernel needing
-> > to manage that).  Per suggestions, EOIFD is now IRQ_ACKFD.
-> > 
-> > I really wanted to add a de-assert-only option to irqfd so the
-> > irq_ackfd could be fed directly into an irqfd, but I'm dependent
-> > on the ordering of de-assert _then_ signal an eventfd.  Keeping
-> > that ordering doesn't seem to be possible, especially since irqfd
-> > uses a workqueue, if I attempt to make that connection.  Thanks,
+On Thu, 16 Aug 2012, Bruno Prémont wrote:
+
+> > I don't really understand this explanation. Once usb_kill_urb() returns, 
+> > the URB should be available for future use (and therefore all queues 
+> > completely drained).
 > 
-> I can't say I'm happy with exposing irq source IDs.  It's true that they
-> correspond to a physical entity so they can't be said to be an
-> implementation detail, but adding more ABIs has a cost and I can't say
-> that I see another user for this.
+> I won't have time today to check, though my guess is that on each
+> echo $usb-id > bind; echo $usb-id > unbind
+> under /sys/bus/hid/drivers/hid-picolcd/ the USB urb queue fills a bit does
+> not get cleared.
 > 
-> Can you provide a link to the combined irqfd+ackfd implementation?  I'm
-> inclined now to go for the simplest solution possible.
+> Is usb_kill_urb() called when unbinding just the specific hid driver? 
 
-As soon as I write it :)  Keeping lists to handle the one-to-many
-deassert-to-notify will notch up the complexity, but it'll be
-interesting to see how it compares.  Thanks,
+Yup, through hid_hw_stop() -> usbhid_stop().
 
-Alex
+> If so my short timing between bind/unbind must be triggering something 
+> else...
+> 
+> Otherwise I'm missing something as at first time I got no "output queue full"
+> messages, but as I repeated the bind/unbind sequences the prints per bind/unbind
+> iteration increased in number.
+> 
+> Anyhow, on Friday evening/week-end I will continue digging and report back with my
+> findings.
 
+Thank you, Bruno.
+
+-- 
+Jiri Kosina
+SUSE Labs
