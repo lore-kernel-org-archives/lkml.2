@@ -1,133 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2HPLfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:35:04 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:8742 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2HPLfA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:35:00 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Mauro Carvalho Chehab" <mchehab@redhat.com>,
-        Steven Toth <stoth@kernellabs.com>,
-        Michael Krufky <mkrufky@kernellabs.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: RE: [NEW DRIVER V3 1/8] DA9058 MFD core driver
-Thread-Topic: [NEW DRIVER V3 1/8] DA9058 MFD core driver
-Thread-Index: AQHNevk5l/k5+isK8EGF7ihfS7RRkpdbJ8CAgAEXAGA=
-Date: Thu, 16 Aug 2012 11:34:56 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51032C6702@NB-EX-MBX02.diasemi.com>
-References: <201208151518.q7FFIN9v011639@latitude.olech.com>
- <20120815185316.GG15365@opensource.wolfsonmicro.com>
-In-Reply-To: <20120815185316.GG15365@opensource.wolfsonmicro.com>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752429Ab2HPLg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:36:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45645 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213Ab2HPLgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 07:36:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
+   d="scan'208";a="202603930"
+Date: Thu, 16 Aug 2012 19:10:51 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+Message-ID: <20120816111051.GA16036@localhost>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816024654.GB3781@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: 15 August 2012 19:53
-> To: Opensource [Anthony Olech]
-> Cc: Samuel Ortiz; Arnd Bergmann; Mauro Carvalho Chehab; Steven Toth;
-> Michael Krufky; LKML; David Dajun Chen
-> Subject: Re: [NEW DRIVER V3 1/8] DA9058 MFD core driver
-> On Wed, Aug 15, 2012 at 04:05:21PM +0100, Anthony Olech wrote:
-> >
-> >  if HAS_IOMEM
-> > +
-> >  menu "Multifunction device drivers"
-> This random change is still present from the first version....
-> > +	/*
-> > +	 * the init_board_irq() call-back function should be defined in
-> > +	 * the machine driver initialization code and is used to set up
-> > +	 * the actual (probably GPIO) line as an interrupt line.
-> > +	 */
-> > +	if (pdata->init_board_irq) {
-> > +		ret = pdata->init_board_irq();
-> > +		if (ret)
-> > +			goto failed_to_setup_the_actual_i2c_hw_irq;
-> > +	}
-> You appear to have ignored my previous review comments about this...  it still
-> shouldn't be needed with modern kernels.
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+>  
+>  	/* the header must be checked already in ext4_ext_remove_space() */
+>  	ext_debug("truncate since %u in leaf to %u\n", start, end);
+> +	if (!path[depth].p_hdr && !path[depth].p_bh) {
+> +		EXT4_ERROR_INODE(inode, "depth %d", depth);
+> +		BUG_ON(1);
+> +	}
+>  	if (!path[depth].p_hdr)
+>  		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
+>  	eh = path[depth].p_hdr;
+> @@ -2730,6 +2734,10 @@ cont:
+>  		/* this is index block */
+>  		if (!path[i].p_hdr) {
+>  			ext_debug("initialize header\n");
+> +			if (!path[i].p_hdr && !path[i].p_bh) {
+> +				EXT4_ERROR_INODE(inode, "i=%d", i);
+> +				BUG_ON(1);
+> +			}
+>  			path[i].p_hdr = ext_block_hdr(path[i].p_bh);
+>  		}
+>  
 
+Here is the dmesg. BTW, it seems 3.5.0 don't have this issue.
 
-The comment you made was "Why is this conditional?  With irqdomains there's no real reason
-to not allocate the IRQs even if you can't usefully use them and it helps make the code simpler."
+[  640.266836] EXT4-fs error (device md0): ext4_ext_remove_space:2694: inode #12: comm rm: i=1
+[  640.275701] ------------[ cut here ]------------
+[  640.276684] kernel BUG at /c/wfg/tip/fs/ext4/extents.c:2695!
+[  640.276684] invalid opcode: 0000 [#1] SMP
+[  640.276684] Modules linked in:
+[  640.276684] CPU 7
+[  640.276684] Pid: 4079, comm: rm Not tainted 3.6.0-rc1+ #3 Supermicro X7DW3/X7DWN
+[  640.276684] RIP: 0010:[<ffffffff811f8980>]  [<ffffffff811f8980>] ext4_ext_remove_space+0x86e/0xbee
+[  640.276684] RSP: 0018:ffff88021e749cb8  EFLAGS: 00010287
+[  640.276684] RAX: ffff880221072000 RBX: ffff88020fc680d0 RCX: 0000000000000092
+[  640.276684] RDX: 0000000000003c3c RSI: 0000000000000092 RDI: ffff880221073800
+[  640.276684] RBP: ffff88021e749d98 R08: ffffffff81f6ea88 R09: 0000000000000000
+[  640.276684] R10: ffffffff81f19a30 R11: 0000000000000647 R12: ffff880222385840
+[  640.276684] R13: 0000000000000001 R14: 0000000000000001 R15: ffff880222385870
+[  640.276684] FS:  00007f4461203700(0000) GS:ffff88022f5c0000(0000) knlGS:0000000000000000
+[  640.276684] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  640.276684] CR2: 00007f4460cf761d CR3: 000000022115c000 CR4: 00000000000007e0
+[  640.276684] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  640.276684] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  640.276684] Process rm (pid: 4079, threadinfo ffff88021e748000, task ffff8802236d2e80)
+[  640.276684] Stack:
+[  640.276684]  ffffffff819caec0 ffff880220901390 ffff88020fc680d0 ffff880220901390
+[  640.276684]  ffff88020fc25750 0000000000790000 ffff88021e749d38 ffffffff811d6b05
+[  640.276684]  8000880200000000 ffff88020fc68000 ffff880221072000 ffff8802223858a0
+[  640.276684] Call Trace:
+[  640.276684]  [<ffffffff811d6b05>] ? ext4_mark_iloc_dirty+0x47a/0x557
+[  640.276684]  [<ffffffff811fa6ab>] ext4_ext_truncate+0xd8/0x176
+[  640.276684]  [<ffffffff811d6de8>] ? ext4_mark_inode_dirty+0x17e/0x1c0
+[  640.276684]  [<ffffffff811d4934>] ext4_truncate+0x7a/0xca
+[  640.276684]  [<ffffffff811d8aa2>] ext4_evict_inode+0x2e9/0x422
+[  640.276684]  [<ffffffff81163e17>] evict+0xae/0x163
+[  640.276684]  [<ffffffff811640c4>] iput+0x1bb/0x1c3
+[  640.276684]  [<ffffffff8115a2ca>] do_unlinkat+0x102/0x157
+[  640.276684]  [<ffffffff813d550e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+[  640.276684]  [<ffffffff8115bf97>] sys_unlinkat+0x22/0x2d
+[  640.276684]  [<ffffffff81985229>] system_call_fastpath+0x16/0x1b
+[  640.276684] Code: 75 33 49 8b 47 28 48 85 c0 75 22 45 89 e9 49 c7 c0 ce e8 d2 81 31 c9 ba 86 0a 00 00 48 c7 c6 80 fb 9c 81 48 89 df e8 eb 6c ff ff <0f> 0b 48 8b 40 28 49 89 47 20 49 8b 47 18 48 85 c0 75 1f 49 8b
+[  640.276684] RIP  [<ffffffff811f8980>] ext4_ext_remove_space+0x86e/0xbee
+[  640.276684]  RSP <ffff88021e749cb8>
+[  640.530999] ---[ end trace e00762202fd8e8a0 ]---
 
-I obviously did not understand, because you also wrote that the driver must not rely of platform
-data. That therefore means that the call-back function pdata->init_board_irq might be NULL,
-which in turn means that a check must be done.
- 
-The only other interpretation of your comment is that the h/w IRQ line setup code must be done
-in the machine driver, in my case for testing is arch/arm/mach-s3c64xx/mach-smdk6410.c
-But that view is contricted by the init call-backs from the wm8350 and wm1192 drivers.
-
-I am confused, but it does make sense to do the GPIO --> IRQ initialization in the machine driver,
-so I will try to do that. But who would be responsible for changing the wm8350 and wm1192 drivers
-to also follow that philosophy?
-
-
-> > +static bool da9058_register_volatile(struct device *dev, unsigned int
-> > +reg) {
-> > +	switch (reg) {
-> > +	case DA9058_ADCMAN_REG:
-> > +	case DA9058_ADCRESH_REG:
-> > +	case DA9058_ADCRESL_REG:
-> > +	case DA9058_ALARMD_REG:
-> > +	case DA9058_ALARMH_REG:
-> > +	case DA9058_ALARMMI_REG:
-> > +	case DA9058_ALARMMO_REG:
-> > +	case DA9058_ALARMS_REG:
-> > +	case DA9058_ALARMY_REG:
-> Are all the alarm registers really volatile?
-
-
-register DA9058_ADCMAN_REG has one bit that is set by the PMIC
-register DA9058_ADCRESH_REG has all bits set by the PMIC
-register DA9058_ADCRESL_REG has some bits set by the PMIC
-
-so those are volatile
-
-the registers DA9058_ALARMD... are, on detailed inspection of the chip
-documentation, not volatile. I misread the docs previous. I will make the
-change. Well done for spotting my mistake - thanks!
-
-
-> > +	case DA9058_LDO9_REG:
-> > +	case DA9058_TOFFSET_REG:
-> > +	default:
-> > +		return false;
-> Just use the default.
-
-
-The compiler will (I hope) produce the same code even if some of the
-default values are enumerated. I produced those call-backs by starting
-with all the registers and moving the cases around. I seemed a good
-idea at the time. Your objection, I presume, is based on source file size
-or aesthetics, but I will eliminate the functionally redundant cases.
-
-
-> > +static struct regulator_consumer_supply platform_vddarm_consumers[] = {
-> > +	{.supply = "vcc",}
-> > +};
-> No, this and all your other regulator configuration is board specific.
-
-
-I will remove that.
-
-
-Thank you Mark for the review.
-
-Tony Olech
+Thanks,
+Fengguang
