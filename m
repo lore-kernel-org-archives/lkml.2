@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407Ab2HPVe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:34:27 -0400
-Received: from audible.transient.net ([216.254.12.79]:52631 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933379Ab2HPVeZ (ORCPT
+	id S933413Ab2HPVkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:40:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41683 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932650Ab2HPVkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:34:25 -0400
-Date: Thu, 16 Aug 2012 21:34:24 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
- return
-Message-ID: <20120816213423.GB4282@cucamonga.audible.transient.net>
-Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
-	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120815061115.GC32347@cucamonga.audible.transient.net>
- <20120815135854.GI32347@cucamonga.audible.transient.net>
- <20120815150251.GB16057@fieldses.org>
- <20120816201838.GA4282@cucamonga.audible.transient.net>
- <20120816204208.GE4385@fieldses.org>
- <20120816210916.GA6108@fieldses.org>
+	Thu, 16 Aug 2012 17:40:07 -0400
+Date: Thu, 16 Aug 2012 16:39:51 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2 1/7] integrity: added digest calculation function
+Message-ID: <20120816213951.GC18485@sergelap>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+ <f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
+ <20120815201135.GA10088@amd1>
+ <CALLzPKaczBwsj0s5wxTLaZ2_=J_fCdbP2SB0R2oUxMyHLDRYMg@mail.gmail.com>
+ <CALLzPKZs79M_s9-ESyMfQudUikEW8GZbggEedfBsp-6L6gxyZg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816210916.GA6108@fieldses.org>
+In-Reply-To: <CALLzPKZs79M_s9-ESyMfQudUikEW8GZbggEedfBsp-6L6gxyZg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. Bruce Fields wrote:
-> On Thu, Aug 16, 2012 at 04:42:08PM -0400, J. Bruce Fields wrote:
-> > Hm, weird.  In the good case the cb_recall's done with auth_unix, in the
-> > bad case with auth_null.  OK, that should be enough to go on....
-> > 
-> > Thanks for digging into this!
+Quoting Kasatkin, Dmitry (dmitry.kasatkin@intel.com):
+> On Thu, Aug 16, 2012 at 12:11 AM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+> > On Wed, Aug 15, 2012 at 11:11 PM, Serge Hallyn
+> > <serge.hallyn@canonical.com> wrote:
+> >> Quoting Dmitry Kasatkin (dmitry.kasatkin@intel.com):
+> >>> There are several functions, that need to calculate digest.
+> >>> This patch adds common function for use by integrity subsystem.
+> >>>
+> >>> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> >>> ---
+> >>>  security/integrity/digsig.c    |   31 +++++++++++++++++++++++++++++--
+> >>>  security/integrity/integrity.h |    3 +++
+> >>>  2 files changed, 32 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+> >>> index 2dc167d..61a0c92 100644
+> >>> --- a/security/integrity/digsig.c
+> >>> +++ b/security/integrity/digsig.c
+> >>> @@ -13,9 +13,9 @@
+> >>>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >>>
+> >>>  #include <linux/err.h>
+> >>> -#include <linux/rbtree.h>
+> >>>  #include <linux/key-type.h>
+> >>>  #include <linux/digsig.h>
+> >>> +#include <crypto/hash.h>
+> >>>
+> >>>  #include "integrity.h"
+> >>>
+> >>> @@ -28,7 +28,7 @@ static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
+> >>>  };
+> >>>
+> >>>  int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> >>> -                                     const char *digest, int digestlen)
+> >>> +                         const char *digest, int digestlen)
+> >>>  {
+> >>>       if (id >= INTEGRITY_KEYRING_MAX)
+> >>>               return -EINVAL;
+> >>> @@ -46,3 +46,30 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+> >>>
+> >>>       return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
+> >>>  }
+> >>> +
+> >>> +int integrity_calc_digest(const char *algo, const void *data, const int len,
+> >>> +                       char *digest)
+> >>> +{
+> >>> +     int rc = -ENOMEM;
+> >>> +     struct crypto_shash *tfm;
+> >>> +
+> >>> +     tfm = crypto_alloc_shash(algo, 0, 0);
+> >>> +     if (IS_ERR(tfm)) {
+> >>> +             rc = PTR_ERR(tfm);
+> >>> +             pr_err("Can not allocate %s (reason: %d)\n", algo, rc);
+> >>> +             return rc;
+> >>> +     } else {
+> >>> +             struct {
+> >>> +                     struct shash_desc shash;
+> >>> +                     char ctx[crypto_shash_descsize(tfm)];
+> >>> +             } desc;
+> >>
+> >> Needless confusing indentation here.  Just move the struct {} desc; to the
+> >> top and drop the else.  That will make it much more readable.
+> >>
+> >
+> > Intention was to allocate it only if tfm allocation succeeded..
+> > But indeed failure very unlikely..
+> >
 > 
-> This should fix it--could you confirm?
-
-Yep, looks like that fixes it.
-
-> commit e950bebdac1f17121f972728489cdba43734d56d
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Thu Aug 16 17:01:21 2012 -0400
+> BTW.. The reason for such code is that ctx member uses function in the
+> parameter:
 > 
->     nfsd4: fix security flavor of NFSv4.0 callback
->     
->     Commit d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move rq_flavor
->     into svc_cred" forgot to remove cl_flavor from the client, leaving two
->     places (cl_flavor and cl_cred.cr_flavor) for the flavor to be stored.
->     After that patch, the latter was the one that was updated, but the
->     former was the one that the callback used.
->     
->     Symptoms were a long delay on utime().  This is because the utime()
->     generated a setattr which recalled a delegation, but the cb_recall was
->     ignored by the client because it had the wrong security flavor.
->     
->     Cc: stable@vger.kernel.org
->     Reported-by: Jamie Heilman <jamie@audible.transient.net>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> char ctx[crypto_shash_descsize(tfm)];
 > 
-> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> index cbaf4f8..4c7bd35 100644
-> --- a/fs/nfsd/nfs4callback.c
-> +++ b/fs/nfsd/nfs4callback.c
-> @@ -651,12 +651,12 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
->  
->  	if (clp->cl_minorversion == 0) {
->  		if (!clp->cl_cred.cr_principal &&
-> -				(clp->cl_flavor >= RPC_AUTH_GSS_KRB5))
-> +				(clp->cl_cred.cr_flavor >= RPC_AUTH_GSS_KRB5))
->  			return -EINVAL;
->  		args.client_name = clp->cl_cred.cr_principal;
->  		args.prognumber	= conn->cb_prog,
->  		args.protocol = XPRT_TRANSPORT_TCP;
-> -		args.authflavor = clp->cl_flavor;
-> +		args.authflavor = clp->cl_cred.cr_flavor;
->  		clp->cl_cb_ident = conn->cb_ident;
->  	} else {
->  		if (!conn->cb_xprt)
-> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> index 167d7d8..9db0bb5 100644
-> --- a/fs/nfsd/state.h
-> +++ b/fs/nfsd/state.h
-> @@ -231,7 +231,6 @@ struct nfs4_client {
->  	nfs4_verifier		cl_verifier; 	/* generated by client */
->  	time_t                  cl_time;        /* time of last lease renewal */
->  	struct sockaddr_storage	cl_addr; 	/* client ipaddress */
-> -	u32			cl_flavor;	/* setclientid pseudoflavor */
->  	struct svc_cred		cl_cred; 	/* setclientid principal */
->  	clientid_t		cl_clientid;	/* generated by server */
->  	nfs4_verifier		cl_confirm;	/* generated by server */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> It is not possible to do it before tfm allocation...
+> So I cannot move it up..
 
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+Ah, I see.  Cool :)
+
+> I can only kmalloc it then.
+
+Well no, you could use another function I suppose.
+
+But if you're going to leave it as is, please at least move the whole
+rest of the function into the else{} :)  Yes, no functional change,
+but a change in how it looks to the eye of someone trying to review
+and look for actual free-unallocated-memory errors or leaks.
+
+-serge
