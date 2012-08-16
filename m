@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030537Ab2HPWeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 18:34:24 -0400
-Received: from eng.riverbed.com ([208.70.196.45]:29570 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933424Ab2HPWeX convert rfc822-to-8bit (ORCPT
+	id S933473Ab2HPWgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 18:36:05 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47974 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933437Ab2HPWgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 18:34:23 -0400
-From: Jiang Wang <Jiang.Wang@riverbed.com>
-To: Michael Chan <mchan@broadcom.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chaitanya Lala <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Topic: [PATCH] bnx2: turn off the network statck during initialization
-Thread-Index: AQHNe9wN/GY2GzvEwk20Q1fuXq+2eJddP4KA//+NcgCAAHtYAP//kWDwgACL2ID//48v0AAQs62AAA55TsA=
-Date: Thu, 16 Aug 2012 22:34:21 +0000
-Message-ID: <CEE05A0D7856E14880AD5560634EBEA834DB2CA2@SFO1EXC-MBXP06.nbttech.com>
-References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
- <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
- <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2B40@SFO1EXC-MBXP06.nbttech.com>
- <1345151593.6916.62.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2C2B@SFO1EXC-MBXP06.nbttech.com>
- <1345156059.6916.67.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-In-Reply-To: <1345156059.6916.67.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.205.254]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 16 Aug 2012 18:36:01 -0400
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
+        minchan@kernel.org, dan.magenheimer@oracle.com
+Subject: [PATCH 0/3] staging: zcache+ramster: move to new code base and re-merge
+Date: Thu, 16 Aug 2012 15:31:30 -0700
+Message-Id: <1345156293-18852-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got it. Thank you very much.
+Greg, please pull for staging-next.
 
-Regards,
+This patchset moves both the original "demo" zcache (in staging since 2.6.29)
+and ramster (in staging since 3.4) to a new stable code base which re-merges
+duplicate code and resolves various serious design flaws needed to allow
+progress in promoting zcache (and ramster) out of staging.
 
-Jiang
+An overview of the zcache rewrite is in the git commit of the new zcache patch.
 
--------------------------------------
-Jiang Wang
-Member of Technical Staff
-Riverbed Technology
-Tel: (408) 522-5109
-Email: Jiang.Wang@riverbed.com
-www.riverbed.com
+A significant item of debate in the new codebase is the removal of zsmalloc.
+This removal may be temporary if zsmalloc is enhanced with necessary
+features to meet the needs of the new zcache codebase.  Justification
+for the change can be found at http://lkml.org/lkml/2012/8/15/292
 
+While this new codebase is far from perfect (and thus remains in staging),
+the foundation is now cleaner, more stable, more maintainable, and much
+better commented.
 
------Original Message-----
-From: Michael Chan [mailto:mchan@broadcom.com] 
-Sent: Thursday, August 16, 2012 3:28 PM
-To: Jiang Wang
-Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant
-Subject: RE: [PATCH] bnx2: turn off the network statck during initialization
-
-On Thu, 2012-08-16 at 21:48 +0000, Jiang Wang wrote:
-> ---- I see. I was confused by the name of bnx2_set_power_state()  and 
-> I think the PHY is actually powered up by bnx2_reset_nic, right?
-
-bnx2_init_phy() in bnx2_init_nic() will bring up the PHY if it is down.
-
-> 
-> 
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
 
+---
+
+Diffstat:
+
+ drivers/staging/Kconfig                            |    6 +-
+ drivers/staging/Makefile                           |    3 +-
+ drivers/staging/ramster/Kconfig                    |   13 -
+ drivers/staging/ramster/Makefile                   |    1 -
+ drivers/staging/ramster/TODO                       |   13 -
+ drivers/staging/ramster/cluster/Makefile           |    3 -
+ drivers/staging/ramster/cluster/heartbeat.c        |  464 ---
+ drivers/staging/ramster/cluster/heartbeat.h        |   87 -
+ drivers/staging/ramster/cluster/masklog.c          |  155 -
+ drivers/staging/ramster/cluster/masklog.h          |  220 --
+ drivers/staging/ramster/cluster/nodemanager.c      |  992 ------
+ drivers/staging/ramster/cluster/nodemanager.h      |   88 -
+ .../staging/ramster/cluster/ramster_nodemanager.h  |   39 -
+ drivers/staging/ramster/cluster/tcp.c              | 2256 -------------
+ drivers/staging/ramster/cluster/tcp.h              |  159 -
+ drivers/staging/ramster/cluster/tcp_internal.h     |  248 --
+ drivers/staging/ramster/r2net.c                    |  401 ---
+ drivers/staging/ramster/ramster.h                  |  118 -
+ drivers/staging/ramster/tmem.c                     |  851 -----
+ drivers/staging/ramster/tmem.h                     |  244 --
+ drivers/staging/ramster/xvmalloc.c                 |  509 ---
+ drivers/staging/ramster/xvmalloc.h                 |   30 -
+ drivers/staging/ramster/xvmalloc_int.h             |   95 -
+ drivers/staging/ramster/zcache-main.c              | 3320 --------------------
+ drivers/staging/ramster/zcache.h                   |   22 -
+ drivers/staging/zcache/Kconfig                     |   23 +-
+ drivers/staging/zcache/Makefile                    |    5 +-
+ drivers/staging/zcache/ramster.h                   |   59 +
+ drivers/staging/zcache/ramster/heartbeat.c         |  462 +++
+ drivers/staging/zcache/ramster/heartbeat.h         |   87 +
+ drivers/staging/zcache/ramster/masklog.c           |  155 +
+ drivers/staging/zcache/ramster/masklog.h           |  220 ++
+ drivers/staging/zcache/ramster/nodemanager.c       |  995 ++++++
+ drivers/staging/zcache/ramster/nodemanager.h       |   88 +
+ drivers/staging/zcache/ramster/r2net.c             |  414 +++
+ drivers/staging/zcache/ramster/ramster.c           |  985 ++++++
+ drivers/staging/zcache/ramster/ramster.h           |  161 +
+ .../staging/zcache/ramster/ramster_nodemanager.h   |   39 +
+ drivers/staging/zcache/ramster/tcp.c               | 2253 +++++++++++++
+ drivers/staging/zcache/ramster/tcp.h               |  159 +
+ drivers/staging/zcache/ramster/tcp_internal.h      |  248 ++
+ drivers/staging/zcache/tmem.c                      |  376 ++-
+ drivers/staging/zcache/tmem.h                      |   83 +-
+ drivers/staging/zcache/zbud.c                      | 1060 +++++++
+ drivers/staging/zcache/zbud.h                      |   33 +
+ drivers/staging/zcache/zcache-main.c               | 2322 ++++++--------
+ drivers/staging/zcache/zcache.h                    |   53 +
+ 47 files changed, 8842 insertions(+), 11775 deletions(-)
