@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab2HPP4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:56:16 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:3274 "EHLO SMTP02.CITRIX.COM"
+	id S932871Ab2HPP4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:56:20 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58234 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932156Ab2HPP4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:56:10 -0400
+	id S932839Ab2HPP4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:56:16 -0400
 X-IronPort-AV: E=Sophos;i="4.77,778,1336363200"; 
-   d="scan'208";a="205388588"
+   d="scan'208";a="34872725"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
@@ -15,9 +15,9 @@ CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>, <linaro-dev@lists.linaro.org>,
         <catalin.marinas@arm.com>, <arnd@arndb.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 24/25] xen: update xen_add_to_physmap interface
-Date: Thu, 16 Aug 2012 16:36:16 +0100
-Message-ID: <1345131377-14713-24-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v3 16/25] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
+Date: Thu, 16 Aug 2012 16:36:08 +0100
+Message-ID: <1345131377-14713-16-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
@@ -27,47 +27,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update struct xen_add_to_physmap to be in sync with Xen's version of the
-structure.
-The size field was introduced by:
-
-changeset:   24164:707d27fe03e7
-user:        Jean Guyader <jean.guyader@eu.citrix.com>
-date:        Fri Nov 18 13:42:08 2011 +0000
-summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
-
-According to the comment:
-
-"This new field .size is located in the 16 bits padding between .domid
-and .space in struct xen_add_to_physmap to stay compatible with older
-versions."
-
-Note: this patch should be already in Konrad's tree, it is here just for
-convenience.
-
-Changes in v2:
-
-- remove erroneous comment in the commit message.
+Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
+default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
+irq_startup, that is responsible for calling irq_unmask at startup time.
+As a result event channels remain masked.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- include/xen/interface/memory.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/xen/events.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index b5c3098..b66d04c 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -163,6 +163,9 @@ struct xen_add_to_physmap {
-     /* Which domain to change the mapping for. */
-     domid_t domid;
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index c3516d3..9b506b2 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -839,6 +839,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ 		struct irq_info *info = info_for_irq(irq);
+ 		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+ 	}
++	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
  
-+    /* Number of pages to go through for gmfn_range */
-+    uint16_t    size;
-+
-     /* Source mapping space. */
- #define XENMAPSPACE_shared_info 0 /* shared info page */
- #define XENMAPSPACE_grant_table 1 /* grant table page */
+ out:
+ 	mutex_unlock(&irq_mapping_update_lock);
 -- 
 1.7.2.5
 
