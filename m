@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab2HPIV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:21:57 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9436 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2HPIVx (ORCPT
+	id S1756418Ab2HPIWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:22:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36268 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2HPIWG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:21:53 -0400
-Message-ID: <502CAD25.7060201@huawei.com>
-Date: Thu, 16 Aug 2012 16:19:49 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Wu Jianguo <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [RFC PATCH] mm: introduce N_LRU_MEMORY to distinguish between
- normal and movable memory
-References: <1344482788-4984-1-git-send-email-guohanjun@huawei.com> <50233EF5.3050605@huawei.com> <alpine.DEB.2.02.1208090900450.15909@greybox.home> <5024CADC.1010202@huawei.com> <alpine.DEB.2.02.1208100909410.3903@greybox.home> <502A3CD2.9000007@huawei.com> <00000139257cb4f7-55034aa0-7541-498a-9a3f-259435ccec65-000000@email.amazonses.com>
-In-Reply-To: <00000139257cb4f7-55034aa0-7541-498a-9a3f-259435ccec65-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.25]
-X-CFilter-Loop: Reflected
+	Thu, 16 Aug 2012 04:22:06 -0400
+Message-ID: <1345105317.29668.1.camel@twins>
+Subject: Re: [PATCH 1/1] sched: unthrottle rt runqueues in
+ __disable_runtime()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Peter Boonstoppel <pboonstoppel@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Thu, 16 Aug 2012 10:21:57 +0200
+In-Reply-To: <5FBF8E85CA34454794F0F7ECBA79798F379D3648B7@HQMAIL04.nvidia.com>
+References: <5FBF8E85CA34454794F0F7ECBA79798F379D3648B7@HQMAIL04.nvidia.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/8/14 22:14, Christoph Lameter wrote:
-> On Tue, 14 Aug 2012, Hanjun Guo wrote:
+On Thu, 2012-08-09 at 15:34 -0700, Peter Boonstoppel wrote:
+> migrate_tasks() uses _pick_next_task_rt() to get tasks from the
+> real-time runqueues to be migrated. When rt_rq is throttled
+> _pick_next_task_rt() won't return anything, in which case
+> migrate_tasks() can't move all threads over and gets stuck in an
+> infinite loop.
 > 
->> N_NORMAL_MEMORY means !LRU allocs possible.
+> Instead unthrottle rt runqueues before migrating tasks.
 > 
-> Ok. I am fine with that change. However this is a significant change that
-> needs to be mentioned prominently in the changelog and there need to be
-> some comments explaining the meaning of these flags clearly in the source.
+> Additionally: move unthrottle_offline_cfs_rqs() to rq_offline_fair()
 
-No problem, we will handle it in next version of this patch.
-
-Thanks
-Hanjun Guo
-
-> 
-> 
-> .
-> 
-
-
+Thanks!
