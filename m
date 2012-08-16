@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab2HPGvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 02:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7330 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab2HPGvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 02:51:07 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: jhs@mojatatu.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [net V2] act_mirred: do not drop packets when fails to mirror it
-Date: Thu, 16 Aug 2012 14:44:27 +0800
-Message-Id: <1345099467-40922-1-git-send-email-jasowang@redhat.com>
+	id S1755371Ab2HPG7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 02:59:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37911 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab2HPG7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 02:59:21 -0400
+Date: Thu, 16 Aug 2012 16:59:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-rdma@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yishai Hadas <yishaih@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: Re: linux-next: build failure after merge of the infiniband tree
+Message-Id: <20120816165912.ca770bb4464a37f1ed4fb968@canb.auug.org.au>
+In-Reply-To: <CAG4TOxNLenjQxZNb7Rpm2G9RNBN77uWgEgfNXgoj+gLFdObuTg@mail.gmail.com>
+References: <20120816114443.600553d2fd103a5b2b36e061@canb.auug.org.au>
+	<CAG4TOxNLenjQxZNb7Rpm2G9RNBN77uWgEgfNXgoj+gLFdObuTg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Aug_2012_16_59_12_+1000_vfpAlVeFxZ6uunvS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We drop packet unconditionally when we fail to mirror it. This is not intended
-in some cases. Consdier for kvm guest, we may mirror the traffic of the bridge
-to a tap device used by a VM. When kernel fails to mirror the packet in
-conditions such as when qemu crashes or stop polling the tap, it's hard for the
-management software to detect such condition and clean the the mirroring
-before. This would lead all packets to the bridge to be dropped and break the
-netowrk of other virtual machines.
+--Signature=_Thu__16_Aug_2012_16_59_12_+1000_vfpAlVeFxZ6uunvS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To solve the issue, the patch does not drop packets when kernel fails to mirror
-it, and only drop the redirected packets.
+Hi Roland,
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
+Thanks for the fix.
 
-Changes from v1:
-- Check with TCA_EGRESS_MIRROR instead of TC_ACT_STOLEN per Jamal's comment
+On Wed, 15 Aug 2012 21:07:37 -0700 Roland Dreier <roland@kernel.org> wrote:
+>
+> > See Rule 1 in Documentation/SubmitChecklist.
+>=20
+> Heh, but it compiles fine on x86!
 
- net/sched/act_mirred.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+Which is why we have Rule 1 :-)
 
-diff --git a/net/sched/act_mirred.c b/net/sched/act_mirred.c
-index fe81cc1..9c0fd0c 100644
---- a/net/sched/act_mirred.c
-+++ b/net/sched/act_mirred.c
-@@ -200,13 +200,12 @@ static int tcf_mirred(struct sk_buff *skb, const struct tc_action *a,
- out:
- 	if (err) {
- 		m->tcf_qstats.overlimits++;
--		/* should we be asking for packet to be dropped?
--		 * may make sense for redirect case only
--		 */
--		retval = TC_ACT_SHOT;
--	} else {
-+		if (m->tcfm_eaction != TCA_EGRESS_MIRROR)
-+			retval = TC_ACT_SHOT;
-+		else
-+			retval = m->tcf_action;
-+	} else
- 		retval = m->tcf_action;
--	}
- 	spin_unlock(&m->tcf_lock);
- 
- 	return retval;
--- 
-1.7.1
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__16_Aug_2012_16_59_12_+1000_vfpAlVeFxZ6uunvS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQLJpAAAoJEECxmPOUX5FE7zcP/1as1IL1Ro8XEwqPdHmev0/b
+kg76jlTblQXRE08ASZAZh1UEeULmvO9v9RESU+0A78H8gv0LuhOc3pmcIXKIfob1
+M3rPdJNCt/YKze00hSQMRwMIlDcs2FD2//CYPNWstrtrxu+uNrHHOnT+uBK+p5vM
+ycx95undBnL5ZHGnXpVSfwD/zQEWm2NnjQmRIg9q7FW4Agso/nxSChcsrxJTGnDQ
+cEQk/wy0Ny2F+3jvFXsRfis9tVMyUXz+SHfanpO7GsDBTspL8GzAKkGkxlTGdTkS
+ZDVO28fuvxHHo6GmTCAz/wW6qVtCa0myeLbAnGp9Tz3ebNFYnrVHaq3LEXsxgWKo
+TU61XYaA2lnbswpk0h1jkDTvIa8EME6aD2Wmb7ueG2tLNrmhu4FOUsqaupVSaFMH
+7PGNb9oaNHdg4pbzEBEj8l/Cd0s/MonHlu2CsKvtGSXbeZspJmy7wfMOiChmQt+N
+Z5K5LZgVAfhD5lINqJOKrkOQdZTms7cBYkZGDhYJLws9sd0VuB2u38fvY6xtbsdf
+GpeRP8RE4/z4TVcoCm3SKHVKdQDU/x2Fhnq1md2QGEhGuZ1+A478IDpjQhPbev+h
+PojsxvAThpWZknbZz/VJ0a8hEn9qI7Q7prDqPI6owANI73mqPMACg98GtZJ7EeT7
+dwdlC0jC816sL5BlL+oj
+=Mvzh
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Aug_2012_16_59_12_+1000_vfpAlVeFxZ6uunvS--
