@@ -1,152 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab2HPT1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:27:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54144 "EHLO mx1.redhat.com"
+	id S933147Ab2HPT2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:28:49 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1245 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105Ab2HPT1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:27:45 -0400
-Date: Thu, 16 Aug 2012 21:27:38 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH, RFC 7/9] thp: implement splitting pmd for huge zero page
-Message-ID: <20120816192738.GO11188@redhat.com>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1754057Ab2HPT2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:28:47 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Subject: RE: [PATCH] bnx2: turn off the network statck during
+ initialization
+From: "Michael Chan" <mchan@broadcom.com>
+To: "Jiang Wang" <Jiang.Wang@riverbed.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chaitanya Lala" <Chaitanya.Lala@riverbed.com>,
+        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
+In-Reply-To: <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
+References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
+ <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+ <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
+Date: Thu, 16 Aug 2012 12:28:38 -0700
+Message-ID: <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
+X-WSS-ID: 7C3396F249820203737-01-01
+Content-Type: text/plain;
+ charset=cp1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 09, 2012 at 12:08:18PM +0300, Kirill A. Shutemov wrote:
-> +static void __split_huge_zero_page_pmd(struct mm_struct *mm, pmd_t *pmd,
-> +		unsigned long address)
-> +{
-> +	pgtable_t pgtable;
-> +	pmd_t _pmd;
-> +	unsigned long haddr = address & HPAGE_PMD_MASK;
-> +	struct vm_area_struct *vma;
-> +	int i;
-> +
-> +	vma = find_vma(mm, address);
-> +	VM_BUG_ON(vma == NULL);
+On Thu, 2012-08-16 at 19:15 +0000, Jiang Wang wrote: 
+> Hi Michael,
+> 
+> I just checked the code for netif_carrier_off(), and it will return if
+> the dev is not initialized (registered) as follows:
+> 
+> void netif_carrier_off(struct net_device *dev)
+> {
+>         if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
+>                 if (dev->reg_state == NETREG_UNINITIALIZED)
+>                         return;
+>                 linkwatch_fire_event(dev);
+>         }
+> }
+> 
+> So linkwatch_fire_event should not fire in this case, right? Thanks
+> for the quick response.
+> 
+Yes, you're right.  Your patch should not cause any problem then.
 
-I think you can use BUG_ON here just in case but see below how I would
-change it.
+But I still don't understand what problem you're trying to solve.  The
+link status from ethtool is determined by bnx2_get_link() and it should
+always return link down before bnx2_open() is called.  Can you please
+elborate?  Thanks.
 
-> +	pmdp_clear_flush_notify(vma, haddr, pmd);
-> +	/* leave pmd empty until pte is filled */
-> +
-> +	pgtable = get_pmd_huge_pte(mm);
-> +	pmd_populate(mm, &_pmd, pgtable);
-> +
-> +	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-> +		pte_t *pte, entry;
-> +		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-> +		entry = pte_mkspecial(entry);
-> +		pte = pte_offset_map(&_pmd, haddr);
-> +		VM_BUG_ON(!pte_none(*pte));
-> +		set_pte_at(mm, haddr, pte, entry);
-> +		pte_unmap(pte);
-> +	}
-> +	smp_wmb(); /* make pte visible before pmd */
-> +	pmd_populate(mm, pmd, pgtable);
-> +}
-> +
+> Regards,
+> 
+> Jiang
+> 
+> -------------------------------------
+> Jiang Wang
+> Member of Technical Staff
+> Riverbed Technology
+> Tel: (408) 522-5109
+> Email: Jiang.Wang@riverbed.com
+> www.riverbed.com
+> 
+> 
+> -----Original Message-----
+> From: Michael Chan [mailto:mchan@broadcom.com] 
+> Sent: Thursday, August 16, 2012 11:57 AM
+> To: Jiang Wang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant; Jiang Wang
+> Subject: Re: [PATCH] bnx2: turn off the network statck during initialization
+> 
+> On Thu, 2012-08-16 at 11:21 -0700, Jiang Wang wrote: 
+> > The initialization state of bnx2 driver is wrong. It does not turn of 
+> > the Linux network stack using netif_carrier_off. This may lead to 
+> > inconsistent report from ethtool as the link is up but speed is 
+> > unknown when the cable is not plugged in.
+> > 
+> > E.g.
+> >         Speed: Unknown! (0)<--------------------------------------
+> >         Duplex: Half       <--------------------------------------
+> >         MDI: Unknown! (0)
+> >         Port: Twisted Pair
+> >         PHYAD: 1
+> >         Transceiver: internal
+> >         Auto-negotiation: on
+> >         Supports Wake-on: g
+> >         Wake-on: d
+> >         Link detected: yes <---------------------------------------
+> > 
+> > This patches fixed the problem by turning off the network stack during 
+> > initialization.
+> > 
+> > Signed-off-by: Jiang Wang <jwang@riverbed.com>
+> > ---
+> >  drivers/net/ethernet/broadcom/bnx2.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/ethernet/broadcom/bnx2.c 
+> > b/drivers/net/ethernet/broadcom/bnx2.c
+> > index ac7b744..ce4548d 100644
+> > --- a/drivers/net/ethernet/broadcom/bnx2.c
+> > +++ b/drivers/net/ethernet/broadcom/bnx2.c
+> > @@ -8463,6 +8463,10 @@ bnx2_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  	dev->features |= dev->hw_features;
+> >  	dev->priv_flags |= IFF_UNICAST_FLT;
+> >  
+> > +	/* tell the stack to leave us alone until bnx2_open() is called */
+> > +	netif_carrier_off(dev);
+> 
+> We have tried this before and this didn't work.  netif_carrier_off() calls linkwatch_fire_event() to schedule the event.  If
+> register_netdev() fails for whatever reason, the netdev will be freed but the link_watch event may still be scheduled.
+> 
+> Calling netif_carrier_off() after register_netdev() returns successfully also may not work as it will race with bnx2_open() which enables IRQ.
+> An linkup IRQ can happen at time and we may end up with the wrong carrier state because of the race condition.
+> 
+> > +	netif_stop_queue(dev);
+> > +
+> >  	if ((rc = register_netdev(dev))) {
+> >  		dev_err(&pdev->dev, "Cannot register net device\n");
+> >  		goto error;
+> 
+> 
+> 
+> 
 
-The last pmd_populate will corrupt memory.
-
-See the comment in __split_huge_page_splitting. If you set it to none
-at any given time, a new page fault will instantiate a hugepmd
-thinking it's the first fault and then you'll overwrite it leaking
-memory and corrupting userland.
-
-The caller may be holding the mmap_sem in read mode too (pagewalk is
-an example). The PSE bit must also remain on at all times.
-
-The non present bit must be clear and a tlb flush must happen before
-the final pmd_populate with the regular pmd to avoid tripping machine
-checks on some CPU (to avoid a 4k and 2m tlb to appear for the same
-vaddr).
-
-I think you should replace pmdp_clear_flush_notify with:
-
-  	    	pmdp_splitting_flush_notify(vma, haddr, pmd);
-
-then build the 4k zero pages in the loop using the temporary _pmd set with
-pmd_populate(&_pmd) and then:
 
 
-		/*
-		 * Up to this point the pmd is present and huge and
-		 * userland has the whole access to the hugepage
-		 * during the split (which happens in place). If we
-		 * overwrite the pmd with the not-huge version
-		 * pointing to the pte here (which of course we could
-		 * if all CPUs were bug free), userland could trigger
-		 * a small page size TLB miss on the small sized TLB
-		 * while the hugepage TLB entry is still established
-		 * in the huge TLB. Some CPU doesn't like that. See
-		 * http://support.amd.com/us/Processor_TechDocs/41322.pdf,
-		 * Erratum 383 on page 93. Intel should be safe but is
-		 * also warns that it's only safe if the permission
-		 * and cache attributes of the two entries loaded in
-		 * the two TLB is identical (which should be the case
-		 * here). But it is generally safer to never allow
-		 * small and huge TLB entries for the same virtual
-		 * address to be loaded simultaneously. So instead of
-		 * doing "pmd_populate(); flush_tlb_range();" we first
-		 * mark the current pmd notpresent (atomically because
-		 * here the pmd_trans_huge and pmd_trans_splitting
-		 * must remain set at all times on the pmd until the
-		 * split is complete for this pmd), then we flush the
-		 * SMP TLB and finally we write the non-huge version
-		 * of the pmd entry with pmd_populate.
-		 */
-		set_pmd_at(mm, address, pmd, pmd_mknotpresent(*pmd));
-		flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-		pmd_populate(mm, pmd, pgtable);
-
-note address above is actually haddr aligned (generated by
-vma_address(page, vma) where page is a thp page)
-
-> +	if (is_huge_zero_pmd(*pmd)) {
-> +		__split_huge_zero_page_pmd(mm, pmd, address);
-
-This will work fine but it's a bit sad having to add "address" at
-every call, just to run a find_vma(). The only place that doesn't have
-a vma already on the caller stack is actually pagewalk, all other
-places already have a vma on the stack without having to find it with
-the rbtree.
-
-I think it may be better to change the param to
-split_huge_page_pmd(vma, pmd).
-
-Then have standard split_huge_page_pmd obtain the mm with vma->vm_mm
-(most callers already calles it with split_huge_page_pmd(vma->vm_mm)
-so it won't alter the cost to do vma->vm_mm in caller or callee).
-
-split_huge_page_address also should take the vma (all callers are
-invoking it as split_huge_page_address(vma->vm_mm) so it'll be zero
-cost change).
-
-Then we can add a split_huge_page_pmd_mm(mm, address, pmd) or
-split_huge_page_pmd_address(mm, address, pmd) (call it as you
-prefer...) only for the pagewalk caller that will do the find_vma and
-BUG_ON if it's not found.
-
-In that new split_huge_page_pmd_mm you can also add a BUG_ON checking
-vma->vm_start to be <= haddr and vma->vm_end >= haddr+HPAGE_PMD_SIZE
-in addition to BUG_ON(!vma) above, for more robustness. I'm not aware
-of any place calling it without mmap_sem hold at least for reading
-and the vma must be stable, but more debug checks won't hurt.
-
-Thanks!
-Andrea
