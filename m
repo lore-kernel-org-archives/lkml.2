@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab2HPTyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:54:37 -0400
-Received: from [213.199.154.209] ([213.199.154.209]:5941 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S933231Ab2HPTyN (ORCPT
+	id S933271Ab2HPTyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:54:35 -0400
+Received: from [216.32.180.14] ([216.32.180.14]:52371 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S933238Ab2HPTyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 15:54:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah1155h)
-X-WSS-ID: 0M8V5X2-01-68Y-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M8V5WR-02-ED2-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 6/8] perf tools: Refactor print_event_desc()
-Date: Thu, 16 Aug 2012 21:10:22 +0200
-Message-ID: <1345144224-27280-7-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 7/8] perf report: Update event names from header description
+Date: Thu, 16 Aug 2012 21:10:23 +0200
+Message-ID: <1345144224-27280-8-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
 References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
@@ -30,203 +30,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For later use we need a function read_event_desc() for processing the
-event_desc feature. Split it from print_event_desc().
+Name events based on the event description in the perf.data header.
+
+Example output:
+
+ $ perf report | grep '^#.*event'
+ # event : name = ibs_op/cnt_ctl=1/GH, type = 7, config = 0x80000, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 0, precise_ip = 0, id = { 49, 50, 51, 52, 53, 54, 55, 56 }
+ # event : name = ibs_fetch/config=0/, type = 6, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, id = { 57, 58, 59, 60, 61, 62, 63, 64 }
+ # Samples: 20K of event 'ibs_op/cnt_ctl=1/GH'
+ # Samples: 4K of event 'ibs_fetch/config=0/'
+
+Note the new pmu event syntax of the names.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- tools/perf/util/header.c |  134 ++++++++++++++++++++++++++++++++--------------
- 1 files changed, 93 insertions(+), 41 deletions(-)
+ tools/perf/util/header.c |   52 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 51 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 1e5b6aa..7454cf4 100644
+index 7454cf4..c0311b3 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -1148,12 +1148,29 @@ static void print_cpu_topology(struct perf_header *ph, int fd, FILE *fp)
- 	}
+@@ -1556,6 +1556,56 @@ static int process_build_id(struct perf_file_section *section,
+ 	return 0;
  }
  
--static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
-+static void free_event_desc(struct perf_evsel *events)
- {
--	struct perf_event_attr attr;
--	uint64_t id;
++static struct perf_evsel *
++perf_evlist_find_by_index(struct perf_evlist *evlist, int idx)
++{
 +	struct perf_evsel *evsel;
 +
-+	if (!events)
-+		return;
-+
-+	for (evsel = events; evsel->attr.size; evsel++) {
-+		if (evsel->name)
-+			free(evsel->name);
-+		if (evsel->id)
-+			free(evsel->id);
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (evsel->idx == idx)
++			return evsel;
 +	}
 +
-+	free(events);
++	return NULL;
 +}
 +
-+static struct perf_evsel *
-+read_event_desc(struct perf_header *ph, int fd)
++static void
++perf_evlist__set_event_name(struct perf_evlist *evlist, struct perf_evsel *event)
 +{
-+	struct perf_evsel *evsel, *events = NULL;
-+	u64 *id;
- 	void *buf = NULL;
--	char *str;
- 	u32 nre, sz, nr, i, j;
- 	ssize_t ret;
- 	size_t msz;
-@@ -1173,18 +1190,22 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 	if (ph->needs_swap)
- 		sz = bswap_32(sz);
- 
--	memset(&attr, 0, sizeof(attr));
--
- 	/* buffer to hold on file attr struct */
- 	buf = malloc(sz);
- 	if (!buf)
- 		goto error;
- 
--	msz = sizeof(attr);
-+	/* the last event terminates with evsel->attr.size == 0: */
-+	events = calloc(nre + 1, sizeof(*events));
-+	if (!events)
-+		goto error;
++	struct perf_evsel *evsel;
 +
-+	msz = sizeof(evsel->attr);
- 	if (sz < msz)
- 		msz = sz;
- 
--	for (i = 0 ; i < nre; i++) {
-+	for (i = 0, evsel = events; i < nre; evsel++, i++) {
-+		evsel->idx = i;
- 
- 		/*
- 		 * must read entire on-file attr struct to
-@@ -1197,7 +1218,7 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 		if (ph->needs_swap)
- 			perf_event__attr_swap(buf);
- 
--		memcpy(&attr, buf, msz);
-+		memcpy(&evsel->attr, buf, msz);
- 
- 		ret = read(fd, &nr, sizeof(nr));
- 		if (ret != (ssize_t)sizeof(nr))
-@@ -1206,51 +1227,82 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 		if (ph->needs_swap)
- 			nr = bswap_32(nr);
- 
--		str = do_read_string(fd, ph);
--		fprintf(fp, "# event : name = %s, ", str);
--		free(str);
-+		evsel->name = do_read_string(fd, ph);
++	if (!event->name)
++		return;
 +
-+		if (!nr)
-+			continue;
++	evsel = perf_evlist_find_by_index(evlist, event->idx);
++	if (!evsel)
++		return;
 +
-+		id = calloc(nr, sizeof(*id));
-+		if (!id)
-+			goto error;
-+		evsel->ids = nr;
-+		evsel->id = id;
++	if (evsel->name)
++		return;
 +
-+		for (j = 0 ; j < nr; j++) {
-+			ret = read(fd, id, sizeof(*id));
-+			if (ret != (ssize_t)sizeof(*id))
-+				goto error;
-+			if (ph->needs_swap)
-+				*id = bswap_64(*id);
-+			id++;
-+		}
-+	}
-+out:
-+	if (buf)
-+		free(buf);
-+	return events;
-+error:
-+	if (events)
-+		free_event_desc(events);
-+	events = NULL;
-+	goto out;
++	evsel->name = strdup(event->name);
 +}
 +
-+static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
++static int
++process_event_desc(struct perf_file_section *section __unused,
++		   struct perf_header *header, int feat __unused, int fd,
++		   void *data __used)
 +{
-+	struct perf_evsel *evsel, *events = read_event_desc(ph, fd);
-+	u32 j;
-+	u64 *id;
++	struct perf_session *session = container_of(header, struct perf_session, header);
++	struct perf_evsel *evsel, *events = read_event_desc(header, fd);
 +
-+	if (!events) {
-+		fprintf(fp, "# event desc: not available or unable to read\n");
-+		return;
-+	}
++	if (!events)
++		return 0;
 +
-+	for (evsel = events; evsel->attr.size; evsel++) {
-+		fprintf(fp, "# event : name = %s, ", evsel->name);
- 
- 		fprintf(fp, "type = %d, config = 0x%"PRIx64
- 			    ", config1 = 0x%"PRIx64", config2 = 0x%"PRIx64,
--				attr.type,
--				(u64)attr.config,
--				(u64)attr.config1,
--				(u64)attr.config2);
-+				evsel->attr.type,
-+				(u64)evsel->attr.config,
-+				(u64)evsel->attr.config1,
-+				(u64)evsel->attr.config2);
- 
- 		fprintf(fp, ", excl_usr = %d, excl_kern = %d",
--				attr.exclude_user,
--				attr.exclude_kernel);
-+				evsel->attr.exclude_user,
-+				evsel->attr.exclude_kernel);
- 
- 		fprintf(fp, ", excl_host = %d, excl_guest = %d",
--				attr.exclude_host,
--				attr.exclude_guest);
-+				evsel->attr.exclude_host,
-+				evsel->attr.exclude_guest);
- 
--		fprintf(fp, ", precise_ip = %d", attr.precise_ip);
-+		fprintf(fp, ", precise_ip = %d", evsel->attr.precise_ip);
- 
--		if (nr)
-+		if (evsel->ids) {
- 			fprintf(fp, ", id = {");
--
--		for (j = 0 ; j < nr; j++) {
--			ret = read(fd, &id, sizeof(id));
--			if (ret != (ssize_t)sizeof(id))
--				goto error;
--
--			if (ph->needs_swap)
--				id = bswap_64(id);
--
--			if (j)
--				fputc(',', fp);
--
--			fprintf(fp, " %"PRIu64, id);
--		}
--		if (nr && j == nr)
-+			for (j = 0, id = evsel->id; j < evsel->ids; j++, id++) {
-+				if (j)
-+					fputc(',', fp);
-+				fprintf(fp, " %"PRIu64, *id);
-+			}
- 			fprintf(fp, " }");
-+		}
-+
- 		fputc('\n', fp);
- 	}
--	free(buf);
--	return;
--error:
--	fprintf(fp, "# event desc: not available or unable to read\n");
++	for (evsel = events; evsel->attr.size; evsel++)
++		perf_evlist__set_event_name(session->evlist, evsel);
 +
 +	free_event_desc(events);
- }
- 
- static void print_total_mem(struct perf_header *h __used, int fd, FILE *fp)
++
++	return 0;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1589,7 +1639,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
+ 	FEAT_OPA(HEADER_CPUID,		cpuid),
+ 	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
+-	FEAT_OPA(HEADER_EVENT_DESC,	event_desc),
++	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
+ 	FEAT_OPA(HEADER_CMDLINE,	cmdline),
+ 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
 -- 
 1.7.8.6
 
