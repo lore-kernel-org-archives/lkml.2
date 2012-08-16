@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab2HPFDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:03:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3700 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab2HPFDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:03:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,776,1336374000"; 
-   d="scan'208";a="134841028"
-Message-ID: <502C7F24.6020900@intel.com>
-Date: Thu, 16 Aug 2012 13:03:32 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1753629Ab2HPFLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:11:07 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35677 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab2HPFLF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 01:11:05 -0400
+Date: Thu, 16 Aug 2012 02:10:56 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: koko Aborigines <7aborigines7@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add support bluetooth usb 0489:e046 Foxconn / Hon Hai
+Message-ID: <20120816051056.GA25290@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	koko Aborigines <7aborigines7@gmail.com>, marcel@holtmann.org,
+	padovan@profusion.mobi, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1344757304-11555-1-git-send-email-7aborigines7@gmail.com>
+ <20120815044111.GG3344@joana>
+ <CA+iwHK1VYJ+G-9aVgkzvAV4C3Unhyz-sqC+_SkUmPhffs1_=CQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <20120815161911.GA14534@srcf.ucam.org>
-In-Reply-To: <20120815161911.GA14534@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CA+iwHK1VYJ+G-9aVgkzvAV4C3Unhyz-sqC+_SkUmPhffs1_=CQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 12:19 AM, Matthew Garrett wrote:
+Hi,
 
-> On Mon, Aug 13, 2012 at 08:21:00PM +0800, Alex Shi wrote:
-> 
->> power aware scheduling), this proposal will adopt the
->> sched_balance_policy concept and use 2 kind of policy: performance, power.
-> 
-> Are there workloads in which "power" might provide more performance than 
-> "performance"? If so, don't use these terms.
-> 
+* koko Aborigines <7aborigines7@gmail.com> [2012-08-16 10:12:44 +0700]:
 
+> Hi, Gustavo
+> 
+> i have error with your patch
+> 
+>  CC [M]  drivers/bluetooth/btusb.o
+> drivers/bluetooth/btusb.c:113:2: error: implicit declaration of function
+> ‘USB_VENDOR_AND_INTERFACE_INFO’ [-Werror=implicit-function-declaration]
+> drivers/bluetooth/btusb.c:113:2: error: initializer element is not constant
+> drivers/bluetooth/btusb.c:113:2: error: (near initialization for
+> ‘btusb_table[22].match_flags’)
 
-Power scheme should no chance has better performance in design.
+You need to apply it against the bluetooth-next tree (or linux-next).
+
+	Gustavo
