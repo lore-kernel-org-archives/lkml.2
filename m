@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab2HPCUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 22:20:15 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:44019 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752380Ab2HPCUM (ORCPT
+	id S1753967Ab2HPCWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 22:22:11 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47699 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab2HPCWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 22:20:12 -0400
-Subject: [PATCH] MAINTAINERS: update address for Dan Williams
-To: <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>
-From: Dan Williams <djbw@fb.com>
-CC: <linux-raid@vger.kernel.org>, Vinod Koul <vinod.koul@linux.intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>
-Date: Wed, 15 Aug 2012 19:20:02 -0700
-Message-ID: <20120816021839.1269.20937.stgit@localhost.localdomain>
-User-Agent: StGit/0.16-38-g167d-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.254]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-15_05:2012-08-15,2012-08-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	Wed, 15 Aug 2012 22:22:09 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-49-502c594f111b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] sched: Add time unit suffix to sched sysctl knobs
+Date: Thu, 16 Aug 2012 11:15:30 +0900
+Message-Id: <1345083330-19486-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved to djbw@fb.com
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
+Unlike others, sched_migration_cost, sched_time_avg and
+sched_shares_window doesn't have time unit as suffix. Add them.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- MAINTAINERS |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ kernel/sysctl.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 94b823f..a728dc0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -827,24 +827,24 @@ F:	arch/arm/mach-pxa/colibri-pxa270-income.c
- 
- ARM/INTEL IOP32X ARM ARCHITECTURE
- M:	Lennert Buytenhek <kernel@wantstofly.org>
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- 
- ARM/INTEL IOP33X ARM ARCHITECTURE
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- 
- ARM/INTEL IOP13XX ARM ARCHITECTURE
- M:	Lennert Buytenhek <kernel@wantstofly.org>
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- 
- ARM/INTEL IQ81342EX MACHINE SUPPORT
- M:	Lennert Buytenhek <kernel@wantstofly.org>
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- 
-@@ -869,7 +869,7 @@ F:	drivers/pcmcia/pxa2xx_stargate2.c
- 
- ARM/INTEL XSC3 (MANZANO) ARM CORE
- M:	Lennert Buytenhek <kernel@wantstofly.org>
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- S:	Maintained
- 
-@@ -1227,9 +1227,9 @@ S:	Maintained
- F:	drivers/hwmon/asb100.c
- 
- ASYNCHRONOUS TRANSFERS/TRANSFORMS (IOAT) API
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- W:	http://sourceforge.net/projects/xscaleiop
--S:	Supported
-+S:	Maintained
- F:	Documentation/crypto/async-tx-api.txt
- F:	crypto/async_tx/
- F:	drivers/dma/
-@@ -2359,7 +2359,7 @@ T:	git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
- 
- DMA GENERIC OFFLOAD ENGINE SUBSYSTEM
- M:	Vinod Koul <vinod.koul@intel.com>
--M:	Dan Williams <dan.j.williams@intel.com>
-+M:	Dan Williams <djbw@fb.com>
- S:	Supported
- F:	drivers/dma/
- F:	include/linux/dma*
-@@ -3547,7 +3547,6 @@ K:	\b(ABS|SYN)_MT_
- 
- INTEL C600 SERIES SAS CONTROLLER DRIVER
- M:	Intel SCU Linux support <intel-linux-scu@intel.com>
--M:	Dan Williams <dan.j.williams@intel.com>
- M:	Dave Jiang <dave.jiang@intel.com>
- M:	Ed Nadolski <edmund.nadolski@intel.com>
- L:	linux-scsi@vger.kernel.org
-@@ -3590,8 +3589,8 @@ F:	arch/x86/kernel/microcode_core.c
- F:	arch/x86/kernel/microcode_intel.c
- 
- INTEL I/OAT DMA DRIVER
--M:	Dan Williams <dan.j.williams@intel.com>
--S:	Supported
-+M:	Dan Williams <djbw@fb.com>
-+S:	Maintained
- F:	drivers/dma/ioat*
- 
- INTEL IOMMU (VT-d)
-@@ -3603,8 +3602,8 @@ F:	drivers/iommu/intel-iommu.c
- F:	include/linux/intel-iommu.h
- 
- INTEL IOP-ADMA DMA DRIVER
--M:	Dan Williams <dan.j.williams@intel.com>
--S:	Maintained
-+M:	Dan Williams <djbw@fb.com>
-+S:	Odd fixes
- F:	drivers/dma/iop-adma.c
- 
- INTEL IXP4XX QMGR, NPE, ETHERNET and HSS SUPPORT
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 87174ef59161..81c7b1a1a307 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -307,7 +307,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra2		= &max_sched_tunable_scaling,
+ 	},
+ 	{
+-		.procname	= "sched_migration_cost",
++		.procname	= "sched_migration_cost_ns",
+ 		.data		= &sysctl_sched_migration_cost,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+@@ -321,14 +321,14 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname	= "sched_time_avg",
++		.procname	= "sched_time_avg_ms",
+ 		.data		= &sysctl_sched_time_avg,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname	= "sched_shares_window",
++		.procname	= "sched_shares_window_ns",
+ 		.data		= &sysctl_sched_shares_window,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+-- 
+1.7.11.2
 
