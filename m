@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab2HPNPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:15:52 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:36437 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab2HPNPu (ORCPT
+	id S932390Ab2HPNQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:16:10 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:44143 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932288Ab2HPNQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:15:50 -0400
-Message-ID: <502CF259.9040300@panasas.com>
-Date: Thu, 16 Aug 2012 16:15:05 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Marco Stornelli <marco.stornelli@gmail.com>, <bhalevy@tonian.com>,
-        <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        <adilger.kernel@dilger.ca>, <tytso@mit.edu>,
-        <hirofumi@mail.parknet.co.jp>, <mikulas@artax.karlin.mff.cuni.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>, <hch@infradead.org>,
-        <dushistov@mail.ru>, <osd-dev@open-osd.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/8] exofs: remove lock/unlock super
-References: <502CC4AA.6040702@gmail.com>  <1345119652.3393.220.camel@sauron.fi.intel.com>  <502CE840.4060802@panasas.com> <1345122611.3393.225.camel@sauron.fi.intel.com>
-In-Reply-To: <1345122611.3393.225.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 09:16:06 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] mtd: lpc32xx_slc: Make driver independent of AMBA DMA engine driver
+Date: Thu, 16 Aug 2012 15:15:34 +0200
+Message-Id: <1345122935-22115-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345122935-22115-1-git-send-email-stigge@antcom.de>
+References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 04:10 PM, Artem Bityutskiy wrote:
+This patch makes the SLC NAND driver independent of the single AMBA DMA engine
+driver by using the platform data provided dma_filter callback.
 
-> On Thu, 2012-08-16 at 15:32 +0300, Boaz Harrosh wrote:
->> On 08/16/2012 03:20 PM, Artem Bityutskiy wrote:
->>
->>> On Thu, 2012-08-16 at 12:00 +0200, Marco Stornelli wrote:
->>>> From: Marco Stornelli <marco.stornelli@gmail.com>
->>>>
->>>> Remove lock and unlock super operation.
->>>>
->>>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
->>>
->>> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
->>>
->>
->>
->> Are you sure? It used to be that exofs_sync_fs() could be called
->> concurrently.
->>
->> What about two "bash -c sync" calls or a sync and an unmount
->> in parallel. anything protecting that?
->>
->> If so then sure, but please let me test first.
-> 
-> Umm, actually we will probably end up writing the same twice without the
-> lock. 
-> 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
+---
+ drivers/mtd/nand/lpc32xx_slc.c  |   13 +++++++++++--
+ include/linux/mtd/lpc32xx_slc.h |   20 ++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 2 deletions(-)
 
-No we are not allowed to run exofs_sync_fs() concurrently because it uses
-a per-alllocated scratch buffer to do it's stuff so you can end up with data
-corruption on disk.
-
-And we cannot use a spin-lock because we might sleep in ore_write()
-
-There are some optimizations I can do here, but lets for now just do
-the sb->s_lock thing, and I might decide to completely revamp the
-all thing later.
-
-Thanks
-Boaz
+--- linux-2.6.orig/drivers/mtd/nand/lpc32xx_slc.c
++++ linux-2.6/drivers/mtd/nand/lpc32xx_slc.c
+@@ -37,7 +37,7 @@
+ #include <linux/of.h>
+ #include <linux/of_mtd.h>
+ #include <linux/of_gpio.h>
+-#include <linux/amba/pl08x.h>
++#include <linux/mtd/lpc32xx_slc.h>
+ 
+ #define LPC32XX_MODNAME		"lpc32xx-nand"
+ 
+@@ -199,6 +199,7 @@ struct lpc32xx_nand_cfg_slc {
+ 
+ struct lpc32xx_nand_host {
+ 	struct nand_chip	nand_chip;
++	struct lpc32xx_slc_platform_data *pdata;
+ 	struct clk		*clk;
+ 	struct mtd_info		mtd;
+ 	void __iomem		*io_base;
+@@ -714,9 +715,15 @@ static int lpc32xx_nand_dma_setup(struct
+ 	struct mtd_info *mtd = &host->mtd;
+ 	dma_cap_mask_t mask;
+ 
++	if (!host->pdata || !host->pdata->dma_filter) {
++		dev_err(mtd->dev.parent, "no DMA platform data\n");
++		return -ENOENT;
++	}
++
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+-	host->dma_chan = dma_request_channel(mask, pl08x_filter_id, "nand-slc");
++	host->dma_chan = dma_request_channel(mask, host->pdata->dma_filter,
++					     "nand-slc");
+ 	if (!host->dma_chan) {
+ 		dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
+ 		return -EBUSY;
+@@ -814,6 +821,8 @@ static int __devinit lpc32xx_nand_probe(
+ 	}
+ 	lpc32xx_wp_disable(host);
+ 
++	host->pdata = pdev->dev.platform_data;
++
+ 	mtd = &host->mtd;
+ 	chip = &host->nand_chip;
+ 	chip->priv = host;
+--- /dev/null
++++ linux-2.6/include/linux/mtd/lpc32xx_slc.h
+@@ -0,0 +1,20 @@
++/*
++ * Platform data for LPC32xx SoC SLC NAND controller
++ *
++ * Copyright (C) 2012 Roland Stigge
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_MTD_LPC32XX_SLC_H
++#define __LINUX_MTD_LPC32XX_SLC_H
++
++#include <linux/dmaengine.h>
++
++struct lpc32xx_slc_platform_data {
++	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
++};
++
++#endif  /* __LINUX_MTD_LPC32XX_SLC_H */
