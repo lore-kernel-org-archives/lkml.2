@@ -1,343 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2HPKMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:12:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38318 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab2HPKMt (ORCPT
+	id S1756922Ab2HPKOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:14:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50649 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779Ab2HPKOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:12:49 -0400
-Message-ID: <502CC61D.40800@gmail.com>
-Date: Thu, 16 Aug 2012 12:06:21 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
-MIME-Version: 1.0
-To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
-        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 8/8] ufs: remove lock/unlock super
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 Aug 2012 06:14:05 -0400
+Date: Thu, 16 Aug 2012 19:13:58 +0900 (JST)
+Message-Id: <20120816.191358.127675610.hdk@igel.co.jp>
+To: m.szyprowski@samsung.com
+Cc: laurent.pinchart@ideasonboard.com, linux@arm.linux.org.uk,
+        pawel@osciak.com, kyungmin.park@samsung.com, mchehab@infradead.org,
+        FlorianSchandinat@gmx.de, perex@perex.cz, tiwai@suse.de,
+        t.stanislaws@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org,
+        matsu@igel.co.jp, dhobsong@igel.co.jp
+Subject: Re: [PATCH v3 3/4] media: videobuf2-dma-contig: use
+ dma_mmap_coherent if available
+From: Hideki EIRAKU <hdk@igel.co.jp>
+In-Reply-To: <012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
+References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
+	<1344246924-32620-4-git-send-email-hdk@igel.co.jp>
+	<012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+Hello,
 
-Replaced lock and unlock super with a new fs mutex s_lock.
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v3 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent if available
+Date: Tue, 07 Aug 2012 16:53:25 +0200
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
+> I'm sorry for bringing this issue now, once you have already created v3 of your
+> patches, but similar patch has been already proposed some time ago. It is already
+> processed together with general videobuf2-dma-contig redesign and dma-buf extensions
+> by Tomasz Stanislawski.
+> 
+> See post http://thread.gmane.org/gmane.comp.video.dri.devel/70402/focus=49461 and
+> http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/49438 
+> 
+> It doesn't use conditional code inside videobuf2 allocator and rely entirely on 
+> dma-mapping subsystem to provide a working dma_mmap_coherent/writecombine/attrs() 
+> function. When it was posted, it relied on the dma-mapping extensions, which now
+> have been finally merged to v3.6-rc1. Now I wonder if there are any architectures, 
+> which don't use dma_map_ops based dma-mapping framework, which might use 
+> videobuf2-dma-conting module. 
 
-diff -Nurp linux-3.6-rc1-orig/fs/ufs/balloc.c linux-3.6-rc1/fs/ufs/balloc.c
---- linux-3.6-rc1-orig/fs/ufs/balloc.c	2012-08-16 09:37:36.000000000 +0200
-+++ linux-3.6-rc1/fs/ufs/balloc.c	2012-08-16 10:25:31.000000000 +0200
-@@ -54,7 +54,7 @@ void ufs_free_fragments(struct inode *in
- 	if (ufs_fragnum(fragment) + count > uspi->s_fpg)
- 		ufs_error (sb, "ufs_free_fragments", "internal error");
- 	
--	lock_super(sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 	
- 	cgno = ufs_dtog(uspi, fragment);
- 	bit = ufs_dtogd(uspi, fragment);
-@@ -118,12 +118,12 @@ void ufs_free_fragments(struct inode *in
- 		ubh_sync_block(UCPI_UBH(ucpi));
- 	ufs_mark_sb_dirty(sb);
- 	
--	unlock_super (sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	UFSD("EXIT\n");
- 	return;
- 
- failed:
--	unlock_super (sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	UFSD("EXIT (FAILED)\n");
- 	return;
- }
-@@ -155,7 +155,7 @@ void ufs_free_blocks(struct inode *inode
- 		goto failed;
- 	}
- 
--	lock_super(sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 	
- do_more:
- 	overflow = 0;
-@@ -215,12 +215,12 @@ do_more:
- 	}
- 
- 	ufs_mark_sb_dirty(sb);
--	unlock_super (sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	UFSD("EXIT\n");
- 	return;
- 
- failed_unlock:
--	unlock_super (sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- failed:
- 	UFSD("EXIT (FAILED)\n");
- 	return;
-@@ -361,7 +361,7 @@ u64 ufs_new_fragments(struct inode *inod
- 	usb1 = ubh_get_usb_first(uspi);
- 	*err = -ENOSPC;
- 
--	lock_super (sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 	tmp = ufs_data_ptr_to_cpu(sb, p);
- 
- 	if (count + ufs_fragnum(fragment) > uspi->s_fpb) {
-@@ -382,19 +382,19 @@ u64 ufs_new_fragments(struct inode *inod
- 				  "fragment %llu, tmp %llu\n",
- 				  (unsigned long long)fragment,
- 				  (unsigned long long)tmp);
--			unlock_super(sb);
-+			mutex_unlock(&UFS_SB(sb)->s_lock);
- 			return INVBLOCK;
- 		}
- 		if (fragment < UFS_I(inode)->i_lastfrag) {
- 			UFSD("EXIT (ALREADY ALLOCATED)\n");
--			unlock_super (sb);
-+			mutex_unlock(&UFS_SB(sb)->s_lock);
- 			return 0;
- 		}
- 	}
- 	else {
- 		if (tmp) {
- 			UFSD("EXIT (ALREADY ALLOCATED)\n");
--			unlock_super(sb);
-+			mutex_unlock(&UFS_SB(sb)->s_lock);
- 			return 0;
- 		}
- 	}
-@@ -403,7 +403,7 @@ u64 ufs_new_fragments(struct inode *inod
- 	 * There is not enough space for user on the device
- 	 */
- 	if (!capable(CAP_SYS_RESOURCE) && ufs_freespace(uspi, UFS_MINFREE) <= 0) {
--		unlock_super (sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		UFSD("EXIT (FAILED)\n");
- 		return 0;
- 	}
-@@ -428,7 +428,7 @@ u64 ufs_new_fragments(struct inode *inod
- 			ufs_clear_frags(inode, result + oldcount,
- 					newcount - oldcount, locked_page != NULL);
- 		}
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		UFSD("EXIT, result %llu\n", (unsigned long long)result);
- 		return result;
- 	}
-@@ -443,7 +443,7 @@ u64 ufs_new_fragments(struct inode *inod
- 						fragment + count);
- 		ufs_clear_frags(inode, result + oldcount, newcount - oldcount,
- 				locked_page != NULL);
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		UFSD("EXIT, result %llu\n", (unsigned long long)result);
- 		return result;
- 	}
-@@ -481,7 +481,7 @@ u64 ufs_new_fragments(struct inode *inod
- 		*err = 0;
- 		UFS_I(inode)->i_lastfrag = max(UFS_I(inode)->i_lastfrag,
- 						fragment + count);
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		if (newcount < request)
- 			ufs_free_fragments (inode, result + newcount, request - newcount);
- 		ufs_free_fragments (inode, tmp, oldcount);
-@@ -489,7 +489,7 @@ u64 ufs_new_fragments(struct inode *inod
- 		return result;
- 	}
- 
--	unlock_super(sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	UFSD("EXIT (FAILED)\n");
- 	return 0;
- }		
-diff -Nurp linux-3.6-rc1-orig/fs/ufs/ialloc.c linux-3.6-rc1/fs/ufs/ialloc.c
---- linux-3.6-rc1-orig/fs/ufs/ialloc.c	2012-08-16 09:37:36.000000000 +0200
-+++ linux-3.6-rc1/fs/ufs/ialloc.c	2012-08-16 10:27:38.000000000 +0200
-@@ -71,11 +71,11 @@ void ufs_free_inode (struct inode * inod
- 	
- 	ino = inode->i_ino;
- 
--	lock_super (sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 
- 	if (!((ino > 1) && (ino < (uspi->s_ncg * uspi->s_ipg )))) {
- 		ufs_warning(sb, "ufs_free_inode", "reserved inode or nonexistent inode %u\n", ino);
--		unlock_super (sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		return;
- 	}
- 	
-@@ -83,7 +83,7 @@ void ufs_free_inode (struct inode * inod
- 	bit = ufs_inotocgoff (ino);
- 	ucpi = ufs_load_cylinder (sb, cg);
- 	if (!ucpi) {
--		unlock_super (sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		return;
- 	}
- 	ucg = ubh_get_ucg(UCPI_UBH(ucpi));
-@@ -117,7 +117,7 @@ void ufs_free_inode (struct inode * inod
- 		ubh_sync_block(UCPI_UBH(ucpi));
- 	
- 	ufs_mark_sb_dirty(sb);
--	unlock_super (sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	UFSD("EXIT\n");
- }
- 
-@@ -197,7 +197,7 @@ struct inode *ufs_new_inode(struct inode
- 	uspi = sbi->s_uspi;
- 	usb1 = ubh_get_usb_first(uspi);
- 
--	lock_super (sb);
-+	mutex_lock(&sbi->s_lock);
- 
- 	/*
- 	 * Try to place the inode in its parent directory
-@@ -333,20 +333,20 @@ cg_found:
- 		brelse(bh);
- 	}
- 
--	unlock_super (sb);
-+	mutex_unlock(&sbi->s_lock);
- 
- 	UFSD("allocating inode %lu\n", inode->i_ino);
- 	UFSD("EXIT\n");
- 	return inode;
- 
- fail_remove_inode:
--	unlock_super(sb);
-+	mutex_unlock(&sbi->s_lock);
- 	clear_nlink(inode);
- 	iput(inode);
- 	UFSD("EXIT (FAILED): err %d\n", err);
- 	return ERR_PTR(err);
- failed:
--	unlock_super (sb);
-+	mutex_unlock(&sbi->s_lock);
- 	make_bad_inode(inode);
- 	iput (inode);
- 	UFSD("EXIT (FAILED): err %d\n", err);
-diff -Nurp linux-3.6-rc1-orig/fs/ufs/super.c linux-3.6-rc1/fs/ufs/super.c
---- linux-3.6-rc1-orig/fs/ufs/super.c	2012-08-16 09:37:36.000000000 +0200
-+++ linux-3.6-rc1/fs/ufs/super.c	2012-08-16 11:18:38.000000000 +0200
-@@ -699,7 +699,7 @@ static int ufs_sync_fs(struct super_bloc
- 	unsigned flags;
- 
- 	lock_ufs(sb);
--	lock_super(sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 
- 	UFSD("ENTER\n");
- 
-@@ -717,7 +717,7 @@ static int ufs_sync_fs(struct super_bloc
- 	ufs_put_cstotal(sb);
- 
- 	UFSD("EXIT\n");
--	unlock_super(sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	unlock_ufs(sb);
- 
- 	return 0;
-@@ -805,6 +805,7 @@ static int ufs_fill_super(struct super_b
- 	}
- #endif
- 	mutex_init(&sbi->mutex);
-+	mutex_init(&sbi->s_lock);
- 	spin_lock_init(&sbi->work_lock);
- 	INIT_DELAYED_WORK(&sbi->sync_work, delayed_sync_fs);
- 	/*
-@@ -1280,7 +1281,7 @@ static int ufs_remount (struct super_blo
- 	unsigned flags;
- 
- 	lock_ufs(sb);
--	lock_super(sb);
-+	mutex_lock(&UFS_SB(sb)->s_lock);
- 	uspi = UFS_SB(sb)->s_uspi;
- 	flags = UFS_SB(sb)->s_flags;
- 	usb1 = ubh_get_usb_first(uspi);
-@@ -1294,7 +1295,7 @@ static int ufs_remount (struct super_blo
- 	new_mount_opt = 0;
- 	ufs_set_opt (new_mount_opt, ONERROR_LOCK);
- 	if (!ufs_parse_options (data, &new_mount_opt)) {
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		unlock_ufs(sb);
- 		return -EINVAL;
- 	}
-@@ -1302,14 +1303,14 @@ static int ufs_remount (struct super_blo
- 		new_mount_opt |= ufstype;
- 	} else if ((new_mount_opt & UFS_MOUNT_UFSTYPE) != ufstype) {
- 		printk("ufstype can't be changed during remount\n");
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		unlock_ufs(sb);
- 		return -EINVAL;
- 	}
- 
- 	if ((*mount_flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
- 		UFS_SB(sb)->s_mount_opt = new_mount_opt;
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		unlock_ufs(sb);
- 		return 0;
- 	}
-@@ -1334,7 +1335,7 @@ static int ufs_remount (struct super_blo
- #ifndef CONFIG_UFS_FS_WRITE
- 		printk("ufs was compiled with read-only support, "
- 		"can't be mounted as read-write\n");
--		unlock_super(sb);
-+		mutex_unlock(&UFS_SB(sb)->s_lock);
- 		unlock_ufs(sb);
- 		return -EINVAL;
- #else
-@@ -1344,13 +1345,13 @@ static int ufs_remount (struct super_blo
- 		    ufstype != UFS_MOUNT_UFSTYPE_SUNx86 &&
- 		    ufstype != UFS_MOUNT_UFSTYPE_UFS2) {
- 			printk("this ufstype is read-only supported\n");
--			unlock_super(sb);
-+			mutex_unlock(&UFS_SB(sb)->s_lock);
- 			unlock_ufs(sb);
- 			return -EINVAL;
- 		}
- 		if (!ufs_read_cylinder_structures(sb)) {
- 			printk("failed during remounting\n");
--			unlock_super(sb);
-+			mutex_unlock(&UFS_SB(sb)->s_lock);
- 			unlock_ufs(sb);
- 			return -EPERM;
- 		}
-@@ -1358,7 +1359,7 @@ static int ufs_remount (struct super_blo
- #endif
- 	}
- 	UFS_SB(sb)->s_mount_opt = new_mount_opt;
--	unlock_super(sb);
-+	mutex_unlock(&UFS_SB(sb)->s_lock);
- 	unlock_ufs(sb);
- 	return 0;
- }
-diff -Nurp linux-3.6-rc1-orig/fs/ufs/ufs.h linux-3.6-rc1/fs/ufs/ufs.h
---- linux-3.6-rc1-orig/fs/ufs/ufs.h	2012-08-16 09:37:36.000000000 +0200
-+++ linux-3.6-rc1/fs/ufs/ufs.h	2012-08-16 10:24:05.000000000 +0200
-@@ -24,6 +24,7 @@ struct ufs_sb_info {
- 	int work_queued; /* non-zero if the delayed work is queued */
- 	struct delayed_work sync_work; /* FS sync delayed work */
- 	spinlock_t work_lock; /* protects sync_work and work_queued */
-+	struct mutex s_lock;
- };
- 
- struct ufs_inode_info {
+Thank you for telling me about videobuf2-dma-contig and v3.6-rc1.  The
+videobuf2-dma-contig patch I sent is now unnecessary.  So I will
+remove the patch.  I will remove the patch defining
+ARCH_HAS_DMA_MMAP_COHERENT too because the v3.6-rc1 kernel has generic
+dma_mmap_coherent() API for every architecture.
 
+I will also remove the Laurent's patch I sent because it was related
+to ARCH_HAS_DMA_MMAP_COHERENT.
 
+The remaining patch is sh_mobile_lcdc.  I will remove ifdefs from the
+patch and re-post it as a patch v4.
+
+-- 
+Hideki EIRAKU <hdk@igel.co.jp>
