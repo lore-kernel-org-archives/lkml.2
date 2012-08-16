@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2HPMrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:47:09 -0400
-Received: from fieldses.org ([174.143.236.118]:35057 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754972Ab2HPMrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:47:07 -0400
-Date: Thu, 16 Aug 2012 08:47:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120816124703.GE28054@fieldses.org>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.591460800@openvz.org>
- <20120815204546.GC25062@fieldses.org>
- <20120815210237.GF25421@moon>
- <20120815220622.GA28054@fieldses.org>
- <20120816062448.GA32081@moon>
- <20120816123814.GD1209@moon>
+	id S1755959Ab2HPMtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:49:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56431 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab2HPMtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 08:49:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 23/31] arm64: Debugging support
+Date: Thu, 16 Aug 2012 12:49:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ulrich.weigand@linaro.rg
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151507.36174.arnd@arndb.de> <20120816104748.GI31784@mudshark.cambridge.arm.com>
+In-Reply-To: <20120816104748.GI31784@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816123814.GD1209@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208161249.35008.arnd@arndb.de>
+X-Provags-ID: V02:K0:kDvn9I2jRylowamjJz1P9uWhTjOaguP4D5TP34tMH7U
+ LCp4dkeYlow5oYfrv4iBWfkIUwg0hiniToK9Og+YCRmUdwP0Ss
+ +nLPmeQYp59Dgq4yeHTZzM9fIqFQBAm9h7EafmzwtVH7dKaSsO
+ iP5PWG1eGqWJ5j7jheI7IhOjHxNqrOUgGJifa5bv/VbTbxoK6T
+ QrW2qp346knwbGwDrIKqgptqs9GZSf3r9QAtyCS7yQHeudKsS3
+ SG185waVeusn2CstPCkFGYdrr5H16vxLMiz/zf6+1nGLfKwW9b
+ VtOd47KjXjU2b1Iw9tVxHV4HTbslV+Jg4+3CKvwTfJYS1okmJ3
+ lt+yF2A2C2gvpH72j65o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 16, 2012 at 10:24:48AM +0400, Cyrill Gorcunov wrote:
-> > > > > On the other hand, if you want a real filehandle then wouldn't you want
-> > > > > to e.g. call the filesystem's ->encode_fh() if necessary, as
-> > > > > exportfs_encode_fh() does?
-> > > > 
-> > > > Well, one of the problem I hit when I've been trying to use encode_fh
-> > > > is that every new implementation of encode_fh will require some size
-> > > > (even unknown) in buffer where encoded data pushed. Correct me please
-> > > > if I'm wrong. But with export_encode_inode_fh there is a small buffer
-> > > > with pretty known size needed on stack needed for printing data in
-> > > > fdinfo.
-> > > 
-> > > You can just give encode_fh a too-small data and let it fail if it's not
-> > > big enough.
-> > > 
-> > > (In practice I think everyone supports NFSv3 filehandles which have a
-> > > maximum size of 64 bytes.)
+On Thursday 16 August 2012, Will Deacon wrote:
+> On Wed, Aug 15, 2012 at 04:07:36PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 14 August 2012, Catalin Marinas wrote:
+
+> > From what I can tell, there is no support for 32 bit processes debugging
+> > 64 bit ones. Is that something you plan to add in the future, or do you
+> > consider that out of scope? In either case, a comment would be helpful.
+> 
+> That can't really work because the debugger won't be able to manipulate
+> child pointers properly without us adding a new ptrace interface (and then,
+> I still wonder about how feasible it really is). I can add a comment.
+
+You can already have a 32 bit gdb that is able to do remote debugging of
+64 bit processes using a gdb server process. I guess it wouldn't be
+too strange to have a ptrace extension to allow the native case as well.
+I agree it's not a high priority.
+
+> > > +long arch_ptrace(struct task_struct *child, long request,
+> > > +		 unsigned long addr, unsigned long data)
+> > > +{
+> > > +	int ret;
+> > > +	unsigned long *datap = (unsigned long __user *)data;
+> > > +
+> > > +	switch (request) {
+> > > +		case PTRACE_GET_THREAD_AREA:
+> > > +			ret = put_user(child->thread.tp_value, datap);
+> > > +			break;
+> > > +
+> > > +#ifdef CONFIG_HAVE_HW_BREAKPOINT
+> > > +		case PTRACE_GETHBPREGS:
+> > > +			ret = ptrace_gethbpregs(child, addr, datap);
+> > > +			break;
+> > > +
+> > > +		case PTRACE_SETHBPREGS:
+> > > +			ret = ptrace_sethbpregs(child, addr, datap);
+> > > +			break;
+> > > +#endif
+> > > +
+> > > +		default:
+> > > +			ret = ptrace_request(child, request, addr, data);
+> > > +			break;
+> > > +	}
+> > > +
+> > > +	return ret;
+> > > +}
 > > 
-> > I'll think about it, thanks!
+> > Is there a reaons why these are not regsets but have their own ptrace
+> > commands? I believe new architectures should generally not add ptrace
+> > commands any more.
 > 
-> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
-> convenient since it operates with dentries while our fdinfo output deals
-> with inodes. Thus I should either provide some new encode_fh variant
-> which would deal with inodes directly without "parents".
-
-I can't see why that wouldn't work.
-
-> Which doesn't
-> look for me anyhow better than the new export_encode_inode_fh helper.
-
-That isn't going to work for filesystems that define their own
-encode_fh:
-
-	$ git grep '\.encode_fh'
-	fs/btrfs/export.c:      .encode_fh      = btrfs_encode_fh,
-	fs/ceph/export.c:       .encode_fh = ceph_encode_fh,
-	fs/fat/inode.c: .encode_fh      = fat_encode_fh,
-	fs/fuse/inode.c:        .encode_fh      = fuse_encode_fh,
-	fs/gfs2/export.c:       .encode_fh = gfs2_encode_fh,
-	fs/isofs/export.c:      .encode_fh      = isofs_export_encode_fh,
-	fs/nilfs2/namei.c:      .encode_fh = nilfs_encode_fh,
-	fs/ocfs2/export.c:      .encode_fh      = ocfs2_encode_fh,
-	fs/reiserfs/super.c:    .encode_fh = reiserfs_encode_fh,
-	fs/udf/namei.c: .encode_fh      = udf_encode_fh,
-	fs/xfs/xfs_export.c:    .encode_fh              = xfs_fs_encode_fh,
-	mm/shmem.c:     .encode_fh      = shmem_encode_fh,
-
---b.
-
-> After all, if the use of encode_fh become a mandatory rule we can easily
-> extend fsnotify fdinfo output to support new scheme without breaking
-> user space, because output looks like
+> I could probably add some regset wrappers about the hbp accessors (which we
+> have to keep for the compat ptrace interface). I'll have a think as it might
+> even make sense to have different regsets for breakpoints and watchpoints.
 > 
->  | fhandle-type:        1 f_handle: 49b1060023552153
-> 
-> (ie if something is changed than these fields will be simply updated).
-> 
-> Or maybe I miss something?
-> 
-> 	Cyrill
+> As for the the tls, is it worth having a regset with only one register?
+
+Better ask the gdb folks. I'm adding Uli to Cc, maybe he has some insight.
+
+	Arnd
