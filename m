@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab2HPNQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:16:10 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:44143 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932288Ab2HPNQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:16:06 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] mtd: lpc32xx_slc: Make driver independent of AMBA DMA engine driver
-Date: Thu, 16 Aug 2012 15:15:34 +0200
-Message-Id: <1345122935-22115-2-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345122935-22115-1-git-send-email-stigge@antcom.de>
-References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S932427Ab2HPNQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:16:22 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:33757 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756375Ab2HPNQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:16:18 -0400
+Message-ID: <502CF2A0.8080109@c-s.fr>
+Date: Thu, 16 Aug 2012 15:16:16 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Alan Cox <alan@linux.intel.com>, Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] Powerpc 8xx CPM_UART delay in receive
+References: <201208141426.q7EEQSPc003956@localhost.localdomain> <20120814155227.018988da@pyramind.ukuu.org.uk>
+In-Reply-To: <20120814155227.018988da@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the SLC NAND driver independent of the single AMBA DMA engine
-driver by using the platform data provided dma_filter callback.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Le 14/08/2012 16:52, Alan Cox a écrit :
+> On Tue, 14 Aug 2012 16:26:28 +0200
+> Christophe Leroy <christophe.leroy@c-s.fr> wrote:
+>
+>> Hello,
+>>
+>> I'm not sure who to address this Patch to either
+>>
+>> It fixes a delay issue with CPM UART driver on Powerpc MPC8xx.
+>> The problem is that with the actual code, the driver waits 32 IDLE patterns before returning the received data to the upper level. It means for instance about 1 second at 300 bauds.
+>> This fix limits to one byte the waiting period.
+> Take a look how the 8250 does it - I think you want to set the value
+> based upon the data rate. Your patch will break it for everyone doing
+> high seed I/O.
+>
+> Alan
+>
+I'm not sure I understand what you mean. As far as I can see 8250/16550 
+is working a bit different, as it is based on a fifo and triggers an 
+interrupt as soon as a given number of bytes is received. I also see 
+that in case this amount is not reached, there is a receive-timeout 
+which goes on after no byte is received for a duration of more than 4 bytes.
 
----
- drivers/mtd/nand/lpc32xx_slc.c  |   13 +++++++++++--
- include/linux/mtd/lpc32xx_slc.h |   20 ++++++++++++++++++++
- 2 files changed, 31 insertions(+), 2 deletions(-)
+The PowerPC CPM is working differently. It doesn't use a fifo but 
+buffers. Buffers are handed to the microprocessor only when they are 
+full or after a timeout period which is adjustable. In the driver, the 
+buffers are configured with a size of 32 bytes. And the timeout is set 
+to the size of the buffer. That is this timeout that I'm reducing to 1 
+byte in my proposed patch. I can't see what it would break for high 
+speed I/O.
 
---- linux-2.6.orig/drivers/mtd/nand/lpc32xx_slc.c
-+++ linux-2.6/drivers/mtd/nand/lpc32xx_slc.c
-@@ -37,7 +37,7 @@
- #include <linux/of.h>
- #include <linux/of_mtd.h>
- #include <linux/of_gpio.h>
--#include <linux/amba/pl08x.h>
-+#include <linux/mtd/lpc32xx_slc.h>
- 
- #define LPC32XX_MODNAME		"lpc32xx-nand"
- 
-@@ -199,6 +199,7 @@ struct lpc32xx_nand_cfg_slc {
- 
- struct lpc32xx_nand_host {
- 	struct nand_chip	nand_chip;
-+	struct lpc32xx_slc_platform_data *pdata;
- 	struct clk		*clk;
- 	struct mtd_info		mtd;
- 	void __iomem		*io_base;
-@@ -714,9 +715,15 @@ static int lpc32xx_nand_dma_setup(struct
- 	struct mtd_info *mtd = &host->mtd;
- 	dma_cap_mask_t mask;
- 
-+	if (!host->pdata || !host->pdata->dma_filter) {
-+		dev_err(mtd->dev.parent, "no DMA platform data\n");
-+		return -ENOENT;
-+	}
-+
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
--	host->dma_chan = dma_request_channel(mask, pl08x_filter_id, "nand-slc");
-+	host->dma_chan = dma_request_channel(mask, host->pdata->dma_filter,
-+					     "nand-slc");
- 	if (!host->dma_chan) {
- 		dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
- 		return -EBUSY;
-@@ -814,6 +821,8 @@ static int __devinit lpc32xx_nand_probe(
- 	}
- 	lpc32xx_wp_disable(host);
- 
-+	host->pdata = pdev->dev.platform_data;
-+
- 	mtd = &host->mtd;
- 	chip = &host->nand_chip;
- 	chip->priv = host;
---- /dev/null
-+++ linux-2.6/include/linux/mtd/lpc32xx_slc.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Platform data for LPC32xx SoC SLC NAND controller
-+ *
-+ * Copyright (C) 2012 Roland Stigge
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __LINUX_MTD_LPC32XX_SLC_H
-+#define __LINUX_MTD_LPC32XX_SLC_H
-+
-+#include <linux/dmaengine.h>
-+
-+struct lpc32xx_slc_platform_data {
-+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
-+};
-+
-+#endif  /* __LINUX_MTD_LPC32XX_SLC_H */
+Christophe
