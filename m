@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab2HPTyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:54:18 -0400
-Received: from [213.199.154.209] ([213.199.154.209]:2620 "EHLO
+	id S933296Ab2HPTyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:54:39 -0400
+Received: from [213.199.154.206] ([213.199.154.206]:55525 "EHLO
 	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S933205Ab2HPTyM (ORCPT
+	by vger.kernel.org with ESMTP id S933230Ab2HPTyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:54:12 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah1155h)
-X-WSS-ID: 0M8V5WR-02-ED3-02
+	Thu, 16 Aug 2012 15:54:13 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz936eIzz1202hzzz2dh668h839hd24he5bhf0ah1155h)
+X-WSS-ID: 0M8V5X0-01-68S-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/8] perf tools: Rename global variable 'events' in util/header.c
-Date: Thu, 16 Aug 2012 21:10:20 +0200
-Message-ID: <1345144224-27280-5-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 0/8] perf tools: Various updates
+Date: Thu, 16 Aug 2012 21:10:16 +0200
+Message-ID: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
-References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -30,107 +28,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial patch that renames global variable 'events' in util/header.c.
+This patch set contains various perf tools updates. Most patches deal
+with event naming. If the event name is unknown it is named like the
+command line string of it. This is esp. valueable for pmu events like
+for AMD IBS:
 
-Use a more specific naming to avoid conflicts. Same for variable
-'event_count'.
+     $ perf report | grep '^#.*event'
+     # event : name = ibs_op/cnt_ctl=1/GH, type = 7, config = 0x80000, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 0, precise_ip = 0, id = { 
+     # event : name = ibs_fetch/config=0/, type = 6, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, id = { 57, 
+     # Samples: 20K of event 'ibs_op/cnt_ctl=1/GH'
+     # Samples: 4K of event 'ibs_fetch/config=0/'
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/header.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+Another patch stores the pmu/type mapping in the header of perf.data.
+Now the pmu types are known and event can be attributed to a certain
+dynamically allocated pmu:
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index e2e5129..1e5b6aa 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -23,8 +23,8 @@
- 
- static bool no_buildid_cache = false;
- 
--static int event_count;
--static struct perf_trace_event_type *events;
-+static int trace_event_count;
-+static struct perf_trace_event_type *trace_events;
- 
- static u32 header_argc;
- static const char **header_argv;
-@@ -36,24 +36,24 @@ int perf_header__push_event(u64 id, const char *name)
- 	if (strlen(name) > MAX_EVENT_NAME)
- 		pr_warning("Event %s will be truncated\n", name);
- 
--	nevents = realloc(events, (event_count + 1) * sizeof(*events));
-+	nevents = realloc(trace_events, (trace_event_count + 1) * sizeof(*trace_events));
- 	if (nevents == NULL)
- 		return -ENOMEM;
--	events = nevents;
-+	trace_events = nevents;
- 
--	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
--	events[event_count].event_id = id;
--	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
--	event_count++;
-+	memset(&trace_events[trace_event_count], 0, sizeof(struct perf_trace_event_type));
-+	trace_events[trace_event_count].event_id = id;
-+	strncpy(trace_events[trace_event_count].name, name, MAX_EVENT_NAME - 1);
-+	trace_event_count++;
- 	return 0;
- }
- 
- char *perf_header__find_event(u64 id)
- {
- 	int i;
--	for (i = 0 ; i < event_count; i++) {
--		if (events[i].event_id == id)
--			return events[i].name;
-+	for (i = 0 ; i < trace_event_count; i++) {
-+		if (trace_events[i].event_id == id)
-+			return trace_events[i].name;
- 	}
- 	return NULL;
- }
-@@ -1726,9 +1726,9 @@ out_err_write:
- 	}
- 
- 	header->event_offset = lseek(fd, 0, SEEK_CUR);
--	header->event_size = event_count * sizeof(struct perf_trace_event_type);
--	if (events) {
--		err = do_write(fd, events, header->event_size);
-+	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
-+	if (trace_events) {
-+		err = do_write(fd, trace_events, header->event_size);
- 		if (err < 0) {
- 			pr_debug("failed to write perf header events\n");
- 			return err;
-@@ -2211,13 +2211,13 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	if (f_header.event_types.size) {
- 		lseek(fd, f_header.event_types.offset, SEEK_SET);
--		events = malloc(f_header.event_types.size);
--		if (events == NULL)
-+		trace_events = malloc(f_header.event_types.size);
-+		if (trace_events == NULL)
- 			return -ENOMEM;
--		if (perf_header__getbuffer64(header, fd, events,
-+		if (perf_header__getbuffer64(header, fd, trace_events,
- 					     f_header.event_types.size))
- 			goto out_errno;
--		event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
-+		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
- 	}
- 
- 	perf_header__process_sections(header, fd, &session->pevent,
-@@ -2362,8 +2362,8 @@ int perf_event__synthesize_event_types(struct perf_tool *tool,
- 	struct perf_trace_event_type *type;
- 	int i, err = 0;
- 
--	for (i = 0; i < event_count; i++) {
--		type = &events[i];
-+	for (i = 0; i < trace_event_count; i++) {
-+		type = &trace_events[i];
- 
- 		err = perf_event__synthesize_event_type(tool, type->event_id,
- 							type->name, process,
+     # pmu mappings: ibs_op = 7, ibs_fetch = 6, cpu = 4, breakpoint = 5, tracepoint = 2, software = 1
+
+This is usefull for analysing the perf.data file on a system where the
+pmu mappings are no longer available, e.g. on a remote system or if
+the pmu has been unregistered.
+
+Patches base on commit 0c21f736e0a37c50f66ab248d2a52f711b28a4e4
+(acme/perf/core):
+
+  perf evlist: Introduce evsel list accessors (2012-08-15 10:14:18 -0300)
+
+-Robert
+
+Robert Richter (8):
+  perf tools: Fix type for evsel->ids and add size check for ids
+  perf tools: Report number of pmu type of unknown events
+  perf tools: Rename some variables for better understanding
+  perf tools: Rename global variable 'events' in util/header.c
+  perf tools: Catch event names from command line
+  perf tools: Refactor print_event_desc()
+  perf report: Update event names from header description
+  perf tools: Add pmu mappings to header information
+
+ tools/perf/util/evsel.c        |    3 +-
+ tools/perf/util/evsel.h        |    2 +-
+ tools/perf/util/header.c       |  357 ++++++++++++++++++++++++++++++----------
+ tools/perf/util/header.h       |    3 +-
+ tools/perf/util/parse-events.c |   12 ++
+ tools/perf/util/parse-events.h |    1 +
+ tools/perf/util/parse-events.l |   50 +++++-
+ tools/perf/util/parse-events.y |   20 ++-
+ tools/perf/util/pmu.c          |   50 ++++++-
+ tools/perf/util/pmu.h          |    2 +
+ 10 files changed, 396 insertions(+), 104 deletions(-)
+
 -- 
 1.7.8.6
 
