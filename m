@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2HPROb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 13:14:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57679 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752338Ab2HPROa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 13:14:30 -0400
-From: Will Deacon <will.deacon@arm.com>
+	id S1755158Ab2HPRP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 13:15:58 -0400
+Received: from mail.tpi.com ([70.99.223.143]:4460 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab2HPRP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 13:15:56 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
 To: linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>, Jason Baron <jbaron@redhat.com>,
-        Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] tracing/syscalls: fix perf syscall tracing when syscall_nr == -1
-Date: Thu, 16 Aug 2012 18:14:14 +0100
-Message-Id: <1345137254-7377-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.4.1
+Cc: Tim Gardner <tim.gardner@canonical.com>, Ian Abbott <abbotti@mev.co.uk>,
+        Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH v2 linux-next] usbdux: Declare MODULE_FIRMWARE usage
+Date: Thu, 16 Aug 2012 11:15:37 -0600
+Message-Id: <1345137337-12367-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120814011654.GB18000@kroah.com>
+References: <20120814011654.GB18000@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syscall_get_nr can return -1 in the case that the task is not executing
-a system call.
-
-This patch fixes perf_syscall_{enter,exit} to check that the syscall
-number is valid before using it as an index into a bitmap.
-
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Wade Farnsworth <wade_farnsworth@mentor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: devel@driverdev.osuosl.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- kernel/trace/trace_syscalls.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/staging/comedi/drivers/usbdux.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 96fc733..4bc7d92 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -506,6 +506,8 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int size;
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 848c7ec..11ee836 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -102,6 +102,7 @@ sampling rate. If you sample two channels you get 4kHz and so on.
+ #define BULK_TIMEOUT 1000
  
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
-+		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
+ /* constants for "firmware" upload and download */
++#define FIRMWARE "usbdux_firmware.bin"
+ #define USBDUXSUB_FIRMWARE 0xA0
+ #define VENDOR_DIR_IN  0xC0
+ #define VENDOR_DIR_OUT 0x40
+@@ -2791,7 +2792,7 @@ static int usbdux_usb_probe(struct usb_interface *uinterf,
  
-@@ -580,6 +582,8 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int size;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
-+		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
- 
+ 	ret = request_firmware_nowait(THIS_MODULE,
+ 				      FW_ACTION_HOTPLUG,
+-				      "usbdux_firmware.bin",
++				      FIRMWARE,
+ 				      &udev->dev,
+ 				      GFP_KERNEL,
+ 				      usbduxsub + index,
+@@ -2850,3 +2851,4 @@ module_comedi_usb_driver(usbdux_driver, usbdux_usb_driver);
+ MODULE_AUTHOR("Bernd Porr, BerndPorr@f2s.com");
+ MODULE_DESCRIPTION("Stirling/ITL USB-DUX -- Bernd.Porr@f2s.com");
+ MODULE_LICENSE("GPL");
++MODULE_FIRMWARE(FIRMWARE);
 -- 
-1.7.4.1
+1.7.9.5
 
