@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab2HPIKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:10:23 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42733 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755894Ab2HPIKG (ORCPT
+	id S1756268Ab2HPIKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:10:43 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63392 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129Ab2HPIK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:10:06 -0400
-Message-ID: <1345104601.3259.19.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Chanho Min <chanho0207@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Date: Thu, 16 Aug 2012 09:10:01 +0100
-In-Reply-To: <502CA6C3.4040903@acm.org>
-References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com>
-	 <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com>
-	 <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com>
-	 <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com>
-	 <502CA6C3.4040903@acm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 16 Aug 2012 04:10:26 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-ce-502caaee56a4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] sched/debug: Limit sd->*_idx range on sysctl
+Date: Thu, 16 Aug 2012 17:03:24 +0900
+Message-Id: <1345104204-8317-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 07:52 +0000, Bart Van Assche wrote:
-> On 08/16/12 01:35, Chanho Min wrote:
-> >> functions will occur in line.  I also don't see why the sdev reference
-> >> couldn't drop to zero here.
-> > scsi_request_fn is called under the lock of request_queue->queue_lock.
-> > If we drop the sdev reference to zero here,
-> > scsi_device_dev_release_usercontext is
-> > invoked and make request_queue to NULL. When caller of scsi_request_fn try to
-> > unlock request_queue->queue_lock, the oops is occurred.
-> 
-> Whether or not your patch is applied, if the put_device() call in
-> scsi_request_fn() decreases the sdev reference count to zero, the
-> scsi_request_fn() caller will still try to unlock the queue lock after
-> scsi_request_fn() finished and hence will trigger a use-after-free. I'm
-> afraid the only real solution is to modify the SCSI and/or block layers
-> such that scsi_remove_device() can't finish while scsi_request_fn() is
-> in progress. And once that is guaranteed the get_device() / put_device()
-> pair can be left out from scsi_request_fn().
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Well, no.  The only way to destroy a queue is with blk_cleanup_queue()
-which does the final put.  blk_cleanup_queue has a rather clunky drain
-check that looks at both queued and in-flight requests.  Even if we have
-a scsi_remove_device() racing with the scsi_request_fn() and it gets to
-blk_cleanup_queue(), that call gets held at the drain wait until the
-scsi_request_fn() has exited.  The same is true for all other request
-functions, so we're safe.
+Various sd->*_idx's are used for refering the rq's load average table
+when selecting a cpu to run.  However they can be set to any number
+with sysctl knobs so that it can crash the kernel if something bad is
+given. Fix it by limiting them into the actual range.
 
-James
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+I'm not sure it needs to go to stable also.
 
+ kernel/sched/core.c | 35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4376c9f34790..e71523eec3e4 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5463,16 +5463,25 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
+ 	*tablep = NULL;
+ }
+ 
++static const int min_load_idx = 0;
++static const int max_load_idx = CPU_LOAD_IDX_MAX;
++
+ static void
+ set_table_entry(struct ctl_table *entry,
+ 		const char *procname, void *data, int maxlen,
+-		umode_t mode, proc_handler *proc_handler)
++		umode_t mode, proc_handler *proc_handler,
++		bool load_idx)
+ {
+ 	entry->procname = procname;
+ 	entry->data = data;
+ 	entry->maxlen = maxlen;
+ 	entry->mode = mode;
+ 	entry->proc_handler = proc_handler;
++
++	if (load_idx) {
++		entry->extra1 = &min_load_idx;
++		entry->extra2 = &max_load_idx;
++	}
+ }
+ 
+ static struct ctl_table *
+@@ -5484,30 +5493,30 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ 		return NULL;
+ 
+ 	set_table_entry(&table[0], "min_interval", &sd->min_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
++		sizeof(long), 0644, proc_doulongvec_minmax, false);
+ 	set_table_entry(&table[1], "max_interval", &sd->max_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
++		sizeof(long), 0644, proc_doulongvec_minmax, false);
+ 	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[9], "cache_nice_tries",
+ 		&sd->cache_nice_tries,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[10], "flags", &sd->flags,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[11], "name", sd->name,
+-		CORENAME_MAX_SIZE, 0444, proc_dostring);
++		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
+ 	/* &table[12] is terminator */
+ 
+ 	return table;
+-- 
+1.7.11.2
 
