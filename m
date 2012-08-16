@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030295Ab2HPQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:14:26 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32115 "EHLO
+	id S1030281Ab2HPQOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:14:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32112 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757658Ab2HPQNV (ORCPT
+	with ESMTP id S1757651Ab2HPQNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 12:13:21 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 11/11] xen/mmu: Release just the MFN list, not MFN list and part of pagetables.
-Date: Thu, 16 Aug 2012 12:03:29 -0400
-Message-Id: <1345133009-21941-12-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 07/11] xen/mmu: Recycle the Xen provided L4, L3, and L2 pages
+Date: Thu, 16 Aug 2012 12:03:25 -0400
+Message-Id: <1345133009-21941-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
 References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
@@ -21,48 +21,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We call memblock_reserve for [start of mfn list] -> [PMD aligned end
-of mfn list] instead of <start of mfn list> -> <page aligned end of mfn list].
+As we are not using them. We end up only using the L1 pagetables
+and grafting those to our page-tables.
 
-This has the disastrous effect that if at bootup the end of mfn_list is
-not PMD aligned we end up returning to memblock parts of the region
-past the mfn_list array. And those parts are the PTE tables with
-the disastrous effect of seeing this at bootup:
-
-Write protecting the kernel read-only data: 10240k
-Freeing unused kernel memory: 1860k freed
-Freeing unused kernel memory: 200k freed
-(XEN) mm.c:2429:d0 Bad type (saw 1400000000000002 != exp 7000000000000000) for mfn 116a80 (pfn 14e26)
-...
-(XEN) mm.c:908:d0 Error getting mfn 116a83 (pfn 14e2a) from L1 entry 8000000116a83067 for l1e_owner=0, pg_owner=0
-(XEN) mm.c:908:d0 Error getting mfn 4040 (pfn 5555555555555555) from L1 entry 0000000004040601 for l1e_owner=0, pg_owner=0
-.. and so on.
-
+[v1: Per Stefano's suggestion squashed two commits]
+[v2: Per Stefano's suggestion simplified loop]
+[v3: Fix smatch warnings]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/mmu.c |   40 +++++++++++++++++++++++++++++++++-------
+ 1 files changed, 33 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 5a880b8..6019c22 100644
+index a59070b..bd92c82 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -1227,7 +1227,6 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
- 			/* We should be in __ka space. */
- 			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
- 			addr = xen_start_info->mfn_list;
--			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
- 			/* We roundup to the PMD, which means that if anybody at this stage is
- 			 * using the __ka address of xen_start_info or xen_start_info->shared_info
- 			 * they are in going to crash. Fortunatly we have already revectored
-@@ -1235,6 +1234,7 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
- 			size = roundup(size, PMD_SIZE);
- 			xen_cleanhighmap(addr, addr + size);
+@@ -1708,7 +1708,20 @@ static void convert_pfn_mfn(void *v)
+ 	for (i = 0; i < PTRS_PER_PTE; i++)
+ 		pte[i] = xen_make_pte(pte[i].pte);
+ }
+-
++static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
++				 unsigned long addr)
++{
++	if (*pt_base == PFN_DOWN(__pa(addr))) {
++		set_page_prot((void *)addr, PAGE_KERNEL);
++		clear_page((void *)addr);
++		(*pt_base)++;
++	}
++	if (*pt_end == PFN_DOWN(__pa(addr))) {
++		set_page_prot((void *)addr, PAGE_KERNEL);
++		clear_page((void *)addr);
++		(*pt_end)--;
++	}
++}
+ /*
+  * Set up the initial kernel pagetable.
+  *
+@@ -1724,6 +1737,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ {
+ 	pud_t *l3;
+ 	pmd_t *l2;
++	unsigned long addr[3];
++	unsigned long pt_base, pt_end;
++	unsigned i;
  
-+			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
- 			memblock_free(__pa(xen_start_info->mfn_list), size);
- 			/* And revector! Bye bye old array */
- 			xen_start_info->mfn_list = new_mfn_list;
+ 	/* max_pfn_mapped is the last pfn mapped in the initial memory
+ 	 * mappings. Considering that on Xen after the kernel mappings we
+@@ -1731,6 +1747,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * set max_pfn_mapped to the last real pfn mapped. */
+ 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+ 
++	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
++	pt_end = PFN_DOWN(__pa(xen_start_info->pt_base + (xen_start_info->nr_pt_frames * PAGE_SIZE)));
++
+ 	/* Zap identity mapping */
+ 	init_level4_pgt[0] = __pgd(0);
+ 
+@@ -1749,6 +1768,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
+ 	l2 = m2v(l3[pud_index(__START_KERNEL_map)].pud);
+ 
++	addr[0] = (unsigned long)pgd;
++	addr[1] = (unsigned long)l3;
++	addr[2] = (unsigned long)l2;
+ 	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
+ 	 * Both L4[272][0] and L4[511][511] have entries that point to the same
+ 	 * L2 (PMD) tables. Meaning that if you modify it in __va space
+@@ -1782,20 +1804,24 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	/* Unpin Xen-provided one */
+ 	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+ 
+-	/* Switch over */
+-	pgd = init_level4_pgt;
+-
+ 	/*
+ 	 * At this stage there can be no user pgd, and no page
+ 	 * structure to attach it to, so make sure we just set kernel
+ 	 * pgd.
+ 	 */
+ 	xen_mc_batch();
+-	__xen_write_cr3(true, __pa(pgd));
++	__xen_write_cr3(true, __pa(init_level4_pgt));
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);
+ 
+-	memblock_reserve(__pa(xen_start_info->pt_base),
+-			 xen_start_info->nr_pt_frames * PAGE_SIZE);
++	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
++	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
++	 * the initial domain. For guests using the toolstack, they are in:
++	 * [L4], [L3], [L2], [L1], [L1], order .. */
++	for (i = 0; i < ARRAY_SIZE(addr); i++)
++		check_pt_base(&pt_base, &pt_end, addr[i]);
++
++	/* Our (by three pages) smaller Xen pagetable that we are using */
++	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
+ }
+ #else	/* !CONFIG_X86_64 */
+ static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
 -- 
 1.7.7.6
 
