@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030414Ab2HPSXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 14:23:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37297 "EHLO mx1.redhat.com"
+	id S1030334Ab2HPSWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 14:22:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39982 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030366Ab2HPSW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 14:22:58 -0400
-Date: Thu, 16 Aug 2012 18:56:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v2] Yama: access task_struct->comm directly
-Message-ID: <20120816165629.GA12599@redhat.com>
-References: <20120815184155.GA3666@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815184155.GA3666@www.outflux.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1030305Ab2HPSWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 14:22:07 -0400
+Message-Id: <20120816174453.154143248@napanee.usersys.redhat.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 16 Aug 2012 13:44:53 -0400
+From: aris@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Lennart Poettering <lpoetter@redhat.com>
+Subject: [PATCH v6 0/4] cgroup: add xattr support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15, Kees Cook wrote:
->
-> v2: update with newly added traceme report.
+This series are a refreshed version of a patchset submitted by Li Zefan back
+in march:
+	https://lkml.org/lkml/2012/3/1/13
 
-...
+With Li's permission, I refreshed the patches to apply over the latest upstream
+and added the modifications suggested by others in the thread:
+- using a mount option instead of config option to enable the xattr support
+- reinitialize the list in kmem_xattrs_free()
+- renamed functions to simple_xattr_*()
 
-> @@ -319,12 +316,9 @@ static int yama_ptrace_traceme(struct task_struct *parent)
->  	}
->  
->  	if (rc) {
-> -		char name[sizeof(current->comm)];
->  		printk_ratelimited(KERN_NOTICE
->  			"ptraceme of pid %d was attempted by: %s (pid %d)\n",
-> -			current->pid,
-> -			get_task_comm(name, parent),
-> -			parent->pid);
-> +			current->pid, parent->comm, parent->pid);
+There're two users for this patchset:
+- SELinux: to be able to control access to cgroupfs inside containers
+- systemd: to store meta information such as main PID in a service cgroup,
+  set specific services special options in the cgroup.
 
-Hmm, yes. This change is even more important. This is called under
-write_lock_irq(tasklist_lock), task_lock() can deadlock if we race
-with another CPU doing task_lock()->interrupt->read_lock(tasklist).
+While the xattrs will use kernel memory like tmpfs, they're restricted to
+'security' (which controls the format of the value) and 'trusted' (which
+requires CAP_SYS_ADMIN). If kernel memory usage is still a concern, we're
+not far from having memcg account for kernel memory.
 
-Oleg.
+v6:
+- only allow trusted and security
+- replace subsys_bits by something more meaningful
+v5:
+- check for permissions for user xattr namespace
+v4:
+- implemented requested changes by Tejun Heo in patch #2
 
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Lennart Poettering <lpoetter@redhat.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+
+-- 
+Aristeu
