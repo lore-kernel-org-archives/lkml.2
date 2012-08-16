@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829Ab2HPPZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:25:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab2HPPZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:25:01 -0400
-Date: Thu, 16 Aug 2012 17:21:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120816152112.GA8874@redhat.com>
-References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop> <20120816050030.GA12060@in.ibm.com>
+	id S964856Ab2HPPZV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:25:21 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45025 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756288Ab2HPPZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:25:17 -0400
+Date: Thu, 16 Aug 2012 11:25:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+Message-ID: <20120816152513.GA31346@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Marti Raudsepp <marti@juffo.org>,
+	Kernel hackers <linux-kernel@vger.kernel.org>,
+	ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
+ <20120816111051.GA16036@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816050030.GA12060@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120816111051.GA16036@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Ananth N Mavinakayanahalli wrote:
->
-> On Thu, Aug 16, 2012 at 07:41:53AM +1000, Benjamin Herrenschmidt wrote:
-> > On Wed, 2012-08-15 at 18:59 +0200, Oleg Nesterov wrote:
-> > > On 07/26, Ananth N Mavinakayanahalli wrote:
-> > > >
-> > > > From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> > > >
-> > > > This is the port of uprobes to powerpc. Usage is similar to x86.
-> > >
-> > > I am just curious why this series was ignored by powerpc maintainers...
-> >
-> > Because it arrived too late for the previous merge window considering my
-> > limited bandwidth for reviewing things and that nobody else seems to
-> > have reviewed it :-)
-> >
-> > It's still on track for the next one, and I'm hoping to dedicate most of
-> > next week going through patches & doing a powerpc -next.
->
-> Thanks Ben!
+On Thu, Aug 16, 2012 at 07:10:51PM +0800, Fengguang Wu wrote:
+> 
+> Here is the dmesg. BTW, it seems 3.5.0 don't have this issue.
 
-Great!
+Fengguang,
 
-> > > Just one question... Shouldn't arch_uprobe_pre_xol() forbid to probe
-> > > UPROBE_SWBP_INSN (at least) ?
-> > >
-> > > (I assume that emulate_step() can't handle this case but of course I
-> > >  do not understand arch/powerpc/lib/sstep.c)
-> > >
-> > > Note that uprobe_pre_sstep_notifier() sets utask->state = UTASK_BP_HIT
-> > > without any checks. This doesn't look right if it was UTASK_SSTEP...
-> > >
-> > > But again, I do not know what powepc will actually do if we try to
-> > > single-step over UPROBE_SWBP_INSN.
-> >
-> > Ananth ?
->
-> set_swbp() will return -EEXIST to install_breakpoint if we are trying to
-> put a breakpoint on UPROBE_SWBP_INSN.
+It sounds like you have a (at least fairly) reliable reproduction for
+this problem?  Is it something you can share?  It would be good to get
+this into our test suites, since it was _not_ something that was
+caught by xfstests, apparently.
 
-not really, this -EEXIST (already removed by recent changes) means that
-bp was already installed.
+Can you see if this patch addresses it?  (The first two patch hunks
+are the same debugging additions I had posted before.)
 
-But this doesn't matter,
+It looks like the responsible commit is 968dee7722: "ext4: fix hole
+punch failure when depth is greater than 0".  I had thought this patch
+was low risk if you weren't using the new punch ioctl, but it turns
+out it did make a critical change in the non-punch (i.e., truncate)
+code path, which is what the addition of "i = 0;" in the patch below
+addresses.
 
-> So, the arch agnostic code itself
-> takes care of this case...
+Regards,
 
-Yes. I forgot about install_breakpoint()->is_swbp_insn() check which
-returns -ENOTSUPP, somehow I thought arch_uprobe_analyze_insn() does
-this.
+    	     	       	     	       	  - Ted
 
-> or am I missing something?
-
-No, it is me.
-
-> However, I see that we need a powerpc specific is_swbp_insn()
-> implementation since we will have to take care of all the trap variants.
-
-Hmm, I am not sure. is_swbp_insn(insn), as it is used in the arch agnostic
-code, should only return true if insn == UPROBE_SWBP_INSN (just in case,
-this logic needs more fixes but this is offtopic).
-
-If powerpc has another insn(s) which can trigger powerpc's do_int3()
-counterpart, they should be rejected by arch_uprobe_analyze_insn().
-I think.
-
-> I will need to update the patches based on changes being made by Oleg
-> and Sebastien for the single-step issues.
-
-Perhaps you can do this in a separate change?
-
-We need some (simple) changes in the arch agnostic code first, they
-should not break poweppc. These changes are still under discussion.
-Once we have "__weak  arch_uprobe_step*" you can reimplement these
-hooks and fix the problems with single-stepping.
-
-Oleg.
-
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 769151d..fa829dc 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+ 
+ 	/* the header must be checked already in ext4_ext_remove_space() */
+ 	ext_debug("truncate since %u in leaf to %u\n", start, end);
++	if (!path[depth].p_hdr && !path[depth].p_bh) {
++		EXT4_ERROR_INODE(inode, "depth %d", depth);
++		BUG_ON(1);
++	}
+ 	if (!path[depth].p_hdr)
+ 		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
+ 	eh = path[depth].p_hdr;
+@@ -2730,6 +2734,10 @@ cont:
+ 		/* this is index block */
+ 		if (!path[i].p_hdr) {
+ 			ext_debug("initialize header\n");
++			if (!path[i].p_hdr && !path[i].p_bh) {
++				EXT4_ERROR_INODE(inode, "i=%d", i);
++				BUG_ON(1);
++			}
+ 			path[i].p_hdr = ext_block_hdr(path[i].p_bh);
+ 		}
+ 
+@@ -2828,6 +2836,7 @@ out:
+ 	kfree(path);
+ 	if (err == -EAGAIN) {
+ 		path = NULL;
++		i = 0;
+ 		goto again;
+ 	}
+ 	ext4_journal_stop(handle);
