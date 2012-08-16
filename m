@@ -1,133 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab2HPT2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:28:49 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1245 "EHLO mms3.broadcom.com"
+	id S933182Ab2HPT3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:29:08 -0400
+Received: from fieldses.org ([174.143.236.118]:38120 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab2HPT2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:28:47 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Subject: RE: [PATCH] bnx2: turn off the network statck during
- initialization
-From: "Michael Chan" <mchan@broadcom.com>
-To: "Jiang Wang" <Jiang.Wang@riverbed.com>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chaitanya Lala" <Chaitanya.Lala@riverbed.com>,
-        "Francis St. Amant" <Francis.St.Amant@riverbed.com>
-In-Reply-To: <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
-References: <1345141295-7589-1-git-send-email-Jiang.Wang@riverbed.com>
- <1345143431.6916.36.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
- <CEE05A0D7856E14880AD5560634EBEA834DB2ABC@SFO1EXC-MBXP06.nbttech.com>
-Date: Thu, 16 Aug 2012 12:28:38 -0700
-Message-ID: <1345145318.6916.42.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S933150Ab2HPT3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:29:04 -0400
+Date: Thu, 16 Aug 2012 15:29:03 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org,
+        neilb@suse.de
+Subject: Re: [PATCH v3] SUNRPC: protect service sockets lists during
+ per-net shutdown
+Message-ID: <20120816192902.GB4385@fieldses.org>
+References: <20120703125851.3850.86782.stgit@localhost.localdomain>
+ <20120724194036.GK8570@fieldses.org>
 MIME-Version: 1.0
-X-WSS-ID: 7C3396F249820203737-01-01
-Content-Type: text/plain;
- charset=cp1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120724194036.GK8570@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-16 at 19:15 +0000, Jiang Wang wrote: 
-> Hi Michael,
+On Tue, Jul 24, 2012 at 03:40:37PM -0400, J. Bruce Fields wrote:
+> On Tue, Jul 03, 2012 at 04:58:57PM +0400, Stanislav Kinsbursky wrote:
+> > v3:
+> > 1) rebased on 3.5-rc3 kernel.
+> > 
+> > v2: destruction of currently processing transport added:
+> > 1) Added marking of currently processing transports with XPT_CLOSE on per-net
+> > shutdown. These transports will be destroyed in svc_xprt_enqueue() (instead of
+> > enqueueing).
 > 
-> I just checked the code for netif_carrier_off(), and it will return if
-> the dev is not initialized (registered) as follows:
+> That worries me:
 > 
-> void netif_carrier_off(struct net_device *dev)
-> {
->         if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
->                 if (dev->reg_state == NETREG_UNINITIALIZED)
->                         return;
->                 linkwatch_fire_event(dev);
->         }
-> }
+> 	- Why did we originally defer close until svc_recv?
+> 	- Are we sure there's no risk to performing it immediately in
+> 	  svc_enqueue?  Is it safe to call from the socket callbacks and
+> 	  wherever else we call svc_enqueue?
 > 
-> So linkwatch_fire_event should not fire in this case, right? Thanks
-> for the quick response.
+> And in the past I haven't been good at testing for problems
+> here--instead they tend to show up when a use somewhere tries shutting
+> down a server that's under load.
 > 
-Yes, you're right.  Your patch should not cause any problem then.
+> I'll look more closely.  Meanwhile you could split out that change as a
+> separate patch and convince me why it's right....
 
-But I still don't understand what problem you're trying to solve.  The
-link status from ethtool is determined by bnx2_get_link() and it should
-always return link down before bnx2_open() is called.  Can you please
-elborate?  Thanks.
+Looking back at this:
 
-> Regards,
+	- adding the sv_lock looks like the right thing to do anyway
+	  independent of containers, because svc_age_temp_xprts may
+	  still be running.
+
+	- I'm increasingly unhappy about sharing rpc servers between
+	  network namespaces.  Everything would be easier to understand
+	  if they were independent.  Can we figure out how to do that?
+
 > 
-> Jiang
+> --b.
 > 
-> -------------------------------------
-> Jiang Wang
-> Member of Technical Staff
-> Riverbed Technology
-> Tel: (408) 522-5109
-> Email: Jiang.Wang@riverbed.com
-> www.riverbed.com
-> 
-> 
-> -----Original Message-----
-> From: Michael Chan [mailto:mchan@broadcom.com] 
-> Sent: Thursday, August 16, 2012 11:57 AM
-> To: Jiang Wang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Chaitanya Lala; Francis St. Amant; Jiang Wang
-> Subject: Re: [PATCH] bnx2: turn off the network statck during initialization
-> 
-> On Thu, 2012-08-16 at 11:21 -0700, Jiang Wang wrote: 
-> > The initialization state of bnx2 driver is wrong. It does not turn of 
-> > the Linux network stack using netif_carrier_off. This may lead to 
-> > inconsistent report from ethtool as the link is up but speed is 
-> > unknown when the cable is not plugged in.
+> > 2) newly created temporary transport in svc_recv() will be destroyed, if it's
+> > "parent" was marked with XPT_CLOSE.
+> > 3) spin_lock(&serv->sv_lock) was replaced by spin_lock_bh() in
+> > svc_close_net(&serv->sv_lock).
 > > 
-> > E.g.
-> >         Speed: Unknown! (0)<--------------------------------------
-> >         Duplex: Half       <--------------------------------------
-> >         MDI: Unknown! (0)
-> >         Port: Twisted Pair
-> >         PHYAD: 1
-> >         Transceiver: internal
-> >         Auto-negotiation: on
-> >         Supports Wake-on: g
-> >         Wake-on: d
-> >         Link detected: yes <---------------------------------------
+> > Service sv_tempsocks and sv_permsocks lists are accessible by tasks with
+> > different network namespaces, and thus per-net service destruction must be
+> > protected.
+> > These lists are protected by service sv_lock. So lets wrap list munipulations
+> > with this lock and move tranports destruction outside wrapped area to prevent
+> > deadlocks.
 > > 
-> > This patches fixed the problem by turning off the network stack during 
-> > initialization.
-> > 
-> > Signed-off-by: Jiang Wang <jwang@riverbed.com>
+> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 > > ---
-> >  drivers/net/ethernet/broadcom/bnx2.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> >  net/sunrpc/svc_xprt.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++---
+> >  1 files changed, 52 insertions(+), 4 deletions(-)
 > > 
-> > diff --git a/drivers/net/ethernet/broadcom/bnx2.c 
-> > b/drivers/net/ethernet/broadcom/bnx2.c
-> > index ac7b744..ce4548d 100644
-> > --- a/drivers/net/ethernet/broadcom/bnx2.c
-> > +++ b/drivers/net/ethernet/broadcom/bnx2.c
-> > @@ -8463,6 +8463,10 @@ bnx2_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
-> >  	dev->features |= dev->hw_features;
-> >  	dev->priv_flags |= IFF_UNICAST_FLT;
+> > diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+> > index 88f2bf6..4af2114 100644
+> > --- a/net/sunrpc/svc_xprt.c
+> > +++ b/net/sunrpc/svc_xprt.c
+> > @@ -320,6 +320,7 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+> >  	struct svc_pool *pool;
+> >  	struct svc_rqst	*rqstp;
+> >  	int cpu;
+> > +	int destroy = 0;
 > >  
-> > +	/* tell the stack to leave us alone until bnx2_open() is called */
-> > +	netif_carrier_off(dev);
-> 
-> We have tried this before and this didn't work.  netif_carrier_off() calls linkwatch_fire_event() to schedule the event.  If
-> register_netdev() fails for whatever reason, the netdev will be freed but the link_watch event may still be scheduled.
-> 
-> Calling netif_carrier_off() after register_netdev() returns successfully also may not work as it will race with bnx2_open() which enables IRQ.
-> An linkup IRQ can happen at time and we may end up with the wrong carrier state because of the race condition.
-> 
-> > +	netif_stop_queue(dev);
+> >  	if (!svc_xprt_has_something_to_do(xprt))
+> >  		return;
+> > @@ -338,6 +339,17 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+> >  
+> >  	pool->sp_stats.packets++;
+> >  
+> > +	/*
+> > +	 * Check transport close flag. It could be marked as closed on per-net
+> > +	 * service shutdown.
+> > +	 */
+> > +	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
+> > +		/* Don't enqueue transport if it has to be destroyed. */
+> > +		dprintk("svc: transport %p have to be closed\n", xprt);
+> > +		destroy++;
+> > +		goto out_unlock;
+> > +	}
 > > +
-> >  	if ((rc = register_netdev(dev))) {
-> >  		dev_err(&pdev->dev, "Cannot register net device\n");
-> >  		goto error;
-> 
-> 
-> 
-> 
-
-
-
+> >  	/* Mark transport as busy. It will remain in this state until
+> >  	 * the provider calls svc_xprt_received. We update XPT_BUSY
+> >  	 * atomically because it also guards against trying to enqueue
+> > @@ -374,6 +386,8 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+> >  
+> >  out_unlock:
+> >  	spin_unlock_bh(&pool->sp_lock);
+> > +	if (destroy)
+> > +		svc_delete_xprt(xprt);
+> >  }
+> >  EXPORT_SYMBOL_GPL(svc_xprt_enqueue);
+> >  
+> > @@ -714,6 +728,13 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
+> >  			__module_get(newxpt->xpt_class->xcl_owner);
+> >  			svc_check_conn_limits(xprt->xpt_server);
+> >  			spin_lock_bh(&serv->sv_lock);
+> > +			if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
+> > +				dprintk("svc_recv: found XPT_CLOSE on listener\n");
+> > +				set_bit(XPT_DETACHED, &newxpt->xpt_flags);
+> > +				spin_unlock_bh(&pool->sp_lock);
+> > +				svc_delete_xprt(newxpt);
+> > +				goto out_closed;
+> > +			}
+> >  			set_bit(XPT_TEMP, &newxpt->xpt_flags);
+> >  			list_add(&newxpt->xpt_list, &serv->sv_tempsocks);
+> >  			serv->sv_tmpcnt++;
+> > @@ -739,6 +760,7 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
+> >  			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
+> >  		dprintk("svc: got len=%d\n", len);
+> >  	}
+> > +out_closed:
+> >  	svc_xprt_received(xprt);
+> >  
+> >  	/* No data, incomplete (TCP) read, or accept() */
+> > @@ -936,6 +958,7 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+> >  	struct svc_pool *pool;
+> >  	struct svc_xprt *xprt;
+> >  	struct svc_xprt *tmp;
+> > +	struct svc_rqst *rqstp;
+> >  	int i;
+> >  
+> >  	for (i = 0; i < serv->sv_nrpools; i++) {
+> > @@ -947,11 +970,16 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+> >  				continue;
+> >  			list_del_init(&xprt->xpt_ready);
+> >  		}
+> > +		list_for_each_entry(rqstp, &pool->sp_all_threads, rq_all) {
+> > +			if (rqstp->rq_xprt && rqstp->rq_xprt->xpt_net == net)
+> > +				set_bit(XPT_CLOSE, &rqstp->rq_xprt->xpt_flags);
+> > +		}
+> >  		spin_unlock_bh(&pool->sp_lock);
+> >  	}
+> >  }
+> >  
+> > -static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+> > +static void svc_clear_list(struct list_head *xprt_list, struct net *net,
+> > +			   struct list_head *kill_list)
+> >  {
+> >  	struct svc_xprt *xprt;
+> >  	struct svc_xprt *tmp;
+> > @@ -959,7 +987,8 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+> >  	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
+> >  		if (xprt->xpt_net != net)
+> >  			continue;
+> > -		svc_delete_xprt(xprt);
+> > +		list_move(&xprt->xpt_list, kill_list);
+> > +		set_bit(XPT_DETACHED, &xprt->xpt_flags);
+> >  	}
+> >  	list_for_each_entry(xprt, xprt_list, xpt_list)
+> >  		BUG_ON(xprt->xpt_net == net);
+> > @@ -967,6 +996,15 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+> >  
+> >  void svc_close_net(struct svc_serv *serv, struct net *net)
+> >  {
+> > +	struct svc_xprt *xprt, *tmp;
+> > +	LIST_HEAD(kill_list);
+> > +
+> > +	/*
+> > +	 * Protect the lists, since they can be by tasks with different network
+> > +	 * namespace contexts.
+> > +	 */
+> > +	spin_lock_bh(&serv->sv_lock);
+> > +
+> >  	svc_close_list(&serv->sv_tempsocks, net);
+> >  	svc_close_list(&serv->sv_permsocks, net);
+> >  
+> > @@ -976,8 +1014,18 @@ void svc_close_net(struct svc_serv *serv, struct net *net)
+> >  	 * svc_xprt_enqueue will not add new entries without taking the
+> >  	 * sp_lock and checking XPT_BUSY.
+> >  	 */
+> > -	svc_clear_list(&serv->sv_tempsocks, net);
+> > -	svc_clear_list(&serv->sv_permsocks, net);
+> > +	svc_clear_list(&serv->sv_tempsocks, net, &kill_list);
+> > +	svc_clear_list(&serv->sv_permsocks, net, &kill_list);
+> > +
+> > +	spin_unlock_bh(&serv->sv_lock);
+> > +
+> > +	/*
+> > +	 * Destroy collected transports.
+> > +	 * Note: tranports has been marked as XPT_DETACHED on svc_clear_list(),
+> > +	 * so no need to protect againt list_del() in svc_delete_xprt().
+> > +	 */
+> > +	list_for_each_entry_safe(xprt, tmp, &kill_list, xpt_list)
+> > +		svc_delete_xprt(xprt);
+> >  }
+> >  
+> >  /*
+> > 
