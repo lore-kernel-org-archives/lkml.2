@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab2HPT4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:56:09 -0400
-Received: from mga05.intel.com ([192.55.52.89]:32518 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932118Ab2HPT4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:56:04 -0400
+	id S933290Ab2HPT4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:56:30 -0400
+Received: from [216.32.180.14] ([216.32.180.14]:52371 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S933221Ab2HPTyM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:54:12 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jagrelo@cisco.com" <jagrelo@cisco.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
+ structures
+Thread-Topic: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
+ structures
+Thread-Index: AQHNe8D81m4DRZTLZUuq2hIWRVG9dJdc1R2AgAACGPA=
+Date: Thu, 16 Aug 2012 19:52:00 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C17D1@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1345130600-2862-1-git-send-email-kys@microsoft.com>
+ <20120816193537.GA14719@kroah.com>
+In-Reply-To: <20120816193537.GA14719@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4i6CYNmxbHHfgEYqPHVD=_PDqurFyrZzzL5jb0rdVj8w@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<68a6f647ca1d4429d6b781b6cfeed9c93a346c14.1345055639.git.dmitry.kasatkin@intel.com>
-	<CA+5PVA4i6CYNmxbHHfgEYqPHVD=_PDqurFyrZzzL5jb0rdVj8w@mail.gmail.com>
-Date: Thu, 16 Aug 2012 22:56:02 +0300
-Message-ID: <CALLzPKb-qpAJCThHxukEUGGhOWUTxr5wCP7C1MmZfNZrdMViGg@mail.gmail.com>
-Subject: Re: [RFC v2 4/7] modsig: add integrity_module_check hook
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CISCO.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 9:49 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
-> <dmitry.kasatkin@intel.com> wrote:
->> @@ -2437,6 +2438,14 @@ static int copy_and_check(struct load_info *info,
->>
->>         info->hdr = hdr;
->>         info->len = len;
->> +
->> +       err = integrity_module_check(hdr, len);
->> +       if (err < 0)
->> +               goto free_hdr;
->> +
->> +       /* cut signature tail */
->> +       info->len = err;
->> +
->>         return 0;
->>
->>  free_hdr:
->
-> So if I'm reading this correctly, any module that fails signature
-> verification will fail to load.  That makes sense, but I wonder if you
-> intend to support a non-enforcing mode for module signatures at all?
-> Actually, a brief document in Documentation describing how this whole
-> mechanism works and what the fail states are would be good.  David's
-> patches have it nicely spelled out and I don't see anything similar in
-> your patch set.
->
-> josh
 
-Hi,
 
-I had enable and enforce mode in my previous patches.
-I have removed them just before posting.
-I added now enforcing back..
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, August 16, 2012 3:36 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com;
+> jagrelo@cisco.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: Explicitly size elements of protocol
+> structures
+> 
+> On Thu, Aug 16, 2012 at 08:23:20AM -0700, K. Y. Srinivasan wrote:
+> > Use explicitly sized types in data structures defining the host/guest
+> > protocol. I would like to thank Juan Sanchez-Agrelo  <jagrelo@cisco.com>
+> > for reporting this.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> 
+> If someone reports a problem, mark it as:
+> 	Reported-by: Juan Sanchez-Agrelo <jagrelo@cisco.com>
+> in the signed-off-by: area of the patch.
 
-- Dmitry
+Will do. 
+> 
+> Does this need to go into 3.6, and possibly older kernels?  Or can it
+> wait for 3.7?
+
+Given the "stable kernel rules",  I don't think this needs to go into older kernels.
+This can wait for 3.7.
+
+Thanks,
+
+K. Y
+ 
+
+
+
