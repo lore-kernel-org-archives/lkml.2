@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030297Ab2HPQf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:35:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996Ab2HPQfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:35:53 -0400
-Date: Thu, 16 Aug 2012 19:36:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
-Message-ID: <20120816163658.GA22518@redhat.com>
-References: <20120810223633.809.44188.stgit@bling.home>
- <20120815142803.GF3068@redhat.com>
- <1345052191.4683.435.camel@ul30vt.home>
- <20120815192224.GB5670@redhat.com>
- <502D1FF4.20506@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502D1FF4.20506@redhat.com>
+	id S1030314Ab2HPQhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:37:42 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45220 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030198Ab2HPQhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:37:38 -0400
+Message-Id: <20120816163408.625246843@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 16 Aug 2012 20:34:08 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: [patch 0/7] procfs, fdinfo reworked, attempts N-th
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 07:29:40PM +0300, Avi Kivity wrote:
-> On 08/15/2012 10:22 PM, Michael S. Tsirkin wrote:
-> > On Wed, Aug 15, 2012 at 11:36:31AM -0600, Alex Williamson wrote:
-> >> On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
-> >> > On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
-> >> > > v8:
-> >> > > 
-> >> > > Trying a new approach.  Nobody seems to like the internal IRQ
-> >> > > source ID object and the interactions it implies between irqfd
-> >> > > and eoifd, so let's get rid of it.  Instead, simply expose
-> >> > > IRQ source IDs to userspace.  This lets the user be in charge
-> >> > > of freeing them or hanging onto a source ID for later use.
-> >> > 
-> >> > In the end it turns out source ID is an optimization for shared
-> >> > interrupts, isn't it?  Can't we apply the optimization transparently to
-> >> > the user?  E.g. if we have some spare source IDs, allocate them, if we
-> >> > run out, use a shared source ID?
-> >> 
-> >> Let's think about shared source IDs a bit more.  I think it's wrong that
-> >> irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
-> >> irqfd users can share a source ID.  We do not get the logical OR of all
-> >> users by putting them on the same source ID, we get "last set wins".
-> >> KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
-> >> logical OR happens in userspace.  How would we not starve a user if we
-> >> define KVM_IRQFD_SOURCE_ID?  What am I missing?
-> > 
-> > That all irqfds are deasserted on EOI anyway.  So there's no point
-> > to do a logical OR.
-> > 
-> > 
-> 
-> What if a level irqfd shares a line with a KVM_IRQ_LINE ioctl?  Then an
-> EOI can de-assert the irqfd source, but the line is kept high by the
-> last KVM_IRQ_LINE invocation.
+Hi guys,
 
-Exactly. So 1 ID for userspace and 1 for irqfd.
+here is a bit reworked series
 
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
+ - all exportfs junk is dropped out of code
+ - fdinfo for seq-files uses embedded seq_file entry
+ - dnotify is not yet addressed (but fdinfo for fsnotify can be easily
+   extended in future)
+
+Al, may I ask you to take a look on final fdinfo seq-file approach?
+Pavel, could you please check the fdnotify patch, will current amount
+of data be enough for us?
+
+Any complains are welcome.
+
+	Cyrill
