@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab2HPJgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 05:36:09 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:41634 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2HPJgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 05:36:07 -0400
-Message-ID: <502CBF23.4070805@windriver.com>
-Date: Thu, 16 Aug 2012 17:36:35 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1756962Ab2HPJgx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 05:36:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383Ab2HPJgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 05:36:51 -0400
+Message-ID: <502CBF29.9050705@redhat.com>
+Date: Thu, 16 Aug 2012 06:36:41 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Priyanka Jain <Priyanka.Jain@freescale.com>, <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage in xfrm_net_init()
-References: <20120816073724.GA10660@localhost>
-In-Reply-To: <20120816073724.GA10660@localhost>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [147.11.103.221]
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH] [media] ddbridge: fix error handling in module_init_ddbridge()
+References: <1345063345-31131-1-git-send-email-khoroshilov@ispras.ru> <502CBCC4.6010603@redhat.com>
+In-Reply-To: <502CBCC4.6010603@redhat.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 16-08-2012 06:26, Mauro Carvalho Chehab escreveu:
+> Em 15-08-2012 17:42, Alexey Khoroshilov escreveu:
+>> If pci_register_driver() failed, resources allocated in
+>> ddb_class_create() are leaked. The patch fixes it.
+>>
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>>
+>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+>> ---
+>>  drivers/media/dvb/ddbridge/ddbridge-core.c |    6 +++++-
+>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
+>> index ebf3f05..36aa4e4 100644
+>> --- a/drivers/media/dvb/ddbridge/ddbridge-core.c
+>> +++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
+>> @@ -1705,7 +1705,11 @@ static __init int module_init_ddbridge(void)
+>>  	       "Copyright (C) 2010-11 Digital Devices GmbH\n");
+>>  	if (ddb_class_create())
+>>  		return -1;
+> 
+> This is not right. It should be returning a proper error code.
 
-Hi, Fengguang
+Please discard this email. I already commented this on a previous email.
+This one was a previous draft.
 
-Could you please try the below patch, see if spewing still there?
-thanks
+Thanks,
+Mauro
 
+> 
+> Could you please patch ddb_class_create() in order to make it to
+> return the retuned value from IS_ERR() as the error code, and return
+> it back to the init code?
+> 
+> Ok, I noticed that other parts of the driver are also returning wrong
+> error codes, but let's fix at least module_init_ddbridge() while you're
+> looking into this.
+> 
+>> -	return pci_register_driver(&ddb_pci_driver);
+>> +	if (pci_register_driver(&ddb_pci_driver) < 0) {
+>> +		ddb_class_destroy();
+>> +		return -1;
+> 
+> The correct here would be to store the error on a temp register
+> and return it, instead of returning -1.
+> 
+>> +	}
+>> +	return 0;
+>>  }
+>>  
+>>  static __exit void module_exit_ddbridge(void)
+>>
+> 
+> Thank you!
+> Mauro
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
- From a3f86ecc3ee16ff81d49416bbf791780422988b3 Mon Sep 17 00:00:00 2001
-From: Fan Du <fan.du@windriver.com>
-Date: Thu, 16 Aug 2012 17:31:25 +0800
-Subject: [PATCH] Use rcu_dereference_bh to deference pointer protected 
-by rcu_read_lock_bh
-
-Signed-off-by: Fan Du <fan.du@windriver.com>
----
-  net/xfrm/xfrm_policy.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 5ad4d2c..75a9d6a 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2501,7 +2501,7 @@ static void __net_init xfrm_dst_ops_init(struct 
-net *net)
-  	struct xfrm_policy_afinfo *afinfo;
-
-  	rcu_read_lock_bh();
--	afinfo = rcu_dereference(xfrm_policy_afinfo[AF_INET]);
-+	afinfo = rcu_dereference_bh(xfrm_policy_afinfo[AF_INET]);
-  	if (afinfo)
-  		net->xfrm.xfrm4_dst_ops = *afinfo->dst_ops;
-  #if IS_ENABLED(CONFIG_IPV6)
--- 
-1.7.1
-
-
-
-
-On 2012年08月16日 15:37, Fengguang Wu wrote:
-> Hi Priyanka,
->
-> The below warning shows up, probably related to this commit:
->
-> 418a99ac6ad487dc9c42e6b0e85f941af56330f2 Replace rwlock on xfrm_policy_afinfo with rcu
->
-> [    0.921216]
-> [    0.921645] ===============================
-> [    0.922766] [ INFO: suspicious RCU usage. ]
-> [    0.923887] 3.5.0-01540-g1669891 #64 Not tainted
-> [    0.925123] -------------------------------
-> [    0.932860] /c/kernel-tests/src/tip/net/xfrm/xfrm_policy.c:2504 suspicious rcu_dereference_check() usage!
-> [    0.935361]
-> [    0.935361] other info that might help us debug this:
-> [    0.935361]
-> [    0.937472]
-> [    0.937472] rcu_scheduler_active = 1, debug_locks = 0
-> [    0.939182] 2 locks held by swapper/1:
-> [    0.940171]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff814e1ad0>] register_pernet_subsys+0x21/0x57
-> [    0.942705]  #1:  (rcu_read_lock_bh){......}, at: [<ffffffff822c7329>] xfrm_net_init+0x1e4/0x437
-> [    0.951507]
-> [    0.951507] stack backtrace:
-> [    0.952660] Pid: 1, comm: swapper Not tainted 3.5.0-01540-g1669891 #64
-> [    0.954364] Call Trace:
-> [    0.955074]  [<ffffffff8108b375>] lockdep_rcu_suspicious+0x174/0x187
-> [    0.956736]  [<ffffffff822c7453>] xfrm_net_init+0x30e/0x437
-> [    0.958205]  [<ffffffff822c7329>] ? xfrm_net_init+0x1e4/0x437
-> [    0.959712]  [<ffffffff814e134a>] ops_init+0x1bb/0x1ff
-> [    0.961067]  [<ffffffff810861f9>] ? trace_hardirqs_on+0x1b/0x24
-> [    0.962644]  [<ffffffff814e17cd>] register_pernet_operations.isra.5+0x9d/0xfe
-> [    0.971376]  [<ffffffff814e1adf>] register_pernet_subsys+0x30/0x57
-> [    0.972992]  [<ffffffff822c7130>] xfrm_init+0x17/0x2c
-> [    0.974316]  [<ffffffff822c2f8c>] ip_rt_init+0x82/0xe7
-> [    0.975668]  [<ffffffff822c31dc>] ip_init+0x10/0x25
-> [    0.976952]  [<ffffffff822c3f77>] inet_init+0x235/0x360
-> [    0.978352]  [<ffffffff822c3d42>] ? devinet_init+0xf2/0xf2
-> [    0.979808]  [<ffffffff82283252>] do_one_initcall+0xb4/0x203
-> [    0.981313]  [<ffffffff8228354a>] kernel_init+0x1a9/0x29a
-> [    0.982732]  [<ffffffff822826d9>] ? loglevel+0x46/0x46
-> [    0.990889]  [<ffffffff816d3d84>] kernel_thread_helper+0x4/0x10
-> [    0.992472]  [<ffffffff816d262c>] ? retint_restore_args+0x13/0x13
-> [    0.994076]  [<ffffffff822833a1>] ? do_one_initcall+0x203/0x203
-> [    0.995636]  [<ffffffff816d3d80>] ? gs_change+0x13/0x13
-> [    0.997197] TCP established hash table entries: 8192 (order: 5, 131072 bytes)
-> [    1.000074] TCP bind hash table entries: 8192 (order: 7, 655360 bytes)
->
-> Thanks,
-> Fengguang
-
--- 
-
-Love each day!
---fan
