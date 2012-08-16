@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030413Ab2HPTmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:42:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7193 "EHLO mx1.redhat.com"
+	id S933215Ab2HPTrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:47:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:52357 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933187Ab2HPTml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:42:41 -0400
-Date: Thu, 16 Aug 2012 21:42:10 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Alex Shi <alex.shu@intel.com>, Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3 6/7] mm: make clear_huge_page cache clear only around
- the fault address
-Message-ID: <20120816194210.GR11188@redhat.com>
-References: <1345130154-9602-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1345130154-9602-7-git-send-email-kirill.shutemov@linux.intel.com>
- <20120816161647.GM11188@redhat.com>
- <20120816164356.GA30106@shutemov.name>
- <20120816182944.GN11188@redhat.com>
- <20120816183725.GA30284@shutemov.name>
+	id S932285Ab2HPTrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:47:15 -0400
+Date: Thu, 16 Aug 2012 12:46:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20120816194651.GK2445@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816183725.GA30284@shutemov.name>
+In-Reply-To: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081619-3534-0000-0000-00000B8E2378
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 09:37:25PM +0300, Kirill A. Shutemov wrote:
-> On Thu, Aug 16, 2012 at 08:29:44PM +0200, Andrea Arcangeli wrote:
-> > On Thu, Aug 16, 2012 at 07:43:56PM +0300, Kirill A. Shutemov wrote:
-> > > Hm.. I think with static_key we can avoid cache overhead here. I'll try.
-> > 
-> > Could you elaborate on the static_key? Is it some sort of self
-> > modifying code?
+On Thu, Aug 16, 2012 at 01:12:36PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Runtime code patching. See Documentation/static-keys.txt. We can patch it
-> on sysctl.
+> After merging the tip tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/infiniband/hw/ehca/ehca_irq.c: In function 'find_next_online_cpu':
+> drivers/infiniband/hw/ehca/ehca_irq.c:672:2: error: expected ';' before 'spin_unlock_irqrestore'
+> 
+> Caused by commit 81942621bd6b ("infiniband: Ehca: Use hotplug thread
+> infrastructure").
+> 
+> I have used the tip tree from next-20120814 for today.
 
-I guessed it had to be patching the code, thanks for the
-pointer. It looks a perfect fit for this one agreed.
+My first reaction was "we tested that!!!", but I see the conversion
+from while(1) to do-while.  Does the following cure it?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+infiniband: ehca: Fix while->do-while conversion typo
+
+This commit just adds a needed semicolon.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
+index 4eeac40..83a0095 100644
+--- a/drivers/infiniband/hw/ehca/ehca_irq.c
++++ b/drivers/infiniband/hw/ehca/ehca_irq.c
+@@ -668,7 +668,7 @@ static int find_next_online_cpu(struct ehca_comp_pool *pool)
+ 		if (cpu >= nr_cpu_ids)
+ 			cpu = cpumask_first(cpu_online_mask);
+ 		pool->last_cpu = cpu;
+-	} while (!per_cpu_ptr(pool->cpu_comp_tasks, cpu)->active)
++	} while (!per_cpu_ptr(pool->cpu_comp_tasks, cpu)->active);
+ 	spin_unlock_irqrestore(&pool->last_cpu_lock, flags);
+ 
+ 	return cpu;
+
