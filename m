@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260Ab2HPUmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:42:13 -0400
-Received: from fieldses.org ([174.143.236.118]:43512 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932636Ab2HPUmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:42:11 -0400
-Date: Thu, 16 Aug 2012 16:42:08 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
- return
-Message-ID: <20120816204208.GE4385@fieldses.org>
-References: <20120815061115.GC32347@cucamonga.audible.transient.net>
- <20120815135854.GI32347@cucamonga.audible.transient.net>
- <20120815150251.GB16057@fieldses.org>
- <20120816201838.GA4282@cucamonga.audible.transient.net>
+	id S1757324Ab2HPUqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:46:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44759 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab2HPUqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 16:46:42 -0400
+Date: Thu, 16 Aug 2012 13:46:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 00/15] firmware loader: introduce cache/uncache
+ firmware
+Message-ID: <20120816204638.GA4463@kroah.com>
+References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
+ <CACVXFVM_WY4v69jdQiG13B94rEPP1EzHXpetZRrTJwhmgT=S2w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816201838.GA4282@cucamonga.audible.transient.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACVXFVM_WY4v69jdQiG13B94rEPP1EzHXpetZRrTJwhmgT=S2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 08:18:38PM +0000, Jamie Heilman wrote:
-> J. Bruce Fields wrote:
-> > On Wed, Aug 15, 2012 at 01:58:54PM +0000, Jamie Heilman wrote:
-> > > Jamie Heilman wrote:
-> > > > I'll try to get full rcpdebug traces on client and server as the delay
-> > > > is occuring in the hopes that helps pin things down, and post them
-> > > > separately.
-> > > 
-> > > OK, here are the logs from client and server, where a run of my test program
-> > > under strace -T resulted in:
-> > > 
-> > > utime("utime-test.c", [2012/08/15-13:35:20, 2012/08/15-13:22:04]) = 0 <0.150815>
-> > > open("utime-test.c", O_RDONLY)          = 3 <0.242635>
-> > > close(3)                                = 0 <0.147768>
-> > > stat("utime-test.c", {st_mode=S_IFREG|0644, st_size=696, ...}) = 0 <0.002772>
-> > > utime("utime-test.c", [2012/08/15-13:35:20, 2012/08/15-13:22:04]) = 0 <71.878058>
-> > > 
-> > > The client is a 64-bit v3.4.8 kernel, the server is 32-bit, v3.5.1 +
-> > > the two sunprc patches that will be in v3.5.2.
-> > > 
-> > > (The client's system clock is a touch faster than the server's, but
-> > > these logs start at the same instant.)
-> > 
-> > Thanks for all the details.
-> > 
-> > What's probably happening is that the client is returning a delegation
-> > with the open.  The setattr then breaks that delegation; you can see it
-> > getting 10008 (NFS4ERR_DELAY) replies while the server waits for the
-> > delegation to be returned.  But for some reason the callback to break
-> > the delegation isn't working.  ("NFSD: warning: no callback path to
-> > client 192.168.2.42/192.168.2.4 tcp UNIX 0: error -110" (110 is
-> > ETIMEDOUT).)  So instead you wait for the delegation to time out and get
-> > forcibly revoked.
-> > 
-> > The reproducer might be more reliable if you did two opens.
+On Fri, Aug 10, 2012 at 03:30:14PM +0800, Ming Lei wrote:
+> On Sat, Aug 4, 2012 at 12:01 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> > Hi,
+> >
+> > In [1][2], the problem below has been discussed for some time:
+> >
+> >         device's firmware may be lost during suspend/resume
+> >         cycle because device might be unplugged and plugged again
+> >         or device experiences system power loss during the period.
+> >         But in resume path, system is still not ready(process
+> >         frozen, rootfs not usable, ...) to complete loading firmware
+> >         from user space for devices.
+> >
+> > The conclusion is that caching firmware during suspend/resume cycle
+> > is capable of solving the problem.
+> >
+> > This patchset implements cache/uncache firmware mechanism,
+> > and apply the mechnism to cache device's firmware in kernel memory
+> > space automatically during suspend/resume cyclye, so device can
+> > load its firmware easily in its resume path. When resume is completed
+> > and system is ready, the cached firmware will be removed from
+> > kernel memory later.
+> >
+> > The patch 15/15 is one example to apply the firmware cache mechanism on
+> > ath9k-htc driver.
+> >
+> > Even there are some corener cases[3] which can't be solved by the
+> > cache approach, but as discussed in[4], the problem can be easily
+> > fixed by a simple patch written by Linus.
+> >
+> > This patch set is against 3.6.0-rc1-next-20120803.
+> >
+> > [1]. http://marc.info/?t=134278790800004&r=1&w=2
+> > [2]. http://marc.info/?t=132528956000002&r=10&w=2
+> > [3]. http://marc.info/?l=linux-usb&m=132554118928398&w=2
+> > [4]. http://marc.info/?l=linux-kernel&m=134323730805443&w=2
+> >
+> > --
+> > V1:
+> >         -handle vmap failure case(1/15)
+> >         -fix a memory leak of 'firmware_buf'(5/15)
+> >         -fix oops during failure path of requesting firmware(6/15)
+> >         -fix vmap more than one time(6/15)
+> >         -introduce __fw_lookup_buf to avoid code duplication(7/15)
+> >         -fix comment of request_firmware_nowait(9/15)
+> >         -avoid releasing lock in devres_for_each_res(11/15)
+> >         -use new devres iterator API to create fw cache entry(12/15)
+> >         -rename some functions and data structures(12/15)
+> >         -some code style fixes
+> >
+> >         Thanks for Borislav's review!
 > 
-> I made the change... not entirely sure it helped, but I think I've
-> bisected this reliably anyway.  It came down to:
+> Gentle ping on -V1, :-)
 
-Hm, weird.  In the good case the cb_recall's done with auth_unix, in the
-bad case with auth_null.  OK, that should be enough to go on....
+Ok, these look good to me, so I've applied the first 14 to the
+driver-core-next tree to get some testing by others.
 
-Thanks for digging into this!
+I didn't feel I could add the 15th patch without some acks from those
+developers, or at least someone who says "it works for me!".
 
---b.
+Also, what about those other patches you reference in your footnotes
+above, what's the status of them?
 
-> 
-> d5497fc693a446ce9100fcf4117c3f795ddfd0d2 is the first bad commit
-> commit d5497fc693a446ce9100fcf4117c3f795ddfd0d2
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Mon May 14 22:06:49 2012 -0400
-> 
->     nfsd4: move rq_flavor into svc_cred
->     
->     Move the rq_flavor into struct svc_cred, and use it in setclientid and
->     exchange_id comparisons as well.
->     
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> :040000 040000 165568aae0fc47067863ea8ca911494033cbf2ce 54244f0084f58df4844b09d56e8e6bad0e19d913 M      fs
-> :040000 040000 bae5a74a85bda2aa2b155b0bdca1ea0028502164 207751ce30c8f49c68fb0a85d0772cb0fa426ae1 M      include
-> :040000 040000 ef940cf0c558fe65a21a710e6c95b2cefb2996fd 459ac143acf5cb2b3b7f59df29c417cedbb23c4b M      net
-> 
-> FWIW reverting this commit does seem to fix the problem.
-> 
-> > It'd be worth looking at the traffic in wireshark.  You should see
-> > setattr, open, close, setattr, a DELAY reply to the setattr, a
-> > CB_RECALL, and then a DELEGRETURN that gets a succesful reply.  But for
-> > some reason the DELEGRETURN isn't getting through in your case, I'm not
-> > sure why.  I can't reproduce that.  You'll need to start wireshark
-> > before you mount to make sure it knows how to parse the callbacks.
-> 
-> Captures from the server showing the delay (running 3.5.2) and the
-> previous behavior (running 3.4.9) are attached.
-> 
-> -- 
-> Jamie Heilman                     http://audible.transient.net/~jamie/
+thanks,
 
-
-
+greg k-h
