@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab2HPTzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:55:44 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:15973 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932118Ab2HPTzj convert rfc822-to-8bit (ORCPT
+	id S933288Ab2HPT4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:56:09 -0400
+Received: from mga05.intel.com ([192.55.52.89]:32518 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932118Ab2HPT4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:55:39 -0400
-X-Greylist: delayed 961 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Aug 2012 15:55:38 EDT
-From: Rakesh Jain <Rakesh.Jain@imgtec.com>
-To: Marc Gauthier <marc@tensilica.com>, Pete Delaney <piet.delaney@gmail.com>,
-        Chris Zankel <chris@zankel.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "Kirill Krinkin" <kirill.krinkin@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "'Mahavir Prasad'" <er.mahavir@gmail.com>,
-        Prasanna Rao <Prasanna.Rao@transwitch.com>,
-        Shimon Edelhaus <Shimon.Edelhaus@transwitch.com>
-Subject: RE: xtensa port maintenance
-Thread-Topic: xtensa port maintenance
-Thread-Index: AQHNd3xdpoBr8I1omUi+onrbsd09hJdc3fTQ
-Date: Thu, 16 Aug 2012 19:38:20 +0000
-Message-ID: <7E6CC3A7A7876F4BAC9F5E798E9726235C5926@bamail01.ba.imgtec.org>
-References: <50205592.1030205@gmail.com> <201208102115.59946.arnd@arndb.de>
- <50258D88.7090903@zankel.net> <5025975D.9030100@gmail.com>
- <522C1DF17AF50042AD8AE87F7887BD3D022DEE8CB5@exch.hq.tensilica.com>
-In-Reply-To: <522C1DF17AF50042AD8AE87F7887BD3D022DEE8CB5@exch.hq.tensilica.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.111.3]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Aug 2012 15:56:04 -0400
 MIME-Version: 1.0
-X-SEF-Processed: 7_3_0_01181__2012_08_16_20_39_34
+In-Reply-To: <CA+5PVA4i6CYNmxbHHfgEYqPHVD=_PDqurFyrZzzL5jb0rdVj8w@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<68a6f647ca1d4429d6b781b6cfeed9c93a346c14.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA4i6CYNmxbHHfgEYqPHVD=_PDqurFyrZzzL5jb0rdVj8w@mail.gmail.com>
+Date: Thu, 16 Aug 2012 22:56:02 +0300
+Message-ID: <CALLzPKb-qpAJCThHxukEUGGhOWUTxr5wCP7C1MmZfNZrdMViGg@mail.gmail.com>
+Subject: Re: [RFC v2 4/7] modsig: add integrity_module_check hook
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
-Is Skype library available for Xtensa Linux port?
-They are available for ARM.
-Thanks.
--Rakesh
+On Thu, Aug 16, 2012 at 9:49 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
+> <dmitry.kasatkin@intel.com> wrote:
+>> @@ -2437,6 +2438,14 @@ static int copy_and_check(struct load_info *info,
+>>
+>>         info->hdr = hdr;
+>>         info->len = len;
+>> +
+>> +       err = integrity_module_check(hdr, len);
+>> +       if (err < 0)
+>> +               goto free_hdr;
+>> +
+>> +       /* cut signature tail */
+>> +       info->len = err;
+>> +
+>>         return 0;
+>>
+>>  free_hdr:
+>
+> So if I'm reading this correctly, any module that fails signature
+> verification will fail to load.  That makes sense, but I wonder if you
+> intend to support a non-enforcing mode for module signatures at all?
+> Actually, a brief document in Documentation describing how this whole
+> mechanism works and what the fail states are would be good.  David's
+> patches have it nicely spelled out and I don't see anything similar in
+> your patch set.
+>
+> josh
 
------Original Message-----
-From: Marc Gauthier [mailto:marc@tensilica.com] 
-Sent: Friday, August 10, 2012 9:47 PM
-To: Pete Delaney; Chris Zankel; Arnd Bergmann; linux-xtensa@linux-xtensa.org; Kirill Krinkin; Stephen Rothwell; Greg KH; linux-kernel@vger.kernel.org; Max Filippov; linux-next@vger.kernel.org; Andrew Morton; Linus Torvalds; 'Mahavir Prasad'; Prasanna Rao; Shimon Edelhaus; Rakesh Jain
-Subject: Re: xtensa port maintenance
+Hi,
 
-Chris Zankel wrote:
-> I have set up a tree on github for now, and will work close with Max 
-> to get his changes to Stephen's linux-next tree and eventually Linus' 
-> tree.
-> I think it's fine to add Max as a second maintainer [...]
+I had enable and enforce mode in my previous patches.
+I have removed them just before posting.
+I added now enforcing back..
 
-Thanks for helping!
-
-
-Pete Delaney wrote:
-> I'm afraid that doing it piecemeal has failed in the past
-
-Proper patches work fine, was just never done.
-(Can discuss off this To: list.)
-
-
-> Mind anding Marc and myself?
-
-Acting as maintainer involves submitting useful patches over some period of time.  Right now that's Max and Chris.
-(Love to do it, but have plenty as it is on my plate.)
-
-Thanks,
--Marc
-
+- Dmitry
