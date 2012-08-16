@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab2HPBfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:35:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25731 "EHLO mx1.redhat.com"
+	id S1756804Ab2HPBfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:35:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24082 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759Ab2HPBfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:35:18 -0400
+	id S1756470Ab2HPBfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:35:39 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/25] KEYS: Asymmetric public-key algorithm crypto key subtype
+Subject: [PATCH 07/25] KEYS: RSA: Implement signature verification algorithm
+ [PKCS#1 / RFC3447]
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         jmorris@namei.org, keyrings@linux-nfs.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:35:08 +0100
-Message-ID: <20120816013508.872.96750.stgit@warthog.procyon.org.uk>
+Date: Thu, 16 Aug 2012 02:35:30 +0100
+Message-ID: <20120816013530.872.32267.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,58 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a subtype for supporting asymmetric public-key encryption algorithms such
-as DSA (FIPS-186) and RSA (PKCS#1 / RFC1337).
+Implement RSA public key cryptography [PKCS#1 / RFC3447].  At this time, only
+the signature verification algorithm is supported.  This uses the asymmetric
+public key subtype to hold its key data.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/crypto/Kconfig      |   10 +++
- security/keys/crypto/Makefile     |    3 +
- security/keys/crypto/public_key.c |   82 +++++++++++++++++++++++++
- security/keys/crypto/public_key.h |  123 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 217 insertions(+), 1 deletion(-)
- create mode 100644 security/keys/crypto/public_key.c
- create mode 100644 security/keys/crypto/public_key.h
+ security/keys/crypto/Kconfig      |    7 +
+ security/keys/crypto/Makefile     |    1 
+ security/keys/crypto/crypto_rsa.c |  267 +++++++++++++++++++++++++++++++++++++
+ security/keys/crypto/public_key.h |    2 
+ 4 files changed, 277 insertions(+)
+ create mode 100644 security/keys/crypto/crypto_rsa.c
 
 
 diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
-index 3d15710..5f2b8ac 100644
+index 5f2b8ac..4e3777e 100644
 --- a/security/keys/crypto/Kconfig
 +++ b/security/keys/crypto/Kconfig
-@@ -5,3 +5,13 @@ config CRYPTO_KEY_TYPE
- 	  This option provides support for a type of key that holds the keys
- 	  required for cryptographic operations such as encryption, decryption,
- 	  signature generation and signature verification.
+@@ -15,3 +15,10 @@ config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
+ 	  If signature generation and/or verification are to be used,
+ 	  appropriate hash algorithms (such as SHA-1) must be available.
+ 	  ENOPKG will be reported if the requisite algorithm is unavailable.
 +
-+config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
-+	tristate "Asymmetric public-key crypto algorithm subtype"
-+	depends on CRYPTO_KEY_TYPE
-+	select MPILIB
++config CRYPTO_KEY_PKEY_ALGO_RSA
++	tristate "RSA public-key algorithm"
++	depends on CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
++	select MPILIB_EXTRA
 +	help
-+	  This option provides support for asymmetric public key type handling.
-+	  If signature generation and/or verification are to be used,
-+	  appropriate hash algorithms (such as SHA-1) must be available.
-+	  ENOPKG will be reported if the requisite algorithm is unavailable.
++	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
 diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
-index 67001bc..6384306 100644
+index 6384306..b6b1a5a 100644
 --- a/security/keys/crypto/Makefile
 +++ b/security/keys/crypto/Makefile
-@@ -3,5 +3,6 @@
- #
- 
- obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
--
+@@ -6,3 +6,4 @@ obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
  crypto_keys-y := crypto_type.o crypto_verify.o
-+
-+obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
-diff --git a/security/keys/crypto/public_key.c b/security/keys/crypto/public_key.c
+ 
+ obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
+diff --git a/security/keys/crypto/crypto_rsa.c b/security/keys/crypto/crypto_rsa.c
 new file mode 100644
-index 0000000..ebb31ec
+index 0000000..6e95e60
 --- /dev/null
-+++ b/security/keys/crypto/public_key.c
-@@ -0,0 +1,82 @@
-+/* Asymmetric public key crypto subtype
++++ b/security/keys/crypto/crypto_rsa.c
+@@ -0,0 +1,267 @@
++/* RSA asymmetric public-key algorithm [RFC3447]
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -86,204 +81,273 @@ index 0000000..ebb31ec
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#define pr_fmt(fmt) "PKEY: "fmt
++#define pr_fmt(fmt) "RSA: "fmt
 +#include <linux/module.h>
-+#include <linux/export.h>
 +#include <linux/kernel.h>
 +#include "public_key.h"
 +
 +MODULE_LICENSE("GPL");
 +
-+const char *const pkey_algo[PKEY_ALGO__LAST] = {
-+	[PKEY_ALGO_DSA]		= "DSA",
-+	[PKEY_ALGO_RSA]		= "RSA",
-+};
-+EXPORT_SYMBOL_GPL(pkey_algo);
-+
-+const char *const pkey_hash_algo[PKEY_HASH__LAST] = {
-+	[PKEY_HASH_MD4]		= "md4",
-+	[PKEY_HASH_MD5]		= "md5",
-+	[PKEY_HASH_SHA1]	= "sha1",
-+	[PKEY_HASH_RIPE_MD_160]	= "rmd160",
-+	[PKEY_HASH_SHA256]	= "sha256",
-+	[PKEY_HASH_SHA384]	= "sha384",
-+	[PKEY_HASH_SHA512]	= "sha512",
-+	[PKEY_HASH_SHA224]	= "sha224",
-+};
-+EXPORT_SYMBOL_GPL(pkey_hash_algo);
-+
-+const char *const pkey_id_type[PKEY_ID_TYPE__LAST] = {
-+	[PKEY_ID_PGP]		= "PGP",
-+	[PKEY_ID_X509]		= "X509",
-+};
-+EXPORT_SYMBOL_GPL(pkey_id_type);
++#define kenter(FMT, ...) \
++	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
++#define kleave(FMT, ...) \
++	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
 +
 +/*
-+ * Provide a part of a description of the key for /proc/keys.
++ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
 + */
-+static void public_key_describe(const struct key *crypto_key,
-+				struct seq_file *m)
-+{
-+	struct public_key *key = crypto_key->payload.data;
++static const u8 RSA_digest_info_MD5[] = {
++	0x30, 0x20, 0x30, 0x0C, 0x06, 0x08,
++	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, /* OID */
++	0x05, 0x00, 0x04, 0x10
++};
 +
-+	if (key)
-+		seq_printf(m, "%s.%s",
-+			   pkey_id_type[key->id_type], key->algo->name);
-+}
++static const u8 RSA_digest_info_SHA1[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2B, 0x0E, 0x03, 0x02, 0x1A,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 RSA_digest_info_RIPE_MD_160[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2B, 0x24, 0x03, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 RSA_digest_info_SHA224[] = {
++	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
++	0x05, 0x00, 0x04, 0x1C
++};
++
++static const u8 RSA_digest_info_SHA256[] = {
++	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x20
++};
++
++static const u8 RSA_digest_info_SHA384[] = {
++	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
++	0x05, 0x00, 0x04, 0x30
++};
++
++static const u8 RSA_digest_info_SHA512[] = {
++	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
++	0x05, 0x00, 0x04, 0x40
++};
++
++static const struct {
++	const u8 *data;
++	size_t size;
++} RSA_ASN1_templates[PKEY_HASH__LAST] = {
++#define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
++	[PKEY_HASH_MD5]		= _(MD5),
++	[PKEY_HASH_SHA1]	= _(SHA1),
++	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
++	[PKEY_HASH_SHA256]	= _(SHA256),
++	[PKEY_HASH_SHA384]	= _(SHA384),
++	[PKEY_HASH_SHA512]	= _(SHA512),
++	[PKEY_HASH_SHA224]	= _(SHA224),
++#undef _
++};
 +
 +/*
-+ * Destroy a public key algorithm key
++ * RSAVP1() function [RFC3447 sec 5.2.2]
 + */
-+void public_key_destroy(void *payload)
++static int RSAVP1(const struct public_key *key, MPI s, MPI *_m)
 +{
-+	struct public_key *key = payload;
-+	int i;
++	MPI m;
++	int ret;
 +
-+	if (key) {
-+		for (i = 0; i < ARRAY_SIZE(key->mpi); i++)
-+			mpi_free(key->mpi[i]);
-+		kfree(key);
++	/* (1) Validate 0 <= s < n */
++	if (mpi_cmp_ui(s, 0) < 0) {
++		kleave(" = -EBADMSG [s < 0]");
++		return -EBADMSG;
 +	}
++	if (mpi_cmp(s, key->rsa.n) >= 0) {
++		kleave(" = -EBADMSG [s >= n]");
++		return -EBADMSG;
++	}
++
++	m = mpi_alloc(0);
++	if (!m)
++		return -ENOMEM;
++
++	/* (2) m = s^e mod n */
++	ret = mpi_powm(m, s, key->rsa.e, key->rsa.n);
++	if (ret < 0) {
++		mpi_free(m);
++		return ret;
++	}
++
++	*_m = m;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(public_key_destroy);
 +
 +/*
-+ * Public key algorithm crypto key subtype
++ * Integer to Octet String conversion [RFC3447 sec 4.1]
 + */
-+struct crypto_key_subtype public_key_crypto_key_subtype = {
-+	.owner		= THIS_MODULE,
-+	.name		= "public_key",
-+	.describe	= public_key_describe,
-+	.destroy	= public_key_destroy,
++static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
++{
++	unsigned X_size, x_size;
++	int X_sign;
++	u8 *X;
++
++	/* Make sure the string is the right length.  The number should begin
++	 * with { 0x00, 0x01, ... } so we have to account for 15 leading zero
++	 * bits not being reported by MPI.
++	 */
++	x_size = mpi_get_nbits(x);
++	pr_devel("size(x)=%u xLen*8=%zu\n", x_size, xLen * 8);
++	if (x_size != xLen * 8 - 15)
++		return -ERANGE;
++
++	X = mpi_get_buffer(x, &X_size, &X_sign);
++	if (!X)
++		return -ENOMEM;
++	if (X_sign < 0) {
++		kfree(X);
++		return -EBADMSG;
++	}
++	if (X_size != xLen - 1) {
++		kfree(X);
++		return -EBADMSG;
++	}
++
++	*_X = X;
++	return 0;
++}
++
++/*
++ * Perform the RSA signature verification.
++ * @H: Value of hash of data and metadata
++ * @EM: The computed signature value
++ * @k: The size of EM (EM[0] is an invalid location but should hold 0x00)
++ * @hash_size: The size of H
++ * @asn1_template: The DigestInfo ASN.1 template
++ * @asn1_size: Size of asm1_template[]
++ */
++static int RSA_verify(const u8 *H, const u8 *EM, size_t k, size_t hash_size,
++		      const u8 *asn1_template, size_t asn1_size)
++{
++	unsigned PS_end, T_offset, i;
++
++	kenter(",,%zu,%zu,%zu", k, hash_size, asn1_size);
++
++	if (k < 2 + 1 + asn1_size + hash_size)
++		return -EBADMSG;
++
++	/* Decode the EMSA-PKCS1-v1_5 */
++	if (EM[1] != 0x01) {
++		kleave(" = -EBADMSG [EM[1] == %02u]", EM[1]);
++		return -EBADMSG;
++	}
++
++	T_offset = k - (asn1_size + hash_size);
++	PS_end = T_offset - 1;
++	if (EM[PS_end] != 0x00) {
++		kleave(" = -EBADMSG [EM[T-1] == %02u]", EM[PS_end]);
++		return -EBADMSG;
++	}
++
++	for (i = 2; i < PS_end; i++) {
++		if (EM[i] != 0xff) {
++			kleave(" = -EBADMSG [EM[PS%x] == %02u]", i - 2, EM[i]);
++			return -EBADMSG;
++		}
++	}
++
++	if (memcmp(asn1_template, EM + T_offset, asn1_size) != 0) {
++		kleave(" = -EBADMSG [EM[T] ASN.1 mismatch]");
++		return -EBADMSG;
++	}
++
++	if (memcmp(H, EM + T_offset + asn1_size, hash_size) != 0) {
++		kleave(" = -EKEYREJECTED [EM[T] hash mismatch]");
++		return -EKEYREJECTED;
++	}
++
++	kleave(" = 0");
++	return 0;
++}
++
++/*
++ * Perform the verification step [RFC3447 sec 8.2.2].
++ */
++static int RSA_verify_signature(const struct public_key *key,
++				const struct public_key_signature *sig)
++{
++	size_t tsize;
++	int ret;
++
++	/* Variables as per RFC3447 sec 8.2.2 */
++	const u8 *H = sig->digest;
++	u8 *EM = NULL;
++	MPI m = NULL;
++	size_t k;
++
++	kenter("");
++
++	if (!RSA_ASN1_templates[sig->pkey_hash_algo].data)
++		return -ENOTSUPP;
++
++	/* (1) Check the signature size against the public key modulus size */
++	k = (mpi_get_nbits(key->rsa.n) + 7) / 8;
++
++	tsize = (mpi_get_nbits(sig->rsa.s) + 7) / 8;
++	pr_devel("step 1: k=%zu size(S)=%zu\n", k, tsize);
++	if (tsize != k) {
++		ret = -EBADMSG;
++		goto error;
++	}
++
++	/* (2b) Apply the RSAVP1 verification primitive to the public key */
++	ret = RSAVP1(key, sig->rsa.s, &m);
++	if (ret < 0)
++		goto error;
++
++	/* (2c) Convert the message representative (m) to an encoded message
++	 *      (EM) of length k octets.
++	 *
++	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
++	 *      pointer to the _preceding_ byte to RSA_verify()!
++	 */
++	ret = RSA_I2OSP(m, k, &EM);
++	if (ret < 0)
++		goto error;
++
++	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
++			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
++			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
++
++error:
++	kfree(EM);
++	mpi_free(m);
++	kleave(" = %d", ret);
++	return ret;
++}
++
++const struct public_key_algorithm RSA_public_key_algorithm = {
++	.name		= "RSA",
++	.n_pub_mpi	= 2,
++	.n_sec_mpi	= 3,
++	.n_sig_mpi	= 1,
++	.verify		= RSA_verify_signature,
 +};
-+EXPORT_SYMBOL_GPL(public_key_crypto_key_subtype);
++EXPORT_SYMBOL_GPL(RSA_public_key_algorithm);
 diff --git a/security/keys/crypto/public_key.h b/security/keys/crypto/public_key.h
-new file mode 100644
-index 0000000..228090d
---- /dev/null
+index 228090d..947817b 100644
+--- a/security/keys/crypto/public_key.h
 +++ b/security/keys/crypto/public_key.h
-@@ -0,0 +1,123 @@
-+/* Asymmetric public-key algorithm definitions
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
+@@ -61,6 +61,8 @@ struct public_key_algorithm {
+ 		      const struct public_key_signature *sig);
+ };
+ 
++extern const struct public_key_algorithm RSA_public_key_algorithm;
 +
-+#ifndef _LINUX_PUBLIC_KEY_H
-+#define _LINUX_PUBLIC_KEY_H
-+
-+#include <linux/mpi.h>
-+#include <crypto/hash.h>
-+#include <keys/crypto-subtype.h>
-+
-+struct public_key;
-+struct public_key_signature;
-+
-+enum pkey_algo {
-+	PKEY_ALGO_DSA,
-+	PKEY_ALGO_RSA,
-+	PKEY_ALGO__LAST
-+};
-+
-+extern const char *const pkey_algo[PKEY_ALGO__LAST];
-+
-+enum pkey_hash_algo {
-+	PKEY_HASH_MD4,
-+	PKEY_HASH_MD5,
-+	PKEY_HASH_SHA1,
-+	PKEY_HASH_RIPE_MD_160,
-+	PKEY_HASH_SHA256,
-+	PKEY_HASH_SHA384,
-+	PKEY_HASH_SHA512,
-+	PKEY_HASH_SHA224,
-+	PKEY_HASH__LAST
-+};
-+
-+extern const char *const pkey_hash_algo[PKEY_HASH__LAST];
-+
-+enum pkey_id_type {
-+	PKEY_ID_PGP,		/* OpenPGP generated key ID */
-+	PKEY_ID_X509,		/* X.509 arbitrary subjectKeyIdentifier */
-+	PKEY_ID_TYPE__LAST
-+};
-+
-+extern const char *const pkey_id_type[PKEY_ID_TYPE__LAST];
-+
-+/*
-+ * Public key type definition
-+ */
-+struct public_key_algorithm {
-+	const char	*name;
-+	u8		n_pub_mpi;	/* Number of MPIs in public key */
-+	u8		n_sec_mpi;	/* Number of MPIs in secret key */
-+	u8		n_sig_mpi;	/* Number of MPIs in a signature */
-+	int (*verify)(const struct public_key *key,
-+		      const struct public_key_signature *sig);
-+};
-+
-+/*
-+ * Asymmetric public key data
-+ */
-+struct public_key {
-+	const struct public_key_algorithm *algo;
-+	u8	capabilities;
-+#define PKEY_CAN_ENCRYPT	0x01
-+#define PKEY_CAN_DECRYPT	0x02
-+#define PKEY_CAN_ENCDEC		(PKEY_CAN_ENCRYPT | PKEY_CAN_DECRYPT)
-+#define PKEY_CAN_SIGN		0x04
-+#define PKEY_CAN_VERIFY		0x08
-+#define PKEY_CAN_SIGVER		(PKEY_CAN_SIGN | PKEY_CAN_VERIFY)
-+	enum pkey_id_type id_type : 8;
-+	union {
-+		MPI	mpi[5];
-+		struct {
-+			MPI	p;	/* DSA prime */
-+			MPI	q;	/* DSA group order */
-+			MPI	g;	/* DSA group generator */
-+			MPI	y;	/* DSA public-key value = g^x mod p */
-+			MPI	x;	/* DSA secret exponent (if present) */
-+		} dsa;
-+		struct {
-+			MPI	n;	/* RSA public modulus */
-+			MPI	e;	/* RSA public encryption exponent */
-+			MPI	d;	/* RSA secret encryption exponent (if present) */
-+			MPI	p;	/* RSA secret prime (if present) */
-+			MPI	q;	/* RSA secret prime (if present) */
-+		} rsa;
-+	};
-+
-+	u8	key_id[8];	/* ID of this key pair */
-+	u8	key_id_size;	/* Number of bytes in key_id */
-+};
-+
-+/*
-+ * Asymmetric public key algorithm signature data
-+ */
-+struct public_key_signature {
-+	struct crypto_sig_verify_context base;
-+	u8 *digest;
-+	enum pkey_hash_algo pkey_hash_algo : 8;
-+	u8 signed_hash_msw[2];
-+	u8 digest_size;	/* Number of bytes in digest */
-+	union {
-+		MPI mpi[2];
-+		struct {
-+			MPI s;			/* m^d mod n */
-+		} rsa;
-+		struct {
-+			MPI r;
-+			MPI s;
-+		} dsa;
-+	};
-+	struct shash_desc hash;			/* This must go last! */
-+};
-+
-+extern struct crypto_key_subtype public_key_crypto_key_subtype;
-+
-+#endif /* _LINUX_PUBLIC_KEY_H */
+ /*
+  * Asymmetric public key data
+  */
 
