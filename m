@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab2HPQ4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:56:45 -0400
-Received: from roc.holo.8d.com ([64.254.227.115]:49936 "EHLO roc.holo.8d.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753128Ab2HPQ4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:56:44 -0400
-Date: Thu, 16 Aug 2012 12:56:40 -0400
-From: Raphael Assenat <raph@8d.com>
-To: linux-kernel@vger.kernel.org
-Cc: greg@kroah.com, zbr@ioremap.net
-Subject: [PATCH v2] 1-Wire: Add support for the maxim ds1825 temperature
- sensor
-Message-ID: <20120816165639.GB22993@renkinjitsu.usine.8d.com>
+	id S1755779Ab2HPQ5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:57:22 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34419 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754719Ab2HPQ5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:57:05 -0400
+X-Sasl-enc: f6+2UAKa3cnJOz/+6LYnQWdJqk8+TSpheCjjmvLutdpv 1345136224
+Date: Thu, 16 Aug 2012 09:57:03 -0700
+From: GregKH <greg@kroah.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+        Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] onewire: w1-gpio: add ext_pullup_enable pin in
+ platform data
+Message-ID: <20120816165703.GA8746@kroah.com>
+References: <1343249670-14985-1-git-send-email-zonque@gmail.com>
+ <20120730181238.GA23443@ioremap.net>
+ <20120731005929.GP27847@sci.fi>
+ <501778DA.5020107@gmail.com>
+ <20120801165736.GQ27847@sci.fi>
+ <501E9CB9.8080902@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <501E9CB9.8080902@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6
-X-Spam-Report: -2.6 points, 5.0 required autolearn=ham
-	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for maxim ds1825 based 1-wire temperature sensors.
+On Sun, Aug 05, 2012 at 06:18:01PM +0200, Daniel Mack wrote:
+> On 01.08.2012 18:57, Ville Syrjälä wrote:
+> > On Tue, Jul 31, 2012 at 08:19:06AM +0200, Daniel Mack wrote:
+> >> On 31.07.2012 02:59, Ville Syrjälä wrote:
+> >>> On Mon, Jul 30, 2012 at 10:12:39PM +0400, Evgeniy Polyakov wrote:
+> >>>> Hi
+> >>>>
+> >>>> Sorry for long delay
+> >>>> [resend with fixed Greg's address :)]
+> >>>>
+> >>>> On Wed, Jul 25, 2012 at 10:54:29PM +0200, Daniel Mack (zonque@gmail.com) wrote:
+> >>>>> In the process of porting boards to devicetree implemenation, we should
+> >>>>> keep information about external circuitry where they belong - the
+> >>>>> individual drivers.
+> >>>>>
+> >>>>> This patch adds a way to specify a GPIO to drive the (optional) external
+> >>>>> pull-up logic, rather than using a function pointer for that.
+> >>>>
+> >>>> I do not object against this patch, but I have rather limited knowledge
+> >>>> about gpio driver. Patch looks good, feel free to add my
+> >>>> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> >>>>
+> >>>> Greg, please pull it into your tree, if Ville does not object.
+> >>>
+> >>> No objections from me.
+> >>
+> >> I take this as an Acked-by:?
+> > 
+> > Sure, why not :)
+> > 
+> > Acked-by: Ville Syrjälä <syrjala@sci.fi>
+> > 
+> 
+> Greg, could you queue up these two patches somewhere?
 
-Signed-off-by: Raphael Assenat <raph@8d.com>
+Yes, I now have them, thanks.
 
-diff --git a/Documentation/w1/slaves/w1_therm b/Documentation/w1/slaves/w1_therm
-index 0403aaa..874a8ca 100644
---- a/Documentation/w1/slaves/w1_therm
-+++ b/Documentation/w1/slaves/w1_therm
-@@ -3,6 +3,7 @@ Kernel driver w1_therm
- 
- Supported chips:
-   * Maxim ds18*20 based temperature sensors.
-+  * Maxim ds1825 based temperature sensors.
- 
- Author: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
- 
-@@ -15,6 +16,7 @@ supported family codes:
- W1_THERM_DS18S20	0x10
- W1_THERM_DS1822		0x22
- W1_THERM_DS18B20	0x28
-+W1_THERM_DS1825		0x3B
- 
- Support is provided through the sysfs w1_slave file.  Each open and
- read sequence will initiate a temperature conversion then provide two
-diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
-index ff29ae7..b34bf1d 100644
---- a/drivers/w1/slaves/w1_therm.c
-+++ b/drivers/w1/slaves/w1_therm.c
-@@ -91,6 +91,11 @@ static struct w1_family w1_therm_family_DS28EA00 = {
- 	.fops = &w1_therm_fops,
- };
- 
-+static struct w1_family w1_therm_family_DS1825 = {
-+	.fid = W1_THERM_DS1825,
-+	.fops = &w1_therm_fops,
-+};
-+
- struct w1_therm_family_converter
- {
- 	u8			broken;
-@@ -120,6 +125,10 @@ static struct w1_therm_family_converter w1_therm_families[] = {
- 		.f		= &w1_therm_family_DS28EA00,
- 		.convert	= w1_DS18B20_convert_temp
- 	},
-+	{
-+		.f		= &w1_therm_family_DS1825,
-+		.convert	= w1_DS18B20_convert_temp
-+	}
- };
- 
- static inline int w1_DS18B20_convert_temp(u8 rom[9])
-diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
-index 874aeb0..b998c30 100644
---- a/drivers/w1/w1_family.h
-+++ b/drivers/w1/w1_family.h
-@@ -38,6 +38,7 @@
- #define W1_EEPROM_DS2431	0x2D
- #define W1_FAMILY_DS2760	0x30
- #define W1_FAMILY_DS2780	0x32
-+#define W1_THERM_DS1825		0x3B
- #define W1_FAMILY_DS2781	0x3D
- #define W1_THERM_DS28EA00	0x42
- 
+greg k-h
