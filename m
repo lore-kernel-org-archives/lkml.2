@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030369Ab2HPQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:38:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52781 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030226Ab2HPQhk (ORCPT
+	id S1030358Ab2HPQiN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:38:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45220 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030227Ab2HPQhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 12:37:40 -0400
-Message-Id: <20120816163734.576898891@openvz.org>
+Message-Id: <20120816163734.743439431@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 16 Aug 2012 20:34:13 +0400
+Date: Thu, 16 Aug 2012 20:34:15 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -17,69 +17,112 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 5/7] fs, eventfd: Add procfs fdinfo helper
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 7/7] fdinfo: Show sigmask for signalfd fd v2
 References: <20120816163408.625246843@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventfd-7
+Content-Disposition: inline; filename=seq-fdinfo-signalfd-3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out raw counter value.
-The /proc/pid/fdinfo/fd output is
-
- | pos:	0
- | flags:	04002
- | eventfd-count:               5a
-
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>
 ---
- fs/eventfd.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ fs/proc/array.c         |    2 +-
+ fs/signalfd.c           |   26 ++++++++++++++++++++++++++
+ include/linux/proc_fs.h |    3 +++
+ 3 files changed, 30 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.git/fs/eventfd.c
+Index: linux-2.6.git/fs/proc/array.c
 ===================================================================
---- linux-2.6.git.orig/fs/eventfd.c
-+++ linux-2.6.git/fs/eventfd.c
-@@ -19,6 +19,8 @@
- #include <linux/export.h>
- #include <linux/kref.h>
- #include <linux/eventfd.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -220,7 +220,7 @@ static inline void task_state(struct seq
+ 	seq_putc(m, '\n');
+ }
  
- struct eventfd_ctx {
- 	struct kref kref;
-@@ -284,7 +286,25 @@ static ssize_t eventfd_write(struct file
- 	return res;
+-static void render_sigset_t(struct seq_file *m, const char *header,
++void render_sigset_t(struct seq_file *m, const char *header,
+ 				sigset_t *set)
+ {
+ 	int i;
+Index: linux-2.6.git/fs/signalfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/signalfd.c
++++ linux-2.6.git/fs/signalfd.c
+@@ -29,6 +29,7 @@
+ #include <linux/anon_inodes.h>
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
++#include <linux/proc_fs.h>
+ 
+ void signalfd_cleanup(struct sighand_struct *sighand)
+ {
+@@ -46,6 +47,7 @@ void signalfd_cleanup(struct sighand_str
+ }
+ 
+ struct signalfd_ctx {
++	seqcount_t cnt;
+ 	sigset_t sigmask;
+ };
+ 
+@@ -227,7 +229,28 @@ static ssize_t signalfd_read(struct file
+ 	return total ? total: ret;
  }
  
 +#ifdef CONFIG_PROC_FS
-+static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
++static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
 +{
-+	struct eventfd_ctx *ctx = f->private_data;
-+	int ret;
++	struct signalfd_ctx *ctx = f->private_data;
++	sigset_t sigmask;
++	unsigned seq;
 +
-+	spin_lock_irq(&ctx->wqh.lock);
-+	ret = seq_printf(m, "eventfd-count: %16llx\n",
-+			 (unsigned long long)ctx->count);
-+	spin_unlock_irq(&ctx->wqh.lock);
++	do {
++		seq = read_seqcount_begin(&ctx->cnt);
++		sigmask = ctx->sigmask;
++	} while (read_seqcount_retry(&ctx->cnt, seq));
 +
-+	return ret;
++	signotset(&sigmask);
++	render_sigset_t(m, "sigmask:\t", &sigmask);
++	return 0;
 +}
 +#endif
 +
- static const struct file_operations eventfd_fops = {
+ static const struct file_operations signalfd_fops = {
 +#ifdef CONFIG_PROC_FS
-+	.show_fdinfo	= eventfd_show_fdinfo,
++	.show_fdinfo	= signalfd_show_fdinfo,
 +#endif
- 	.release	= eventfd_release,
- 	.poll		= eventfd_poll,
- 	.read		= eventfd_read,
+ 	.release	= signalfd_release,
+ 	.poll		= signalfd_poll,
+ 	.read		= signalfd_read,
+@@ -259,6 +282,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -ENOMEM;
+ 
+ 		ctx->sigmask = sigmask;
++		seqcount_init(&ctx->cnt);
+ 
+ 		/*
+ 		 * When we call this, the initialization must be complete, since
+@@ -279,7 +303,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sig
+ 			return -EINVAL;
+ 		}
+ 		spin_lock_irq(&current->sighand->siglock);
++		write_seqcount_begin(&ctx->cnt);
+ 		ctx->sigmask = sigmask;
++		write_seqcount_end(&ctx->cnt);
+ 		spin_unlock_irq(&current->sighand->siglock);
+ 
+ 		wake_up(&current->sighand->signalfd_wqh);
+Index: linux-2.6.git/include/linux/proc_fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/proc_fs.h
++++ linux-2.6.git/include/linux/proc_fs.h
+@@ -290,4 +290,7 @@ static inline struct net *PDE_NET(struct
+ 	return pde->parent->data;
+ }
+ 
++#include <asm/signal.h>
++
++void render_sigset_t(struct seq_file *m, const char *header, sigset_t *set);
+ #endif /* _LINUX_PROC_FS_H */
 
