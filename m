@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2HPO01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:26:27 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:50790 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752917Ab2HPO0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:26:22 -0400
+	id S1756404Ab2HPO06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:26:58 -0400
+Received: from antcom.de ([188.40.178.216]:51212 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753060Ab2HPO04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:26:56 -0400
+Message-ID: <502D032D.1000301@antcom.de>
+Date: Thu, 16 Aug 2012 16:26:53 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <20120816130344.GD26408@arwen.pp.htv.fi>
-References: <1345060759-18091-1-git-send-email-bigeasy@linutronix.de>
-	<1345060759-18091-3-git-send-email-bigeasy@linutronix.de>
-	<CAAe_U6KyAt8KuzOR0dpPmN0NFDLUupzCmdfB=d5ibbN_m4nFTA@mail.gmail.com>
-	<20120816130344.GD26408@arwen.pp.htv.fi>
-Date: Thu, 16 Aug 2012 19:56:19 +0530
-Message-ID: <CAAe_U6LEs3W7PoTmRrD9nEdjB=0RvGpXaw5MffbeL-yS52EdEQ@mail.gmail.com>
-Subject: Re: [PATCH 2/9] scripts/modpost: add a exception for USB gadget drivers
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: balbi@ti.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: artem.bityutskiy@linux.intel.com
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        dwmw2@infradead.org, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 1/2] mtd: lpc32xx_slc: Adjust to pl08x DMA interface changes
+References: <1342095778-13403-1-git-send-email-stigge@antcom.de>  <1342095778-13403-2-git-send-email-stigge@antcom.de> <1345027069.3393.124.camel@sauron.fi.intel.com>
+In-Reply-To: <1345027069.3393.124.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 6:33 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Aug 16, 2012 at 06:35:07PM +0530, ABRAHAM, KISHON VIJAY wrote:
->> Hi Sebastian,
->>
->> On Thu, Aug 16, 2012 at 1:29 AM, Sebastian Andrzej Siewior
->> <bigeasy@linutronix.de> wrote:
->> > The "driver" struct for a gadget driver is named *_driver. On module
->> > load, the gadget expects a UDC driver to be loaded and avaiable. If this
->> > is not the case => -ENODEV and bye bye. That means that the gadget
->> Will this be taken care of in your future series (with configfs?).
->> There might be cases when your gadget driver gets loaded before the
->> UDC driver.
->
-> with configfs that won't be a problem because even though function
-> drivers are loaded, they won't bind to any controller until we tell them
-> to through configfs. IOW, functions will only bind to UDCs after we
-> assign them to a particular usb interface through configfs.
+Hi,
 
-Ok. Makes sense..
+On 08/15/2012 12:37 PM, Artem Bityutskiy wrote:
+> On Thu, 2012-07-12 at 14:22 +0200, Roland Stigge wrote:
+>> This patch adjusts the LPC32xx SLC NAND driver to the new pl08x
+>> DMA interface, fixing the compile error resulting from changed
+>> pl08x structures.
+>> 
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> This patch breaks compilation:
+> 
+> ERROR: "pl08x_filter_id" [drivers/mtd/nand/lpc32xx_slc.ko]
+> undefined!
+> 
+> Please, send a fix. The defconfig I used is attached.
 
-Thanks
-Kishon
+Please see my just posted patches:
+
+mtd: lpc32xx_slc: Make driver independent of AMBA DMA engine driver
+mtd: lpc32xx_mlc: Make driver independent of AMBA DMA engine driver
+
+This also fixes the above problem by getting rid of the reference to
+pl08x_filter_id.
+
+Thanks,
+
+Roland
