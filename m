@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2HPPLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:11:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57932 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab2HPPLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:11:51 -0400
-Date: Thu, 16 Aug 2012 17:11:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] hugetlb: do not use vma_hugecache_offset for
- vma_prio_tree_foreach
-Message-ID: <20120816151149.GF2817@dhcp22.suse.cz>
-References: <1344866141-27906-1-git-send-email-mhocko@suse.cz>
- <CAJd=RBAwg0k0=8zmRh6jwAYe7Msmxw=HE8qs3YjwXrtsezr78Q@mail.gmail.com>
+	id S1757325Ab2HPPND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:13:03 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57482 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab2HPPNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:13:00 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: Prabhakar Lad <prabhakar.lad@ti.com>, LMML <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
+Date: Thu, 16 Aug 2012 17:13:16 +0200
+Message-ID: <1435592.88fOxbvhY7@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
+References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAwg0k0=8zmRh6jwAYe7Msmxw=HE8qs3YjwXrtsezr78Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-08-12 20:45:15, Hillf Danton wrote:
-> On Mon, Aug 13, 2012 at 9:55 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
-> > from vma) fixed pgoff calculation but it has replaced it by
-> > vma_hugecache_offset which is not approapriate for offsets used for
-> > vma_prio_tree_foreach because that one expects index in page units
-> > rather than in huge_page_shift.
-> > Using vma_hugecache_offset is not incorrect because the pgoff will fit
-> > into the same vmas but it is confusing so the standard PAGE_SHIFT based
-> > index calculation is used instead.
-> >
-> > Cc: Hillf Danton <dhillf@gmail.com>
-> > Cc: Mel Gorman <mel@csn.ul.ie>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
+Hi Prabhakar,
+
+Thanks for the patch.
+
+On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> Thanks
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> ---
+>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
+>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
+>  2 files changed, 15 insertions(+), 11 deletions(-)
 > 
-> Acked-by: Hillf Danton <dhillf@gmail.com>
+> diff --git a/drivers/media/video/davinci/vpif_capture.c
+> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5 100644
+> --- a/drivers/media/video/davinci/vpif_capture.c
+> +++ b/drivers/media/video/davinci/vpif_capture.c
+> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
+> unsigned int count) }
+> 
+>  	/* configure 1 or 2 channel mode */
+> -	ret = vpif_config_data->setup_input_channel_mode
+> -					(vpif->std_info.ycmux_mode);
+> +	if (vpif_config_data->setup_input_channel_mode) {
+> +		ret = vpif_config_data->setup_input_channel_mode
+> +						(vpif->std_info.ycmux_mode);
+> 
+> -	if (ret < 0) {
+> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> -		return ret;
+> +		if (ret < 0) {
+> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> +			return ret;
+> +		}
 
-Thanks Hillf!
+This change looks good to me. However, note that you will need to get rid of 
+board code callbacks at some point to implement device tree support. It would 
+be worth thinking about how to do so now.
 
-> >  mm/hugetlb.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index c39e4be..a74ea31 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
-> >          * from page cache lookup which is in HPAGE_SIZE units.
-> >          */
-> >         address = address & huge_page_mask(h);
-> > -       pgoff = vma_hugecache_offset(h, vma, address);
-> > +       pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-> > +                       vma->vm_pgoff;
-> >         mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
-> >
-> >         /*
-> > --
-> > 1.7.10.4
-> >
+>  	}
+> 
+>  	/* Call vpif_set_params function to set the parameters and addresses */
+> diff --git a/drivers/media/video/davinci/vpif_display.c
+> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92 100644
+> --- a/drivers/media/video/davinci/vpif_display.c
+> +++ b/drivers/media/video/davinci/vpif_display.c
+> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
+> unsigned int count) }
+> 
+>  	/* clock settings */
+> -	ret =
+> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+> -					ch->vpifparams.std_info.hd_sd);
+> -	if (ret < 0) {
+> -		vpif_err("can't set clock\n");
+> -		return ret;
+> +	if (vpif_config_data->set_clock) {
 
+Does the DaVinci platform use the common clock framework ? If so, a better fix 
+for this would be to pass a clock name through platform data instead of using 
+a callback function.
+
+> +		ret =
+> +		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+> +						ch->vpifparams.std_info.hd_sd);
+> +		if (ret < 0) {
+> +			vpif_err("can't set clock\n");
+> +			return ret;
+> +		}
+>  	}
+> 
+>  	/* set the parameters and addresses */
 -- 
-Michal Hocko
-SUSE Labs
+Regards,
+
+Laurent Pinchart
+
