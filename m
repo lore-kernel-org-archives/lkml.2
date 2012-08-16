@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab2HPOM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 10:12:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41536 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab2HPOM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 10:12:57 -0400
-Message-ID: <502CFFB6.3080006@oracle.com>
-Date: Thu, 16 Aug 2012 22:12:06 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-Reply-To: jeff.liu@oracle.com
-Organization: Oracle
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1753730Ab2HPOOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 10:14:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:32528 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab2HPOOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 10:14:07 -0400
+Message-ID: <502D0021.5090004@parallels.com>
+Date: Thu, 16 Aug 2012 18:13:53 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lockdep: fix potential NULL pointer dereferences
-Content-Type: text/plain; charset=ISO-8859-1
+To: James Bottomley <jbottomley@parallels.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120815092116.700948346@openvz.org>  <20120815092409.591460800@openvz.org> <20120815204546.GC25062@fieldses.org>  <20120815210237.GF25421@moon> <20120815220622.GA28054@fieldses.org>  <20120816062448.GA32081@moon> <20120816123814.GD1209@moon>  <20120816134339.GQ23464@ZenIV.linux.org.uk>  <502CF9DA.8030701@parallels.com>  <20120816135019.GS23464@ZenIV.linux.org.uk> <20120816135448.GP32081@moon> <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1345125779.3259.50.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 08/16/2012 06:03 PM, James Bottomley wrote:
+> On Thu, 2012-08-16 at 17:54 +0400, Cyrill Gorcunov wrote:
+>> On Thu, Aug 16, 2012 at 02:50:19PM +0100, Al Viro wrote:
+>>> On Thu, Aug 16, 2012 at 05:47:06PM +0400, Pavel Emelyanov wrote:
+>>>> On 08/16/2012 05:43 PM, Al Viro wrote:
+>>>>> On Thu, Aug 16, 2012 at 04:38:14PM +0400, Cyrill Gorcunov wrote:
+>>>>>
+>>>>>> Hi Bruce, thinking a bit more I guess using general encode_fh is not that
+>>>>>> convenient since it operates with dentries while our fdinfo output deals
+>>>>>> with inodes. Thus I should either provide some new encode_fh variant
+>>>>>> which would deal with inodes directly without "parents". Which doesn't
+>>>>>> look for me anyhow better than the new export_encode_inode_fh helper.
+>>>>>
+>>>>> Huh?  You do have dentries, for crying out loud...
+>>>>
+>>>> Sometimes we don't -- the inotify thing gets an inode only.
+>>>> Unlike other notifies that have dentries at hands...
+>>>
+>>> What's wrong with saying "we don't support idiotify"?
+>>
+>> Al, we need some way to restore inotifies after checkpoint.
+>> At the very early versions of these patches I simply added
+>> dentry to the inotify mark thus once inotify created we always
+>> have a dentry to refer on in encode_fh, but I'm not sure if
+>> this will be good design.
+> 
+> Actually, I was about to suggest this.  This can be done internally
+> within fs/notify without actually modifying the syscall interface, can't
+> it, since they take a path which is used to obtain the inode?  It looks
+> like the whole of the inotify interface could be internally recast to
+> use dentries instead of inodes.  Unless I've missed something obvious?
 
-In general we can get the symbol name of a particular lock and print it out if something
-went wrong regarding lock/unlock stuff.
+This will change the observable by userspace behavior. Various apps inotify a
+file, then rename/unlink/link it or do tricks with mounts container the file.
+And it works one way if the dentry+mount reference is 0 (now) and some other
+way if it's not (after the proposed change).
 
-However, I observed the following info(3.5.0-rc4) when running quotacheck(1) yesterday.
-It has occurred only once, I can not reproduced it afterwards.
+The dentries-related behavior is especially bad on NFS with its silly-renames
+decisions based on dentry reference counters. The mount-related one is bad in
+general.
 
-[15800.938071] quotacheck/11934 is trying to release lock (
-[15800.940040] BUG: unable to handle kernel NULL pointer dereference at 0000007c
-[15800.940040] IP: [<c10f9b2c>] print_lockdep_cache+0x15/0x86
-[15800.940040] *pde = 00000000
-[15800.940040] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+I'm saying this, because we were facing such problems at approx. once-a-week
+rate when we did this in OpenVZ :(
 
-Maybe something wrong at other areas, but I also noticed there is no defense for __get_key_name()
-failure at both __print_lock_name() and print_lockdep_cache().
-
-How about to trigger BUG_ON() to indicate it a bit more explicit once such situation is detected?
+> James
+> 
 
 Thanks,
--Jeff
-
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-
----
- kernel/lockdep.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index ea9ee45..dfbcd86 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -508,6 +508,7 @@ static void __print_lock_name(struct lock_class *class)
- 	name = class->name;
- 	if (!name) {
- 		name = __get_key_name(class->key, str);
-+		BUG_ON(!name);
- 		printk("%s", name);
- 	} else {
- 		printk("%s", name);
-@@ -538,6 +539,7 @@ static void print_lockdep_cache(struct lockdep_map *lock)
- 	if (!name)
- 		name = __get_key_name(lock->key->subkeys, str);
- 
-+	BUG_ON(!name);
- 	printk("%s", name);
- }
- 
--- 
-1.7.9
+Pavel
