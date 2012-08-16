@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab2HPMQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:16:21 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38332 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab2HPMQR (ORCPT
+	id S1754338Ab2HPM1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:27:33 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:34167 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2HPM1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:16:17 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hideki EIRAKU <hdk@igel.co.jp>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Subject: Re: [PATCH v4] fbdev: sh_mobile_lcdc: use dma_mmap_coherent
-Date: Thu, 16 Aug 2012 14:16:32 +0200
-Message-ID: <14014166.3JMiBq7jRA@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <1345112000-22738-1-git-send-email-hdk@igel.co.jp>
-References: <1345112000-22738-1-git-send-email-hdk@igel.co.jp>
+	Thu, 16 Aug 2012 08:27:31 -0400
+Message-ID: <502CE700.3070709@panasas.com>
+Date: Thu, 16 Aug 2012 15:26:40 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: <bhalevy@tonian.com>, <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>, <adilger.kernel@dilger.ca>,
+        <tytso@mit.edu>, <hirofumi@mail.parknet.co.jp>,
+        <mikulas@artax.karlin.mff.cuni.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        <hch@infradead.org>, <dushistov@mail.ru>, <osd-dev@open-osd.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] vfs: remove lock and unlock functions for super block
+References: <502CC499.4030109@gmail.com>
+In-Reply-To: <502CC499.4030109@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eiraku-san,
+On 08/16/2012 12:59 PM, Marco Stornelli wrote:
 
-On Thursday 16 August 2012 19:13:20 Hideki EIRAKU wrote:
-> fb_mmap() implemented in fbmem.c uses smem_start as the physical
-> address of the frame buffer.  In the sh_mobile_lcdc driver, the
-> smem_start is a dma_addr_t that is not a physical address when IOMMU is
-> enabled.  dma_mmap_coherent() maps the address correctly.
+> From: Marco Stornelli <marco.stornelli@gmail.com>
 > 
-> Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
+> Remove lock_super and unlock_super from VFS.
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-I will push the patch to v3.7 through my tree.
+You can't remove the lock here. After this patch the tree will
+not compile, and will not be bisectable. You must move this patch
+to be last.
+
+Each patch should leave the tree compileable and with out any
+regressions.
+
+Boaz
 
 > ---
->  drivers/video/sh_mobile_lcdcfb.c |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/video/sh_mobile_lcdcfb.c
-> b/drivers/video/sh_mobile_lcdcfb.c index 699487c..bccfd7e 100644
-> --- a/drivers/video/sh_mobile_lcdcfb.c
-> +++ b/drivers/video/sh_mobile_lcdcfb.c
-> @@ -1614,6 +1614,15 @@ static int sh_mobile_lcdc_overlay_blank(int blank,
-> struct fb_info *info) return 1;
+> diff -Nurp linux-3.6-rc1-orig/fs/super.c linux-3.6-rc1/fs/super.c
+> --- linux-3.6-rc1-orig/fs/super.c	2012-08-16 09:37:35.000000000 +0200
+> +++ linux-3.6-rc1/fs/super.c	2012-08-16 09:43:46.000000000 +0200
+> @@ -186,15 +186,8 @@ static struct super_block *alloc_super(s
+>  		spin_lock_init(&s->s_inode_lru_lock);
+>  		INIT_LIST_HEAD(&s->s_mounts);
+>  		init_rwsem(&s->s_umount);
+> -		mutex_init(&s->s_lock);
+>  		lockdep_set_class(&s->s_umount, &type->s_umount_key);
+>  		/*
+> -		 * The locking rules for s_lock are up to the
+> -		 * filesystem. For example ext3fs has different
+> -		 * lock ordering than usbfs:
+> -		 */
+> -		lockdep_set_class(&s->s_lock, &type->s_lock_key);
+> -		/*
+>  		 * sget() can have s_umount recursion.
+>  		 *
+>  		 * When it cannot find a suitable sb, it allocates a new
+> @@ -400,22 +393,6 @@ bool grab_super_passive(struct super_blo
+>  	return false;
 >  }
+>  -/*
+> - * Superblock locking.  We really ought to get rid of these two.
+> - */
+> -void lock_super(struct super_block * sb)
+> -{
+> -	mutex_lock(&sb->s_lock);
+> -}
+> -
+> -void unlock_super(struct super_block * sb)
+> -{
+> -	mutex_unlock(&sb->s_lock);
+> -}
+> -
+> -EXPORT_SYMBOL(lock_super);
+> -EXPORT_SYMBOL(unlock_super);
+> -
+>  /**
+>   *	generic_shutdown_super	-	common helper for ->kill_sb()
+>   *	@sb: superblock to kill
 > 
-> +static int
-> +sh_mobile_lcdc_overlay_mmap(struct fb_info *info, struct vm_area_struct
-> *vma) +{
-> +	struct sh_mobile_lcdc_overlay *ovl = info->par;
-> +
-> +	return dma_mmap_coherent(ovl->channel->lcdc->dev, vma, ovl->fb_mem,
-> +				 ovl->dma_handle, ovl->fb_size);
-> +}
-> +
->  static struct fb_ops sh_mobile_lcdc_overlay_ops = {
->  	.owner          = THIS_MODULE,
->  	.fb_read        = fb_sys_read,
-> @@ -1626,6 +1635,7 @@ static struct fb_ops sh_mobile_lcdc_overlay_ops = {
->  	.fb_ioctl       = sh_mobile_lcdc_overlay_ioctl,
->  	.fb_check_var	= sh_mobile_lcdc_overlay_check_var,
->  	.fb_set_par	= sh_mobile_lcdc_overlay_set_par,
-> +	.fb_mmap	= sh_mobile_lcdc_overlay_mmap,
->  };
-> 
->  static void
-> @@ -2093,6 +2103,15 @@ static int sh_mobile_lcdc_blank(int blank, struct
-> fb_info *info) return 0;
->  }
-> 
-> +static int
-> +sh_mobile_lcdc_mmap(struct fb_info *info, struct vm_area_struct *vma)
-> +{
-> +	struct sh_mobile_lcdc_chan *ch = info->par;
-> +
-> +	return dma_mmap_coherent(ch->lcdc->dev, vma, ch->fb_mem,
-> +				 ch->dma_handle, ch->fb_size);
-> +}
-> +
->  static struct fb_ops sh_mobile_lcdc_ops = {
->  	.owner          = THIS_MODULE,
->  	.fb_setcolreg	= sh_mobile_lcdc_setcolreg,
-> @@ -2108,6 +2127,7 @@ static struct fb_ops sh_mobile_lcdc_ops = {
->  	.fb_release	= sh_mobile_lcdc_release,
->  	.fb_check_var	= sh_mobile_lcdc_check_var,
->  	.fb_set_par	= sh_mobile_lcdc_set_par,
-> +	.fb_mmap	= sh_mobile_lcdc_mmap,
->  };
-> 
->  static void
+> diff -Nurp linux-3.6-rc1-orig/include/linux/fs.h linux-3.6-rc1/include/linux/fs.h
+> --- linux-3.6-rc1-orig/include/linux/fs.h	2012-08-16 11:38:42.000000000 +0200
+> +++ linux-3.6-rc1/include/linux/fs.h	2012-08-16 09:45:18.000000000 +0200
+> @@ -1504,7 +1504,6 @@ struct super_block {
+>  	unsigned long		s_magic;
+>  	struct dentry		*s_root;
+>  	struct rw_semaphore	s_umount;
+> -	struct mutex		s_lock;
+>  	int			s_count;
+>  	atomic_t		s_active;
+>  #ifdef CONFIG_SECURITY
 
--- 
-Regards,
-
-Laurent Pinchart
 
