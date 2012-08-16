@@ -1,217 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab2HPIXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 04:23:08 -0400
+	id S932073Ab2HPIVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 04:21:45 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58556 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab2HPIVp (ORCPT
+	with ESMTP id S1756179Ab2HPIVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 04:21:45 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-f3-502cad964e90
+	Thu, 16 Aug 2012 04:21:41 -0400
+X-AuditID: 9c93016f-b7cc0ae000000e9f-d9-502cad93bc9b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH v2 5/5] perf ui/gtk: Add perf_gtk__show_helpline() for pr_*
-Date: Thu, 16 Aug 2012 17:14:54 +0900
-Message-Id: <1345104894-14205-5-git-send-email-namhyung@kernel.org>
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/5] perf ui: Introduce struct ui_helpline
+Date: Thu, 16 Aug 2012 17:14:50 +0900
+Message-Id: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
-References: <1345104894-14205-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helpline for printing error/debug messages. The code resembles a
-TUI counter part and only print the first line of the message.
+Add struct ui_helpline in order to provide flexible implementation of
+helpline APIs.  And convert existing TUI implementation to use it.
 
-Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/helpline.c | 26 ++++++++++++++++++++++++++
- tools/perf/ui/gtk/util.c     |  5 -----
- tools/perf/ui/helpline.h     | 23 +++++++++++++++++++++++
- tools/perf/ui/setup.c        |  4 ++++
- tools/perf/ui/tui/setup.c    |  2 --
- tools/perf/util/debug.c      |  4 +++-
- tools/perf/util/debug.h      |  8 +-------
- 7 files changed, 57 insertions(+), 15 deletions(-)
+ tools/perf/Makefile          |  5 ++--
+ tools/perf/ui/helpline.c     | 56 +++++++++++++++---------------------------
+ tools/perf/ui/helpline.h     | 10 +++++++-
+ tools/perf/ui/tui/helpline.c | 58 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 89 insertions(+), 40 deletions(-)
+ create mode 100644 tools/perf/ui/tui/helpline.c
 
-diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
-index 9180fea920d5..28c6d33177a7 100644
---- a/tools/perf/ui/gtk/helpline.c
-+++ b/tools/perf/ui/gtk/helpline.c
-@@ -1,5 +1,10 @@
-+#include <stdio.h>
-+#include <string.h>
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e457afa04b59..483fb69fa4ae 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -335,6 +335,7 @@ LIB_H += util/rblist.h
+ LIB_H += util/intlist.h
+ LIB_H += util/perf_regs.h
+ LIB_H += util/unwind.h
++LIB_H += ui/helpline.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -402,6 +403,7 @@ LIB_OBJS += $(OUTPUT)util/cgroup.o
+ LIB_OBJS += $(OUTPUT)util/target.o
+ LIB_OBJS += $(OUTPUT)util/rblist.o
+ LIB_OBJS += $(OUTPUT)util/intlist.o
++LIB_OBJS += $(OUTPUT)ui/helpline.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ 
+@@ -567,14 +569,13 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+ 		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-		LIB_OBJS += $(OUTPUT)ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)ui/progress.o
+ 		LIB_OBJS += $(OUTPUT)ui/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+ 		LIB_OBJS += $(OUTPUT)ui/tui/util.o
++		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+ 		LIB_H += ui/browser.h
+ 		LIB_H += ui/browsers/map.h
+-		LIB_H += ui/helpline.h
+ 		LIB_H += ui/keysyms.h
+ 		LIB_H += ui/libslang.h
+ 		LIB_H += ui/progress.h
+diff --git a/tools/perf/ui/helpline.c b/tools/perf/ui/helpline.c
+index 2f950c2641c8..78ba28ac7a2c 100644
+--- a/tools/perf/ui/helpline.c
++++ b/tools/perf/ui/helpline.c
+@@ -5,23 +5,32 @@
+ #include "../debug.h"
+ #include "helpline.h"
+ #include "ui.h"
+-#include "libslang.h"
+ 
+-void ui_helpline__pop(void)
++char ui_helpline__current[512];
 +
- #include "gtk.h"
-+#include "../ui.h"
- #include "../helpline.h"
-+#include "../../util/debug.h"
- 
- 
- static void gtk_helpline_pop(void)
-@@ -29,3 +34,24 @@ void perf_gtk__init_helpline(void)
++static void nop_helpline__pop(void)
  {
- 	helpline_fns = &gtk_helpline_fns;
  }
-+
-+int perf_gtk__show_helpline(const char *fmt, va_list ap)
+ 
+-char ui_helpline__current[512];
++static void nop_helpline__push(const char *msg __used)
 +{
-+	int ret;
-+	char *ptr;
-+	static int backlog;
-+
-+	ret = vscnprintf(ui_helpline__current + backlog,
-+			 sizeof(ui_helpline__current) - backlog, fmt, ap);
-+	backlog += ret;
-+
-+	/* only first line can be displayed */
-+	ptr = strchr(ui_helpline__current, '\n');
-+	if (ptr && (ptr - ui_helpline__current) <= backlog) {
-+		*ptr = '\0';
-+		ui_helpline__puts(ui_helpline__current);
-+		backlog = 0;
-+	}
-+
-+	return ret;
 +}
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 0ead373c0dfb..b8efb966f94c 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -117,11 +117,6 @@ struct perf_error_ops perf_gtk_eops = {
-  *        For now, just add stubs for NO_NEWT=1 build.
-  */
- #ifdef NO_NEWT_SUPPORT
--int ui_helpline__show_help(const char *format __used, va_list ap __used)
+ 
+-void ui_helpline__push(const char *msg)
++static struct ui_helpline default_helpline_fns = {
++	.pop	= nop_helpline__pop,
++	.push	= nop_helpline__push,
++};
++
++struct ui_helpline *helpline_fns = &default_helpline_fns;
++
++void ui_helpline__pop(void)
+ {
+-	const size_t sz = sizeof(ui_helpline__current);
++	helpline_fns->pop();
++}
+ 
+-	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
+-	SLsmg_set_color(0);
+-	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
+-	SLsmg_refresh();
+-	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
++void ui_helpline__push(const char *msg)
++{
++	helpline_fns->push(msg);
+ }
+ 
+ void ui_helpline__vpush(const char *fmt, va_list ap)
+@@ -50,30 +59,3 @@ void ui_helpline__puts(const char *msg)
+ 	ui_helpline__pop();
+ 	ui_helpline__push(msg);
+ }
+-
+-void ui_helpline__init(void)
 -{
--	return 0;
+-	ui_helpline__puts(" ");
 -}
 -
- void ui_progress__update(u64 curr __used, u64 total __used,
- 			 const char *title __used)
- {
+-char ui_helpline__last_msg[1024];
+-
+-int ui_helpline__show_help(const char *format, va_list ap)
+-{
+-	int ret;
+-	static int backlog;
+-
+-	pthread_mutex_lock(&ui__lock);
+-	ret = vscnprintf(ui_helpline__last_msg + backlog,
+-			sizeof(ui_helpline__last_msg) - backlog, format, ap);
+-	backlog += ret;
+-
+-	if (ui_helpline__last_msg[backlog - 1] == '\n') {
+-		ui_helpline__puts(ui_helpline__last_msg);
+-		SLsmg_refresh();
+-		backlog = 0;
+-	}
+-	pthread_mutex_unlock(&ui__lock);
+-
+-	return ret;
+-}
 diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
-index d9e97f771245..6d49f932ddcc 100644
+index 7bab6b34e35e..61118b2bc242 100644
 --- a/tools/perf/ui/helpline.h
 +++ b/tools/perf/ui/helpline.h
-@@ -4,6 +4,8 @@
+@@ -4,13 +4,21 @@
  #include <stdio.h>
  #include <stdarg.h>
  
-+#include "../util/cache.h"
++struct ui_helpline {
++	void (*pop)(void);
++	void (*push)(const char *msg);
++};
 +
- struct ui_helpline {
- 	void (*pop)(void);
- 	void (*push)(const char *msg);
-@@ -19,4 +21,25 @@ void ui_helpline__puts(const char *msg);
++extern struct ui_helpline *helpline_fns;
++
+ void ui_helpline__init(void);
++
+ void ui_helpline__pop(void);
+ void ui_helpline__push(const char *msg);
+ void ui_helpline__vpush(const char *fmt, va_list ap);
+ void ui_helpline__fpush(const char *fmt, ...);
+ void ui_helpline__puts(const char *msg);
  
- extern char ui_helpline__current[512];
+-extern char ui_helpline__current[];
++extern char ui_helpline__current[512];
  
-+#ifdef NO_NEWT_SUPPORT
-+static inline int ui_helpline__show_help(const char *format __used,
-+					 va_list ap __used)
-+{
-+	return 0;
-+}
-+#else
-+extern char ui_helpline__last_msg[];
-+int ui_helpline__show_help(const char *format, va_list ap);
-+#endif /* NO_NEWT_SUPPORT */
-+
-+#ifdef NO_GTK2_SUPPORT
-+static inline int perf_gtk__show_helpline(const char *format __used,
-+					  va_list ap __used)
-+{
-+	return 0;
-+}
-+#else
-+int perf_gtk__show_helpline(const char *format, va_list ap);
-+#endif /* NO_GTK2_SUPPORT */
-+
  #endif /* _PERF_UI_HELPLINE_H_ */
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 791fb15ce350..c7820e569660 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -1,7 +1,11 @@
+diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
+new file mode 100644
+index 000000000000..b4e521ef2170
+--- /dev/null
++++ b/tools/perf/ui/tui/helpline.c
+@@ -0,0 +1,58 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
 +#include <pthread.h>
 +
- #include "../cache.h"
- #include "../debug.h"
- 
- 
-+pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
++#include "../../util/debug.h"
++#include "../helpline.h"
++#include "../ui.h"
++#include "../libslang.h"
 +
- void setup_browser(bool fallback_to_pager)
- {
- 	if (!isatty(1) || dump_trace)
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index e247bf51d247..009c962fae85 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -3,8 +3,6 @@
- 
- #include "tui.h"
- 
--pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
--
- static volatile int ui__need_resize;
- 
- void ui__refresh_dimensions(bool force)
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 4dfe0bb3c322..66eb3828ceb5 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -23,8 +23,10 @@ int eprintf(int level, const char *fmt, ...)
- 
- 	if (verbose >= level) {
- 		va_start(args, fmt);
--		if (use_browser > 0)
-+		if (use_browser == 1)
- 			ret = ui_helpline__show_help(fmt, args);
-+		else if (use_browser == 2)
-+			ret = perf_gtk__show_helpline(fmt, args);
- 		else
- 			ret = vfprintf(stderr, fmt, args);
- 		va_end(args);
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 015c91dbc096..05e660cbf7e2 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -4,6 +4,7 @@
- 
- #include <stdbool.h>
- #include "event.h"
-+#include "../ui/helpline.h"
- 
- extern int verbose;
- extern bool quiet, dump_trace;
-@@ -15,11 +16,6 @@ struct ui_progress;
- struct perf_error_ops;
- 
- #if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
--static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
--{
--	return 0;
--}
--
- static inline void ui_progress__update(u64 curr __used, u64 total __used,
- 				       const char *title __used) {}
- 
-@@ -39,8 +35,6 @@ perf_error__unregister(struct perf_error_ops *eops __used)
- 
- #else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
- 
--extern char ui_helpline__last_msg[];
--int ui_helpline__show_help(const char *format, va_list ap);
- #include "../ui/progress.h"
- int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- #include "../ui/util.h"
++
++static void tui_helpline__pop(void)
++{
++}
++
++static void tui_helpline__push(const char *msg)
++{
++	const size_t sz = sizeof(ui_helpline__current);
++
++	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
++	SLsmg_set_color(0);
++	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
++	SLsmg_refresh();
++	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
++}
++
++struct ui_helpline tui_helpline_fns = {
++	.pop	= tui_helpline__pop,
++	.push	= tui_helpline__push,
++};
++
++void ui_helpline__init(void)
++{
++	helpline_fns = &tui_helpline_fns;
++	ui_helpline__puts(" ");
++}
++
++char ui_helpline__last_msg[1024];
++
++int ui_helpline__show_help(const char *format, va_list ap)
++{
++	int ret;
++	static int backlog;
++
++	pthread_mutex_lock(&ui__lock);
++	ret = vscnprintf(ui_helpline__last_msg + backlog,
++			sizeof(ui_helpline__last_msg) - backlog, format, ap);
++	backlog += ret;
++
++	if (ui_helpline__last_msg[backlog - 1] == '\n') {
++		ui_helpline__puts(ui_helpline__last_msg);
++		SLsmg_refresh();
++		backlog = 0;
++	}
++	pthread_mutex_unlock(&ui__lock);
++
++	return ret;
++}
 -- 
 1.7.11.2
 
