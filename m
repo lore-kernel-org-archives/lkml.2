@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2HPKFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:05:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50669 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab2HPKFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:05:47 -0400
-Message-ID: <502CC477.4060005@gmail.com>
-Date: Thu, 16 Aug 2012 11:59:19 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	id S1756735Ab2HPKGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:06:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41293 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756280Ab2HPKGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 06:06:05 -0400
+Date: Thu, 16 Aug 2012 12:05:57 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (hid
+ tree related)
+In-Reply-To: <20120816152538.7f850ee1a3b8ce90d9f749a2@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1208161204520.7026@pobox.suse.cz>
+References: <20120816152538.7f850ee1a3b8ce90d9f749a2@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
-        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 0/8] remove lock and unlock super
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 16 Aug 2012, Stephen Rothwell wrote:
 
-I'm trying to remove the functions lock_super/unlock_super and to push 
-the lock into each single fs. Currently these fs use these functions: 
-ext3, ext4, fat, hpfs, exofs, sysv, ufs. At the moment I used the more 
-conservative approach, I created a new mutex s_lock in the private sb 
-info for each fs, so nothing change but a couple of notes:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/hid/hid-picolcd_fb.c: In function 'picolcd_fb_destroy':
+> drivers/hid/hid-picolcd_fb.c:350:2: error: implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
+> drivers/hid/hid-picolcd_fb.c: In function 'picolcd_init_framebuffer':
+> drivers/hid/hid-picolcd_fb.c:508:2: error: implicit declaration of function 'vmalloc' [-Werror=implicit-function-declaration]
+> drivers/hid/hid-picolcd_fb.c:508:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+> 
+> Caused by commit fabdbf2fd22f ("HID: picoLCD: split driver code") from
+> the hid tree.
 
-1) exofs/hpfs: they use lock_super only in one function so the lock 
-seems completely not needed and I removed it, do you see collateral effect?
+Hmm, seems config dependent, doesn't trigger here. Probably vmalloc.h gets 
+sucked in some other way under certain config options.
 
-2) fat/ufs: they have already got functions to lock the fs with a mutex, 
-I don't know at the moment if a general review of the code can give us 
-the possibility to "merge" the locks.
+Anyway I have now applied your patch Stephen, so you should be able to 
+drop it from your pile.
 
-Bugs, comments, review are welcome especially from fs maintainers. Maybe 
-this work can be a first cleaning, after that each fs can adjust its 
-lock policy.
+Thanks,
 
-The patch is against 3.6-rc1.
-
-Marco
+-- 
+Jiri Kosina
+SUSE Labs
