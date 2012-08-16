@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab2HPUBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:01:48 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38713 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933217Ab2HPUBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:01:46 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgFOAK1QLVBV5qoUPGdsb2JhbABFhRiFI690GQEBAQEeGQ0ngiABAQQBOhwjBQsIA0YUJQoaiBoKuw4UkG1gA5VOhWyNCA
-X-IronPort-AV: E=Sophos;i="4.77,781,1336341600"; 
-   d="scan'208";a="98471683"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 16 Aug 2012 22:05:53 +0200
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
-Message-ID: <20120816200553.GA751@polaris.bitmath.org>
-References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
- <1344807757-2217-10-git-send-email-rydberg@euromail.se>
- <CAF8JNhLBO72-Rpm7dFWfYLPvbhDZZsm2yOy_7sREnNhTWqZ04w@mail.gmail.com>
- <20120816180732.GA451@polaris.bitmath.org>
- <CAF8JNhJ1R68pU3aOCnYC8KvmfDDU7oKhMsvQV5hfRX2qE=X5WA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF8JNhJ1R68pU3aOCnYC8KvmfDDU7oKhMsvQV5hfRX2qE=X5WA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933325Ab2HPUDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:03:05 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52226 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933199Ab2HPUDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 16:03:01 -0400
+Message-ID: <1345147278.3402.28.camel@falcor.watson.ibm.com>
+Subject: Re: [RFC v2 2/7] keys: initialize root uid and session keyrings
+ early
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        rusty@rustcorp.com.au, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>
+Date: Thu, 16 Aug 2012 16:01:18 -0400
+In-Reply-To: <CA+5PVA5dLY8rux88dC74q3uVwf3mE_VkGxaJU14YHbXkkGuBJQ@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	 <ec8635c36005ba5ea3784276214fb905720ee3ec.1345055639.git.dmitry.kasatkin@intel.com>
+		<CA+5PVA71WegBSBbgZDBZopORkAMN9G8i2MXHmAGdpiSjWzo9RQ@mail.gmail.com>
+		<1345144127.3402.2.camel@falcor.watson.ibm.com>
+		<CA+5PVA6bwH1RKwT8DiZU2J3xo_c_R5d=0Zo9qHXkq+JhtZeG3Q@mail.gmail.com>
+		<1345146349.3402.21.camel@falcor.watson.ibm.com>
+	 <CA+5PVA5dLY8rux88dC74q3uVwf3mE_VkGxaJU14YHbXkkGuBJQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081620-5806-0000-0000-00001878782E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For example, the new input_mt_init_slots() takes care of the
-> __set_bit() functions in one place. That is great. But, it requires
-> wacom_wac.c to be updated since it has an interface change. I guess
-> there are other drivers calling input_mt_init_slots as well.
+On Thu, 2012-08-16 at 15:59 -0400, Josh Boyer wrote:
+> On Thu, Aug 16, 2012 at 3:45 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Thu, 2012-08-16 at 15:13 -0400, Josh Boyer wrote:
+> >> On Thu, Aug 16, 2012 at 3:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >> >> > +#include "internal.h"
+> >> >> > +static int __init init_root_keyring(void)
+> >> >> > +{
+> >> >> > +       return install_user_keyrings();
+> >> >> > +}
+> >> >> > +
+> >> >> > +late_initcall(init_root_keyring);
+> >> >> > --
+> >> >>
+> >> >> Why is this in an entirely new file instead of just being added to
+> >> >> process_keys.c ?
+> >> >>
+> >> >> josh
+> >> >
+> >> > Only when "CONFIG_INTEGRITY_SIGNATURE" is selected, does this get built.
+> >>
+> >> Yes, I noticed that.  It doesn't explain why it's in its own file.  You
+> >> could accomplish the same thing by wrapping the function and initcall
+> >> in #ifdef CONFIG_INTEGRITY_SIGNATURE in process_keys.c.
+> >
+> > I was under the impression using 'ifdefs' in 'C' code was frowned upon
+> > (Documentation/SubmittingPatches section 2.2).  This would be an
+> > exception?
+> 
+> If it makes a big ugly mess it's frowned upon.  But if you're adding 7
+> lines of code in a new file that will almost certainly never get more
+> code added to it, I'm not sure.  IMHO, it can go into an existing file.
+> Others might disagree.  Isn't Linux development fun?!
 
-The default behavior in the "new" input_mt_init_slots(), i.e. with the
-zero flags argument added to all the drivers, is exactly the same as
-before. No further changes are necessary.
+This is just a case where if I had 'ifdef's in 'C' code, I'm sure
+someone would have complained.  :)
 
-Yes, some drivers could definitely start using some of the flags to
-good advantage, but there is no rush to make that happen. Such changes
-would of course involve the driver maintainers.
+Mimi
 
-> I was wondering if you plan to update all drivers after this patchset
-> is accepted or if you need us to chime in.
-
-Thank you, the best is definitely if you want to do it yourself. Let's
-just see where the latency-related work takes us first, since it might
-affect how to send data from drivers.
-
-> From what I see, frame/mt is only initialized when driver starts.
-> Frame will be increased by MT events while the driver running. If this
-> is true, won't it be possible the value gets too large?
-
-Yes, but as is apparent from the code, the semantics of that variable
-is not to count the number of frames since the dawn of times, but to
-keep track of changes per frame.
-
-Thanks,
-Henrik
