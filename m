@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab2HPLBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:01:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33887 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab2HPLBM (ORCPT
+	id S1756994Ab2HPLCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:02:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58910 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab2HPLCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:01:12 -0400
-From: Matthias Brugger <mbrugger@iseebcn.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthias Brugger <mbrugger@iseebcn.com>
-Subject: [PATCH] usb/musb/omap2430.c Delete unused variable.
-Date: Thu, 16 Aug 2012 13:00:25 +0200
-Message-Id: <1345114825-10331-1-git-send-email-mbrugger@iseebcn.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20120816101917.GK10736@arwen.pp.htv.fi>
-References: <20120816101917.GK10736@arwen.pp.htv.fi>
+	Thu, 16 Aug 2012 07:02:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344968568-4613-1-git-send-email-morbidrsa@googlemail.com>
+References: <1344968568-4613-1-git-send-email-morbidrsa@googlemail.com>
+Date: Thu, 16 Aug 2012 12:02:47 +0100
+Message-ID: <CAJSP0QV9wsC_Q8swMPaGAFXnF3X-B_Ds9B06Vh+wgju=ck3rsw@mail.gmail.com>
+Subject: Re: [PATCH] staging: line6: variax.c: Eliminated remaining strict_stroul()s
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Johannes Thumshirn <morbidrsa@googlemail.com>
+Cc: gregkh@linuxfoundation.org, grabner@icg.tugraz.at,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ret is always evaluated as true, so we don't need to check it.
+On Tue, Aug 14, 2012 at 7:22 PM, Johannes Thumshirn
+<morbidrsa@googlemail.com> wrote:
+> Eliminated remaining calls to strict_stroul() and replaced them with
+> strict_kstrtou8().
+>
+> Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
+> ---
+>  drivers/staging/line6/variax.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 
-Signed-off-by: Matthias Brugger <mbrugger@iseebcn.com>
----
- drivers/usb/musb/omap2430.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Commit description is wrong:
+s/strict_kstrtou8/kstrtou8/
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 5fdb9da..2d207c6 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -140,7 +140,6 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
- 	struct usb_otg	*otg = musb->xceiv->otg;
- 	u8		devctl;
- 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
--	int ret = 1;
- 	/* HDRC controls CPEN, but beware current surges during device
- 	 * connect.  They can trigger transient overcurrent conditions
- 	 * that must be ignored.
-@@ -164,12 +163,11 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
- 				if (time_after(jiffies, timeout)) {
- 					dev_err(musb->controller,
- 					"configured as A device timeout");
--					ret = -EINVAL;
- 					break;
- 				}
- 			}
- 
--			if (ret && otg->set_vbus)
-+			if (otg->set_vbus)
- 				otg_set_vbus(otg, 1);
- 		} else {
- 			musb->is_active = 1;
--- 
-1.7.9.5
-
+Reviewed-by: Stefan Hajnoczi <stefanha@gmail.com>
