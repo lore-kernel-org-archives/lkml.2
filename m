@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2HPTEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:04:40 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:34244 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab2HPTEh (ORCPT
+	id S1757425Ab2HPTKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:10:05 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55492 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2HPTKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:04:37 -0400
-Message-ID: <502D4444.9050400@kernel.org>
-Date: Thu, 16 Aug 2012 20:04:36 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 16 Aug 2012 15:10:02 -0400
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        kernel-janitors@vger.kernel.org, linux-iio@vger.kernel.org,
+In-Reply-To: <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+Date: Thu, 16 Aug 2012 15:10:01 -0400
+Message-ID: <CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
+ sign modules
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/iio/adc/at91_adc.c: use devm_ functions
-References: <1343729383-30073-1-git-send-email-Julia.Lawall@lip6.fr> <5017D148.6030006@metafoo.de> <alpine.DEB.2.02.1207311509040.1894@hadrien> <502AB5F1.3050908@kernel.org> <502B658F.5040100@metafoo.de> <alpine.DEB.2.02.1208151119290.2000@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1208151119290.2000@localhost6.localdomain6>
-X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 10:20 AM, Julia Lawall wrote:
->> devm_request_and_ioremap will already print a error messages on it's own if
->> something goes wrong. So strictly speaking this one is redundant, but I don't
->> think it is necessary to do a resend just for this, maybe you can remove the
->> extra dev_err when you apply the patch.
-> 
-> Thanks for pointing that out.  I will get rid of the messages in the future.  That seems easier than figuring out how to
-> adapt the message to the new function.
-> 
-merged with that line removed as suggested.  Thanks Julia and Lars-Peter.
+On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
+> This patch adds build rules and scripts to generate keys and sign modules.
+>
+> Two scripts has been added. genkey.sh is used to generate private and
+> public keys. ksign.sh is used to sign kernel modules. Both scripts
+> use only standard utilites from coreutils and additionally requires
+> openssl tool for RSA keys creation and signing.
+>
+> The patch modifies 'modules_install' target and adds two new targets to
+> the main kernel Makefile.
+>
+> 1. signed_modules_install
+> This target creates an ephemeral key pair, signs the kernel modules with
+> the private key, destroys the private key, and embeds the public key in
+> the kernel. (Thanks to Dave Hansen for the target name.)
+
+This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
+anything useful with the signed modules, correct?
+
+>
+> 2. modules_install
+> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
+> private key to sign kernel modules.
+
+If the answer to the above question is yes, then why can't we stick
+with a single modules_install command for signing?  It would seem to me
+that calling signed_modules_install could use an existing key or
+generate an ephemeral key in the absence of one and install the signed
+modules, and modules_install would simply install unsigned modules.
+
+Or, alternatively, just make modules_install sign or not sign depending
+on whether CONFIG_INTEGRITY_MODULES is enabled.  I don't see why you
+would overload a target or create two different ones when both depend
+on that option.
+
+Could you explain the reasoning behind that a bit more?
+
+josh
