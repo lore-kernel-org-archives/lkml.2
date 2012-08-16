@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856Ab2HPPZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:25:21 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45025 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756288Ab2HPPZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:25:17 -0400
-Date: Thu, 16 Aug 2012 11:25:13 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-Message-ID: <20120816152513.GA31346@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	Marti Raudsepp <marti@juffo.org>,
-	Kernel hackers <linux-kernel@vger.kernel.org>,
-	ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
+	id S1757560Ab2HPPZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:25:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59419 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757394Ab2HPPZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:25:47 -0400
+Date: Thu, 16 Aug 2012 17:25:44 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH v2 04/11] kmem accounting basic infrastructure
+Message-ID: <20120816152543.GG2817@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-5-git-send-email-glommer@parallels.com>
+ <20120814162144.GC6905@dhcp22.suse.cz>
+ <CALWz4iwgnqwq5k_zhpsiiwrj8Y=OkCUg7H96khJWPZScSQE=nw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816111051.GA16036@localhost>
+In-Reply-To: <CALWz4iwgnqwq5k_zhpsiiwrj8Y=OkCUg7H96khJWPZScSQE=nw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 07:10:51PM +0800, Fengguang Wu wrote:
+On Wed 15-08-12 12:50:55, Ying Han wrote:
+> On Tue, Aug 14, 2012 at 9:21 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Thu 09-08-12 17:01:12, Glauber Costa wrote:
+> >> This patch adds the basic infrastructure for the accounting of the slab
+> >> caches. To control that, the following files are created:
+> >>
+> >>  * memory.kmem.usage_in_bytes
+> >>  * memory.kmem.limit_in_bytes
+> >>  * memory.kmem.failcnt
+> >>  * memory.kmem.max_usage_in_bytes
+> >>
+> >> They have the same meaning of their user memory counterparts. They
+> >> reflect the state of the "kmem" res_counter.
+> >>
+> >> The code is not enabled until a limit is set. This can be tested by the
+> >> flag "kmem_accounted". This means that after the patch is applied, no
+> >> behavioral changes exists for whoever is still using memcg to control
+> >> their memory usage.
+> >>
+> >> We always account to both user and kernel resource_counters. This
+> >> effectively means that an independent kernel limit is in place when the
+> >> limit is set to a lower value than the user memory. A equal or higher
+> >> value means that the user limit will always hit first, meaning that kmem
+> >> is effectively unlimited.
+> >
+> > Well, it contributes to the user limit so it is not unlimited. It just
+> > falls under a different limit and it tends to contribute less. This can
+> > be quite confusing.  I am still not sure whether we should mix the two
+> > things together. If somebody wants to limit the kernel memory he has to
+> > touch the other limit anyway.  Do you have a strong reason to mix the
+> > user and kernel counters?
 > 
-> Here is the dmesg. BTW, it seems 3.5.0 don't have this issue.
+> The reason to mix the two together is a compromise of the two use
+> cases we've heard by far. In google, we only need one limit which
+> limits u & k, and the reclaim kicks in when the total usage hits the
+> limit.
+> 
+> > My impression was that kernel allocation should simply fail while user
+> > allocations might reclaim as well. Why should we reclaim just because of
+> > the kernel allocation (which is unreclaimable from hard limit reclaim
+> > point of view)?
+> 
+> Some of kernel objects are reclaimable if we have per-memcg shrinker.
 
-Fengguang,
+Agreed and I think we need that before this is merged as I state in
+other email.
 
-It sounds like you have a (at least fairly) reliable reproduction for
-this problem?  Is it something you can share?  It would be good to get
-this into our test suites, since it was _not_ something that was
-caught by xfstests, apparently.
+> > I also think that the whole thing would get much simpler if those two
+> > are split. Anyway if this is really a must then this should be
+> > documented here.
+> 
+> What would be the use case you have in your end?
 
-Can you see if this patch addresses it?  (The first two patch hunks
-are the same debugging additions I had posted before.)
+I do not have any specific unfortunately but I would like to prevent us
+from closing other possible. I realize this sounds hand wavy and that is
+why I do not want to block this work but I think we should give it some
+time before this gets merged.
 
-It looks like the responsible commit is 968dee7722: "ext4: fix hole
-punch failure when depth is greater than 0".  I had thought this patch
-was low risk if you weren't using the new punch ioctl, but it turns
-out it did make a critical change in the non-punch (i.e., truncate)
-code path, which is what the addition of "i = 0;" in the patch below
-addresses.
-
-Regards,
-
-    	     	       	     	       	  - Ted
-
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 769151d..fa829dc 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2432,6 +2432,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 
- 	/* the header must be checked already in ext4_ext_remove_space() */
- 	ext_debug("truncate since %u in leaf to %u\n", start, end);
-+	if (!path[depth].p_hdr && !path[depth].p_bh) {
-+		EXT4_ERROR_INODE(inode, "depth %d", depth);
-+		BUG_ON(1);
-+	}
- 	if (!path[depth].p_hdr)
- 		path[depth].p_hdr = ext_block_hdr(path[depth].p_bh);
- 	eh = path[depth].p_hdr;
-@@ -2730,6 +2734,10 @@ cont:
- 		/* this is index block */
- 		if (!path[i].p_hdr) {
- 			ext_debug("initialize header\n");
-+			if (!path[i].p_hdr && !path[i].p_bh) {
-+				EXT4_ERROR_INODE(inode, "i=%d", i);
-+				BUG_ON(1);
-+			}
- 			path[i].p_hdr = ext_block_hdr(path[i].p_bh);
- 		}
- 
-@@ -2828,6 +2836,7 @@ out:
- 	kfree(path);
- 	if (err == -EAGAIN) {
- 		path = NULL;
-+		i = 0;
- 		goto again;
- 	}
- 	ext4_journal_stop(handle);
+> --Ying
+-- 
+Michal Hocko
+SUSE Labs
