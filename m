@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933330Ab2HPUAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 16:00:39 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45107 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932536Ab2HPUAd convert rfc822-to-8bit (ORCPT
+	id S933323Ab2HPUBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 16:01:48 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38713 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933217Ab2HPUBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 16:00:33 -0400
-Date: Thu, 16 Aug 2012 16:00:32 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" 
-	<linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4fs error "ext4_mb_generate_buddy:741:group 16, 8160 clusters
- in bitmap, 4064 in gd" (with repro)
-Message-ID: <20120816200032.GE31346@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	=?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-	Paolo Bonzini <pbonzini@redhat.com>,
-	"Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <50238A29.3060808@redhat.com>
- <20120809170640.GA6607@thunk.org>
- <alpine.LFD.2.00.1208151116530.4904@dhcp-1-248.brq.redhat.com>
- <alpine.LFD.2.00.1208161619440.2459@vpn-8-20.rdu.redhat.com>
+	Thu, 16 Aug 2012 16:01:46 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgFOAK1QLVBV5qoUPGdsb2JhbABFhRiFI690GQEBAQEeGQ0ngiABAQQBOhwjBQsIA0YUJQoaiBoKuw4UkG1gA5VOhWyNCA
+X-IronPort-AV: E=Sophos;i="4.77,781,1336341600"; 
+   d="scan'208";a="98471683"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 16 Aug 2012 22:05:53 +0200
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
+Message-ID: <20120816200553.GA751@polaris.bitmath.org>
+References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
+ <1344807757-2217-10-git-send-email-rydberg@euromail.se>
+ <CAF8JNhLBO72-Rpm7dFWfYLPvbhDZZsm2yOy_7sREnNhTWqZ04w@mail.gmail.com>
+ <20120816180732.GA451@polaris.bitmath.org>
+ <CAF8JNhJ1R68pU3aOCnYC8KvmfDDU7oKhMsvQV5hfRX2qE=X5WA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1208161619440.2459@vpn-8-20.rdu.redhat.com>
+In-Reply-To: <CAF8JNhJ1R68pU3aOCnYC8KvmfDDU7oKhMsvQV5hfRX2qE=X5WA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 04:28:07PM +0200, Lukáš Czerner wrote:
-> 
-> After a little bit of tracing with the systemtap and blktrace ext4
-> does not seem to be doing anything wrong and yet we get part of the
-> block bitmap trimmed. This lead me to the scsi_debug driver itself
-> and indeed it seems that we have off-by-one bug there in the
-> unamp_region() which is causing the problem.
+> For example, the new input_mt_init_slots() takes care of the
+> __set_bit() functions in one place. That is great. But, it requires
+> wacom_wac.c to be updated since it has an interface change. I guess
+> there are other drivers calling input_mt_init_slots as well.
 
-Thanks for finding this --- I was getting scared that ext4 users were
-losing data in production.  It's good to know it was just a bug in the
-scsi_debug driver.
+The default behavior in the "new" input_mt_init_slots(), i.e. with the
+zero flags argument added to all the drivers, is exactly the same as
+before. No further changes are necessary.
 
-						- Ted
+Yes, some drivers could definitely start using some of the flags to
+good advantage, but there is no rush to make that happen. Such changes
+would of course involve the driver maintainers.
+
+> I was wondering if you plan to update all drivers after this patchset
+> is accepted or if you need us to chime in.
+
+Thank you, the best is definitely if you want to do it yourself. Let's
+just see where the latency-related work takes us first, since it might
+affect how to send data from drivers.
+
+> From what I see, frame/mt is only initialized when driver starts.
+> Frame will be increased by MT events while the driver running. If this
+> is true, won't it be possible the value gets too large?
+
+Yes, but as is apparent from the code, the semantics of that variable
+is not to count the number of frames since the dawn of times, but to
+keep track of changes per frame.
+
+Thanks,
+Henrik
