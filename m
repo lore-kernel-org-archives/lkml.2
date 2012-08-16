@@ -1,181 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757729Ab2HPVCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 17:02:13 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39126 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757263Ab2HPVCM (ORCPT
+	id S933336Ab2HPVEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 17:04:12 -0400
+Received: from mga12.intel.com ([143.182.124.36]:58014 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754506Ab2HPVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 17:02:12 -0400
-Date: Thu, 16 Aug 2012 17:02:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/p2m: Fix for 32-bit builds the
- "Reserve 8MB of _brk space for P2M"
-Message-ID: <20120816210206.GA17966@phenom.dumpdata.com>
-References: <1345132214-15298-1-git-send-email-konrad.wilk@oracle.com>
- <1345132214-15298-2-git-send-email-konrad.wilk@oracle.com>
- <20120816173215.GB9790@phenom.dumpdata.com>
+	Thu, 16 Aug 2012 17:04:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816173215.GB9790@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+	<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+Date: Fri, 17 Aug 2012 00:04:05 +0300
+Message-ID: <CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
+ sign modules
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 01:32:15PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Aug 16, 2012 at 11:50:13AM -0400, Konrad Rzeszutek Wilk wrote:
-> > The git commit 5bc6f9888db5739abfa0cae279b4b442e4db8049
-> > xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back.
-> > 
-> > extended the _brk space to fit 1048576 PFNs. The math is that each
-> > P2M leaf can cover PAGE_SIZE/sizeof(unsigned long) PFNs. In 64-bit
-> > that means 512 PFNs, on 32-bit that is 1024. If on 64-bit machines
-> > we want to cover 4GB of PFNs, that means having enough for space
-> > to fit 1048576 unsigned longs.
-> 
-> Scratch that patch. This is better, but even with that I am still
-> hitting some weird 32-bit cases.
+On Thu, Aug 16, 2012 at 11:31 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Thu, Aug 16, 2012 at 4:12 PM, Kasatkin, Dmitry
+> <dmitry.kasatkin@intel.com> wrote:
+>>>> 1. signed_modules_install
+>>>> This target creates an ephemeral key pair, signs the kernel modules with
+>>>> the private key, destroys the private key, and embeds the public key in
+>>>> the kernel. (Thanks to Dave Hansen for the target name.)
+>>>
+>>> This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
+>>> anything useful with the signed modules, correct?
+>>>
+>>
+>> Correct. It does not make sense to sign module if module support is disabled.
+>> But there scripts/genkey.sh and ksign.sh which works without Makefiles.
+>> So possible to generate keys and sign a module...
+>
+> Right, but it won't actually do anything if the config option isn't set.
+> Which means someone calling 'make signed_modules_install' won't actually
+> get signed modules.  That's confusing.
+>
 
-So I thought about this some more and came up with this patch. Its
-RFC and going to run it through some overnight tests to see how they fare.
+Yes.. It had to be behind "ifeq CONFIG_INTEGRITY_MODULES"
 
+>>>> 2. modules_install
+>>>> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
+>>>> private key to sign kernel modules.
+>>>
+>>> If the answer to the above question is yes, then why can't we stick
+>>> with a single modules_install command for signing?  It would seem to me
+>>> that calling signed_modules_install could use an existing key or
+>>> generate an ephemeral key in the absence of one and install the signed
+>>> modules, and modules_install would simply install unsigned modules.
+>>>
+>>> Or, alternatively, just make modules_install sign or not sign depending
+>>> on whether CONFIG_INTEGRITY_MODULES is enabled.
+>>
+>> This is what "make modules_install" does. It uses existing private key
+>> and does not remove it after install.
+>
+> Right.  I should have been more clear.  I was suggesting that "make
+> modules_install" generate a key as well if one does not already exist.
+> Essentially removing the necessity for sign_modules_install.
+>
+>>>  I don't see why you
+>>> would overload a target or create two different ones when both depend
+>>> on that option.
+>>>
+>>> Could you explain the reasoning behind that a bit more?
+>>
+>> The reason for "signed_modules_install" is to limit existence of private key.
+>> Private key is generate just before install, modules installed and
+>> signed, then key is destroyed.
+>> So existence of private key is limited to "time make
+>> signed_modules_install" execution time.
+>>
+>> We had a debate about it, and strong message was that we might want to
+>> do it like that...
+>
+> I guess I personally don't see the need to destroy they key so quickly.
+> Is the concern that an intruder might grab the key and use it to sign a
+> module that the developer would then later on somehow load?  Or
+> similarly someone would grab a temporary key from a distro build
+> machine?  That limits the attack surface, sure, but I'm not sure it's
+> really reasonable.
+>
+> For a developer that isn't distributing kernels to others, it's just
+> adding more time to the compile (which I know can be disabled, but
+> still).  For a distribution, most of them are either using a private
+> key already or they have a buildsystem that destroys a buildroot after
+> a build completes.  The key is already going to be destroyed in that
+> scenario.
+>
+> josh
 
-commit da858a92dbeb52fb3246e3d0f1dd57989b5b1734
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Fri Jul 27 16:05:47 2012 -0400
+Well... Will not argue here. I had similar opinion as well.
 
-    xen/p2m: Reuse existing P2M leafs if they are filled with 1:1 PFNs or INVALID.
-    
-    If P2M leaf is completly packed with INVALID_P2M_ENTRY or with
-    1:1 PFNs (so IDENTITY_FRAME type PFNs), we can swap the P2M leaf
-    with either a p2m_missing or p2m_identity respectively. The old
-    page (which was created via extend_brk or was grafted on from the
-    mfn_list) can be re-used for setting new PFNs.
-    
-    This also means we can remove git commit:
-    5bc6f9888db5739abfa0cae279b4b442e4db8049
-    xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back
-    which tried to fix this.
-    
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Mimi strongly wanted really to "reduce" the existence time of the key...
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 29244d0..b6b7c10 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -194,11 +194,6 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID
-  * boundary violation will require three middle nodes. */
- RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
- 
--/* When we populate back during bootup, the amount of pages can vary. The
-- * max we have is seen is 395979, but that does not mean it can't be more.
-- * Some machines can have 3GB I/O holes so lets reserve for that. */
--RESERVE_BRK(p2m_populated, 786432 * sizeof(unsigned long));
--
- static inline unsigned p2m_top_index(unsigned long pfn)
- {
- 	BUG_ON(pfn >= MAX_P2M_PFN);
-@@ -575,12 +570,99 @@ static bool __init early_alloc_p2m(unsigned long pfn)
- 	}
- 	return true;
- }
-+
-+/*
-+ * Skim over the P2M tree looking at pages that are either filled with
-+ * INVALID_P2M_ENTRY or with 1:1 PFNs. If found, re-use that page and
-+ * replace the P2M leaf with a p2m_missing or p2m_identity.
-+ * Stick the old page in the new P2M tree location.
-+ */
-+bool __init early_can_reuse_p2m_middle(unsigned long set_pfn, unsigned long set_mfn)
-+{
-+	unsigned topidx;
-+	unsigned mididx;
-+	unsigned ident_pfns;
-+	unsigned inv_pfns;
-+	unsigned long *p2m;
-+	unsigned long *mid_mfn_p;
-+	unsigned idx;
-+	unsigned long pfn;
-+
-+	/* We only look when this entails a P2M middle layer */
-+	if (p2m_index(set_pfn))
-+		return false;
-+
-+	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
-+		topidx = p2m_top_index(pfn);
-+
-+		if (!p2m_top[topidx])
-+			continue;
-+
-+		if (p2m_top[topidx] == p2m_mid_missing)
-+			continue;
-+
-+		mididx = p2m_mid_index(pfn);
-+		p2m = p2m_top[topidx][mididx];
-+		if (!p2m)
-+			continue;
-+
-+		if ((p2m == p2m_missing) || (p2m == p2m_identity))
-+			continue;
-+
-+		if ((unsigned long)p2m == INVALID_P2M_ENTRY)
-+			continue;
-+
-+		ident_pfns = 0;
-+		inv_pfns = 0;
-+		for (idx = 0; idx < P2M_PER_PAGE; idx++) {
-+			/* IDENTITY_PFNs are 1:1 */
-+			if (p2m[idx] == IDENTITY_FRAME(pfn + idx))
-+				ident_pfns++;
-+			else if (p2m[idx] == INVALID_P2M_ENTRY)
-+				inv_pfns++;
-+			else
-+				break;
-+		}
-+		if ((ident_pfns == P2M_PER_PAGE) || (inv_pfns == P2M_PER_PAGE))
-+			goto found;
-+	}
-+	return false;
-+found:
-+	/* Found one, replace old with p2m_identity or p2m_missing */
-+	p2m_top[topidx][mididx] = (ident_pfns ? p2m_identity : p2m_missing);
-+	/* And the other for save/restore.. */
-+	mid_mfn_p = p2m_top_mfn_p[topidx];
-+	/* NOTE: Even if it is a p2m_identity it should still be point to
-+	 * a page filled with INVALID_P2M_ENTRY entries. */
-+	mid_mfn_p[mididx] = virt_to_mfn(p2m_missing);
-+
-+	/* Reset where we want to stick the old page in. */
-+	topidx = p2m_top_index(set_pfn);
-+	mididx = p2m_mid_index(set_pfn);
-+
-+	/* This shouldn't happen */
-+	if (WARN_ON(p2m_top[topidx] == p2m_mid_missing))
-+		early_alloc_p2m(set_pfn);
-+
-+	if (WARN_ON(p2m_top[topidx][mididx] != p2m_missing))
-+		return false;
-+
-+	p2m_init(p2m);
-+	p2m_top[topidx][mididx] = p2m;
-+	mid_mfn_p = p2m_top_mfn_p[topidx];
-+	mid_mfn_p[mididx] = virt_to_mfn(p2m);
-+
-+	return true;
-+}
- bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- {
- 	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
- 		if (!early_alloc_p2m(pfn))
- 			return false;
- 
-+		if (early_can_reuse_p2m_middle(pfn, mfn))
-+			return __set_phys_to_machine(pfn, mfn);
-+
- 		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
- 			return false;
- 
+- Dmitry
