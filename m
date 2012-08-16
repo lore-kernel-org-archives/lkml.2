@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2HPNug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:50:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39480 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102Ab2HPNud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:50:33 -0400
-Date: Thu, 16 Aug 2012 16:50:27 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: dedekind1@gmail.com
-Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
- parameter
-Message-ID: <20120816165027.6520c4f4@pixies.home.jungo.com>
-In-Reply-To: <1345123718.3393.235.camel@sauron.fi.intel.com>
-References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
-	<1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
-	<20120816115713.726da8f2@pixies.home.jungo.com>
-	<1345123718.3393.235.camel@sauron.fi.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932529Ab2HPNuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:50:52 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37002 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755389Ab2HPNuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 09:50:50 -0400
+Message-ID: <1345125049.26882.16.camel@joe2Laptop>
+Subject: Re: Regression: Spurious "^A" in UML output
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 16 Aug 2012 06:50:49 -0700
+In-Reply-To: <CAMuHMdVEKpVYn+Yr5rzdOvV5zUWrD12Fas197Mn2oVDC5YgVgw@mail.gmail.com>
+References: <CAMuHMdVEKpVYn+Yr5rzdOvV5zUWrD12Fas197Mn2oVDC5YgVgw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012 16:28:38 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Thu, 2012-08-16 at 11:57 +0300, Shmulik Ladkani wrote:
-> > 
-> > For the simplest systems (those having one ubi device) that need a
-> > limit
-> > *other* than the default (20 per 1024), they can simply set the config
-> > to their chosen value, as they were used to.
-> > 
-> > With you approach, these system MUST pass the limit parameter via the
-> > ioctl / module-parameter. 
+On Thu, 2012-08-16 at 15:17 +0200, Geert Uytterhoeven wrote:
+> In v3.6-rc1 UML, I see spurious "^A" (ASCII 1, SOH) characters in some kernel
+> messages:
 > 
-> Yeah, when you change the default, you usually need to do an extra step.
-> It does not feel too bad, and I would not keep additional configuration
-> option for a hypothetical user. If someone suffers, we can add an option
-> to change the default. But I'd start without it. So, I think it is OK to
-> remove this.
+> Calibrating delay loop... 4640.76 BogoMIPS (lpj=23203840)
+> pid_max: default: 32768 minimum: 301
+> Mount-cache hash table entries: 256
+> ^AChecking that host ptys support output SIGIO...Yes
+> ^AChecking that host ptys support SIGIO on close...No, enabling workaround
+> ^AUsing 2.6 host AIO
+> NET: Registered protocol family 16
+> bio: create slab <bio-0> at 0
+> Switching to clocksource itimer
+> 
+> This happens for all output using the "printk(UM_KERN_XXX ...)" idiom.
 
-Yes, but the main drawback I was referring to is those platforms already
-setting MTD_UBI_BEB_RESERVE other than the default, by means of kernel
-configuration.
-(there's one platform known to do so in its defconfig, that's
-sam9_l9260_defconfig, which uses 3% instead of the "standard" 2%).
+Were these emitted with "KERN_<LEVEL>" string constants
+before this change (not <[0-7]>", but the string text
+KERN_INFO, KERN_WARNING, etc...)?
 
-These platforms must now change their usermode code to either pass a
-module parameter during the insmod or change their attach ioctl of
-their application.
+> The "UM_KERN_XXX" defines are generated from the KERN_XXX defines in
+> arch/um/include/shared/common-offsets.h using:
+> 
+> DEFINE_STR(UM_KERN_EMERG, KERN_EMERG);
+[]
+> I.e. only the SOH character is retained in the actual define, the remainder ends
+> up in the comment.
+> 
+> Apparently the combo of DEFINE_STR() in
+> arch/x86/um/shared/sysdep/kernel-offsets.h
+> and sed-y in Kbuild doesn't support string constants consisting of
+> multiple parts.
+> 
+> A quick fix is the (whitespace-damaged) patch below, but this would reduce
+> readability. And I'm afraid my sed-foo is not good enough to fix it better.
+> Any takers?
 
-We force these systems to change their usermode because we changed ubi's
-default BEB limit to be 20/1024 _hardcoded_ (instead of kernel
-configurable as previously was).
+Perhaps it's better to change the um STR macro instead
 
-Is this ok?
+$ git grep -w DEFINE_STR
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_EMERG, KERN_EMERG);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_ALERT, KERN_ALERT);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_CRIT, KERN_CRIT);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_ERR, KERN_ERR);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_WARNING, KERN_WARNING);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_NOTICE, KERN_NOTICE);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_INFO, KERN_INFO);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_DEBUG, KERN_DEBUG);
+arch/um/include/shared/common-offsets.h:DEFINE_STR(UM_KERN_CONT, KERN_CONT);
+arch/x86/um/shared/sysdep/kernel-offsets.h:#define DEFINE_STR(sym, val) asm volatile("\n->" #sym " " STR(val) " " #val: : )
 
-Regards,
-Shmulik
+$ git grep -w STR arch/x86/um/shared/
+arch/x86/um/shared/sysdep/kernel-offsets.h:#define STR(x) #x
+arch/x86/um/shared/sysdep/kernel-offsets.h:#define DEFINE_STR(sym, val) asm volatile("\n->" #sym " " STR(val) " " #val: : )
+
+
