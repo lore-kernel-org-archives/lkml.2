@@ -1,131 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2HPPUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:20:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21203 "EHLO mga01.intel.com"
+	id S1757476Ab2HPPVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:21:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56032 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757337Ab2HPPTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:19:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,778,1336374000"; 
-   d="scan'208";a="202776975"
-Date: Thu, 16 Aug 2012 23:19:49 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Fan Du <fan.du@windriver.com>
-Cc: Priyanka Jain <Priyanka.Jain@freescale.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage in xfrm_net_init()
-Message-ID: <20120816151949.GA18681@localhost>
-References: <20120816073724.GA10660@localhost>
- <502CBF23.4070805@windriver.com>
+	id S1755847Ab2HPPVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:21:30 -0400
+Date: Thu, 16 Aug 2012 16:28:07 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@vpn-8-20.rdu.redhat.com
+To: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Paolo Bonzini <pbonzini@redhat.com>,
+        "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List" 
+	<linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4fs error "ext4_mb_generate_buddy:741:group 16, 8160 clusters
+ in bitmap, 4064 in gd" (with repro)
+In-Reply-To: <alpine.LFD.2.00.1208151116530.4904@dhcp-1-248.brq.redhat.com>
+Message-ID: <alpine.LFD.2.00.1208161619440.2459@vpn-8-20.rdu.redhat.com>
+References: <50238A29.3060808@redhat.com> <20120809170640.GA6607@thunk.org> <alpine.LFD.2.00.1208151116530.4904@dhcp-1-248.brq.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <502CBF23.4070805@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="185209864-1526929049-1345127291=:2459"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fan,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Thu, Aug 16, 2012 at 05:36:35PM +0800, Fan Du wrote:
-> 
-> Hi, Fengguang
-> 
-> Could you please try the below patch, see if spewing still there?
-> thanks
+--185209864-1526929049-1345127291=:2459
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Yes, it worked, thank you very much!
+On Wed, 15 Aug 2012, Luká¨ Czerner wrote:
 
-btw, your email client wraps long lines..
+> Date: Wed, 15 Aug 2012 11:17:57 +0200 (CEST)
+> From: Luká¨ Czerner <lczerner@redhat.com>
+> To: Theodore Ts'o <tytso@mit.edu>
+> Cc: Lukas Czerner <lczerner@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+>     "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List"
+>     <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+> Subject: Re: ext4fs error
+>     "ext4_mb_generate_buddy:741:group 16, 8160 clusters in bitmap, 4064 in gd"
+>      (with repro)
+> 
+> On Thu, 9 Aug 2012, Theodore Ts'o wrote:
+> 
+> > Date: Thu, 9 Aug 2012 13:06:40 -0400
+> > From: Theodore Ts'o <tytso@mit.edu>
+> > To: Lukas Czerner <lczerner@redhat.com>
+> > Cc: Paolo Bonzini <pbonzini@redhat.com>,
+> >     "Linux Kernel Mailinlinux-ext4@vger.kernel.orgg List"
+> >     <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+> > Subject: Re: ext4fs error
+> >     "ext4_mb_generate_buddy:741:group 16, 8160 clusters in bitmap, 4064 in gd"
+> >      (with repro)
+> > 
+> > On Thu, Aug 09, 2012 at 12:00:09PM +0200, Paolo Bonzini wrote:
+> > > Here is how to reproduce it.  It happens during fstrim.  I found other
+> > > occurrences of the error in the mailing list, but they were not related
+> > > to trim so they may be something different.
+> > > 
+> > > modprobe scsi_debug dev_size_mb=256 lbpws=1
+> > > dd if=/dev/zero of=/dev/sdb bs=1M      
+> > > fdisk /dev/sdb
+> > >  >> create a new partition accepting all defaults
+> > > fdisk -lu /dev/sdb|tail -1
+> > >  >> should show: /dev/sdb1     57      524285      262114+  83  Linux
+> > > 
+> > > mkfs.ext4 /dev/sdb1
+> > > mkdir test
+> > > mount /dev/sdb1 test
+> > > fstrim ./test
+> > 
+> > I can confirm that this accurately reproduces file system corruption
+> > using a 3.5 kernel.  It looks like some block allocation bitmap blocks
+> > is getting trimmed when it shouldn't have been.  Lukas, can you take a
+> > look at this?
+> > 
+> > 					- Ted
+> 
+> Hi Ted,
+> 
+> sorry for the delay, I've just got back from my vacation. I'll take
+> a look at it.
+> 
+> Thanks!
+> -Lukas
 
-Thanks,
-Fengguang
+This does not seem like an ext4 problem. The code seems unable to
+actually discard blocks which are allocated. Moreover I was not able
+to reproduce the problem on the loop device with the same setting as
+the reported scsi_debug device (1024 bs file system on the 256MB image
+residing on the 1024 bs filesystem) 
 
-> From a3f86ecc3ee16ff81d49416bbf791780422988b3 Mon Sep 17 00:00:00 2001
-> From: Fan Du <fan.du@windriver.com>
-> Date: Thu, 16 Aug 2012 17:31:25 +0800
-> Subject: [PATCH] Use rcu_dereference_bh to deference pointer
-> protected by rcu_read_lock_bh
-> 
-> Signed-off-by: Fan Du <fan.du@windriver.com>
-> ---
->  net/xfrm/xfrm_policy.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-> index 5ad4d2c..75a9d6a 100644
-> --- a/net/xfrm/xfrm_policy.c
-> +++ b/net/xfrm/xfrm_policy.c
-> @@ -2501,7 +2501,7 @@ static void __net_init
-> xfrm_dst_ops_init(struct net *net)
->  	struct xfrm_policy_afinfo *afinfo;
-> 
->  	rcu_read_lock_bh();
-> -	afinfo = rcu_dereference(xfrm_policy_afinfo[AF_INET]);
-> +	afinfo = rcu_dereference_bh(xfrm_policy_afinfo[AF_INET]);
->  	if (afinfo)
->  		net->xfrm.xfrm4_dst_ops = *afinfo->dst_ops;
->  #if IS_ENABLED(CONFIG_IPV6)
-> -- 
-> 1.7.1
-> 
-> 
-> 
-> 
-> On 2012å¹´08æœˆ16æ—¥ 15:37, Fengguang Wu wrote:
-> >Hi Priyanka,
-> >
-> >The below warning shows up, probably related to this commit:
-> >
-> >418a99ac6ad487dc9c42e6b0e85f941af56330f2 Replace rwlock on xfrm_policy_afinfo with rcu
-> >
-> >[    0.921216]
-> >[    0.921645] ===============================
-> >[    0.922766] [ INFO: suspicious RCU usage. ]
-> >[    0.923887] 3.5.0-01540-g1669891 #64 Not tainted
-> >[    0.925123] -------------------------------
-> >[    0.932860] /c/kernel-tests/src/tip/net/xfrm/xfrm_policy.c:2504 suspicious rcu_dereference_check() usage!
-> >[    0.935361]
-> >[    0.935361] other info that might help us debug this:
-> >[    0.935361]
-> >[    0.937472]
-> >[    0.937472] rcu_scheduler_active = 1, debug_locks = 0
-> >[    0.939182] 2 locks held by swapper/1:
-> >[    0.940171]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff814e1ad0>] register_pernet_subsys+0x21/0x57
-> >[    0.942705]  #1:  (rcu_read_lock_bh){......}, at: [<ffffffff822c7329>] xfrm_net_init+0x1e4/0x437
-> >[    0.951507]
-> >[    0.951507] stack backtrace:
-> >[    0.952660] Pid: 1, comm: swapper Not tainted 3.5.0-01540-g1669891 #64
-> >[    0.954364] Call Trace:
-> >[    0.955074]  [<ffffffff8108b375>] lockdep_rcu_suspicious+0x174/0x187
-> >[    0.956736]  [<ffffffff822c7453>] xfrm_net_init+0x30e/0x437
-> >[    0.958205]  [<ffffffff822c7329>] ? xfrm_net_init+0x1e4/0x437
-> >[    0.959712]  [<ffffffff814e134a>] ops_init+0x1bb/0x1ff
-> >[    0.961067]  [<ffffffff810861f9>] ? trace_hardirqs_on+0x1b/0x24
-> >[    0.962644]  [<ffffffff814e17cd>] register_pernet_operations.isra.5+0x9d/0xfe
-> >[    0.971376]  [<ffffffff814e1adf>] register_pernet_subsys+0x30/0x57
-> >[    0.972992]  [<ffffffff822c7130>] xfrm_init+0x17/0x2c
-> >[    0.974316]  [<ffffffff822c2f8c>] ip_rt_init+0x82/0xe7
-> >[    0.975668]  [<ffffffff822c31dc>] ip_init+0x10/0x25
-> >[    0.976952]  [<ffffffff822c3f77>] inet_init+0x235/0x360
-> >[    0.978352]  [<ffffffff822c3d42>] ? devinet_init+0xf2/0xf2
-> >[    0.979808]  [<ffffffff82283252>] do_one_initcall+0xb4/0x203
-> >[    0.981313]  [<ffffffff8228354a>] kernel_init+0x1a9/0x29a
-> >[    0.982732]  [<ffffffff822826d9>] ? loglevel+0x46/0x46
-> >[    0.990889]  [<ffffffff816d3d84>] kernel_thread_helper+0x4/0x10
-> >[    0.992472]  [<ffffffff816d262c>] ? retint_restore_args+0x13/0x13
-> >[    0.994076]  [<ffffffff822833a1>] ? do_one_initcall+0x203/0x203
-> >[    0.995636]  [<ffffffff816d3d80>] ? gs_change+0x13/0x13
-> >[    0.997197] TCP established hash table entries: 8192 (order: 5, 131072 bytes)
-> >[    1.000074] TCP bind hash table entries: 8192 (order: 7, 655360 bytes)
-> >
-> >Thanks,
-> >Fengguang
-> 
-> -- 
-> 
-> Love each day!
-> --fan
+After a little bit of tracing with the systemtap and blktrace ext4
+does not seem to be doing anything wrong and yet we get part of the
+block bitmap trimmed. This lead me to the scsi_debug driver itself
+and indeed it seems that we have off-by-one bug there in the
+unamp_region() which is causing the problem.
+
+Here is the patch which fixes the problem for me, I'll resend the
+proper patch in a bit.
+
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 182d5a5..f4cc413 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, unsigned int len)
+ 		block = lba + alignment;
+ 		rem = do_div(block, granularity);
+ 
+-		if (rem == 0 && lba + granularity <= end && block < map_size) {
++		if (rem == 0 && lba + granularity < end && block < map_size) {
+ 			clear_bit(block, map_storep);
+ 			if (scsi_debug_lbprz)
+ 				memset(fake_storep +
+
+
+Thanks!
+-Lukas
+--185209864-1526929049-1345127291=:2459--
