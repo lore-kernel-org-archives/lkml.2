@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030246Ab2HPQNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:13:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21493 "EHLO
+	id S1030233Ab2HPQNj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:13:39 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21494 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964786Ab2HPQNX (ORCPT
+	with ESMTP id S964789Ab2HPQNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 12:13:23 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 09/11] xen/mmu: Copy and revector the P2M tree.
-Date: Thu, 16 Aug 2012 12:03:27 -0400
-Message-Id: <1345133009-21941-10-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 05/11] xen/mmu: use copy_page instead of memcpy.
+Date: Thu, 16 Aug 2012 12:03:23 -0400
+Message-Id: <1345133009-21941-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
 References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please first read the description in "xen/p2m: Add logic to revector a
-P2M tree to use __va leafs" patch.
+After all, this is what it is there for.
 
-The 'xen_revector_p2m_tree()' function allocates a new P2M tree
-copies the contents of the old one in it, and returns the new one.
-
-At this stage, the __ka address space (which is what the old
-P2M tree was using) is partially disassembled. The cleanup_highmap
-has removed the PMD entries from 0-16MB and anything past _brk_end
-up to the max_pfn_mapped (which is the end of the ramdisk).
-
-We have revectored the P2M tree (and the one for save/restore as well)
-to use new shiny __va address to new MFNs. The xen_start_info
-has been taken care of already in 'xen_setup_kernel_pagetable()' and
-xen_start_info->shared_info in 'xen_setup_shared_info()', so
-we are free to roam and delete PMD entries - which is exactly what
-we are going to do. We rip out the __ka for the old P2M array.
-
-[v1: Fix smatch warnings]
-[v2: memset was doing 0 instead of 0xff]
+Acked-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
+ arch/x86/xen/mmu.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index bd92c82..e0919c5 100644
+index 6ba6100..7247e5a 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -1183,9 +1183,64 @@ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+@@ -1754,14 +1754,14 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	 * it will be also modified in the __ka space! (But if you just
+ 	 * modify the PMD table to point to other PTE's or none, then you
+ 	 * are OK - which is what cleanup_highmap does) */
+-	memcpy(level2_ident_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
++	copy_page(level2_ident_pgt, l2);
+ 	/* Graft it onto L4[511][511] */
+-	memcpy(level2_kernel_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
++	copy_page(level2_kernel_pgt, l2);
  
- static void xen_post_allocator_init(void);
+ 	/* Get [511][510] and graft that in level2_fixmap_pgt */
+ 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
+ 	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
+-	memcpy(level2_fixmap_pgt, l2, sizeof(pmd_t) * PTRS_PER_PMD);
++	copy_page(level2_fixmap_pgt, l2);
+ 	/* Note that we don't do anything with level1_fixmap_pgt which
+ 	 * we don't need. */
  
-+#ifdef CONFIG_X86_64
-+static void __init xen_cleanhighmap(unsigned long vaddr,
-+				    unsigned long vaddr_end)
-+{
-+	unsigned long kernel_end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
-+	pmd_t *pmd = level2_kernel_pgt + pmd_index(vaddr);
-+
-+	/* NOTE: The loop is more greedy than the cleanup_highmap variant.
-+	 * We include the PMD passed in on _both_ boundaries. */
-+	for (; vaddr <= vaddr_end && (pmd < (level2_kernel_pgt + PAGE_SIZE));
-+			pmd++, vaddr += PMD_SIZE) {
-+		if (pmd_none(*pmd))
-+			continue;
-+		if (vaddr < (unsigned long) _text || vaddr > kernel_end)
-+			set_pmd(pmd, __pmd(0));
-+	}
-+	/* In case we did something silly, we should crash in this function
-+	 * instead of somewhere later and be confusing. */
-+	xen_mc_flush();
-+}
-+#endif
- static void __init xen_pagetable_setup_done(pgd_t *base)
- {
-+#ifdef CONFIG_X86_64
-+	unsigned long size;
-+	unsigned long addr;
-+#endif
-+
- 	xen_setup_shared_info();
-+#ifdef CONFIG_X86_64
-+	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-+		unsigned long new_mfn_list;
-+
-+		size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+
-+		/* On 32-bit, we get zero so this never gets executed. */
-+		new_mfn_list = xen_revector_p2m_tree();
-+		if (new_mfn_list && new_mfn_list != xen_start_info->mfn_list) {
-+			/* using __ka address and sticking INVALID_P2M_ENTRY! */
-+			memset((void *)xen_start_info->mfn_list, 0xff, size);
-+
-+			/* We should be in __ka space. */
-+			BUG_ON(xen_start_info->mfn_list < __START_KERNEL_map);
-+			addr = xen_start_info->mfn_list;
-+			size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
-+			/* We roundup to the PMD, which means that if anybody at this stage is
-+			 * using the __ka address of xen_start_info or xen_start_info->shared_info
-+			 * they are in going to crash. Fortunatly we have already revectored
-+			 * in xen_setup_kernel_pagetable and in xen_setup_shared_info. */
-+			size = roundup(size, PMD_SIZE);
-+			xen_cleanhighmap(addr, addr + size);
-+
-+			memblock_free(__pa(xen_start_info->mfn_list), size);
-+			/* And revector! Bye bye old array */
-+			xen_start_info->mfn_list = new_mfn_list;
-+		}
-+	}
-+#endif
- 	xen_post_allocator_init();
- }
+@@ -1821,8 +1821,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+ 	 */
+ 	swapper_kernel_pmd =
+ 		extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+-	memcpy(swapper_kernel_pmd, initial_kernel_pmd,
+-	       sizeof(pmd_t) * PTRS_PER_PMD);
++	copy_page(swapper_kernel_pmd, initial_kernel_pmd);
+ 	swapper_pg_dir[KERNEL_PGD_BOUNDARY] =
+ 		__pgd(__pa(swapper_kernel_pmd) | _PAGE_PRESENT);
+ 	set_page_prot(swapper_kernel_pmd, PAGE_KERNEL_RO);
+@@ -1851,11 +1850,11 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 				  512*1024);
  
-@@ -1822,6 +1877,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+-	memcpy(initial_kernel_pmd, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
++	copy_page(initial_kernel_pmd, kernel_pmd);
  
- 	/* Our (by three pages) smaller Xen pagetable that we are using */
- 	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
-+	/* Revector the xen_start_info */
-+	xen_start_info = (struct start_info *)__va(__pa(xen_start_info));
- }
- #else	/* !CONFIG_X86_64 */
- static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
+ 	xen_map_identity_early(initial_kernel_pmd, max_pfn);
+ 
+-	memcpy(initial_page_table, pgd, sizeof(pgd_t) * PTRS_PER_PGD);
++	copy_page(initial_page_table, pgd);
+ 	initial_page_table[KERNEL_PGD_BOUNDARY] =
+ 		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
+ 
 -- 
 1.7.7.6
 
