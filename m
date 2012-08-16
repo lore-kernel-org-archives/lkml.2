@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab2HPBgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:36:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58645 "EHLO mx1.redhat.com"
+	id S1757398Ab2HPBl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:41:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3141 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab2HPBgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:36:01 -0400
+	id S1755284Ab2HPBfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:35:30 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 09/25] PGPLIB: PGP definitions (RFC 4880)
+Subject: [PATCH 06/25] MPILIB: Reinstate mpi_cmp[_ui]() and export for RSA
+ signature verification
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         jmorris@namei.org, keyrings@linux-nfs.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:35:51 +0100
-Message-ID: <20120816013551.872.86991.stgit@warthog.procyon.org.uk>
+Date: Thu, 16 Aug 2012 02:35:19 +0100
+Message-ID: <20120816013519.872.13122.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,228 +25,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide some useful PGP definitions from RFC 4880.  These describe details of
-public key crypto as used by crypto keys for things like signature
-verification.
+Reinstate and export mpi_cmp() and mpi_cmp_ui() from the MPI library for use by
+RSA signature verification as per RFC3447 section 5.2.2 step 1.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/pgp.h |  206 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 206 insertions(+)
- create mode 100644 include/linux/pgp.h
+ lib/mpi/Makefile  |    1 +
+ lib/mpi/mpi-cmp.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+)
+ create mode 100644 lib/mpi/mpi-cmp.c
 
 
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
+diff --git a/lib/mpi/Makefile b/lib/mpi/Makefile
+index 45ca90a..019a68c 100644
+--- a/lib/mpi/Makefile
++++ b/lib/mpi/Makefile
+@@ -14,6 +14,7 @@ mpi-y = \
+ 	generic_mpih-add1.o		\
+ 	mpicoder.o			\
+ 	mpi-bit.o			\
++	mpi-cmp.o			\
+ 	mpih-cmp.o			\
+ 	mpih-div.o			\
+ 	mpih-mul.o			\
+diff --git a/lib/mpi/mpi-cmp.c b/lib/mpi/mpi-cmp.c
 new file mode 100644
-index 0000000..1359f64
+index 0000000..1871e7b
 --- /dev/null
-+++ b/include/linux/pgp.h
-@@ -0,0 +1,206 @@
-+/* PGP definitions (RFC 4880)
++++ b/lib/mpi/mpi-cmp.c
+@@ -0,0 +1,70 @@
++/* mpi-cmp.c  -  MPI functions
++ * Copyright (C) 1998, 1999 Free Software Foundation, Inc.
 + *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
++ * This file is part of GnuPG.
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
 + */
 +
-+#ifndef _LINUX_PGP_H
-+#define _LINUX_PGP_H
++#include "mpi-internal.h"
 +
-+#include <linux/types.h>
++int mpi_cmp_ui(MPI u, unsigned long v)
++{
++	mpi_limb_t limb = v;
 +
-+struct pgp_key_ID {
-+	u8 id[8];
-+};
++	mpi_normalize(u);
++	if (!u->nlimbs && !limb)
++		return 0;
++	if (u->sign)
++		return -1;
++	if (u->nlimbs > 1)
++		return 1;
 +
-+struct pgp_time {
-+	u8 time[4];
-+};
++	if (u->d[0] == limb)
++		return 0;
++	else if (u->d[0] > limb)
++		return 1;
++	else
++		return -1;
++}
++EXPORT_SYMBOL_GPL(mpi_cmp_ui);
 +
-+/*
-+ * PGP public-key algorithm identifiers [RFC4880: 9.1]
-+ */
-+enum pgp_pubkey_algo {
-+	PGP_PUBKEY_RSA_ENC_OR_SIG	= 1,
-+	PGP_PUBKEY_RSA_ENC_ONLY		= 2,
-+	PGP_PUBKEY_RSA_SIG_ONLY		= 3,
-+	PGP_PUBKEY_ELGAMAL		= 16,
-+	PGP_PUBKEY_DSA			= 17,
-+	PGP_PUBKEY__LAST
-+};
++int mpi_cmp(MPI u, MPI v)
++{
++	mpi_size_t usize, vsize;
++	int cmp;
 +
-+/*
-+ * PGP symmetric-key algorithm identifiers [RFC4880: 9.2]
-+ */
-+enum pgp_symkey_algo {
-+	PGP_SYMKEY_PLAINTEXT		= 0,
-+	PGP_SYMKEY_IDEA			= 1,
-+	PGP_SYMKEY_3DES			= 2,
-+	PGP_SYMKEY_CAST5		= 3,
-+	PGP_SYMKEY_BLOWFISH		= 4,
-+	PGP_SYMKEY_AES_128KEY		= 7,
-+	PGP_SYMKEY_AES_192KEY		= 8,
-+	PGP_SYMKEY_AES_256KEY		= 9,
-+	PGP_SYMKEY_TWOFISH_256KEY	= 10,
-+};
-+
-+/*
-+ * PGP compression algorithm identifiers [RFC4880: 9.3]
-+ */
-+enum pgp_compr_algo {
-+	PGP_COMPR_UNCOMPRESSED		= 0,
-+	PGP_COMPR_ZIP			= 1,
-+	PGP_COMPR_ZLIB			= 2,
-+	PGP_COMPR_BZIP2			= 3,
-+};
-+
-+/*
-+ * PGP hash algorithm identifiers [RFC4880: 9.4]
-+ */
-+enum pgp_hash_algo {
-+	PGP_HASH_MD5			= 1,
-+	PGP_HASH_SHA1			= 2,
-+	PGP_HASH_RIPE_MD_160		= 3,
-+	PGP_HASH_SHA256			= 8,
-+	PGP_HASH_SHA384			= 9,
-+	PGP_HASH_SHA512			= 10,
-+	PGP_HASH_SHA224			= 11,
-+	PGP_HASH__LAST
-+};
-+
-+extern const char *const pgp_hash_algorithms[PGP_HASH__LAST];
-+
-+/*
-+ * PGP packet type tags [RFC4880: 4.3].
-+ */
-+enum pgp_packet_tag {
-+	PGP_PKT_RESERVED		= 0,
-+	PGP_PKT_PUBKEY_ENC_SESSION_KEY	= 1,
-+	PGP_PKT_SIGNATURE		= 2,
-+	PGP_PKT_SYMKEY_ENC_SESSION_KEY	= 3,
-+	PGP_PKT_ONEPASS_SIGNATURE	= 4,
-+	PGP_PKT_SECRET_KEY		= 5,
-+	PGP_PKT_PUBLIC_KEY		= 6,
-+	PGP_PKT_SECRET_SUBKEY		= 7,
-+	PGP_PKT_COMPRESSED_DATA		= 8,
-+	PGP_PKT_SYM_ENC_DATA		= 9,
-+	PGP_PKT_MARKER			= 10,
-+	PGP_PKT_LITERAL_DATA		= 11,
-+	PGP_PKT_TRUST			= 12,
-+	PGP_PKT_USER_ID			= 13,
-+	PGP_PKT_PUBLIC_SUBKEY		= 14,
-+	PGP_PKT_USER_ATTRIBUTE		= 17,
-+	PGP_PKT_SYM_ENC_AND_INTEG_DATA	= 18,
-+	PGP_PKT_MODIFY_DETECT_CODE	= 19,
-+	PGP_PKT_PRIVATE_0		= 60,
-+	PGP_PKT_PRIVATE_3		= 63,
-+	PGP_PKT__HIGHEST		= 63
-+};
-+
-+/*
-+ * Signature (tag 2) packet [RFC4880: 5.2].
-+ */
-+enum pgp_signature_version {
-+	PGP_SIG_VERSION_3			= 3,
-+	PGP_SIG_VERSION_4			= 4,
-+};
-+
-+enum pgp_signature_type {
-+	PGP_SIG_BINARY_DOCUMENT_SIG		= 0x00,
-+	PGP_SIG_CANONICAL_TEXT_DOCUMENT_SIG	= 0x01,
-+	PGP_SIG_STANDALONE_SIG			= 0x02,
-+	PGP_SIG_GENERAL_CERT_OF_UID_PUBKEY	= 0x10,
-+	PGP_SIG_PERSONAL_CERT_OF_UID_PUBKEY	= 0x11,
-+	PGP_SIG_CASUAL_CERT_OF_UID_PUBKEY	= 0x12,
-+	PGP_SIG_POSTITIVE_CERT_OF_UID_PUBKEY	= 0x13,
-+	PGP_SIG_SUBKEY_BINDING_SIG		= 0x18,
-+	PGP_SIG_PRIMARY_KEY_BINDING_SIG		= 0x19,
-+	PGP_SIG_DIRECTLY_ON_KEY			= 0x1F,
-+	PGP_SIG_KEY_REVOCATION_SIG		= 0x20,
-+	PGP_SIG_SUBKEY_REVOCATION_SIG		= 0x28,
-+	PGP_SIG_CERT_REVOCATION_SIG		= 0x30,
-+	PGP_SIG_TIMESTAMP_SIG			= 0x40,
-+	PGP_SIG_THIRD_PARTY_CONFIRM_SIG		= 0x50,
-+};
-+
-+struct pgp_signature_v3_packet {
-+	enum pgp_signature_version version : 8; /* == PGP_SIG_VERSION_3 */
-+	u8	length_of_hashed;	/* == 5 */
-+	struct {
-+		enum pgp_signature_type signature_type : 8;
-+		struct pgp_time	creation_time;
-+	} hashed;
-+	struct pgp_key_ID issuer;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+struct pgp_signature_v4_packet {
-+	enum pgp_signature_version version : 8;	/* == PGP_SIG_VERSION_4 */
-+	enum pgp_signature_type signature_type : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+} __packed;
-+
-+/*
-+ * V4 signature subpacket types [RFC4880: 5.2.3.1].
-+ */
-+enum pgp_sig_subpkt_type {
-+	PGP_SIG_CREATION_TIME			= 2,
-+	PGP_SIG_EXPIRATION_TIME			= 3,
-+	PGP_SIG_EXPORTABLE_CERT			= 4,
-+	PGP_SIG_TRUST_SIG			= 5,
-+	PGP_SIG_REGEXP				= 6,
-+	PGP_SIG_REVOCABLE			= 7,
-+	PGP_SIG_KEY_EXPIRATION_TIME		= 9,
-+	PGP_SIG_PREF_SYM_ALGO			= 11,
-+	PGP_SIG_REVOCATION_KEY			= 12,
-+	PGP_SIG_ISSUER				= 16,
-+	PGP_SIG_NOTATION_DATA			= 20,
-+	PGP_SIG_PREF_HASH_ALGO			= 21,
-+	PGP_SIG_PREF_COMPR_ALGO			= 22,
-+	PGP_SIG_KEY_SERVER_PREFS		= 23,
-+	PGP_SIG_PREF_KEY_SERVER			= 24,
-+	PGP_SIG_PRIMARY_USER_ID			= 25,
-+	PGP_SIG_POLICY_URI			= 26,
-+	PGP_SIG_KEY_FLAGS			= 27,
-+	PGP_SIG_SIGNERS_USER_ID			= 28,
-+	PGP_SIG_REASON_FOR_REVOCATION		= 29,
-+	PGP_SIG_FEATURES			= 30,
-+	PGP_SIG_TARGET				= 31,
-+	PGP_SIG_EMBEDDED_SIG			= 32,
-+	PGP_SIG__LAST
-+};
-+
-+#define PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK	0x80
-+
-+/*
-+ * Key (tag 5, 6, 7 and 14) packet
-+ */
-+enum pgp_key_version {
-+	PGP_KEY_VERSION_2			= 2,
-+	PGP_KEY_VERSION_3			= 3,
-+	PGP_KEY_VERSION_4			= 4,
-+};
-+
-+struct pgp_key_v3_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	u8 expiry[2];				/* 0 or time in days till expiry */
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+struct pgp_key_v4_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+} __packed;
-+
-+#endif /* _LINUX_PGP_H */
++	mpi_normalize(u);
++	mpi_normalize(v);
++	usize = u->nlimbs;
++	vsize = v->nlimbs;
++	if (!u->sign && v->sign)
++		return 1;
++	if (u->sign && !v->sign)
++		return -1;
++	if (usize != vsize && !u->sign && !v->sign)
++		return usize - vsize;
++	if (usize != vsize && u->sign && v->sign)
++		return vsize + usize;
++	if (!usize)
++		return 0;
++	cmp = mpihelp_cmp(u->d, v->d, usize);
++	if (!cmp)
++		return 0;
++	if ((cmp < 0 ? 1 : 0) == (u->sign ? 1 : 0))
++		return 1;
++	return -1;
++}
++EXPORT_SYMBOL_GPL(mpi_cmp);
 
