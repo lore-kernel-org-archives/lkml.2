@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab2HPFLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 01:11:07 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:35677 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab2HPFLF convert rfc822-to-8bit (ORCPT
+	id S1753885Ab2HPFQT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:16:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36364 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2HPFQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 01:11:05 -0400
-Date: Thu, 16 Aug 2012 02:10:56 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: koko Aborigines <7aborigines7@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add support bluetooth usb 0489:e046 Foxconn / Hon Hai
-Message-ID: <20120816051056.GA25290@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	koko Aborigines <7aborigines7@gmail.com>, marcel@holtmann.org,
-	padovan@profusion.mobi, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1344757304-11555-1-git-send-email-7aborigines7@gmail.com>
- <20120815044111.GG3344@joana>
- <CA+iwHK1VYJ+G-9aVgkzvAV4C3Unhyz-sqC+_SkUmPhffs1_=CQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CA+iwHK1VYJ+G-9aVgkzvAV4C3Unhyz-sqC+_SkUmPhffs1_=CQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Aug 2012 01:16:17 -0400
+Date: Thu, 16 Aug 2012 15:16:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: build failure after merge of the final tree (regulator
+ tree related)
+Message-Id: <20120816151605.b0a9932005b541956288ce96@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* koko Aborigines <7aborigines7@gmail.com> [2012-08-16 10:12:44 +0700]:
+Hi all,
 
-> Hi, Gustavo
-> 
-> i have error with your patch
-> 
->  CC [M]  drivers/bluetooth/btusb.o
-> drivers/bluetooth/btusb.c:113:2: error: implicit declaration of function
-> ‘USB_VENDOR_AND_INTERFACE_INFO’ [-Werror=implicit-function-declaration]
-> drivers/bluetooth/btusb.c:113:2: error: initializer element is not constant
-> drivers/bluetooth/btusb.c:113:2: error: (near initialization for
-> ‘btusb_table[22].match_flags’)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-You need to apply it against the bluetooth-next tree (or linux-next).
+drivers/regulator/twl-regulator.c: In function 'twlreg_probe':
+drivers/regulator/twl-regulator.c:1229:3: error: implicit declaration of fu=
+nction 'kfree' [-Werror=3Dimplicit-function-declaration]
 
-	Gustavo
+Caused by commit 537fbe92d723 ("regulator: twl: make twl_info tables
+const") from the regulator tree.
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 16 Aug 2012 15:11:22 +1000
+Subject: [PATCH] regulator: using kfree() requires including slab.h
+
+Fixes this build error:
+
+drivers/regulator/twl-regulator.c: In function 'twlreg_probe':
+drivers/regulator/twl-regulator.c:1229:3: error: implicit declaration of fu=
+nction 'kfree' [-Werror=3Dimplicit-function-declaration]
+
+Also added string.h for kmemdup().
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/regulator/twl-regulator.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regu=
+lator.c
+index a836522..564acae 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -10,6 +10,8 @@
+  */
+=20
+ #include <linux/module.h>
++#include <linux/string.h>
++#include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQLIIVAAoJEECxmPOUX5FEkDUP/0Hqut54Leul3xtmVqEeY43j
+ITwVeT7Tqix9zYkMHykLSijnO/s7wksGe2qiO4nkpgop7p8dzaZmoJAN5RPCKu2d
+8wM5XLAmEFbNjz0e4U1n2YGzAa1q8nGreZagg5fldrQ8gD19Y/qr4YSk7I1eJEPV
+5AYmt2C1syuCEzPBfGv4M4H7VEy0CUVY2buvDg5KOMxGcvkQgDkkVQSZ/fOcRonS
+UsvKXw64wfSrgG6QS8TGOVgqtrqHuum4fHdiuKLa3fYpgrEoKvEwzdII0yy6UBN1
+FsGnB3rZ1CGH8oFTL13DVU3cAJZUjuZ+W0HrtTG87Avue+cZoF5p6y/OT/HXnCCg
+4F2x5dep5v5bSUXlQuYghHDKhmXleE5mhrewyvEciqJJoo5Tm3mkJKypIRrsa/oq
+ADAjT8FQ0eiYpQPB8oAwkQHQ4jZujxmg0AJ5iq/aanVStoiiEn7dl8/vZihmr+ni
+iEPQ1PMpbekgvjJ4jznfQ2JOJCtlMxwEkk0Qlmc4bSWMgfaXQ6znvx+nRFxIc/Dx
+D4v7H65gKDFIcV/1HezDN0zQ1FIbdMK0LCarRPemsiBg4lawQVNZAZC7vdH7mIs3
+AIaZqdgnaaPuvvXnlGRU9qUO6WlrIe4bJyFlLGAiyn1ElSPBfs50TGfnMjZr7i1Z
+nJXF6HD+TzxpwEr/bves
+=bxas
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Aug_2012_15_16_05_+1000_Hll.proEM1UdR2//--
