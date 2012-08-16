@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab2HPPKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 11:10:44 -0400
-Received: from mx1.zhaw.ch ([160.85.104.50]:48265 "EHLO mx1.zhaw.ch"
+	id S1755622Ab2HPPLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 11:11:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57932 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab2HPPKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 11:10:43 -0400
-X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Aug 2012 11:10:43 EDT
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] c6x: Use schedule_preempt_disabled()
-Date: Thu, 16 Aug 2012 17:03:43 +0200
-Message-Id: <1345129423-1626-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.7.5.4
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.8.16.145125
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- HTML_NO_HTTP 0.1, MULTIPLE_RCPTS 0.1, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, NO_URI_FOUND 0, __HAS_FROM 0, __HAS_HTML 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MULTIPLE_RCPTS_CC_X2 0, __SANE_MSGID 0, __TO_MALFORMED_2 0'
+	id S1752596Ab2HPPLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 11:11:51 -0400
+Date: Thu, 16 Aug 2012 17:11:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] hugetlb: do not use vma_hugecache_offset for
+ vma_prio_tree_foreach
+Message-ID: <20120816151149.GF2817@dhcp22.suse.cz>
+References: <1344866141-27906-1-git-send-email-mhocko@suse.cz>
+ <CAJd=RBAwg0k0=8zmRh6jwAYe7Msmxw=HE8qs3YjwXrtsezr78Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBAwg0k0=8zmRh6jwAYe7Msmxw=HE8qs3YjwXrtsezr78Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Follow bd2f5536 (sched/rt: Use schedule_preempt_disabled()).
+On Thu 16-08-12 20:45:15, Hillf Danton wrote:
+> On Mon, Aug 13, 2012 at 9:55 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
+> > from vma) fixed pgoff calculation but it has replaced it by
+> > vma_hugecache_offset which is not approapriate for offsets used for
+> > vma_prio_tree_foreach because that one expects index in page units
+> > rather than in huge_page_shift.
+> > Using vma_hugecache_offset is not incorrect because the pgoff will fit
+> > into the same vmas but it is confusing so the standard PAGE_SHIFT based
+> > index calculation is used instead.
+> >
+> > Cc: Hillf Danton <dhillf@gmail.com>
+> > Cc: Mel Gorman <mel@csn.ul.ie>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Cc: David Rientjes <rientjes@google.com>
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> 
+> Thanks
+> 
+> Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- arch/c6x/kernel/process.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Thanks Hillf!
 
-diff --git a/arch/c6x/kernel/process.c b/arch/c6x/kernel/process.c
-index 45e924a..4ff4862 100644
---- a/arch/c6x/kernel/process.c
-+++ b/arch/c6x/kernel/process.c
-@@ -68,9 +68,7 @@ void cpu_idle(void)
- 		rcu_idle_exit();
- 		tick_nohz_idle_exit();
- 
--		preempt_enable_no_resched();
--		schedule();
--		preempt_disable();
-+		schedule_preempt_disabled();
- 	}
- }
- 
+> >  mm/hugetlb.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index c39e4be..a74ea31 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+> >          * from page cache lookup which is in HPAGE_SIZE units.
+> >          */
+> >         address = address & huge_page_mask(h);
+> > -       pgoff = vma_hugecache_offset(h, vma, address);
+> > +       pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
+> > +                       vma->vm_pgoff;
+> >         mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+> >
+> >         /*
+> > --
+> > 1.7.10.4
+> >
+
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
