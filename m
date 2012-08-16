@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2HPBfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 21:35:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57512 "EHLO mx1.redhat.com"
+	id S1755350Ab2HPBfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 21:35:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756511Ab2HPBez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 21:34:55 -0400
+	id S1756792Ab2HPBfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 21:35:06 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 03/25] KEYS: Create a key type that can be used for general
- cryptographic operations
+Subject: [PATCH 04/25] KEYS: Add signature verification facility
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         jmorris@namei.org, keyrings@linux-nfs.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 02:34:45 +0100
-Message-ID: <20120816013445.872.34394.stgit@warthog.procyon.org.uk>
+Date: Thu, 16 Aug 2012 02:34:57 +0100
+Message-ID: <20120816013456.872.6089.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,401 +24,292 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a key type that can be used for general cryptographic operations, such
-as encryption, decryption, signature generation and signature verification.
+Add a facility whereby a key subtype may be asked to verify a signature against
+the data it is purported to have signed.
 
-The key type is "crypto" and can provide access to a variety of cryptographic
-algorithms.
+This adds four routines:
+
+ (1) struct crypto_key_verify_context *
+     verify_sig_begin(struct key *keyring, const void *sig, size_t siglen);
+
+     This sets up a verification context for the given signature using
+     information in that signature to select a key from the specified keyring
+     and to request a hash algorithm from the crypto layer.
+
+ (2) int verify_sig_add_data(struct crypto_key_verify_context *ctx,
+			     const void *data, size_t datalen);
+
+     Incrementally supply data to be signed.  May be called multiple times.
+
+ (3) int verify_sig_end(struct crypto_key_verify_context *ctx,
+			const void *sig, size_t siglen);
+
+     Complete the verification process and return the result.  -EKEYREJECTED
+     will indicate that the verification failed and 0 will indicate success.
+     Other errors are also possible.
+
+ (4) void verify_sig_cancel(struct crypto_key_verify_context *ctx);
+
+     Cancel the verification process.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys-crypto.txt |  181 +++++++++++++++++++++
- include/keys/crypto-subtype.h          |   57 +++++++
- include/keys/crypto-type.h             |   25 +++
- security/keys/Kconfig                  |    2 
- security/keys/Makefile                 |    1 
- security/keys/crypto/Kconfig           |    7 +
- security/keys/crypto/Makefile          |    7 +
- security/keys/crypto/crypto_keys.h     |   28 +++
- security/keys/crypto/crypto_type.c     |  272 ++++++++++++++++++++++++++++++++
- 9 files changed, 580 insertions(+)
- create mode 100644 Documentation/security/keys-crypto.txt
- create mode 100644 include/keys/crypto-subtype.h
- create mode 100644 include/keys/crypto-type.h
- create mode 100644 security/keys/crypto/Kconfig
- create mode 100644 security/keys/crypto/Makefile
- create mode 100644 security/keys/crypto/crypto_keys.h
- create mode 100644 security/keys/crypto/crypto_type.c
+ Documentation/security/keys-crypto.txt |  100 ++++++++++++++++++++
+ include/keys/crypto-subtype.h          |   36 +++++++
+ include/keys/crypto-type.h             |    9 ++
+ security/keys/crypto/Makefile          |    2 
+ security/keys/crypto/crypto_keys.h     |    1 
+ security/keys/crypto/crypto_type.c     |    2 
+ security/keys/crypto/crypto_verify.c   |  159 ++++++++++++++++++++++++++++++++
+ 7 files changed, 304 insertions(+), 5 deletions(-)
+ create mode 100644 security/keys/crypto/crypto_verify.c
 
 
 diff --git a/Documentation/security/keys-crypto.txt b/Documentation/security/keys-crypto.txt
-new file mode 100644
-index 0000000..97dee80
---- /dev/null
+index 97dee80..0a886ec 100644
+--- a/Documentation/security/keys-crypto.txt
 +++ b/Documentation/security/keys-crypto.txt
-@@ -0,0 +1,181 @@
-+			    ======================
-+			    CRYPTOGRAPHIC KEY TYPE
-+			    ======================
+@@ -7,6 +7,7 @@ Contents:
+   - Overview.
+   - Key identification.
+   - Accessing crypto keys.
++    - Signature verification.
+   - Implementing crypto parsers.
+   - Implementing crypto subtypes.
+ 
+@@ -89,6 +90,65 @@ This gives access to the key type:
+ 	struct key_type key_type_crypto;
+ 
+ 
++SIGNATURE VERIFICATION
++----------------------
 +
-+Contents:
++The four operations that can perform cryptographic signature verification,
++using one of a set of keys to provide the public key:
 +
-+  - Overview.
-+  - Key identification.
-+  - Accessing crypto keys.
-+  - Implementing crypto parsers.
-+  - Implementing crypto subtypes.
++ (1) Begin verification procedure.
 +
++	struct crypto_key_verify_context *
++	verify_sig_begin(struct key *keyring, const void *sig, size_t siglen);
 +
-+========
-+OVERVIEW
-+========
++     This function sets up a verification context from the information in the
++     signature and looks for a suitable key in the keyring.  The signature blob
++     must be presented again at the end of the procedure.  The keys will be
++     checked against parameters in the signature, and if the matching one is
++     not found then -ENOKEY will be returned.
 +
-+The "crypto" key type is designed to be a container for cryptographic keys,
-+without imposing any particular restrictions on the form of the cryptography or
-+the key.
++     The hashing algorithm, if such a thing applies, will be determined from
++     information in the signature and the appropriate crypto module will be
++     used.  -ENOPKG will be returned if the hash algorithm is unavailable.
 +
-+The crypto key is given a subtype that defines what sort of data is associated
-+with the key and provides operations to describe and destroy it.  However, no
-+requirement is made that the key data actually be loaded into the key.
++     The return value is an opaque pointer to be passed to the other functions,
++     or a negative error code.
 +
-+The crypto key also has a number of data parsers registered with it.  The data
-+parsers are responsible for extracing information the blobs of data passed to
-+the instantiator function.  The first data parser that recognises the blob gets
-+to set the subtype of the key and define the operations that can be done on
-+that key.
++ (2) Indicate data to be verified.
 +
-+Completely in-kernel key retention and operation subtypes and parsers can be
-+defined, but it would also be possible to provide access to cryptographic
-+hardware (such as a TPM) that might be used to both retain the relevant key and
-+perform operations using that key.  In such a case, the crypto key would then
-+merely be an interface to the TPM driver.
++	int verify_sig_add_data(struct crypto_key_verify_context *ctx,
++				const void *data, size_t datalen);
 +
++     This function is used to shovel data to the verification procedure so that
++     it can load it into the hash, pass it to hardware or whatever is
++     appropriate for the algorithm being employed.
 +
-+==================
-+KEY IDENTIFICATION
-+==================
++     The data is not canonicalised for the document type specified in the
++     signature.  The caller must do that.
 +
-+Because the identity of a key is not necessarily known and may not be easily
-+calculated when a crypto key is allocated, it may not be a simple matter to set
-+a key description to something that's useful for determining whether this is
-+the key you're looking for.  Furthermore, it may be necessary to perform a
-+partial match upon the key identity.
++     It will return 0 if successful and a negative error code if not.
 +
-+To help with this, when a key is loaded, the parser calculates the key
-+fingerprint and stores a copy in the key structure.
++ (3) Complete the verification process.
 +
-+The crypto key type's key matching function then performs more checks than just
-+the straightforward comparison of the description with the criterion string:
++	int verify_sig_end(struct crypto_key_verify_context *ctx,
++			   const void *sig, size_t siglen);
 +
-+ (1) If the criterion string is of the form "id:<hexdigits>" then the match
-+     function will examine a key's fingerprint to see if the hex digits given
-+     after the "id:" match the tail.  For instance:
++     This function performs the actual signature verification step and cleans
++     up the resources allocated at the beginning.  The signature must be
++     presented again as some of the data therein may need to be added to the
++     internal hash.
 +
-+	keyctl search @s crypto id:5acc2142
++     It will return -EKEYREJECTED if the signature didn't match, 0 if
++     successful and may return other errors as appropriate.
 +
-+     will match a key with fingerprint:
++ (4) Cancel the verification process.
 +
-+	1A00 2040 7601 7889 DE11  882C 3823 04AD 5ACC 2142
++	void verify_sig_cancel(struct crypto_key_verify_context *ctx);
 +
-+ (2) If the criterion string is of the form "<subtype>:<hexdigits>" then the
-+     match will match the ID as in (1), but with the added restriction that
-+     only keys of the specified subtype (e.g. dsa or rsa) will be matched.  For
-+     instance:
-+
-+	keyctl search @s crypto dsa:5acc2142
-+
-+Looking in /proc/keys, the last 8 hex digits of the key fingerprint are
-+displayed, along with the subtype:
-+
-+	1a39e171 I-----     1 perm 3f010000     0     0 crypto    modsign.0: DSA 5acc2142 []
++     This function cleans up the resources allocated at the beginning.  This is
++     not necessary if verify_sig_end() was called.
 +
 +
-+=====================
-+ACCESSING CRYPTO KEYS
-+=====================
+ ===========================
+ IMPLEMENTING CRYPTO PARSERS
+ ===========================
+@@ -107,6 +167,8 @@ The parser definition structure looks like the following:
+ 
+ 		int (*instantiate)(struct key *key,
+ 				   const void *data, size_t datalen);
++		struct crypto_key_verify_context *(*verify_sig_begin)(
++			struct key *keyring, const u8 *sig, size_t siglen);
+ 	};
+ 
+ The owner and name fields should be set to the owning module and the name of
+@@ -135,6 +197,44 @@ but it is expected that at least one will be defined.
+      algorithm such as RSA and DSA this will likely be a printable hex version
+      of the key's fingerprint.
+ 
++ (2) verify_sig_begin().
 +
-+To access crypto keys from within the kernel, the following inclusion is
-+required:
-+
-+	#include <keys/crypto-type.h>
-+
-+This gives access to the key type:
-+
-+	struct key_type key_type_crypto;
-+
-+
-+===========================
-+IMPLEMENTING CRYPTO PARSERS
-+===========================
-+
-+The crypto key type keeps a list of registered data parsers.  An example of
-+such a parser is one that parses OpenPGP packet formatted data [RFC 4880].
-+
-+During key instantiation each parser in the list is tried until one doesn't
-+return -EBADMSG.
-+
-+The parser definition structure looks like the following:
-+
-+	struct crypto_key_parser {
-+		struct module		*owner;
-+		const char		*name;
-+
-+		int (*instantiate)(struct key *key,
-+				   const void *data, size_t datalen);
-+	};
-+
-+The owner and name fields should be set to the owning module and the name of
-+the parser.
-+
-+There are a number of operations defined by the parser.  They are all optional,
-+but it is expected that at least one will be defined.
-+
-+ (1) instantiate().
-+
-+     The arguments are the same as for the instantiate function in the key
-+     type.  'key' is the crypto key being instantiated; data and datalen are
-+     the instantiation data, presumably containing cryptographic key data, and
-+     the length of that data.
++     This is similar in concept to the instantiate() function, except that it
++     is given a signature blob to parse rather than a key data blob.
 +
 +     If the data format is not recognised, -EBADMSG should be returned.  If it
-+     is recognised, but the key cannot for some reason be set up, some other
-+     negative error code should be returned.
++     is recognised, but the signature verification process cannot for some
++     reason be set up, some other negative error code should be returned.
++     -ENOKEY should be used to indicate that no matching key is available and
++     -ENOPKG should be returned if the hash algorithm or the verification
++     algorithm are unavailable.
 +
-+     If the key can be successfully set up, then key->payload should be set to
-+     point to the retained data, key->type_data.p[0] should be set to point to
-+     the subtype chosen and key->type_data.p[1] should be set to point to a
-+     copy of the key's identity string and 0 should be returned.
++     If successful, the parser should allocate a verification context and embed
++     the following struct in it:
 +
-+     The key's identity string may be partially matched upon.  For a public-key
-+     algorithm such as RSA and DSA this will likely be a printable hex version
-+     of the key's fingerprint.
-+
-+Functions are provided to register and unregister parsers:
-+
-+	int register_crypto_key_parser(struct crypto_key_parser *parser);
-+	void unregister_crypto_key_parser(struct crypto_key_parser *subtype);
-+
-+Parsers may not have the same name.  The names are only used for displaying in
-+debugging messages.
-+
-+
-+============================
-+IMPLEMENTING CRYPTO SUBTYPES
-+============================
-+
-+The parser selects the appropriate subtype directly and sets it on the key; the
-+crypto key then retains a reference on the subtype module (which means the
-+parser can be removed thereafter).
-+
-+The subtype definition structure looks like the following:
-+
-+	struct crypto_key_subtype {
-+		struct module		*owner;
-+		const char		*name;
-+
-+		void (*describe)(const struct key *key, struct seq_file *m);
-+		void (*destroy)(void *payload);
++	struct crypto_key_verify_context {
++		struct key *key;
++		int (*add_data)(struct crypto_key_verify_context *ctx,
++				const void *data, size_t datalen);
++		int (*end)(struct crypto_key_verify_context *ctx,
++			   const u8 *sig, size_t siglen);
++		void (*cancel)(struct crypto_key_verify_context *ctx);
 +	};
 +
-+The owner and name fields should be set to the owning module and the name of
-+the subtype.
++     and return a pointer to this to the caller, who will then pass it to the
++     verification operation wrappers described in the "Signature Verification"
++     section.  The three operation pointers here correspond exactly to those
++     wrappers and are all mandatory.  container_of() should be used to retrieve
++     the actual context.
 +
-+There are a number of operations defined by the subtype:
++     Note that the crypto key type retains a reference on the parser module for
++     the lifetime of this context, though the operation pointers need not point
++     into this module.
 +
-+ (1) describe().
++     The parser should also record a pointer to the key selected and take a
++     reference on that key with key_get().
 +
-+     Mandatory.  This allows the subtype to display something in /proc/keys
-+     against the key.  For instance the name of the public key algorithm type
-+     could be displayed.  The key type will display the tail of the key
-+     identity string after this.
 +
-+ (2) destroy().
-+
-+     Mandatory.  This should free the memory associated with the key.  The
-+     crypto key will look after freeing the fingerprint and releasing the
-+     reference on the subtype module.
+ Functions are provided to register and unregister parsers:
+ 
+ 	int register_crypto_key_parser(struct crypto_key_parser *parser);
 diff --git a/include/keys/crypto-subtype.h b/include/keys/crypto-subtype.h
-new file mode 100644
-index 0000000..1f546e6
---- /dev/null
+index 1f546e6..61a5338 100644
+--- a/include/keys/crypto-subtype.h
 +++ b/include/keys/crypto-subtype.h
-@@ -0,0 +1,57 @@
-+/* Cryptographic key subtype
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ *
-+ * See Documentation/security/keys-crypto.txt
-+ */
-+
-+#ifndef _KEYS_CRYPTO_SUBTYPE_H
-+#define _KEYS_CRYPTO_SUBTYPE_H
-+
-+#include <linux/seq_file.h>
-+#include <keys/crypto-type.h>
-+
-+extern struct key_type key_type_crypto;
-+
+@@ -34,8 +34,7 @@ struct crypto_key_subtype {
+ };
+ 
+ /*
+- * Data parser.  Called during instantiation and signature verification
+- * initiation.
++ * Key data parser.  Called during key instantiation.
+  */
+ struct crypto_key_parser {
+ 	struct list_head	link;
+@@ -54,4 +53,37 @@ struct crypto_key_parser {
+ extern int register_crypto_key_parser(struct crypto_key_parser *);
+ extern void unregister_crypto_key_parser(struct crypto_key_parser *);
+ 
 +/*
-+ * Keys of this type declare a subtype that indicates the handlers and
-+ * capabilities.
++ * Context base for signature verification methods.  Allocated by the subtype
++ * and presumably embedded in something appropriate.
 + */
-+struct crypto_key_subtype {
-+	struct module		*owner;
-+	const char		*name;
-+	unsigned short		name_len;	/* length of name */
-+
-+	void (*describe)(const struct key *key, struct seq_file *m);
-+
-+	void (*destroy)(void *payload);
++struct crypto_sig_verify_context {
++	struct key *key;
++	struct crypto_sig_parser *parser;
++	int (*add_data)(struct crypto_sig_verify_context *ctx,
++			const void *data, size_t datalen);
++	int (*end)(struct crypto_sig_verify_context *ctx,
++		   const u8 *sig, size_t siglen);
++	void (*cancel)(struct crypto_sig_verify_context *ctx);
 +};
 +
 +/*
-+ * Data parser.  Called during instantiation and signature verification
-+ * initiation.
++ * Signature data parser.  Called during signature verification initiation.
 + */
-+struct crypto_key_parser {
++struct crypto_sig_parser {
 +	struct list_head	link;
 +	struct module		*owner;
 +	const char		*name;
 +
-+	/* Attempt to parse a key from the data blob passed to add_key() or
-+	 * keyctl_instantiate().  Should also generate a proposed description
-+	 * that the caller can optionally use for the key.
++	/* Attempt to recognise a signature blob and find a matching key.
 +	 *
 +	 * Return EBADMSG if not recognised.
 +	 */
-+	int (*preparse)(struct key_preparsed_payload *prep);
++	struct crypto_sig_verify_context *(*verify_sig_begin)(
++		struct key *keyring, const u8 *sig, size_t siglen);
 +};
 +
-+extern int register_crypto_key_parser(struct crypto_key_parser *);
-+extern void unregister_crypto_key_parser(struct crypto_key_parser *);
++extern int register_crypto_sig_parser(struct crypto_sig_parser *);
++extern void unregister_crypto_sig_parser(struct crypto_sig_parser *);
 +
-+#endif /* _KEYS_CRYPTO_SUBTYPE_H */
+ #endif /* _KEYS_CRYPTO_SUBTYPE_H */
 diff --git a/include/keys/crypto-type.h b/include/keys/crypto-type.h
-new file mode 100644
-index 0000000..47c00c7
---- /dev/null
+index 47c00c7..0fb362a 100644
+--- a/include/keys/crypto-type.h
 +++ b/include/keys/crypto-type.h
-@@ -0,0 +1,25 @@
-+/* Cryptographic key type interface
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ *
-+ * See Documentation/security/keys-crypto.txt
-+ */
-+
-+#ifndef _KEYS_CRYPTO_TYPE_H
-+#define _KEYS_CRYPTO_TYPE_H
-+
-+#include <linux/key-type.h>
-+
-+extern struct key_type key_type_crypto;
-+
-+/*
-+ * The payload is at the discretion of the subtype.
-+ */
-+
-+#endif /* _KEYS_CRYPTO_TYPE_H */
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index a90d6d3..992fe52 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -69,3 +69,5 @@ config KEYS_DEBUG_PROC_KEYS
- 	  the resulting table.
+@@ -18,6 +18,15 @@
  
- 	  If you are unsure as to whether this is required, answer N.
+ extern struct key_type key_type_crypto;
+ 
++struct crypto_sig_verify_context;
++extern struct crypto_sig_verify_context *verify_sig_begin(
++	struct key *key, const void *sig, size_t siglen);
++extern int verify_sig_add_data(struct crypto_sig_verify_context *ctx,
++			       const void *data, size_t datalen);
++extern int verify_sig_end(struct crypto_sig_verify_context *ctx,
++			  const void *sig, size_t siglen);
++extern void verify_sig_cancel(struct crypto_sig_verify_context *ctx);
 +
-+source security/keys/crypto/Kconfig
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 504aaa0..67dae73 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -24,3 +24,4 @@ obj-$(CONFIG_SYSCTL) += sysctl.o
- #
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
-+obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto/
-diff --git a/security/keys/crypto/Kconfig b/security/keys/crypto/Kconfig
-new file mode 100644
-index 0000000..3d15710
---- /dev/null
-+++ b/security/keys/crypto/Kconfig
-@@ -0,0 +1,7 @@
-+config CRYPTO_KEY_TYPE
-+	tristate "Cryptographic key type"
-+	depends on KEYS
-+	help
-+	  This option provides support for a type of key that holds the keys
-+	  required for cryptographic operations such as encryption, decryption,
-+	  signature generation and signature verification.
+ /*
+  * The payload is at the discretion of the subtype.
+  */
 diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
-new file mode 100644
-index 0000000..36db1d5
---- /dev/null
+index 36db1d5..67001bc 100644
+--- a/security/keys/crypto/Makefile
 +++ b/security/keys/crypto/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for cryptographic keys
-+#
-+
-+obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
-+
-+crypto_keys-y := crypto_type.o
+@@ -4,4 +4,4 @@
+ 
+ obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
+ 
+-crypto_keys-y := crypto_type.o
++crypto_keys-y := crypto_type.o crypto_verify.o
 diff --git a/security/keys/crypto/crypto_keys.h b/security/keys/crypto/crypto_keys.h
-new file mode 100644
-index 0000000..eb11788
---- /dev/null
+index eb11788..ab9b381 100644
+--- a/security/keys/crypto/crypto_keys.h
 +++ b/security/keys/crypto/crypto_keys.h
-@@ -0,0 +1,28 @@
-+/* Internal crypto type stuff
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+static inline
-+struct crypto_key_subtype *crypto_key_subtype(const struct key *key)
-+{
-+	return key->type_data.p[0];
-+}
-+
-+static inline const char *crypto_key_id(const struct key *key)
-+{
-+	return key->type_data.p[1];
-+}
-+
-+
-+/*
-+ * crypto_type.c
-+ */
-+extern struct list_head crypto_key_parsers;
-+extern struct rw_semaphore crypto_key_parsers_sem;
+@@ -24,5 +24,4 @@ static inline const char *crypto_key_id(const struct key *key)
+ /*
+  * crypto_type.c
+  */
+-extern struct list_head crypto_key_parsers;
+ extern struct rw_semaphore crypto_key_parsers_sem;
 diff --git a/security/keys/crypto/crypto_type.c b/security/keys/crypto/crypto_type.c
-new file mode 100644
-index 0000000..e8f83a6
---- /dev/null
+index e8f83a6..821db37 100644
+--- a/security/keys/crypto/crypto_type.c
 +++ b/security/keys/crypto/crypto_type.c
-@@ -0,0 +1,272 @@
-+/* Cryptographic key type
+@@ -18,7 +18,7 @@
+ 
+ MODULE_LICENSE("GPL");
+ 
+-LIST_HEAD(crypto_key_parsers);
++static LIST_HEAD(crypto_key_parsers);
+ DECLARE_RWSEM(crypto_key_parsers_sem);
+ 
+ /*
+diff --git a/security/keys/crypto/crypto_verify.c b/security/keys/crypto/crypto_verify.c
+new file mode 100644
+index 0000000..d64f1c7
+--- /dev/null
++++ b/security/keys/crypto/crypto_verify.c
+@@ -0,0 +1,159 @@
++/* Signature verification with a crypto key
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -431,264 +321,151 @@ index 0000000..e8f83a6
 + *
 + * See Documentation/security/keys-crypto.txt
 + */
++
 +#include <keys/crypto-subtype.h>
-+#include <linux/seq_file.h>
 +#include <linux/module.h>
-+#include <linux/slab.h>
++#include <linux/err.h>
 +#include "crypto_keys.h"
 +
-+MODULE_LICENSE("GPL");
++static LIST_HEAD(crypto_sig_parsers);
 +
-+LIST_HEAD(crypto_key_parsers);
-+DECLARE_RWSEM(crypto_key_parsers_sem);
-+
-+/*
-+ * Match crypto_keys on (part of) their name
-+ * We have some shorthand methods for matching keys.  We allow:
++/**
++ * verify_sig_begin - Initiate the use of a crypto key to verify a signature
++ * @keyring: The public keys to verify against
++ * @sig: The signature data
++ * @siglen: The signature length
 + *
-+ *	"<desc>"	- request a key by description
-+ *	"id:<id>"	- request a key matching the ID
-+ *	"<subtype>:<id>" - request a key of a subtype
++ * Returns a context or an error.
 + */
-+static int crypto_key_match(const struct key *key, const void *description)
++struct crypto_sig_verify_context *verify_sig_begin(
++	struct key *keyring, const void *sig, size_t siglen)
 +{
-+	const struct crypto_key_subtype *subtype = crypto_key_subtype(key);
-+	const char *spec = description;
-+	const char *id, *kid;
-+	ptrdiff_t speclen;
-+	size_t idlen, kidlen;
-+
-+	if (!subtype || !spec || !*spec)
-+		return 0;
-+
-+	/* See if the full key description matches as is */
-+	if (key->description && strcmp(key->description, description) == 0)
-+		return 1;
-+
-+	/* All tests from here on break the criterion description into a
-+	 * specifier, a colon and then an identifier.
-+	 */
-+	id = strchr(spec, ':');
-+	if (!id)
-+		return 0;
-+
-+	speclen = id - spec;
-+	id++;
-+
-+	/* Anything after here requires a partial match on the ID string */
-+	kid = crypto_key_id(key);
-+	if (!kid)
-+		return 0;
-+
-+	idlen = strlen(id);
-+	kidlen = strlen(kid);
-+	if (idlen > kidlen)
-+		return 0;
-+
-+	kid += kidlen - idlen;
-+	if (strcasecmp(id, kid) != 0)
-+		return 0;
-+
-+	if (speclen == 2 &&
-+	    memcmp(spec, "id", 2) == 0)
-+		return 1;
-+
-+	if (speclen == subtype->name_len &&
-+	    memcmp(spec, subtype->name, speclen) == 0)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Describe the crypto key
-+ */
-+static void crypto_key_describe(const struct key *key, struct seq_file *m)
-+{
-+	const struct crypto_key_subtype *subtype = crypto_key_subtype(key);
-+	const char *kid = crypto_key_id(key);
-+	size_t n;
-+
-+	seq_puts(m, key->description);
-+
-+	if (subtype) {
-+		seq_puts(m, ": ");
-+		subtype->describe(key, m);
-+
-+		if (kid) {
-+			seq_putc(m, ' ');
-+			n = strlen(kid);
-+			if (n <= 8)
-+				seq_puts(m, kid);
-+			else
-+				seq_puts(m, kid + n - 8);
-+		}
-+
-+		seq_puts(m, " [");
-+		/* put something here to indicate the key's capabilities */
-+		seq_putc(m, ']');
-+	}
-+}
-+
-+/*
-+ * Preparse a crypto payload to get format the contents appropriately for the
-+ * internal payload to cut down on the number of scans of the data performed.
-+ *
-+ * We also generate a proposed description from the contents of the key that
-+ * can be used to name the key if the user doesn't want to provide one.
-+ */
-+static int crypto_key_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct crypto_key_parser *parser;
-+	int ret;
++	struct crypto_sig_verify_context *ret;
++	struct crypto_sig_parser *parser;
 +
 +	pr_devel("==>%s()\n", __func__);
 +
-+	if (prep->datalen == 0)
-+		return -EINVAL;
++	if (siglen == 0 || !sig)
++		return ERR_PTR(-EINVAL);
 +
 +	down_read(&crypto_key_parsers_sem);
 +
-+	ret = -EBADMSG;
-+	list_for_each_entry(parser, &crypto_key_parsers, link) {
-+		pr_debug("Trying parser '%s'\n", parser->name);
++	ret = ERR_PTR(-EBADMSG);
++	list_for_each_entry(parser, &crypto_sig_parsers, link) {
++		if (parser->verify_sig_begin) {
++			if (!try_module_get(parser->owner))
++				continue;
 +
-+		ret = parser->preparse(prep);
-+		if (ret != -EBADMSG) {
-+			pr_debug("Parser recognised the format (ret %d)\n",
-+				 ret);
-+			break;
++			pr_debug("Trying parser '%s'\n", parser->name);
++
++			ret = parser->verify_sig_begin(keyring, sig, siglen);
++			if (IS_ERR(ret))
++				module_put(parser->owner);
++			else
++				ret->parser = parser;
++			if (ret != ERR_PTR(-EBADMSG)) {
++				pr_debug("Parser recognised the format"
++					 " (ret %ld)\n",
++					 PTR_ERR(ret));
++				break;
++			}
 +		}
 +	}
 +
 +	up_read(&crypto_key_parsers_sem);
-+	pr_devel("<==%s() = %d\n", __func__, ret);
++	pr_devel("<==%s() = %p\n", __func__, ret);
 +	return ret;
 +}
-+
-+/*
-+ * Clean up the preparse data
-+ */
-+static void crypto_key_free_preparse(struct key_preparsed_payload *prep)
-+{
-+	struct crypto_key_subtype *subtype = prep->type_data[0];
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	if (subtype) {
-+		subtype->destroy(prep->payload);
-+		module_put(subtype->owner);
-+	}
-+	kfree(prep->type_data[1]);
-+	kfree(prep->description);
-+}
-+
-+/*
-+ * Instantiate a crypto_key defined key
-+ */
-+static int crypto_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	int ret;
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	ret = key_payload_reserve(key, prep->quotalen);
-+	if (ret == 0) {
-+		key->type_data.p[0] = prep->type_data[0];
-+		key->type_data.p[1] = prep->type_data[1];
-+		key->payload.data = prep->payload;
-+		prep->type_data[0] = NULL;
-+		prep->type_data[1] = NULL;
-+		prep->payload = NULL;
-+	}
-+	pr_devel("<==%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+
-+/*
-+ * dispose of the data dangling from the corpse of a crypto key
-+ */
-+static void crypto_key_destroy(struct key *key)
-+{
-+	struct crypto_key_subtype *subtype = crypto_key_subtype(key);
-+	if (subtype) {
-+		subtype->destroy(key->payload.data);
-+		module_put(subtype->owner);
-+		key->type_data.p[0] = NULL;
-+	}
-+	kfree(key->type_data.p[1]);
-+	key->type_data.p[1] = NULL;
-+}
-+
-+struct key_type key_type_crypto = {
-+	.name		= "crypto",
-+	.preparse	= crypto_key_preparse,
-+	.free_preparse	= crypto_key_free_preparse,
-+	.instantiate	= crypto_key_instantiate,
-+	.match		= crypto_key_match,
-+	.destroy	= crypto_key_destroy,
-+	.describe	= crypto_key_describe,
-+};
-+EXPORT_SYMBOL_GPL(key_type_crypto);
++EXPORT_SYMBOL_GPL(verify_sig_begin);
 +
 +/**
-+ * register_crypto_key_parser - Register a crypto key blob parser
++ * verify_sig_add_data - Incrementally provide data to be verified
++ * @ctx: The context from verify_sig_begin()
++ * @data: Data
++ * @datalen: The amount of @data
++ *
++ * This may be called multiple times.
++ */
++int verify_sig_add_data(struct crypto_sig_verify_context *ctx,
++			const void *data, size_t datalen)
++{
++	return ctx->add_data(ctx, data, datalen);
++}
++EXPORT_SYMBOL_GPL(verify_sig_add_data);
++
++/**
++ * verify_sig_end - Finalise signature verification and return result
++ * @ctx: The context from verify_sig_begin()
++ * @sig: The signature data
++ * @siglen: The signature length
++ */
++int verify_sig_end(struct crypto_sig_verify_context *ctx,
++		   const void *sig, size_t siglen)
++{
++	struct crypto_sig_parser *parser = ctx->parser;
++	int ret;
++
++	ret = ctx->end(ctx, sig, siglen);
++	module_put(parser->owner);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(verify_sig_end);
++
++/**
++ * verify_sig_end - Cancel signature verification
++ * @ctx: The context from verify_sig_begin()
++ */
++void verify_sig_cancel(struct crypto_sig_verify_context *ctx)
++{
++	struct crypto_sig_parser *parser = ctx->parser;
++
++	ctx->cancel(ctx);
++	module_put(parser->owner);
++}
++EXPORT_SYMBOL_GPL(verify_sig_cancel);
++
++/**
++ * register_crypto_sig_parser - Register a crypto sig blob parser
 + * @parser: The parser to register
 + */
-+int register_crypto_key_parser(struct crypto_key_parser *parser)
++int register_crypto_sig_parser(struct crypto_sig_parser *parser)
 +{
-+	struct crypto_key_parser *cursor;
++	struct crypto_sig_parser *cursor;
 +	int ret;
 +
 +	down_write(&crypto_key_parsers_sem);
 +
-+	list_for_each_entry(cursor, &crypto_key_parsers, link) {
++	list_for_each_entry(cursor, &crypto_sig_parsers, link) {
 +		if (strcmp(cursor->name, parser->name) == 0) {
-+			pr_err("Crypto key parser '%s' already registered\n",
++			pr_err("Crypto signature parser '%s' already registered\n",
 +			       parser->name);
 +			ret = -EEXIST;
 +			goto out;
 +		}
 +	}
 +
-+	list_add_tail(&parser->link, &crypto_key_parsers);
++	list_add_tail(&parser->link, &crypto_sig_parsers);
 +
-+	pr_notice("Crypto key parser '%s' registered\n", parser->name);
++	pr_notice("Crypto signature parser '%s' registered\n", parser->name);
 +	ret = 0;
 +
 +out:
 +	up_write(&crypto_key_parsers_sem);
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(register_crypto_key_parser);
++EXPORT_SYMBOL_GPL(register_crypto_sig_parser);
 +
 +/**
-+ * unregister_crypto_key_parser - Unregister a crypto key blob parser
++ * unregister_crypto_sig_parser - Unregister a crypto sig blob parser
 + * @parser: The parser to unregister
 + */
-+void unregister_crypto_key_parser(struct crypto_key_parser *parser)
++void unregister_crypto_sig_parser(struct crypto_sig_parser *parser)
 +{
 +	down_write(&crypto_key_parsers_sem);
 +	list_del(&parser->link);
 +	up_write(&crypto_key_parsers_sem);
 +
-+	pr_notice("Crypto key parser '%s' unregistered\n", parser->name);
++	pr_notice("Crypto signature parser '%s' unregistered\n", parser->name);
 +}
-+EXPORT_SYMBOL_GPL(unregister_crypto_key_parser);
-+
-+/*
-+ * Module stuff
-+ */
-+static int __init crypto_key_init(void)
-+{
-+	return register_key_type(&key_type_crypto);
-+}
-+
-+static void __exit crypto_key_cleanup(void)
-+{
-+	unregister_key_type(&key_type_crypto);
-+}
-+
-+module_init(crypto_key_init);
-+module_exit(crypto_key_cleanup);
++EXPORT_SYMBOL_GPL(unregister_crypto_sig_parser);
 
