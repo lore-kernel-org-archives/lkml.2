@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2HPQs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:48:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36242 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab2HPQsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:48:54 -0400
-Message-ID: <502D2471.407@pobox.com>
-Date: Thu, 16 Aug 2012 12:48:49 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754524Ab2HPQ4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:56:45 -0400
+Received: from roc.holo.8d.com ([64.254.227.115]:49936 "EHLO roc.holo.8d.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128Ab2HPQ4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:56:44 -0400
+Date: Thu, 16 Aug 2012 12:56:40 -0400
+From: Raphael Assenat <raph@8d.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com, zbr@ioremap.net
+Subject: [PATCH v2] 1-Wire: Add support for the maxim ds1825 temperature
+ sensor
+Message-ID: <20120816165639.GB22993@renkinjitsu.usine.8d.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
-        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] Update LZO compression
-References: <50299142.2030504@oberhumer.com> <20120814123937.GA14756@sig21.net> <502B8FE3.7080501@oberhumer.com> <20120815144539.GA8300@sig21.net> <502C92C3.7090701@oberhumer.com> <502D100D.2030609@pobox.com> <20120816162051.GK11413@one.firstfloor.org>
-In-Reply-To: <20120816162051.GK11413@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6
+X-Spam-Report: -2.6 points, 5.0 required autolearn=ham
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2012 12:20 PM, Andi Kleen wrote:
->> If you think a little bit, I bet you could come up with a solution that
->> operates at cacheline-aligned granularity, something that would be _even
->> faster_ than simply fixing the code to do aligned accesses.
->
-> Cache aligned compression is unlikely to compress anything at all.
-> Compression algorithms are usually by definition unaligned.
+This patch adds support for maxim ds1825 based 1-wire temperature sensors.
 
-Sure it's a bitstream, but that does not imply the impossibility of 
-reading data in in an word-aligned manner.
+Signed-off-by: Raphael Assenat <raph@8d.com>
 
-Maybe cache-aligned is ambitious, because of resultant code bloat, but 
-machine-int-aligned is doable and reasonable.
-
-	Jeff
-
-
-
-
+diff --git a/Documentation/w1/slaves/w1_therm b/Documentation/w1/slaves/w1_therm
+index 0403aaa..874a8ca 100644
+--- a/Documentation/w1/slaves/w1_therm
++++ b/Documentation/w1/slaves/w1_therm
+@@ -3,6 +3,7 @@ Kernel driver w1_therm
+ 
+ Supported chips:
+   * Maxim ds18*20 based temperature sensors.
++  * Maxim ds1825 based temperature sensors.
+ 
+ Author: Evgeniy Polyakov <johnpol@2ka.mipt.ru>
+ 
+@@ -15,6 +16,7 @@ supported family codes:
+ W1_THERM_DS18S20	0x10
+ W1_THERM_DS1822		0x22
+ W1_THERM_DS18B20	0x28
++W1_THERM_DS1825		0x3B
+ 
+ Support is provided through the sysfs w1_slave file.  Each open and
+ read sequence will initiate a temperature conversion then provide two
+diff --git a/drivers/w1/slaves/w1_therm.c b/drivers/w1/slaves/w1_therm.c
+index ff29ae7..b34bf1d 100644
+--- a/drivers/w1/slaves/w1_therm.c
++++ b/drivers/w1/slaves/w1_therm.c
+@@ -91,6 +91,11 @@ static struct w1_family w1_therm_family_DS28EA00 = {
+ 	.fops = &w1_therm_fops,
+ };
+ 
++static struct w1_family w1_therm_family_DS1825 = {
++	.fid = W1_THERM_DS1825,
++	.fops = &w1_therm_fops,
++};
++
+ struct w1_therm_family_converter
+ {
+ 	u8			broken;
+@@ -120,6 +125,10 @@ static struct w1_therm_family_converter w1_therm_families[] = {
+ 		.f		= &w1_therm_family_DS28EA00,
+ 		.convert	= w1_DS18B20_convert_temp
+ 	},
++	{
++		.f		= &w1_therm_family_DS1825,
++		.convert	= w1_DS18B20_convert_temp
++	}
+ };
+ 
+ static inline int w1_DS18B20_convert_temp(u8 rom[9])
+diff --git a/drivers/w1/w1_family.h b/drivers/w1/w1_family.h
+index 874aeb0..b998c30 100644
+--- a/drivers/w1/w1_family.h
++++ b/drivers/w1/w1_family.h
+@@ -38,6 +38,7 @@
+ #define W1_EEPROM_DS2431	0x2D
+ #define W1_FAMILY_DS2760	0x30
+ #define W1_FAMILY_DS2780	0x32
++#define W1_THERM_DS1825		0x3B
+ #define W1_FAMILY_DS2781	0x3D
+ #define W1_THERM_DS28EA00	0x42
+ 
