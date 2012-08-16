@@ -1,107 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2HPDWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 23:22:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33807 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab2HPDWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 23:22:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,776,1336374000"; 
-   d="scan'208";a="181621297"
-Message-ID: <502C676A.7050001@intel.com>
-Date: Thu, 16 Aug 2012 11:22:18 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Borislav Petkov <bp@alien8.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+	id S1754139Ab2HPDhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 23:37:08 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:46966 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab2HPDhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 23:37:04 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>  <20120815131514.GC4409@x1.osrc.amd.com> <1345041802.31459.94.camel@twins>
-In-Reply-To: <1345041802.31459.94.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+	<1344517279-30646-7-git-send-email-glommer@parallels.com>
+	<50254475.4000201@jp.fujitsu.com> <5028BA9E.7000302@parallels.com>
+	<xr93ipcl9u7x.fsf@gthelen.mtv.corp.google.com>
+	<502B6956.5030508@parallels.com>
+	<xr93wr109kke.fsf@gthelen.mtv.corp.google.com>
+	<502BD5AF.301@parallels.com>
+	<xr93lihg9j0q.fsf@gthelen.mtv.corp.google.com>
+	<502BF916.10902@parallels.com>
+Date: Wed, 15 Aug 2012 20:37:01 -0700
+In-Reply-To: <502BF916.10902@parallels.com> (Glauber Costa's message of "Wed,
+	15 Aug 2012 23:31:34 +0400")
+Message-ID: <xr93zk5vecde.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 10:43 PM, Peter Zijlstra wrote:
+On Wed, Aug 15 2012, Glauber Costa wrote:
 
-> On Wed, 2012-08-15 at 15:15 +0200, Borislav Petkov wrote:
->> On Wed, Aug 15, 2012 at 01:05:38PM +0200, Peter Zijlstra wrote:
->>> On Mon, 2012-08-13 at 20:21 +0800, Alex Shi wrote:
->>>> Since there is no power saving consideration in scheduler CFS, I has a
->>>> very rough idea for enabling a new power saving schema in CFS.
+> On 08/15/2012 09:12 PM, Greg Thelen wrote:
+>> On Wed, Aug 15 2012, Glauber Costa wrote:
+>> 
+>>> On 08/15/2012 08:38 PM, Greg Thelen wrote:
+>>>> On Wed, Aug 15 2012, Glauber Costa wrote:
+>>>>
+>>>>> On 08/14/2012 10:58 PM, Greg Thelen wrote:
+>>>>>> On Mon, Aug 13 2012, Glauber Costa wrote:
+>>>>>>
+>>>>>>>>>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>>>>>>>>>> +	size = (1 << order) << PAGE_SHIFT;
+>>>>>>>>>> +	memcg_uncharge_kmem(memcg, size);
+>>>>>>>>>> +	mem_cgroup_put(memcg);
+>>>>>>>> Why do we need ref-counting here ? kmem res_counter cannot work as
+>>>>>>>> reference ?
+>>>>>>> This is of course the pair of the mem_cgroup_get() you commented on
+>>>>>>> earlier. If we need one, we need the other. If we don't need one, we
+>>>>>>> don't need the other =)
+>>>>>>>
+>>>>>>> The guarantee we're trying to give here is that the memcg structure will
+>>>>>>> stay around while there are dangling charges to kmem, that we decided
+>>>>>>> not to move (remember: moving it for the stack is simple, for the slab
+>>>>>>> is very complicated and ill-defined, and I believe it is better to treat
+>>>>>>> all kmem equally here)
+>>>>>>
+>>>>>> By keeping memcg structures hanging around until the last referring kmem
+>>>>>> page is uncharged do such zombie memcg each consume a css_id and thus
+>>>>>> put pressure on the 64k css_id space?  I imagine in pathological cases
+>>>>>> this would prevent creation of new cgroups until these zombies are
+>>>>>> dereferenced.
+>>>>>
+>>>>> Yes, but although this patch makes it more likely, it doesn't introduce
+>>>>> that. If the tasks, for instance, grab a reference to the cgroup dentry
+>>>>> in the filesystem (like their CWD, etc), they will also keep the cgroup
+>>>>> around.
+>>>>
+>>>> Fair point.  But this doesn't seems like a feature.  It's probably not
+>>>> needed initially, but what do you think about creating a
+>>>> memcg_kernel_context structure which is allocated when memcg is
+>>>> allocated?  Kernel pages charged to a memcg would have
+>>>> page_cgroup->mem_cgroup=memcg_kernel_context rather than memcg.  This
+>>>> would allow the mem_cgroup and its css_id to be deleted when the cgroup
+>>>> is unlinked from cgroupfs while allowing for the active kernel pages to
+>>>> continue pointing to a valid memcg_kernel_context.  This would be a
+>>>> reference counted structure much like you are doing with memcg.  When a
+>>>> memcg is deleted the memcg_kernel_context would be linked into its
+>>>> surviving parent memcg.  This would avoid needing to visit each kernel
+>>>> page.
 >>>
->>> Adding Thomas, he always delights poking holes in power schemes.
+>>> You need more, you need at the res_counters to stay around as well. And
+>>> probably other fields.
+>> 
+>> I am not sure the res_counters would need to stay around.  Once a
+>> memcg_kernel_context has been reparented, then any future kernel page
+>> uncharge calls will uncharge the parent res_counter.
+>
+> Well, if you hold the memcg due to a reference, like in the dentry case,
+> then fine. But if this is a dangling charge, as will be the case with
+> the slab, then you have to uncharge it.
+>
+> An arbitrary number of parents might have been deleted as well, so you
+> need to transverse them all until you reach a live parent to uncharge from.
+
+I was thinking that each time a memcg is deleted move the
+memcg_kernel_context from the victim memcg to its parent.  When moving,
+also update the context to refer to the parent and link context to
+parent:
+  for_each_kernel_context(kernel_context, memcg) {
+    kernel_context->memcg = memcg->parent;
+    list_add(&kernel_context->list, &memcg->parent->kernel_contexts);
+  }
+
+Whenever pages referring to a memcg_kernel_context are uncharged they
+will uncharge the nearest surviving parent memcg.
+
+> To do that, your counters have to be still alive.
+
+The counters of nearest surviving parent will be alive and pointed to by
+memcg_kernel_context->memcg.
+
+>>> So my fear here is that as you add fields to that structure, you can
+>>> defeat a bit the goal of reducing memory consumption. Still leaves the
+>>> css space, yes. But by doing this we can introduce some subtle bugs by
+>>> having a field in the wrong structure.
 >>>
->>>> It bases on the following assumption:
->>>> 1, If there are many task crowd in system, just let few domain cpus
->>>> running and let other cpus idle can not save power. Let all cpu take the
->>>> load, finish tasks early, and then get into idle. will save more power
->>>> and have better user experience.
->>>
->>> I'm not sure this is a valid assumption. I've had it explained to me by
->>> various people that race-to-idle isn't always the best thing. It has to
->>> do with the cost of switching power states and the duration of execution
->>> and other such things.
->>
->> I think what he means here is that we might want to let all cores on
->> the node (i.e., domain) finish and then power down the whole node which
->> should bring much more power savings than letting a subset of the cores
->> idle. Alex?
-> 
-> Sure we can do that.
-> 
->>> So I'd leave the currently implemented scheme as performance, and I
->>> don't think the above describes the current state.
->>>
->>>> 			} else if (schedule policy == power)
->>>> 				move tasks from busiest group to
->>>> 				idlest group until busiest is just full
->>>> 				of capacity.
->>>> 				//the busiest group can balance
->>>> 				//internally after next time LB,
->>>
->>> There's another thing we need to do, and that is collect tasks in a
->>> minimal amount of power domains.
->>
->> Yep.
->>
->> Btw, what heuristic would tell here when a domain overflows and another
->> needs to get woken? Combined load of the whole domain?
->>
->> And if I absolutely positively don't want a node to wake up, do I
->> hotplug its cores off or are we going to have a way to tell the
->> scheduler to overcommit the non-idle domains and spread the tasks only
->> among them.
->>
->> I'm thinking of short bursts here where it would be probably beneficial
->> to let the tasks rather wait runnable for a while then wake up the next
->> node and waste power...
-> 
-> I was thinking of a utilization measure made of per-task weighted
-> runnable averages. This should indeed cover that case and we'll overflow
-> when on average there is no (significant) idle time over a period longer
-> than the averaging period.
+>>> Did you observe that to be a big problem in your systems?
+>> 
+>> No I have not seen this yet.  But our past solutions have reparented
+>> kmem_cache's to root memcg so we have been avoiding zombie memcg.  My
+>> concerns with your approach are just a suspicion because we have been
+>> experimenting with accounting of even more kernel memory (e.g. vmalloc,
+>> kernel stacks, page tables).  As the scope of such accounting grows the
+>> chance of long lived charged pages grows and thus the chance of zombies
+>> which exhaust the css_id space grows.
+>
+> Well, since we agree this can all be done under the hood, I'd say let's
+> wait until a problem actually exists, since the solution is likely to be
+> a bit convoluted...
+>
+> I personally believe that if won't have a lot of task movement, most of
+> the data will go away as the cgroup dies. The remainder shouldn't be too
+> much to hold it in memory for a lot of time. This is of course assuming
+> a real use case, not an adversarial scenario, which is quite easy to
+> come up with: just create a task, hold a bunch of kmem, move the task
+> away, delete the cgroup, etc.
+>
+> That said, nothing stops us to actively try to create a scenario that
+> would demonstrate such a problem.
 
-
-It's also a good idea. :)
-
-> 
-> Anyway, I'm not too set on this and I'm very sure we can tweak this ad
-> infinitum, so starting with something relatively simple that works for
-> most is preferred.
-> 
-> As already stated, I think some of the Linaro people actually played
-> around with something like this based on PJTs patches.
-
-
-Vincent, would you like to introduce more?
+With our in-house per-memcg slab accounting (similar to what's discussed
+here), we're seeing a few slab allocations (mostly radix_tree_node) that
+survive a long time after memcg deletion.  This isn't meant as criticism
+of this patch series, just an fyi that I expect there will be scenarios
+where some dead kmem caches will live for a long time.  Though I think
+that in your patches a dead kmem cache does not hold reference to the
+memcg.
