@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab2HPMpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 08:45:18 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58750 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab2HPMpQ (ORCPT
+	id S1755699Ab2HPMpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 08:45:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44912 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754965Ab2HPMpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 08:45:16 -0400
+	Thu, 16 Aug 2012 08:45:51 -0400
+Date: Thu, 16 Aug 2012 13:45:47 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>,
+        Michael Krufky <mkrufky@kernellabs.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V3 1/8] DA9058 MFD core driver
+Message-ID: <20120816124547.GJ15365@opensource.wolfsonmicro.com>
+References: <201208151518.q7FFIN9v011639@latitude.olech.com>
+ <20120815185316.GG15365@opensource.wolfsonmicro.com>
+ <24DF37198A1E704D9811D8F72B87EB51032C6702@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-In-Reply-To: <1344866141-27906-1-git-send-email-mhocko@suse.cz>
-References: <1344866141-27906-1-git-send-email-mhocko@suse.cz>
-Date: Thu, 16 Aug 2012 20:45:15 +0800
-Message-ID: <CAJd=RBAwg0k0=8zmRh6jwAYe7Msmxw=HE8qs3YjwXrtsezr78Q@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb: do not use vma_hugecache_offset for vma_prio_tree_foreach
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51032C6702@NB-EX-MBX02.diasemi.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 9:55 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> 0c176d5 (mm: hugetlb: fix pgoff computation when unmapping page
-> from vma) fixed pgoff calculation but it has replaced it by
-> vma_hugecache_offset which is not approapriate for offsets used for
-> vma_prio_tree_foreach because that one expects index in page units
-> rather than in huge_page_shift.
-> Using vma_hugecache_offset is not incorrect because the pgoff will fit
-> into the same vmas but it is confusing so the standard PAGE_SHIFT based
-> index calculation is used instead.
->
-> Cc: Hillf Danton <dhillf@gmail.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
+On Thu, Aug 16, 2012 at 11:34:56AM +0000, Opensource [Anthony Olech] wrote:
 
-Thanks
+Fix your mail configuration to word wrap at something less than 80
+columns within paragraphs, your mails are currently extremely hard to
+read.
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+> The only other interpretation of your comment is that the h/w IRQ line setup code must be done
+> in the machine driver, in my case for testing is arch/arm/mach-s3c64xx/mach-smdk6410.c
+> But that view is contricted by the init call-backs from the wm8350 and wm1192 drivers.
 
+This board driver is not a modern driver, configuration callbacks used
+to be used but this is no longer be something that's needed.
 
->  mm/hugetlb.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index c39e4be..a74ea31 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2462,7 +2462,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
->          * from page cache lookup which is in HPAGE_SIZE units.
->          */
->         address = address & huge_page_mask(h);
-> -       pgoff = vma_hugecache_offset(h, vma, address);
-> +       pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-> +                       vma->vm_pgoff;
->         mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
->
->         /*
-> --
-> 1.7.10.4
->
+> I am confused, but it does make sense to do the GPIO --> IRQ initialization in the machine driver,
+> so I will try to do that. But who would be responsible for changing the wm8350 and wm1192 drivers
+> to also follow that philosophy?
+
+If someone has the time and enthusiasm it might be worthwhile, but it's
+not clear that this is the case.
