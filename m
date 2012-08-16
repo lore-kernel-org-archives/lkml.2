@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab2HPKkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:40:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13777 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab2HPKkR (ORCPT
+	id S1755120Ab2HPKkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:40:46 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57772 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab2HPKko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:40:17 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-cb-502cce0f5de5
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Hideki EIRAKU'" <hdk@igel.co.jp>
-Cc: laurent.pinchart@ideasonboard.com, linux@arm.linux.org.uk,
-        pawel@osciak.com, kyungmin.park@samsung.com, mchehab@infradead.org,
-        FlorianSchandinat@gmx.de, perex@perex.cz, tiwai@suse.de,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        alsa-devel@alsa-project.org, matsu@igel.co.jp, dhobsong@igel.co.jp
-References: <1344246924-32620-1-git-send-email-hdk@igel.co.jp>
- <1344246924-32620-4-git-send-email-hdk@igel.co.jp>
- <012701cd74ac$6a617060$3f245120$%szyprowski@samsung.com>
- <20120816.191358.127675610.hdk@igel.co.jp>
-In-reply-to: <20120816.191358.127675610.hdk@igel.co.jp>
-Subject: RE: [PATCH v3 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent
- if available
-Date: Thu, 16 Aug 2012 12:39:57 +0200
-Organization: SPRC
-Message-id: <015b01cd7b9b$8010e2b0$8032a810$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac17l99JsboOf4qRTvSAr8cw/axfbwAA01hA
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jAV3+czoBBr0PNCxO9H1gtbi8aw6b
-	Rc+GrawOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZcw63M5ccJ234tb85ewNjOu5uxg5OSQETCS2
-	HDzDBGGLSVy4t56ti5GLQ0hgEaPEpnfnmCCcn4wSTxd2gVWxCRhKdL3tYgOxRQRUJJZ8PcMK
-	YjML7GCWePK3DqLhNqNEz55bQAkODk4Bc4nP/bwgNcICsRK9B/eygNgsAqoS659tYgMp4RcQ
-	kpg4SwEkzCvgIrFoUwcLhC0o8WPyPRaI8VoS63ceZ4Kw5SU2r3nLDNIqIaAu8eivLsQ1RhKv
-	50yEukZE4m7Dc9YJjMKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/
-	dxMjOOSfSe9gXNVgcYhRgINRiYf3wH/tACHWxLLiytxDjBIczEoivLdrdQKEeFMSK6tSi/Lj
-	i0pzUosPMUpzsCiJ85p4f/UXEkhPLEnNTk0tSC2CyTJxcEo1MPIL3w753uo46WC1Qvy709fZ
-	xOWkTV+0LX+4MmPL4ywu9VmfnWPM7/DqLH4WYnHI4MPpMp9AkdB70+RXrDcLUasIKknXWmPz
-	aHFlkKTTnQfPhSf8cZOK3qJX+LSjIzWvI8bgqwvD1K8bW/aXvfEvEVrM83itwKv9f+YaXXUx
-	/3FJe/G/2+Yct5VYijMSDbWYi4oTAcwx4uZ1AgAA
-X-TM-AS-MML: No
+	Thu, 16 Aug 2012 06:40:44 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: sedat.dilek@gmail.com
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
+Subject: Re: [PATCH 08/13] fs: limit filesystem stacking depth
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+	<1345045700-9062-9-git-send-email-miklos@szeredi.hu>
+	<CA+icZUX32x5qiyxhAakxvo0Y4ypEA=DiurP5WCxbYmFi07+O4A@mail.gmail.com>
+Date: Thu, 16 Aug 2012 12:42:03 +0200
+In-Reply-To: <CA+icZUX32x5qiyxhAakxvo0Y4ypEA=DiurP5WCxbYmFi07+O4A@mail.gmail.com>
+	(Sedat Dilek's message of "Thu, 16 Aug 2012 10:02:11 +0200")
+Message-ID: <87sjbnce4k.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Sedat Dilek <sedat.dilek@gmail.com> writes:
 
-On Thursday, August 16, 2012 12:14 PM Hideki EIRAKU wrote:
+> On Wed, Aug 15, 2012 at 5:48 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>>
+>> Add a simple read-only counter to super_block that indicates deep this
+>> is in the stack of filesystems.  Previously ecryptfs was the only
+>> stackable filesystem and it explicitly disallowed multiple layers of
+>> itself.
+>>
+>> Overlayfs, however, can be stacked recursively and also may be stacked
+>> on top of ecryptfs or vice versa.
+>>
+>> To limit the kernel stack usage we must limit the depth of the
+>> filesystem stack.  Initially the limit is set to 2.
+>>
+>
+> Hi,
+>
+> I have tested OverlayFS for a long time with "fs-stack-depth=3".
+> The original OverlayFS test-case script  from Jordi was slightly
+> modified (see "testcase-ovl-v3.sh").
+> I have sent my test-results to Andy and Jordi (tested with the
+> patchset from Andy against Linux-v3.4 [1] with Ext4-FS).
+> The attached test-case script *requires* "fs-stack-depth=3" to run
+> properly (patch attached).
+>
+> So, I have 2 questions:
+>
+> [1] FS-stack-limitation
+>
+> Is a "fs-stack-depth>=2" (like "3") critical?
+> Is your setting to "2" just a defensive (and initial) one?
+> Can you explain your choice a bit more as ecryptFS is involved in this
+> limitation, too.
 
-> From: Marek Szyprowski <m.szyprowski@samsung.com>
-> Subject: RE: [PATCH v3 3/4] media: videobuf2-dma-contig: use dma_mmap_coherent if available
-> Date: Tue, 07 Aug 2012 16:53:25 +0200
-> 
-> > I'm sorry for bringing this issue now, once you have already created v3 of your
-> > patches, but similar patch has been already proposed some time ago. It is already
-> > processed together with general videobuf2-dma-contig redesign and dma-buf extensions
-> > by Tomasz Stanislawski.
-> >
-> > See post http://thread.gmane.org/gmane.comp.video.dri.devel/70402/focus=49461 and
-> > http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/49438
-> >
-> > It doesn't use conditional code inside videobuf2 allocator and rely entirely on
-> > dma-mapping subsystem to provide a working dma_mmap_coherent/writecombine/attrs()
-> > function. When it was posted, it relied on the dma-mapping extensions, which now
-> > have been finally merged to v3.6-rc1. Now I wonder if there are any architectures,
-> > which don't use dma_map_ops based dma-mapping framework, which might use
-> > videobuf2-dma-conting module.
-> 
-> Thank you for telling me about videobuf2-dma-contig and v3.6-rc1.  The
-> videobuf2-dma-contig patch I sent is now unnecessary.  So I will
-> remove the patch.  I will remove the patch defining
-> ARCH_HAS_DMA_MMAP_COHERENT too because the v3.6-rc1 kernel has generic
-> dma_mmap_coherent() API for every architecture.
+If directly stacking filesystems like this on top of each other
+(ecryptfs is currently the only filesystem that does this in mainline)
+then the call chain can get too long and the kernel stack overflow.
 
-Just to let you know - Tomasz has posted an updated version of the dma-buf/vb2-dma-contig
-patches:
-
-http://www.spinics.net/lists/linux-media/msg51768.html
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Yes, setting it to 2 is defensive, it would need more stack depth
+analysis to see what an acceptable number would be.
 
 
+> [2] Test-Case/Use-Case scripts
+>
+> It would be *very very very* helpful if you could provide or even ship
+> in the Linux-kernel a test-case/use-case script, Thanks!
+
+Sure, I could add Andy's test script under the tools/ directory.  But I
+don't understand why exactly it needs the stacking depth to be
+increased.
+
+Thanks,
+Miklos
