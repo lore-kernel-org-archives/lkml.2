@@ -1,87 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab2HPKI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 06:08:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62859 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab2HPKIz (ORCPT
+	id S1756792Ab2HPKKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 06:10:01 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52363 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab2HPKJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 06:08:55 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: NeilBrown <neilb@suse.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com
-Subject: Re: [PATCH 01/13] vfs: add i_op->open()
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
-	<1345045700-9062-2-git-send-email-miklos@szeredi.hu>
-	<20120815172150.GA25062@fieldses.org>
-	<20120816062832.36a48cb0@notabene.brown>
-Date: Thu, 16 Aug 2012 12:10:16 +0200
-In-Reply-To: <20120816062832.36a48cb0@notabene.brown> (NeilBrown's message of
-	"Thu, 16 Aug 2012 06:28:32 +1000")
-Message-ID: <871uj7du5z.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 16 Aug 2012 06:09:58 -0400
+Message-ID: <502CC572.4040202@gmail.com>
+Date: Thu, 16 Aug 2012 12:03:30 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: bharrosh@panasas.com, bhalevy@tonian.com, jack@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, adilger.kernel@dilger.ca,
+        tytso@mit.edu, hirofumi@mail.parknet.co.jp,
+        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+        hch@infradead.org, dushistov@mail.ru, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 5/8] fat: remove lock/unlock super
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NeilBrown <neilb@suse.de> writes:
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-> On Wed, 15 Aug 2012 13:21:50 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-> wrote:
->
->> On Wed, Aug 15, 2012 at 05:48:08PM +0200, Miklos Szeredi wrote:
->> > From: Miklos Szeredi <mszeredi@suse.cz>
->> > 
->> > Add a new inode operation i_op->open().  This is for stacked
->> 
->> Shouldn't that "->open()" be "->dentry_open()" ?
->> 
->> --b.
->> 
->> > filesystems that want to return a struct file from a different
->> > filesystem.
->> > 
->> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->> > ---
->> >  Documentation/filesystems/Locking |    2 ++
->> >  Documentation/filesystems/vfs.txt |    7 +++++++
->> >  fs/namei.c                        |    9 ++++++---
->> >  fs/open.c                         |   23 +++++++++++++++++++++--
->> >  include/linux/fs.h                |    2 ++
->> >  5 files changed, 38 insertions(+), 5 deletions(-)
->> > 
->> > diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
->> > index 0f103e3..d222b6a 100644
->> > --- a/Documentation/filesystems/Locking
->> > +++ b/Documentation/filesystems/Locking
->> > @@ -64,6 +64,7 @@ prototypes:
->> >  	int (*atomic_open)(struct inode *, struct dentry *,
->> >  				struct file *, unsigned open_flag,
->> >  				umode_t create_mode, int *opened);
->> > +	int (*dentry_open)(struct dentry *, struct file *, const struct cred *);
->> >  
->> >  locking rules:
->> >  	all may block
->> > @@ -92,6 +93,7 @@ removexattr:	yes
->> >  fiemap:		no
->> >  update_time:	no
->> >  atomic_open:	yes
->> > +open:		no
->> >  
->
-> and that last line should be
->     +dentry_open:       no
-> ??
+Replaced lock and unlock super with a new fs mutex s_lock.
 
-Yes.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
 
-Thanks,
-Miklos
+diff -Nurp linux-3.6-rc1-orig/fs/fat/dir.c linux-3.6-rc1/fs/fat/dir.c
+--- linux-3.6-rc1-orig/fs/fat/dir.c	2012-08-16 09:37:32.000000000 +0200
++++ linux-3.6-rc1/fs/fat/dir.c	2012-08-16 09:57:24.000000000 +0200
+@@ -568,7 +568,7 @@ static int __fat_readdir(struct inode *i
+ 	int short_len = 0, fill_len = 0;
+ 	int ret = 0;
+ 
+-	lock_super(sb);
++	mutex_lock(&sbi->s_lock);
+ 
+ 	cpos = filp->f_pos;
+ 	/* Fake . and .. for the root directory. */
+@@ -689,7 +689,7 @@ fill_failed:
+ 	if (unicode)
+ 		__putname(unicode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&sbi->s_lock);
+ 	return ret;
+ }
+ 
+diff -Nurp linux-3.6-rc1-orig/fs/fat/fat.h linux-3.6-rc1/fs/fat/fat.h
+--- linux-3.6-rc1-orig/fs/fat/fat.h	2012-08-16 09:37:32.000000000 +0200
++++ linux-3.6-rc1/fs/fat/fat.h	2012-08-16 09:56:36.000000000 +0200
+@@ -69,6 +69,7 @@ struct msdos_sb_info {
+ 	unsigned long root_cluster;  /* first cluster of the root directory */
+ 	unsigned long fsinfo_sector; /* sector number of FAT32 fsinfo */
+ 	struct mutex fat_lock;
++	struct mutex s_lock;
+ 	unsigned int prev_free;      /* previously allocated cluster number */
+ 	unsigned int free_clusters;  /* -1 if undefined */
+ 	unsigned int free_clus_valid; /* is free_clusters valid? */
+diff -Nurp linux-3.6-rc1-orig/fs/fat/inode.c linux-3.6-rc1/fs/fat/inode.c
+--- linux-3.6-rc1-orig/fs/fat/inode.c	2012-08-16 09:37:32.000000000 +0200
++++ linux-3.6-rc1/fs/fat/inode.c	2012-08-16 11:10:46.000000000 +0200
+@@ -634,9 +634,9 @@ static int fat_write_inode(struct inode
+ 	if (inode->i_ino == MSDOS_FSINFO_INO) {
+ 		struct super_block *sb = inode->i_sb;
+ 
+-		lock_super(sb);
++		mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 		err = fat_clusters_flush(sb);
+-		unlock_super(sb);
++		mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	} else
+ 		err = __fat_write_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+ 
+@@ -762,7 +762,7 @@ static struct dentry *fat_get_parent(str
+ 	struct inode *inode;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = fat_get_dotdot_entry(child->d_inode, &bh, &de, &i_pos);
+ 	if (err) {
+@@ -774,7 +774,7 @@ static struct dentry *fat_get_parent(str
+ 
+ 	parent = d_obtain_alias(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return parent;
+ }
+@@ -1332,6 +1332,7 @@ int fat_fill_super(struct super_block *s
+ 		b = (struct fat_boot_sector *) bh->b_data;
+ 	}
+ 
++	mutex_init(&sbi->s_lock);
+ 	sbi->cluster_size = sb->s_blocksize * sbi->sec_per_clus;
+ 	sbi->cluster_bits = ffs(sbi->cluster_size) - 1;
+ 	sbi->fats = b->fats;
+diff -Nurp linux-3.6-rc1-orig/fs/fat/namei_msdos.c linux-3.6-rc1/fs/fat/namei_msdos.c
+--- linux-3.6-rc1-orig/fs/fat/namei_msdos.c	2012-08-16 09:37:32.000000000 +0200
++++ linux-3.6-rc1/fs/fat/namei_msdos.c	2012-08-16 11:12:25.000000000 +0200
+@@ -208,7 +208,7 @@ static struct dentry *msdos_lookup(struc
+ 	struct inode *inode;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = msdos_find(dir, dentry->d_name.name, dentry->d_name.len, &sinfo);
+ 	switch (err) {
+ 	case -ENOENT:
+@@ -221,7 +221,7 @@ static struct dentry *msdos_lookup(struc
+ 	default:
+ 		inode = ERR_PTR(err);
+ 	}
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return d_splice_alias(inode, dentry);
+ }
+ 
+@@ -273,7 +273,7 @@ static int msdos_create(struct inode *di
+ 	unsigned char msdos_name[MSDOS_NAME];
+ 	int err, is_hid;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(dentry->d_name.name, dentry->d_name.len,
+ 				msdos_name, &MSDOS_SB(sb)->options);
+@@ -302,7 +302,7 @@ static int msdos_create(struct inode *di
+ 
+ 	d_instantiate(dentry, inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 	return err;
+@@ -316,7 +316,7 @@ static int msdos_rmdir(struct inode *dir
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	/*
+ 	 * Check whether the directory is not in use, then check
+ 	 * whether it is empty.
+@@ -337,7 +337,7 @@ static int msdos_rmdir(struct inode *dir
+ 	inode->i_ctime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 
+@@ -354,7 +354,7 @@ static int msdos_mkdir(struct inode *dir
+ 	struct timespec ts;
+ 	int err, is_hid, cluster;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(dentry->d_name.name, dentry->d_name.len,
+ 				msdos_name, &MSDOS_SB(sb)->options);
+@@ -392,14 +392,14 @@ static int msdos_mkdir(struct inode *dir
+ 
+ 	d_instantiate(dentry, inode);
+ 
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	fat_flush_inodes(sb, dir, inode);
+ 	return 0;
+ 
+ out_free:
+ 	fat_free_clusters(dir, cluster);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -411,7 +411,7 @@ static int msdos_unlink(struct inode *di
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = msdos_find(dir, dentry->d_name.name, dentry->d_name.len, &sinfo);
+ 	if (err)
+ 		goto out;
+@@ -423,7 +423,7 @@ static int msdos_unlink(struct inode *di
+ 	inode->i_ctime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, dir, inode);
+ 
+@@ -607,7 +607,7 @@ static int msdos_rename(struct inode *ol
+ 	unsigned char old_msdos_name[MSDOS_NAME], new_msdos_name[MSDOS_NAME];
+ 	int err, is_hid;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = msdos_format_name(old_dentry->d_name.name,
+ 				old_dentry->d_name.len, old_msdos_name,
+@@ -626,7 +626,7 @@ static int msdos_rename(struct inode *ol
+ 	err = do_msdos_rename(old_dir, old_msdos_name, old_dentry,
+ 			      new_dir, new_msdos_name, new_dentry, is_hid);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	if (!err)
+ 		err = fat_flush_inodes(sb, old_dir, new_dir);
+ 	return err;
+diff -Nurp linux-3.6-rc1-orig/fs/fat/namei_vfat.c linux-3.6-rc1/fs/fat/namei_vfat.c
+--- linux-3.6-rc1-orig/fs/fat/namei_vfat.c	2012-08-16 09:37:32.000000000 +0200
++++ linux-3.6-rc1/fs/fat/namei_vfat.c	2012-08-16 11:13:50.000000000 +0200
+@@ -721,7 +721,7 @@ static struct dentry *vfat_lookup(struct
+ 	struct dentry *alias;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = vfat_find(dir, &dentry->d_name, &sinfo);
+ 	if (err) {
+@@ -752,13 +752,13 @@ static struct dentry *vfat_lookup(struct
+ 		if (!S_ISDIR(inode->i_mode))
+ 			d_move(alias, dentry);
+ 		iput(inode);
+-		unlock_super(sb);
++		mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 		return alias;
+ 	} else
+ 		dput(alias);
+ 
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	dentry = d_splice_alias(inode, dentry);
+ 	if (dentry)
+@@ -766,7 +766,7 @@ out:
+ 	return dentry;
+ 
+ error:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return ERR_PTR(err);
+ }
+ 
+@@ -779,7 +779,7 @@ static int vfat_create(struct inode *dir
+ 	struct timespec ts;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	ts = CURRENT_TIME_SEC;
+ 	err = vfat_add_entry(dir, &dentry->d_name, 0, 0, &ts, &sinfo);
+@@ -800,7 +800,7 @@ static int vfat_create(struct inode *dir
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -811,7 +811,7 @@ static int vfat_rmdir(struct inode *dir,
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = fat_dir_empty(inode);
+ 	if (err)
+@@ -829,7 +829,7 @@ static int vfat_rmdir(struct inode *dir,
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ }
+@@ -841,7 +841,7 @@ static int vfat_unlink(struct inode *dir
+ 	struct fat_slot_info sinfo;
+ 	int err;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	err = vfat_find(dir, &dentry->d_name, &sinfo);
+ 	if (err)
+@@ -854,7 +854,7 @@ static int vfat_unlink(struct inode *dir
+ 	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
+ 	fat_detach(inode);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ }
+@@ -867,7 +867,7 @@ static int vfat_mkdir(struct inode *dir,
+ 	struct timespec ts;
+ 	int err, cluster;
+ 
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	ts = CURRENT_TIME_SEC;
+ 	cluster = fat_alloc_new_dir(dir, &ts);
+@@ -896,13 +896,13 @@ static int vfat_mkdir(struct inode *dir,
+ 	dentry->d_time = dentry->d_parent->d_inode->i_version;
+ 	d_instantiate(dentry, inode);
+ 
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return 0;
+ 
+ out_free:
+ 	fat_free_clusters(dir, cluster);
+ out:
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 	return err;
+ }
+ 
+@@ -921,7 +921,7 @@ static int vfat_rename(struct inode *old
+ 	old_sinfo.bh = sinfo.bh = dotdot_bh = NULL;
+ 	old_inode = old_dentry->d_inode;
+ 	new_inode = new_dentry->d_inode;
+-	lock_super(sb);
++	mutex_lock(&MSDOS_SB(sb)->s_lock);
+ 	err = vfat_find(old_dir, &old_dentry->d_name, &old_sinfo);
+ 	if (err)
+ 		goto out;
+@@ -997,7 +997,7 @@ out:
+ 	brelse(sinfo.bh);
+ 	brelse(dotdot_bh);
+ 	brelse(old_sinfo.bh);
+-	unlock_super(sb);
++	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+ 
+ 	return err;
+ 
+
