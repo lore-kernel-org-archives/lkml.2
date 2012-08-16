@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab2HPQcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 12:32:54 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:53444 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933025Ab2HPQcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 12:32:52 -0400
-Date: Thu, 16 Aug 2012 12:32:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: Hans de Goede <hdegoede@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
-In-Reply-To: <87obmals06.fsf@tucsk.pomaz.szeredi.hu>
-Message-ID: <Pine.LNX.4.44L0.1208161232001.31195-100000@netrider.rowland.org>
+	id S1030297Ab2HPQf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 12:35:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932996Ab2HPQfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 12:35:53 -0400
+Date: Thu, 16 Aug 2012 19:36:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, gleb@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 0/6] kvm: level irqfd support
+Message-ID: <20120816163658.GA22518@redhat.com>
+References: <20120810223633.809.44188.stgit@bling.home>
+ <20120815142803.GF3068@redhat.com>
+ <1345052191.4683.435.camel@ul30vt.home>
+ <20120815192224.GB5670@redhat.com>
+ <502D1FF4.20506@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502D1FF4.20506@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Miklos Szeredi wrote:
-
-> Yes, this appears to work.  Following patch fixes the suspend oops.
+On Thu, Aug 16, 2012 at 07:29:40PM +0300, Avi Kivity wrote:
+> On 08/15/2012 10:22 PM, Michael S. Tsirkin wrote:
+> > On Wed, Aug 15, 2012 at 11:36:31AM -0600, Alex Williamson wrote:
+> >> On Wed, 2012-08-15 at 17:28 +0300, Michael S. Tsirkin wrote:
+> >> > On Fri, Aug 10, 2012 at 04:37:08PM -0600, Alex Williamson wrote:
+> >> > > v8:
+> >> > > 
+> >> > > Trying a new approach.  Nobody seems to like the internal IRQ
+> >> > > source ID object and the interactions it implies between irqfd
+> >> > > and eoifd, so let's get rid of it.  Instead, simply expose
+> >> > > IRQ source IDs to userspace.  This lets the user be in charge
+> >> > > of freeing them or hanging onto a source ID for later use.
+> >> > 
+> >> > In the end it turns out source ID is an optimization for shared
+> >> > interrupts, isn't it?  Can't we apply the optimization transparently to
+> >> > the user?  E.g. if we have some spare source IDs, allocate them, if we
+> >> > run out, use a shared source ID?
+> >> 
+> >> Let's think about shared source IDs a bit more.  I think it's wrong that
+> >> irqfd uses KVM_USERSPACE_IRQ_SOURCE_ID, but I'm questioning whether all
+> >> irqfd users can share a source ID.  We do not get the logical OR of all
+> >> users by putting them on the same source ID, we get "last set wins".
+> >> KVM_USERSPACE_IRQ_SOURCE_ID is used for multiple inputs because the
+> >> logical OR happens in userspace.  How would we not starve a user if we
+> >> define KVM_IRQFD_SOURCE_ID?  What am I missing?
+> > 
+> > That all irqfds are deasserted on EOI anyway.  So there's no point
+> > to do a logical OR.
+> > 
+> > 
 > 
-> Thanks,
-> Miklos
+> What if a level irqfd shares a line with a KVM_IRQ_LINE ioctl?  Then an
+> EOI can de-assert the irqfd source, but the line is kept high by the
+> last KVM_IRQ_LINE invocation.
+
+Exactly. So 1 ID for userspace and 1 for irqfd.
+
 > 
-> ---
->  drivers/ide/ide-pm.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/ide/ide-pm.c b/drivers/ide/ide-pm.c
-> index 9240609..8d1e32d 100644
-> --- a/drivers/ide/ide-pm.c
-> +++ b/drivers/ide/ide-pm.c
-> @@ -4,7 +4,7 @@
->  
->  int generic_ide_suspend(struct device *dev, pm_message_t mesg)
->  {
-> -	ide_drive_t *drive = dev_get_drvdata(dev);
-> +	ide_drive_t *drive = to_ide_device(dev);
->  	ide_drive_t *pair = ide_get_pair_dev(drive);
->  	ide_hwif_t *hwif = drive->hwif;
->  	struct request *rq;
-> @@ -40,7 +40,7 @@ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
->  
->  int generic_ide_resume(struct device *dev)
->  {
-> -	ide_drive_t *drive = dev_get_drvdata(dev);
-> +	ide_drive_t *drive = to_ide_device(dev);
->  	ide_drive_t *pair = ide_get_pair_dev(drive);
->  	ide_hwif_t *hwif = drive->hwif;
->  	struct request *rq;
-
-And now you can get rid of the useless dev_set_drvdata() call.
-
-Alan Stern
-
+> -- 
+> error compiling committee.c: too many arguments to function
