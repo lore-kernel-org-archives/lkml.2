@@ -1,121 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab2HPNRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 09:17:25 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:57859 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab2HPNRW (ORCPT
+	id S932522Ab2HPNR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 09:17:59 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:58468 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932123Ab2HPNQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 09:17:22 -0400
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: "'Joel Becker'" <jlbec@evilplan.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
- <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
- <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
- <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
-In-reply-to: <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
-Subject: RE: [RFC 0/2] USB gadget - configfs
-Date: Thu, 16 Aug 2012 15:17:12 +0200
-Message-id: <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac16veOhtEySPd/STfK7xUPv+ruBFQA8MCpQ
-Content-language: pl
-X-TM-AS-MML: No
+	Thu, 16 Aug 2012 09:16:21 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] ARM: LPC32xx: Provide DMA filter callbacks via platform data
+Date: Thu, 16 Aug 2012 15:15:33 +0200
+Message-Id: <1345122935-22115-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Joel,
+The SLC and MLC NAND drivers now need their dma_filter callbacks via platform
+data to make them independent of single DMA engine drivers.
 
-Thank you for your reply. Please find comments inline.
+(This also helps fixing build errors of the SLC and MLC drivers when building
+as modules because direct access to AMBA dma filter functions isn't available
+via export.)
 
-On Wednesday, August 15, 2012 10:14 AM Joel Becker wrote:
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-<snip>
+---
 
-> > So, the config item corresponding to the lun becomes depended on during
-> > the write file operation, the same with undepend. Can this be expressed
-> > with configfs_depend/undepend_item()? Your code in fs/configfs/dir.c
-> > contains a warning not to call the configfs_depend_item()
-> > from a configfs callback.
-> > In this case, is store_attribute a configfs callback?
-> 
+Applies to v3.6-rc1
 
-<snip>
+ arch/arm/mach-lpc32xx/phy3250.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-> 	Yes, attribute store is a callback.  So what should you do?
-> This is where my understanding of your setup logic fails me.  At first I
-> thought fsg_bind_function() was the right place, because it is where you
-> expect the LUNs to already be configured.  But it is, in turn, called
-> underneath another configfs callback (ufg_gadget_grp_store_connect()).
-> 	Can you help me understand the userspace steps that are used to
-> set up a gadget?  The way I read the code, there is some software in the
-> gadget that sets up the LUN mappings; that is, the host has no idea
-> "lun01" is backed by a file named "foo".  So, if you had a gadget that
-> just exposed a single LUN, it would have some userspace software at
-> startup that sets fua=1, removable=0, ro=0, file="foo".  At some future
-> point, the host connects to the gadget.  At this point, lun01 is
-> connected to the host, and it had better not disappear.  What part of
-> the code reacts to the host connect?  This is the "open" of the LUN
-> where I think you should be locking out.
-
->From userspace the procedure to set up a gadget looks like this:
-
-(please note that for testing I use _very_ short names like
-G1, C1, F1; these are not mandatory and, as already pointed out
-by some, more descriptive names should be used)
-
-$ insmod g_usb_functions.ko
-$ mount -t configfs none /cfg
-$ mkdir -p /cfg/usb-function-gadget/G1/C1/F1
-$ echo -n <some id> > /cfg/usb-function-gadget/G1/idVendor
-$ echo -n <some id> > /cfg/usb-function-gadget/G1/idProduct
-$ echo -n 0xff > /cfg/usb-function-gadget/G1/bcdDevice
-$ echo Manufacturer > /cfg/usb-function-gadget/G1/iManufacturer
-$ echo 123abc > /cfg/usb-function-gadget/G1/iSerialNumber
-$ echo Gadget > /cfg/usb-function-gadget/G1/iProduct
-
-$ echo -n f_mass_storage > /cfg/usb-function-gadget/G1/C1/F1/name
-$ mkdir /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage
-$ echo -n 1 > /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/luns
-$ mkdir /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0
-$ echo -n /root/file.img >
-/cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0/file
-
-$ echo -n 1 > /cfg/usb-function-gadget/G1/connect
-
-The mapping between luns and their backing files is maintained in
-alloc_fsg_lun,
-f_mass_storage.c; the function needs improvement. The intended logic is not
-to
-allow more than 1 lun of the same name at the same time.
-
-A lun is "opened" on storing the "file" attribute of the lun, it is in
-fsg_lun_store_file, storage_common.c. So, again, this is a configfs
-callback.
-
-On storing the connect attribute, the following happens: a composite driver
-is probed, then all the configurations are iterated over, their functions
-being bound in turn. After the gadget is set up this way, the host notices
-connecting a new mass storage device.
-
-So it seems the only chance to call config_item_depend is in a configfs
-callback. Or is it?
-
-Thanks,
-
-Andrzej
-
-
-
-
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
++++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
+@@ -37,6 +37,8 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/clk.h>
++#include <linux/mtd/lpc32xx_slc.h>
++#include <linux/mtd/lpc32xx_mlc.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -223,6 +225,14 @@ static struct mmci_platform_data lpc32xx
+ 	 * gather, and the MMCI driver doesn't do it this way */
+ };
+ 
++static struct lpc32xx_slc_platform_data lpc32xx_slc_data = {
++	.dma_filter = pl08x_filter_id,
++};
++
++static struct lpc32xx_mlc_platform_data lpc32xx_mlc_data = {
++	.dma_filter = pl08x_filter_id,
++};
++
+ static const struct of_dev_auxdata lpc32xx_auxdata_lookup[] __initconst = {
+ 	OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", &lpc32xx_ssp0_data),
+ 	OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", &lpc32xx_ssp1_data),
+@@ -230,6 +240,10 @@ static const struct of_dev_auxdata lpc32
+ 	OF_DEV_AUXDATA("arm,pl080", 0x31000000, "pl08xdmac", &pl08x_pd),
+ 	OF_DEV_AUXDATA("arm,pl18x", 0x20098000, "20098000.sd",
+ 		       &lpc32xx_mmci_data),
++	OF_DEV_AUXDATA("nxp,lpc3220-slc", 0x20020000, "20020000.flash",
++		       &lpc32xx_slc_data),
++	OF_DEV_AUXDATA("nxp,lpc3220-mlc", 0x200a8000, "200a8000.flash",
++		       &lpc32xx_mlc_data),
+ 	{ }
+ };
+ 
