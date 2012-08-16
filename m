@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab2HPE54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 00:57:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61002 "EHLO mga03.intel.com"
+	id S1753252Ab2HPFAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 01:00:37 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57689 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab2HPE5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 00:57:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,776,1336374000"; 
-   d="scan'208";a="134839801"
-Message-ID: <502C7DC7.8010601@intel.com>
-Date: Thu, 16 Aug 2012 12:57:43 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752807Ab2HPFAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 01:00:35 -0400
+Date: Thu, 16 Aug 2012 10:30:30 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linuxppc-dev@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, michael@ellerman.id.au,
+        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
+Message-ID: <20120816050030.GA12060@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop>
 MIME-Version: 1.0
-To: Rakib Mullick <rakib.mullick@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <CADZ9YHhB_1ZeZM3WOFiz0kcx1ZR9iFO_R=Mst_w=QKXOi4Z9OQ@mail.gmail.com>
-In-Reply-To: <CADZ9YHhB_1ZeZM3WOFiz0kcx1ZR9iFO_R=Mst_w=QKXOi4Z9OQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345066913.11751.4.camel@pasglop>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081605-5930-0000-0000-00000AEC3B23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 10:24 PM, Rakib Mullick wrote:
-
-> On 8/13/12, Alex Shi <alex.shi@intel.com> wrote:
->> Since there is no power saving consideration in scheduler CFS, I has a
->> very rough idea for enabling a new power saving schema in CFS.
->>
->> It bases on the following assumption:
->> 1, If there are many task crowd in system, just let few domain cpus
->> running and let other cpus idle can not save power. Let all cpu take the
->> load, finish tasks early, and then get into idle. will save more power
->> and have better user experience.
->>
-> This assumption indirectly point towards the scheme when performance
-> is enabled, isn't it? Cause you're trying to spread the load equally
-> amongst all the CPUs.
-
-
-It is.
-
+On Thu, Aug 16, 2012 at 07:41:53AM +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2012-08-15 at 18:59 +0200, Oleg Nesterov wrote:
+> > On 07/26, Ananth N Mavinakayanahalli wrote:
+> > >
+> > > From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> > >
+> > > This is the port of uprobes to powerpc. Usage is similar to x86.
+> > 
+> > I am just curious why this series was ignored by powerpc maintainers...
 > 
->>
->> select_task_rq_fair()
->> {
-
-	int powersaving = 0;
-
->> 	for_each_domain(cpu, tmp) {
->> 		if (policy == power && tmp_has_capacity &&
->> 			 tmp->flags & sd_flag) {
->> 			sd = tmp;
->> 			//It is fine to got cpu in the domain
-
-			powersaving = 1;
-
->> 			break;
->> 		}
->> 	}
->>
->> 	while(sd) {
- 		if (policy == power && powersaving == 1)
->> 			find_busiest_and_capable_group()
+> Because it arrived too late for the previous merge window considering my
+> limited bandwidth for reviewing things and that nobody else seems to
+> have reviewed it :-)
 > 
-> I'm not sure what find_busiest_and_capable_group() would really be, it
-> seems it'll find the busiest and capable group, but isn't it a
-> conflict with the first assumption you proposed on your proposal?
+> It's still on track for the next one, and I'm hoping to dedicate most of
+> next week going through patches & doing a powerpc -next.
 
+Thanks Ben!
 
-This pseudo code missed a power saving workable flag , adding it into
-above code should solved your concern.
-
+> > Of course I can not review this code, I know nothing about powerpc,
+> > but the patches look simple/straightforward.
+> > 
+> > Paul, Benjamin?
+> > 
+> > Just one question... Shouldn't arch_uprobe_pre_xol() forbid to probe
+> > UPROBE_SWBP_INSN (at least) ?
+> > 
+> > (I assume that emulate_step() can't handle this case but of course I
+> >  do not understand arch/powerpc/lib/sstep.c)
+> > 
+> > Note that uprobe_pre_sstep_notifier() sets utask->state = UTASK_BP_HIT
+> > without any checks. This doesn't look right if it was UTASK_SSTEP...
+> > 
+> > But again, I do not know what powepc will actually do if we try to
+> > single-step over UPROBE_SWBP_INSN.
 > 
-> Thanks,
-> Rakib.
+> Ananth ?
 
+set_swbp() will return -EEXIST to install_breakpoint if we are trying to
+put a breakpoint on UPROBE_SWBP_INSN. So, the arch agnostic code itself
+takes care of this case... or am I missing something?
+
+However, I see that we need a powerpc specific is_swbp_insn()
+implementation since we will have to take care of all the trap variants.
+
+I will need to update the patches based on changes being made by Oleg
+and Sebastien for the single-step issues. Will incorporate the powerpc
+specific is_swbp_insn() change along with the changes required for the
+single-step part and send out the next version.
+
+Ananth
 
