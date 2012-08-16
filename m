@@ -1,44 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163Ab2HPTVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 15:21:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54198 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab2HPTVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 15:21:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,780,1336374000"; 
-   d="scan'208";a="181619566"
-Message-ID: <502D481B.8010404@linux.intel.com>
-Date: Thu, 16 Aug 2012 12:20:59 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S933167Ab2HPTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 15:22:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44521 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2HPTWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 15:22:05 -0400
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: preeti <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <502C98E8.20800@linux.vnet.ibm.com> <502CFD35.5000801@linux.intel.com> <502D3FB2.7000008@redhat.com>
-In-Reply-To: <502D3FB2.7000008@redhat.com>
-X-Enigmail-Version: 1.4.3
+In-Reply-To: <20120816180732.GA451@polaris.bitmath.org>
+References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
+	<1344807757-2217-10-git-send-email-rydberg@euromail.se>
+	<CAF8JNhLBO72-Rpm7dFWfYLPvbhDZZsm2yOy_7sREnNhTWqZ04w@mail.gmail.com>
+	<20120816180732.GA451@polaris.bitmath.org>
+Date: Thu, 16 Aug 2012 12:22:03 -0700
+Message-ID: <CAF8JNhJ1R68pU3aOCnYC8KvmfDDU7oKhMsvQV5hfRX2qE=X5WA@mail.gmail.com>
+Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/16/2012 11:45 AM, Rik van Riel wrote:
-> 
-> The c-state governor can call the scheduler code before
-> putting a CPU to sleep, to indicate (1) the wakeup latency
-> of the CPU, and (2) whether TLB and/or cache get invalidated.
+On Thu, Aug 16, 2012 at 11:07 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Wed, Aug 15, 2012 at 04:28:17PM -0700, Ping Cheng wrote:
+>> On Sun, Aug 12, 2012 at 2:42 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> > Collect common frame synchronization tasks in a new function,
+>> > input_mt_sync_frame(). Depending on the flags set, it drops
+>> > unseen contacts and performs pointer emulation.
+>> >
+>> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>
+>> I went through the patchset except those for bcm5974. Since there are
+>> changes that affect other drivers, do you plan to update the affected
+>> drivers as well?
+>
+> I am not sure what you mean here? There is a patch with in-kernel api
+> changes, which also changes all drivers using the api. Some of those
+> drivers will benefit from further changes, but that is a different
+> story.
 
-I don't think (2) is useful really; that basically always happens ;-)
+I meant that some new routines require individual MT drivers to be
+updated to adapt to the new implementation.
 
+For example, the new input_mt_init_slots() takes care of the
+__set_bit() functions in one place. That is great. But, it requires
+wacom_wac.c to be updated since it has an interface change. I guess
+there are other drivers calling input_mt_init_slots as well.
+
+I was wondering if you plan to update all drivers after this patchset
+is accepted or if you need us to chime in.
+
+
+>> > +void input_mt_sync_frame(struct input_dev *dev)
+>> > +{
+>> > +       struct input_mt *mt = dev->mt;
+>> > +       struct input_mt_slot *s;
+>> > +
+>> > +       if (!mt)
+>> > +               return;
+>> > +
+>> > +       if (mt->flags & INPUT_MT_DROP_UNUSED) {
+>> > +               for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
+>> > +                       if (s->frame == mt->frame)
+>> > +                               continue;
+>> > +                       input_mt_slot(dev, s - mt->slots);
+>> > +                       input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
+>> > +               }
+>> > +       }
+>> > +
+>> > +       if (mt->flags & INPUT_MT_POINTER)
+>> > +               input_mt_report_pointer_emulation(dev, true);
+>> > +
+>> > +       if (mt->flags & INPUT_MT_DIRECT)
+>> > +               input_mt_report_pointer_emulation(dev, false);
+>> > +
+>> > +       mt->frame++;
+>>
+>> Where do we reset this frame counter?
+>
+> Why would we reset it? It is used in the core to keep track of changes
+> per frame, and may wrap around without issues.
+
+>From what I see, frame/mt is only initialized when driver starts.
+Frame will be increased by MT events while the driver running. If this
+is true, won't it be possible the value gets too large?
+
+I might have missed a detail about frame somewhere in the patchset.
+
+Ping
