@@ -1,98 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226Ab2HPLKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 07:10:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52448 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2HPLKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 07:10:48 -0400
-Date: Thu, 16 Aug 2012 13:10:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: awful kconfig help texts.
-Message-ID: <20120816111044.GA12029@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Thierry Reding <thierry.reding@avionic-design.de>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120731151600.GA19412@redhat.com>
- <20120731170741.GA4735@x1.osrc.amd.com>
- <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751504Ab2HPLL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 07:11:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52772 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2HPLL5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 07:11:57 -0400
+Message-ID: <1345115497.29668.13.camel@twins>
+Subject: Re: [RFC PATCH] perf/x86: Add cpumask for uncore PMU.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, acme <acme@ghostprotocols.net>
+Date: Thu, 16 Aug 2012 13:11:37 +0200
+In-Reply-To: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com>
+References: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 11:54:39AM +0200, Thierry Reding wrote:
-> How does the attached patch look?
+On Mon, 2012-08-06 at 15:35 +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 > 
-> Thierry
+> This RFC patch adds a cpumask file to the uncore pmu sysfs directory.
+> If user doesn't explicitly specify CPU list, perf-stat only collects
+> uncore events on CPUs listed in the cpumask file.
 
-> From cd3199b94e697cccd38766b4a60d2e91474d0539 Mon Sep 17 00:00:00 2001
-> From: Thierry Reding <thierry.reding@avionic-design.de>
-> Date: Thu, 16 Aug 2012 08:01:21 +0200
-> Subject: [PATCH] pwm: Improve Kconfig help text
-> 
-> The Kconfig help text should help the user understand what functionality
-> is provided by an option. This is especially true for new subsystems. An
-> improved help text is provided by this commit in the hopes of clarifying
-> the usefulness of the PWM framework.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Right, seems simple enough.
+
+Stephane, Acme?
+
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 > ---
->  drivers/pwm/Kconfig | 24 ++++++++++++++++++------
->  1 file changed, 18 insertions(+), 6 deletions(-)
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.h |  6 ++++--
+>  tools/perf/builtin-stat.c                     | 30 ++++++++++++++++++---------
+>  tools/perf/util/cpumap.c                      | 22 +++++++++++++-------
+>  tools/perf/util/cpumap.h                      |  2 +-
+>  tools/perf/util/evsel.h                       |  1 +
+>  tools/perf/util/parse-events.c                | 14 +++++++------
+>  tools/perf/util/pmu.c                         | 30 +++++++++++++++++++++++++++
+>  tools/perf/util/pmu.h                         |  1 +
+>  9 files changed, 105 insertions(+), 29 deletions(-)
 > 
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 8fc3808..88ddb9e 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -1,12 +1,24 @@
->  menuconfig PWM
-> -	bool "PWM Support"
-> +	bool "Pulse-Width Modulation (PWM) Support"
->  	depends on !MACH_JZ4740 && !PUV3_PWM
->  	help
-> -	  This enables PWM support through the generic PWM framework.
-> -	  You only need to enable this, if you also want to enable
-> -	  one or more of the PWM drivers below.
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 0a55710..62ec3e6 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
+>  	return ret;
+>  }
+>  
+> +static ssize_t uncore_get_attr_cpumask(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
+> +
+> +	buf[n++] = '\n';
+> +	buf[n] = '\0';
+> +	return n;
+> +}
+> +
+> +static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
+> +
+> +static struct attribute *uncore_pmu_attrs[] = {
+> +	&dev_attr_cpumask.attr,
+> +	NULL,
+> +};
+> +
+> +static struct attribute_group uncore_pmu_attr_group = {
+> +	.attrs = uncore_pmu_attrs,
+> +};
+> +
+>  static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+>  {
+>  	int ret;
+> @@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+>  		free_percpu(type->pmus[i].box);
+>  	kfree(type->pmus);
+>  	type->pmus = NULL;
+> -	kfree(type->attr_groups[1]);
+> -	type->attr_groups[1] = NULL;
+> +	kfree(type->events_group);
+> +	type->events_group = NULL;
+>  }
+>  
+>  static void __init uncore_types_exit(struct intel_uncore_type **types)
+> @@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+>  		for (j = 0; j < i; j++)
+>  			attrs[j] = &type->event_descs[j].attr.attr;
+>  
+> -		type->attr_groups[1] = events_group;
+> +		type->events_group = events_group;
+>  	}
+>  
+> +	type->pmu_group = &uncore_pmu_attr_group;
+>  	type->pmus = pmus;
+>  	return 0;
+>  fail:
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> index 5b81c18..e68a455 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> @@ -369,10 +369,12 @@ struct intel_uncore_type {
+>  	struct intel_uncore_pmu *pmus;
+>  	struct intel_uncore_ops *ops;
+>  	struct uncore_event_desc *event_descs;
+> -	const struct attribute_group *attr_groups[3];
+> +	const struct attribute_group *attr_groups[4];
+>  };
+>  
+> -#define format_group attr_groups[0]
+> +#define pmu_group attr_groups[0]
+> +#define format_group attr_groups[1]
+> +#define events_group attr_groups[2]
+>  
+>  struct intel_uncore_ops {
+>  	void (*init_box)(struct intel_uncore_box *);
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 861f0ae..8b4275c 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -220,6 +220,16 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+>  	evsel->priv = NULL;
+>  }
+>  
+> +static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
+> +{
+> +	return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
+> +}
+> +
+> +static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
+> +{
+> +	return perf_evsel__cpus(evsel)->nr;
+> +}
+> +
+>  static void update_stats(struct stats *stats, u64 val)
+>  {
+>  	double delta;
+> @@ -299,7 +309,7 @@ retry:
+>  		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
+>  
+>  	if (perf_target__has_cpu(&target)) {
+> -		ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+> +		ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel),
+>  					       group, group_fd);
+>  		if (ret)
+>  			goto check_ret;
+> @@ -382,7 +392,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+>  	u64 *count = counter->counts->aggr.values;
+>  	int i;
+>  
+> -	if (__perf_evsel__read(counter, evsel_list->cpus->nr,
+> +	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
+>  			       evsel_list->threads->nr, scale) < 0)
+>  		return -1;
+>  
+> @@ -411,7 +421,7 @@ static int read_counter(struct perf_evsel *counter)
+>  	u64 *count;
+>  	int cpu;
+>  
+> -	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+> +	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>  		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+>  			return -1;
+>  
+> @@ -546,12 +556,12 @@ static int run_perf_stat(int argc __used, const char **argv)
+>  	if (no_aggr) {
+>  		list_for_each_entry(counter, &evsel_list->entries, node) {
+>  			read_counter(counter);
+> -			perf_evsel__close_fd(counter, evsel_list->cpus->nr, 1);
+> +			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
+>  		}
+>  	} else {
+>  		list_for_each_entry(counter, &evsel_list->entries, node) {
+>  			read_counter_aggr(counter);
+> -			perf_evsel__close_fd(counter, evsel_list->cpus->nr,
+> +			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
+>  					     evsel_list->threads->nr);
+>  		}
+>  	}
+> @@ -592,7 +602,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+>  	if (no_aggr)
+>  		sprintf(cpustr, "CPU%*d%s",
+>  			csv_output ? 0 : -4,
+> -			evsel_list->cpus->map[cpu], csv_sep);
+> +			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>  
+>  	fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
+>  
+> @@ -788,7 +798,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+>  	if (no_aggr)
+>  		sprintf(cpustr, "CPU%*d%s",
+>  			csv_output ? 0 : -4,
+> -			evsel_list->cpus->map[cpu], csv_sep);
+> +			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>  	else
+>  		cpu = 0;
+>  
+> @@ -949,14 +959,14 @@ static void print_counter(struct perf_evsel *counter)
+>  	u64 ena, run, val;
+>  	int cpu;
+>  
+> -	for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+> +	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>  		val = counter->counts->cpu[cpu].val;
+>  		ena = counter->counts->cpu[cpu].ena;
+>  		run = counter->counts->cpu[cpu].run;
+>  		if (run == 0 || ena == 0) {
+>  			fprintf(output, "CPU%*d%s%*s%s%*s",
+>  				csv_output ? 0 : -4,
+> -				evsel_list->cpus->map[cpu], csv_sep,
+> +				perf_evsel__cpus(counter)->map[cpu], csv_sep,
+>  				csv_output ? 0 : 18,
+>  				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+>  				csv_sep,
+> @@ -1255,7 +1265,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+>  
+>  	list_for_each_entry(pos, &evsel_list->entries, node) {
+>  		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+> -		    perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
+> +		    perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+>  			goto out_free_fd;
+>  	}
+>  
+> diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+> index adc72f0..2b32ffa 100644
+> --- a/tools/perf/util/cpumap.c
+> +++ b/tools/perf/util/cpumap.c
+> @@ -38,24 +38,19 @@ static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
+>  	return cpus;
+>  }
+>  
+> -static struct cpu_map *cpu_map__read_all_cpu_map(void)
+> +struct cpu_map *cpu_map__read(FILE *file)
+>  {
+>  	struct cpu_map *cpus = NULL;
+> -	FILE *onlnf;
+>  	int nr_cpus = 0;
+>  	int *tmp_cpus = NULL, *tmp;
+>  	int max_entries = 0;
+>  	int n, cpu, prev;
+>  	char sep;
+>  
+> -	onlnf = fopen("/sys/devices/system/cpu/online", "r");
+> -	if (!onlnf)
+> -		return cpu_map__default_new();
 > -
-> -	  If unsure, say N.
-> +	  Generic Pulse-Width Modulation (PWM) support.
+>  	sep = 0;
+>  	prev = -1;
+>  	for (;;) {
+> -		n = fscanf(onlnf, "%u%c", &cpu, &sep);
+> +		n = fscanf(file, "%u%c", &cpu, &sep);
+>  		if (n <= 0)
+>  			break;
+>  		if (prev >= 0) {
+> @@ -95,6 +90,19 @@ static struct cpu_map *cpu_map__read_all_cpu_map(void)
+>  		cpus = cpu_map__default_new();
+>  out_free_tmp:
+>  	free(tmp_cpus);
+> +	return cpus;
+> +}
 > +
-> +	  This framework provides a generic interface to PWM devices
-> +	  within the Linux kernel. On the driver side it provides an API
-> +	  to register and unregister a PWM chip, an abstraction of a PWM
-> +	  controller, that supports one or more PWM devices. Client
-> +	  drivers can request PWM devices and use the generic framework
-> +	  to configure as well as enable and disable them.
+> +static struct cpu_map *cpu_map__read_all_cpu_map(void)
+> +{
+> +	struct cpu_map *cpus = NULL;
+> +	FILE *onlnf;
 > +
-> +	  The new generic framework replaces the legacy PWM framework
-> +	  which allows only a single driver implementing the required
-> +	  API. Not all legacy implementations have been ported to the
-> +	  new framework yet. The new framework provides an API that is
-> +	  backward compatible with the legacy framework so that existing
-> +	  client drivers continue to work as expected.
+> +	onlnf = fopen("/sys/devices/system/cpu/online", "r");
+> +	if (!onlnf)
+> +		return cpu_map__default_new();
 > +
-> +	  If unsure, say no.
+> +	cpus = cpu_map__read(onlnf);
+>  	fclose(onlnf);
+>  	return cpus;
+>  }
+> diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+> index c415185..17b5264 100644
+> --- a/tools/perf/util/cpumap.h
+> +++ b/tools/perf/util/cpumap.h
+> @@ -11,7 +11,7 @@ struct cpu_map {
+>  struct cpu_map *cpu_map__new(const char *cpu_list);
+>  struct cpu_map *cpu_map__dummy_new(void);
+>  void cpu_map__delete(struct cpu_map *map);
+> -
+> +struct cpu_map *cpu_map__read(FILE *file);
+>  size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+>  
+>  #endif /* __PERF_CPUMAP_H */
+> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> index b559929..26c0095 100644
+> --- a/tools/perf/util/evsel.h
+> +++ b/tools/perf/util/evsel.h
+> @@ -65,6 +65,7 @@ struct perf_evsel {
+>  		void		*func;
+>  		void		*data;
+>  	} handler;
+> +	struct cpu_map		*cpus;
+>  	unsigned int		sample_size;
+>  	bool 			supported;
+>  };
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 74a5af4..af07c4f 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -240,7 +240,8 @@ const char *event_type(int type)
+>  }
+>  
+>  static int add_event(struct list_head **_list, int *idx,
+> -		     struct perf_event_attr *attr, char *name)
+> +		     struct perf_event_attr *attr,
+> +		     struct cpu_map *cpus, char *name)
+>  {
+>  	struct perf_evsel *evsel;
+>  	struct list_head *list = *_list;
+> @@ -260,6 +261,7 @@ static int add_event(struct list_head **_list, int *idx,
+>  		return -ENOMEM;
+>  	}
+>  
+> +	evsel->cpus = cpus;
+>  	if (name)
+>  		evsel->name = strdup(name);
+>  	list_add_tail(&evsel->node, list);
+> @@ -343,7 +345,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
+>  	memset(&attr, 0, sizeof(attr));
+>  	attr.config = cache_type | (cache_op << 8) | (cache_result << 16);
+>  	attr.type = PERF_TYPE_HW_CACHE;
+> -	return add_event(list, idx, &attr, name);
+> +	return add_event(list, idx, &attr, NULL, name);
+>  }
+>  
+>  static int add_tracepoint(struct list_head **list, int *idx,
+> @@ -381,7 +383,7 @@ static int add_tracepoint(struct list_head **list, int *idx,
+>  	attr.sample_period = 1;
+>  
+>  	snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
+> -	return add_event(list, idx, &attr, name);
+> +	return add_event(list, idx, &attr, NULL, name);
+>  }
+>  
+>  static int add_tracepoint_multi(struct list_head **list, int *idx,
+> @@ -492,7 +494,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+>  	attr.type = PERF_TYPE_BREAKPOINT;
+>  	attr.sample_period = 1;
+>  
+> -	return add_event(list, idx, &attr, NULL);
+> +	return add_event(list, idx, &attr, NULL, NULL);
+>  }
+>  
+>  static int config_term(struct perf_event_attr *attr,
+> @@ -564,7 +566,7 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
+>  	    config_attr(&attr, head_config, 1))
+>  		return -EINVAL;
+>  
+> -	return add_event(list, idx, &attr, NULL);
+> +	return add_event(list, idx, &attr, NULL, NULL);
+>  }
+>  
+>  static int parse_events__is_name_term(struct parse_events__term *term)
+> @@ -607,7 +609,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+>  	if (perf_pmu__config(pmu, &attr, head_config))
+>  		return -EINVAL;
+>  
+> -	return add_event(list, idx, &attr,
+> +	return add_event(list, idx, &attr, pmu->cpus,
+>  			 pmu_event_name(head_config));
+>  }
+>  
+> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> index 67715a4..0b9aca6 100644
+> --- a/tools/perf/util/pmu.c
+> +++ b/tools/perf/util/pmu.c
+> @@ -9,6 +9,7 @@
+>  #include "util.h"
+>  #include "pmu.h"
+>  #include "parse-events.h"
+> +#include "cpumap.h"
+>  
+>  int perf_pmu_parse(struct list_head *list, char *name);
+>  extern FILE *perf_pmu_in;
+> @@ -222,6 +223,33 @@ static int pmu_type(char *name, __u32 *type)
+>  	return ret;
+>  }
+>  
+> +static struct cpu_map *pmu_cpumask(char *name)
+> +{
+> +	struct stat st;
+> +	char path[PATH_MAX];
+> +	const char *sysfs;
+> +	FILE *file;
+> +	struct cpu_map *cpus;
+> +
+> +	sysfs = sysfs_find_mountpoint();
+> +	if (!sysfs)
+> +		return NULL;
+> +
+> +	snprintf(path, PATH_MAX,
+> +		 "%s/bus/event_source/devices/%s/cpumask", sysfs, name);
+> +
+> +	if (stat(path, &st) < 0)
+> +		return NULL;
+> +
+> +	file = fopen(path, "r");
+> +	if (!file)
+> +		return NULL;
+> +
+> +	cpus = cpu_map__read(file);
+> +	fclose(file);
+> +	return cpus;
+> +}
+> +
+>  static struct perf_pmu *pmu_lookup(char *name)
+>  {
+>  	struct perf_pmu *pmu;
+> @@ -244,6 +272,8 @@ static struct perf_pmu *pmu_lookup(char *name)
+>  	if (!pmu)
+>  		return NULL;
+>  
+> +	pmu->cpus = pmu_cpumask(name);
+> +
+>  	pmu_aliases(name, &aliases);
+>  
+>  	INIT_LIST_HEAD(&pmu->format);
+> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+> index 535f2c5..277c874 100644
+> --- a/tools/perf/util/pmu.h
+> +++ b/tools/perf/util/pmu.h
+> @@ -28,6 +28,7 @@ struct perf_pmu__alias {
+>  struct perf_pmu {
+>  	char *name;
+>  	__u32 type;
+> +	struct cpu_map *cpus;
+>  	struct list_head format;
+>  	struct list_head aliases;
+>  	struct list_head list;
 
-Yes, this is much better than what we had before. I'd suggest though,
-that instead of describing the high-level software design of the PWM
-subsystem, the text should be more addressed to the simple user like me
-who would like to know what this thing is and why do I want to enable
-it. Basically summarize what PWN devices are and what they're used for.
-I.e., https://en.wikipedia.org/wiki/Pulse-width_modulation#Applications
-but in 4-5 lines of text.
-
-IMHO, of course.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
