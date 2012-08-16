@@ -1,82 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab2HPDtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Aug 2012 23:49:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39907 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2HPDtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Aug 2012 23:49:24 -0400
-Date: Thu, 16 Aug 2012 13:49:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: linux-next: manual merge of the kvm tree with the s390 tree
-Message-Id: <20120816134911.1acd403bd420ad64c8ad9ef5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Aug_2012_13_49_11_+1000_zWs0jqmZg_OxiI2e"
+	id S1754178Ab2HPD6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Aug 2012 23:58:23 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:38306 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505Ab2HPD6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Aug 2012 23:58:22 -0400
+Date: Wed, 15 Aug 2012 22:58:20 -0500
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] SGI XPC fails to load when cpu 0 is out of IRQ resources.
+  -v2
+Message-ID: <20120816035820.GE2951@sgi.com>
+References: <20120803194628.GN3093@sgi.com>
+ <20120815155605.cf02ef7b.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120815155605.cf02ef7b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Aug_2012_13_49_11_+1000_zWs0jqmZg_OxiI2e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On many of our larger systems, CPU 0 has had all of its IRQ resources
+consumed before XPC loads.  Worst cases on machines with multiple
+10 GigE cards and multiple IB cards have depleted the entire first
+socket of IRQs.  This patch makes selecting the node upon which
+IRQs are allocated (as well as all the other GRU Message Queue
+structures) specifiable as a module load param and has a default
+behavior of searching all nodes/cpus for an available resources.
 
-Today's linux-next merge of the kvm tree got a conflict in
-arch/s390/include/asm/processor.h between commit 3c011c612acb
-("s390/bpf,jit: BPF Just In Time compiler for s390") from the s390 tree
-and commit 9b7fb990e080 ("s390, /dis: Instruction decoding interface") from
-the kvm tree.
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: stable@vger.kernel.org
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+---
 
-diff --cc arch/s390/include/asm/processor.h
-index d4477ba,eac4fb5..0000000
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@@ -140,7 -140,7 +140,8 @@@ extern int kernel_thread(int (*fn)(voi
-  extern unsigned long thread_saved_pc(struct task_struct *t);
- =20
-  extern void show_code(struct pt_regs *regs);
- +extern void print_fn_code(unsigned char *code, unsigned long len);
-+ extern int insn_to_mnemonic(unsigned char *instruction, char buf[8]);
- =20
-  unsigned long get_wchan(struct task_struct *p);
-  #define task_pt_regs(tsk) ((struct pt_regs *) \
+-v2 - incorporate review comments from Andrew Morton.
 
---Signature=_Thu__16_Aug_2012_13_49_11_+1000_zWs0jqmZg_OxiI2e
-Content-Type: application/pgp-signature
+ drivers/misc/sgi-xp/xpc_uv.c |   82 ++++++++++++++++++++++++++++++++----------
+ 1 files changed, 63 insertions(+), 19 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+index 87b251a..57a53c1 100644
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -59,6 +59,8 @@ static struct xpc_heartbeat_uv *xpc_heartbeat_uv;
+ 					 XPC_NOTIFY_MSG_SIZE_UV)
+ #define XPC_NOTIFY_IRQ_NAME		"xpc_notify"
+ 
++static int xpc_mq_node = -1;
++
+ static struct xpc_gru_mq_uv *xpc_activate_mq_uv;
+ static struct xpc_gru_mq_uv *xpc_notify_mq_uv;
+ 
+@@ -109,11 +111,8 @@ xpc_get_gru_mq_irq_uv(struct xpc_gru_mq_uv *mq, int cpu, char *irq_name)
+ #if defined CONFIG_X86_64
+ 	mq->irq = uv_setup_irq(irq_name, cpu, mq->mmr_blade, mq->mmr_offset,
+ 			UV_AFFINITY_CPU);
+-	if (mq->irq < 0) {
+-		dev_err(xpc_part, "uv_setup_irq() returned error=%d\n",
+-			-mq->irq);
++	if (mq->irq < 0)
+ 		return mq->irq;
+-	}
+ 
+ 	mq->mmr_value = uv_read_global_mmr64(mmr_pnode, mq->mmr_offset);
+ 
+@@ -238,8 +237,9 @@ xpc_create_gru_mq_uv(unsigned int mq_size, int cpu, char *irq_name,
+ 	mq->mmr_blade = uv_cpu_to_blade_id(cpu);
+ 
+ 	nid = cpu_to_node(cpu);
+-	page = alloc_pages_exact_node(nid, GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
+-				pg_order);
++	page = alloc_pages_exact_node(nid,
++				      GFP_KERNEL | __GFP_ZERO | GFP_THISNODE,
++				      pg_order);
+ 	if (page == NULL) {
+ 		dev_err(xpc_part, "xpc_create_gru_mq_uv() failed to alloc %d "
+ 			"bytes of memory on nid=%d for GRU mq\n", mq_size, nid);
+@@ -1731,9 +1731,50 @@ static struct xpc_arch_operations xpc_arch_ops_uv = {
+ 	.notify_senders_of_disconnect = xpc_notify_senders_of_disconnect_uv,
+ };
+ 
++static int
++xpc_init_mq_node(int nid)
++{
++	int cpu;
++
++	get_online_cpus();
++
++	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		xpc_activate_mq_uv =
++			xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, nid,
++					     XPC_ACTIVATE_IRQ_NAME,
++					     xpc_handle_activate_IRQ_uv);
++		if (!IS_ERR(xpc_activate_mq_uv))
++			break;
++	}
++	if (IS_ERR(xpc_activate_mq_uv)) {
++		put_online_cpus();
++		return PTR_ERR(xpc_activate_mq_uv);
++	}
++
++	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		xpc_notify_mq_uv =
++			xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, nid,
++					     XPC_NOTIFY_IRQ_NAME,
++					     xpc_handle_notify_IRQ_uv);
++		if (!IS_ERR(xpc_notify_mq_uv))
++			break;
++	}
++	if (IS_ERR(xpc_notify_mq_uv)) {
++		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
++		put_online_cpus();
++		return PTR_ERR(xpc_notify_mq_uv);
++	}
++
++	put_online_cpus();
++	return 0;
++}
++
+ int
+ xpc_init_uv(void)
+ {
++	int nid;
++	int ret = 0;
++
+ 	xpc_arch_ops = xpc_arch_ops_uv;
+ 
+ 	if (sizeof(struct xpc_notify_mq_msghdr_uv) > XPC_MSG_HDR_MAX_SIZE) {
+@@ -1742,21 +1783,21 @@ xpc_init_uv(void)
+ 		return -E2BIG;
+ 	}
+ 
+-	xpc_activate_mq_uv = xpc_create_gru_mq_uv(XPC_ACTIVATE_MQ_SIZE_UV, 0,
+-						  XPC_ACTIVATE_IRQ_NAME,
+-						  xpc_handle_activate_IRQ_uv);
+-	if (IS_ERR(xpc_activate_mq_uv))
+-		return PTR_ERR(xpc_activate_mq_uv);
++	if (xpc_mq_node < 0)
++		for_each_online_node(nid) {
++			ret = xpc_init_mq_node(nid);
+ 
+-	xpc_notify_mq_uv = xpc_create_gru_mq_uv(XPC_NOTIFY_MQ_SIZE_UV, 0,
+-						XPC_NOTIFY_IRQ_NAME,
+-						xpc_handle_notify_IRQ_uv);
+-	if (IS_ERR(xpc_notify_mq_uv)) {
+-		xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
+-		return PTR_ERR(xpc_notify_mq_uv);
+-	}
++			if (!ret)
++				break;
++		}
++	else
++		ret = xpc_init_mq_node(xpc_mq_node);
+ 
+-	return 0;
++	if (ret < 0)
++		dev_err(xpc_part, "xpc_init_mq_node() returned error=%d\n",
++			-ret);
++
++	return ret;
+ }
+ 
+ void
+@@ -1765,3 +1806,6 @@ xpc_exit_uv(void)
+ 	xpc_destroy_gru_mq_uv(xpc_notify_mq_uv);
+ 	xpc_destroy_gru_mq_uv(xpc_activate_mq_uv);
+ }
++
++module_param(xpc_mq_node, int, 0);
++MODULE_PARM_DESC(xpc_mq_node, "Node number on which to allocate message queues.");
+-- 
+1.7.6.1
 
-iQIcBAEBCAAGBQJQLG23AAoJEECxmPOUX5FEITwP+we3QuLSNmxsRDeE59TPSMmK
-CjyMHrPwOK9PUiVGN/7KfkMEbNqc/Rc9wXY8dKbA1KjuumAPD2q0TcWbf+JVx6LX
-A4IIKIPQALMUVkPWaVzyo6CrxGVNW1py8d2JiZN03gezPPV2nj68DsZdaRmKhaFJ
-loQ05L02vzgwjZriW3gRGqzLQRy47AHJFdf4eWhh3zf79c9gJq9jiDe8JxqV3lgO
-SymWZ0rWn59ZPeKDIFGPItQkyYPrvhFauaonn8mGLXZcn6Ok98JItNOO2b3BRuQG
-++0H2U05aqXDnRzTnS567zytWEt9rQkUzD7amHk9Z6dqBXOASWandXn2rKKWzOpJ
-6vMzUVArWPv2+b1N4jzzb1cY8Y5dqEK6qapAzX7wwuz+WlrUgGZJoAmxU2marM7M
-scsRKxpNoFy5K0NjcXyTUwRhhpbWgRS28dhp+8lWEL355SixcQK/j60rpZMmg+Kw
-+p3SkigW0GPYXpH5qjRjATGPYuYto3Ikow+gW36fekdltJglkpxHvkfejAxFthSe
-nwziEP6vqk7ME/P/9qtSpfxUagyiq4vTgU9s7ZbtIbI3ndDpq6tUi9HCFM8h5MMD
-fKgsvS++KmeDYdbYw9BExrapRIHZhl2RYUizapPkmXkY0/GxfJ8+Ex/BN90AXIFN
-rydH5neht4wtNVHXPdxs
-=dzfD
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Aug_2012_13_49_11_+1000_zWs0jqmZg_OxiI2e--
