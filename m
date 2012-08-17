@@ -1,176 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab2HQJO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 05:14:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53561 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab2HQJOZ (ORCPT
+	id S1030238Ab2HQJPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:15:40 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51645 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab2HQJPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:14:25 -0400
-From: Daniel J Blueman <daniel@quora.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel@quora.org>
-Subject: [PATCH] Add MSI support for SDHCI PCI hosts
-Date: Fri, 17 Aug 2012 17:14:14 +0800
-Message-Id: <1345194854-8330-1-git-send-email-daniel@quora.org>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 Aug 2012 05:15:35 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
+Date: Fri, 17 Aug 2012 11:15:46 +0200
+Message-ID: <2565324.ujMjh3qGVe@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <502E0193.9000003@ti.com>
+References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com> <502DD889.3040306@ti.com> <502E0193.9000003@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow module parameter 'enable_msi' to request an MSI interrupt for
-hosts where available (presently PCI). Useful as a workaround on
-platforms where the legacy interrupt is broken.
+Hi Prabhakar,
 
-Signed-off-by: Daniel J Blueman <daniel@quora.org>
----
- drivers/mmc/host/sdhci-pci.c |   30 ++++++++++++++++++++++++++++++
- drivers/mmc/host/sdhci.c     |   23 +++++++++++++++++++++++
- drivers/mmc/host/sdhci.h     |    2 ++
- 3 files changed, 55 insertions(+)
+On Friday 17 August 2012 14:02:19 Prabhakar Lad wrote:
+> On Friday 17 August 2012 11:07 AM, Sekhar Nori wrote:
+> > On 8/17/2012 10:51 AM, Prabhakar Lad wrote:
+> >> On Thursday 16 August 2012 08:43 PM, Laurent Pinchart wrote:
+> >>> On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
+> >>>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >>>> 
+> >>>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> >>>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> >>>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> >>>> ---
+> >>>> 
+> >>>>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
+> >>>>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
+> >>>>  2 files changed, 15 insertions(+), 11 deletions(-)
+> >>>> 
+> >>>> diff --git a/drivers/media/video/davinci/vpif_capture.c
+> >>>> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5
+> >>>> 100644
+> >>>> --- a/drivers/media/video/davinci/vpif_capture.c
+> >>>> +++ b/drivers/media/video/davinci/vpif_capture.c
+> >>>> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue
+> >>>> *vq,
+> >>>> unsigned int count) }
+> >>>> 
+> >>>>  	/* configure 1 or 2 channel mode */
+> >>>> 
+> >>>> -	ret = vpif_config_data->setup_input_channel_mode
+> >>>> -					(vpif->std_info.ycmux_mode);
+> >>>> +	if (vpif_config_data->setup_input_channel_mode) {
+> >>>> +		ret = vpif_config_data->setup_input_channel_mode
+> >>>> +						(vpif->std_info.ycmux_mode);
+> >>>> 
+> >>>> -	if (ret < 0) {
+> >>>> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> >>>> -		return ret;
+> >>>> +		if (ret < 0) {
+> >>>> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
+> >>>> +			return ret;
+> >>>> +		}
+> >>> 
+> >>> This change looks good to me. However, note that you will need to get
+> >>> rid of board code callbacks at some point to implement device tree
+> >>> support. It would be worth thinking about how to do so now.
+> >> 
+> >> Currently VPIF driver is only used by dm646x, and the handlers for this
+> >> in the the board code are not null. This patch is intended for da850
+> >> where this handlers will be null.
+> >> 
+> >>>>  	}
+> >>>>  	
+> >>>>  	/* Call vpif_set_params function to set the parameters and addresses
+> >>>>  	*/
+> >>>> 
+> >>>> diff --git a/drivers/media/video/davinci/vpif_display.c
+> >>>> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92
+> >>>> 100644
+> >>>> --- a/drivers/media/video/davinci/vpif_display.c
+> >>>> +++ b/drivers/media/video/davinci/vpif_display.c
+> >>>> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue
+> >>>> *vq,
+> >>>> unsigned int count) }
+> >>>> 
+> >>>>  	/* clock settings */
+> >>>> 
+> >>>> -	ret =
+> >>>> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+> >>>> -					ch->vpifparams.std_info.hd_sd);
+> >>>> -	if (ret < 0) {
+> >>>> -		vpif_err("can't set clock\n");
+> >>>> -		return ret;
+> >>>> +	if (vpif_config_data->set_clock) {
+> >>> 
+> >>> Does the DaVinci platform use the common clock framework ? If so, a
+> >>> better fix for this would be to pass a clock name through platform data
+> >>> instead of using a callback function.
+> >> 
+> >> Currently DaVinci is not using the common clock framework.
+> >> 
+> >> Can you ACK this patch?
+> > 
+> > Yes, DaVinci has not migrated to common clock framework (yet). However,
+> > even without that it should be possible to use clock API in driver code.
+> > Using a callback to enable clocks or even passing the clock name from
+> > platform data would be bypassing an existing framework. Clock name
+> > should be IP specific, so it should be possible to use that in driver.
+> 
+> The callback is not actually dealing with PSC clock's but with system
+> module registers.
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 504da71..fbde589 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -934,6 +934,34 @@ static int sdhci_pci_enable_dma(struct sdhci_host *host)
- 	return 0;
- }
- 
-+static int sdhci_pci_enable_msi(struct sdhci_host *host)
-+{
-+	struct sdhci_pci_slot *slot;
-+	struct pci_dev *pdev;
-+	int ret;
-+
-+	slot = sdhci_priv(host);
-+	pdev = slot->chip->pdev;
-+
-+	ret = pci_enable_msi(pdev);
-+	if (ret)
-+		return ret;
-+
-+	host->irq = pdev->irq;
-+	return 0;
-+}
-+
-+static void sdhci_pci_disable_msi(struct sdhci_host *host)
-+{
-+	struct sdhci_pci_slot *slot;
-+	struct pci_dev *pdev;
-+
-+	slot = sdhci_priv(host);
-+	pdev = slot->chip->pdev;
-+
-+	pci_disable_msi(pdev);
-+}
-+
- static int sdhci_pci_8bit_width(struct sdhci_host *host, int width)
- {
- 	u8 ctrl;
-@@ -976,6 +1004,8 @@ static void sdhci_pci_hw_reset(struct sdhci_host *host)
- 
- static struct sdhci_ops sdhci_pci_ops = {
- 	.enable_dma	= sdhci_pci_enable_dma,
-+	.enable_msi	= sdhci_pci_enable_msi,
-+	.disable_msi	= sdhci_pci_disable_msi,
- 	.platform_8bit_width	= sdhci_pci_8bit_width,
- 	.hw_reset		= sdhci_pci_hw_reset,
- };
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 9a11dc3..9fa2180 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -45,6 +45,7 @@
- 
- static unsigned int debug_quirks = 0;
- static unsigned int debug_quirks2;
-+static bool enable_msi;
- 
- static void sdhci_finish_data(struct sdhci_host *);
- 
-@@ -2433,6 +2434,9 @@ int sdhci_suspend_host(struct sdhci_host *host)
- 
- 	free_irq(host->irq, host);
- 
-+	if (host->ops->disable_msi && enable_msi)
-+		host->ops->disable_msi(host);
-+
- 	return ret;
- }
- 
-@@ -2447,6 +2451,12 @@ int sdhci_resume_host(struct sdhci_host *host)
- 			host->ops->enable_dma(host);
- 	}
- 
-+	if (host->ops->enable_msi && enable_msi) {
-+		ret = host->ops->enable_msi(host);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	ret = request_irq(host->irq, sdhci_irq, IRQF_SHARED,
- 			  mmc_hostname(host->mmc), host);
- 	if (ret)
-@@ -3024,6 +3034,12 @@ int sdhci_add_host(struct sdhci_host *host)
- 		host->tuning_timer.function = sdhci_tuning_timer;
- 	}
- 
-+	if (host->ops->enable_msi && enable_msi) {
-+		ret = host->ops->enable_msi(host);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	ret = request_irq(host->irq, sdhci_irq, IRQF_SHARED,
- 		mmc_hostname(mmc), host);
- 	if (ret) {
-@@ -3071,6 +3087,8 @@ int sdhci_add_host(struct sdhci_host *host)
- reset:
- 	sdhci_reset(host, SDHCI_RESET_ALL);
- 	free_irq(host->irq, host);
-+	if (host->ops->disable_msi && enable_msi)
-+		host->ops->disable_msi(host);
- #endif
- untasklet:
- 	tasklet_kill(&host->card_tasklet);
-@@ -3114,6 +3132,9 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 
- 	free_irq(host->irq, host);
- 
-+	if (host->ops->disable_msi && enable_msi)
-+		host->ops->disable_msi(host);
-+
- 	del_timer_sync(&host->timer);
- 
- 	tasklet_kill(&host->card_tasklet);
-@@ -3162,6 +3183,7 @@ module_exit(sdhci_drv_exit);
- 
- module_param(debug_quirks, uint, 0444);
- module_param(debug_quirks2, uint, 0444);
-+module_param(enable_msi, bool, 0444);
- 
- MODULE_AUTHOR("Pierre Ossman <pierre@ossman.eu>");
- MODULE_DESCRIPTION("Secure Digital Host Controller Interface core driver");
-@@ -3169,3 +3191,4 @@ MODULE_LICENSE("GPL");
- 
- MODULE_PARM_DESC(debug_quirks, "Force certain quirks.");
- MODULE_PARM_DESC(debug_quirks2, "Force certain other quirks.");
-+MODULE_PARM_DESC(debug_quirks2, "Enable MSI interrupt support where possible.");
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index 97653ea..df4e003 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -264,6 +264,8 @@ struct sdhci_ops {
- 	void	(*set_clock)(struct sdhci_host *host, unsigned int clock);
- 
- 	int		(*enable_dma)(struct sdhci_host *host);
-+	int		(*enable_msi)(struct sdhci_host *host);
-+	void		(*disable_msi)(struct sdhci_host *host);
- 	unsigned int	(*get_max_clock)(struct sdhci_host *host);
- 	unsigned int	(*get_min_clock)(struct sdhci_host *host);
- 	unsigned int	(*get_timeout_clock)(struct sdhci_host *host);
+Good to know. Then you'll have to create an API to expose the system module 
+registers to drivers.
+
 -- 
-1.7.10.4
+Regards,
+
+Laurent Pinchart
 
