@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226Ab2HQPNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 11:13:04 -0400
-Received: from mga07.intel.com ([143.182.124.22]:53915 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754164Ab2HQPM5 (ORCPT
+	id S1758194Ab2HQPSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 11:18:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60583 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab2HQPR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 11:12:57 -0400
+	Fri, 17 Aug 2012 11:17:59 -0400
+Message-ID: <502E60A3.1020405@wwwdotorg.org>
+Date: Fri, 17 Aug 2012 09:17:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <86lihdbm1h.fsf@miki.keithp.com>
-References: <1344918891-6283-1-git-send-email-keithp@keithp.com>
-	<1344918891-6283-3-git-send-email-keithp@keithp.com>
-	<CAPX-8+8euppecLhZu3XR95uM5e9m_kYmbJ6vmgBU=d03cs=RWA@mail.gmail.com>
-	<86lihdbm1h.fsf@miki.keithp.com>
-Date: Fri, 17 Aug 2012 16:12:54 +0100
-Message-ID: <CAPX-8+-GOu33-pNUoHMz_OA5_h7U_-FZEvuGQZfE-b+Qe=JRjQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH 2/7] drm/i915: FDI B/C share 4 lanes on Ivybridge
-From: "Lespiau, Damien" <damien.lespiau@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
+ driver
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com>
+In-Reply-To: <502DE6FE.8040200@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 4:00 PM, Keith Packard <keithp@keithp.com> wrote:
->> I guess this does not cover the case of pipe B using 3 lanes meaning
->> pipe C can use 1?
+On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
+> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
+>> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+>>> Enable config for dmaengine based Tegra APB DMA driver and
+>>> disable the legacy APB DMA driver (SYSTEM_DMA).
+>> Laxman, if I apply this series to next-20120816 (plus a few patches in
+>> my local work branch plus the CPU hotplug patches from Joseph, although
+>> I suspect none of that matters), then audio playback on Tegra20 is
+>> broken; the pitch is far too high. Audio playback on Tegra30 works as
+>> expected.
 >
-> It didn't look like that was a supported mode from the docs.
+> I run the test again on ventana and did not see any issue.
+> I play one song and saw similar behavior with/without this series.
 
-Ah yes, found it now "FDI B maximum port width is 4 lanes when FDI C
-is disabled, 2 lanes when FDI C is enabled."
+OK, I'll test some other boards. I tested Whistler, although all the
+clocking logic is identical between all Tegra20 boards.
 
->> This duplicates the code just that is just a few lines away, instead
->> how about moving the logic to set target_clock up in front of this
->> whole if()?
->
-> It's not the same, it's the inverse -- computing bpp from lanes+clock
-> clock instead of computing lanes from bpp+clock. But, yeah, it would be
-> nice to have these merged somehow. I couldn't figure out a good way though.
+> With this series:
+> --------------------
+> 
+> ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
+> Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little
+> Endian, Rate
+>  44100 Hz, Stereo
+> underrun!!! (at least 5039.388 ms long)
 
-I meant the
-
-> +               if (is_dp)
-> +                       target_clock = mode->clock;
-> +               else
-> +                       target_clock = adjusted_mode->clock;
-
-Just after that else block you have
-
-        /* [e]DP over FDI requires target mode clock instead of link clock. */
-        if (edp_encoder)
-                target_clock = intel_edp_target_clock(edp_encoder, mode);
-        else if (is_dp)
-                target_clock = mode->clock;
-        else
-                target_clock = adjusted_mode->clock;
-
-Those look strangely similar to me. The later could be moved up.
-
--- 
-Damien
+Why are you getting all these underruns? I almost never see this, except
+when something else is hammering the SD card containing the .wav file.
+If I saw those, I'd count it as a test failure.
