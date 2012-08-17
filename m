@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2HQS1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:27:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:43738 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2HQS1Q (ORCPT
+	id S1758802Ab2HQS1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:27:52 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:25139 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932346Ab2HQS1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:27:16 -0400
-Message-ID: <502E8CC7.4070401@windriver.com>
-Date: Fri, 17 Aug 2012 14:26:15 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 17 Aug 2012 14:27:24 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr3c7pEgsE
+X-RZG-CLASS-ID: mo00
+Date: Fri, 17 Aug 2012 20:27:21 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com
+Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+Message-ID: <20120817182721.GA7747@aepfle.de>
+References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-8-git-send-email-kys@microsoft.com>
+ <20120817165109.GA11323@kroah.com>
+ <20120817173209.GA29217@decadent.org.uk>
 MIME-Version: 1.0
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Luciano Chavez <lnx1138@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Willy Tarreau <w@1wt.eu>
-Subject: Re: [v2.6.34-stable 134/165] mm: avoid null pointer access in vm_struct
- via /proc/vmallocinfo
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-135-git-send-email-paul.gortmaker@windriver.com> <20120817152233.GB4039@herton-Z68MA-D2H-B3>
-In-Reply-To: <20120817152233.GB4039@herton-Z68MA-D2H-B3>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120817173209.GA29217@decadent.org.uk>
+User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-08-17 11:22 AM, Herton Ronaldo Krzesinski wrote:
-> On Wed, Aug 15, 2012 at 03:47:58PM -0400, Paul Gortmaker wrote:
->> From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit f5252e009d5b87071a919221e4f6624184005368 upstream.
->>
->> The /proc/vmallocinfo shows information about vmalloc allocations in
->> vmlist that is a linklist of vm_struct.  It, however, may access pages
->> field of vm_struct where a page was not allocated.  This results in a null
->> pointer access and leads to a kernel panic.
->>
->> Why this happens: In __vmalloc_node_range() called from vmalloc(), newly
->> allocated vm_struct is added to vmlist at __get_vm_area_node() and then,
->> some fields of vm_struct such as nr_pages and pages are set at
->> __vmalloc_area_node().  In other words, it is added to vmlist before it is
->> fully initialized.  At the same time, when the /proc/vmallocinfo is read,
->> it accesses the pages field of vm_struct according to the nr_pages field
->> at show_numa_info().  Thus, a null pointer access happens.
->>
->> The patch adds the newly allocated vm_struct to the vmlist *after* it is
->> fully initialized.  So, it can avoid accessing the pages field with
->> unallocated page when show_numa_info() is called.
->>
->> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Namhyung Kim <namhyung@gmail.com>
->> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->> [PG: .34 has VMALLOC_START/END vs. start/end in f5252e009d5]
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> [...]
-> 
-> commit 1368edf0647ac112d8cfa6ce47257dc950c50f5c ("mm: vmalloc: check for
-> page allocation failure before vmlist insertion") addresses a regression
-> on this change, something to consider for inclusion in this stable
-> update as well.
+On Fri, Aug 17, Ben Hutchings wrote:
 
-Thanks Herton.
+> On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
+> > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
+> > > Now, gather DNS information. Invoke an external script (that can be
+> > > distro dependent) to gather the DNS information.
+> > 
+> > Where is that script?  Why a script, this really isn't in a standard
+> > method for all Linux distros?  If not, why not work to do that like the
+> > freedesktop.org people have done for other system configuration items?
+>  
+> I suggested using the Network Manager D-Bus API.  That obviously
+> isn't going to work everywhere, but it seems to cover the same simple
+> cases that this hypervisor-guest interface allows for.
 
-I've added Willy to CC, since v2.6.32.49 added f5252e but does
-not have 1368edf0 yet in any 2.6.32.x
+If its not going to work everywhere how can it be the solution?
 
-Paul.
---
+The script in turn can do whatever it takes, which includes NM. However
+NM (in its current state) shouldnt be thrown at everyone and everything.
 
-> 
+Olaf
