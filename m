@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030212Ab2HQG5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:57:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35966 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964832Ab2HQG5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:57:35 -0400
-From: Adam Lee <adam8157@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz> (odd fixer:KCONFIG 
-	,commit_signer:2/3=67%),
-        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/3=67%),
-        linux-kbuild@vger.kernel.org (open list:KCONFIG)
-Subject: [PATCH] [Signed-off] kconfig: document oldnoconfig to what it really does in conf.c
-Date: Fri, 17 Aug 2012 14:57:28 +0800
-Message-Id: <1345186649-17502-1-git-send-email-adam8157@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
+	id S1030616Ab2HQHAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:00:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43756 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964833Ab2HQHAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 03:00:46 -0400
+Date: Fri, 17 Aug 2012 09:00:42 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: awful kconfig help texts.
+Message-ID: <20120817070042.GA24241@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thierry Reding <thierry.reding@avionic-design.de>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120731151600.GA19412@redhat.com>
+ <20120731170741.GA4735@x1.osrc.amd.com>
+ <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de>
+ <20120816111044.GA12029@x1.osrc.amd.com>
+ <20120816120541.GA10154@avionic-0098.adnet.avionic-design.de>
+ <20120817061102.GA6003@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120817061102.GA6003@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, the make target
-'oldnoconfig' is a misnomer. It doesn't set new symbols to 'n', but
-instead sets it to their default values.
+On Fri, Aug 17, 2012 at 08:11:02AM +0200, Thierry Reding wrote:
+> How about the patch below?
+> 
+> Thierry
 
-This patch fixes the document in conf.c, and will submit another patch
-to replace 'oldnoconfig' to 'olddefconfig'
+> From deb6852dc5e9da365a33c744f2dc107ae11b407a Mon Sep 17 00:00:00 2001
+> From: Thierry Reding <thierry.reding@avionic-design.de>
+> Date: Thu, 16 Aug 2012 08:01:21 +0200
+> Subject: [PATCH v2] pwm: Improve Kconfig help text
+> 
+> The Kconfig help text should help the user understand what functionality
+> is provided by an option. This is especially true for new subsystems. An
+> improved help text is provided by this commit in the hopes of clarifying
+> the usefulness of the PWM framework.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Signed-off-by: Adam Lee <adam8157@gmail.com>
----
- scripts/kconfig/conf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Absolutely! Now even I understand it :-).
 
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 0dc4a2c..6875680 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -467,7 +467,7 @@ static void conf_usage(const char *progname)
- 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
- 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
- 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
--	printf("  --oldnoconfig           Same as silentoldconfig but set new symbols to no\n");
-+	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
- 	printf("  --defconfig <file>      New config with default defined in <file>\n");
- 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
- 	printf("  --allnoconfig           New config where all options are answered with no\n");
+Acked-by: Borislav Petkov <bp@alien8.de>
+
+Thanks.
+
 -- 
-1.7.11.2
-
+Regards/Gruss,
+    Boris.
