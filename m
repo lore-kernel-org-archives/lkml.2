@@ -1,212 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030647Ab2HQHQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:16:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63439 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639Ab2HQHQY (ORCPT
+	id S932929Ab2HQHSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:18:01 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11033 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639Ab2HQHR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:16:24 -0400
-From: Adam Lee <adam8157@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz> (odd fixer:KCONFIG 
-	,commit_signer:6/7=86%,commit_signer:2/4=50%),
-        Yaakov Selkowitz <yselkowitz@users.sourceforge.net> (commit_signer:2/7=29%),
-        Peter Foley <pefoley2@verizon.net> (commit_signer:1/7=14%),
-        Steven Rostedt <rostedt@goodmis.org> (commit_signer:1/7=14% 
-	,commit_signer:61/63=97%),
-        Paul Bolle <pebolle@tiscali.nl> (commit_signer:1/7=14%),
-        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/4=50%),
-        linux-kbuild@vger.kernel.org (open list:KCONFIG)
-Subject: [PATCH] kconfig: replace 'oldnoconfig' with 'olddefconfig', what it really does
-Date: Fri, 17 Aug 2012 15:16:13 +0800
-Message-Id: <1345187778-19678-1-git-send-email-adam8157@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
+	Fri, 17 Aug 2012 03:17:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 17 Aug 2012 00:12:16 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@nvidia.com>, <olof@lixom.net>
+CC: <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: dt: tegra: harmony: add regulators
+Date: Fri, 17 Aug 2012 12:29:59 +0530
+Message-ID: <1345186799-18229-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
-set new symbols to 'n', but instead sets it to their default values.
+Harmony uses a TPS6586x regulator. Instantiate this, and hook up a
+couple of fixed GPIO-controlled regulators too.
 
-So, this patch replace 'oldnoconfig' with 'olddefconfig', stop making
-people confused.
+Based on Ventana regulator patch by Stephen Warren <swarren@nvidia.com>
+and converted to Harmony.
 
-PS: the document in conf.c fixed in another mail, "[PATCH] [Signed-off]
-kconfig: document oldnoconfig to what it really does in conf.c"
-
-Signed-off-by: Adam Lee <adam8157@gmail.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- scripts/kconfig/Makefile     |  6 +++---
- scripts/kconfig/conf.c       | 18 +++++++++---------
- tools/testing/ktest/ktest.pl | 15 +++++++--------
- 3 files changed, 19 insertions(+), 20 deletions(-)
+ arch/arm/boot/dts/tegra20-harmony.dts |  210 +++++++++++++++++++++++++++++++++
+ 1 files changed, 210 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 77d5399..15c69f2 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -76,9 +76,9 @@ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
- allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
+diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
+index f146dbf..0add02b 100644
+--- a/arch/arm/boot/dts/tegra20-harmony.dts
++++ b/arch/arm/boot/dts/tegra20-harmony.dts
+@@ -275,6 +275,152 @@
+ 	i2c@7000d000 {
+ 		status = "okay";
+ 		clock-frequency = <400000>;
++
++		pmic: tps6586x@34 {
++			compatible = "ti,tps6586x";
++			reg = <0x34>;
++			interrupts = <0 86 0x4>;
++
++			#gpio-cells = <2>;
++			gpio-controller;
++
++			sys-supply = <&vdd_5v0_reg>;
++			vin-sm0-supply = <&sys_reg>;
++			vin-sm1-supply = <&sys_reg>;
++			vin-sm2-supply = <&sys_reg>;
++			vinldo01-supply = <&sm2_reg>;
++			vinldo23-supply = <&sm2_reg>;
++			vinldo4-supply = <&sm2_reg>;
++			vinldo678-supply = <&sm2_reg>;
++			vinldo9-supply = <&sm2_reg>;
++
++			regulators {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				sys_reg: regulator@0 {
++					reg = <0>;
++					regulator-compatible = "sys";
++					regulator-name = "vdd_sys";
++					regulator-always-on;
++				};
++
++				regulator@1 {
++					reg = <1>;
++					regulator-compatible = "sm0";
++					regulator-name = "vdd_sm0,vdd_core";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++				};
++
++				regulator@2 {
++					reg = <2>;
++					regulator-compatible = "sm1";
++					regulator-name = "vdd_sm1,vdd_cpu";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				sm2_reg: regulator@3 {
++					reg = <3>;
++					regulator-compatible = "sm2";
++					regulator-name = "vdd_sm2,vin_ldo*";
++					regulator-min-microvolt = <3700000>;
++					regulator-max-microvolt = <3700000>;
++					regulator-always-on;
++				};
++
++				/* LDO0 is not connected to anything */
++
++				regulator@5 {
++					reg = <5>;
++					regulator-compatible = "ldo1";
++					regulator-name = "vdd_ldo1,avdd_pll*";
++					regulator-min-microvolt = <1100000>;
++					regulator-max-microvolt = <1100000>;
++					regulator-always-on;
++				};
++
++				regulator@6 {
++					reg = <6>;
++					regulator-compatible = "ldo2";
++					regulator-name = "vdd_ldo2,vdd_rtc";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++				};
++
++				regulator@7 {
++					reg = <7>;
++					regulator-compatible = "ldo3";
++					regulator-name = "vdd_ldo3,avdd_usb*";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-always-on;
++				};
++
++				regulator@8 {
++					reg = <8>;
++					regulator-compatible = "ldo4";
++					regulator-name = "vdd_ldo4,avdd_osc,vddio_sys";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++				};
++
++				regulator@9 {
++					reg = <9>;
++					regulator-compatible = "ldo5";
++					regulator-name = "vdd_ldo5,vcore_mmc";
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <2850000>;
++					regulator-always-on;
++				};
++
++				regulator@10 {
++					reg = <10>;
++					regulator-compatible = "ldo6";
++					regulator-name = "vdd_ldo6,avdd_vdac";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				regulator@11 {
++					reg = <11>;
++					regulator-compatible = "ldo7";
++					regulator-name = "vdd_ldo7,avdd_hdmi,vdd_fuse";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++				};
++
++				regulator@12 {
++					reg = <12>;
++					regulator-compatible = "ldo8";
++					regulator-name = "vdd_ldo8,avdd_hdmi_pll";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				regulator@13 {
++					reg = <13>;
++					regulator-compatible = "ldo9";
++					regulator-name = "vdd_ldo9,avdd_2v85,vdd_ddr_rx";
++					regulator-min-microvolt = <2850000>;
++					regulator-max-microvolt = <2850000>;
++					regulator-always-on;
++				};
++
++				regulator@14 {
++					reg = <14>;
++					regulator-compatible = "ldo_rtc";
++					regulator-name = "vdd_rtc_out,vdd_cell";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-always-on;
++				};
++			};
++		};
+ 	};
  
--PHONY += listnewconfig oldnoconfig savedefconfig defconfig
-+PHONY += listnewconfig olddefconfig savedefconfig defconfig
+ 	pmc {
+@@ -310,6 +456,70 @@
+ 		bus-width = <8>;
+ 	};
  
--listnewconfig oldnoconfig: $(obj)/conf
-+listnewconfig olddefconfig: $(obj)/conf
- 	$< --$@ $(Kconfig)
- 
- savedefconfig: $(obj)/conf
-@@ -114,7 +114,7 @@ help:
- 	@echo  '  alldefconfig    - New config with all symbols set to default'
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
--	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
-+	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
- 
- # lxdialog stuff
- check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 6875680..80d122f 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -32,7 +32,7 @@ enum input_mode {
- 	defconfig,
- 	savedefconfig,
- 	listnewconfig,
--	oldnoconfig,
-+	olddefconfig,
- } input_mode = oldaskconfig;
- 
- static int indent = 1;
-@@ -365,7 +365,7 @@ static void conf(struct menu *menu)
- 		case P_MENU:
- 			if ((input_mode == silentoldconfig ||
- 			     input_mode == listnewconfig ||
--			     input_mode == oldnoconfig) &&
-+			     input_mode == olddefconfig) &&
- 			    rootEntry != menu) {
- 				check_conf(menu);
- 				return;
-@@ -429,7 +429,7 @@ static void check_conf(struct menu *menu)
- 				if (sym->name && !sym_is_choice_value(sym)) {
- 					printf("%s%s\n", CONFIG_, sym->name);
- 				}
--			} else if (input_mode != oldnoconfig) {
-+			} else if (input_mode != olddefconfig) {
- 				if (!conf_cnt++)
- 					printf(_("*\n* Restart config...\n*\n"));
- 				rootEntry = menu_get_parent_menu(menu);
-@@ -454,7 +454,7 @@ static struct option long_opts[] = {
- 	{"alldefconfig",    no_argument,       NULL, alldefconfig},
- 	{"randconfig",      no_argument,       NULL, randconfig},
- 	{"listnewconfig",   no_argument,       NULL, listnewconfig},
--	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
-+	{"olddefconfig",    no_argument,       NULL, olddefconfig},
- 	{NULL, 0, NULL, 0}
- };
- 
-@@ -467,7 +467,7 @@ static void conf_usage(const char *progname)
- 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
- 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
- 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
--	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
-+	printf("  --olddefconfig          Same as silentoldconfig but sets new symbols to their default value\n");
- 	printf("  --defconfig <file>      New config with default defined in <file>\n");
- 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
- 	printf("  --allnoconfig           New config where all options are answered with no\n");
-@@ -520,7 +520,7 @@ int main(int ac, char **av)
- 		case allmodconfig:
- 		case alldefconfig:
- 		case listnewconfig:
--		case oldnoconfig:
-+		case olddefconfig:
- 			break;
- 		case '?':
- 			conf_usage(progname);
-@@ -565,7 +565,7 @@ int main(int ac, char **av)
- 	case oldaskconfig:
- 	case oldconfig:
- 	case listnewconfig:
--	case oldnoconfig:
-+	case olddefconfig:
- 		conf_read(NULL);
- 		break;
- 	case allnoconfig:
-@@ -645,7 +645,7 @@ int main(int ac, char **av)
- 		/* fall through */
- 	case oldconfig:
- 	case listnewconfig:
--	case oldnoconfig:
-+	case olddefconfig:
- 	case silentoldconfig:
- 		/* Update until a loop caused no more changes */
- 		do {
-@@ -653,7 +653,7 @@ int main(int ac, char **av)
- 			check_conf(&rootmenu);
- 		} while (conf_cnt &&
- 			 (input_mode != listnewconfig &&
--			  input_mode != oldnoconfig));
-+			  input_mode != olddefconfig));
- 		break;
- 	}
- 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 52b7959..0ed73b5 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -1871,10 +1871,10 @@ sub make_oldconfig {
- 	apply_min_config;
-     }
- 
--    if (!run_command "$make oldnoconfig") {
--	# Perhaps oldnoconfig doesn't exist in this version of the kernel
-+    if (!run_command "$make olddefconfig") {
-+	# Perhaps olddefconfig doesn't exist in this version of the kernel
- 	# try a yes '' | oldconfig
--	doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
-+	doprint "olddefconfig failed, trying yes '' | make oldconfig\n";
- 	run_command "yes '' | $make oldconfig" or
- 	    dodie "failed make config oldconfig";
-     }
-@@ -1927,7 +1927,7 @@ sub build {
- 
-     # old config can ask questions
-     if ($type eq "oldconfig") {
--	$type = "oldnoconfig";
-+	$type = "olddefconfig";
- 
- 	# allow for empty configs
- 	run_command "touch $output_config";
-@@ -1957,7 +1957,7 @@ sub build {
- 	load_force_config($minconfig);
-     }
- 
--    if ($type ne "oldnoconfig") {
-+    if ($type ne "olddefconfig") {
- 	run_command "$make $type" or
- 	    dodie "failed make config";
-     }
-@@ -2456,8 +2456,7 @@ my %config_set;
- 
- # config_off holds the set of configs that the bad config had disabled.
- # We need to record them and set them in the .config when running
--# oldnoconfig, because oldnoconfig does not turn off new symbols, but
--# instead just keeps the defaults.
-+# olddefconfig, because olddefconfig keeps the defaults.
- my %config_off;
- 
- # config_off_tmp holds a set of configs to turn off for now
-@@ -3248,7 +3247,7 @@ sub test_this_config {
-     }
- 
-     # Remove this config from the list of configs
--    # do a make oldnoconfig and then read the resulting
-+    # do a make olddefconfig and then read the resulting
-     # .config to make sure it is missing the config that
-     # we had before
-     my %configs = %min_configs;
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vdd_5v0_reg: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "vdd_5v0";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			regulator-always-on;
++		};
++
++		regulator@1 {
++			compatible = "regulator-fixed";
++			reg = <1>;
++			regulator-name = "vdd_1v5";
++			regulator-min-microvolt = <1500000>;
++			regulator-max-microvolt = <1500000>;
++			gpio = <&pmic 0 0>;
++		};
++
++		regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "vdd_1v2";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1200000>;
++			gpio = <&pmic 1 0>;
++			enable-active-high;
++		};
++
++		regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "vdd_1v05";
++			regulator-min-microvolt = <10500000>;
++			regulator-max-microvolt = <10500000>;
++			gpio = <&pmic 2 0>;
++			enable-active-high;
++		};
++
++		regulator@4 {
++			compatible = "regulator-fixed";
++			reg = <4>;
++			regulator-name = "vdd_pnl";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++			gpio = <&gpio 22 0>; /* gpio PC6 */
++			enable-active-high;
++		};
++
++		regulator@5 {
++			compatible = "regulator-fixed";
++			reg = <5>;
++			regulator-name = "vdd_bl";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++			gpio = <&gpio 176 0>; /* gpio PW0 */
++			enable-active-high;
++		};
++	};
++
+ 	sound {
+ 		compatible = "nvidia,tegra-audio-wm8903-harmony",
+ 			     "nvidia,tegra-audio-wm8903";
 -- 
-1.7.11.2
+1.7.1.1
 
